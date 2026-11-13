@@ -1155,10 +1155,13 @@ recently active agent, and SHALL happen only when the user presses Send.
 - **THEN** nothing is captured and the app explains how to grant it, with a button that
   opens the System Settings pane
 
-#### Scenario: The editor keeps its work on a second hotkey press
+#### Scenario: Keep editing while taking another screenshot
 
 - **WHEN** an editor is open and the user presses ⌥⌘4 again
-- **THEN** the open editor comes to the front instead of a new capture starting
+- **THEN** a new region selection starts and opens an independent editor
+- **AND** the earlier document retains its image, annotations, note, target, undo and receipt
+- **AND** cancelling or failing the new selection preserves every earlier document
+- **AND** selection is serialized and a maximum of eight open editors bounds resource use; reaching this limit explains how to save or close a document without discarding work
 
 #### Scenario: Capture the open menu itself
 
@@ -1558,3 +1561,19 @@ The screenshot sender SHALL require explicit attachment ingress rather than infe
 - **WHEN** only next-turn queue acceptance is confirmed
 - **THEN** the screenshot feedback says queued and waiting for the next turn, without claiming terminal receipt
 - **AND** contradictory, nonzero-success or unknown receipts keep a recoverable editor rather than reporting success
+
+### Requirement: Screenshot target selection uses session identity and keyboard search
+The screenshot target chip and picker SHALL show the same primary session title as the menu bar, with agent, tmux session and pane ID as secondary disambiguating context. The picker SHALL focus a search field when opened, support case/width/diacritic-insensitive token and ordered-subsequence matching, and retain stable ordering for tied scores. Arrow keys SHALL highlight a visible result, Return SHALL select that result, and Escape SHALL dismiss the picker. Input-method composition SHALL remain text input. Searching SHALL NOT send a screenshot or invoke annotation shortcuts. A changed target session SHALL require explicit reselection rather than silently following a reused pane ID.
+
+#### Scenario: Find a session without the mouse
+- **WHEN** the owner types a title abbreviation, project name or pane ID in the picker
+- **THEN** matching sessions display their menu-bar titles and distinct locations
+- **AND** arrows and Return select only a visible matching row; an empty result cannot select a hidden row
+
+### Requirement: Screenshot refusal feedback identifies evidence accurately
+A generic refused-waiting receipt SHALL NOT itself prove a pending human decision. Only explicit approval/menu evidence SHALL use that explanation. Known pre-mutation connection and target refusals SHALL say not sent and preserve the screenshot and note. Unknown receipts SHALL remain unconfirmed without automatic retry. A duplicate guard SHALL describe a matching send record, not assert that delivery succeeded. Diagnostics SHALL include a bounded stable reason code and preflight/dispatch stage, never message text or image paths.
+
+#### Scenario: A missing native frontend is not an approval prompt
+- **WHEN** an explicit refusal reports codex-frontend-unavailable
+- **THEN** the editor says the input connection is not ready, not that a human request needs answering
+- **AND** the user can view the session or keep editing, with no alternate-channel resend

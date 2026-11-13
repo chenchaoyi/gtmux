@@ -35803,7 +35803,7 @@
           "design": "SSI-003"
         }
       ],
-      "sha256": "1a0e1a096238bc3ec520c8ec36299d2a70a59e4ef0c3effa62d8a922c486617f"
+      "sha256": "10335f97aa839176bb9a8d45e6123a871d83825705f03d2e148c6ae9a5e10c7e"
     },
     "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift": {
       "layer": "L2",
@@ -36131,7 +36131,7 @@
       "sha256": "8417bd98aeea1b084b08033d32e984ba805fdbc471fbc8492529b0470f081e26"
     },
     "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift": {
-      "sha256": "2c09f9673bc76a667f526716d44142b62ec40112863c82a7ffed7893ed5904a1",
+      "sha256": "85f363b45fd6a7e333c60d279526dc20da28cf7c132e22d5505d9054b77898ea",
       "layer": "L1",
       "stack": "macOS / Widgets Swift",
       "cases": [
@@ -36145,7 +36145,7 @@
         },
         {
           "id": "LEG-79f70d2945be",
-          "line": 25,
+          "line": 26,
           "kind": "XCTest",
           "name": "testCaptureArgumentsKeepDPIAndStayQuiet",
           "dynamic": false,
@@ -36153,7 +36153,7 @@
         },
         {
           "id": "LEG-cc57bb521730",
-          "line": 31,
+          "line": 32,
           "kind": "XCTest",
           "name": "testEscLeavesNoFileAndIsNotAnError",
           "dynamic": false,
@@ -36161,7 +36161,7 @@
         },
         {
           "id": "LEG-82e6f2275513",
-          "line": 60,
+          "line": 61,
           "kind": "XCTest",
           "name": "testMarksUndoAndRedoThroughTheWindowsUndoManager",
           "dynamic": false,
@@ -36169,7 +36169,7 @@
         },
         {
           "id": "LEG-e138b1b17709",
-          "line": 75,
+          "line": 76,
           "kind": "XCTest",
           "name": "testAClickIsNotAShapeAndDragsStayOnTheImage",
           "dynamic": false,
@@ -36185,7 +36185,7 @@
         },
         {
           "id": "LEG-78a874783ff2",
-          "line": 111,
+          "line": 112,
           "kind": "XCTest",
           "name": "testTextAndArrowLeaveInk",
           "dynamic": false,
@@ -36201,7 +36201,7 @@
         },
         {
           "id": "LEG-7ff5c8701eda",
-          "line": 141,
+          "line": 142,
           "kind": "XCTest",
           "name": "testSaveWritesToAPathWithSpaces",
           "dynamic": false,
@@ -36209,7 +36209,7 @@
         },
         {
           "id": "LEG-22fbfacce51e",
-          "line": 161,
+          "line": 162,
           "kind": "XCTest",
           "name": "testDefaultTargetPrefersWhatTheTerminalShowed",
           "dynamic": false,
@@ -36217,7 +36217,7 @@
         },
         {
           "id": "LEG-f71a3d1cba20",
-          "line": 174,
+          "line": 175,
           "kind": "XCTest",
           "name": "testViewedAtParsesPanesJSON",
           "dynamic": false,
@@ -36225,7 +36225,7 @@
         },
         {
           "id": "LEG-15bf537b324f",
-          "line": 180,
+          "line": 181,
           "kind": "XCTest",
           "name": "testLastTargetRoundTrips",
           "dynamic": false,
@@ -36233,7 +36233,7 @@
         },
         {
           "id": "LEG-6133f333e754",
-          "line": 189,
+          "line": 190,
           "kind": "XCTest",
           "name": "testSendArgumentsUseStdinAndAttach",
           "dynamic": false,
@@ -36244,14 +36244,6 @@
           "line": 196,
           "kind": "XCTest",
           "name": "testPreflightRefusesWaitingAndGonePanes",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-7613e876ac15",
-          "line": 206,
-          "kind": "XCTest",
-          "name": "testRefusedWaitingFromTheCLIMapsToWaiting",
           "dynamic": false,
           "layer": "L1"
         },
@@ -36281,7 +36273,7 @@
         },
         {
           "id": "LEG-2c4c23aa235d",
-          "line": 292,
+          "line": 293,
           "kind": "XCTest",
           "name": "testSendResultsMapFromSendJSON",
           "dynamic": false,
@@ -36289,7 +36281,7 @@
         },
         {
           "id": "LEG-b0f7459fe635",
-          "line": 308,
+          "line": 309,
           "kind": "XCTest",
           "name": "testRetryIsOfferedOnlyForAnUnconfirmedDelivery",
           "dynamic": false,
@@ -36297,7 +36289,7 @@
         },
         {
           "id": "LEG-c37c8d0ccd62",
-          "line": 319,
+          "line": 320,
           "kind": "XCTest",
           "name": "testStatusLineSaysWhatHappened",
           "dynamic": false,
@@ -36329,7 +36321,7 @@
         },
         {
           "id": "LEG-28801797ae21",
-          "line": 414,
+          "line": 415,
           "kind": "XCTest",
           "name": "testSingleKeysChooseToolsAndColours",
           "dynamic": false,
@@ -36345,7 +36337,7 @@
         },
         {
           "id": "LEG-7b9001459e01",
-          "line": 485,
+          "line": 486,
           "kind": "XCTest",
           "name": "testCopyFailurePreservesTheEditorAndSuccessfulCopyClosesIt",
           "dynamic": false,
@@ -36353,7 +36345,7 @@
         },
         {
           "id": "LEG-db4948a3aa0c",
-          "line": 497,
+          "line": 498,
           "kind": "XCTest",
           "name": "testSaveFailureKeepsTheEditorAndConfirmedSaveKeepsTheChosenFile",
           "dynamic": false,
@@ -36361,7 +36353,7 @@
         },
         {
           "id": "LEG-81760e4e143f",
-          "line": 513,
+          "line": 514,
           "kind": "XCTest",
           "name": "testLateSaveCallbackCannotCloseANewerEditor",
           "dynamic": false,
@@ -36377,7 +36369,7 @@
         },
         {
           "id": "LEG-13dea55a8f02",
-          "line": 554,
+          "line": 555,
           "kind": "XCTest",
           "name": "testShowThePaneOnlyWhereALookHelps",
           "dynamic": false,
@@ -36385,7 +36377,7 @@
         },
         {
           "id": "LEG-b9e73d2bc658",
-          "line": 565,
+          "line": 566,
           "kind": "XCTest",
           "name": "testRecentPaneIsTheOneLastTypedIn",
           "dynamic": false,
@@ -36401,7 +36393,7 @@
         },
         {
           "id": "LEG-9eaebeb5b574",
-          "line": 606,
+          "line": 607,
           "kind": "XCTest",
           "name": "testSaveNameIsShortAndPlainlyGtmux",
           "dynamic": false,
@@ -36409,7 +36401,7 @@
         },
         {
           "id": "LEG-bdee4816dac2",
-          "line": 615,
+          "line": 616,
           "kind": "XCTest",
           "name": "testOvalsAndSquares",
           "dynamic": false,
@@ -36433,7 +36425,7 @@
         },
         {
           "id": "LEG-41b4ddbe4cc8",
-          "line": 688,
+          "line": 689,
           "kind": "XCTest",
           "name": "testALineFollowsThePointer",
           "dynamic": false,
@@ -36441,7 +36433,7 @@
         },
         {
           "id": "LEG-ca4bd48b7b66",
-          "line": 700,
+          "line": 701,
           "kind": "XCTest",
           "name": "testALineLeavesInkAlongItsPath",
           "dynamic": false,
@@ -36457,7 +36449,7 @@
         },
         {
           "id": "LEG-93b230468d3e",
-          "line": 735,
+          "line": 736,
           "kind": "XCTest",
           "name": "testWidthsChangeStrokesAndText",
           "dynamic": false,
@@ -36465,11 +36457,20 @@
         },
         {
           "id": "LEG-b94c7d0ad710",
-          "line": 750,
+          "line": 751,
           "kind": "XCTest",
           "name": "testEditorFitsItsActualViewportAndCanEnlargeWithTheWindow",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-254944c2bd6a",
+          "line": 207,
+          "kind": "reviewed-selector",
+          "name": "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCW-003"
         }
       ]
     },
@@ -62280,6 +62281,101 @@
         }
       ],
       "sha256": "fde140686dcdb663ac8c38e7dab662b28ac428a46c9f9e8dcb1a801bf3b486d6"
+    },
+    "internal/codexrpc/screenshot_workflow_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-bf7d87f214f5",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SCW-005"
+        }
+      ],
+      "sha256": "2aa18d80c4b9c39f51cdc87ba560c1f2643465910bbecdd094dfee8f29f3b191"
+    },
+    "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9a386ff2443f",
+          "line": 41,
+          "kind": "reviewed-selector",
+          "name": "testSCW001WindowsKeepDraftsFilesAndLateReceiptsIndependent",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCW-001,SCW-002,SCW-003,SCW-004"
+        },
+        {
+          "id": "MAP-a3ea176cccad",
+          "line": 87,
+          "kind": "reviewed-selector",
+          "name": "testSCW001CapacityPreservesEveryExistingDocument",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCW-001,SCW-002,SCW-003,SCW-004"
+        },
+        {
+          "id": "MAP-67fd43e70193",
+          "line": 101,
+          "kind": "reviewed-selector",
+          "name": "testSCW002SearchUsesTitlesLocationsAndStableFuzzyMatches",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCW-001,SCW-002,SCW-003,SCW-004"
+        },
+        {
+          "id": "MAP-a6ffb365d9b0",
+          "line": 119,
+          "kind": "reviewed-selector",
+          "name": "testSCW002ActualSearchFieldNavigationCompositionAndEmptyResults",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCW-001,SCW-002,SCW-003,SCW-004"
+        },
+        {
+          "id": "MAP-685850c28e4c",
+          "line": 148,
+          "kind": "reviewed-selector",
+          "name": "testSCW003RefusalCategoriesNeverInventHumanApprovalOrDelivery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCW-001,SCW-002,SCW-003,SCW-004"
+        },
+        {
+          "id": "MAP-d734ea7663af",
+          "line": 175,
+          "kind": "reviewed-selector",
+          "name": "testSCW004NewCaptureIsSerializedThroughHandoffAndKeepsOldDraft",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCW-001,SCW-002,SCW-003,SCW-004"
+        },
+        {
+          "id": "MAP-96208183d130",
+          "line": 207,
+          "kind": "reviewed-selector",
+          "name": "testSCW004CLIEditCanOpenBesideDraftAndResolveItsOwnStore",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCW-001,SCW-002,SCW-003,SCW-004"
+        },
+        {
+          "id": "MAP-c62877f2ca18",
+          "line": 236,
+          "kind": "reviewed-selector",
+          "name": "testSCW004PermissionAndCapacityRefusalsPreserveWorkWithoutCapture",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SCW-001,SCW-002,SCW-003,SCW-004"
+        }
+      ],
+      "sha256": "f8e12115b119256adac0fad148004bca4058c84a280bf568e2edb4acb2e01859"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

@@ -204,9 +204,9 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertEqual(ScreenshotSender.preflight(target: "%2", session: "x", agents: nil), .agentsUnreadable)
     }
 
-    func testRefusedWaitingFromTheCLIMapsToWaiting() {
+    func testRefusedWaitingWithoutEvidenceStaysUnconfirmed() {
         XCTAssertEqual(ScreenshotSender.interpret(status: 1, stdout: #"{"delivered":false,"state":"refused-waiting"}"#, stderr: ""),
-                       .refusedWaiting)
+                       .notConfirmed("refusal-reason-unavailable"))
     }
 
     /// Refused before the paste: nothing was typed. Refused before the Enter or its retry:
@@ -222,7 +222,7 @@ final class ScreenshotTests: XCTestCase {
         XCTAssertEqual(r("stopped before Enter: a choice menu is on the screen"), .heldAfterPaste)
         XCTAssertEqual(r("Enter not retried: a choice menu is on the screen"), .heldAfterPaste)
         // A prefix that only appears later in the text is not the stage.
-        XCTAssertEqual(r("could not read the pane: stopped before Enter: x"), .refusedWaiting)
+        XCTAssertEqual(r("could not read the pane: stopped before Enter: x"), .notConfirmed("could not read the pane: stopped before Enter: x"))
 
         let l = L10n.shared
         let was = l.mode
@@ -321,7 +321,7 @@ final class ScreenshotTests: XCTestCase {
         // L10n's language is the app's (not settable from a test); expect whichever is active.
         let l = L10n.shared
         XCTAssertTrue(ScreenshotStatusText.text(.result(.refusedWaiting), target: "Codex", l10n: l)
-            .contains(l.tr("needs input or confirmation", "有待处理请求")))
+            .contains(l.tr("pending confirmation or question", "有确认或提问待处理")))
         XCTAssertTrue(ScreenshotStatusText.text(.result(.notConfirmed("")), target: "Codex", l10n: l)
             .contains(l.tr("check the pane", "重试前请检查窗格")))
         XCTAssertTrue(ScreenshotStatusText.text(.result(.refusedDraft("")), target: "Codex", l10n: l)
