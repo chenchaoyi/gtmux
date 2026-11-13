@@ -2113,10 +2113,10 @@ LEG-af82b006f9d1,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,
 LEG-8b1ecde3115f,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,33,Test,TestASensitiveEntryDoesNotTravel,False,legacy-not-retrospectively-reviewed
 LEG-d6b1859d0bad,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,58,Test,TestSupersedeKeepsTheMarkAndTheVerbFlipsIt,False,legacy-not-retrospectively-reviewed
 LEG-693f614997fb,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,83,Test,TestLintNamesACredentialWrittenWithoutAsking,False,legacy-not-retrospectively-reviewed
-MAP-afe47be3eae8,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,125,reviewed-selector,TestSourceLineageOrdinarySupersede,False,"KBL-001,KBL-002,KBL-003,KBL-004"
-MAP-612f85bd86d7,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,188,reviewed-selector,TestSourceLineageReviewApply,False,"KBL-001,KBL-002,KBL-003,KBL-004"
-MAP-653639d05776,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,289,reviewed-selector,TestSourceLineageReplay,False,"KBL-001,KBL-002,KBL-003,KBL-004"
-MAP-01de870ed64f,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,340,reviewed-selector,TestSourceLineageNewCapture,False,"KBL-001,KBL-002,KBL-003,KBL-004"
+MAP-afe47be3eae8,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,127,reviewed-selector,TestSourceLineageOrdinarySupersede,False,"KBL-001,KBL-002,KBL-003,KBL-004"
+MAP-612f85bd86d7,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,190,reviewed-selector,TestSourceLineageReviewApply,False,"KBL-001,KBL-002,KBL-003,KBL-004"
+MAP-653639d05776,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,291,reviewed-selector,TestSourceLineageReplay,False,"KBL-001,KBL-002,KBL-003,KBL-004"
+MAP-01de870ed64f,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,342,reviewed-selector,TestSourceLineageNewCapture,False,"KBL-001,KBL-002,KBL-003,KBL-004"
 MAP-e5314cedb7a1,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,78,reviewed-selector,TestPublicSyncSerializesSnapshotAndPublication,False,KBSYNC-SERIALIZATION
 MAP-59a004277dc8,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,218,reviewed-selector,TestPublicSyncReleasesLockOnErrorAndRefusal,False,KBSYNC-SERIALIZATION
 MAP-9fe9287c0104,L2,reviewed implementation,internal/knowledge/usage_test.go,14,reviewed-selector,TestUsageDoesNotBecomeHitAndRetryIsIdempotent,False,KBMEM-USAGE

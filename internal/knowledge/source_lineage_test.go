@@ -55,7 +55,9 @@ func lineageSeed(t *testing.T, shape string) knowledgeOp {
 	e.Kind, e.Provenance, e.Tags, e.Hits, e.HitLast = KindPitfalls, ProvCorrection, []string{"synthetic-tag"}, 3, 9
 	e.Lang = "en"
 	e.Alt = &altHalf{Lang: "zh", Title: "旧译文", Body: "仅用于隔离测试。"}
-	e.Sources = []Candidate{{ID: "synthetic-original", Digest: "synthetic-digest", At: 8, Topic: "pitfalls", Key: "pitfalls/synthetic-source", Lesson: "Preserve synthetic evidence.", Seq: 70, Pane: "%901", Task: "synthetic-origin-task", Source: "transcript", Context: "Synthetic context", Session: "synthetic-session", Project: "/synthetic/project", Count: 2, Agent: "synthetic-agent", Speaker: "user", ObservedAt: 7, SourceFile: "synthetic.jsonl", SourceOffset: 12, SourceTurn: "synthetic-turn"}}
+	if shape == "all" {
+		e.Sources = []Candidate{{ID: "synthetic-original", Digest: "synthetic-digest", At: 8, Topic: "pitfalls", Key: "pitfalls/synthetic-source", Lesson: "Preserve synthetic evidence.", Seq: 70, Pane: "%901", Task: "synthetic-origin-task", Source: "transcript", Context: "Synthetic context", Session: "synthetic-session", Project: "/synthetic/project", Count: 2, Agent: "synthetic-agent", Speaker: "user", ObservedAt: 7, SourceFile: "synthetic.jsonl", SourceOffset: 12, SourceTurn: "synthetic-turn"}}
+	}
 	e.Memory = &MemoryRule{Actions: []string{"replace"}, Summary: "Check the fixture", Scope: "hq", Confidence: "supported", VerifiedAt: 5, Evidence: []string{"synthetic:evidence"}, ProtectedReason: "synthetic protection"}
 	e.Sensitive, e.Confirmed = true, "Synthetic confirmation only."
 	e.Status, e.Audience, e.PromotedAt, e.LandedAt, e.LandedRef = StatusHypothesis, AudienceHQ, 11, 12, "synthetic-old-carrier"
