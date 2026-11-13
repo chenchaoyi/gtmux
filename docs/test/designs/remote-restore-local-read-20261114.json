@@ -1,0 +1,24 @@
+{
+  "id": "remote-restore-local-read-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Unknown local request state cannot become permission to create or overwrite a restore request",
+    "notes": "Follow up exact Rcecdb1ab independent F1, accepting only the corrected service-contract scenario: a same-pairing local ID/revision is saved before POST admission, status is legitimately not_found, preview legitimately has no job. A native Keychain read rejection is not confirmation of an empty record. Keep local read readiness explicit, reset per target lifetime, and guard start/new-preview before persistence or POST. A reachable explicit read-only retry first re-reads the same pairing record; if successful, remember its exact ID/revision and query status first. Only a successful empty read permits a new preview/new ID. Convert native read rejection to local_record without revealing credentials. Corrupt or repeatedly unavailable records remain conservative and retryable, never cleared automatically. Preserve all original RSR001..010 assertions, old valid status/preview retries and epoch/pairing protections. Deterministic actual sheet and synthetic Keychain/client tests cover the corrected old-R failure, repeated rejection, successful empty-read recovery, and a delayed old-target local read. No real Keychain, restore, service, session or credentials. No claim of duplicated server launch from this scenario."
+  },
+  "cases": [
+    {
+      "id": "RSR-011",
+      "layer": "L2",
+      "description": "Local request reads must resolve before creating or replacing a restore identity",
+      "setup": "Production RestoreSessionsSheet and loadPendingRestore with isolated Keychain/client mocks, saved ID before server admission, old R source control",
+      "action": "Reject first local read then retry with status not_found/new preview; repeat rejection; recover an actually empty record; switch host or pairing while retry read is pending",
+      "expected": "No POST, new ID or overwrite until local state is known. Explicit retry re-reads and preserves exact old ID/revision, checks its status before preview and only explicitly retries that ID. Repeated/corrupt local read failure leaves a reachable read-only retry and no start/clear. A confirmed empty record may resume preview. A late old-target read cannot grant readiness or alter the current target. All earlier assertions remain unchanged.",
+      "planned_files": [
+        "mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx"
+      ]
+    }
+  ],
+  "seal": "901fa72fa258f61e5e258bb98b7b89e70bcfcbc9e1e87244dadd4992abb4bb0a"
+}
