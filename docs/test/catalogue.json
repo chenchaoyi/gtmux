@@ -61906,6 +61906,49 @@
         }
       ],
       "sha256": "d17c4b5b0968e44187c4ab91c1333dec62b491cb41c194ba924834eed5c5044b"
+    },
+    "internal/knowledge/source_lineage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-afe47be3eae8",
+          "line": 107,
+          "kind": "reviewed-selector",
+          "name": "TestSourceLineageOrdinarySupersede",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBL-001,KBL-002,KBL-003,KBL-004"
+        },
+        {
+          "id": "MAP-612f85bd86d7",
+          "line": 170,
+          "kind": "reviewed-selector",
+          "name": "TestSourceLineageReviewApply",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBL-001,KBL-002,KBL-003,KBL-004"
+        },
+        {
+          "id": "MAP-653639d05776",
+          "line": 269,
+          "kind": "reviewed-selector",
+          "name": "TestSourceLineageReplay",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBL-001,KBL-002,KBL-003,KBL-004"
+        },
+        {
+          "id": "MAP-01de870ed64f",
+          "line": 320,
+          "kind": "reviewed-selector",
+          "name": "TestSourceLineageNewCapture",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBL-001,KBL-002,KBL-003,KBL-004"
+        }
+      ],
+      "sha256": "48e75f3d725060118c8fb6b07ae698653b3ea810149d8a094fa364730a268fd4"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

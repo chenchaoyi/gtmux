@@ -2172,5 +2172,19 @@
       "CPG008 automatic cut-row refresh lets a six-second initial read finish",
       "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read"
     ]
+  },
+  "internal/knowledge/source_lineage_test.go": {
+    "cases": [
+      "KBL-001",
+      "KBL-002",
+      "KBL-003",
+      "KBL-004"
+    ],
+    "selectors": [
+      "TestSourceLineageOrdinarySupersede",
+      "TestSourceLineageReviewApply",
+      "TestSourceLineageReplay",
+      "TestSourceLineageNewCapture"
+    ]
   }
 }
