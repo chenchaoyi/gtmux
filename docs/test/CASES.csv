@@ -879,13 +879,13 @@ MAP-4ce426882554,L2,reviewed implementation,internal/codexbridge/binding_recover
 MAP-aac43ea4b6b5,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,64,reviewed-selector,TestCBA003NewSelectionAndEpochRetirePendingRecovery,False,"CBA-002,CBA-003"
 MAP-3122afdfb50d,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,94,reviewed-selector,TestCBA003PendingNewRootNeverRefreshesOldRoot,False,"CBA-002,CBA-003"
 MAP-554ff71d0ab3,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,111,reviewed-selector,TestCBA003RetryPacingDeadlineAndHardRefusal,False,"CBA-002,CBA-003"
-MAP-3903c9d1874c,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,143,reviewed-selector,TestCBA003ReceiptFailureCommitsThenOnlyHeartbeats,False,"CBA-002,CBA-003"
-MAP-75f85cc0a395,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,158,reviewed-selector,TestCBA003ClosedConnectionCannotPublishLater,False,"CBA-002,CBA-003"
-MAP-97003cdf0a2b,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,177,reviewed-selector,TestCBA003InitializeInvalidatesEarlierRootAndEarlierHomeResponse,False,"CBA-002,CBA-003"
-MAP-b86b97579ad7,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,199,reviewed-selector,TestCBA003NewVerifiedRootReplacesOnlyItsOwnPendingSelection,False,"CBA-002,CBA-003"
-MAP-05e3b5d18e88,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,220,reviewed-selector,TestCBA003NoAttemptAtDeadlineOrAfterEpochChange,False,"CBA-002,CBA-003"
-MAP-2264d7fedcc2,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,244,reviewed-selector,TestCBA003UnrelatedTrafficCannotReplacePendingRoot,False,"CBA-002,CBA-003"
-MAP-7da2773582d5,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,277,reviewed-selector,TestCBA002SameRootReconnectRecoversWithoutRefreshingUnverifiedProof,False,"CBA-002,CBA-003"
+MAP-3903c9d1874c,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,157,reviewed-selector,TestCBA003ReceiptFailureCommitsThenOnlyHeartbeats,False,"CBA-002,CBA-003"
+MAP-75f85cc0a395,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,172,reviewed-selector,TestCBA003ClosedConnectionCannotPublishLater,False,"CBA-002,CBA-003"
+MAP-97003cdf0a2b,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,191,reviewed-selector,TestCBA003InitializeInvalidatesEarlierRootAndEarlierHomeResponse,False,"CBA-002,CBA-003"
+MAP-b86b97579ad7,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,213,reviewed-selector,TestCBA003NewVerifiedRootReplacesOnlyItsOwnPendingSelection,False,"CBA-002,CBA-003"
+MAP-05e3b5d18e88,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,234,reviewed-selector,TestCBA003NoAttemptAtDeadlineOrAfterEpochChange,False,"CBA-002,CBA-003"
+MAP-2264d7fedcc2,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,258,reviewed-selector,TestCBA003UnrelatedTrafficCannotReplacePendingRoot,False,"CBA-002,CBA-003"
+MAP-7da2773582d5,L2,reviewed implementation,internal/codexbridge/binding_recovery_test.go,291,reviewed-selector,TestCBA002SameRootReconnectRecoversWithoutRefreshingUnverifiedProof,False,"CBA-002,CBA-003"
 MAP-61b29ce6decb,L1,reviewed implementation,internal/codexbridge/connection_epoch_test.go,9,reviewed-selector,TestCFR004OnlySuccessfulNewerConnectionChangesAuthority,False,CFR-004
 MAP-d0efecbb0cb2,L1,reviewed implementation,internal/codexbridge/connection_epoch_test.go,31,reviewed-selector,TestCFR004UpgradeRetainsOnlyTheRemainingAdmissionBudget,False,CFR-004
 MAP-67cdcc44a1a8,L2,reviewed implementation,internal/codexbridge/daemon_readiness_test.go,10,reviewed-selector,TestCFR007ActualAdmissionDialKeepsCancellationAndDeadlineReasons,False,CFR-007
@@ -2124,8 +2124,17 @@ LEG-af82b006f9d1,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,
 LEG-8b1ecde3115f,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,33,Test,TestASensitiveEntryDoesNotTravel,False,legacy-not-retrospectively-reviewed
 LEG-d6b1859d0bad,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,58,Test,TestSupersedeKeepsTheMarkAndTheVerbFlipsIt,False,legacy-not-retrospectively-reviewed
 LEG-693f614997fb,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,83,Test,TestLintNamesACredentialWrittenWithoutAsking,False,legacy-not-retrospectively-reviewed
+MAP-afe47be3eae8,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,127,reviewed-selector,TestSourceLineageOrdinarySupersede,False,"KBL-001,KBL-002,KBL-003,KBL-004"
+MAP-612f85bd86d7,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,190,reviewed-selector,TestSourceLineageReviewApply,False,"KBL-001,KBL-002,KBL-003,KBL-004"
+MAP-653639d05776,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,291,reviewed-selector,TestSourceLineageReplay,False,"KBL-001,KBL-002,KBL-003,KBL-004"
+MAP-01de870ed64f,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,342,reviewed-selector,TestSourceLineageNewCapture,False,"KBL-001,KBL-002,KBL-003,KBL-004"
 MAP-e5314cedb7a1,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,78,reviewed-selector,TestPublicSyncSerializesSnapshotAndPublication,False,KBSYNC-SERIALIZATION
 MAP-59a004277dc8,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,218,reviewed-selector,TestPublicSyncReleasesLockOnErrorAndRefusal,False,KBSYNC-SERIALIZATION
+MAP-e7a25aaee18c,L2,reviewed implementation,internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden,1,reviewed-selector,"""task"":""t-9""",False,KBL-GOLDEN
+MAP-a5ff1afcf8f7,L2,reviewed implementation,internal/knowledge/testdata/golden/api/index.json.golden,1,reviewed-selector,"""task"":""t-9""",False,KBL-GOLDEN
+MAP-15ee1ca5c9f4,L2,reviewed implementation,internal/knowledge/testdata/golden/cli/list.json.golden,1,reviewed-selector,"""task"":""t-9""",False,KBL-GOLDEN
+MAP-9d783e31fb73,L2,reviewed implementation,internal/knowledge/testdata/golden/cli/show.txt.golden,8,reviewed-selector,task t-9,False,KBL-GOLDEN
+MAP-dca3e881bb09,L2,reviewed implementation,internal/knowledge/testdata/golden/render/workflows.md.golden,9,reviewed-selector,task t-9,False,KBL-GOLDEN
 MAP-9fe9287c0104,L2,reviewed implementation,internal/knowledge/usage_test.go,14,reviewed-selector,TestUsageDoesNotBecomeHitAndRetryIsIdempotent,False,KBMEM-USAGE
 MAP-76d1fe9047e3,L2,reviewed implementation,internal/knowledge/usage_test.go,41,reviewed-selector,TestUsageRejectsAuditAndForgedMeasurement,False,KBMEM-USAGE
 MAP-c93b792249fd,L2,reviewed implementation,internal/knowledge/vault_test.go,12,reviewed-selector,TestVaultRoundTripRenameAndDeletion,False,KBMEM-VAULT

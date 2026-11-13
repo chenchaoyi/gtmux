@@ -112,8 +112,11 @@ func TestCBA003RetryPacingDeadlineAndHardRefusal(t *testing.T) {
 	for _, hard := range []bool{false, true} {
 		t.Run(map[bool]string{false: "transient", true: "hard"}[hard], func(t *testing.T) {
 			b, o, clock, calls := recoveryFixture(t)
+			started := *clock
+			var attempts []time.Duration
 			b.bind = func(f resume.CodexFrontend, id, cwd string) (resume.CodexFrontend, error) {
 				*calls = append(*calls, id)
+				attempts = append(attempts, clock.Sub(started))
 				return f, &resume.FrontendBindingError{Code: "proof", Retryable: !hard}
 			}
 			o.request([]byte(`{"id":1,"method":"thread/resume"}`))
@@ -131,6 +134,17 @@ func TestCBA003RetryPacingDeadlineAndHardRefusal(t *testing.T) {
 			n := len(*calls)
 			if hard && n != 1 || !hard && (n < 2 || n > 8) {
 				t.Fatal("attempt budget", n)
+			}
+			if !hard {
+				want := []time.Duration{0, time.Second, 3 * time.Second, 7 * time.Second, 15 * time.Second, 23 * time.Second}
+				if len(attempts) != len(want) {
+					t.Fatal("retry pacing", attempts)
+				}
+				for i := range want {
+					if attempts[i] != want[i] {
+						t.Fatal("retry pacing", attempts)
+					}
+				}
 			}
 			*clock = clock.Add(time.Hour)
 			b.tick()
