@@ -1097,3 +1097,16 @@ HQ unread debt, default event pulls, attention checks and history SHALL use the 
 #### Scenario: Observation interval
 - **WHEN** the user stops and later reenrolls a conversation
 - **THEN** only activity in the new interval is observed and prior records are retained
+
+### Requirement: Automatic wakes preserve a maintenance window
+Automatic Codex wakes SHALL start only an explicitly loaded idle thread, SHALL remain durably held while busy or uncertain, and SHALL NOT use turn steering or future queue fallback.
+
+#### Scenario: A rotation is queued while automatic wakes are pending
+- **GIVEN** an unsent rotation for the exact HQ pane and durable wake batches
+- **WHEN** wake delivery or draining runs
+- **THEN** no new automatic batch is claimed, pasted or submitted until the reservation ends
+- **AND** existing exact stranded-batch repair and all identity/draft guards remain
+
+#### Scenario: No safe maintenance window arrives
+- **WHEN** the existing rotation deadline expires
+- **THEN** one important audit and normal desktop notification request report failure without repeating reset or removing old native queue entries

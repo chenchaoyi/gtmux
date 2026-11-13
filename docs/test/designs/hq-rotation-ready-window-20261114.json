@@ -1,0 +1,79 @@
+{
+  "id": "hq-rotation-ready-window-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; design self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Keep automatic wakes out of the future Codex queue and reserve a safe window for queued rotation",
+    "notes": "Bounded production observation matched 29 old automatic wake payload hashes to accepted spool receipts; recent inputs entered the conversation roughly three hours after acceptance, with consecutive task_complete/task_started separated by milliseconds. Do not equate visible empty composer with completed idle, or clear/replay existing native queues. Introduce a separate idle-only wake RPC policy that uses verified thread metadata and one normal turn/start with no steer/queue fallback; preserve explicit human and attachment paths. Existing hqinput lease plus bounded read-only pending reservation holds NEW wake batches before claim, after existing own stranded-repair handling. Only unsent rotation reserves; sent handoff can use existing bootstrap. Process normal rotation before wake draining on fast/slow ticks; retain all original identity, owner, draft, two-frame and turn-boundary checks. Failure is important/audible through existing notification channel once, not queued back into the broken HQ conversation. Existing native queue contents are untouched and may still prevent immediate recovery of the currently deployed old session. Current source candidates, shared dirty root and all protected materials remain unchanged. No live TUI/socket/queue/marker/config/service input during implementation."
+  },
+  "cases": [
+    {
+      "id": "HRW-001",
+      "layer": "L2",
+      "description": "Automatic native wakes only start an explicitly loaded idle thread",
+      "setup": "Use the production RPC path with synthetic exact-home/thread/peer responses for idle, active, approvals, unloaded, unsupported metadata/start, lost receipts and changed target.",
+      "action": "Submit an idle-only wake and inspect the actual wire and claim counts.",
+      "expected": "Only a confirmed idle thread receives one turn/start. Never steer, queue/add, resume or discover; unsupported/unknown metadata refuses before claim, and ambiguous writes never retry/fallback. Existing explicit user, image and legacy queue contracts remain unchanged.",
+      "planned_files": [
+        "internal/codexrpc/idle_wake_test.go"
+      ]
+    },
+    {
+      "id": "HRW-002",
+      "layer": "L2",
+      "description": "The actual native dispatch selects idle-only policy for automatic wakes",
+      "setup": "Actual codexNativeSubmit with isolated spool, exact attachment and recording policy seams.",
+      "action": "Send automatic wake, busy refusal and ordinary/direct-user controls through the production adapter.",
+      "expected": "Automatic wake uses only idle policy and retains exact target/send identity; busy refusal before claim retains authority and produces no accepted receipt. Ordinary user/CLI/screenshot selection remains unchanged.",
+      "planned_files": [
+        "internal/dispatchbridge/idle_wake_test.go"
+      ]
+    },
+    {
+      "id": "HRW-003",
+      "layer": "L2",
+      "description": "Queued rotation reserves input without granting authority",
+      "setup": "Synthetic missing/valid unsent/sent/other-pane/malformed/oversize/symlink/FIFO pending request leaves.",
+      "action": "Read the reservation using bounded private no-follow IO; compare all original bytes.",
+      "expected": "Only matching unsent pending maintenance reserves new automatic input; sent handoff and other panes do not. Read failures conservatively hold automatic delivery and never authorize/reset/repair config. Missing returns no hold, no writes or blocking special-file read.",
+      "planned_files": [
+        "internal/hqinput/rotation_test.go"
+      ]
+    },
+    {
+      "id": "HRW-004",
+      "layer": "L2",
+      "description": "Public wake channels retain batches behind pending rotation",
+      "setup": "Production Deliver/DeliverKeyedAt/Drain, fake native/terminal I/O and synthetic pending rotation. Include an existing exact stranded own batch and uncertain claims.",
+      "action": "Deliver and drain repeatedly before/after sent or removed reservation; inspect queue, captures, mutation calls and maintenance file.",
+      "expected": "No new batch is claimed/submitted/pasted while unsent maintenance reserves input. Keyed coalescing and original IDs/content survive. Existing own stranded repair still works; uncertain input is never requeued; drafts/foreign pane safeguards remain. Normal drain resumes after reservation ends.",
+      "planned_files": [
+        "internal/hqnudge/rotation_priority_test.go"
+      ]
+    },
+    {
+      "id": "HRW-005",
+      "layer": "L2",
+      "description": "Native wake entry passes the idle-only contract and preserves HQ identity hold",
+      "setup": "Actual nativeWakeSubmit with isolated recording DispatchIO and exact/changed HQ resolver.",
+      "action": "Observe the production dispatch options and refusal/success.",
+      "expected": "Idle-only flag is set only for automatic wake, stable delivery identity remains, changed HQ rejects before mutation. No legacy queue or direct-user behavior is silently selected.",
+      "planned_files": [
+        "internal/hqnudge/rotation_priority_test.go"
+      ]
+    },
+    {
+      "id": "HRW-006",
+      "layer": "L2",
+      "description": "Rotation timeout is visible and cannot repeat from an old snapshot",
+      "setup": "Actual queued request and advanceHQRotation with synthetic clock, transcript boundary and fake pane; normal native notification queue in isolated HOME.",
+      "action": "Expire without a safe completed boundary, then invoke the old snapshot again.",
+      "expected": "Exactly one important failed audit with reason and one desktop notification where supported; original session, history/draft and queue are preserved, no reset input. Stale replay does nothing. Production fast-tick wiring is reviewed statically, not claimed scheduler/real-TUI execution.",
+      "planned_files": [
+        "internal/hq/rotation_priority_test.go"
+      ]
+    }
+  ],
+  "seal": "38603529161da2d4bafd27f5c2616af028edbae9d0e126524f50307ff1628370"
+}
