@@ -62180,6 +62180,58 @@
         }
       ],
       "sha256": "54ebf356476a5ed3b6dd220fa57b63535858b81a49c156bbf1ba949b30b2a8fb"
+    },
+    "mobileapp/src/screens/RestoreSessionsSheet.recovery.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-eb73f0a915b0",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "RSR010 persisted progress remains readable when a new preview is unavailable",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-010"
+        },
+        {
+          "id": "MAP-3d6ab342fc35",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "RSR010 failed status and preview keep a reachable same-ID read-only retry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-010"
+        },
+        {
+          "id": "MAP-95174b6f9411",
+          "line": 58,
+          "kind": "reviewed-selector",
+          "name": "RSR010 failed initial preview can be retried without starting recovery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-010"
+        },
+        {
+          "id": "MAP-86c2300f6876",
+          "line": 69,
+          "kind": "reviewed-selector",
+          "name": "RSR010 late stored-job status cannot replace a different paired server",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-010"
+        },
+        {
+          "id": "MAP-ef646f1a17bd",
+          "line": 81,
+          "kind": "reviewed-selector",
+          "name": "RSR010 unreadable local identity cannot be cleared into a new request",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-010"
+        }
+      ],
+      "sha256": "b611965a1265832d27677b9ce1b2d8ac7dc13e469167800cde85869be57392bb"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

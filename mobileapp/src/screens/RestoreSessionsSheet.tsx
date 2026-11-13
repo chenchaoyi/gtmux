@@ -37,14 +37,22 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
         const stored = await loadPendingRestore(mac);
         if (!valid(n)) return;
         const p = stored;
-        if (p) remember(p);
+        if (p) {
+          remember(p);
+          // Existing progress belongs to this paired request, not a new preview.
+          try {
+            const result = await client.restoreStatus(p.id);
+            if (valid(n)) setJob(result);
+            return;
+          } catch (e) {
+            if (!valid(n)) return;
+            setError(e instanceof RestoreError ? e.code : 'unavailable');
+          }
+        }
         const answer = await client.restorePreview();
         if (!valid(n)) return;
         setPlan(answer.plan);
-        if (p) {
-          const result = await client.restoreStatus(p.id);
-          if (valid(n)) setJob(result);
-        } else if (answer.job) setJob(answer.job);
+        if (!p && answer.job) setJob(answer.job);
       } catch (e) {if (valid(n)) setError(e instanceof RestoreError ? e.code : 'unavailable');}
       finally {if (valid(n)) setBusy(false);}
     })();
@@ -104,7 +112,9 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
     : error === 'restore_busy' ? say('Another restore is running. Check its progress.', '已有恢复正在进行，请查看进度。')
     : error === 'request_expired' ? say('This request expired and was not started again. Check the server sessions before making a new request.', '请求已过期，没有再次执行。请核对服务器会话后再创建新请求。')
     : error === 'local_record' ? say('The saved request could not be read. No new restore was sent.', '无法读取上次请求记录，未发送新的恢复请求。')
-    : pending ? say('The result is not confirmed. Check status or submit the same request again; a new request has not been created.', '尚未确认结果。可核对状态或重试同一请求，不会创建新的恢复请求。')
+    : pending ? plan
+      ? say('The result is not confirmed. Check status or submit the same request again; a new request has not been created.', '尚未确认结果。可核对状态或重试同一请求，不会创建新的恢复请求。')
+      : say('The result is not confirmed. Check the saved request’s status; no new request will be sent.', '尚未确认结果。核对状态会继续查询上次请求，不会发送新请求。')
       : say('Could not reach the restore service. Nothing new was started.', '暂时无法查询恢复服务，未启动新的恢复。');
   const control = (id: string, title: string, onPress: () => void, disabled = false, primary = false) => <TouchableOpacity testID={id} accessibilityRole="button" accessibilityState={{disabled}} disabled={disabled} onPress={onPress} style={[styles.button, {borderColor: pal.divider, backgroundColor: primary ? BRAND : pal.raised, opacity: disabled ? 0.5 : 1}]}><Text style={[styles.buttonText, {color: primary ? '#fff' : pal.fg}]}>{title}</Text></TouchableOpacity>;
   return <SheetShell visible={!!mac} pal={pal} onClose={onClose}>
@@ -129,6 +139,7 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
         {control('restore-check', pending ? say('Check status', '核对状态') : say('Refresh preview', '刷新预览'), check, busy)}
         {['plan_changed', 'request_expired'].includes(error) && control('restore-new-preview', say('Refresh preview', '刷新预览'), previewAgain, busy)}
       </>}
+      {!job && !plan && !!mac && !!client && mac.scope !== 'guest' && (!!pending || (!!error && error !== 'local_record')) && control('restore-check', pending ? say('Check status', '核对状态') : say('Retry preview', '重新查询预览'), check, busy)}
     </ScrollView>
   </SheetShell>;
 }

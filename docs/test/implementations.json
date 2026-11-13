@@ -2256,5 +2256,17 @@
       "Typed query details in Chat and Trace ",
       "Recorded query failure retries and large results page without losing full copy"
     ]
+  },
+  "mobileapp/src/screens/RestoreSessionsSheet.recovery.test.tsx": {
+    "cases": [
+      "RSR-010"
+    ],
+    "selectors": [
+      "RSR010 persisted progress remains readable when a new preview is unavailable",
+      "RSR010 failed status and preview keep a reachable same-ID read-only retry",
+      "RSR010 failed initial preview can be retried without starting recovery",
+      "RSR010 late stored-job status cannot replace a different paired server",
+      "RSR010 unreadable local identity cannot be cleared into a new request"
+    ]
   }
 }
