@@ -44,7 +44,9 @@ func readManagedRules() ([]byte, os.FileInfo, error) {
 		if afterLocal && line != "" {
 			return nil, nil, errors.New(i18n.Tr("HQ rules contain additional instructions after LOCAL; review them before refreshing. The original is unchanged", "LOCAL 引用后还有额外指令，请先核对；原件未修改"))
 		}
-		if strings.HasPrefix(line, "<!-- user:") || strings.HasPrefix(line, "<!-- gtmux:knowledge:") {
+		// The knowledge protocol finds sentinels by substring, not line start.
+		// Reserve recognized independent blocks even beside other inline content.
+		if strings.Contains(line, "<!-- user:") || strings.Contains(line, "<!-- gtmux:knowledge:") {
 			return nil, nil, errors.New(i18n.Tr("HQ rules contain separate user or knowledge instructions; review them before refreshing. The original is unchanged", "规则中含有独立用户或知识指令，请先核对；原件未修改"))
 		}
 		if line == "@LOCAL.md" {

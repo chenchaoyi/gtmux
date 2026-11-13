@@ -1756,6 +1756,7 @@ MAP-8b92ea364819,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_te
 MAP-21d9bf41c0b2,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,35,reviewed-selector,TestHQR008BackupKeepsReplacement,False,"HQR-007,HQR-008,HQR-009,HQR-010"
 MAP-578e146c5570,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,98,reviewed-selector,TestHQR009MixedRulesAreNotSilentlyRebuilt,False,"HQR-007,HQR-008,HQR-009,HQR-010"
 MAP-44bbae26a68a,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,136,reviewed-selector,TestHQR010HardlinkedLockCannotChangeExternalPermissions,False,"HQR-007,HQR-008,HQR-009,HQR-010"
+MAP-2c176da9ae7f,L2,reviewed implementation,internal/hq/rulesrefresh_inline_block_test.go,14,reviewed-selector,TestHQR011InlineInSyncKnowledgeRemainsEffective,False,HQR-011
 MAP-f07cf6ea366b,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,84,reviewed-selector,TestHQR001RefreshOnlyUpdatesManagedRules,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 MAP-f3c6fa0664ed,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,137,reviewed-selector,TestHQR002RefreshKeepsLanguageAndConverges,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 MAP-26c222f9b436,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,180,reviewed-selector,TestHQR003RefreshRejectsConflictingOptions,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"

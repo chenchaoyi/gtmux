@@ -2479,5 +2479,13 @@
       "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
       "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
     ]
+  },
+  "internal/hq/rulesrefresh_inline_block_test.go": {
+    "cases": [
+      "HQR-011"
+    ],
+    "selectors": [
+      "TestHQR011InlineInSyncKnowledgeRemainsEffective"
+    ]
   }
 }
