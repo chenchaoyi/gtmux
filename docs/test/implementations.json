@@ -2172,5 +2172,59 @@
       "CPG008 automatic cut-row refresh lets a six-second initial read finish",
       "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read"
     ]
+  },
+  "internal/knowledge/source_lineage_test.go": {
+    "cases": [
+      "KBL-001",
+      "KBL-002",
+      "KBL-003",
+      "KBL-004"
+    ],
+    "selectors": [
+      "TestSourceLineageOrdinarySupersede",
+      "TestSourceLineageReviewApply",
+      "TestSourceLineageReplay",
+      "TestSourceLineageNewCapture"
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/index.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/list.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/show.txt.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
+  },
+  "internal/knowledge/testdata/golden/render/workflows.md.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
   }
 }
