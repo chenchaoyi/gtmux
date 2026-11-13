@@ -1,0 +1,113 @@
+{
+  "id": "remote-session-restore-20261113",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-13",
+    "decision": "Restore missing saved sessions remotely with explicit preview and durable once-only worker; retain menu progress",
+    "notes": "User authorized App remote restoration and menu progress. All verification uses isolated fixtures; no actual old-session restore, live pane input, App/service restart or deployment. Reuse existing saved-layout/agent evidence and strict identity guards. Remote execution is headless even on macOS; never attaches/opens a local terminal. Only missing saved sessions approved by preview may receive agent startup; live existing sessions are untouched. Read/start/status are owner-only. Snapshot binds full underlying save+record/config/topology data, not just display names. POST persists reservation before detached child launch; stable time-prefixed request ID expires for NEW admissions after24h; receipts retained48h, at most128, unexpired receipts never evicted for capacity. Same ID returns existing result before comparing changed topology; changed payload conflicts. Corrupt/private-storage failure refuses, never starts. Process-owned leases serialize all CLI/menu/remote execution without stale-age takeover; child claim is once-only and survives HTTP loss. Interrupted/unknown never auto-runs again. Finished means worker ended; confirmed/pending/partial/layout failures stay distinct. Client reopens with status reads, never retries mutation on mount or network recovery. Preserve existing CLI desktop semantics outside the remote worker. Bound worker30min, metadata IO, preview256sessions/2048 agent results and replies. Native permission attribution remains existing --from-app bootstrap policy. Web has no new restore UI in this change; API is transport-independent owner contract; document five-surface decision. 403 is not presumed a session-count quota; current evidence lacks pane26 admission reason, so no relaxation/automatic retry on hard identity refusal. Entry integration self-review before test edits: add Restore sessions to the existing owner server More menu; preserve order and all existing Connect/rename/push/remove behavior, updating only old exact menu expectations to include the new action."
+  },
+  "cases": [
+    {
+      "id": "RSR-001",
+      "layer": "L2",
+      "description": "Owner-only restore HTTP contract",
+      "setup": "Authenticated real Handler with fake preview/status/start callbacks",
+      "action": "GET preview/status, POST stable id+revision; guest, methods, malformed/unknown/oversize fields",
+      "expected": "Reads never start work; only owner may start; strict bounded schema; stale/changed/uncertain codes preserved",
+      "planned_files": [
+        "internal/server/restore_test.go"
+      ]
+    },
+    {
+      "id": "RSR-002",
+      "layer": "L2",
+      "description": "Durable idempotent restore reservations and worker ownership",
+      "setup": "Actual restorejob.Store under isolated HOME with deterministic clock/launch seam",
+      "action": "Concurrent same ID, other ID, changed revision, late retry, launch failure, restart/read, storage failure, expired IDs and bounded capacity",
+      "expected": "Persist before launch; one launch per request; same ID never relaunches even after failure/interruption; active blocks another ID; unavailable storage refuses; expired IDs cannot become new work",
+      "planned_files": [
+        "internal/restorejob/store_test.go"
+      ]
+    },
+    {
+      "id": "RSR-003",
+      "layer": "L2",
+      "description": "Missing-only preview and execution freshness",
+      "setup": "Production app projection over synthetic saved/live topology, original pending plan builder with injected tmux queries",
+      "action": "Mix missing/live-detached/attached; unreadable topology, save/config/identity changes, zero/many sessions",
+      "expected": "Remote preview includes only missing saved sessions; existing detached sessions remain usable and are not restarted; revision binds save bytes, records/mode, and topology; unknown refuses; cap fails explicitly",
+      "planned_files": [
+        "internal/app/restore_remote_test.go"
+      ]
+    },
+    {
+      "id": "RSR-004",
+      "layer": "L2",
+      "description": "Remote worker preserves restore safety and honest results",
+      "setup": "Production worker with injected plan/prepare/live/resume hooks; isolated kernel execution lease",
+      "action": "Stale revision, duplicate worker, busy CLI lease, layout failure, mixed confirmed/pending/skipped results and late phase updates",
+      "expected": "No mutation before claim+lease+fresh matching preview; no terminal/focus; resumptions limited to approved newly missing sessions; no existing program restart; pending is not confirmed; final result persisted once, write error stops before further input",
+      "planned_files": [
+        "internal/app/restore_remote_test.go"
+      ]
+    },
+    {
+      "id": "RSR-005",
+      "layer": "L2",
+      "description": "Process lease shared by CLI and remote worker",
+      "setup": "Production execution lease in isolated state; actual CLI dry-run fixture and lease contention",
+      "action": "Two contenders, holder release/process exit and IO failure",
+      "expected": "At most one restore mutation producer; unavailable lease fails closed; no age-based takeover of a live holder; dry-run/read preview still read-only",
+      "planned_files": [
+        "internal/app/restore_remote_test.go"
+      ]
+    },
+    {
+      "id": "RSR-006",
+      "layer": "L2",
+      "description": "Client restore response validation and bounded mutation",
+      "setup": "Real GtmuxClient and controlled fetch with normal request timeout",
+      "action": "Read/start/status; timeout, unsupported server, malformed result, wrong request/host and explicit same-ID retry",
+      "expected": "No automatic mutation retry or channel fallback; stable ID/revision transmitted; bounded parsing; reads cannot start; unsupported is actionable",
+      "planned_files": [
+        "mobileapp/src/api/client.restore.test.ts"
+      ]
+    },
+    {
+      "id": "RSR-007",
+      "layer": "L2",
+      "description": "Rendered remote restore journey and reconnect",
+      "setup": "Actual RestoreSessionsSheet with injected client and fake network/timers; normal SheetShell",
+      "action": "Preview then confirm; duplicate clicks; response loss, close/reopen, host switch, late old reply, offline/guest/old server and partial result",
+      "expected": "Nothing starts on mount/refresh; explicit confirm starts once; progress reattaches by read on reopen; unknown only checks status using same ID; no cross-host late update/mutation; failure not success; no polling after close",
+      "planned_files": [
+        "mobileapp/src/screens/RestoreSessionsSheet.test.tsx"
+      ]
+    },
+    {
+      "id": "RSR-008",
+      "layer": "L2",
+      "description": "Menu restore retains progress instead of generic close",
+      "setup": "Actual menu closing policy and MenuPopoverPresentation with isolated NSWindow/NSPopover",
+      "action": "Dispatch restore closing policy, activation, reopen during restore, explicit Escape/outside close and other actions",
+      "expected": "Restore bypasses generic close, keeps progress without focus theft/reopen; explicit close wins; all other actions retain their behavior",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/RestoreMenuActionTests.swift"
+      ]
+    },
+    {
+      "id": "RSR-009",
+      "layer": "L2",
+      "description": "Owner App restore entry and platform layout",
+      "setup": "Mounted ServersScreen with owner/guest rows and actual restore sheet entry",
+      "action": "Open restore for paired server, close/reopen; narrow/wide/large type and disabled/unreachable",
+      "expected": "Clear server identity and explicit restoration scope; owner entry available remotely, guest absent; sheet scrolls with content and safe-area controls",
+      "planned_files": [
+        "mobileapp/src/screens/RestoreSessionsEntry.test.tsx",
+        "mobileapp/src/screens/ServersScreen.test.tsx"
+      ]
+    }
+  ],
+  "seal": "0158b0a6b4d762be783359966aea53e70d96f1e141dd1c6930a07fd32e6ac2d9"
+}

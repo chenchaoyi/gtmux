@@ -77,6 +77,12 @@ func execTmuxAttach(name string) int {
 // impossible: if a saved layout exists but didn't restore, we warn loudly and
 // point at the save instead of pretending success.
 func ensureServer() {
+	if !ensureServerResult() {
+		os.Exit(1)
+	}
+}
+
+func ensureServerResult() bool {
 	restoreLogf("restore.server", "ensureServer: begin serverUp=%v", tmux.ServerUp())
 	if tmux.ServerUp() {
 		// A server is already up. The classic post-reboot trap: a reopened
@@ -84,7 +90,7 @@ func ensureServer() {
 		// restore` ran, so the boot+restore path below is skipped and the saved
 		// layout never comes back. Recover it.
 		recoverMissingSavedSessions()
-		return
+		return true
 	}
 	// Fix a poisoned resurrect `last` BEFORE booting: starting the server triggers
 	// continuum's auto-restore (@continuum-restore on), which reads `last`. If we
@@ -94,7 +100,7 @@ func ensureServer() {
 	boot := fmt.Sprintf("gtmux-boot-%d", os.Getpid())
 	if !startBootServer(boot, restoreFromApp) {
 		i18n.Sae("failed to start tmux", "启动 tmux 失败")
-		os.Exit(1)
+		return false
 	}
 
 	save := resurrectLastSave()
@@ -133,7 +139,7 @@ func ensureServer() {
 			i18n.Say("Workspace loaded. Bringing your agent conversations back…",
 				"工作区已载入，正在接回 agent 对话…")
 			resumeAgents()
-			return
+			return true
 		}
 	} else if hadLayout {
 		// No tmux-resurrect script found, but a save exists — fall back to waiting
@@ -147,7 +153,7 @@ func ensureServer() {
 			afterRestore(save)
 			i18n.Say("Restored saved sessions.", "已恢复存档 session。")
 			resumeAgents()
-			return
+			return true
 		}
 	}
 
@@ -161,10 +167,11 @@ func ensureServer() {
 			"⚠ 存在存档但未能恢复，没有覆盖它。存档："+save)
 		i18n.Sae("  Recover it before continuum autosaves: point .../resurrect/last at it and re-run, or restore manually.",
 			"  请在 continuum 自动存档前恢复：把 .../resurrect/last 指向它后重试，或手动恢复。")
-		return
+		return false
 	}
 	i18n.Say("No saved sessions found, so gtmux created a fresh session 'main'.",
 		"没有找到存档，已新建 session 'main'。")
+	return !hadLayout
 }
 
 // resurrectRestoreScript returns the tmux-resurrect restore.sh path ("" if not
@@ -610,17 +617,14 @@ func restoreSessions(list []string, dryRun bool) int {
 }
 
 // cmdRestore implements `gtmux restore [--one|--pick|<name>|--dry-run]`.
-// restoreLockMaxAge is how long a restore may hold the lock before another run treats it
-// as dead. Generous on purpose: restoring a large working set opens a tab per session and
-// waits on each terminal, and a guard that expires early would reintroduce the double
-// restore it exists to prevent.
-const restoreLockMaxAge = 10 * time.Minute
-
 // restoreFromApp records that this invocation came from an application (the menu-bar
 // app), which is what decides whether the boot server needs an identity of its own.
 var restoreFromApp bool
 
 func cmdRestore(args []string) int {
+	if len(args) == 1 && strings.HasPrefix(args[0], "--run-job=") {
+		return runRemoteRestoreJob(strings.TrimPrefix(args[0], "--run-job="))
+	}
 	if tmux.Bin == "" {
 		i18n.Sae("tmux not installed (brew install tmux)", "未安装 tmux（brew install tmux）")
 		return 1
@@ -699,19 +703,21 @@ func cmdRestore(args []string) int {
 	// ONE restore at a time, whoever asks. A restore opens the whole working set, so two
 	// in parallel open it twice — and the way a person triggers a second one is precisely
 	// the way slow actions invite: clicking again because nothing visibly happened. The
-	// guard lives here rather than in the menu bar because the second trigger can come
+	// kernel lease lives here rather than in the menu bar because the second trigger can come
 	// from a terminal, the phone, or a click that raced the first.
 	//
 	// A plan/dry run is exempt: it opens nothing, and refusing to SHOW the plan while a
 	// restore runs would be the guard getting in the way of the answer.
-	lock := state.NewRunLock("restore")
-	if ok, heldFor := lock.Acquire(restoreLockMaxAge); !ok {
-		i18n.Say(
-			fmt.Sprintf("A restore is already running (started %ds ago), so there is nothing to do.", int(heldFor.Seconds())),
-			fmt.Sprintf("已经有一个恢复在进行中（%d 秒前开始），无需重复操作。", int(heldFor.Seconds())))
-		return 0
+	var execution *state.Lease
+	if !dryRun {
+		var err error
+		execution, err = restoreExecutionLease()
+		if err != nil {
+			i18n.Sae("Restore is busy or its lock is unavailable; no new restore was started.", "已有恢复正在进行，或无法取得恢复锁；未启动新的恢复。")
+			return 1
+		}
+		defer execution.Close()
 	}
-	defer lock.Release()
 
 	if target != "" {
 		ensureServer()

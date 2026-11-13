@@ -39,6 +39,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/radar"
+	"github.com/chenchaoyi/gtmux/internal/restorejob"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/servermode"
@@ -295,6 +296,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 	hq.RegisterWakeProbes()
 
 	deps := server.Deps{
+		RestorePreview: restorePreviewSnapshot,
+		RestoreStart:   startRemoteRestore,
+		RestoreStatus:  (restorejob.Store{}).Get,
 		CreateSession: func(name, requestID string) (server.SessionCreated, error) {
 			result, err := createDetachedSession(name, requestID, state.Home())
 			if err != nil {

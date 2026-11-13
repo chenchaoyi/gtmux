@@ -328,7 +328,7 @@ final class AgentStore: ObservableObject {
     /// row looked identical before and after the click, so the honest reading of the screen
     /// was "nothing happened" and the natural response was to click again — which used to
     /// restore the whole working set twice. The CLI now refuses the second run outright
-    /// (state.RunLock); this is the half that keeps the user from having to find out.
+    /// (a process-owned restore lease); this is the half that keeps the user from having to find out.
     @Published private(set) var restoring = false
 
     @Published private(set) var restoreError = false

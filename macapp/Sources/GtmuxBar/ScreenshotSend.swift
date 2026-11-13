@@ -65,6 +65,8 @@ enum ScreenshotSendResult: Equatable {
     case delivered(queued: Bool)
     case activeTurnAccepted
     case refusedWaiting
+    /// An explicit refusal before mutation, with a protocol reason rather than a human request.
+    case refusedUnavailable(String)
     /// Refused as waiting AFTER the paste: the Enter was withheld, so the note and the image
     /// path may still be in the agent's input box.
     case heldAfterPaste
@@ -88,6 +90,22 @@ enum ScreenshotSendResult: Equatable {
         case .delivered(queued: true): return "queued"
         case .delivered(queued: false): return "delivered"
         default: return "not-delivered"
+        }
+    }
+
+    /// Stable diagnostics only: never log message text, image paths or arbitrary stderr.
+    var reasonCode: String {
+        switch self {
+        case .refusedWaiting: return "confirmation-required"
+        case .refusedUnavailable(let code): return code
+        case .heldAfterPaste: return "held-after-paste"
+        case .paneGone: return "target-gone"
+        case .agentsUnreadable: return "agents-unavailable"
+        case .refusedDraft: return "unsent-draft"
+        case .duplicate: return "duplicate-guard"
+        case .notConfirmed: return "receipt-unconfirmed"
+        case .failed: return "send-failed"
+        default: return "accepted"
         }
     }
 }
@@ -122,6 +140,9 @@ enum ScreenshotSender {
         if let line = stdout.split(separator: "\n").last,
            let reply = try? JSONDecoder().decode(Reply.self, from: Data(line.utf8)) {
             let evidence = reply.evidence ?? ""
+            if reply.delivered && !["landed", "sent"].contains(reply.state) {
+                return .notConfirmed("inconsistent send receipt")
+            }
             if status != 0 && ["landed", "sent", "queued"].contains(reply.state) { return .notConfirmed("inconsistent send receipt") }
             if reply.state == "queued" && reply.delivered || ["landed", "sent"].contains(reply.state) && !reply.delivered { return .notConfirmed("inconsistent send receipt") }
             switch reply.state {
@@ -136,8 +157,16 @@ enum ScreenshotSender {
             case "refused-draft": return .refusedDraft(evidence)
             case "refused-duplicate": return .duplicate
             case "refused-waiting":
-                if evidence.hasPrefix("input-") && evidence != "input-awaiting-confirmation" { return .notConfirmed(evidence) }
-                return pastedFirst(evidence) ? .heldAfterPaste : .refusedWaiting
+                if pastedFirst(evidence) { return .heldAfterPaste }
+                if evidence == "input-awaiting-confirmation" ||
+                    evidence == "the agent is waiting on a decision (a permission prompt or a question)" ||
+                    evidence == "a choice menu is on the screen" || evidence.hasPrefix("a choice menu is open: ") {
+                    return .refusedWaiting
+                }
+                if unavailableReasons.contains(evidence) { return .refusedUnavailable(evidence) }
+                // This state also carries identity/connection failures. Unknown evidence
+                // is not proof of a pending human request or of successful delivery.
+                return .notConfirmed(evidence.isEmpty ? "refusal-reason-unavailable" : evidence)
             default: return .notConfirmed(evidence.isEmpty ? reply.state : evidence)
             }
         }
@@ -149,6 +178,12 @@ enum ScreenshotSender {
     /// `gtmux send` starts the evidence of a refusal that came after the paste with one of
     /// these (dispatch.EvidenceHeldBeforeEnter / EvidenceHeldBeforeRetry).
     static let pastedPrefixes = ["stopped before Enter: ", "Enter not retried: "]
+    static let unavailableReasons: Set<String> = [
+        "codex-frontend-unavailable", "expected-conversation-changed", "codex-input-target-changed",
+        "input-metadata-unavailable", "input-metadata-rejected", "input-metadata-mismatch",
+        "input-thread-not-loaded", "input-state-unavailable", "input-turn-unavailable",
+        "input-turn-rejected", "input-turn-changed", "input-turn-view-unavailable"
+    ]
 
     static func pastedFirst(_ evidence: String) -> Bool {
         pastedPrefixes.contains { evidence.hasPrefix($0) }
@@ -161,14 +196,18 @@ enum ScreenshotSender {
             // A failed read is not "the pane is gone": say what actually happened.
             let agents = GtmuxCLI.capture(["agents", "--json", "--pane", pane]).flatMap { try? JSONDecoder().decode([Agent].self, from: $0) }
             let result: ScreenshotSendResult
+            let stage: String
             if let refused = preflight(target: pane, session: session, agents: agents) {
                 result = refused
+                stage = "preflight"
             } else {
                 let r = GtmuxCLI.captureFull(arguments(pane: pane, png: png.path), stdin: note)
                 result = interpret(status: r.status, stdout: r.stdout, stderr: r.stderr)
+                stage = "dispatch"
             }
             DiagLog.act("act.screenshot.send", target: pane, outcome: result.isSuccess ? "ok" : "refused",
-                        "screenshot input receipt", ["receipt_state": result.receiptState])
+                        "screenshot input receipt", ["receipt_state": result.receiptState,
+                            "reason_code": result.reasonCode, "stage": stage])
             DispatchQueue.main.async { completion(result) }
         }
     }

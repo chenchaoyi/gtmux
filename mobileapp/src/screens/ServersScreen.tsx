@@ -36,6 +36,7 @@ import {ReorderableList, ScrollHost} from '../ui/ReorderableList';
 import {Reach, rowStatus, RowTone, useReachability} from './serverReachability';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 import {ServerDetailsSheet} from './ServerDetailsSheet';
+import {RestoreSessionsSheet} from './RestoreSessionsSheet';
 import {AnchoredMenu, MenuAnchor, MenuItem} from '../ui/AnchoredMenu';
 import {cachedHost, hostSystem, loadHost} from '../state/hostInfo';
 import type {HostAnswer} from '../api/types';
@@ -168,6 +169,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     };
   }, [reach, servers, shot]);
   const [details, setDetails] = useState<PairedMac | null>(null);
+const [restoreMac, setRestoreMac] = useState<PairedMac | null>(null);
 
   // What a Mac's status line says, and in what colour. Its row says it, and so does the
   // Details sheet. Keep host identity in Details, where it has room; the list
@@ -282,6 +284,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
   const menuSections = (s: PairedMac): MenuItem[][] => [
     [
       {key: 'details', label: t('serverDetails'), icon: 'info', onPress: () => setDetails(s)},
+...(s.scope !== 'guest' ? [{key: 'restore', label: lang === 'zh' ? '恢复会话' : 'Restore sessions', icon: 'history' as const, onPress: () => setRestoreMac(s)}] : []),
       {key: 'rename', label: t('renameServer'), icon: 'pencil', onPress: () => rename(s)},
     ],
     s.url === activeUrl ? [{key: 'disconnect', label: t('disconnect'), icon: 'disconnect', onPress: () => disconnect()}] : [],
@@ -447,6 +450,7 @@ export function ServersScreen({navigation}: {navigation?: any}) {
         testID="server-menu"
         lift={<Text style={[styles.moreText, {color: pal.fg}]}>•••</Text>}
       />
+      <RestoreSessionsSheet mac={restoreMac} pal={pal} lang={lang} onClose={() => setRestoreMac(null)} />
       <ServerDetailsSheet
         mac={details}
         status={detailsStatus}

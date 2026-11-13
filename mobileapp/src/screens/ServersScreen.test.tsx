@@ -207,13 +207,13 @@ test('a store capture shows every seeded Mac answering, and asks none of them', 
 test('More is a menu: Disconnect only on the open Mac, Remove last', async () => {
   await render();
   openMenu('Office Mac');
-  expect(menuKeys()).toEqual(['details', 'rename', 'disconnect', 'remove']);
+  expect(menuKeys()).toEqual(['details', 'restore', 'rename', 'disconnect', 'remove']);
   expect(menuTexts()).toContain('Remove this server…');
   choose('disconnect');
   expect(app.disconnect).toHaveBeenCalledTimes(1);
   expect(tree.root.findByType(AnchoredMenu).props.visible).toBe(false);
   openMenu('Home Mac');
-  expect(menuKeys()).toEqual(['details', 'rename', 'remove']);
+  expect(menuKeys()).toEqual(['details', 'restore', 'rename', 'remove']);
 });
 
 // Reordering (ReorderableList): hold a row, drag it, let go; or VoiceOver's actions.
