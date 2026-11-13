@@ -321,6 +321,31 @@ func readKnowledgeOps() ([]knowledgeOp, error) {
 	return out, sc.Err()
 }
 
+// inheritSourceOrigins keeps omitted origin references distinct from the new
+// mutation's event watermark and receipt. Only a live predecessor may supply
+// them; explicit successor references win. Sources merge separately by ID.
+func inheritSourceOrigins(op *knowledgeOp, pred knowledgeOp) {
+	if op.SeqRange == "" {
+		op.SeqRange = pred.SeqRange
+	}
+	if len(op.Seqs) == 0 {
+		op.Seqs = append([]int64(nil), pred.Seqs...)
+	}
+	if op.Capture == "" {
+		op.Capture = pred.Capture
+	}
+	if op.Pane == "" {
+		op.Pane = pred.Pane
+	}
+	if op.Task == "" {
+		op.Task = pred.Task
+	}
+	if op.Migration == "" {
+		op.Migration = pred.Migration
+	}
+	op.Legacy = op.Legacy || pred.Legacy
+}
+
 // foldKnowledge replays the ledger into the LIVE entry set, in ledger order.
 // add → live; supersede → predecessor dead, successor live; retire → dead.
 // Robustness over ceremony: a same-id re-add is last-wins here (the WRITE path
@@ -371,6 +396,7 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 					op.PromotedAt, op.PromoteWhy, op.PromoteTarget = pred.PromotedAt, pred.PromoteWhy, pred.PromoteTarget
 					op.Audience, op.AudienceRepo = pred.Audience, pred.AudienceRepo
 				}
+				inheritSourceOrigins(&op, pred)
 				op.Sources = mergeSources(pred.Sources, op.Sources)
 				if op.Kind == "" {
 					op.Kind, op.KindAssumed = pred.Kind, pred.KindAssumed

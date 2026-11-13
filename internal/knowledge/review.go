@@ -194,6 +194,7 @@ func prepareReview(p ReviewProposal, ops []knowledgeOp, now int64) ([]knowledgeO
 			}
 			op.Op, op.Supersedes, op.Title, op.Body = knowledgeOpSupersede, e.ID, c.Title, c.Body
 			op.Reviewed, op.Memory, op.Lang = true, c.Memory, e.Lang
+			inheritSourceOrigins(&op, e)
 			op.Status = e.Status
 			// Store the reopened distribution intent explicitly as well, so a
 			// previous schema-3 reader does not claim the old landing or lose it.
