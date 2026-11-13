@@ -674,8 +674,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .quit:       quitApp()
         case .startHQ:    GtmuxCLI.spawn(["hq"]) // spawns/focuses the supervisor session + tab
         }
-        if action != .quit && action != .preferences && action != .pairPhone && action != .newSession && action != .browsePanes
-            && action != .screenshot {
+        if action.closesMenuAfterAction {
             popover.performClose(nil)
         }
     }

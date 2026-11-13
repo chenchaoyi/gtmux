@@ -46116,7 +46116,7 @@
       "sha256": "0d0db6ccaec91d3d9c3052ad9be51c9ae2d006d1a9d139238574279d245c32c4"
     },
     "mobileapp/src/screens/ServersScreen.test.tsx": {
-      "sha256": "448272dfa64ea468379586e005b1a6fcfa049c67e8c00c5323298fd67813b247",
+      "sha256": "d180f797ad025a2c4c568980ec7b01f38752a38988661b55f7151e7e44c62f86",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -61906,6 +61906,280 @@
         }
       ],
       "sha256": "d17c4b5b0968e44187c4ab91c1333dec62b491cb41c194ba924834eed5c5044b"
+    },
+    "internal/app/restore_remote_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fbaec0f3be47",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "TestRemotePreviewOnlyMissingAndBindsProducerInputs",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-003,RSR-004,RSR-005"
+        },
+        {
+          "id": "MAP-807debf9711a",
+          "line": 66,
+          "kind": "reviewed-selector",
+          "name": "TestRemoteWorkerRejectsStaleAndBusyBeforeMutating",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-003,RSR-004,RSR-005"
+        },
+        {
+          "id": "MAP-bc3fb043f111",
+          "line": 116,
+          "kind": "reviewed-selector",
+          "name": "TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-003,RSR-004,RSR-005"
+        },
+        {
+          "id": "MAP-11ad15161c7e",
+          "line": 141,
+          "kind": "reviewed-selector",
+          "name": "TestRemotePaneGuardRechecksExactShellWithoutTouchingOthers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-003,RSR-004,RSR-005"
+        },
+        {
+          "id": "MAP-e7599bd04950",
+          "line": 161,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreExecutionLeaseIsProcessOwnedAndFailsClosed",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-003,RSR-004,RSR-005"
+        },
+        {
+          "id": "MAP-912002a39f12",
+          "line": 189,
+          "kind": "reviewed-selector",
+          "name": "TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-003,RSR-004,RSR-005"
+        },
+        {
+          "id": "MAP-d06f94a439ec",
+          "line": 256,
+          "kind": "reviewed-selector",
+          "name": "TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-003,RSR-004,RSR-005"
+        }
+      ],
+      "sha256": "df8a2ad03cc8648ece5484c4f4e8394f98445708f5e9ebfdb63689b1d9496de4"
+    },
+    "internal/restorejob/store_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1b9e141ee5dd",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreReservationSurvivesRetryRestartAndChangedPayload",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-002"
+        },
+        {
+          "id": "MAP-6e102e7ac1ae",
+          "line": 77,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreClaimNeverRelaunchesInterruptedOrFailedWork",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-002"
+        },
+        {
+          "id": "MAP-c04281a7ab4b",
+          "line": 109,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreLaunchFailureAndExpiredRequestsRemainClosed",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-002"
+        },
+        {
+          "id": "MAP-ca25ff169b1a",
+          "line": 128,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreStorageAndCapacityNeverEvictAnUnexpiredReceipt",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-002"
+        },
+        {
+          "id": "MAP-d1faf180f47a",
+          "line": 156,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreProgressIsBoundedAndFinalOnce",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-002"
+        }
+      ],
+      "sha256": "0d23108046c219bffbf30fd5b254a1faeea716e02aaa40bc649bed8f6fd57891"
+    },
+    "internal/server/restore_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9620b4543648",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreOwnerContractNeverStartsOnRead",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-001"
+        },
+        {
+          "id": "MAP-348612dc54c3",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreKnownFailureCodesStayDistinct",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-001"
+        }
+      ],
+      "sha256": "126e832d399dea6bdf9d7eea5d347dc2aace6b225e3b81e6f0f11180f88a9f29"
+    },
+    "macapp/Tests/GtmuxBarTests/RestoreMenuActionTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9a1f99f206ec",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "testRestoreDispatchPolicyKeepsActualProgressPopoverVisible",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-008"
+        }
+      ],
+      "sha256": "ead3e03ca310d8c17baa032007dbd4ab63b346f4cd53b737a72f7ecd5ec93ed9"
+    },
+    "mobileapp/src/api/client.restore.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-54a9492c8511",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "preview and status are read only; start carries exact stable ID and revision",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-006"
+        },
+        {
+          "id": "MAP-80f11833eaaa",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "normal 15s timeout is uncertain and never retries a mutation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-006"
+        },
+        {
+          "id": "MAP-28339549d766",
+          "line": 25,
+          "kind": "reviewed-selector",
+          "name": "unsupported, malformed, foreign ID and typed conflicts never become success",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-006"
+        }
+      ],
+      "sha256": "eea663cfc633c71c1a79e2aa74a900891d5260792eda5a0f2f36541af0ec65eb"
+    },
+    "mobileapp/src/screens/RestoreSessionsEntry.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7d46d9427e0a",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "owner server More offers restore and targets that server; guest does not",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-009"
+        }
+      ],
+      "sha256": "2eeeded0112502706eaf5854eddfd8964be60e79a533f20705360d0cd0eea98b"
+    },
+    "mobileapp/src/screens/RestoreSessionsSheet.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-41decb70d441",
+          "line": 23,
+          "kind": "reviewed-selector",
+          "name": "preview is not a restore; duplicate clicks start one persisted request and reopening only reads it",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-007"
+        },
+        {
+          "id": "MAP-0b2fa72083aa",
+          "line": 32,
+          "kind": "reviewed-selector",
+          "name": "response loss retry reuses the exact request and never changes to another transport",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-007"
+        },
+        {
+          "id": "MAP-36ceacc1ee88",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "host change during pending local persistence cannot post to either target",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-007"
+        },
+        {
+          "id": "MAP-790a14df8957",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "late old host preview cannot replace the new server result; guest never reads or starts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-007"
+        },
+        {
+          "id": "MAP-19a9941dbee1",
+          "line": 50,
+          "kind": "reviewed-selector",
+          "name": "closed sheet stops polling and partial results remain visibly partial",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-007"
+        },
+        {
+          "id": "MAP-157d7028a843",
+          "line": 58,
+          "kind": "reviewed-selector",
+          "name": "local persistence failure prevents POST; stale preview refresh discards only an explicitly refused request",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-007"
+        }
+      ],
+      "sha256": "54ebf356476a5ed3b6dd220fa57b63535858b81a49c156bbf1ba949b30b2a8fb"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

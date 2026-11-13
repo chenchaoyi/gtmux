@@ -1673,3 +1673,17 @@ Relay `POST /push` and the tunnel Worker's incoming `/direct/redeem`, `/direct/s
 ### Pane history observation state
 
 Owner reads of `/api/transcript` may explicitly include `observation=1`. Only after ordinary association fails, verified historical evidence may provide bounded read-only history. `X-Gtmux-Conversation-State` identifies `last-known`, `recovered` or `verified`, including on 304 responses. This never changes pane input/restore authority. Guest reads cannot use the fallback and guest roster projections omit `observed_conversation`. Ordinary API defaults, recent-window opt-in and history cursor bounds remain unchanged.
+
+## Owner restore jobs
+
+`GET /api/restore` returns `{plan, job?}`; `GET /api/restore/job?id=...` reads one receipt. Both are read-only with respect to restoring sessions. Guest/share tokens receive403 even with input grants. Unavailable callbacks return501; unknown topology/storage returns503, never an empty-success projection.
+
+`plan` has `revision` (SHA256), `server_time`/`saved_at` (Unix seconds), `resume_mode` (`auto|type|off`), and `sessions[]` with `name, windows, panes, agents, resumable, state:"missing"`. This is the missing-only projection; live detached sessions are not missing. Paths, saved shell commands, transcript goals and native thread IDs are omitted. The revision covers full private producer inputs, including saved bytes and relevant resume records.
+
+`POST /api/restore` accepts only `{request_id,revision}` in at most1024bytes. The ID is `<server_time>-<16..64 ASCII letters/digits/hyphens>`. A new ID must be within24h of server time (at most60s future skew). Persist before dispatch; repeated identical IDs return the original job, including failed/interrupted jobs, without relaunch. A changed revision on the same ID is409 `request_changed`. A stale preview is409 `plan_changed`; another active job is409 `restore_busy`. Storage/launch failure is not evidence of a successful restoration. No request accepts a command, path, arbitrary session name, home or worker options. HTTP202 means the durable job was reserved/observed, not that sessions started.
+
+Jobs include `id, revision, created_at, updated_at, phase, code?, sessions[], agents?[]`. Phases are `queued|preparing|layout|agents|completed|partial|failed|interrupted`. Session states distinguish `missing|restored`; agent receipts retain `confirmed|pending|prefilled` and explicit skipped/failed reasons. `completed` is a completed worker with available sessions, not a device/UI acceptance claim. Sent commands without fresh matching identity remain pending and make the result partial.
+
+A detached worker owns a once-only claim and the shared process-owned CLI/menu/remote execution lease. HTTP disconnect never cancels or retries it. Dead workers become interrupted on a later read after a60s startup grace; no automatic reclaim/launch. Worker process budget30min. Keep up to128receipts, at least48h for terminal receipts; unexpired receipts are not evicted to admit another job. Expired NEW IDs are refused, so removal of old receipts cannot replay them. Plans/results cap256sessions/2048agent rows, private receipt database4MiB; capacity/IO failure refuses rather than dropping unknown work. The App stores its ID before POST and reads it on reopening.
+
+This API does not bypass saved-agent evidence, same-home/strict frontend admission, current shell/identity checks or pending command confirmation. Native startup HTTP403 is not a session-count quota signal. Hard identity failures do not get an alternate input channel.

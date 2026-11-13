@@ -1,3 +1,4 @@
+import {RestoreError, parseRestoreJob, parseRestoreSnapshot, type RestoreJob, type RestoreSnapshot} from './restore';
 import {withSendDeadline, type SendDelivery} from './sendDeadline';
 import type {HQWorkspace, HQMatterDetail} from './hqWorkspace';
 import {DocumentError, documentReference} from '../documents/references';
@@ -785,6 +786,34 @@ export class GtmuxClient {
     if (r.status === 404 || r.status === 503) return null;
     if (!r.ok) throw new ApiError(r.status, 'input-capabilities');
     return parseInputCapabilities(await r.json());
+  }
+
+  async restorePreview(): Promise<RestoreSnapshot> {
+    const r = await tfetch(`${this.base}/api/restore`, {headers: this.h()});
+    if (!r.ok) throw new RestoreError(r.status === 404 || r.status === 501 ? 'unsupported' : r.status === 403 ? 'owner_only' : 'unavailable', r.status);
+    return parseRestoreSnapshot(await r.json());
+  }
+
+  async restoreStatus(id: string): Promise<RestoreJob> {
+    const r = await tfetch(`${this.base}/api/restore/job?id=${encodeURIComponent(id)}`, {headers: this.h()});
+    if (!r.ok) throw new RestoreError(r.status === 404 ? 'not_found' : 'unavailable', r.status);
+    const job = parseRestoreJob(await r.json());
+    if (job.id !== id) throw new RestoreError('invalid_response');
+    return job;
+  }
+
+  async restoreStart(id: string, revision: string): Promise<RestoreJob> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => abortAtDeadline(controller, 15000), 15000);
+    try {
+      const r = await tfetch(`${this.base}/api/restore`, {method: 'POST', signal: controller.signal, headers: {...this.h(), 'Content-Type': 'application/json'}, body: JSON.stringify({request_id: id, revision})});
+      const j = await r.json().catch(() => null);
+      if (!r.ok) throw new RestoreError(j?.code || 'unavailable', r.status);
+      const job = parseRestoreJob(j);
+      if (job.id !== id || job.revision !== revision) throw new RestoreError('uncertain');
+      return job;
+    } catch (e) {if (e instanceof RestoreError) throw e; throw new RestoreError('uncertain');}
+    finally {clearTimeout(timeout);}
   }
 
   // Explicit retries reuse requestID. No automatic network retry of a mutation.

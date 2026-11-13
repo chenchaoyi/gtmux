@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1186 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1193 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2121 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2146 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 132 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -190,6 +190,15 @@
 | PWR-001 | One production collection per producer tick, no extra REST collections within freshness; explicit next producer bypasses TTL; clone ownership preserved; failure/oversize never turns stale bytes into success; scopes never cross |
 | PWR-002 | Frame probes within one pass share exact text; each pane is captured at most once, no frame survives into next gather; new approval becomes waiting without invented done; unrelated non-Codex states retained |
 | PWR-003 | SSE uses fresh producer, REST reads its cache rather than second gather; role/completion/follow/native identity unchanged; no real services/power settings touched |
+| RSR-001 | Reads never start work; only owner may start; strict bounded schema; stale/changed/uncertain codes preserved |
+| RSR-002 | Persist before launch; one launch per request; same ID never relaunches even after failure/interruption; active blocks another ID; unavailable storage refuses; expired IDs cannot become new work |
+| RSR-003 | Remote preview includes only missing saved sessions; existing detached sessions remain usable and are not restarted; revision binds save bytes, records/mode, and topology; unknown refuses; cap fails explicitly |
+| RSR-004 | No mutation before claim+lease+fresh matching preview; no terminal/focus; resumptions limited to approved newly missing sessions; no existing program restart; pending is not confirmed; final result persisted once, write error stops before further input |
+| RSR-005 | At most one restore mutation producer; unavailable lease fails closed; no age-based takeover of a live holder; dry-run/read preview still read-only |
+| RSR-006 | No automatic mutation retry or channel fallback; stable ID/revision transmitted; bounded parsing; reads cannot start; unsupported is actionable |
+| RSR-007 | Nothing starts on mount/refresh; explicit confirm starts once; progress reattaches by read on reopen; unknown only checks status using same ID; no cross-host late update/mutation; failure not success; no polling after close |
+| RSR-008 | Restore bypasses generic close, keeps progress without focus theft/reopen; explicit close wins; all other actions retain their behavior |
+| RSR-009 | Clear server identity and explicit restoration scope; owner entry available remotely, guest absent; sheet scrolls with content and safe-area controls |
 | SSI-001 | Active eligible thread uses turn/steer with exact expectedTurnId; no queue/start, interrupt, full-history read or duplicate accepted input. Only explicitly unsupported read/steer methods can fall back to original queue behavior; generic errors/uncertain write never replay. Waiting flags and target/home/peer mismatch refuse before input. Byte/deadline bounds remain. |
 | SSI-002 | Only existing authorized image inputs request active submission; ordinary text stays existing queue. Exact target and image survive, accepted mode persists, retry does not resubmit, uncertain never enters queue or alternate pane; receipt mode backward compatible. |
 | SSI-003 | Queued never claims terminal receipt; active acceptance says current task, never task completion. Nonzero/unrecognized receipt cannot falsely succeed; accepted receipts keep existing fast-close semantics and failure preserves editable draft. Logs distinguish accepted queue from immediate input without content. |

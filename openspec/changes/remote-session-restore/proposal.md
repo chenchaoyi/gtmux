@@ -11,9 +11,9 @@ After a server reboot an owner away from the computer cannot recover saved tmux 
 - Restore remains visible in the menu until explicit dismissal.
 
 ## Surfaces
-- Terminal: existing interactive restore remains; internal job execution uses the same safe producer, never a client-supplied shell command.
-- Menu bar: keep progress visible, honor explicit Escape/outside close, do not steal focus.
-- Phone: paired owner can preview/start/check remote recovery; guests cannot.
+- terminal: existing interactive restore remains; internal job execution uses the same safe producer, never a client-supplied shell command.
+- menubar: keep progress visible, honor explicit Escape/outside close, do not steal focus.
+- phone: paired owner can preview/start/check remote recovery; guests cannot.
 - iPad: same API and scrollable sheet, adapting to wide/large-text layouts. Android shares this RN flow.
 - Web: no new restore control in this change; authenticated owner API has the same scope enforcement regardless of transport.
 
