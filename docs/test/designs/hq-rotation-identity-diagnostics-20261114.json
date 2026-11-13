@@ -1,0 +1,35 @@
+{
+  "id": "hq-rotation-identity-diagnostics-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Distinguish unavailable HQ identity from a positively changed conversation without weakening reset admission",
+    "notes": "HQ4949 requests bounded source diagnosis after a failed deployed rotation reported session changed while later samples remained the original SID. The failure-time complete fields are unavailable; do not assert its root cause or repair live state. Preserve every existing source of input authority. Add value-free live-record diagnostic codes without changing LoadLive boolean/record semantics. Preserve hqSessionRef return semantics for other callers; only rotation consumes explicit diagnostic evidence. An unsent rotation never sends when agent/session/driver/frontend or active-identity evidence is unknown/conflicting. Real nonempty different agent/SID remains a hard refusal. Persist first unavailable time and last bounded code; warn once per code transition, do not extend the original 30-minute deadline. If unresolved for 60 seconds (or original deadline), settle once with independent attention notification; this is failure, not permission to recover/clear/retarget. A recovered exact original identity still must pass all original active/waiting/draft/two-frame/completed-boundary checks. Sent handoff keeps its original event/history checks; unknown agent after sending is reported unavailable, not changed, with no reset retry. No new registration, marker, queue, TUI or service changes on the real HQ."
+  },
+  "cases": [
+    {
+      "id": "HRW-012",
+      "layer": "L2",
+      "description": "Actual rotation separates missing identity, true changes and bounded escalation",
+      "setup": "Actual advanceHQRotation in isolated HOME with synthetic agent/session/active evidence, stable queued request and clock, spy pane and notification queue. Include repeated missing evidence, reason changes, exact recovery with a draft, real nonempty SID/agent replacement, sent request and stale snapshot.",
+      "action": "Withhold identity, retry before and after the persisted 60-second limit, then verify exact recovery and hard-change controls.",
+      "expected": "Unknown is not falsely reported as session changed and never authorizes reset. First unavailable time survives repeat ticks and reason changes; unresolved management evidence yields one precise attention failure within 60 seconds/original deadline. Exact recovery still respects drafts/active/waiting/boundary guards, while real changed SID/agent refuses immediately. Sent requests never repeat input. Reasons are bounded value-free known codes or explicit unknown; no fabricated cause.",
+      "planned_files": [
+        "internal/hq/rotation_identity_diagnostic_test.go"
+      ]
+    },
+    {
+      "id": "HRW-013",
+      "layer": "L2",
+      "description": "Live resume diagnostics preserve existing authority semantics",
+      "setup": "Real frontendFixture/Bind and private records in fixture HOME; valid/legacy/missing/expired frontend, missing bridge, observed birth change, index and pane mismatch.",
+      "action": "Read diagnostic live status and the existing LoadLive interface for the same controlled evidence.",
+      "expected": "Original record and live boolean remain identical to the original predicate; unavailable/conflict codes are value-free and precise only where actually observed. No new binding, input, retry or authority from a code, and no source PID/home/SID borrowed from another location.",
+      "planned_files": [
+        "internal/resume/frontend_live_diagnostic_test.go"
+      ]
+    }
+  ],
+  "seal": "6a3659638d385cc06a2e11ef3c41d790a2fa15ef9464d5d26410fa2fc137fd6e"
+}
