@@ -30,3 +30,5 @@ The managed charter content/version is unchanged by this feature.
 Tests and chronology: `docs/test/designs/hq-rules-refresh-20261113.json`. Self-review
 precedes implementation; independent source review and normal shipping are required
 before using the installed entry to adopt the shipped charter in the real HQ home.
+
+Boundary follow-up: recognize the standalone token before consuming option values. Verify backups through their created descriptor and a bounded no-follow identity recheck; failed/changed paths are retained, never blindly removed. Mixed user/knowledge blocks and unknown trailing instructions are refused without migration. A dedicated single-link private lock open rejects hardlinks before chmod. Existing external-editor publication checks remain best-effort.
