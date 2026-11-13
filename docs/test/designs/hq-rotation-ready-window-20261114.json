@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner; design self-review, not independent approval",
     "date": "2026-11-14",
     "decision": "Keep automatic wakes out of the future Codex queue and reserve a safe window for queued rotation",
-    "notes": "Bounded production observation matched 29 old automatic wake payload hashes to accepted spool receipts; recent inputs entered the conversation roughly three hours after acceptance, with consecutive task_complete/task_started separated by milliseconds. Do not equate visible empty composer with completed idle, or clear/replay existing native queues. Introduce a separate idle-only wake RPC policy that uses verified thread metadata and one normal turn/start with no steer/queue fallback; preserve explicit human and attachment paths. Existing hqinput lease plus bounded read-only pending reservation holds NEW wake batches before claim, after existing own stranded-repair handling. Only unsent rotation reserves; sent handoff can use existing bootstrap. Process normal rotation before wake draining on fast/slow ticks; retain all original identity, owner, draft, two-frame and turn-boundary checks. Failure is important/audible through existing notification channel once, not queued back into the broken HQ conversation. Existing native queue contents are untouched and may still prevent immediate recovery of the currently deployed old session. Current source candidates, shared dirty root and all protected materials remain unchanged. No live TUI/socket/queue/marker/config/service input during implementation."
+    "notes": "Bounded production observation matched 29 old automatic wake payload hashes to accepted spool receipts; recent inputs entered the conversation roughly three hours after acceptance, with consecutive task_complete/task_started separated by milliseconds. Do not equate visible empty composer with completed idle, or clear/replay existing native queues. Introduce a separate idle-only wake RPC policy that uses verified thread metadata and one normal turn/start with no steer/queue fallback; preserve explicit human and attachment paths. Existing hqinput lease plus bounded read-only pending reservation holds NEW wake batches before claim, after existing own stranded-repair handling. Only unsent rotation reserves; sent handoff can use existing bootstrap. Process normal rotation before wake draining on fast/slow ticks; retain all original identity, owner, draft, two-frame and turn-boundary checks. Failure is important/audible through existing notification channel once, not queued back into the broken HQ conversation. Existing native queue contents are untouched and may still prevent immediate recovery of the currently deployed old session. Current source candidates, shared dirty root and all protected materials remain unchanged. No live TUI/socket/queue/marker/config/service input during implementation. HQ c02b follow-up additionally requires admission race and important alert visibility. Creation of a rotation request must share the input lease with automatic batch claims; contention never falsely reports queued. Preserve old input/owner/draft guards. Native idle-start acceptance is an accepted transport/start receipt, not model-read or business consumption: journal it separately from a confirmed legacy delivery and never advance event consumption. Source important events/owner notification policy remain independently visible and unchanged; local priority/key coalescing may not silently consume or downgrade them. Existing 10-minute wake watchdog is not claimed immediate blocked-task notification. The current backend idle-to-busy start contract must be checked against the loaded native protocol or conservatively refuse; unknown cannot become future queue input."
   },
   "cases": [
     {
@@ -73,7 +73,29 @@
       "planned_files": [
         "internal/hq/rotation_priority_test.go"
       ]
+    },
+    {
+      "id": "HRW-007",
+      "layer": "L2",
+      "description": "Rotation registration and automatic batch claims serialize on the same input lease",
+      "setup": "Actual queueHQRotation in isolated HOME while a cooperating input lease is held, then released; existing same-target pending request and a different request controls.",
+      "action": "Try registration during contention, create after release, retry and attempt conflicting registration; retain exact request bytes.",
+      "expected": "No new pending request or input while another writer owns admission. After release one durable request is accepted; retries do not change ID/deadline, conflicts do not overwrite it. Claim cannot pass an unsent request registered before its lease. Identity validation before actual reset remains unchanged.",
+      "planned_files": [
+        "internal/hq/rotation_admission_test.go"
+      ]
+    },
+    {
+      "id": "HRW-008",
+      "layer": "L2",
+      "description": "Busy wake retention preserves important source events and does not claim consumption",
+      "setup": "Public automatic wake path with busy/unknown native input, separate important blocking event and lower-priority keyed routine notices; normal owner event read and existing notification/follow policy.",
+      "action": "Hold/coalesce notices while busy or rotating, then admit one idle start and inspect journal, priority, exact receipts and source events.",
+      "expected": "No persistent native future queue input, no delivered/consumed audit on busy or unknown, no watermark advance or removal of source important events. Typed idle-start acceptance is distinct from exact confirmed delivery; retained priorities/key updates survive. Existing source notifications/quiet/follow policy are not bypassed; runtime desktop delivery is an installation acceptance limit.",
+      "planned_files": [
+        "internal/hqnudge/rotation_priority_test.go"
+      ]
     }
   ],
-  "seal": "38603529161da2d4bafd27f5c2616af028edbae9d0e126524f50307ff1628370"
+  "seal": "03d3a868e509993ff4edc9bb4a451d04ea4bf08a69d01386412fd767cf1716e4"
 }
