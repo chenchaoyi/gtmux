@@ -613,6 +613,9 @@ func batchID(claims []string, payload string) string {
 // A claim is REMOVED only once the delivery is acked; otherwise it is returned to the
 // queue for a later attempt.
 func drainInto(x io, pane string) {
+	if pending, err := hqinput.RotationPending(pane); err != nil || pending {
+		return // own stranded repair ran first; do not claim a NEW batch
+	}
 	reclaimOrphans()
 	settleEarlierAttempts(x, pane)
 	due := queuedNames(func(n string) bool { return dueOf(n) <= x.nowNano() })
@@ -634,7 +637,9 @@ func drainInto(x io, pane string) {
 	if x.nativeSubmit != nil {
 		if result, managed := x.nativeSubmit(pane, payload, id); managed {
 			switch result.State {
-			case dispatch.StateQueued, dispatch.StateLanded:
+			case dispatch.StateQueued:
+				finishAccepted(pane, payload, claimed)
+			case dispatch.StateLanded:
 				finishDelivered(pane, payload, claimed)
 			case dispatch.StateRefusedDraft, dispatch.StateRefusedWaiting:
 				for _, c := range claimed {
@@ -773,6 +778,16 @@ func queuedEntries(ids []string) []string {
 // own receipt records only the six-hex id.
 func finishDelivered(pane, payload string, claimed []string) {
 	events.AuditWakeDelivered(pane, payload, time.Now().Unix())
+	for _, c := range claimed {
+		_ = os.Remove(c)
+	}
+	writeFailCount(0)
+}
+
+// Native acceptance is durable transport evidence, not a conversation receipt
+// or consumption of any source event. The exact native spool receipt remains.
+func finishAccepted(pane, payload string, claimed []string) {
+	events.AuditWakeAccepted(pane, payload, time.Now().Unix())
 	for _, c := range claimed {
 		_ = os.Remove(c)
 	}

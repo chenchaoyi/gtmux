@@ -31,6 +31,9 @@ type Outcome struct {
 	Accepted, Attempted, Unsupported bool
 	QueueID, Reason                  string
 	ActiveTurnID, StartedTurnID      string
+	// AcknowledgedTurnID is the wake RPC's returned turn. It does not prove this
+	// request caused a new turn: an external writer may win after idle sampling.
+	AcknowledgedTurnID string
 }
 
 type wireResponse struct {
@@ -64,21 +67,38 @@ func QueueChecked(ctx context.Context, target Target, messageID, text string, ch
 }
 
 func QueueInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
-	return submitInputs(ctx, target, messageID, inputs, check, false, false, nil)
+	return submitInputs(ctx, target, messageID, inputs, check, queuedInput, nil)
 }
 
 // ImageInputs supplements an exact active turn when the loaded server explicitly
 // supports it. Older servers keep their queue semantics. Existing queue entries
 // are never consumed, deleted or resubmitted by this path.
 func ImageInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
-	return submitInputs(ctx, target, messageID, inputs, check, true, false, nil)
+	return submitInputs(ctx, target, messageID, inputs, check, imageInput, nil)
 }
 
 // UserInputs delivers explicit phone input to a loaded idle or eligible active
 // thread. It never resumes a thread or consumes/replays existing queued inputs.
 func UserInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
-	return submitInputs(ctx, target, messageID, inputs, check, true, true, nil)
+	return submitInputs(ctx, target, messageID, inputs, check, userInput, nil)
 }
+
+// IdleWakeInputs samples exact loaded-idle metadata before one ordinary start.
+// This is a best-effort precondition, not atomic idle-only submission. Known busy
+// or unknown state refuses; no persistent queue, steer, retry or fallback exists.
+func IdleWakeInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool) Outcome {
+	return submitInputs(ctx, target, messageID, inputs, check, wakeInput, nil)
+}
+
+type inputPolicy uint8
+
+const (
+	queuedInput inputPolicy = iota
+	imageInput
+	userInput
+	coordinationInput
+	wakeInput
+)
 
 // CoordinationNotice addresses an eligible exact active turn only. It never
 // starts idle work, resumes a thread or falls back to persistent queued input.
@@ -87,10 +107,10 @@ func CoordinationNotice(ctx context.Context, target Target, messageID, text stri
 	if check == nil {
 		return Outcome{Reason: "notice-guard-required"}
 	}
-	return submitInputs(ctx, target, messageID, []Input{{Type: "text", Text: text}}, nil, true, false, check)
+	return submitInputs(ctx, target, messageID, []Input{{Type: "text", Text: text}}, nil, coordinationInput, check)
 }
 
-func submitInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool, preferActive, userInput bool, coordination func(string) bool) Outcome {
+func submitInputs(ctx context.Context, target Target, messageID string, inputs []Input, check func() bool, policy inputPolicy, coordination func(string) bool) Outcome {
 	bytes := 0
 	valid := len(inputs) > 0 && len(inputs) <= 17
 	for _, input := range inputs {
@@ -156,12 +176,15 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 		return Outcome{Reason: "initialize-unavailable"}
 	}
 	id, turnID, startIdle := 2, "", false
-	if preferActive {
+	if policy != queuedInput {
 		var why string
-		turnID, startIdle, id, why = inputTurnPlan(target.ThreadID, id, send, read, userInput)
+		turnID, startIdle, id, why = inputTurnPlan(target.ThreadID, id, send, read, policy == userInput || policy == wakeInput)
 		if why != "" {
 			return Outcome{Reason: why}
 		}
+	}
+	if policy == wakeInput && !startIdle {
+		return Outcome{Reason: "wake-loaded-idle-required"}
 	}
 	if coordination != nil {
 		if turnID == "" || startIdle {
@@ -193,7 +216,16 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 			if json.Unmarshal(r.Result, &accepted) != nil || accepted.Turn.ID == "" || len(accepted.Turn.ID) > 256 || (accepted.Turn.Status != "inProgress" && accepted.Turn.Status != "completed") {
 				return result
 			}
+			if policy == wakeInput {
+				return Outcome{Accepted: true, Attempted: true, AcknowledgedTurnID: accepted.Turn.ID}
+			}
 			return Outcome{Accepted: true, Attempted: true, StartedTurnID: accepted.Turn.ID}
+		}
+		if policy == wakeInput {
+			if r.Error.Code == -32601 {
+				return Outcome{Unsupported: true, Reason: "wake-start-unsupported"}
+			}
+			return result
 		}
 		// A definitive unknown-method rejection is the only safe legacy fallback.
 		if r.Error.Code != -32601 {

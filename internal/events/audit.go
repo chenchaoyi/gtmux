@@ -36,6 +36,8 @@ const (
 	// AuditEventWakeDelivered records one CONFIRMED wake batch: the id and the
 	// full coalesced payload, one record per batch.
 	AuditEventWakeDelivered = AuditPrefix + "wake-delivered"
+	// Native input was accepted; neither model-read nor source-event consumption.
+	AuditEventWakeAccepted = AuditPrefix + "wake-accepted"
 	// AuditEventWakeDropped records one dropped wake line and why — the control
 	// trace "never silently dropped" needs to be a journal property.
 	AuditEventWakeDropped = AuditPrefix + "wake-dropped"
@@ -123,6 +125,12 @@ func AuditWakeDelivered(pane, payload string, now int64) {
 		Summary: auditLine(payload, auditWakeMax),
 	}, now)
 	diag.For("hq").Act("act.wake.delivered", "system", pane, diag.OK, "a wake reached HQ",
+		"batch", batchTag(payload), "bytes", len(payload), "op_id", id)
+}
+
+func AuditWakeAccepted(pane, payload string, now int64) {
+	id := auditAppend(Record{Event: AuditEventWakeAccepted, Pane: pane, Summary: auditLine(payload, auditWakeMax)}, now)
+	diag.For("hq").Act("act.wake.accepted", "system", pane, diag.OK, "native HQ wake input accepted; consumption unconfirmed",
 		"batch", batchTag(payload), "bytes", len(payload), "op_id", id)
 }
 
@@ -357,7 +365,7 @@ func IsSupervisorAct(r Record) bool {
 	if !strings.HasPrefix(r.Event, "gtmux:") {
 		return false
 	}
-	return r.Event != AuditEventWakeDelivered && r.Event != AuditEventWakeDropped
+	return r.Event != AuditEventWakeDelivered && r.Event != AuditEventWakeDropped && r.Event != AuditEventWakeAccepted
 }
 
 // HQSessionPredecessor returns the session id the given HQ session replaced, from the

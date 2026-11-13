@@ -2447,5 +2447,59 @@
       "RSR011 confirmed empty local read can resume read-only preview after a native failure",
       "RSR011 late old-pairing local read %s cannot grant a new target readiness"
     ]
+  },
+  "internal/codexrpc/idle_wake_test.go": {
+    "cases": [
+      "HRW-001"
+    ],
+    "selectors": [
+      "TestHRW001AutomaticWakeUsesFreshIdleWithoutQueueOrSteer"
+    ]
+  },
+  "internal/dispatchbridge/idle_wake_test.go": {
+    "cases": [
+      "HRW-002"
+    ],
+    "selectors": [
+      "TestHRW002ActualNativeWakePolicyKeepsTargetAndAtMostOnce"
+    ]
+  },
+  "internal/hqinput/rotation_test.go": {
+    "cases": [
+      "HRW-003"
+    ],
+    "selectors": [
+      "TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize"
+    ]
+  },
+  "internal/hq/rotation_admission_test.go": {
+    "cases": [
+      "HRW-007"
+    ],
+    "selectors": [
+      "TestHRW007RegistrationSharesTheInputClaimLease"
+    ]
+  },
+  "internal/hq/rotation_priority_test.go": {
+    "cases": [
+      "HRW-006"
+    ],
+    "selectors": [
+      "TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert"
+    ]
+  },
+  "internal/hqnudge/rotation_priority_test.go": {
+    "cases": [
+      "HRW-004",
+      "HRW-005",
+      "HRW-008"
+    ],
+    "selectors": [
+      "TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority",
+      "TestHRW004RotationDoesNotSubmitOrRepairUserDraft",
+      "TestHRW004ExactOwnStrandedRepairPrecedesReservation",
+      "TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity",
+      "TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource"
+    ]
   }
 }

@@ -474,6 +474,7 @@ act.uninstall.hooks        uninstall
 act.unwatch                panes
 act.update                 update
 act.upload                 serve
+act.wake.accepted          hq, relay, serve, hook
 act.wake.delivered         serve, hook
 act.wake.dropped           serve, hook
 act.wait.suppressed        hook

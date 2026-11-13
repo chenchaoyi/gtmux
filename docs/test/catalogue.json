@@ -62795,6 +62795,138 @@
         }
       ],
       "sha256": "88b749aeaab235ee69d79b5e404aebd776cda62b2f8f11db6fc1a7cb3e5aa11f"
+    },
+    "internal/codexrpc/idle_wake_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0457021e01bc",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestHRW001AutomaticWakeUsesFreshIdleWithoutQueueOrSteer",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-001"
+        }
+      ],
+      "sha256": "96a0750bbc5ad1e53541f7aef67e796c953f3868cf823eeff908e351ec19a4ac"
+    },
+    "internal/dispatchbridge/idle_wake_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0fd1f58c076b",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestHRW002ActualNativeWakePolicyKeepsTargetAndAtMostOnce",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-002"
+        }
+      ],
+      "sha256": "545329aa85f4f72415d64b8b8af6f6e1ad0d85df6289564902babcf17aa509a6"
+    },
+    "internal/hq/rotation_admission_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fc5da55172ab",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestHRW007RegistrationSharesTheInputClaimLease",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-007"
+        }
+      ],
+      "sha256": "c1ae09e3d81a7859f9421c235c7b8059c13560195a740f85a2ba769e47d529b9"
+    },
+    "internal/hq/rotation_priority_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5c6873f6e524",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-006"
+        }
+      ],
+      "sha256": "6d08af609b5c5c691ab6c2c2e0025e599b93311e3eff65ebfbcdd6835dfb5ea9"
+    },
+    "internal/hqinput/rotation_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e4cfa47e623e",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-003"
+        }
+      ],
+      "sha256": "e1a0cb8223054accb0dd2424afe39723c271a9ff6d13febdce29c7157217ccda"
+    },
+    "internal/hqnudge/rotation_priority_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2f393b4dfbb1",
+          "line": 28,
+          "kind": "reviewed-selector",
+          "name": "TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-004,HRW-005,HRW-008"
+        },
+        {
+          "id": "MAP-89ffb5925672",
+          "line": 88,
+          "kind": "reviewed-selector",
+          "name": "TestHRW004RotationDoesNotSubmitOrRepairUserDraft",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-004,HRW-005,HRW-008"
+        },
+        {
+          "id": "MAP-ad61e9898864",
+          "line": 102,
+          "kind": "reviewed-selector",
+          "name": "TestHRW004ExactOwnStrandedRepairPrecedesReservation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-004,HRW-005,HRW-008"
+        },
+        {
+          "id": "MAP-62d7c36b98c4",
+          "line": 119,
+          "kind": "reviewed-selector",
+          "name": "TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-004,HRW-005,HRW-008"
+        },
+        {
+          "id": "MAP-f6f7a40c985c",
+          "line": 149,
+          "kind": "reviewed-selector",
+          "name": "TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-004,HRW-005,HRW-008"
+        }
+      ],
+      "sha256": "6b456f3fe3c4fcdb38af6bb02ddaa4a2139aeca32a9c517eb79e933e2047d772"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

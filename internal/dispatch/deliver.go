@@ -135,6 +135,7 @@ type Opts struct {
 	DeliveryID        string // caller idempotency key for an addressed native transport
 	DirectUserInput   bool   // explicit phone text+Enter; default CLI/HQ retains queue semantics
 	ActiveImageInput  bool   // explicit attachment ingress; never inferred from message text
+	IdleWakeInput     bool   // trusted automatic HQ producer; best-effort fresh idle, never future queue
 	Pane              string
 	HookEquipped      bool // prefer the deterministic event stream over the screen
 	Force             bool // override the re-send interlock

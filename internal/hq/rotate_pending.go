@@ -18,6 +18,8 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqinput"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -78,7 +80,7 @@ func rotationTargetMatches(expected, actual string) bool {
 func rotationPendingPath() string { return filepath.Join(state.Dir(), "hqwake", "rotate-pending.json") }
 
 func readRotationRequest() (rotationRequest, bool, error) {
-	b, err := os.ReadFile(rotationPendingPath())
+	b, err := hqinput.ReadRotationFile()
 	if errors.Is(err, os.ErrNotExist) {
 		return rotationRequest{}, false, nil
 	}
@@ -149,6 +151,18 @@ func RequestHQRotation() (rotationRequest, bool, string) {
 }
 
 func queueHQRotation(r rotationRequest) (rotationRequest, bool, string) {
+	release, acquired, err := hqinput.Acquire()
+	if err != nil {
+		return rotationRequest{}, false, err.Error()
+	}
+	if !acquired {
+		return rotationRequest{}, false, "HQ input is busy; rotation was not registered"
+	}
+	defer release()
+	return queueHQRotationLocked(r)
+}
+
+func queueHQRotationLocked(r rotationRequest) (rotationRequest, bool, string) {
 	if current, exists, err := readRotationRequest(); err != nil {
 		return rotationRequest{}, false, err.Error()
 	} else if exists {
@@ -159,7 +173,14 @@ func queueHQRotation(r rotationRequest) (rotationRequest, bool, string) {
 	}
 	if err := writeRotationFile(r, true); err != nil {
 		if errors.Is(err, os.ErrExist) {
-			return queueHQRotation(r) // another CLI won creation; report its request
+			current, exists, readErr := readRotationRequest()
+			if readErr != nil {
+				return rotationRequest{}, false, readErr.Error()
+			}
+			if exists && current.Pane == r.Pane && current.Agent == r.Agent && current.Retiring == r.Retiring {
+				return current, true, ""
+			}
+			return rotationRequest{}, false, "HQ rotation changed during registration"
 		}
 		return rotationRequest{}, false, err.Error()
 	}
@@ -167,7 +188,7 @@ func queueHQRotation(r rotationRequest) (rotationRequest, bool, string) {
 	return r, true, ""
 }
 
-// ProcessPendingHQRotation runs only from serve's slow tick. An unfinished turn,
+// ProcessPendingHQRotation runs before draining on fast and slow ticks. An unfinished turn,
 // a draft, or an unreadable composer leaves the durable request untouched.
 func ProcessPendingHQRotation() {
 	r, exists, err := readRotationRequest()
@@ -179,11 +200,11 @@ func ProcessPendingHQRotation() {
 	}
 	pane := hqpane.Find()
 	if pane == "" {
-		failRotation(r, "HQ pane disappeared", time.Now().Unix())
+		failQueuedRotation(r, "HQ pane disappeared", time.Now().Unix())
 		return
 	}
 	if !rotationTargetMatches(r.TargetStamp, rotationTargetStamp(pane)) {
-		failRotation(r, "HQ target changed or its pre-reboot identity is unavailable; no input sent", time.Now().Unix())
+		failQueuedRotation(r, "HQ target changed or its pre-reboot identity is unavailable; no input sent", time.Now().Unix())
 		return
 	}
 	agent, sid := hqSessionRef(pane)
@@ -349,7 +370,28 @@ func rotationTurnFinished(r rotationRequest, boundary func(string) (string, time
 	return state.Exists(state.FinishedPath(r.Pane))
 }
 
+// The early identity refusals keep their original checks. Their failure cleanup
+// also owns admission, so it cannot delete a concurrently registered request.
+func failQueuedRotation(r rotationRequest, reason string, now int64) {
+	release, acquired, err := hqinput.Acquire()
+	if err != nil || !acquired {
+		return
+	}
+	defer release()
+	failRotation(r, reason, now)
+}
+
 func failRotation(r rotationRequest, reason string, now int64) {
+	// Every production caller owns the registration/input lease. A stale snapshot
+	// cannot repeat an alert or remove a successor request.
+	current, exists, err := readRotationRequest()
+	if err != nil || !exists || current != r {
+		return
+	}
 	events.AuditRotateFailed(r.Agent, r.Retiring, reason, now)
+	notify.Send(notify.Options{
+		Kind: "input", Title: i18n.Tr("HQ handoff did not complete", "HQ 轮换未完成"),
+		Subtitle: "gtmux", Message: reason, Pane: r.Pane, Session: "gtmux HQ",
+	})
 	_ = os.Remove(rotationPendingPath())
 }

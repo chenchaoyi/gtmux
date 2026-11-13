@@ -36,8 +36,7 @@ import (
 // per new/changed warning.
 func SlowTickEval() {
 	collection := radar.NewCollection()
-	ProcessPendingHQRotation() // one durable request, after the requesting turn has ended
-	DrainHQNudges()            // also on the 3s fast tick — this covers serve's first evaluation
+	DrainHQNudges() // maintenance first, also on the 3s fast tick
 	// Resource: sample + nudge on a NEW machine warn TIER. Dedup keys on the tier
 	// (amber/red), NOT the exact warn value — disk-free jittering 40→39→38 GB stays
 	// amber and must NOT re-nudge per GB (the by-tier fix) — and the tier itself is
@@ -152,6 +151,7 @@ func hqSummaryTick(now int64) {
 // resource-sampling cadence. Cheap-gated on Pending() — a dir scan — so a quiet queue
 // costs no tmux at all.
 func DrainHQNudges() {
+	ProcessPendingHQRotation() // reserve a ready window before any new automatic wake
 	if hqnudge.Pending() {
 		hqnudge.Drain(hqpane.Find())
 	}
