@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1186 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1188 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2121 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2135 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 132 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -79,6 +79,9 @@
 | CBP-002 | Contention returns/defer without changing primary, receipts or intent. Eligible retry publishes only after a fresh exact index comparison. Both previously uncovered writer paths are covered; existing Save/Refresh CSR003 assertions remain untouched. |
 | CBP-003 | Failure preserves incumbent and pending intent as appropriate; committed-index/failed-retirement remains explicitly retryable. No deadlock or leaked shared/location lock. Same owner retains Frontend and TerminalClient; changed owner cannot be reclaimed by retry. Existing valid assertions and budgets are not weakened. |
 | CBP-004 | Held lease prevents publication and consumption across OS processes; after release the exact valid fixture succeeds. No real state directory, target, backend or service is touched. Helper entry is not separate product acceptance. |
+| CBA-001 | Missing observations remain refused but retryable. Explicit observed identity/home/birth/owner mismatch is hard and never publishes. Existing input authority assertions remain unchanged. |
+| CBA-002 | The exact root is retried within schedule/budget and binds once, then ordinary heartbeat resumes; no repeated root RPC or message/input is sent. Baseline callback/tick semantics fail the recovery assertion. |
+| CBA-003 | New selection invalidates prior pending root; old responses/epochs never reclaim. Unknown observations do not authorize. Hard mismatch stops. At most8 bind attempts, no new attempt at/after30s, exponential1/2/4/8s pacing. Deadline is scheduling bound, not a claim that an uninterruptible syscall returns at30s. Receipt-only errors retain committed attachment and retry only via ordinary heartbeat. A newer successful root whose binding fails suspends old-root heartbeat instead of keeping wrong history live. |
 | CET-001 | Return the latest kind, time and explicit turn ID; tied conflicting metadata is unusable as exact completion proof. Legacy kind/time callers still work and scoped facts stay fresh. |
 | CET-002 | Idle since actual boundary; active content/mtime and turn ID remain untouched; no fabricated completion, latest flag or done notification evidence. |
 | CET-003 | Only verified same-session exact-ended-turn ready evidence overrides working. Real waiting/start/work survives, missing identity follows existing legacy behavior; no input authority or real marker mutation. |

@@ -2172,5 +2172,34 @@
       "CPG008 automatic cut-row refresh lets a six-second initial read finish",
       "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read"
     ]
+  },
+  "internal/codexbridge/binding_recovery_test.go": {
+    "cases": [
+      "CBA-002",
+      "CBA-003"
+    ],
+    "selectors": [
+      "TestCBA002TransientRootBindingRecoversFromTheActualObserver",
+      "TestCBA003NewSelectionAndEpochRetirePendingRecovery",
+      "TestCBA003PendingNewRootNeverRefreshesOldRoot",
+      "TestCBA003RetryPacingDeadlineAndHardRefusal",
+      "TestCBA003ReceiptFailureCommitsThenOnlyHeartbeats",
+      "TestCBA003ClosedConnectionCannotPublishLater",
+      "TestCBA003InitializeInvalidatesEarlierRootAndEarlierHomeResponse",
+      "TestCBA003NewVerifiedRootReplacesOnlyItsOwnPendingSelection",
+      "TestCBA003NoAttemptAtDeadlineOrAfterEpochChange",
+      "TestCBA003UnrelatedTrafficCannotReplacePendingRoot",
+      "TestCBA002SameRootReconnectRecoversWithoutRefreshingUnverifiedProof"
+    ]
+  },
+  "internal/resume/frontend_binding_readiness_test.go": {
+    "cases": [
+      "CBA-001"
+    ],
+    "selectors": [
+      "TestCBA001UnavailableProofIsRetryableButNeverPublishes",
+      "TestCBA001ObservedBirthHomeAndTargetChangesStayHard",
+      "TestCBA001MissingTerminalProofNeverBecomesInputAuthority"
+    ]
   }
 }

@@ -32,3 +32,14 @@ See the [Chinese version](session-state.zh.md) and [API contract](../api/contrac
 When current conversation metadata cannot be verified, a private historical binding may still identify readable history for the same verified terminal process. GTmux shows **Association pending · history read only** and folds that history into the pane instead of listing the same conversation again as external. Conflicting, ambiguous or missing process evidence does not authorize this fallback.
 
 This observation is separate from the current session identity. It does not enable Chat sending, adoption, restore or lifecycle updates, change status or borrow a task timestamp. Use the Terminal view for existing manual controls. Guest views do not receive this fallback identity. Ordinary transcript clients retain their existing contract; the supported UI explicitly requests the read-only observation. A successful verified refresh removes the history restriction, including on an unchanged response. Original history files and live bindings are not rewritten.
+
+After a successful root operation on a verified Codex connection, temporarily
+unavailable terminal proof or a busy binding lease no longer discards the root.
+The same connection can retry publication for up to 30 seconds, with at most
+eight attempts and increasing delays. Every attempt repeats the strict identity
+checks; a different process, home, terminal or newer owner remains refused.
+Switching conversations or reconnecting retires the older pending selection.
+While a newly observed root remains unverified, the bridge stops refreshing the
+old root. This recovery sends no input and replays no conversation operation.
+An already running older bridge needs a normal reconnect with the updated CLI;
+updating the App's list alone does not upgrade that process.

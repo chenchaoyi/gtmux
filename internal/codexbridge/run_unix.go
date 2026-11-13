@@ -133,25 +133,16 @@ func Run(bin string, args []string, pane string) int {
 		diag.For("codex-bridge").Info("codex.frontend.startup.ready", "verified local frontend connection",
 			"pane", pane, "attempts", attempts, "elapsed_ms", time.Since(started).Milliseconds())
 		down.SetReadLimit(64 << 20)
-		var mu sync.Mutex
-		defer func() { mu.Lock(); resume.EndCodexFrontend(attachment); mu.Unlock() }()
-		o := &observer{home: attachment.HomeID, bind: func(sid, cwd string) {
-			mu.Lock()
-			defer mu.Unlock()
-			if !sequence.current(attachment.Sequence) {
+		binding := newFrontendBinding(attachment, func() bool { return sequence.current(connectionSequence) }, func(kind string, err error, count int) {
+			if kind == "ready" {
+				diag.For("codex-bridge").Info("codex.frontend.binding.ready", "verified frontend binding recovered", "pane", pane, "attempts", count)
 				return
 			}
-			bound, err := resume.BindCodexFrontend(attachment, sid, cwd)
-			if err != nil {
-				var receiptErr *resume.CodexBindingReceiptError
-				if errors.As(err, &receiptErr) {
-					attachment = bound
-				}
-				diag.For("codex-bridge").Warn("codex.frontend.binding.failed", "could not verify frontend attachment", "pane", pane, "error", err)
-				return
-			}
-			attachment = bound
-		}}
+			diag.For("codex-bridge").Warn("codex.frontend.binding.failed", "could not verify frontend attachment", "pane", pane, "error", err, "attempts", count, "stage", kind)
+		})
+		defer binding.close()
+		o := &observer{home: attachment.HomeID, bind: binding.stage, selectRoot: binding.selectRoot, resetHome: binding.resetHome}
+
 		trust := newTrustConfig(r.Context(), o.homeVerified)
 		ended := make(chan error, 2)
 		go func() { ended <- forward(down, up, func(data []byte) { o.request(data); trust.request(data) }) }()
@@ -172,13 +163,7 @@ func Run(bin string, args []string, pane string) int {
 				<-ended
 				return
 			case <-tick.C:
-				mu.Lock()
-				if attachment.SessionID != "" && sequence.current(attachment.Sequence) {
-					if fresh, err := resume.RefreshCodexFrontend(attachment); err == nil {
-						attachment = fresh
-					}
-				}
-				mu.Unlock()
+				binding.tick()
 			}
 		}
 	})

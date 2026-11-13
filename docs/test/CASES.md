@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1186 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1188 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2121 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2135 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 132 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -79,6 +79,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CBP-002 | Contention returns/defer without changing primary, receipts or intent. Eligible retry publishes only after a fresh exact index comparison. Both previously uncovered writer paths are covered; existing Save/Refresh CSR003 assertions remain untouched. |
 | CBP-003 | Failure preserves incumbent and pending intent as appropriate; committed-index/failed-retirement remains explicitly retryable. No deadlock or leaked shared/location lock. Same owner retains Frontend and TerminalClient; changed owner cannot be reclaimed by retry. Existing valid assertions and budgets are not weakened. |
 | CBP-004 | Held lease prevents publication and consumption across OS processes; after release the exact valid fixture succeeds. No real state directory, target, backend or service is touched. Helper entry is not separate product acceptance. |
+| CBA-001 | Missing observations remain refused but retryable. Explicit observed identity/home/birth/owner mismatch is hard and never publishes. Existing input authority assertions remain unchanged. |
+| CBA-002 | The exact root is retried within schedule/budget and binds once, then ordinary heartbeat resumes; no repeated root RPC or message/input is sent. Baseline callback/tick semantics fail the recovery assertion. |
+| CBA-003 | New selection invalidates prior pending root; old responses/epochs never reclaim. Unknown observations do not authorize. Hard mismatch stops. At most8 bind attempts, no new attempt at/after30s, exponential1/2/4/8s pacing. Deadline is scheduling bound, not a claim that an uninterruptible syscall returns at30s. Receipt-only errors retain committed attachment and retry only via ordinary heartbeat. A newer successful root whose binding fails suspends old-root heartbeat instead of keeping wrong history live. |
 | CET-001 | Return the latest kind, time and explicit turn ID; tied conflicting metadata is unusable as exact completion proof. Legacy kind/time callers still work and scoped facts stay fresh. |
 | CET-002 | Idle since actual boundary; active content/mtime and turn ID remain untouched; no fabricated completion, latest flag or done notification evidence. |
 | CET-003 | Only verified same-session exact-ended-turn ready evidence overrides working. Real waiting/start/work survives, missing identity follows existing legacy behavior; no input authority or real marker mutation. |

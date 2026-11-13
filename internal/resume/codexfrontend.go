@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -104,8 +103,11 @@ func BindCodexFrontend(f CodexFrontend, sid string, cwd ...string) (CodexFronten
 	if f.ThreadCwd == "" {
 		f.ThreadCwd = f.Cwd
 	}
-	if !validFrontend(f) || !freshFrontend(f, true) {
-		return f, errors.New("frontend changed before thread binding")
+	if !validFrontend(f) {
+		return f, &FrontendBindingError{Code: "invalid-attachment"}
+	}
+	if err := frontendProof(f, true); err != nil {
+		return f, err
 	}
 	if err := state.MkdirAll(filepath.Dir(frontendPath(f.Instance)), 0700); err != nil {
 		return f, err
@@ -122,8 +124,8 @@ func BindCodexFrontend(f CodexFrontend, sid string, cwd ...string) (CodexFronten
 			return f, errors.New("a newer frontend owns this location")
 		}
 	}
-	if !freshFrontend(f, true) {
-		return f, errors.New("frontend changed while acquiring binding")
+	if err := frontendProof(f, true); err != nil {
+		return f, err
 	}
 	if err := writeBindingJSON(frontendPath(f.Instance), f); err != nil {
 		return f, err
@@ -251,26 +253,7 @@ func readFrontend(instance string) (CodexFrontend, bool) {
 	return f, f.Instance == instance && validFrontend(f)
 }
 
-func freshFrontend(f CodexFrontend, strict bool) bool {
-	age := time.Now().UnixMilli() - f.UpdatedAt
-	if age < -1000 || age > 5000 {
-		return false
-	}
-	p, ok := frontendProcess(f.BridgePID)
-	if !ok || p.Start != f.BridgeStart {
-		return false
-	}
-	if strict {
-		backend, live := frontendProcess(f.BackendPID)
-		if !live || backend.PID != f.BackendPID || backend.Start != f.BackendStart {
-			return false
-		}
-		t, ok := frontendTarget(f.Pane)
-		return ok && t == f.CodexBindingTarget
-	}
-	return frontendPaneView(f.Pane, "#{pane_id}\t#{pane_pid}\t#{session_name}:#{window_index}.#{pane_index}") ==
-		f.Pane+"\t"+strconv.Itoa(f.PanePID)+"\t"+f.Loc
-}
+func freshFrontend(f CodexFrontend, strict bool) bool { return frontendProof(f, strict) == nil }
 
 // LoadLive preserves legacy records while requiring live evidence for records
 // produced by the frontend bridge. Restore continues to use Load/AllLocated.
