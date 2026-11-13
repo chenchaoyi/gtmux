@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex source-lineage implementation owner (self-review; not independent approval)",
+    "date": "2026-11-13",
+    "decision": "Align five existing synthetic golden outputs with intentional retention of the original task origin",
+    "notes": "Full candidate CI43434326176 passed the new KBL-001..004 regressions but TestKnowledgeGolden found five stale outputs for one synthetic ordinary supersede whose live predecessor has task t-9. This is the requested absent-origin preservation, not unrelated drift. Preserve the existing golden test and all other expected bytes. Add only task=t-9, its literal footer marker and the independently recomputed entry revision. The cloud actual builder output is retained; local Go/native/npm builds remain paused. Commit this fresh expected-result review before updating fixtures; rerun normal full candidate CI. No private KB values are used."
+  },
+  "cases": [
+    {
+      "id": "KBL-GOLDEN",
+      "layer": "L2",
+      "description": "Existing byte-level API/CLI/render contract retains the synthetic predecessor task on ordinary supersede",
+      "setup": "Unchanged goldenFixture at fixed UTC times and sequences; workflows/release-flow has task t-9, successor release-flow-v2 omits task. Existing goldens for all other entries remain unchanged.",
+      "action": "Run unchanged TestKnowledgeGolden against the five updated expectations; independently hash the complete folded entry representation for its revision.",
+      "expected": "Only the successor gains task t-9 in API entry/index and CLI list, task t-9 in CLI show/topic footer, and the matching changed revision. No body, sequence, timestamp, other metadata, other entry, test runner or assertion is changed.",
+      "planned_files": [
+        "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden",
+        "internal/knowledge/testdata/golden/api/index.json.golden",
+        "internal/knowledge/testdata/golden/cli/list.json.golden",
+        "internal/knowledge/testdata/golden/cli/show.txt.golden",
+        "internal/knowledge/testdata/golden/render/workflows.md.golden"
+      ]
+    }
+  ],
+  "seal": "4f629f670981a6316c4735a31db512206163910a43381ffbcd73ad1ffd251657"
+}

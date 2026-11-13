@@ -134,9 +134,11 @@ func commitKnowledge(op knowledgeOp, keys []string, note string, publish func(kn
 			}
 		}
 		if op.Op == knowledgeOpSupersede {
-			if _, exists := findLive(live, op.Supersedes); !exists {
+			pred, exists := findLive(live, op.Supersedes)
+			if !exists {
 				return fmt.Errorf("no live entry %q", op.Supersedes)
 			}
+			inheritSourceOrigins(&op, pred)
 			if op.ID != op.Supersedes {
 				if _, exists := findLive(live, op.ID); exists {
 					return fmt.Errorf("id %s is a live entry", op.ID)

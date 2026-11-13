@@ -931,3 +931,22 @@ The existing HQ writer MAY increase a run's absolute call/time ceilings with a n
 - **WHEN** the authorized writer extends a paused run and explicitly resumes it
 - **THEN** completed items are skipped and prior failures/costs remain in that same run
 - **AND** changing the allowance cannot reset global or item retry counters
+
+### Requirement: Revisions retain existing source origins
+
+Ordinary supersede and reviewed revise SHALL retain omitted `seq_range`, `seqs`, `capture`, `pane`, `task`, `legacy` and `migration` from the named live predecessor in the appended operation and live projection. Replay SHALL apply the same inheritance without rewriting history or searching dead revisions. Explicit nonzero successor references SHALL take precedence; a legacy origin SHALL remain true. Structured sources SHALL continue to merge by candidate ID. The mutation event `seq` and current candidate receipt SHALL remain distinct from inherited origins. Existing digest/CAS, atomicity, idempotency, hit history, privacy, audience and stale-translation rules SHALL remain in force.
+
+#### Scenario: A reviewed prose change has only a legacy origin reference
+- **WHEN** the current revision has a sequence range or a sequence list and capture, without structured sources
+- **THEN** review check remains read-only and apply retains that origin in the new operation, latest show and rendered footer
+- **AND** the new operation uses its current event watermark, review evidence and identity
+
+#### Scenario: Ordinary supersede consumes new evidence
+- **WHEN** a successor supplies a new capture while the live predecessor has existing origins and structured sources
+- **THEN** explicit new capture references win and omitted origin fields survive alongside merged structured sources
+- **AND** only the newly consumed candidates receive a new acceptance receipt and add observations
+
+#### Scenario: A retry follows newer observations
+- **WHEN** the same review proposal is retried after a subsequent hit
+- **THEN** the retry appends nothing and preserves the current observation count and time
+- **AND** an unrelated updated entry is unchanged and a stale different proposal still conflicts
