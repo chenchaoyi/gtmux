@@ -1122,3 +1122,9 @@ Automatic Codex wakes SHALL freshly verify an exact loaded idle thread before at
 - **WHEN** A is claimed, a delayed producer publishes newest B in the same key slot, and native delivery refuses while busy
 - **THEN** returning A never replaces B; the latest payload and original key/due/priority survive
 - **AND** recovery from interrupted no-clobber publication preserves the already-published queue inode and any legitimate producer update
+
+#### Scenario: HQ identity evidence temporarily disappears
+- **WHEN** a queued unsent rotation cannot verify its current agent/session/frontend/active identity
+- **THEN** it sends no reset, reports a bounded known reason or explicit unknown, and does not claim that a different session was observed
+- **AND** repeated missing evidence or a changed diagnostic reason does not extend the first unavailable time or original deadline; persistent unavailability produces one attention failure after 60 seconds or the original deadline
+- **AND** exact identity recovery still passes the original completed-turn, draft, active/waiting and target checks; an observed nonempty different session or agent remains a hard refusal

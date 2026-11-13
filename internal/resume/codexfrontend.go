@@ -353,12 +353,8 @@ func freshFrontend(f CodexFrontend, strict bool) bool { return frontendProof(f, 
 // LoadLive preserves legacy records while requiring live evidence for records
 // produced by the frontend bridge. Restore continues to use Load/AllLocated.
 func LoadLive(loc string) (Record, bool) {
-	r, ok := Load(loc)
-	if !ok || r.Frontend == "" {
-		return r, ok
-	}
-	f, exists := readFrontend(r.Frontend)
-	return r, exists && f.Loc == loc && f.HomeID == r.HomeID && f.SessionID == r.SessionID && freshFrontend(f, false)
+	r, ok, _ := LoadLiveDiagnostic(loc)
+	return r, ok
 }
 
 // CodexFrontendForThread grants an exact current attachment only after a fresh

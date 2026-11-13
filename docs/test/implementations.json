@@ -2647,5 +2647,23 @@
     "selectors": [
       "ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace"
     ]
+  },
+  "internal/resume/frontend_live_diagnostic_test.go": {
+    "cases": [
+      "HRW-013"
+    ],
+    "selectors": [
+      "TestHRW013LiveDiagnosticsDoNotChangeExistingAuthority"
+    ]
+  },
+  "internal/hq/rotation_identity_diagnostic_test.go": {
+    "cases": [
+      "HRW-012"
+    ],
+    "selectors": [
+      "TestHRW012UnavailableIdentityIsNotChangedAndEscalatesOnce",
+      "TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity",
+      "TestHRW012DiagnosticReasonChangesDoNotExtendDeadlineOrGrantReset"
+    ]
   }
 }

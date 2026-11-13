@@ -123,6 +123,9 @@ MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,194,reviewed-s
 MAP-426d8c4b1e7f,L2,reviewed implementation,internal/hq/identity_launch_test.go,11,reviewed-selector,TestSID001ActualHQRecipeRetainsManagedFrontend,False,SID-001
 MAP-fc5da55172ab,L2,reviewed implementation,internal/hq/rotation_admission_test.go,11,reviewed-selector,TestHRW007RegistrationSharesTheInputClaimLease,False,HRW-007
 MAP-5fb504a908e7,L2,reviewed implementation,internal/hq/rotation_attention_test.go,14,reviewed-selector,TestHRW011RotationFailureUsesNonWaitingAttention,False,HRW-011
+MAP-a00029d4084e,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,12,reviewed-selector,TestHRW012UnavailableIdentityIsNotChangedAndEscalatesOnce,False,HRW-012
+MAP-5ca00611b9a2,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,69,reviewed-selector,TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity,False,HRW-012
+MAP-835642774aba,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,110,reviewed-selector,TestHRW012DiagnosticReasonChangesDoNotExtendDeadlineOrGrantReset,False,HRW-012
 MAP-5c6873f6e524,L2,reviewed implementation,internal/hq/rotation_priority_test.go,13,reviewed-selector,TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert,False,HRW-006
 MAP-8b92ea364819,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,15,reviewed-selector,TestHQR007StandaloneTokenCannotBeConsumedAsAValue,False,"HQR-007,HQR-008,HQR-009,HQR-010"
 MAP-21d9bf41c0b2,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,35,reviewed-selector,TestHQR008BackupKeepsReplacement,False,"HQR-007,HQR-008,HQR-009,HQR-010"
@@ -238,6 +241,7 @@ MAP-7904cc643f1d,L2,reviewed implementation,internal/resume/frontend_binding_rea
 MAP-3cee131e3a9d,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,12,reviewed-selector,TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex,False,CBA-006
 MAP-38c7cef4bfeb,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,60,reviewed-selector,TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt,False,CBA-006
 MAP-8b4dde286a90,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,123,reviewed-selector,TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery,False,CBA-006
+MAP-1aa7a26187d9,L2,reviewed implementation,internal/resume/frontend_live_diagnostic_test.go,10,reviewed-selector,TestHRW013LiveDiagnosticsDoNotChangeExistingAuthority,False,HRW-013
 MAP-56aadbd19e58,L2,reviewed implementation,internal/resume/observed_conversation_test.go,35,reviewed-selector,TestSID003LastKnownHistoryHasNoLiveAuthority,False,SID-003
 MAP-64bbe883d24c,L2,reviewed implementation,internal/resume/observed_conversation_test.go,68,reviewed-selector,TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated,False,SID-003
 MAP-e0f0d6088eea,L2,reviewed implementation,internal/resume/state_publication_test.go,14,reviewed-selector,TestCSR003SavePublishesAnAtomicResumeSnapshot,False,CSR-003

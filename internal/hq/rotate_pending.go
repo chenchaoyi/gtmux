@@ -29,23 +29,26 @@ import (
 // Codex will accept /new. The resident serve owns delivery and settlement; the
 // command only queues, and never calls a pasted slash command "success".
 type rotationRequest struct {
-	TargetStamp string `json:"targetStamp,omitempty"`
-	Successor   string `json:"successor,omitempty"`
-	SwitchedAt  int64  `json:"switchedAt,omitempty"`
-	BootstrapAt int64  `json:"bootstrapAt,omitempty"`
-	Pane        string `json:"pane"`
-	Agent       string `json:"agent"`
-	Retiring    string `json:"retiring"`
-	Input       string `json:"input"`
-	CreatedAt   int64  `json:"createdAt"`
-	SentAt      int64  `json:"sentAt,omitempty"`
+	IdentityUnavailableAt int64  `json:"identityUnavailableAt,omitempty"`
+	IdentityCause         string `json:"identityCause,omitempty"`
+	TargetStamp           string `json:"targetStamp,omitempty"`
+	Successor             string `json:"successor,omitempty"`
+	SwitchedAt            int64  `json:"switchedAt,omitempty"`
+	BootstrapAt           int64  `json:"bootstrapAt,omitempty"`
+	Pane                  string `json:"pane"`
+	Agent                 string `json:"agent"`
+	Retiring              string `json:"retiring"`
+	Input                 string `json:"input"`
+	CreatedAt             int64  `json:"createdAt"`
+	SentAt                int64  `json:"sentAt,omitempty"`
 }
 
 const (
-	rotationReadyDelay = 3 * time.Second
-	rotationSettleWait = 45 * time.Second
-	rotationQueueLimit = 30 * time.Minute
-	rotationReadyWait  = 3 * time.Minute
+	rotationReadyDelay   = 3 * time.Second
+	rotationSettleWait   = 45 * time.Second
+	rotationQueueLimit   = 30 * time.Minute
+	rotationReadyWait    = 3 * time.Minute
+	rotationIdentityWait = time.Minute
 )
 
 // Use the existing guarded HQ startup channel, after releasing the shared input
@@ -207,12 +210,12 @@ func ProcessPendingHQRotation() {
 		failQueuedRotation(r, "HQ target changed or its pre-reboot identity is unavailable; no input sent", time.Now().Unix())
 		return
 	}
-	agent, sid := hqSessionRef(pane)
-	advanceHQRotation(r, pane, agent, sid, dispatchbridge.DispatchIO(pane), transcript.CodexLastTurnBoundary, time.Now())
+	agent, sid, reason := hqSessionEvidence(pane)
+	advanceHQRotation(r, pane, agent, sid, dispatchbridge.DispatchIO(pane), transcript.CodexLastTurnBoundary, time.Now(), reason)
 }
 
 func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.IO,
-	boundary func(string) (string, time.Time), now time.Time) {
+	boundary func(string) (string, time.Time), now time.Time, identityReason ...string) {
 	release, acquired, err := hqinput.Acquire()
 	if err != nil {
 		diag.ReportStoreFailure("hq-input", err)
@@ -243,11 +246,15 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 		failRotation(r, "HQ target changed while waiting for input; no input sent", now.Unix())
 		return
 	}
-	if pane != r.Pane || agent != r.Agent {
+	if pane != r.Pane || agent != "" && agent != r.Agent {
 		failRotation(r, "HQ pane or agent changed", now.Unix())
 		return
 	}
 	if r.SentAt != 0 {
+		if agent == "" {
+			failRotation(r, "HQ agent identity unavailable after reset; no reset will be repeated", now.Unix())
+			return
+		}
 		if sid == "" || sid == r.Retiring {
 			// Legacy hooks can precede the location record. Modern bridges also bind
 			// empty threads, so a changed ID alone is no durability acknowledgement.
@@ -295,9 +302,37 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 		}
 		return
 	}
-	if sid != r.Retiring {
+	if sid != "" && sid != r.Retiring {
 		failRotation(r, "HQ session changed before reset was sent", now.Unix())
 		return
+	}
+	reason := ""
+	if len(identityReason) > 0 {
+		reason = rotationIdentityCode(identityReason[0])
+	}
+	if reason == "" && agent == "" {
+		reason = "agent-evidence-unavailable"
+	}
+	if reason == "" && sid == "" {
+		reason = "session-evidence-unavailable"
+	}
+	if active := state.ReadMarker(state.ActivePath(pane)); reason == "" && state.Exists(state.ActivePath(pane)) {
+		if active == "" {
+			reason = "active-evidence-unavailable"
+		} else if active != r.Retiring {
+			reason = "active-identity-mismatch"
+		}
+	}
+	if reason != "" {
+		holdRotationIdentity(r, reason, now)
+		return
+	}
+	if r.IdentityUnavailableAt != 0 || r.IdentityCause != "" {
+		r.IdentityUnavailableAt, r.IdentityCause = 0, ""
+		if err := writeRotationFile(r, false); err != nil {
+			diag.ReportStoreFailure("hq-rotation", err)
+			return
+		}
 	}
 	if now.Unix()-r.CreatedAt >= int64(rotationQueueLimit.Seconds()) {
 		failRotation(r, "no safe idle input box within 30 minutes", now.Unix())
@@ -394,4 +429,33 @@ func failRotation(r rotationRequest, reason string, now int64) {
 		Subtitle: "gtmux", Message: reason, Pane: r.Pane, Session: "gtmux HQ",
 	})
 	_ = os.Remove(rotationPendingPath())
+}
+
+// Only known, value-free observation codes enter persisted diagnostics or logs.
+func rotationIdentityCode(reason string) string {
+	switch reason {
+	case "", "pane-location-unavailable", "agent-driver-unavailable", "resume-record-unavailable",
+		"frontend-record-unavailable", "frontend-index-mismatch", "frontend-proof-unknown",
+		"proof-expired", "bridge-proof-unavailable", "bridge-changed", "pane-changed":
+		return reason
+	default:
+		return "unknown"
+	}
+}
+func holdRotationIdentity(r rotationRequest, reason string, now time.Time) {
+	changed := r.IdentityCause != reason || r.IdentityUnavailableAt == 0 || r.IdentityUnavailableAt > now.Unix()
+	if r.IdentityUnavailableAt == 0 || r.IdentityUnavailableAt > now.Unix() {
+		r.IdentityUnavailableAt = now.Unix()
+	}
+	r.IdentityCause = reason
+	if changed {
+		if err := writeRotationFile(r, false); err != nil {
+			diag.ReportStoreFailure("hq-rotation", err)
+			return
+		}
+		diag.For("hq").Info("hq.rotation.identity-unavailable", "HQ identity cannot currently be verified; no reset sent", "reason", reason)
+	}
+	if now.Unix()-r.IdentityUnavailableAt >= int64(rotationIdentityWait.Seconds()) || now.Unix()-r.CreatedAt >= int64(rotationQueueLimit.Seconds()) {
+		failRotation(r, "HQ identity unavailable for reset ("+reason+"); no input sent", now.Unix())
+	}
 }

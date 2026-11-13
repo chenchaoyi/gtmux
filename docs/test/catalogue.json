@@ -63331,6 +63331,56 @@
         }
       ],
       "sha256": "323c87df3607c909e9d81f2c131b419199f32734088241de1fcbf1c6c383c30f"
+    },
+    "internal/hq/rotation_identity_diagnostic_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a00029d4084e",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestHRW012UnavailableIdentityIsNotChangedAndEscalatesOnce",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-012"
+        },
+        {
+          "id": "MAP-5ca00611b9a2",
+          "line": 69,
+          "kind": "reviewed-selector",
+          "name": "TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-012"
+        },
+        {
+          "id": "MAP-835642774aba",
+          "line": 110,
+          "kind": "reviewed-selector",
+          "name": "TestHRW012DiagnosticReasonChangesDoNotExtendDeadlineOrGrantReset",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-012"
+        }
+      ],
+      "sha256": "52d767868b5d9a87eb0b93210950d6f3faa2a25a7076adfb237273238b3d35ad"
+    },
+    "internal/resume/frontend_live_diagnostic_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1aa7a26187d9",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestHRW013LiveDiagnosticsDoNotChangeExistingAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-013"
+        }
+      ],
+      "sha256": "c4e4fa20c97c7cd1933acc49f24e5966afd6f569db08dc8ba76938207f017742"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",
