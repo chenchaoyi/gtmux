@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1187 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1192 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2125 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2130 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 132 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -170,6 +170,7 @@
 | KBL-002 | Dry-run changes no files. Prepared and appended operations retain seven origin fields; final live sources, language, privacy and protection survive; old translation is invalidated and landing reopens. New Seq/review evidence are new. Stale CAS writes nothing; identical retry appends nothing; later hit and unrelated guard remain current. |
 | KBL-003 | Omitted seven origin fields inherit only from the named live predecessor; explicit nonzero successor values win, true legacy is sticky. Sources deduplicate by ID without dropping payload; no retired/stale predecessor metadata returns, no input aliasing, no new candidate receipt. Existing distribution/translation behavior stays distinct. |
 | KBL-004 | New candidate seqs/capture/pane/task take precedence; omitted range/legacy/migration survive; old and new Sources coexist once; hits increment exactly once; receipts refer only to actually consumed new candidates. Review never repeats an accepted receipt. |
+| KBL-GOLDEN | Only the successor gains task t-9 in API entry/index and CLI list, task t-9 in CLI show/topic footer, and the matching changed revision. No body, sequence, timestamp, other metadata, other entry, test runner or assertion is changed. |
 | KBSYNC-SERIALIZATION | Old implementation fails held-lock and final R1-content assertions. New sync holds the same ledger lock across read/publication; independent review/carry cannot interleave and final R1 remains landed with its full carrier. Errors/refusals release the lock. Carry uses an internal already-locked implementation; no recursive deadlock. |
 | KBLOCAL-DURABILITY-RETRY | Both failures leave ledger unchanged, same revision pending and carrier complete/private; every retry invokes the durable writer even with identical content. Only successful writer completion allows exactly one land append. Existing readonly/link/edited-target protections and original revision token contract remain. Old equal-content early return fails actual ledger/callback assertions. |
 | PRIVATEWRITE-DIRECTORY-SYNC | EIO is returned after complete visible replacement, repeated same-byte writes reach directory synchronization again, successful directory fsync returns nil. No truncated inode, exposed permissions or leaked staging file. No hardware durability claim. |

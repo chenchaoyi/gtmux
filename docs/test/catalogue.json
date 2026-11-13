@@ -61949,6 +61949,86 @@
         }
       ],
       "sha256": "c7f0b92d6e8a029ffd0be1499859944920f9a89139923c3ae168c8acf50fa80d"
+    },
+    "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e7a25aaee18c",
+          "line": 1,
+          "kind": "reviewed-selector",
+          "name": "\"task\":\"t-9\"",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBL-GOLDEN"
+        }
+      ],
+      "sha256": "0a5ae7f494695887244c0b667811c7fa66c7ff443660953d447831cd3ff31cd6"
+    },
+    "internal/knowledge/testdata/golden/api/index.json.golden": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a5ff1afcf8f7",
+          "line": 1,
+          "kind": "reviewed-selector",
+          "name": "\"task\":\"t-9\"",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBL-GOLDEN"
+        }
+      ],
+      "sha256": "c1d6a87378dabdcfd7d80bd3f10c0a119df397814c6c92c6290973d25852630b"
+    },
+    "internal/knowledge/testdata/golden/cli/list.json.golden": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-15ee1ca5c9f4",
+          "line": 1,
+          "kind": "reviewed-selector",
+          "name": "\"task\":\"t-9\"",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBL-GOLDEN"
+        }
+      ],
+      "sha256": "ef1eb2ad8a0846db4ec1fad9542f28867e6a18b8fd3668a9077b2f9f63aad2eb"
+    },
+    "internal/knowledge/testdata/golden/cli/show.txt.golden": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9d783e31fb73",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "task t-9",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBL-GOLDEN"
+        }
+      ],
+      "sha256": "b98e16da89984ffc44a7f8339549a9f1e22c40187e0cc9c49fdf6a6e75d98b87"
+    },
+    "internal/knowledge/testdata/golden/render/workflows.md.golden": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-dca3e881bb09",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "task t-9",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBL-GOLDEN"
+        }
+      ],
+      "sha256": "955c361f9a269505806123f74edec93a64ab861d3b94edfb9f0d91078f49c341"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

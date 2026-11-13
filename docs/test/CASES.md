@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1187 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1192 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2125 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2130 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 132 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -170,6 +170,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | KBL-002 | Dry-run changes no files. Prepared and appended operations retain seven origin fields; final live sources, language, privacy and protection survive; old translation is invalidated and landing reopens. New Seq/review evidence are new. Stale CAS writes nothing; identical retry appends nothing; later hit and unrelated guard remain current. |
 | KBL-003 | Omitted seven origin fields inherit only from the named live predecessor; explicit nonzero successor values win, true legacy is sticky. Sources deduplicate by ID without dropping payload; no retired/stale predecessor metadata returns, no input aliasing, no new candidate receipt. Existing distribution/translation behavior stays distinct. |
 | KBL-004 | New candidate seqs/capture/pane/task take precedence; omitted range/legacy/migration survive; old and new Sources coexist once; hits increment exactly once; receipts refer only to actually consumed new candidates. Review never repeats an accepted receipt. |
+| KBL-GOLDEN | Only the successor gains task t-9 in API entry/index and CLI list, task t-9 in CLI show/topic footer, and the matching changed revision. No body, sequence, timestamp, other metadata, other entry, test runner or assertion is changed. |
 | KBSYNC-SERIALIZATION | Old implementation fails held-lock and final R1-content assertions. New sync holds the same ledger lock across read/publication; independent review/carry cannot interleave and final R1 remains landed with its full carrier. Errors/refusals release the lock. Carry uses an internal already-locked implementation; no recursive deadlock. |
 | KBLOCAL-DURABILITY-RETRY | Both failures leave ledger unchanged, same revision pending and carrier complete/private; every retry invokes the durable writer even with identical content. Only successful writer completion allows exactly one land append. Existing readonly/link/edited-target protections and original revision token contract remain. Old equal-content early return fails actual ledger/callback assertions. |
 | PRIVATEWRITE-DIRECTORY-SYNC | EIO is returned after complete visible replacement, repeated same-byte writes reach directory synchronization again, successful directory fsync returns nil. No truncated inode, exposed permissions or leaked staging file. No hardware durability claim. |

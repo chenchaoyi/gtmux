@@ -2186,5 +2186,45 @@
       "TestSourceLineageReplay",
       "TestSourceLineageNewCapture"
     ]
+  },
+  "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/index.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/list.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/show.txt.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
+  },
+  "internal/knowledge/testdata/golden/render/workflows.md.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
   }
 }

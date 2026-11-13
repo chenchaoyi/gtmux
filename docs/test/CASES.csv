@@ -2119,6 +2119,11 @@ MAP-653639d05776,L2,reviewed implementation,internal/knowledge/source_lineage_te
 MAP-01de870ed64f,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,342,reviewed-selector,TestSourceLineageNewCapture,False,"KBL-001,KBL-002,KBL-003,KBL-004"
 MAP-e5314cedb7a1,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,78,reviewed-selector,TestPublicSyncSerializesSnapshotAndPublication,False,KBSYNC-SERIALIZATION
 MAP-59a004277dc8,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,218,reviewed-selector,TestPublicSyncReleasesLockOnErrorAndRefusal,False,KBSYNC-SERIALIZATION
+MAP-e7a25aaee18c,L2,reviewed implementation,internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden,1,reviewed-selector,"""task"":""t-9""",False,KBL-GOLDEN
+MAP-a5ff1afcf8f7,L2,reviewed implementation,internal/knowledge/testdata/golden/api/index.json.golden,1,reviewed-selector,"""task"":""t-9""",False,KBL-GOLDEN
+MAP-15ee1ca5c9f4,L2,reviewed implementation,internal/knowledge/testdata/golden/cli/list.json.golden,1,reviewed-selector,"""task"":""t-9""",False,KBL-GOLDEN
+MAP-9d783e31fb73,L2,reviewed implementation,internal/knowledge/testdata/golden/cli/show.txt.golden,8,reviewed-selector,task t-9,False,KBL-GOLDEN
+MAP-dca3e881bb09,L2,reviewed implementation,internal/knowledge/testdata/golden/render/workflows.md.golden,9,reviewed-selector,task t-9,False,KBL-GOLDEN
 MAP-9fe9287c0104,L2,reviewed implementation,internal/knowledge/usage_test.go,14,reviewed-selector,TestUsageDoesNotBecomeHitAndRetryIsIdempotent,False,KBMEM-USAGE
 MAP-76d1fe9047e3,L2,reviewed implementation,internal/knowledge/usage_test.go,41,reviewed-selector,TestUsageRejectsAuditAndForgedMeasurement,False,KBMEM-USAGE
 MAP-c93b792249fd,L2,reviewed implementation,internal/knowledge/vault_test.go,12,reviewed-selector,TestVaultRoundTripRenameAndDeletion,False,KBMEM-VAULT
