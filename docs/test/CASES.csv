@@ -923,6 +923,7 @@ MAP-f930cf46c48d,L1,reviewed implementation,internal/codexrpc/screenshot_input_t
 MAP-2f4616d9d325,L1,reviewed implementation,internal/codexrpc/screenshot_input_test.go,56,reviewed-selector,TestSSI001OnlyExplicitUnsupportedOrIdleUsesLegacyQueue,False,SSI-001
 MAP-7bcaec9ec776,L1,reviewed implementation,internal/codexrpc/screenshot_input_test.go,83,reviewed-selector,TestSSI001RefusalsAndUncertaintyNeverMutateOrReplay,False,SSI-001
 MAP-570ce9eacef7,L1,reviewed implementation,internal/codexrpc/screenshot_input_test.go,121,reviewed-selector,TestSSI001LastMomentHoldStopsActiveInput,False,SSI-001
+MAP-bf7d87f214f5,L1,reviewed implementation,internal/codexrpc/screenshot_workflow_test.go,9,reviewed-selector,TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval,False,SCW-005
 LEG-a0e23aa15f05,L1,Go core / CLI / server,internal/codexterminal/client_test.go,16,Test,TestWrappedCodexRequiresForegroundTerminalInput,False,legacy-not-retrospectively-reviewed
 LEG-0c669bc678ef,L1,Go core / CLI / server,internal/codexterminal/client_test.go,18,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-e50166084b79,L1,Go core / CLI / server,internal/codexterminal/client_test.go,93,Test,TestWrappedCodexBoundsAndProcessParsing,False,legacy-not-retrospectively-reviewed
@@ -3894,48 +3895,56 @@ LEG-a371cf737ff5,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotS
 LEG-7f8c7ebd96be,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotSelectorTests.swift,151,XCTest,testTheCrosshairIsTheBrandsCyan,False,legacy-not-retrospectively-reviewed
 MAP-6e2c5d1a0073,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift,6,reviewed-selector,testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture,False,ASC-011
 LEG-e4d3336f32fd,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,12,XCTest,testHotkeyDispatchIsByID,False,legacy-not-retrospectively-reviewed
-LEG-79f70d2945be,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,25,XCTest,testCaptureArgumentsKeepDPIAndStayQuiet,False,legacy-not-retrospectively-reviewed
-LEG-cc57bb521730,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,31,XCTest,testEscLeavesNoFileAndIsNotAnError,False,legacy-not-retrospectively-reviewed
-LEG-82e6f2275513,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,60,XCTest,testMarksUndoAndRedoThroughTheWindowsUndoManager,False,legacy-not-retrospectively-reviewed
-LEG-e138b1b17709,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,75,XCTest,testAClickIsNotAShapeAndDragsStayOnTheImage,False,legacy-not-retrospectively-reviewed
+LEG-79f70d2945be,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,26,XCTest,testCaptureArgumentsKeepDPIAndStayQuiet,False,legacy-not-retrospectively-reviewed
+LEG-cc57bb521730,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,32,XCTest,testEscLeavesNoFileAndIsNotAnError,False,legacy-not-retrospectively-reviewed
+LEG-82e6f2275513,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,61,XCTest,testMarksUndoAndRedoThroughTheWindowsUndoManager,False,legacy-not-retrospectively-reviewed
+LEG-e138b1b17709,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,76,XCTest,testAClickIsNotAShapeAndDragsStayOnTheImage,False,legacy-not-retrospectively-reviewed
 LEG-a7121679e9e5,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,95,XCTest,testRendererDrawsAtFullPixelResolution,False,legacy-not-retrospectively-reviewed
-LEG-78a874783ff2,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,111,XCTest,testTextAndArrowLeaveInk,False,legacy-not-retrospectively-reviewed
+LEG-78a874783ff2,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,112,XCTest,testTextAndArrowLeaveInk,False,legacy-not-retrospectively-reviewed
 LEG-0feb73846073,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,129,XCTest,testExportsAgree,False,legacy-not-retrospectively-reviewed
-LEG-7ff5c8701eda,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,141,XCTest,testSaveWritesToAPathWithSpaces,False,legacy-not-retrospectively-reviewed
-LEG-22fbfacce51e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,161,XCTest,testDefaultTargetPrefersWhatTheTerminalShowed,False,legacy-not-retrospectively-reviewed
-LEG-f71a3d1cba20,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,174,XCTest,testViewedAtParsesPanesJSON,False,legacy-not-retrospectively-reviewed
-LEG-15bf537b324f,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,180,XCTest,testLastTargetRoundTrips,False,legacy-not-retrospectively-reviewed
-LEG-6133f333e754,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,189,XCTest,testSendArgumentsUseStdinAndAttach,False,legacy-not-retrospectively-reviewed
+LEG-7ff5c8701eda,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,142,XCTest,testSaveWritesToAPathWithSpaces,False,legacy-not-retrospectively-reviewed
+LEG-22fbfacce51e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,162,XCTest,testDefaultTargetPrefersWhatTheTerminalShowed,False,legacy-not-retrospectively-reviewed
+LEG-f71a3d1cba20,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,175,XCTest,testViewedAtParsesPanesJSON,False,legacy-not-retrospectively-reviewed
+LEG-15bf537b324f,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,181,XCTest,testLastTargetRoundTrips,False,legacy-not-retrospectively-reviewed
+LEG-6133f333e754,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,190,XCTest,testSendArgumentsUseStdinAndAttach,False,legacy-not-retrospectively-reviewed
 LEG-7072f20d97c1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,196,XCTest,testPreflightRefusesWaitingAndGonePanes,False,legacy-not-retrospectively-reviewed
-LEG-7613e876ac15,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,206,XCTest,testRefusedWaitingFromTheCLIMapsToWaiting,False,legacy-not-retrospectively-reviewed
 LEG-f8fb86c20e80,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,214,XCTest,testRefusedWaitingSaysWhetherTheTextWasPasted,False,legacy-not-retrospectively-reviewed
 LEG-b59c3bff4945,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,248,XCTest,testPendingTextIsExported,False,legacy-not-retrospectively-reviewed
 LEG-b276a294dfc0,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,272,XCTest,testEditorLifecycle,False,legacy-not-retrospectively-reviewed
-LEG-2c4c23aa235d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,292,XCTest,testSendResultsMapFromSendJSON,False,legacy-not-retrospectively-reviewed
-LEG-b0f7459fe635,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,308,XCTest,testRetryIsOfferedOnlyForAnUnconfirmedDelivery,False,legacy-not-retrospectively-reviewed
-LEG-c37c8d0ccd62,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,319,XCTest,testStatusLineSaysWhatHappened,False,legacy-not-retrospectively-reviewed
+LEG-2c4c23aa235d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,293,XCTest,testSendResultsMapFromSendJSON,False,legacy-not-retrospectively-reviewed
+LEG-b0f7459fe635,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,309,XCTest,testRetryIsOfferedOnlyForAnUnconfirmedDelivery,False,legacy-not-retrospectively-reviewed
+LEG-c37c8d0ccd62,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,320,XCTest,testStatusLineSaysWhatHappened,False,legacy-not-retrospectively-reviewed
 LEG-335fd5542f68,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,337,XCTest,testOwnResultsAreLocalised,False,legacy-not-retrospectively-reviewed
 LEG-38754c83f597,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,363,XCTest,testDragTouchesOnlyTheMarks,False,legacy-not-retrospectively-reviewed
 LEG-d932a095b6e3,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,406,XCTest,testCanvasScalesTheCaptureOnce,False,legacy-not-retrospectively-reviewed
-LEG-28801797ae21,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,414,XCTest,testSingleKeysChooseToolsAndColours,False,legacy-not-retrospectively-reviewed
+LEG-28801797ae21,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,415,XCTest,testSingleKeysChooseToolsAndColours,False,legacy-not-retrospectively-reviewed
 LEG-39d556406ba1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,434,XCTest,testTitleBarCarriesCopyAndSave,False,legacy-not-retrospectively-reviewed
-LEG-7b9001459e01,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,485,XCTest,testCopyFailurePreservesTheEditorAndSuccessfulCopyClosesIt,False,legacy-not-retrospectively-reviewed
-LEG-db4948a3aa0c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,497,XCTest,testSaveFailureKeepsTheEditorAndConfirmedSaveKeepsTheChosenFile,False,legacy-not-retrospectively-reviewed
-LEG-81760e4e143f,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,513,XCTest,testLateSaveCallbackCannotCloseANewerEditor,False,legacy-not-retrospectively-reviewed
+LEG-7b9001459e01,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,486,XCTest,testCopyFailurePreservesTheEditorAndSuccessfulCopyClosesIt,False,legacy-not-retrospectively-reviewed
+LEG-db4948a3aa0c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,498,XCTest,testSaveFailureKeepsTheEditorAndConfirmedSaveKeepsTheChosenFile,False,legacy-not-retrospectively-reviewed
+LEG-81760e4e143f,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,514,XCTest,testLateSaveCallbackCannotCloseANewerEditor,False,legacy-not-retrospectively-reviewed
 LEG-5ba1ec98011e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,528,XCTest,testALongNoteDoesNotMoveTheCapture,False,legacy-not-retrospectively-reviewed
-LEG-13dea55a8f02,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,554,XCTest,testShowThePaneOnlyWhereALookHelps,False,legacy-not-retrospectively-reviewed
-LEG-b9e73d2bc658,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,565,XCTest,testRecentPaneIsTheOneLastTypedIn,False,legacy-not-retrospectively-reviewed
+LEG-13dea55a8f02,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,555,XCTest,testShowThePaneOnlyWhereALookHelps,False,legacy-not-retrospectively-reviewed
+LEG-b9e73d2bc658,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,566,XCTest,testRecentPaneIsTheOneLastTypedIn,False,legacy-not-retrospectively-reviewed
 LEG-b5df6c8754f5,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,582,XCTest,testTheEditorIsCompact,False,legacy-not-retrospectively-reviewed
-LEG-9eaebeb5b574,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,606,XCTest,testSaveNameIsShortAndPlainlyGtmux,False,legacy-not-retrospectively-reviewed
-LEG-bdee4816dac2,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,615,XCTest,testOvalsAndSquares,False,legacy-not-retrospectively-reviewed
+LEG-9eaebeb5b574,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,607,XCTest,testSaveNameIsShortAndPlainlyGtmux,False,legacy-not-retrospectively-reviewed
+LEG-bdee4816dac2,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,616,XCTest,testOvalsAndSquares,False,legacy-not-retrospectively-reviewed
 LEG-17bdcecee7dc,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,648,XCTest,testMosaicHidesWhatIsUnderIt,False,legacy-not-retrospectively-reviewed
 LEG-9d23ca56942b,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,671,XCTest,testMosaicIsOpaqueBlocksOnScreen,False,legacy-not-retrospectively-reviewed
-LEG-41b4ddbe4cc8,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,688,XCTest,testALineFollowsThePointer,False,legacy-not-retrospectively-reviewed
-LEG-ca4bd48b7b66,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,700,XCTest,testALineLeavesInkAlongItsPath,False,legacy-not-retrospectively-reviewed
+LEG-41b4ddbe4cc8,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,689,XCTest,testALineFollowsThePointer,False,legacy-not-retrospectively-reviewed
+LEG-ca4bd48b7b66,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,701,XCTest,testALineLeavesInkAlongItsPath,False,legacy-not-retrospectively-reviewed
 LEG-ffab4b0740cd,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,714,XCTest,testDrawingALineWithThePointer,False,legacy-not-retrospectively-reviewed
-LEG-93b230468d3e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,735,XCTest,testWidthsChangeStrokesAndText,False,legacy-not-retrospectively-reviewed
-LEG-b94c7d0ad710,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,750,XCTest,testEditorFitsItsActualViewportAndCanEnlargeWithTheWindow,False,legacy-not-retrospectively-reviewed
+LEG-93b230468d3e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,736,XCTest,testWidthsChangeStrokesAndText,False,legacy-not-retrospectively-reviewed
+LEG-b94c7d0ad710,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,751,XCTest,testEditorFitsItsActualViewportAndCanEnlargeWithTheWindow,False,legacy-not-retrospectively-reviewed
+MAP-254944c2bd6a,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ScreenshotTests.swift,207,reviewed-selector,testRefusedWaitingWithoutEvidenceStaysUnconfirmed,False,SCW-003
 MAP-e7b5f07e2603,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift,20,reviewed-selector,testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn,False,ASC-013
+MAP-9a386ff2443f,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift,41,reviewed-selector,testSCW001WindowsKeepDraftsFilesAndLateReceiptsIndependent,False,"SCW-001,SCW-002,SCW-003,SCW-004"
+MAP-a3ea176cccad,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift,87,reviewed-selector,testSCW001CapacityPreservesEveryExistingDocument,False,"SCW-001,SCW-002,SCW-003,SCW-004"
+MAP-67fd43e70193,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift,101,reviewed-selector,testSCW002SearchUsesTitlesLocationsAndStableFuzzyMatches,False,"SCW-001,SCW-002,SCW-003,SCW-004"
+MAP-a6ffb365d9b0,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift,119,reviewed-selector,testSCW002ActualSearchFieldNavigationCompositionAndEmptyResults,False,"SCW-001,SCW-002,SCW-003,SCW-004"
+MAP-685850c28e4c,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift,148,reviewed-selector,testSCW003RefusalCategoriesNeverInventHumanApprovalOrDelivery,False,"SCW-001,SCW-002,SCW-003,SCW-004"
+MAP-d734ea7663af,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift,175,reviewed-selector,testSCW004NewCaptureIsSerializedThroughHandoffAndKeepsOldDraft,False,"SCW-001,SCW-002,SCW-003,SCW-004"
+MAP-96208183d130,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift,207,reviewed-selector,testSCW004CLIEditCanOpenBesideDraftAndResolveItsOwnStore,False,"SCW-001,SCW-002,SCW-003,SCW-004"
+MAP-c62877f2ca18,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift,236,reviewed-selector,testSCW004PermissionAndCapacityRefusalsPreserveWorkWithoutCapture,False,"SCW-001,SCW-002,SCW-003,SCW-004"
 LEG-66d5e5e6fc2d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ServerModeStatusTests.swift,16,XCTest,testUnreadableWhileGtmuxMayHaveItOnAsksForALook,False,legacy-not-retrospectively-reviewed
 LEG-73cdff864dbd,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ServerModeStatusTests.swift,25,XCTest,testUnreadableWithNothingOfGtmuxsStaysQuiet,False,legacy-not-retrospectively-reviewed
 LEG-ade16eac4540,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ServerModeStatusTests.swift,31,XCTest,testAReadingIsUnchanged,False,legacy-not-retrospectively-reviewed

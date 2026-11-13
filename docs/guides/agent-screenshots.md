@@ -51,7 +51,7 @@ gtmux screenshot annotate --capture /tmp/my-task-shots/terminal.capture.json --s
 gtmux screenshot edit --document /tmp/my-task-shots/marked.capture.json
 ```
 
-Annotation uses the existing native renderer. Base image plus marks remain editable through the existing editor; an open draft is preserved and returns `editor-busy`. Capture, import, annotation and editing never send implicitly. Output files are not overwritten. A later annotation of an editable derived document is refused: use `edit`, or explicitly import the flattened image as a new base.
+Annotation uses the existing native renderer. Base image plus marks remain editable through the existing editor; each edit opens an independent window without replacing another draft; `editor-busy` is returned only when the eight-window limit is reached. Capture, import, annotation and editing never send implicitly. Output files are not overwritten. A later annotation of an editable derived document is refused: use `edit`, or explicitly import the flattened image as a new base.
 
 ## Deliver to one exact conversation
 
@@ -82,3 +82,9 @@ Requests have a ten-second maximum budget, 256 KiB JSON, 30 MiB/image, 32 millio
 The caller owns PNG/preview/sidecar outputs. Product-managed `capture-bridge` holds only the host/socket lease and identity. `capture-requests` holds a private target-signing key and hashed delivery receipts, capped at 1000 directory entries; it stores no note or image body. A full receipt budget returns an explicit error and does not discard unresolved receipts. This increment does not automatically migrate or delete existing archives. Existing attachment delivery retains its established product-managed uploads behavior.
 
 Linux can query CLI help and use supported delivery logic, but native image operations report `platform-unsupported`. Native recording permission, real window capture and signed installation are acceptance items distinct from synthetic renderer/socket tests.
+
+## Editing several screenshots
+
+Press ⌥⌘4 again to take another screenshot while a previous editor is open. Each window has its own image, annotations, message and delivery result. Up to eight windows may stay open; save or close one before opening more. Copy, Save and a confirmed send close only their own window.
+
+The destination picker uses the same session title as the menu bar. Type a title, project or pane ID to filter the list; abbreviations work too. Use ↑/↓ and Return to select, or Escape to close the list. The secondary line identifies the agent and tmux location. Sending requires an explicit action; a real pending approval still needs your attention. Connection failures are reported separately and preserve the draft.
