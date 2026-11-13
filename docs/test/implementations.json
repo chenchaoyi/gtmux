@@ -2255,5 +2255,36 @@
     "selectors": [
       "task t-9"
     ]
+  },
+  "internal/codexbridge/binding_publication_test.go": {
+    "cases": [
+      "CBA-004"
+    ],
+    "selectors": [
+      "TestCBA004PublicationAndAttachmentFinishBeforeNewEpochActivation",
+      "TestCBA004CanceledPublicationWaitNeverStartsBind",
+      "TestCBA004HeartbeatPublicationAlsoPrecedesNewEpoch",
+      "TestCBA004CancellationInsidePublicationPermitDoesNotRetry"
+    ]
+  },
+  "internal/codexbridge/binding_lifetime_test.go": {
+    "cases": [
+      "CBA-005"
+    ],
+    "selectors": [
+      "TestCBA005RunDisconnectRetiresBeforeTransportDrain",
+      "TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry",
+      "TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed"
+    ]
+  },
+  "internal/resume/frontend_binding_context_test.go": {
+    "cases": [
+      "CBA-004"
+    ],
+    "selectors": [
+      "TestCBA004CancellationDuringStrictProofCannotPublish",
+      "TestCBA004CanceledPartialCommitRetiresOnlyItsOwnLiveReceipt",
+      "TestCBA004CancellationNeverRemovesAReplacedOwner"
+    ]
   }
 }

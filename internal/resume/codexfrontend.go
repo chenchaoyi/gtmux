@@ -1,6 +1,7 @@
 package resume
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -46,6 +47,7 @@ func frontendPath(instance string) string {
 var frontendClients = codexterminal.Resolve
 var frontendProcess = launchhost.ReadAgent
 var frontendPaneView = tmux.Display
+var frontendBindingWrite = writeBindingJSON
 
 // frontendTarget always applies the strict foreground, TTY and birth checks,
 // including when tmux reports an outer shell or gtmux as its current command.
@@ -93,6 +95,16 @@ func validFrontend(f CodexFrontend) bool {
 // BindCodexFrontend commits only a successful root-thread operation observed on
 // that frontend's own connection. The caller excludes ephemeral/subagent work.
 func BindCodexFrontend(f CodexFrontend, sid string, cwd ...string) (CodexFrontend, error) {
+	return BindCodexFrontendContext(context.Background(), f, sid, cwd...)
+}
+
+// BindCodexFrontendContext checks the connection lifetime again at publication,
+// after the potentially slow strict observations. The bridge holds its epoch
+// permission across this function and the in-memory attachment commit.
+func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, cwd ...string) (CodexFrontend, error) {
+	if err := ctx.Err(); err != nil {
+		return f, err
+	}
 	if f.SessionID != sid {
 		f.ThreadCwd = f.Cwd
 	}
@@ -117,6 +129,23 @@ func BindCodexFrontend(f CodexFrontend, sid string, cwd ...string) (CodexFronten
 		return f, err
 	}
 	defer lease.Close()
+	wroteReceipt := false
+	canceled := func() error {
+		err := ctx.Err()
+		if err == nil {
+			return nil
+		}
+		if wroteReceipt {
+			// Preserve committed history, but retire only this exact publication's
+			// live proof. Never remove a replaced owner or roll its index back.
+			if saved, ok := readFrontend(f.Instance); ok && saved == f {
+				if removeErr := os.Remove(frontendPath(f.Instance)); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+					return errors.Join(err, errors.New("frontend retirement failed"))
+				}
+			}
+		}
+		return err
+	}
 	previous, _ := Load(f.Loc)
 	if previous.Frontend != "" && previous.Frontend != f.Instance {
 		old, ok := readFrontend(previous.Frontend)
@@ -127,16 +156,33 @@ func BindCodexFrontend(f CodexFrontend, sid string, cwd ...string) (CodexFronten
 	if err := frontendProof(f, true); err != nil {
 		return f, err
 	}
-	if err := writeBindingJSON(frontendPath(f.Instance), f); err != nil {
+	if err := canceled(); err != nil {
+		return f, err
+	}
+	if err := frontendBindingWrite(frontendPath(f.Instance), f); err != nil {
+		return f, err
+	}
+	wroteReceipt = true
+	if err := canceled(); err != nil {
 		return f, err
 	}
 	r := Record{Agent: "codex", HomeID: f.HomeID, SessionID: sid, Cwd: f.ThreadCwd,
 		UpdatedAt: f.UpdatedAt / 1000, Frontend: f.Instance}
 	r = withRecoveryCheckpoint(r, previous)
-	if err := writeBindingJSON(fileFor(f.Loc), r); err != nil {
+	if err := canceled(); err != nil {
 		return f, err
 	}
-	if err := confirmFrontendStartup(f); err != nil {
+	if err := frontendBindingWrite(fileFor(f.Loc), r); err != nil {
+		return f, err
+	}
+	if err := canceled(); err != nil {
+		return f, err
+	}
+	receiptErr := confirmFrontendStartup(f)
+	if err := canceled(); err != nil {
+		return f, err
+	}
+	if err := receiptErr; err != nil {
 		return f, &CodexBindingReceiptError{Err: err}
 	}
 	return f, nil

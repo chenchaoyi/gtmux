@@ -62169,6 +62169,117 @@
         }
       ],
       "sha256": "955c361f9a269505806123f74edec93a64ab861d3b94edfb9f0d91078f49c341"
+    },
+    "internal/codexbridge/binding_lifetime_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3350a2c15a53",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestCBA005RunDisconnectRetiresBeforeTransportDrain",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBA-005"
+        },
+        {
+          "id": "MAP-a9d70d810c9d",
+          "line": 55,
+          "kind": "reviewed-selector",
+          "name": "TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBA-005"
+        },
+        {
+          "id": "MAP-cea0125b012a",
+          "line": 85,
+          "kind": "reviewed-selector",
+          "name": "TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBA-005"
+        }
+      ],
+      "sha256": "b8850b886ec399e2dc52dd96a459354a63c13c441cbef15e34e8d3bd8cb36ed6"
+    },
+    "internal/codexbridge/binding_publication_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-eac5223b18f0",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestCBA004PublicationAndAttachmentFinishBeforeNewEpochActivation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBA-004"
+        },
+        {
+          "id": "MAP-a893dbc2e4a4",
+          "line": 69,
+          "kind": "reviewed-selector",
+          "name": "TestCBA004CanceledPublicationWaitNeverStartsBind",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBA-004"
+        },
+        {
+          "id": "MAP-6f03d92adb14",
+          "line": 108,
+          "kind": "reviewed-selector",
+          "name": "TestCBA004HeartbeatPublicationAlsoPrecedesNewEpoch",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBA-004"
+        },
+        {
+          "id": "MAP-d15d6b14fbd3",
+          "line": 87,
+          "kind": "reviewed-selector",
+          "name": "TestCBA004CancellationInsidePublicationPermitDoesNotRetry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBA-004"
+        }
+      ],
+      "sha256": "c5626bdfbac34de5081fcb301a146c0c9649ee16493fb1e09d104494f7416059"
+    },
+    "internal/resume/frontend_binding_context_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-603428fb50c0",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestCBA004CancellationDuringStrictProofCannotPublish",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBA-004"
+        },
+        {
+          "id": "MAP-c64b5ba765c1",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "TestCBA004CanceledPartialCommitRetiresOnlyItsOwnLiveReceipt",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBA-004"
+        },
+        {
+          "id": "MAP-8bd80450b6d7",
+          "line": 62,
+          "kind": "reviewed-selector",
+          "name": "TestCBA004CancellationNeverRemovesAReplacedOwner",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CBA-004"
+        }
+      ],
+      "sha256": "fde140686dcdb663ac8c38e7dab662b28ac428a46c9f9e8dcb1a801bf3b486d6"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

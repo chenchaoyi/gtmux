@@ -133,7 +133,7 @@ func Run(bin string, args []string, pane string) int {
 		diag.For("codex-bridge").Info("codex.frontend.startup.ready", "verified local frontend connection",
 			"pane", pane, "attempts", attempts, "elapsed_ms", time.Since(started).Milliseconds())
 		down.SetReadLimit(64 << 20)
-		binding := newFrontendBinding(attachment, func() bool { return sequence.current(connectionSequence) }, func(kind string, err error, count int) {
+		binding := newConnectionBinding(ctx, attachment, &sequence, func(kind string, err error, count int) {
 			if kind == "ready" {
 				diag.For("codex-bridge").Info("codex.frontend.binding.ready", "verified frontend binding recovered", "pane", pane, "attempts", count)
 				return
@@ -149,23 +149,7 @@ func Run(bin string, args []string, pane string) int {
 		go func() { ended <- forward(up, down, o.response, trust.response) }()
 		tick := time.NewTicker(time.Second)
 		defer tick.Stop()
-		for {
-			select {
-			case <-ended:
-				down.Close()
-				up.Close()
-				<-ended
-				return
-			case <-ctx.Done():
-				down.Close()
-				up.Close()
-				<-ended
-				<-ended
-				return
-			case <-tick.C:
-				binding.tick()
-			}
-		}
+		runFrontendLifetime(ctx, tick.C, down, up, ended, binding)
 	})
 	go func() { _ = server.Serve(listener) }()
 	defer func() {

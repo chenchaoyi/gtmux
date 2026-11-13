@@ -43,3 +43,5 @@ While a newly observed root remains unverified, the bridge stops refreshing the
 old root. This recovery sends no input and replays no conversation operation.
 An already running older bridge needs a normal reconnect with the updated CLI;
 updating the App's list alone does not upgrade that process.
+
+Connection activation and association writes share one publication permission. A replacement connection waiting for it keeps its original readiness budget; failure leaves the incumbent active. Disconnect retires the connection before transports drain. Cancellation during validation stops pending live publication; committed history is preserved.

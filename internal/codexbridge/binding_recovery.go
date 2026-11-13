@@ -1,6 +1,7 @@
 package codexbridge
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
@@ -33,12 +34,38 @@ type frontendBinding struct {
 	pending    *pendingRootBinding
 	suspended  bool
 	closed     bool
+	ctx        context.Context
+	cancel     context.CancelFunc
+	publish    func(func()) error
 }
 
 func newFrontendBinding(f resume.CodexFrontend, current func() bool, report func(string, error, int)) *frontendBinding {
-	return &frontendBinding{attachment: f, current: current, bind: func(f resume.CodexFrontend, id, cwd string) (resume.CodexFrontend, error) {
-		return resume.BindCodexFrontend(f, id, cwd)
-	}, refresh: resume.RefreshCodexFrontend, end: resume.EndCodexFrontend, report: report, now: time.Now}
+	return makeFrontendBinding(context.Background(), f, current, report)
+}
+
+func makeFrontendBinding(parent context.Context, f resume.CodexFrontend, current func() bool, report func(string, error, int)) *frontendBinding {
+	ctx, cancel := context.WithCancel(parent)
+	b := &frontendBinding{attachment: f, current: current, ctx: ctx, cancel: cancel, refresh: resume.RefreshCodexFrontend, end: resume.EndCodexFrontend, report: report, now: time.Now}
+	b.bind = func(f resume.CodexFrontend, id, cwd string) (resume.CodexFrontend, error) {
+		return resume.BindCodexFrontendContext(ctx, f, id, cwd)
+	}
+	b.publish = func(commit func()) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if !current() {
+			return errors.New("frontend connection retired")
+		}
+		commit()
+		return nil
+	}
+	return b
+}
+
+func newConnectionBinding(ctx context.Context, f resume.CodexFrontend, epoch *connectionEpoch, report func(string, error, int)) *frontendBinding {
+	b := makeFrontendBinding(ctx, f, func() bool { return epoch.current(f.Sequence) }, report)
+	b.publish = func(commit func()) error { return epoch.publish(b.ctx, f.Sequence, commit) }
+	return b
 }
 
 // A new selection retires an unresolved older root even before its response.
@@ -58,7 +85,7 @@ func (b *frontendBinding) resetHome() {
 func (b *frontendBinding) stage(id, cwd string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.closed || !b.current() {
+	if b.closed || b.ctx.Err() != nil || !b.current() {
 		return
 	}
 	now := b.now()
@@ -72,7 +99,7 @@ func (b *frontendBinding) stage(id, cwd string) {
 // root, never an RPC or task input. Every attempt repeats Bind's strict checks.
 func (b *frontendBinding) attempt() {
 	p := b.pending
-	if p == nil || b.closed || !b.current() {
+	if p == nil || b.closed || b.ctx.Err() != nil || !b.current() {
 		b.pending = nil
 		return
 	}
@@ -85,11 +112,38 @@ func (b *frontendBinding) attempt() {
 	if now.Before(p.next) {
 		return
 	}
-	p.attempts++
-	f, err := b.bind(b.attachment, p.id, p.cwd)
-	var receipt *resume.CodexBindingReceiptError
-	if err == nil || errors.As(err, &receipt) {
-		b.attachment, b.pending, b.suspended = f, nil, false
+	var err error
+	committed, expired := false, false
+	permitErr := b.publish(func() {
+		if !b.now().Before(p.deadline) || p.attempts >= bindingRecoveryAttempts {
+			expired = true
+			return
+		}
+		if b.ctx.Err() != nil {
+			err = b.ctx.Err()
+			return
+		}
+		p.attempts++
+		var f resume.CodexFrontend
+		f, err = b.bind(b.attachment, p.id, p.cwd)
+		var receipt *resume.CodexBindingReceiptError
+		if err == nil || errors.As(err, &receipt) {
+			// Keep the attachment commit inside the same epoch permission as IO.
+			b.attachment, b.pending, b.suspended = f, nil, false
+			committed = true
+		}
+	})
+	if permitErr != nil {
+		b.pending = nil
+		b.log("retired", permitErr, p.attempts)
+		return
+	}
+	if expired {
+		b.pending = nil
+		b.log("expired", errors.New("frontend binding recovery budget exhausted"), p.attempts)
+		return
+	}
+	if committed {
 		if err != nil {
 			b.log("receipt", err, p.attempts)
 		} else if p.attempts > 1 {
@@ -101,6 +155,8 @@ func (b *frontendBinding) attempt() {
 	retry := errors.Is(err, state.ErrLeaseHeld) || errors.As(err, &proof) && proof.Retryable
 	if !retry {
 		b.pending = nil
+		b.log("failed", err, p.attempts)
+		return
 	}
 	b.log("failed", err, p.attempts)
 	// Start pacing after the completed check, not before potentially slow IO.
@@ -117,7 +173,7 @@ func (b *frontendBinding) log(kind string, err error, attempts int) {
 func (b *frontendBinding) tick() {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if b.closed || !b.current() {
+	if b.closed || b.ctx.Err() != nil || !b.current() {
 		b.pending = nil
 		return
 	}
@@ -126,13 +182,20 @@ func (b *frontendBinding) tick() {
 		return
 	}
 	if !b.suspended && b.attachment.SessionID != "" {
-		if f, e := b.refresh(b.attachment); e == nil {
-			b.attachment = f
-		}
+		_ = b.publish(func() {
+			if b.ctx.Err() != nil {
+				return
+			}
+			if f, e := b.refresh(b.attachment); e == nil {
+				b.attachment = f
+			}
+		})
 	}
 }
 
 func (b *frontendBinding) close() {
+	// Signal cancellation before waiting for an in-flight publication's mutex.
+	b.cancel()
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.closed {
