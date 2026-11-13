@@ -1,0 +1,24 @@
+{
+  "id": "hq-native-claim-generation-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; design self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Retain the original cloud-red assertion and strengthen native claim incarnation evidence",
+    "notes": "Accurate T CI43522417893 failed the unchanged replaced-identical assertion on Linux. The log did not record both inode values; do not invent observed values or label this infrastructure. The dev/inode+body predicate cannot distinguish a quickly reused identifier from the original file. Add captured fstat ctime (seconds/nanoseconds) to durable claim evidence and reject metadata changes during the bounded read. Preserve every T test byte and assertion. A deterministic same-inode/same-content/same-mtime but observed-ctime-changed fixture exercises the missing distinction without allocator probability or sleep. Under the existing cooperating-writer lease, only a recognized interrupted publication may change ctime legitimately: refused queue link may carry a newer payload; uncertain parked link must still have exact original payload and inode. All other conflicts remain held. This is observed file evidence, not an atomic filesystem CAS against an adversarial same-user path writer. No real queues, claims, input, configuration or services."
+  },
+  "cases": [
+    {
+      "id": "HRW-014",
+      "layer": "L2",
+      "description": "Native claim cleanup requires unchanged generation evidence and permits only owned interrupted publication",
+      "setup": "Real private native intent and claim in isolated HOME. Change ctime through explicit mode transitions, preserving inode/body/mtime and restoring mode; verify the ctime precondition with independent fstat. Keep the exact T replaced-identical test unchanged. Add owned uncertain park-link and altered-parked-payload controls; retain existing refused queue-link producer update regression.",
+      "action": "Attempt accepted recovery after metadata change, then recover interrupted uncertain publication with exact and changed payloads. Compile the affected package for Linux using the pinned existing unix module; run native host targeted race and normal candidate CI.",
+      "expected": "Generation/ctime mismatch never deletes or reauthorizes the claim, despite identical inode/body/mtime. Normal unchanged accepted cleanup passes. Exact owned uncertain publication completes one link retirement and retains original batch uncertainty; changed payload or foreign link holds without deletion. Known-refused shared queue ownership still preserves newest B. Original T tests/expectations remain unchanged; old-source target red is a real assertion, not compile/setup/allocator failure.",
+      "planned_files": [
+        "internal/hqnudge/native_generation_test.go"
+      ]
+    }
+  ],
+  "seal": "423371257c1d518205f104dc490cf67f857e31e47643c5247023290df5b4ea54"
+}
