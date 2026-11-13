@@ -17,7 +17,7 @@ struct ScreenshotAgentBudget {
 
 @MainActor final class ScreenshotAgentService {
     let sources: ScreenshotAgentSources
-    var editorOpen: () -> Bool = { ScreenshotEditorController.shared.isOpen }
+    var editorOpen: () -> Bool = { !ScreenshotEditors.shared.hasCapacity }
     var openEditor: (ScreenshotDocument, Data) throws -> Void
 
     init(sources: ScreenshotAgentSources? = nil, openEditor: @escaping (ScreenshotDocument, Data) throws -> Void) {
@@ -74,7 +74,7 @@ struct ScreenshotAgentBudget {
                 try Self.prepare(request, fd: files[0], budget: budget)
             }
             return try context.commit {
-                guard !editorOpen() else { throw ScreenshotAgentFailure.refused("editor-busy", "An existing screenshot draft is open; it was preserved") }
+                guard !editorOpen() else { throw ScreenshotAgentFailure.refused("editor-busy", "Screenshot window limit reached; existing drafts were preserved") }
                 let document = ScreenshotDocument(image: image, pointSize: size)
                 items.forEach { document.add($0) }
                 try openEditor(document, data)
