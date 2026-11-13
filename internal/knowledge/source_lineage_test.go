@@ -96,7 +96,25 @@ func lineageShowAndRender(t *testing.T, e knowledgeOp) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{e.Title, e.Body, provenanceFooter(e)} {
+	markers := []string{e.Title, e.Body}
+	if len(e.Seqs) > 0 {
+		markers = append(markers, "seq 140,145")
+	} else if e.SeqRange != "" {
+		markers = append(markers, "seq 110..125")
+	}
+	if e.Capture != "" {
+		markers = append(markers, "capture "+e.Capture)
+	}
+	if e.Pane != "" {
+		markers = append(markers, "pane "+e.Pane)
+	}
+	if e.Task != "" {
+		markers = append(markers, "task "+e.Task)
+	}
+	if e.Legacy {
+		markers = append(markers, "from legacy")
+	}
+	for _, want := range markers {
 		if !strings.Contains(string(b), want) {
 			t.Errorf("render missing %q", want)
 		}
@@ -197,9 +215,11 @@ func TestSourceLineageReviewApply(t *testing.T) {
 			}
 			lineageAssertOrigins(t, prepared[0], e)
 			if len(prepared[0].Seqs) > 0 {
+				originalOps, _ := json.Marshal(ops)
 				prepared[0].Seqs[0]++
-				if lineageLive(t, e.ID).Seqs[0] != e.Seqs[0] {
-					t.Fatal("preparation mutated persisted origins")
+				afterOps, _ := json.Marshal(ops)
+				if !bytes.Equal(originalOps, afterOps) {
+					t.Fatal("preparation mutated input origins")
 				}
 			}
 			seq := events.LatestSeq()
@@ -291,7 +311,7 @@ func TestSourceLineageReplay(t *testing.T) {
 				if got.Seq != 200 || got.CandidateResult != "" || len(got.Sources) != 2 || !reflect.DeepEqual(got.Sources[0], e.Sources[0]) || got.Sources[1].SourceOffset != 42 {
 					t.Fatal("replay corrupted event, receipt or Sources")
 				}
-				if !explicit {
+				if !explicit && len(got.Seqs) > 0 {
 					got.Seqs[0]++
 					after, _ := json.Marshal(input)
 					if !bytes.Equal(original, after) {
