@@ -14,6 +14,11 @@ const (
 // toolStep adds inspectable input without retaining results or dumping arbitrary JSON.
 // Summaries remain compatible with older clients; richer fields are optional.
 func toolStep(name, title string, raw json.RawMessage, summary string) Step {
+	return providerToolStep("", name, title, raw, summary)
+}
+
+// Only adapters with a known native schema may interpret provider-only aliases.
+func providerToolStep(provider, name, title string, raw json.RawMessage, summary string) Step {
 	step := Step{Kind: "tool", Title: title, Detail: summary, Operation: toolOperation(name)}
 	var args map[string]any
 	if json.Unmarshal(raw, &args) != nil {
@@ -74,7 +79,7 @@ func toolStep(name, title string, raw json.RawMessage, summary string) Step {
 			}
 		}
 	}
-	applyActivityFacts(&step, name, args)
+	applyActivityFacts(&step, name, args, provider)
 	return step
 }
 

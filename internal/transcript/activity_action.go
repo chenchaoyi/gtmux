@@ -56,7 +56,43 @@ func readTargetFacts(step *Step, paths []string) {
 	}
 }
 
-func applyActivityFacts(step *Step, name string, args map[string]any) {
+func activitySkill(name, provider string, args map[string]any) string {
+	keys := []string{"skill"}
+	if (provider == "dsh" || provider == "opencode") && strings.EqualFold(name, "skill") {
+		keys = append(keys, "name", "id")
+	}
+	identity := ""
+	for _, key := range keys {
+		if raw, present := args[key]; present {
+			value := strings.TrimSpace(activityText(raw))
+			if value == "" || identity != "" && value != identity {
+				return ""
+			}
+			identity = value
+		}
+	}
+	return identity
+}
+
+func activityQueries(raw any) string {
+	values, ok := raw.([]any)
+	if !ok || len(values) == 0 || len(values) > 64 {
+		return ""
+	}
+	var preview []string
+	for _, raw := range values {
+		value := activityText(raw)
+		if value == "" {
+			return ""
+		}
+		if len(preview) < 3 {
+			preview = append(preview, activityDetail(value))
+		}
+	}
+	return activityDetail(strings.Join(preview, ", "))
+}
+
+func applyActivityFacts(step *Step, name string, args map[string]any, provider string) {
 	method := name
 	if i := strings.LastIndex(method, "__"); i >= 0 {
 		method = method[i+2:]
@@ -66,7 +102,7 @@ func applyActivityFacts(step *Step, name string, args map[string]any) {
 	}
 	method = strings.ToLower(method)
 	if method == "skill" {
-		if skill := activityText(args["skill"]); skill != "" {
+		if skill := activitySkill(name, provider, args); skill != "" {
 			step.Action, step.Detail, step.SubjectCount = "skill", activityDetail(skill), 1
 		}
 	}
@@ -78,6 +114,10 @@ func applyActivityFacts(step *Step, name string, args map[string]any) {
 		step.Action = "web_search"
 		if value := activityText(args["query"]); value != "" {
 			step.Detail = activityDetail(value)
+		} else if _, present := args["query"]; !present && provider == "dsh" && strings.EqualFold(name, "web_search") {
+			if value := activityQueries(args["queries"]); value != "" {
+				step.Detail = value
+			}
 		}
 	case "webfetch", "web_fetch", "open_url", "fetchurl":
 		step.Action = "web_open"

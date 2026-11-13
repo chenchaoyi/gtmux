@@ -3252,6 +3252,8 @@ MAP-6f4234fa9eea,L2,reviewed implementation,internal/transcript/activity_action_
 MAP-86e4d7539d34,L2,reviewed implementation,internal/transcript/activity_action_test.go,145,reviewed-selector,TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput,False,"ASA-001,ASA-002,ASA-003"
 MAP-4ebad51532c4,L2,reviewed implementation,internal/transcript/activity_action_test.go,188,reviewed-selector,TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands,False,"ASA-001,ASA-002,ASA-003"
 MAP-82d0542c06e1,L2,reviewed implementation,internal/transcript/activity_action_test.go,221,reviewed-selector,TestASA003ActionMetadataParticipatesInRetentionBudget,False,"ASA-001,ASA-002,ASA-003"
+MAP-528289833275,L2,reviewed implementation,internal/transcript/activity_native_facts_test.go,9,reviewed-selector,TestASA006NativeSkillSchema,False,"ASA-006,ASA-007"
+MAP-fe36601b6e24,L2,reviewed implementation,internal/transcript/activity_native_facts_test.go,41,reviewed-selector,TestASA007NativeQueriesSchema,False,"ASA-006,ASA-007"
 LEG-7f066e9629ff,L1,Go core / CLI / server,internal/transcript/cache_budget_test.go,23,Test,TestTranscriptCacheEvictsSessionsAndReadsThemAgain,False,legacy-not-retrospectively-reviewed
 LEG-78cf0a18e433,L1,Go core / CLI / server,internal/transcript/cache_budget_test.go,60,Test,TestTranscriptCacheHasByteBudget,False,legacy-not-retrospectively-reviewed
 LEG-29e9ae4eccad,L1,Go core / CLI / server,internal/transcript/cache_budget_test.go,82,Test,TestTranscriptCacheKeepsRecentlyUsedAndExpiresIdle,False,legacy-not-retrospectively-reviewed
@@ -6215,6 +6217,7 @@ LEG-719b2976f521,L2,RN / mobile harness,mobileapp/src/ui/markupGeometry.test.ts,
 LEG-84282da476a0,L2,RN / mobile harness,mobileapp/src/ui/markupGeometry.test.ts,78,test,canvas pan stays within the image and pinch preserves the focal point,False,legacy-not-retrospectively-reviewed
 LEG-62f4748984cb,L2,RN / mobile harness,mobileapp/src/ui/modalOrientations.test.ts,15,it,finds the modals it guards,False,legacy-not-retrospectively-reviewed
 LEG-206cc14bcec0,L2,RN / mobile harness,mobileapp/src/ui/modalOrientations.test.ts,19,it,gives every <Modal> the app’s orientations,False,legacy-not-retrospectively-reviewed
+MAP-989d715dab42,L3,reviewed implementation,mobileapp/src/ui/native-action-facts.test.ts,7,reviewed-selector,ASA008 native provider skill and queries facts agree in Chat and Trace,False,ASA-008
 LEG-2ea084f2d94c,L2,RN / mobile harness,mobileapp/src/ui/paneLines.test.ts,20,test,normalizes the glyph on its way through the parser,False,legacy-not-retrospectively-reviewed
 LEG-cafdd79804e4,L2,RN / mobile harness,mobileapp/src/ui/paneLines.test.ts,27,test,"is exactly normalize-then-parse, so the two cannot drift apart",False,legacy-not-retrospectively-reviewed
 LEG-bff5cf231806,L2,RN / mobile harness,mobileapp/src/ui/paneLines.test.ts,34,test,keeps the ANSI it was given,False,legacy-not-retrospectively-reviewed

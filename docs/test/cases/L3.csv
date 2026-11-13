@@ -51,6 +51,7 @@ MAP-5a69cc101040,L3,reviewed implementation,mobileapp/src/ui/activity-action-fac
 MAP-009536778cba,L3,reviewed implementation,mobileapp/src/ui/activity-action-facts.test.ts,33,reviewed-selector,ASA005 unknown incompatible and malformed facts use bounded neutral fallback,False,"ASA-004,ASA-005"
 MAP-4a512680e430,L3,reviewed implementation,mobileapp/src/ui/activity-semantics.test.ts,9,reviewed-selector,AOP001 semantic actions override raw transport names without rewriting tool facts,False,"AOP-001,AOP-002"
 MAP-8a7265b6c0d7,L3,reviewed implementation,mobileapp/src/ui/activity-semantics.test.ts,21,reviewed-selector,"AOP002 argv preview is bounded, cross-surface and leaves ambiguous input verbatim",False,"AOP-001,AOP-002"
+MAP-989d715dab42,L3,reviewed implementation,mobileapp/src/ui/native-action-facts.test.ts,7,reviewed-selector,ASA008 native provider skill and queries facts agree in Chat and Trace,False,ASA-008
 MAP-0776a6d8933b,L3,reviewed implementation,tests/manual/codex-worktree-trust.py,96,reviewed-selector,def main():,False,WTR-003
 LEG-4d0986af07f7,L3,Browser,tests/web/alignment.test.cjs,6,scenario,"`App-aligned roster status, summaries and persistent sections at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-d5140dc35e4a,L3,Browser,tests/web/alignment.test.cjs,26,scenario,"`Settings change actual Chat and Terminal typography, immediately and after reload at ${width}`",True,legacy-not-retrospectively-reviewed
