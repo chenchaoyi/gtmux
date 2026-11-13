@@ -6,7 +6,7 @@ export type PendingRestore = {id: string; revision: string};
 // Credentials remain in Keychain, exactly as the paired-server roster does.
 export const restorePendingService = (mac: PairedMac) => `com.gtmux.app.restore.v1:${encodeURIComponent(mac.url)}`;
 export async function loadPendingRestore(mac: PairedMac): Promise<PendingRestore | null> {
-  const saved = await Keychain.getGenericPassword({service: restorePendingService(mac)});
+  const saved = await Keychain.getGenericPassword({service: restorePendingService(mac)}).catch(() => {throw new RestoreError('local_record');});
   if (!saved) return null;
   let v: any;
   try {v = JSON.parse(saved.password);} catch {throw new RestoreError('local_record');}

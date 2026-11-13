@@ -62355,6 +62355,49 @@
         }
       ],
       "sha256": "955c361f9a269505806123f74edec93a64ab861d3b94edfb9f0d91078f49c341"
+    },
+    "mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-da95b2a6169e",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "RSR011 transient native read rejection cannot replace a saved pre-admission ID",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-011"
+        },
+        {
+          "id": "MAP-a5a2d8898ff2",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "RSR011 repeated native read rejection stays reachable without preview mutation or clear",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-011"
+        },
+        {
+          "id": "MAP-05d016e371df",
+          "line": 64,
+          "kind": "reviewed-selector",
+          "name": "RSR011 confirmed empty local read can resume read-only preview after a native failure",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-011"
+        },
+        {
+          "id": "MAP-9708d8034c47",
+          "line": 76,
+          "kind": "reviewed-selector",
+          "name": "RSR011 late old-pairing local read %s cannot grant a new target readiness",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSR-011"
+        }
+      ],
+      "sha256": "88b749aeaab235ee69d79b5e404aebd776cda62b2f8f11db6fc1a7cb3e5aa11f"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

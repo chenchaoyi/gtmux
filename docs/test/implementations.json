@@ -2322,5 +2322,16 @@
     "selectors": [
       "task t-9"
     ]
+  },
+  "mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx": {
+    "cases": [
+      "RSR-011"
+    ],
+    "selectors": [
+      "RSR011 transient native read rejection cannot replace a saved pre-admission ID",
+      "RSR011 repeated native read rejection stays reachable without preview mutation or clear",
+      "RSR011 confirmed empty local read can resume read-only preview after a native failure",
+      "RSR011 late old-pairing local read %s cannot grant a new target readiness"
+    ]
   }
 }

@@ -13,3 +13,5 @@ The owner API is in api/contract.md. It omits private commands/paths/goals. IDs 
 The screenshot of a local frontend403 alone cannot establish a Codex session quota. The native bridge returns403 for hard process/home/TTY/identity refusals and503 for unavailable observations/deadlines. Inspect the matching `codex.frontend.startup.*` log reason and timestamp before choosing a remedy; an old pane’s restored screen may predate current startup logs. Never automatically retry a hard refusal or replay user tasks.
 
 An existing paired request is checked before making any new preview. A preview failure cannot hide its progress. If the status read fails, the page keeps the same request and provides a read-only Check status action; no request is recreated or automatically submitted.
+
+A failed local request read is distinct from a confirmed empty record. Retry first re-reads the same pairing’s record; an existing ID/revision is retained and checked before preview. Until that read succeeds, Start and clearing the saved request remain unavailable. A delayed read from an old pairing cannot unlock the current target.

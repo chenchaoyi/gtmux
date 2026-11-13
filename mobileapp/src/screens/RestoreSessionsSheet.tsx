@@ -22,6 +22,7 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
   const epoch = useRef(0);
   const action = useRef(false);
   const pendingRef = useRef<Pending | null>(null);
+  const localReadReady = useRef(false);
   const say = (en: string, zh: string) => lang === 'zh' ? zh : en;
   const valid = (n: number) => n === epoch.current;
   const remember = (p: Pending | null) => {pendingRef.current = p; setPending(p);};
@@ -29,13 +30,14 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
   useEffect(() => {const sub = AppState.addEventListener('change', s => setActive(s === 'active')); return () => sub.remove();}, []);
   useEffect(() => {
     const n = ++epoch.current;
-    action.current = false; setPlan(null); setJob(null); remember(null); setError(''); setBusy(false);
+    action.current = false; localReadReady.current = false; setPlan(null); setJob(null); remember(null); setError(''); setBusy(false);
     if (!mac || !client || mac.scope === 'guest') return;
     setBusy(true);
     (async () => {
       try {
         const stored = await loadPendingRestore(mac);
         if (!valid(n)) return;
+        localReadReady.current = true;
         const p = stored;
         if (p) {
           remember(p);
@@ -61,13 +63,28 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
   }, [mac, client, key]);
 
   const check = async () => {
-    if (!client || action.current) return;
+    if (!client || !mac || action.current) return;
     const n = epoch.current;
-    const id = pendingRef.current?.id ?? job?.id;
     action.current = true; setBusy(true);
     try {
-      if (id) {const result = await client.restoreStatus(id); if (valid(n)) {setJob(result); setError('');}}
-      else {const v = await client.restorePreview(); if (valid(n)) {setPlan(v.plan); setJob(v.job ?? null); setError('');}}
+      const reread = !localReadReady.current;
+      if (reread) {
+        const stored = await loadPendingRestore(mac);
+        if (!valid(n)) return;
+        localReadReady.current = true;
+        remember(stored);
+      }
+      const id = pendingRef.current?.id ?? job?.id;
+      if (id) {
+        try {const result = await client.restoreStatus(id); if (valid(n)) {setJob(result); setError('');} return;}
+        catch (e) {
+          if (!valid(n)) return;
+          if (!reread) throw e;
+          setError(e instanceof RestoreError ? e.code : 'unavailable');
+        }
+      }
+      const v = await client.restorePreview();
+      if (valid(n)) {setPlan(v.plan); if (!pendingRef.current) setJob(v.job ?? null); if (!id) setError('');}
     } catch (e) {if (valid(n)) setError(e instanceof RestoreError ? e.code : 'unavailable');}
     finally {if (valid(n)) {setBusy(false); action.current = false;}}
   };
@@ -78,7 +95,7 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
   });
 
   const start = async () => {
-    if (!client || !mac || mac.scope === 'guest' || !plan || action.current || (job && !restoreTerminal(job.phase))) return;
+    if (!client || !mac || !localReadReady.current || mac.scope === 'guest' || !plan || action.current || (job && !restoreTerminal(job.phase))) return;
     const n = epoch.current;
     const p = pendingRef.current ?? {id: restoreRequestID(plan), revision: plan.revision};
     action.current = true; setBusy(true); setError('');
@@ -93,7 +110,7 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
     finally {if (valid(n)) {action.current = false; setBusy(false);}}
   };
   const previewAgain = async () => {
-    if (!client || !mac || action.current || (job && !restoreTerminal(job.phase))) return;
+    if (!client || !mac || !localReadReady.current || action.current || (job && !restoreTerminal(job.phase))) return;
     const n = epoch.current; action.current = true; setBusy(true);
     try {
       await clearPendingRestore(mac);
@@ -139,7 +156,7 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
         {control('restore-check', pending ? say('Check status', '核对状态') : say('Refresh preview', '刷新预览'), check, busy)}
         {['plan_changed', 'request_expired'].includes(error) && control('restore-new-preview', say('Refresh preview', '刷新预览'), previewAgain, busy)}
       </>}
-      {!job && !plan && !!mac && !!client && mac.scope !== 'guest' && (!!pending || (!!error && error !== 'local_record')) && control('restore-check', pending ? say('Check status', '核对状态') : say('Retry preview', '重新查询预览'), check, busy)}
+      {!job && !plan && !!mac && !!client && mac.scope !== 'guest' && (!!pending || !!error) && control('restore-check', !localReadReady.current ? say('Retry saved request read', '重读请求记录') : pending ? say('Check status', '核对状态') : say('Retry preview', '重新查询预览'), check, busy)}
     </ScrollView>
   </SheetShell>;
 }
