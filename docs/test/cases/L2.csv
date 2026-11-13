@@ -565,6 +565,12 @@ MAP-e5d2427c7d6d,L2,reviewed implementation,internal/state/cpu_repeated_poll_tes
 MAP-33d2a35b1094,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,30,reviewed-selector,TestCSR005RepeatedPollRequiresValidPriorEvidence,False,CSR-005
 MAP-c2cbd0d02497,L2,reviewed implementation,internal/state/privatewrite_durability_test.go,14,reviewed-selector,TestPrivateWriteRetriesDirectorySyncAfterRename,False,PRIVATEWRITE-DIRECTORY-SYNC
 MAP-495d9fb7b0a9,L2,Go core / CLI / server,internal/state/privatewrite_test.go,201,reviewed-selector,TestPrivateWritePrePublicationFailurePreservesOriginal,False,KBCARRIER-ATOMIC
+MAP-3cff5fa16242,L2,reviewed implementation,internal/transcript/activity_action_test.go,78,reviewed-selector,TestASA001RecordedSkillIdentityAcrossFiveAdapters,False,"ASA-001,ASA-002,ASA-003"
+MAP-005983dcced4,L2,reviewed implementation,internal/transcript/activity_action_test.go,96,reviewed-selector,TestASA001ShellTextAndBareNamesDoNotInventSkillReads,False,"ASA-001,ASA-002,ASA-003"
+MAP-6f4234fa9eea,L2,reviewed implementation,internal/transcript/activity_action_test.go,111,reviewed-selector,TestASA002WebIntentUsesExplicitMethodsOrCompleteActions,False,"ASA-001,ASA-002,ASA-003"
+MAP-86e4d7539d34,L2,reviewed implementation,internal/transcript/activity_action_test.go,145,reviewed-selector,TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput,False,"ASA-001,ASA-002,ASA-003"
+MAP-4ebad51532c4,L2,reviewed implementation,internal/transcript/activity_action_test.go,188,reviewed-selector,TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands,False,"ASA-001,ASA-002,ASA-003"
+MAP-82d0542c06e1,L2,reviewed implementation,internal/transcript/activity_action_test.go,221,reviewed-selector,TestASA003ActionMetadataParticipatesInRetentionBudget,False,"ASA-001,ASA-002,ASA-003"
 MAP-79929223fc37,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,13,reviewed-selector,TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable,False,LCL-001
 MAP-9661b1f33d22,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,112,reviewed-selector,TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached,False,LCL-001
 MAP-18b153c61e83,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,12,reviewed-selector,class ChoiceFixture,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"

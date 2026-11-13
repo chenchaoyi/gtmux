@@ -21,6 +21,8 @@ export interface TraceStep {
   inputKind: string;
   workdir: string;
   operation: string;
+  action?: string;
+  subjectCount?: number;
   inputRef?: string;
   truncated: boolean;
 }
@@ -279,6 +281,8 @@ export function build(
             inputKind: string(step.input_kind),
             workdir: string(step.workdir),
             operation: string(step.operation),
+            action: string(step.action).slice(0, 32),
+            subjectCount: typeof step.subject_count === 'number' && Number.isSafeInteger(step.subject_count) && step.subject_count >= 1 && step.subject_count <= 10000 ? step.subject_count : undefined,
             truncated: step.details_truncated === true,
             inputRef: string(step.input_ref),
             call: object(step.call) as TranscriptToolCall | undefined,
@@ -319,6 +323,8 @@ export function sourceInfo(event: TraceEvent): Record<string, unknown> {
       ? {
           input_kind: event.step.inputKind,
           operation: event.step.operation,
+          ...(event.step.action ? {action: event.step.action} : {}),
+          ...(event.step.subjectCount ? {subject_count: event.step.subjectCount} : {}),
           truncated: event.step.truncated,
         }
       : {}),

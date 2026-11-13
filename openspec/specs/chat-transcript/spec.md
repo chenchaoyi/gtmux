@@ -801,3 +801,12 @@ The pane transcript endpoint MAY provide an owner-only historical observation wi
 #### Scenario: Conditional read changes association state
 - **WHEN** an explicit observation read receives an unchanged response with verified conversation state
 - **THEN** existing turns remain visible and the last-known-only Chat restriction is removed
+
+### Requirement: Recorded Activity action facts
+
+Optional action metadata SHALL distinguish a recorded skill read, web search, page open and page find across all supported agent adapters and shared App/browser/Trace presenters. Distinct file target counts SHALL describe one invocation without increasing real call counts. Explicit methods, complete known web argument structures and canonical recorded skill-read paths MAY supply these facts; shell text, results, arbitrary filenames and incomplete or mixed operations SHALL NOT invent them. Original input, scoped references, recorded status and bounded retention SHALL remain intact; unknown or old payloads retain neutral fallback.
+
+#### Scenario: One native invocation reads three files
+- **WHEN** a native record with the same exact call identity adds three parsed read targets to an existing generic call
+- **THEN** the row shows one call with three file targets and retains its original input and scoped reference
+- **AND** App, browser and Trace use the same factual action label without claiming success

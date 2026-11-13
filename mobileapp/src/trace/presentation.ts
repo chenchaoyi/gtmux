@@ -34,6 +34,8 @@ export function recordedStep(event: TraceEvent) {
     input: step.input,
     detail: step.summary,
     operation: step.operation,
+    action: step.action,
+    subject_count: step.subjectCount,
     input_kind: step.inputKind,
   };
 }

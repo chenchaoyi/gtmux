@@ -2226,5 +2226,48 @@
     "selectors": [
       "task t-9"
     ]
+  },
+  "internal/transcript/activity_action_test.go": {
+    "cases": [
+      "ASA-001",
+      "ASA-002",
+      "ASA-003"
+    ],
+    "selectors": [
+      "TestASA001RecordedSkillIdentityAcrossFiveAdapters",
+      "TestASA001ShellTextAndBareNamesDoNotInventSkillReads",
+      "TestASA002WebIntentUsesExplicitMethodsOrCompleteActions",
+      "TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput",
+      "TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands",
+      "TestASA003ActionMetadataParticipatesInRetentionBudget"
+    ]
+  },
+  "mobileapp/src/ui/activity-action-facts.test.ts": {
+    "cases": [
+      "ASA-004",
+      "ASA-005"
+    ],
+    "selectors": [
+      "ASA004 recorded actions and targets agree across five agents and Trace without adding calls",
+      "ASA005 unknown incompatible and malformed facts use bounded neutral fallback"
+    ]
+  },
+  "mobileapp/src/ui/ToolSteps.action-facts.test.tsx": {
+    "cases": [
+      "ASA-004"
+    ],
+    "selectors": [
+      "ASA004 actual App rows identify skill web intent and file targets with unchanged inspector input"
+    ]
+  },
+  "internal/server/web/activity-action-facts.test.cjs": {
+    "cases": [
+      "ASA-004",
+      "ASA-005"
+    ],
+    "selectors": [
+      "ASA004 browser Chat and Trace preserve factual action labels and one call per record",
+      "ASA005 browser fallback ignores contradictory facts without guessing scripts or changing raw input"
+    ]
   }
 }

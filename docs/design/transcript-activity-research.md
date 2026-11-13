@@ -4,6 +4,8 @@ Paired Chinese document: [中文](transcript-activity-research.zh.md).
 
 The reported phone screen displayed a run of bare `js` and `wait` lines. The problem is hierarchy and missing descriptions, not the number of agent statuses.
 
+The 2026-11-14 refinement retains optional recorded `action` (skill reading, web search/open/find) and distinct file `subject_count` within one call. Explicit tool methods or complete known web parameter structures supply intent; a canonical recorded `skills/name/SKILL.md` read supplies the skill name. Shell text, results and bare filenames are not evidence of those actions. Native exact-ID mirrors may enrich one existing call without changing its original input/ref or creating additional calls. All five adapters share the parser, and App/browser/Trace share the presenter. Mixed or unknown inputs remain neutral; old payloads keep their fallback. These labels describe recorded requests, not success or proof that a skill was applied.
+
 ## First-party references (checked 2026-10-19)
 
 - [Claude Code Desktop, view modes](https://code.claude.com/docs/en/desktop#switch-view-modes): Normal folds tool calls into summaries while retaining full replies; Verbose exposes individual calls. Borrow progressive disclosure, without introducing another global mode selector.

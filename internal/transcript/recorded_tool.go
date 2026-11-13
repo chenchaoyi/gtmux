@@ -54,6 +54,14 @@ func (st *parseState) addRecordedStep(provider string, step Step, id string) {
 						if old.recordedCallID == id && old.Operation == "command" {
 							old.Operation, old.Detail = step.Operation, step.Detail
 						}
+						if old.recordedCallID == id && old.Operation == step.Operation {
+							if step.SubjectCount > 0 {
+								old.SubjectCount = step.SubjectCount
+							}
+							if step.Action != "" {
+								old.Action, old.Detail = step.Action, step.Detail
+							}
+						}
 					}
 				}
 			}
