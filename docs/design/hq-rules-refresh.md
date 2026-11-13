@@ -32,3 +32,5 @@ precedes implementation; independent source review and normal shipping are requi
 before using the installed entry to adopt the shipped charter in the real HQ home.
 
 Boundary follow-up: recognize the standalone token before consuming option values. Verify backups through their created descriptor and a bounded no-follow identity recheck; failed/changed paths are retained, never blindly removed. Mixed user/knowledge blocks and unknown trailing instructions are refused without migration. A dedicated single-link private lock open rejects hardlinks before chmod. Existing external-editor publication checks remain best-effort.
+
+Known user/knowledge block marker prefixes reserve independent instructions wherever they occur, including inline begin/end positions accepted by the existing knowledge protocol. Refuse refresh without changing the effective file; backups do not substitute for active instructions. This does not merge arbitrary unmarked text.

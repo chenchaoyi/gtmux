@@ -1,0 +1,24 @@
+{
+  "id": "hq-rules-inline-block-boundary-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner design self-review; independent approval pending",
+    "date": "2026-11-14",
+    "decision": "Conservatively recognize existing independently marked instructions regardless of line position",
+    "notes": "Full independent R report/manifest bytes/SHA verified. Only HQR009 remains;007/008/010 and integration closed. Existing knowledge protocol uses substring findBlock and optional newline before end, so line-prefix guard misses a valid in-sync block with adjacent begin/end. Reject known user/knowledge marker prefixes wherever they occur; no migration, no arbitrary unmarked-text merge, no new global parser or knowledge changes. Proof uses actual public knowledge SyncMachine/CarrierStatuses with all carrier homes isolated, then actual bilingual CmdHQ refresh and unchanged effective file/mtime/no-backup. Existing canonical and line-start/LOCAL-tail controls remain. Preserve R object/first failures and legitimate helper scope; no production config/KB/session/permission action."
+  },
+  "cases": [
+    {
+      "id": "HQR-011",
+      "layer": "L2",
+      "description": "Existing in-sync inline knowledge instructions survive refresh refusal",
+      "setup": "Generate a real machine block with isolated public knowledge sync and real en/zh managed template. Relocate begin adjacent to a preceding HTML comment and end onto the last body line; confirm real CarrierStatuses=in-sync and another normal sync keeps bytes unchanged.",
+      "action": "Run actual CmdHQ --refresh-rules, inspect effective AGENTS bytes/mtime and backup directory, then real read-only carrier status. Compare exact R production control and new candidate.",
+      "expected": "Exact R loses the active valid block at target assertion; the fixed command refuses safely without modifying effective instructions or creating backup. Knowledge remains in-sync. No tmux/new session/config widening. Original valid, unsafe leaf, line-start blocks and LOCAL-tail checks remain green.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_inline_block_test.go"
+      ]
+    }
+  ],
+  "seal": "a6311b148dd27a72f6e95a5b4b10a65dfefaf4704768164e343fd08e33852c0e"
+}
