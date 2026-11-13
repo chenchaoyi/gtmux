@@ -1,0 +1,47 @@
+{
+  "id": "hq-native-recovery-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; design self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Close independent Q review R1/R2/R3 with durable native batch intent, no-clobber claim return and non-waiting attention delivery",
+    "notes": "Independent53 exact Q review confirms three local P1 paths, distinct from the accepted external idle-to-submit race. Preserve original HRW001..008, private state policy, input lease and explicit human/image contracts. Before native mutation, atomically persist bounded batch intent containing exact original delivery identity/payload and claim fingerprints. Successful/uncertain crash recovery must never mix those entries with fresh inputs or invent a new delivery ID. Prepared with unknown outcome is retained as uncertain for normal owner reconciliation, not automatically replayed, even if the crash preceded mutation. New unrelated input can progress. Persist terminal outcome before cleanup; recovery is idempotent. Invalid/unreadable/over-budget intent conservatively holds automatic draining, never deletes foreign/replaced entries. Older native untracked orphan claims are retained uncertain, not presumed safe to retry. Native preparation chooses a route without mutation; no legacy fallback after a native attempt. Returning a refused claim must publish without replacement; a newer same-key producer wins the existing keyed contract without losing its due/priority/body. Unexpected non-key conflicts preserve the old claim for inspection rather than overwrite. Rotation failure emits explicit attention semantics, not fake waiting or completion; actual Swift consumer preserves enabled/system permission/Focus/stale/one-shot and ordinary resolved-input guards. Synthetic fixtures only; no real notification permission, pane, queue, service, reset or App operation."
+  },
+  "cases": [
+    {
+      "id": "HRW-009",
+      "layer": "L2",
+      "description": "Native wake intent survives interruption before local claim cleanup",
+      "setup": "Actual hqnudge drain with isolated HOME, durable Prepare/ClaimNative/FinishNative spool and controlled accepted/uncertain/pre-call interruption. Include a new unrelated B, same-body new event, replaced claim, malformed intent, restart and journal-write failure. Bind source at both ends; independent full RPC fixture is additional evidence, not a copied oracle.",
+      "action": "Interrupt immediately after real native outcome but before local cleanup, age only fixture claims, enqueue B and recover. Exercise prepared-before-call, settled recovery and failures.",
+      "expected": "A is never submitted under a new batch identity; original exact payload, ID and uncertainty remain inspectable. Accepted/uncertain spool state is not downgraded to unsent. B and legitimate fresh duplicate text can progress once. Journal precedes possible mutation; failure holds without mutation. Recovery never removes a foreign replacement; malformed evidence holds conservatively. Ordinary non-native transport retains its existing contract.",
+      "planned_files": [
+        "internal/hqnudge/native_recovery_test.go"
+      ]
+    },
+    {
+      "id": "HRW-010",
+      "layer": "L2",
+      "description": "Returning busy claims cannot replace newer keyed producer work",
+      "setup": "Real DeliverKeyedAt/DoneDue delayed producer during actual native thread-read busy refusal, plus direct no-conflict/non-key conflict and original priority/due controls. No sleeps for ordering.",
+      "action": "Publish newer B while A is claimed, then return A from a refused call and retry at the original due boundary.",
+      "expected": "B remains byte-identical with original key/due/priority, A cannot overwrite it, no mutation while busy. No-clobber return preserves unexpected conflicts and normal retry. Existing latest-keyed coalescing is retained, not disabled.",
+      "planned_files": [
+        "internal/hqnudge/native_recovery_test.go"
+      ]
+    },
+    {
+      "id": "HRW-011",
+      "layer": "L2",
+      "description": "Rotation failure reaches the real desktop consumer without a waiting prompt",
+      "setup": "Actual Go failRotation output in isolated HOME fed into the actual Swift NotificationManager with injected notification center, non-waiting snapshot and controlled clock. Include enabled/permission/stale and ordinary waiting/resolved controls.",
+      "action": "Expire one real synthetic rotation, consume the resulting JSON twice through the Swift component; verify kind, content/actions, system submission and rejection controls.",
+      "expected": "One attention notification is submitted even with no waiting pane; it has Jump-only actions, no reply buttons or done/wait identity, active Focus-respecting delivery. Disabled, denied, stale and bare/headless hosts remain rejected. Ordinary resolved input remains suppressed and ordinary waiting still posts. Queue creation/center acceptance is not actual OS presentation or user-read proof.",
+      "planned_files": [
+        "internal/hq/rotation_attention_test.go",
+        "macapp/Tests/GtmuxBarTests/RotationAttentionTests.swift"
+      ]
+    }
+  ],
+  "seal": "98684c4a584240a3970fe424628bb7e8c56454888a91bc864392202096db52b7"
+}
