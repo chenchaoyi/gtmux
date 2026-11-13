@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1194 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1203 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2139 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2173 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 132 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -195,6 +195,17 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | PWR-001 | One production collection per producer tick, no extra REST collections within freshness; explicit next producer bypasses TTL; clone ownership preserved; failure/oversize never turns stale bytes into success; scopes never cross |
 | PWR-002 | Frame probes within one pass share exact text; each pane is captured at most once, no frame survives into next gather; new approval becomes waiting without invented done; unrelated non-Codex states retained |
 | PWR-003 | SSE uses fresh producer, REST reads its cache rather than second gather; role/completion/follow/native identity unchanged; no real services/power settings touched |
+| RSR-011 | No POST, new ID or overwrite until local state is known. Explicit retry re-reads and preserves exact old ID/revision, checks its status before preview and only explicitly retries that ID. Repeated/corrupt local read failure leaves a reachable read-only retry and no start/clear. A confirmed empty record may resume preview. A late old-target read cannot grant readiness or alter the current target. All earlier assertions remain unchanged. |
+| RSR-010 | Existing status is queried without successful new preview. Status success shows the old job and reachable check action; failure retains ID and reachable read-only retry without POST/new ID/clear. Unknown old target cannot update or route to the new target. Corrupt local record never enables a new POST. Original assertions and timers remain. |
+| RSR-001 | Reads never start work; only owner may start; strict bounded schema; stale/changed/uncertain codes preserved |
+| RSR-002 | Persist before launch; one launch per request; same ID never relaunches even after failure/interruption; active blocks another ID; unavailable storage refuses; expired IDs cannot become new work |
+| RSR-003 | Remote preview includes only missing saved sessions; existing detached sessions remain usable and are not restarted; revision binds save bytes, records/mode, and topology; unknown refuses; cap fails explicitly |
+| RSR-004 | No mutation before claim+lease+fresh matching preview; no terminal/focus; resumptions limited to approved newly missing sessions; no existing program restart; pending is not confirmed; final result persisted once, write error stops before further input |
+| RSR-005 | At most one restore mutation producer; unavailable lease fails closed; no age-based takeover of a live holder; dry-run/read preview still read-only |
+| RSR-006 | No automatic mutation retry or channel fallback; stable ID/revision transmitted; bounded parsing; reads cannot start; unsupported is actionable |
+| RSR-007 | Nothing starts on mount/refresh; explicit confirm starts once; progress reattaches by read on reopen; unknown only checks status using same ID; no cross-host late update/mutation; failure not success; no polling after close |
+| RSR-008 | Restore bypasses generic close, keeps progress without focus theft/reopen; explicit close wins; all other actions retain their behavior |
+| RSR-009 | Clear server identity and explicit restoration scope; owner entry available remotely, guest absent; sheet scrolls with content and safe-area controls |
 | SSI-001 | Active eligible thread uses turn/steer with exact expectedTurnId; no queue/start, interrupt, full-history read or duplicate accepted input. Only explicitly unsupported read/steer methods can fall back to original queue behavior; generic errors/uncertain write never replay. Waiting flags and target/home/peer mismatch refuse before input. Byte/deadline bounds remain. |
 | SSI-002 | Only existing authorized image inputs request active submission; ordinary text stays existing queue. Exact target and image survive, accepted mode persists, retry does not resubmit, uncertain never enters queue or alternate pane; receipt mode backward compatible. |
 | SSI-003 | Queued never claims terminal receipt; active acceptance says current task, never task completion. Nonzero/unrecognized receipt cannot falsely succeed; accepted receipts keep existing fast-close semantics and failure preserves editable draft. Logs distinguish accepted queue from immediate input without content. |

@@ -93,7 +93,7 @@ func parseActiveSpots(savePath string) []activeSpot {
 // correctly, and being on the wrong window is never worth failing a restore over.
 func applyActiveSpots(spots []activeSpot) {
 	for _, s := range spots {
-		if s.session == "" || s.window == "" {
+		if s.session == "" || s.window == "" || (remoteRestoreSessions != nil && !remoteRestoreSessions[s.session]) {
 			continue
 		}
 		target := s.session + ":" + s.window

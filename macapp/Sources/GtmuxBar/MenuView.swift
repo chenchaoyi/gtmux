@@ -3,6 +3,13 @@ import SwiftUI
 
 enum MenuAction {
     case localWorkspace, restore, newSession, environmentHealth, whatsNew, preferences, pairPhone, quit, startHQ, browsePanes, screenshot
+
+    var closesMenuAfterAction: Bool {
+        switch self {
+        case .restore, .quit, .preferences, .pairPhone, .newSession, .browsePanes, .screenshot: return false
+        default: return true
+        }
+    }
 }
 
 /// MenuView is the popover (DESIGN §3): a header (logo + search + summary), the
