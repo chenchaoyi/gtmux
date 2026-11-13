@@ -1,0 +1,46 @@
+{
+  "id": "codex-binding-recovery-20261113",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-13",
+    "decision": "Recover a transient post-admission binding failure without guessing the current thread or weakening terminal identity",
+    "notes": "User requests current session association fix. Runtime diagnosis proved inherited TMUX_PANE %10 is another project; actual current gtmux dev is %23. Current valid terminal inspection succeeds; matching bridge log has a prior failed Bind and source has no pending retry. This is proof of lost recovery behavior, not the exact missing observation at17:25. Design precedes tests. Retain only a matching successful root operation already observed on the home-verified, admitted live connection. Do not infer SID from CWD, inherited pane, shared backend, argv, global notifications or history reads. Keep all existing strict PID/birth/home/foreground/TTY/new-owner/epoch checks. Retry only explicitly unavailable observation or held publication lease; observed different identity and unsafe IO remain refused. A state helper is wired into actual Run bind/tick/selection paths; deterministic baseline callback/tick negative control is semantics extracted from exact B, not a whole B binary/real reconnect. Controller retries publication only, never protocol frames, task input, service/terminal restart or restore. Suspend old-root heartbeat after a successful different-root operation while new binding is unresolved. Preserve committed receipt-error handling and all current observer protection tests. Native/UI runtime acceptance of the existing old bridge is separate from candidate source quality; do not fabricate a live rebind. Shared dirty root and frozen PR1859/1861 source remain unchanged."
+  },
+  "cases": [
+    {
+      "id": "CBA-001",
+      "layer": "L2",
+      "description": "Typed binding readiness preserves strict identity and distinguishes unavailable proof",
+      "setup": "Actual BindCodexFrontend and isolated process/pane/storage seams",
+      "action": "Temporarily omit bridge/backend/terminal observations then restore; compare changed birth, home, target and newer owner",
+      "expected": "Missing observations remain refused but retryable. Explicit observed identity/home/birth/owner mismatch is hard and never publishes. Existing input authority assertions remain unchanged.",
+      "planned_files": [
+        "internal/resume/frontend_binding_readiness_test.go"
+      ]
+    },
+    {
+      "id": "CBA-002",
+      "layer": "L2",
+      "description": "A verified root operation survives one transient binding failure",
+      "setup": "Production observer plus production per-connection binding state; deterministic clock and strict bind/refresh seams, no real daemon",
+      "action": "Receive matching successful root response, fail first binding, tick after proof recovers; include initial empty attachment and same-root reconnect",
+      "expected": "The exact root is retried within schedule/budget and binds once, then ordinary heartbeat resumes; no repeated root RPC or message/input is sent. Baseline callback/tick semantics fail the recovery assertion.",
+      "planned_files": [
+        "internal/codexbridge/binding_recovery_test.go"
+      ]
+    },
+    {
+      "id": "CBA-003",
+      "layer": "L2",
+      "description": "Pending retry cannot publish stale roots or exceed its budget",
+      "setup": "Same production state/observer, controlled selection/epoch/clock/lease/receipt failures",
+      "action": "New root request before response, newer accepted root, old response, invalid/ephemeral/home/notification/catalog traffic, new connection epoch, hard mismatch, receipt-only error and deadline",
+      "expected": "New selection invalidates prior pending root; old responses/epochs never reclaim. Unknown observations do not authorize. Hard mismatch stops. At most8 bind attempts, no new attempt at/after30s, exponential1/2/4/8s pacing. Deadline is scheduling bound, not a claim that an uninterruptible syscall returns at30s. Receipt-only errors retain committed attachment and retry only via ordinary heartbeat. A newer successful root whose binding fails suspends old-root heartbeat instead of keeping wrong history live.",
+      "planned_files": [
+        "internal/codexbridge/binding_recovery_test.go"
+      ]
+    }
+  ],
+  "seal": "de7a0c0679eb79fc179935209d9314d7af84556ef8dc301d4daab88ad72eb8ce"
+}

@@ -30,7 +30,7 @@ func completeAdmission(ctx context.Context, epoch *connectionEpoch, id uint64) (
 	if _, err := admissionUpgradeTimeout(ctx); err != nil {
 		return false, err
 	}
-	return epoch.activate(id), nil
+	return epoch.activateContext(ctx, id)
 }
 
 // The listener can receive the child's connection before cmd.Start returns.
