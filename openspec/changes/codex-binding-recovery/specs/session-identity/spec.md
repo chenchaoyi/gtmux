@@ -12,3 +12,13 @@ The bridge SHALL retain the latest matching successful non-ephemeral root operat
 - **WHEN** the connection requests a newer root or a newer connection epoch succeeds
 - **THEN** the old pending root cannot publish
 - **AND** failure of a successful new root publication cannot refresh the old root as current
+
+#### Scenario: A new connection arrives while publication is running
+- **WHEN** an incumbent is publishing a verified root
+- **THEN** publication and activation of a newer epoch share a serial permission boundary
+- **AND** admission waiting for that permission keeps its original deadline and does not displace the incumbent on failure
+
+#### Scenario: Connection stops while responses drain
+- **WHEN** cancellation or disconnect is observed
+- **THEN** the connection retires publication before transports close and forwarders drain
+- **AND** already canceled work cannot start another binding attempt
