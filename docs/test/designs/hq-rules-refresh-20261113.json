@@ -1,0 +1,79 @@
+{
+  "id": "hq-rules-refresh-20261113",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review; not independent approval",
+    "date": "2026-11-13",
+    "decision": "Add one standalone managed-rules refresh path before every session/startup action",
+    "notes": "Reviewed exact e2768b40 source: CmdHQ currently seeds then StampEnrolledAll/focus/launch. Reuse existing playbook version/language decision and playbookIn; do not create a second charter generator. Shared nonblocking migration lock serializes cooperating startup/import/refresh writers. New path uses bounded no-follow owned-regular read, requires canonical managed marker and known installed language, refuses read-only/unsafe leaves, exclusive collision-safe backup with no pruning, and existing state.WritePrivateFile atomic publication. Preserve normal startup upgrade semantics and existing valid tests. Recheck original bytes/identity before publish as a best-effort manual-editor conflict guard; manual editors do not share the lock, so no external-writer atomic CAS guarantee. The lock and normal private parent handling may create/narrow managed parent directories, but unrelated files/markers/input and their payloads are untouched. No production rules refresh, TCC, input, session restore, KB apply or model calls during implementation. Targeted command tests old-red/new-green plus neighboring backup/language/help/state/race checks and normal final gates; operational install/adoption waits separate review and normal release."
+  },
+  "cases": [
+    {
+      "id": "HQR-001",
+      "layer": "L2",
+      "description": "Refreshing managed HQ rules never starts, focuses, inputs or enrolls sessions",
+      "setup": "Actual CmdHQ with synthetic old managed en/zh HQ home, personal notes/knowledge/board, existing old backups, exact status/enrollment/input sentinels, recording tmux executable.",
+      "action": "Run --refresh-rules without TMUX and with tmux unavailable; compare all unrelated bytes and process calls.",
+      "expected": "Success publishes exactly playbookIn(current existing language), retains an exact old-file backup and all existing backups. LOCAL/notes/knowledge/board/CLAUDE pointer and unrelated status/enrollment/input bytes remain unchanged; zero tmux calls, no fresh seeding or session mutation.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_test.go"
+      ]
+    },
+    {
+      "id": "HQR-002",
+      "layer": "L2",
+      "description": "Same/newer managed rules converge and preserve the installed language",
+      "setup": "Existing older en/zh managed file with opposite shell language, then same-version and future-version variants; no optional personal files.",
+      "action": "Invoke actual standalone command twice; compare content/mtime/file list and rendered help catalog.",
+      "expected": "Older rules upgrade in their existing language using the common generator. Equal/newer versions remain byte/mtime identical, no new backups or optional personal/pointer files. Common/help-all and HelpFlags expose the standalone flag.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_test.go"
+      ]
+    },
+    {
+      "id": "HQR-003",
+      "layer": "L2",
+      "description": "Rules refresh cannot be combined with another HQ action",
+      "setup": "Fresh isolated home with per-action variants: rotate/launch target/agent/language/board/home/records/export/import/passphrase/json/brief/maintenance and duplicate refresh.",
+      "action": "Call actual parser with each combination before/after refresh.",
+      "expected": "Exit2 before lock/seeding/I/O/tmux, no files in fixture home; help retains ordinary nonmutating early return. No action precedence silently chooses a different mode.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_test.go"
+      ]
+    },
+    {
+      "id": "HQR-004",
+      "layer": "L2",
+      "description": "Rules refresh shares the existing nonblocking startup/import lock",
+      "setup": "Managed old rules and a held actual acquireMigrationApplyLock in the same isolated home; recording tmux and sentinels.",
+      "action": "Invoke while held, release lock, invoke again.",
+      "expected": "Contention exits1 without changing AGENTS/backup/other files; after release exactly one upgrade succeeds, no session effects or deadlock. No sleep/probabilistic race proof.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_test.go"
+      ]
+    },
+    {
+      "id": "HQR-005",
+      "layer": "L2",
+      "description": "Refresh refuses absent, unmanaged or unsafe instruction files",
+      "setup": "Missing home/file, unmanaged/embedded or malformed marker, unknown language, read-only AGENTS, symlink to external sentinel, directory and FIFO leaf fixtures.",
+      "action": "Invoke actual standalone command and compare retained original/external bytes and absence of seed files/backups.",
+      "expected": "Exit1 without following links/special files or blocking FIFO, without chmod repair of the source or seeding/migration. No downgrade of future versions. Only the pre-existing shared lock outside the HQ home may be created; no credentials/real homes read.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_test.go"
+      ]
+    },
+    {
+      "id": "HQR-006",
+      "layer": "L2",
+      "description": "Backups are exclusive, bounded and preserved when publication cannot start",
+      "setup": "Managed prior rules with collisions at version-language backup names, 100 occupied candidates, and an unwritable HQ directory; old-backup byte sentinels.",
+      "action": "Run command under each isolated filesystem condition, restore fixture permissions in cleanup.",
+      "expected": "Collisions get a fresh bounded numbered backup and never overwrite/delete existing material; full namespace or backup I/O failure exits1 with the original AGENTS unchanged. Successful publication is atomic via the existing private state writer; a post-rename sync failure may leave complete new content plus backup and is an error, not promised rollback.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_test.go"
+      ]
+    }
+  ],
+  "seal": "778baf0c83ea3578f677076c543a0a97e027a7325d5125c6e746eb8fc7283a61"
+}

@@ -1,0 +1,35 @@
+{
+  "id": "activity-dsh-identity-boundary-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner design self-review; independent approval pending",
+    "date": "2026-11-14",
+    "decision": "Keep each provider skill identity within its own recorded schema",
+    "notes": "Read full S review and verify bytes/SHA. DSH current rc.5 declares name, OpenCode V2 id does not authorize DSH id. For exact DSH skill, any id field is an unknown alias conflict and remains neutral, including mixed name/id; original skill compatibility and all existing invalid/conflict controls stay. OpenCode name/id, DSH name and queries are unchanged. No source/FS inference, original input/ref/redaction/dedup/count behavior changes. Actual native DSH adapter output is supplied to Chat/Trace plus rendered RN row; exact S production overlay must fail the new target assertions while legitimate controls remain green. No live provider/app input."
+  },
+  "cases": [
+    {
+      "id": "ASA-009",
+      "layer": "L2",
+      "description": "DSH never borrows OpenCode id as a skill identity",
+      "setup": "Actual dshStep append arguments with id-only and mixed id/name, plus valid DSH name/OpenCode id/name and existing controls.",
+      "action": "Parse original records, compare Action/Detail/count/input/ref and emit actual public Steps for presentation verification.",
+      "expected": "Foreign DSH id shapes stay neutral without treating id as identity. Valid native identities and queries remain factual one-call inputs. Exact old S is target-red, new candidate green, source restoration hash checked.",
+      "planned_files": [
+        "internal/transcript/activity_dsh_identity_test.go"
+      ]
+    },
+    {
+      "id": "ASA-010",
+      "layer": "L2",
+      "description": "Neutral DSH input stays neutral in shared labels and actual RN ToolSteps",
+      "setup": "Public Step JSON emitted by actual Go DSH adapter with id-only and mixed fields; valid name/queries controls; generated browser presenter and real RN ToolSteps.",
+      "action": "Assert bilingual Chat/Trace labels, previews/call count, unchanged Step and actual rendered neutral row.",
+      "expected": "Unknown id is never labelled Read skill; generic tool label remains. Valid skill/query labels/count are preserved. Go\u2192presenter/RN controls use exact emitted JSON, not handwritten inferred facts.",
+      "planned_files": [
+        "mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx"
+      ]
+    }
+  ],
+  "seal": "d3b38cdd584bb4c8c104ac3176432b82c749dc869ffde53345ca866e8e185efc"
+}

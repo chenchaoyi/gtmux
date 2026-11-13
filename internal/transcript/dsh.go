@@ -75,7 +75,7 @@ func dshStep(line []byte, st *parseState) error {
 			return fmt.Errorf("DSH tool name exceeds read limit")
 		}
 		if data.Name != "" {
-			st.addSteps([]Step{toolStep(data.Name, data.Name, json.RawMessage(data.Arguments), toolDetail(json.RawMessage(data.Arguments)))})
+			st.addSteps([]Step{providerToolStep("dsh", data.Name, data.Name, json.RawMessage(data.Arguments), toolDetail(json.RawMessage(data.Arguments)))})
 		}
 	}
 	if st.cur != nil {

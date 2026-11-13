@@ -14,6 +14,11 @@ const (
 // toolStep adds inspectable input without retaining results or dumping arbitrary JSON.
 // Summaries remain compatible with older clients; richer fields are optional.
 func toolStep(name, title string, raw json.RawMessage, summary string) Step {
+	return providerToolStep("", name, title, raw, summary)
+}
+
+// Only adapters with a known native schema may interpret provider-only aliases.
+func providerToolStep(provider, name, title string, raw json.RawMessage, summary string) Step {
 	step := Step{Kind: "tool", Title: title, Detail: summary, Operation: toolOperation(name)}
 	var args map[string]any
 	if json.Unmarshal(raw, &args) != nil {
@@ -74,6 +79,7 @@ func toolStep(name, title string, raw json.RawMessage, summary string) Step {
 			}
 		}
 	}
+	applyActivityFacts(&step, name, args, provider)
 	return step
 }
 
@@ -157,6 +163,9 @@ func boundedToolText(value string, limit int) (string, bool) {
 }
 
 func toolOperation(name string) string {
+	if webRunner(name) {
+		return "web"
+	}
 	if i := strings.LastIndex(name, "__"); i >= 0 {
 		name = name[i+2:]
 	}
@@ -174,7 +183,7 @@ func toolOperation(name string) string {
 		return "command"
 	case "edit", "write", "apply_patch", "patch", "write_file", "edit_file":
 		return "edit"
-	case "web_search", "webfetch", "web_fetch", "browse", "open_url", "fetch", "fetchurl":
+	case "web_search", "websearch", "webfetch", "web_fetch", "browse", "open_url", "fetch", "fetchurl":
 		return "web"
 	case "js", "python":
 		return "code"

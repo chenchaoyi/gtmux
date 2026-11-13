@@ -5,6 +5,26 @@ TBD - created by archiving change supervisor-mvp. Update Purpose after archive.
 
 ## Requirements
 
+### Requirement: Refresh existing managed HQ rules without session actions
+
+The standalone `gtmux hq --refresh-rules` action SHALL reuse the shipped charter
+renderer and version/language decision for an existing owned regular managed
+AGENTS.md. It SHALL preserve its language, LOCAL/CLAUDE/notes/knowledge and every
+other session marker or input. Equal/newer versions SHALL remain unchanged.
+The action SHALL NOT initialize a missing/legacy home, require tmux, enroll panes,
+focus, launch, rotate or send input; combining another action SHALL be refused.
+
+#### Scenario: An installed CLI carries newer rules while HQ keeps running
+
+- **WHEN** the standalone action reads a valid older managed file under the shared startup/import lock
+- **THEN** it saves the exact old bytes under a fresh exclusive backup name without pruning old backups, atomically publishes the shipped rules in the existing language, and leaves all session actions untouched
+
+#### Scenario: Unsafe file, occupied lock or backup failure
+
+- **WHEN** the existing file is missing/unmanaged/unsafe, the shared lock is held, or backup publication cannot complete
+- **THEN** it refuses without seeding a home or altering the existing instruction file, personal records or session markers; external manual editors are not claimed to participate in the lock
+
+
 ### Requirement: Direct Codex HQ retains terminal scrollback
 
 A direct interactive Codex HQ launch SHALL share the managed inline-screen default

@@ -1,0 +1,57 @@
+{
+  "id": "hq-rules-boundary-followup-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review; not independent approval",
+    "date": "2026-11-14",
+    "decision": "Close four precise standalone refresh review boundaries without widening write authority",
+    "notes": "Independent Q report/manifest fully read and SHA checked. Preserve HQR001..006 and original Q/failed evidence. Pre-scan exact standalone marker before parser value consumption and actions. Keep backup fd for bounded content verification; no-follow recheck current leaf inode, and conservatively leave any failed/changed backup instead of unlinking an uncertain path. Detect recognized external user/knowledge blocks and unknown content after the generated LOCAL boundary, refuse safely rather than silently remove effective instructions or auto-migrate. Use a dedicated single-link private lock open that checks nlink before chmod while preserving existing regular/owner/no-follow/managed-parent checks and normal flock. Backup legacy helper and generic private primitives are inherited; state precisely what this new caller makes reachable. Keep best-effort external editor conflict boundary and post-rename fsync limits, not an artificial CAS guarantee. Exact old-Q controls for parser/mixed content/hardlink and a declared old-logic plus observer backup control precede green. No real HQ/config/KB/session/permissions changes."
+  },
+  "cases": [
+    {
+      "id": "HQR-007",
+      "layer": "L2",
+      "description": "Malformed value flags cannot swallow standalone refresh",
+      "setup": "Use actual CmdHQ and recording rejecting tmux in synthetic HOME; value-taking flags before/after the standalone marker, missing values and help.",
+      "action": "Invoke exact token combinations including --agent --refresh-rules.",
+      "expected": "Standalone marker is validated before value consumption/actions; every incompatible combination exits2 without seed/enroll/launch/tmux/writes. Ordinary legitimate agent/language values and existing read-only help semantics remain.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_boundary_test.go"
+      ]
+    },
+    {
+      "id": "HQR-008",
+      "layer": "L2",
+      "description": "Backup verification and failure never remove a replacement object",
+      "setup": "Actual exclusive backup writer with a deterministic after-write observer replacing the path with a same-UID file, symlink or FIFO, plus ordinary backup and collision controls.",
+      "action": "Verify the created fd and current path identity under the observer-controlled ordering.",
+      "expected": "Bounded no-follow verification returns conflict for changed identity; source and replacement bytes/inode remain, no unlink of an uncertain path, no blocking FIFO or arbitrary reads. A failed partial owned backup may remain visibly retained. Negative control reintroduces old path-read/unlink semantics at the same seam; not claimed old-binary concurrency.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_boundary_test.go"
+      ]
+    },
+    {
+      "id": "HQR-009",
+      "layer": "L2",
+      "description": "Mixed active instruction blocks are not silently overwritten",
+      "setup": "Managed old en/zh files with independent user and valid knowledge blocks before/after LOCAL, arbitrary trailing instructions, and canonical managed-only controls.",
+      "action": "Invoke standalone refresh and compare all file bytes/mtime/backups.",
+      "expected": "Conservatively reject recognized external blocks or unknown post-LOCAL content without modifying original/LOCAL/knowledge; do not migrate private content automatically. Canonical managed-only files still upgrade with verified backup. Same/future-version limits remain honest.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_boundary_test.go"
+      ]
+    },
+    {
+      "id": "HQR-010",
+      "layer": "L2",
+      "description": "The shared apply lock rejects hardlinked leaves before chmod",
+      "setup": "Actual standalone Cmd and lock acquisition with isolated managed root and external same-UID0644 sentinel hardlinked as lock; owner/no-follow/single-link contention controls.",
+      "action": "Try refresh and compare external inode/mode/content/mtime; then use ordinary lock and contend.",
+      "expected": "Hardlink is rejected before mode/truncate changes, preserving external file and rules. Normal single-link private lock retains flock/owner/parent protections; no global weakening of private IO. Tests never change real permissions.",
+      "planned_files": [
+        "internal/hq/rulesrefresh_boundary_test.go"
+      ]
+    }
+  ],
+  "seal": "c60650eef30c92619325ad2f6324b9b8da5578d381fac3f44c19775c4032432c"
+}

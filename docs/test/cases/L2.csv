@@ -124,6 +124,17 @@ MAP-426d8c4b1e7f,L2,reviewed implementation,internal/hq/identity_launch_test.go,
 MAP-fc5da55172ab,L2,reviewed implementation,internal/hq/rotation_admission_test.go,11,reviewed-selector,TestHRW007RegistrationSharesTheInputClaimLease,False,HRW-007
 MAP-5fb504a908e7,L2,reviewed implementation,internal/hq/rotation_attention_test.go,14,reviewed-selector,TestHRW011RotationFailureUsesNonWaitingAttention,False,HRW-011
 MAP-5c6873f6e524,L2,reviewed implementation,internal/hq/rotation_priority_test.go,13,reviewed-selector,TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert,False,HRW-006
+MAP-8b92ea364819,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,15,reviewed-selector,TestHQR007StandaloneTokenCannotBeConsumedAsAValue,False,"HQR-007,HQR-008,HQR-009,HQR-010"
+MAP-21d9bf41c0b2,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,35,reviewed-selector,TestHQR008BackupKeepsReplacement,False,"HQR-007,HQR-008,HQR-009,HQR-010"
+MAP-578e146c5570,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,98,reviewed-selector,TestHQR009MixedRulesAreNotSilentlyRebuilt,False,"HQR-007,HQR-008,HQR-009,HQR-010"
+MAP-44bbae26a68a,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,136,reviewed-selector,TestHQR010HardlinkedLockCannotChangeExternalPermissions,False,"HQR-007,HQR-008,HQR-009,HQR-010"
+MAP-2c176da9ae7f,L2,reviewed implementation,internal/hq/rulesrefresh_inline_block_test.go,14,reviewed-selector,TestHQR011InlineInSyncKnowledgeRemainsEffective,False,HQR-011
+MAP-f07cf6ea366b,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,84,reviewed-selector,TestHQR001RefreshOnlyUpdatesManagedRules,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-f3c6fa0664ed,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,137,reviewed-selector,TestHQR002RefreshKeepsLanguageAndConverges,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-26c222f9b436,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,180,reviewed-selector,TestHQR003RefreshRejectsConflictingOptions,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-27e9b5f03486,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,198,reviewed-selector,TestHQR004RefreshUsesExistingApplyLock,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-564acb685125,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,219,reviewed-selector,TestHQR005RefreshRefusesUnsafeManagedFiles,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-1b8457abb5dd,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,278,reviewed-selector,TestHQR006RefreshPreservesBackupNamesAndFailsSafely,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 MAP-e4cfa47e623e,L2,reviewed implementation,internal/hqinput/rotation_test.go,13,reviewed-selector,TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize,False,HRW-003
 MAP-0983f7043ede,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,17,reviewed-selector,TestHRW009NativeOutcomeCrashCannotRebatchOldInput,False,"HRW-009,HRW-010"
 MAP-10606a0f2e3f,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,113,reviewed-selector,TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer,False,"HRW-009,HRW-010"
@@ -623,6 +634,15 @@ MAP-e5d2427c7d6d,L2,reviewed implementation,internal/state/cpu_repeated_poll_tes
 MAP-33d2a35b1094,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,30,reviewed-selector,TestCSR005RepeatedPollRequiresValidPriorEvidence,False,CSR-005
 MAP-c2cbd0d02497,L2,reviewed implementation,internal/state/privatewrite_durability_test.go,14,reviewed-selector,TestPrivateWriteRetriesDirectorySyncAfterRename,False,PRIVATEWRITE-DIRECTORY-SYNC
 MAP-495d9fb7b0a9,L2,Go core / CLI / server,internal/state/privatewrite_test.go,201,reviewed-selector,TestPrivateWritePrePublicationFailurePreservesOriginal,False,KBCARRIER-ATOMIC
+MAP-3cff5fa16242,L2,reviewed implementation,internal/transcript/activity_action_test.go,78,reviewed-selector,TestASA001RecordedSkillIdentityAcrossFiveAdapters,False,"ASA-001,ASA-002,ASA-003"
+MAP-005983dcced4,L2,reviewed implementation,internal/transcript/activity_action_test.go,96,reviewed-selector,TestASA001ShellTextAndBareNamesDoNotInventSkillReads,False,"ASA-001,ASA-002,ASA-003"
+MAP-6f4234fa9eea,L2,reviewed implementation,internal/transcript/activity_action_test.go,111,reviewed-selector,TestASA002WebIntentUsesExplicitMethodsOrCompleteActions,False,"ASA-001,ASA-002,ASA-003"
+MAP-86e4d7539d34,L2,reviewed implementation,internal/transcript/activity_action_test.go,145,reviewed-selector,TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput,False,"ASA-001,ASA-002,ASA-003"
+MAP-4ebad51532c4,L2,reviewed implementation,internal/transcript/activity_action_test.go,188,reviewed-selector,TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands,False,"ASA-001,ASA-002,ASA-003"
+MAP-82d0542c06e1,L2,reviewed implementation,internal/transcript/activity_action_test.go,221,reviewed-selector,TestASA003ActionMetadataParticipatesInRetentionBudget,False,"ASA-001,ASA-002,ASA-003"
+MAP-eb016323a1eb,L2,reviewed implementation,internal/transcript/activity_dsh_identity_test.go,8,reviewed-selector,TestASA009DSHDoesNotBorrowOpenCodeIdentity,False,ASA-009
+MAP-528289833275,L2,reviewed implementation,internal/transcript/activity_native_facts_test.go,9,reviewed-selector,TestASA006NativeSkillSchema,False,"ASA-006,ASA-007"
+MAP-fe36601b6e24,L2,reviewed implementation,internal/transcript/activity_native_facts_test.go,41,reviewed-selector,TestASA007NativeQueriesSchema,False,"ASA-006,ASA-007"
 MAP-79929223fc37,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,13,reviewed-selector,TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable,False,LCL-001
 MAP-9661b1f33d22,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,112,reviewed-selector,TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached,False,LCL-001
 MAP-18b153c61e83,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,12,reviewed-selector,class ChoiceFixture,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
@@ -1692,6 +1712,7 @@ LEG-bd8a819ecc3d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,
 LEG-089667cd0076,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,97,test,"two turns minutes apart share one separator, at the start",False,legacy-not-retrospectively-reviewed
 LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,104,test,"a night and a pause each earn one, the turn between them earns none",False,legacy-not-retrospectively-reviewed
 LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,110,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
+MAP-14697d90a8f6,L2,reviewed implementation,mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx,10,reviewed-selector,ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace,False,ASA-010
 LEG-89ff3e67a8c8,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,60,test,native file changes are labeled as recorded changes and preserve complete copy,False,legacy-not-retrospectively-reviewed
 LEG-1f4a8322a751,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,96,test,whole group folds to a labelled summary and unmounts all command content,False,legacy-not-retrospectively-reviewed
 LEG-69fa3bc440bd,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,107,test,individual input wraps without horizontal controls and copies the complete recorded input,False,legacy-not-retrospectively-reviewed
