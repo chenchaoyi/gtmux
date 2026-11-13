@@ -2322,5 +2322,23 @@
       "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
       "testRefusedWaitingSaysWhetherTheTextWasPasted"
     ]
+  },
+  "internal/codexbridge/binding_heartbeat_context_test.go": {
+    "cases": [
+      "CBA-006"
+    ],
+    "selectors": [
+      "TestCBA006ProductionFactoryHeartbeatRetainsConnectionContext"
+    ]
+  },
+  "internal/resume/frontend_heartbeat_context_test.go": {
+    "cases": [
+      "CBA-006"
+    ],
+    "selectors": [
+      "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
+      "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
+      "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
+    ]
   }
 }

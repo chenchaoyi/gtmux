@@ -45,7 +45,10 @@ func newFrontendBinding(f resume.CodexFrontend, current func() bool, report func
 
 func makeFrontendBinding(parent context.Context, f resume.CodexFrontend, current func() bool, report func(string, error, int)) *frontendBinding {
 	ctx, cancel := context.WithCancel(parent)
-	b := &frontendBinding{attachment: f, current: current, ctx: ctx, cancel: cancel, refresh: resume.RefreshCodexFrontend, end: resume.EndCodexFrontend, report: report, now: time.Now}
+	b := &frontendBinding{attachment: f, current: current, ctx: ctx, cancel: cancel, end: resume.EndCodexFrontend, report: report, now: time.Now}
+	b.refresh = func(f resume.CodexFrontend) (resume.CodexFrontend, error) {
+		return resume.RefreshCodexFrontendContext(ctx, f)
+	}
 	b.bind = func(f resume.CodexFrontend, id, cwd string) (resume.CodexFrontend, error) {
 		return resume.BindCodexFrontendContext(ctx, f, id, cwd)
 	}

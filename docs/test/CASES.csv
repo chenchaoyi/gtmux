@@ -875,6 +875,7 @@ LEG-77f52af6f569,G,Go core / CLI / server,internal/artifact/store_test.go,126,Te
 LEG-5cd7ac080740,L1,Go core / CLI / server,internal/artifact/store_test.go,169,Test,TestRegistryQuotaAndRemoval,False,legacy-not-retrospectively-reviewed
 MAP-087141967dfd,L2,reviewed implementation,internal/codexbridge/analytics_identity_test.go,9,reviewed-selector,TestSID002AnalyticsLabelDoesNotEraseRootIdentity,False,SID-002
 MAP-e319389af183,L2,reviewed implementation,internal/codexbridge/analytics_identity_test.go,22,reviewed-selector,TestSID002AnalyticsCannotPromoteChildOrGlobalTraffic,False,SID-002
+MAP-01ae39f2f61d,L2,reviewed implementation,internal/codexbridge/binding_heartbeat_context_test.go,11,reviewed-selector,TestCBA006ProductionFactoryHeartbeatRetainsConnectionContext,False,CBA-006
 MAP-3350a2c15a53,L2,reviewed implementation,internal/codexbridge/binding_lifetime_test.go,17,reviewed-selector,TestCBA005RunDisconnectRetiresBeforeTransportDrain,False,CBA-005
 MAP-a9d70d810c9d,L2,reviewed implementation,internal/codexbridge/binding_lifetime_test.go,55,reviewed-selector,TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry,False,CBA-005
 MAP-cea0125b012a,L2,reviewed implementation,internal/codexbridge/binding_lifetime_test.go,85,reviewed-selector,TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed,False,CBA-005
@@ -2603,6 +2604,9 @@ MAP-8bd80450b6d7,L2,reviewed implementation,internal/resume/frontend_binding_con
 MAP-1c1e4be8a53f,L2,reviewed implementation,internal/resume/frontend_binding_readiness_test.go,12,reviewed-selector,TestCBA001UnavailableProofIsRetryableButNeverPublishes,False,CBA-001
 MAP-39ddbf3063f8,L2,reviewed implementation,internal/resume/frontend_binding_readiness_test.go,40,reviewed-selector,TestCBA001ObservedBirthHomeAndTargetChangesStayHard,False,CBA-001
 MAP-7904cc643f1d,L2,reviewed implementation,internal/resume/frontend_binding_readiness_test.go,68,reviewed-selector,TestCBA001MissingTerminalProofNeverBecomesInputAuthority,False,CBA-001
+MAP-3cee131e3a9d,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,12,reviewed-selector,TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex,False,CBA-006
+MAP-38c7cef4bfeb,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,60,reviewed-selector,TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt,False,CBA-006
+MAP-8b4dde286a90,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,123,reviewed-selector,TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery,False,CBA-006
 LEG-e73e8edb8618,L1,Go core / CLI / server,internal/resume/launcher_test.go,11,Test,TestResumeUsesTheRecordedLauncher,False,legacy-not-retrospectively-reviewed
 LEG-333f100efdb6,L1,Go core / CLI / server,internal/resume/launcher_test.go,26,Test,TestLauncherKeepsTheAgentsOwnFlags,False,legacy-not-retrospectively-reviewed
 LEG-75667cf67db3,L1,Go core / CLI / server,internal/resume/launcher_test.go,34,Test,TestNoLauncherResumesAsBefore,False,legacy-not-retrospectively-reviewed
