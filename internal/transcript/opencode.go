@@ -128,7 +128,7 @@ func AppendOpencodeEvent(sessionID string, raw json.RawMessage) {
 		if event.Name == "" {
 			return
 		}
-		step := toolStep(event.Name, event.Name, event.Input, kimiToolDetail(string(event.Input)))
+		step := providerToolStep("opencode", event.Name, event.Name, event.Input, kimiToolDetail(string(event.Input)))
 		step.Input, step.Workdir = step.fullInput, step.fullWorkdir
 		step.DetailsTruncated = false
 		appendOpencodeLine(sessionID, opencodeLine{Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Role: "tool", Step: &step, CallID: event.ID})

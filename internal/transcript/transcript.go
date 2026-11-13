@@ -378,7 +378,9 @@ type Step struct {
 	Title            string    `json:"title"`            // tool name (Edit, Bash, exec_command…)
 	Detail           string    `json:"detail,omitempty"` // a short arg summary (path / command head)
 	Operation        string    `json:"operation,omitempty"`
-	Input            string    `json:"input,omitempty"` // selected original input, with whitespace preserved
+	Action           string    `json:"action,omitempty"`        // selected recorded intent, not inferred execution
+	SubjectCount     int       `json:"subject_count,omitempty"` // distinct recorded file targets within this one call
+	Input            string    `json:"input,omitempty"`         // selected original input, with whitespace preserved
 	InputKind        string    `json:"input_kind,omitempty"`
 	Workdir          string    `json:"workdir,omitempty"`
 	DetailsTruncated bool      `json:"details_truncated,omitempty"`

@@ -86,7 +86,7 @@ func cachedTurnBytes(turns []Turn) int64 {
 				if c := step.Call; c != nil {
 					n += int64(128 + len(c.Provider) + len(c.Name) + len(c.Status) + len(c.Ref) + len(c.Arguments) + len(c.Result) + len(step.detailIdentity))
 				}
-				n += int64(160 + len(step.Kind) + len(step.Title) + len(step.Detail) + len(step.Operation) + len(step.Input) + len(step.InputKind) + len(step.Workdir) + len(step.InputRef))
+				n += int64(184 + len(step.Kind) + len(step.Title) + len(step.Detail) + len(step.Operation) + len(step.Action) + len(step.Input) + len(step.InputKind) + len(step.Workdir) + len(step.InputRef))
 			}
 		}
 	}

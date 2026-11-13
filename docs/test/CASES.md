@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1213 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1221 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2212 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 132 | [L3.csv](cases/L3.csv) |
+| L2 · Component / contract | 2222 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 138 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
@@ -21,6 +21,16 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 
 | ID | Expected behavior |
 | --- | --- |
+| ASA-001 | Only explicit skill methods or recorded read targets under a skills directory supply skill identity; no filesystem reads, frontmatter execution, shell-text guessing or claim of skill application. Mixed ordinary/skill reads remain file reads. Raw input/ref/name/status/order/count remain. |
+| ASA-002 | Specific web labels require a known method or complete recognized action structure. Search queries are not called page navigation; find patterns are not called web searches. Mixed/unknown remain a neutral web action. No result/body/credential scanning or additional arbitrary parameter retention. |
+| ASA-003 | Recorded target count and bounded names are visible; count describes targets, not extra calls. Exact-ID merge enriches metadata without changing original input/ref or inventing records, parentage or execution success; unknown/mixed commands remain command. |
+| ASA-004 | Read skill/name, Search web/query, Open webpage/target and Find in page/pattern agree across surfaces; plural target label is accurate. Unknown action falls back, invalid counts ignored, original record remains unchanged. Existing mouse/touch targets and inspector raw data remain. |
+| ASA-005 | Old payloads retain useful fallback; only known explicit tool names refine old web labels. Bounds and raw fields survive; action metadata round-trips through Trace; no success claim, arbitrary decoding, file lookup or increased call counts. |
+| ASA-009 | Foreign DSH id shapes stay neutral without treating id as identity. Valid native identities and queries remain factual one-call inputs. Exact old S is target-red, new candidate green, source restoration hash checked. |
+| ASA-010 | Unknown id is never labelled Read skill; generic tool label remains. Valid skill/query labels/count are preserved. Go→presenter/RN controls use exact emitted JSON, not handwritten inferred facts. |
+| ASA-006 | Only exact known provider/tool schemas permit name/id; valid forms show skill action and bounded identity once. Missing/wrong/conflicting/foreign parameters remain neutral; existing canonical path reads, legacy skill and native mirror controls stay unchanged. |
+| ASA-007 | A valid 1..64 typed nonblank query array supplies a clipped preview from at most three entries, preserving one call and the original input/ref. Invalid arrays do not create a guessed preview; only exact DSH web_search gains this schema. |
+| ASA-008 | Skill name and search text match recorded facts across surfaces; one invocation remains one row/call, original objects/refs remain unchanged and unsupported records retain the existing fallback. |
 | AOP-001 | Known normalized operations take primary title; unknown methods retain real provider/name. Call facts, inputs, count and ordering are unchanged. Actual RN row and browser inspector/Trace agree; no fabricated children, successes or per-file calls. |
 | AOP-002 | Readable actual command instead of serialized argv when structure is complete and recognized; semantic file/query summaries remain. Never execute/parse shell text as authority, infer read/search from arbitrary words, unescape malformed JSON, change Raw input, invent output or expand record count. Keep 160-character spoken bound and surrogate safety. |
 | AOP-003 | Fine pointer row min-height30px with bounded one-line summary and visible focus; touch/coarse remains44px and RN44pt. Full details remain keyboard accessible, long content stays within edge, record label matches icon and accessibility name. Static fixtures do not certify real iOS/Android VoiceOver or device accessibility. |

@@ -1,9 +1,11 @@
 import type { TranscriptStep } from '../api/client';
-import {activityOperation, activityLabel} from './activity';
+import {activityOperation, activityLabel, activityActionLabel} from './activity';
 
 // Canonical Chat/Trace interpretation, also generated for the browser. These
 // fields describe recorded evidence; never infer success from a tool name.
 export function callTitle(step: TranscriptStep, lang: 'en' | 'zh' = 'en') {
+  const actionLabel = activityActionLabel(step, lang);
+  if (actionLabel) return actionLabel;
   const operation = activityOperation(step);
   if (operation !== 'tool') return activityLabel(operation, lang);
   const call = step.call;

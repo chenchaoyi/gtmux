@@ -4,6 +4,8 @@ Paired Chinese document: [中文](transcript-activity-research.zh.md).
 
 The reported phone screen displayed a run of bare `js` and `wait` lines. The problem is hierarchy and missing descriptions, not the number of agent statuses.
 
+The 2026-11-14 refinement retains optional recorded `action` (skill reading, web search/open/find) and distinct file `subject_count` within one call. Explicit tool methods or complete known web parameter structures supply intent; a canonical recorded `skills/name/SKILL.md` read supplies the skill name. Shell text, results and bare filenames are not evidence of those actions. Native exact-ID mirrors may enrich one existing call without changing its original input/ref or creating additional calls. All five adapters share the parser, and App/browser/Trace share the presenter. Mixed or unknown inputs remain neutral; old payloads keep their fallback. These labels describe recorded requests, not success or proof that a skill was applied.
+
 ## First-party references (checked 2026-10-19)
 
 - [Claude Code Desktop, view modes](https://code.claude.com/docs/en/desktop#switch-view-modes): Normal folds tool calls into summaries while retaining full replies; Verbose exposes individual calls. Borrow progressive disclosure, without introducing another global mode selector.
@@ -34,3 +36,7 @@ The implemented refinement replaces the earlier card treatment: default-folded g
 ## Recorded delegation and wait parameters (2026-10-20)
 
 Some recorded calls had useful inputs but still appeared as bare Delegate or Wait rows. The shared transcript adapter now selects task instructions/name, target/type/model/context options, or wait identifiers/requested timeout and yield options from an explicit field list. Only fields actually recorded by that agent are shown. These are labelled Parameters and reuse the existing inspector, copy behavior and byte budgets; they are not shell argv. Unknown fields, nested configuration and tool results are excluded. Calls without selected input remain quiet, non-interactive rows. A requested timeout is not measured elapsed time, and a delegation record does not establish the child’s result. Existing running servers require the normal update/restart to reparse cached history.
+
+Native schema follow-up: only exact DSH/OpenCode skill calls add their recorded name/id identity. Conflicting or malformed aliases remain neutral. Exact DSH web_search may show a bounded preview of a complete typed queries array, still one call; no new input capability or arbitrary name/id extraction is added.
+
+DSH skill identity uses its own recorded name field. OpenCode V2 id does not grant a DSH alias: DSH id-only or mixed id records stay neutral. Preserve original fields and count; verify real native adapter output in shared presenters and rendered rows.
