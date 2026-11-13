@@ -38,6 +38,19 @@ func readManagedRules() ([]byte, os.FileInfo, error) {
 	if version < 1 || (lang != "en" && lang != "zh") || !strings.HasPrefix(string(body), playbookMarker(version, lang)+"\n") {
 		return nil, nil, errors.New(i18n.Tr("refresh requires existing managed HQ rules; missing or legacy rules need normal HQ setup", "只支持已有的受管规则；缺失或旧式档案请通过正常 HQ 启动流程处理"))
 	}
+	afterLocal := false
+	for _, line := range strings.Split(string(body), "\n") {
+		line = strings.TrimSpace(line)
+		if afterLocal && line != "" {
+			return nil, nil, errors.New(i18n.Tr("HQ rules contain additional instructions after LOCAL; review them before refreshing. The original is unchanged", "LOCAL 引用后还有额外指令，请先核对；原件未修改"))
+		}
+		if strings.HasPrefix(line, "<!-- user:") || strings.HasPrefix(line, "<!-- gtmux:knowledge:") {
+			return nil, nil, errors.New(i18n.Tr("HQ rules contain separate user or knowledge instructions; review them before refreshing. The original is unchanged", "规则中含有独立用户或知识指令，请先核对；原件未修改"))
+		}
+		if line == "@LOCAL.md" {
+			afterLocal = true
+		}
+	}
 	return body, info, nil
 }
 

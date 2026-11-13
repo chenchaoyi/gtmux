@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -448,8 +449,8 @@ var legacyBackupNow = time.Now
 // per day, written with os.WriteFile: a second migration the same day (AGENTS.md deleted,
 // `gtmux hq` run again) replaced the original playbook in it with the one-line pointer
 // the first migration had written. A taken name now gets a numbered sibling, and nothing
-// that exists is ever opened for writing. On any failure the partial copy, which only this
-// call created, is removed and the caller migrates nothing.
+// that exists is ever opened for writing. A failed copy is retained: its path may
+// already name another writer's object, so failure never authorizes unlinking it.
 func writeLegacyBackup(path string, body []byte) (string, error) {
 	stem := path + ".bak-legacy-" + legacyBackupNow().Format("20060102")
 	return writeHQBackup(path, stem, body)
@@ -462,22 +463,39 @@ func writeHQBackup(path, stem string, body []byte) (string, error) {
 		if i > 1 {
 			bak = fmt.Sprintf("%s-%d", stem, i)
 		}
-		f, err := state.OpenFile(bak, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		f, err := state.OpenFile(bak, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o644)
 		if errors.Is(err, os.ErrExist) {
 			continue
 		}
 		if err != nil {
 			return "", err
 		}
-		_, werr := f.Write(body)
-		serr := f.Sync()
-		if err := errors.Join(werr, serr, f.Close()); err != nil {
-			_ = os.Remove(bak)
+		defer f.Close()
+		created, err := f.Stat()
+		if err != nil {
 			return "", err
 		}
-		if got, err := os.ReadFile(bak); err != nil || !bytes.Equal(got, body) {
-			_ = os.Remove(bak)
+		_, werr := f.Write(body)
+		serr := f.Sync()
+		if err := errors.Join(werr, serr); err != nil {
+			return "", err
+		}
+		if hqBackupWritten != nil {
+			hqBackupWritten(bak)
+		}
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			return "", err
+		}
+		got, err := io.ReadAll(io.LimitReader(f, int64(len(body))+1))
+		if err != nil || !bytes.Equal(got, body) {
 			return "", fmt.Errorf("the backup %s did not read back", bak)
+		}
+		current, err := os.Lstat(bak)
+		if err != nil || !current.Mode().IsRegular() || !os.SameFile(created, current) {
+			return "", fmt.Errorf("the backup %s changed during verification; retained without cleanup", bak)
+		}
+		if err := f.Close(); err != nil {
+			return "", err
 		}
 		return bak, nil
 	}
@@ -826,17 +844,34 @@ func agentAliveByCmd(cmd string) bool {
 
 // CmdHQ implements `gtmux hq`: focus the live supervisor, or seed + spawn one.
 func CmdHQ(args []string) int {
+	// Inspect the standalone token before another option can consume it as a
+	// value or choose a mode with startup/enrollment side effects.
+	for _, arg := range args {
+		if arg != "--refresh-rules" {
+			continue
+		}
+		for _, help := range args {
+			if help == "-h" || help == "--help" || help == "--help-all" {
+				fmt.Print(HelpText(helpWidth(), help == "--help-all"))
+				return 0
+			}
+		}
+		if len(args) != 1 {
+			i18n.Sae("gtmux hq: --refresh-rules must be used on its own", "gtmux hq：--refresh-rules 请单独使用")
+			return 2
+		}
+		return refreshHQRulesCmd()
+	}
 	if len(args) > 0 && args[0] == "migrate" {
 		return migrationCmd(args[1:])
 	}
 	agentCmd := ""
 	rotate := false
-	refreshRules := false // standalone: managed rules only, no session actions
-	board := false        // --board: print the situation board instead of opening HQ
-	boardJSON := false    // --json alongside --board, for a surface that wants the mtime too
-	home := false         // --home: print where a knowledge mutation has to run
-	memoryState := false  // --memory: what is at risk and what protects it
-	exportTo := ""        // --export <path>: the memory as one portable file
+	board := false       // --board: print the situation board instead of opening HQ
+	boardJSON := false   // --json alongside --board, for a surface that wants the mtime too
+	home := false        // --home: print where a knowledge mutation has to run
+	memoryState := false // --memory: what is at risk and what protects it
+	exportTo := ""       // --export <path>: the memory as one portable file
 	expectedArchive := ""
 	importFrom := ""        // --import <path>: put one back
 	exportPlain := false    // --plain: an export without a passphrase (the pre-1.0.21 form)
@@ -851,8 +886,6 @@ func CmdHQ(args []string) int {
 		case a == "-h" || a == "--help" || a == "--help-all":
 			fmt.Print(HelpText(helpWidth(), a == "--help-all"))
 			return 0
-		case a == "--refresh-rules":
-			refreshRules = true
 		case a == "--rotate":
 			rotate = true
 		case a == "--maintenance-done":
@@ -941,14 +974,6 @@ func CmdHQ(args []string) int {
 			i18n.Sae("gtmux hq: unknown option '"+a+"'", "gtmux hq: 未知选项 '"+a+"'")
 			return 2
 		}
-	}
-	// Resolve this mode before ANY other action, including the detached watcher.
-	if refreshRules {
-		if len(args) != 1 {
-			i18n.Sae("gtmux hq: --refresh-rules must be used on its own", "gtmux hq：--refresh-rules 请单独使用")
-			return 2
-		}
-		return refreshHQRulesCmd()
 	}
 	// The detached briefing watcher (self-pane hand-over, see briefhere.go) does one thing
 	// and exits; it never seeds, spawns or focuses anything.

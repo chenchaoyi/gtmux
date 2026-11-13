@@ -2387,5 +2387,19 @@
       "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
       "testRefusedWaitingSaysWhetherTheTextWasPasted"
     ]
+  },
+  "internal/hq/rulesrefresh_boundary_test.go": {
+    "cases": [
+      "HQR-007",
+      "HQR-008",
+      "HQR-009",
+      "HQR-010"
+    ],
+    "selectors": [
+      "TestHQR007StandaloneTokenCannotBeConsumedAsAValue",
+      "TestHQR008BackupKeepsReplacement",
+      "TestHQR009MixedRulesAreNotSilentlyRebuilt",
+      "TestHQR010HardlinkedLockCannotChangeExternalPermissions"
+    ]
   }
 }
