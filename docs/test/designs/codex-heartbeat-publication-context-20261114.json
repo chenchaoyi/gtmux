@@ -1,0 +1,25 @@
+{
+  "id": "codex-heartbeat-publication-context-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Carry connection cancellation through actual heartbeat, compatibility rebind and recovery writes",
+    "notes": "Follow up independent exact Re1a44 heartbeat P1. Previously fixed activation publication serialization, Run shutdown, zero-attempt cancellation and strict owner guards remain unchanged. Add context-aware Refresh while preserving its public background-context compatibility wrapper. The actual production binding factory must supply its own lifetime context to heartbeat, not only to ordinary Bind. All Refresh branches, especially same-thread legacy hook with empty Frontend, propagate that context into actual Bind; a cancellation during strict proof must prevent not-yet-started writes. Check context around direct recovery/checkpoint/receipt writes too. Already-started atomic IO is not forcibly undone; retire only the exact live receipt this call wrote, preserve committed history/replacement owners, keep lease ordering and avoid recursive binding lease. Committed regressions exercise real factory callback context and real resume fixture legacy rebind/recovery/normal refresh publication. Also re-run the retained independent actual factory\u2192tick\u2192permit\u2192Refresh\u2192Bind integration fixture in a new task-only source snapshot with exact old-R/new-candidate maps; its synthetic proof adapters are fixture-only, never shipped or confused with real sessions. Test controls must fail target assertions, not compilation. Do not claim post-return discard/close cleanup proves no publication. No real binding, session, restore, input, queue or service operations."
+  },
+  "cases": [
+    {
+      "id": "CBA-006",
+      "layer": "L2",
+      "description": "Heartbeat publication uses the live connection context at actual writes and compatibility Bind",
+      "setup": "Actual production binding factory callback and isolated real resume frontend fixture; deterministic strict-observation/write seams; retained independent integration adapter source",
+      "action": "Cancel in same-thread old-hook rebind strict proof; cancel while recovering a missing index or checkpoint/receipt write; replace live receipt during partial cleanup; call the actual factory heartbeat after its parent is canceled",
+      "expected": "Canceled proof causes zero not-yet-started receipt/index writes and no new live authority before close. Factory callback returns the actual cancellation cause. Partial IO only retires its own exact written live proof, retains committed history and a replacement owner. Valid uncanceled legacy/missing-index recovery and original guards remain; no recursive lease or new lock cycle.",
+      "planned_files": [
+        "internal/resume/frontend_heartbeat_context_test.go",
+        "internal/codexbridge/binding_heartbeat_context_test.go"
+      ]
+    }
+  ],
+  "seal": "55fd71b4359ba18c0ca8fd27149d20229ad01b72f5c5492d07276a4d62038eda"
+}

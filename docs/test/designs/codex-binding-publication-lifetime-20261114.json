@@ -1,0 +1,36 @@
+{
+  "id": "codex-binding-publication-lifetime-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Fence actual root publication and attachment commit against connection activation and shutdown",
+    "notes": "Follow up exact Q8bd independent P1-1/P1-2. Preserve Q and original report. Share one per-bridge publication permit across Bind+attachment commit and epoch activation, with context-bounded acquisition for admission so an in-flight publisher cannot make a newer connection exceed its readiness budget. Reservation still grants no authority. Serialize accepted publication versus completed activation; do not merely discard Bind result after writes. Give each connection an explicit lifetime, check it before tick/stage and at actual Bind commit boundaries, and invalidate/fence before closing transports or draining forwarders. A publication already inside an atomic filesystem operation cannot be forcibly undone; retain committed history, retire its own live receipt before shutdown completes, never delete another owner. Cancellation during validation must prevent not-yet-committed live publication. No new Bind may start after known cancellation. Extract the actual Run lifecycle into a small production helper used by Run and tests, not a test-only imitation. Cover strict identity/home/birth/TTY/new root/new owner as before. Old independent Q harness is source-bound synthetic evidence, not real sockets; new regressions must exercise actual production lifecycle/permit and actual resume fixture. No real bindings, user sessions, queue, restore or service/App changes. Keep original18 top-level controls and all valid assertions. No hard-return claim for uninterruptible system calls; context bounds waiting for publication permission, 30s retry remains a scheduling bound."
+  },
+  "cases": [
+    {
+      "id": "CBA-004",
+      "layer": "L2",
+      "description": "Publication permission spans actual Bind and commit before a newer epoch can activate",
+      "setup": "Production connectionEpoch and binding factory with controlled blocking Bind; actual resume.Bind context with isolated process/storage seams",
+      "action": "Old retry enters Bind; newer activation waits or exhausts its admission context without changing incumbent; release old publisher then activate newer without a new root yet. Cancel during strict proof and before actual publication.",
+      "expected": "No old publication/attachment commit after completed newer activation. A failed/timed-out admission leaves incumbent active. Context cancellation during proof prevents live receipt/index authority; committed history is not deleted. Existing strict guards remain.",
+      "planned_files": [
+        "internal/codexbridge/binding_publication_test.go",
+        "internal/resume/frontend_binding_context_test.go"
+      ]
+    },
+    {
+      "id": "CBA-005",
+      "layer": "L2",
+      "description": "Actual Run lifecycle retires binding before transport drain and denies canceled ready ticks",
+      "setup": "Production connection lifecycle helper wired from Run; synthetic closers, channels and real observer/binding state",
+      "action": "Canceled context and ready tick, both closers release an already-read root response, disconnect while retry is validating, duplicate close, later tick/stage",
+      "expected": "No new Bind after known cancellation; no late response can publish during forwarder drain. Stop cancels before waiting and fences publications before transport close/drain. Original successful recovery, receipt, epoch, home/selection and schedule assertions remain. Test controls disclose exact Q fragments versus production helper, never claim real socket acceptance.",
+      "planned_files": [
+        "internal/codexbridge/binding_lifetime_test.go"
+      ]
+    }
+  ],
+  "seal": "b8ae51f2397be11ea8b2fd0e9dd657e684d3e375336e0fe536396243577415df"
+}

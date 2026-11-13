@@ -1,12 +1,12 @@
 package resume
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -47,6 +47,7 @@ func frontendPath(instance string) string {
 var frontendClients = codexterminal.Resolve
 var frontendProcess = launchhost.ReadAgent
 var frontendPaneView = tmux.Display
+var frontendBindingWrite = writeBindingJSON
 
 // frontendTarget always applies the strict foreground, TTY and birth checks,
 // including when tmux reports an outer shell or gtmux as its current command.
@@ -94,6 +95,16 @@ func validFrontend(f CodexFrontend) bool {
 // BindCodexFrontend commits only a successful root-thread operation observed on
 // that frontend's own connection. The caller excludes ephemeral/subagent work.
 func BindCodexFrontend(f CodexFrontend, sid string, cwd ...string) (CodexFrontend, error) {
+	return BindCodexFrontendContext(context.Background(), f, sid, cwd...)
+}
+
+// BindCodexFrontendContext checks the connection lifetime again at publication,
+// after the potentially slow strict observations. The bridge holds its epoch
+// permission across this function and the in-memory attachment commit.
+func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, cwd ...string) (CodexFrontend, error) {
+	if err := ctx.Err(); err != nil {
+		return f, err
+	}
 	if f.SessionID != sid {
 		f.ThreadCwd = f.Cwd
 	}
@@ -104,8 +115,11 @@ func BindCodexFrontend(f CodexFrontend, sid string, cwd ...string) (CodexFronten
 	if f.ThreadCwd == "" {
 		f.ThreadCwd = f.Cwd
 	}
-	if !validFrontend(f) || !freshFrontend(f, true) {
-		return f, errors.New("frontend changed before thread binding")
+	if !validFrontend(f) {
+		return f, &FrontendBindingError{Code: "invalid-attachment"}
+	}
+	if err := frontendProof(f, true); err != nil {
+		return f, err
 	}
 	if err := state.MkdirAll(filepath.Dir(frontendPath(f.Instance)), 0700); err != nil {
 		return f, err
@@ -115,6 +129,23 @@ func BindCodexFrontend(f CodexFrontend, sid string, cwd ...string) (CodexFronten
 		return f, err
 	}
 	defer lease.Close()
+	wroteReceipt := false
+	canceled := func() error {
+		err := ctx.Err()
+		if err == nil {
+			return nil
+		}
+		if wroteReceipt {
+			// Preserve committed history, but retire only this exact publication's
+			// live proof. Never remove a replaced owner or roll its index back.
+			if saved, ok := readFrontend(f.Instance); ok && saved == f {
+				if removeErr := os.Remove(frontendPath(f.Instance)); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+					return errors.Join(err, errors.New("frontend retirement failed"))
+				}
+			}
+		}
+		return err
+	}
 	previous, _ := Load(f.Loc)
 	if previous.Frontend != "" && previous.Frontend != f.Instance {
 		old, ok := readFrontend(previous.Frontend)
@@ -122,19 +153,36 @@ func BindCodexFrontend(f CodexFrontend, sid string, cwd ...string) (CodexFronten
 			return f, errors.New("a newer frontend owns this location")
 		}
 	}
-	if !freshFrontend(f, true) {
-		return f, errors.New("frontend changed while acquiring binding")
+	if err := frontendProof(f, true); err != nil {
+		return f, err
 	}
-	if err := writeBindingJSON(frontendPath(f.Instance), f); err != nil {
+	if err := canceled(); err != nil {
+		return f, err
+	}
+	if err := frontendBindingWrite(frontendPath(f.Instance), f); err != nil {
+		return f, err
+	}
+	wroteReceipt = true
+	if err := canceled(); err != nil {
 		return f, err
 	}
 	r := Record{Agent: "codex", HomeID: f.HomeID, SessionID: sid, Cwd: f.ThreadCwd,
 		UpdatedAt: f.UpdatedAt / 1000, Frontend: f.Instance}
 	r = withRecoveryCheckpoint(r, previous)
-	if err := writeBindingJSON(fileFor(f.Loc), r); err != nil {
+	if err := canceled(); err != nil {
 		return f, err
 	}
-	if err := confirmFrontendStartup(f); err != nil {
+	if err := frontendBindingWrite(fileFor(f.Loc), r); err != nil {
+		return f, err
+	}
+	if err := canceled(); err != nil {
+		return f, err
+	}
+	receiptErr := confirmFrontendStartup(f)
+	if err := canceled(); err != nil {
+		return f, err
+	}
+	if err := receiptErr; err != nil {
 		return f, &CodexBindingReceiptError{Err: err}
 	}
 	return f, nil
@@ -153,6 +201,15 @@ func confirmFrontendStartup(f CodexFrontend) error {
 // RefreshCodexFrontend is a bounded liveness heartbeat from the bridge process.
 // It does not promote a different thread or reclaim an incumbent's location.
 func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
+	return RefreshCodexFrontendContext(context.Background(), f)
+}
+
+// The bridge carries its connection context through heartbeat recovery too;
+// the legacy public wrapper remains available to non-connection callers.
+func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFrontend, error) {
+	if err := ctx.Err(); err != nil {
+		return f, err
+	}
 	previous := f
 	previousTick := f.UpdatedAt
 	f.UpdatedAt = time.Now().UnixMilli()
@@ -164,19 +221,39 @@ func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
 		return f, err
 	}
 	defer lease.Close()
+	publishIndex, wroteReceipt := false, false
+	canceled := func() error {
+		err := ctx.Err()
+		if err == nil {
+			return nil
+		}
+		if wroteReceipt {
+			if saved, ok := readFrontend(f.Instance); ok && saved == f {
+				if removeErr := os.Remove(frontendPath(f.Instance)); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
+					return errors.Join(err, errors.New("frontend retirement failed"))
+				}
+			}
+		}
+		return err
+	}
+	if err := canceled(); err != nil {
+		return f, err
+	}
 	r, ok := Load(f.Loc)
 	if !ok {
 		// Only the authenticated current bridge can republish its own index. A
 		// standalone history read never writes or gains terminal-input authority.
 		saved, exists := readFrontend(f.Instance)
 		unique, verified := conversationFrontend(f.Loc)
-		if !exists || saved != previous || !verified || unique != saved || !freshFrontend(saved, true) {
+		eligible := exists && saved == previous && verified && unique == saved && freshFrontend(saved, true)
+		if err := canceled(); err != nil {
+			return f, err
+		}
+		if !eligible {
 			return f, errors.New("frontend recovery evidence unavailable")
 		}
 		r = frontendRecord(f)
-		if err := writeBindingJSON(fileFor(f.Loc), r); err != nil {
-			return f, err
-		}
+		publishIndex = true
 		ok = true
 	}
 	if !ok || r.Agent != "codex" || r.SessionID != f.SessionID || r.HomeID != f.HomeID || r.Frontend != "" && r.Frontend != f.Instance {
@@ -186,22 +263,42 @@ func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
 		// Older hook binaries omit the additive field when publishing the SAME
 		// thread. Recover only from our own still-verified connection evidence.
 		lease.Close() // Bind reacquires and revalidates; never recursively hold it.
-		return BindCodexFrontend(f, f.SessionID, f.ThreadCwd)
+		return BindCodexFrontendContext(ctx, f, f.SessionID, f.ThreadCwd)
 	}
 	// New threads may acquire history after thread/start. Once promoted, normal
 	// heartbeats never enumerate history; empty threads are checked at most /10s.
 	if r.RecoverySessionID != r.SessionID && previousTick/10000 != f.UpdatedAt/10000 {
 		checked := withRecoveryCheckpoint(r, r)
 		if checked != r {
-			if err := writeBindingJSON(fileFor(f.Loc), checked); err != nil {
-				return f, err
-			}
+			r, publishIndex = checked, true
 		}
 	}
-	if err := writeBindingJSON(frontendPath(f.Instance), f); err != nil {
+	if err := canceled(); err != nil {
 		return f, err
 	}
-	return f, confirmFrontendStartup(f)
+	// Publish the exact receipt before any recovered index. If cancellation
+	// races an already-started atomic write, only this publication's live proof
+	// is retired; already committed history and replaced owners are preserved.
+	if err := frontendBindingWrite(frontendPath(f.Instance), f); err != nil {
+		return f, err
+	}
+	wroteReceipt = true
+	if err := canceled(); err != nil {
+		return f, err
+	}
+	if publishIndex {
+		if err := frontendBindingWrite(fileFor(f.Loc), r); err != nil {
+			return f, err
+		}
+		if err := canceled(); err != nil {
+			return f, err
+		}
+	}
+	receiptErr := confirmFrontendStartup(f)
+	if err := canceled(); err != nil {
+		return f, err
+	}
+	return f, receiptErr
 }
 
 func EndCodexFrontend(f CodexFrontend) {
@@ -251,26 +348,7 @@ func readFrontend(instance string) (CodexFrontend, bool) {
 	return f, f.Instance == instance && validFrontend(f)
 }
 
-func freshFrontend(f CodexFrontend, strict bool) bool {
-	age := time.Now().UnixMilli() - f.UpdatedAt
-	if age < -1000 || age > 5000 {
-		return false
-	}
-	p, ok := frontendProcess(f.BridgePID)
-	if !ok || p.Start != f.BridgeStart {
-		return false
-	}
-	if strict {
-		backend, live := frontendProcess(f.BackendPID)
-		if !live || backend.PID != f.BackendPID || backend.Start != f.BackendStart {
-			return false
-		}
-		t, ok := frontendTarget(f.Pane)
-		return ok && t == f.CodexBindingTarget
-	}
-	return frontendPaneView(f.Pane, "#{pane_id}\t#{pane_pid}\t#{session_name}:#{window_index}.#{pane_index}") ==
-		f.Pane+"\t"+strconv.Itoa(f.PanePID)+"\t"+f.Loc
-}
+func freshFrontend(f CodexFrontend, strict bool) bool { return frontendProof(f, strict) == nil }
 
 // LoadLive preserves legacy records while requiring live evidence for records
 // produced by the frontend bridge. Restore continues to use Load/AllLocated.
