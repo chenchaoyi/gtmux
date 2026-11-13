@@ -41,6 +41,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
+	"github.com/chenchaoyi/gtmux/internal/restorejob"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/terminal"
 	"github.com/chenchaoyi/gtmux/internal/terminalkeys"
@@ -50,6 +51,9 @@ import (
 // (internal/app) supplies them from gtmux's existing internals, so this package
 // stays decoupled from app and easy to test with fakes.
 type Deps struct {
+	RestorePreview     func() (restorejob.Snapshot, error)
+	RestoreStart       func(id, revision string) (*restorejob.Job, error)
+	RestoreStatus      func(id string) (*restorejob.Job, error)
 	ParticipantProfile func(pane, sessionID, homeID, at string) (any, error)
 	InputTarget        func(id string) (terminalkeys.Target, error)
 	InputKey           func(id, binding string, event terminalkeys.Event, action *terminalkeys.ActionRequest) error
@@ -397,6 +401,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("/api/attach", s.auth(http.HandlerFunc(s.handleAttach))) // WS: raw PTY attach, scope-gated
 	mux.Handle("/api/options", s.auth(http.HandlerFunc(s.handleOptions)))
 	mux.Handle("/api/interaction", s.auth(http.HandlerFunc(s.handleInteraction)))
+	mux.Handle("/api/restore", s.auth(http.HandlerFunc(s.handleRestore)))
+	mux.Handle("/api/restore/job", s.auth(http.HandlerFunc(s.handleRestoreJob)))
 	mux.Handle("/api/sessions", s.auth(http.HandlerFunc(s.handleCreateSession)))
 	mux.Handle("/api/focus", s.auth(http.HandlerFunc(s.handleFocus)))
 	mux.Handle("/api/send", s.auth(http.HandlerFunc(s.handleSend)))

@@ -938,7 +938,7 @@
   },
   "macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift": {
     "cases": [
-      "SSI-003"
+      "SCW-003"
     ],
     "selectors": [
       "testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct",
@@ -2189,6 +2189,203 @@
       "TestHQR004RefreshUsesExistingApplyLock",
       "TestHQR005RefreshRefusesUnsafeManagedFiles",
       "TestHQR006RefreshPreservesBackupNamesAndFailsSafely"
+    ]
+  },
+  "internal/app/restore_remote_test.go": {
+    "cases": [
+      "RSR-003",
+      "RSR-004",
+      "RSR-005"
+    ],
+    "selectors": [
+      "TestRemotePreviewOnlyMissingAndBindsProducerInputs",
+      "TestRemoteWorkerRejectsStaleAndBusyBeforeMutating",
+      "TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate",
+      "TestRemotePaneGuardRechecksExactShellWithoutTouchingOthers",
+      "TestRestoreExecutionLeaseIsProcessOwnedAndFailsClosed",
+      "TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions",
+      "TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology"
+    ]
+  },
+  "internal/restorejob/store_test.go": {
+    "cases": [
+      "RSR-002"
+    ],
+    "selectors": [
+      "TestRestoreReservationSurvivesRetryRestartAndChangedPayload",
+      "TestRestoreClaimNeverRelaunchesInterruptedOrFailedWork",
+      "TestRestoreLaunchFailureAndExpiredRequestsRemainClosed",
+      "TestRestoreStorageAndCapacityNeverEvictAnUnexpiredReceipt",
+      "TestRestoreProgressIsBoundedAndFinalOnce"
+    ]
+  },
+  "internal/server/restore_test.go": {
+    "cases": [
+      "RSR-001"
+    ],
+    "selectors": [
+      "TestRestoreOwnerContractNeverStartsOnRead",
+      "TestRestoreKnownFailureCodesStayDistinct"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/RestoreMenuActionTests.swift": {
+    "cases": [
+      "RSR-008"
+    ],
+    "selectors": [
+      "testRestoreDispatchPolicyKeepsActualProgressPopoverVisible"
+    ]
+  },
+  "mobileapp/src/api/client.restore.test.ts": {
+    "cases": [
+      "RSR-006"
+    ],
+    "selectors": [
+      "preview and status are read only; start carries exact stable ID and revision",
+      "normal 15s timeout is uncertain and never retries a mutation",
+      "unsupported, malformed, foreign ID and typed conflicts never become success"
+    ]
+  },
+  "mobileapp/src/screens/RestoreSessionsEntry.test.tsx": {
+    "cases": [
+      "RSR-009"
+    ],
+    "selectors": [
+      "owner server More offers restore and targets that server; guest does not"
+    ]
+  },
+  "mobileapp/src/screens/RestoreSessionsSheet.test.tsx": {
+    "cases": [
+      "RSR-007"
+    ],
+    "selectors": [
+      "preview is not a restore; duplicate clicks start one persisted request and reopening only reads it",
+      "response loss retry reuses the exact request and never changes to another transport",
+      "host change during pending local persistence cannot post to either target",
+      "late old host preview cannot replace the new server result; guest never reads or starts",
+      "closed sheet stops polling and partial results remain visibly partial",
+      "local persistence failure prevents POST; stale preview refresh discards only an explicitly refused request"
+    ]
+  },
+  "mobileapp/src/screens/ServersScreen.test.tsx": {
+    "cases": [
+      "RSR-009"
+    ],
+    "selectors": [
+      "More is a menu: Disconnect only on the open Mac, Remove last"
+    ]
+  },
+  "mobileapp/src/screens/RestoreSessionsSheet.recovery.test.tsx": {
+    "cases": [
+      "RSR-010"
+    ],
+    "selectors": [
+      "RSR010 persisted progress remains readable when a new preview is unavailable",
+      "RSR010 failed status and preview keep a reachable same-ID read-only retry",
+      "RSR010 failed initial preview can be retried without starting recovery",
+      "RSR010 late stored-job status cannot replace a different paired server",
+      "RSR010 unreadable local identity cannot be cleared into a new request"
+    ]
+  },
+  "internal/knowledge/source_lineage_test.go": {
+    "cases": [
+      "KBL-001",
+      "KBL-002",
+      "KBL-003",
+      "KBL-004"
+    ],
+    "selectors": [
+      "TestSourceLineageOrdinarySupersede",
+      "TestSourceLineageReviewApply",
+      "TestSourceLineageReplay",
+      "TestSourceLineageNewCapture"
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/index.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/list.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/show.txt.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
+  },
+  "internal/knowledge/testdata/golden/render/workflows.md.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
+  },
+  "mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx": {
+    "cases": [
+      "RSR-011"
+    ],
+    "selectors": [
+      "RSR011 transient native read rejection cannot replace a saved pre-admission ID",
+      "RSR011 repeated native read rejection stays reachable without preview mutation or clear",
+      "RSR011 confirmed empty local read can resume read-only preview after a native failure",
+      "RSR011 late old-pairing local read %s cannot grant a new target readiness"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift": {
+    "cases": [
+      "SCW-001",
+      "SCW-002",
+      "SCW-003",
+      "SCW-004"
+    ],
+    "selectors": [
+      "testSCW001WindowsKeepDraftsFilesAndLateReceiptsIndependent",
+      "testSCW001CapacityPreservesEveryExistingDocument",
+      "testSCW002SearchUsesTitlesLocationsAndStableFuzzyMatches",
+      "testSCW002ActualSearchFieldNavigationCompositionAndEmptyResults",
+      "testSCW003RefusalCategoriesNeverInventHumanApprovalOrDelivery",
+      "testSCW004NewCaptureIsSerializedThroughHandoffAndKeepsOldDraft",
+      "testSCW004CLIEditCanOpenBesideDraftAndResolveItsOwnStore",
+      "testSCW004PermissionAndCapacityRefusalsPreserveWorkWithoutCapture"
+    ]
+  },
+  "internal/codexrpc/screenshot_workflow_test.go": {
+    "cases": [
+      "SCW-005"
+    ],
+    "selectors": [
+      "TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift": {
+    "cases": [
+      "SCW-003"
+    ],
+    "selectors": [
+      "testStatusLineSaysWhatHappened",
+      "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
+      "testRefusedWaitingSaysWhetherTheTextWasPasted"
     ]
   }
 }

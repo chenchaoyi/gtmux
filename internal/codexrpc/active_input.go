@@ -32,6 +32,12 @@ func inputTurnPlan(thread string, id int, send func(int, string, any) error, rea
 		return "", false, id, "input-metadata-mismatch"
 	}
 	if len(meta.Thread.Status.Flags) > 0 {
+		for _, flag := range meta.Thread.Status.Flags {
+			if flag != "waitingOnApproval" && flag != "waitingOnUserInput" {
+				// Unknown flags still refuse input, without inventing a human decision.
+				return "", false, id, "input-state-unavailable"
+			}
+		}
 		return "", false, id, "input-awaiting-confirmation"
 	}
 	switch meta.Thread.Status.Type {

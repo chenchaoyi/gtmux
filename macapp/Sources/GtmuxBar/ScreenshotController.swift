@@ -7,6 +7,10 @@ final class ScreenshotController {
 
     var access = ScreenCaptureAccess()
     var capture: (URL, @escaping (CaptureOutcome) -> Void) -> Void = ScreenshotSelector.run
+    var readPanes: () -> Data = { GtmuxCLI.capture(["panes", "--json"]) ?? Data() }
+    var presentAlert: (String, String) -> Void = { ScreenshotController.alert($0, $1) }
+    /// The permission flow can be observed without requesting real TCC permission in tests.
+    var requestPermission: ((L10n) -> Void)?
     private var capturing = false
     private static let requestedKey = "screenshot.permissionRequested"
 
@@ -14,27 +18,26 @@ final class ScreenshotController {
     /// outcome, before alerts or the editor can change focus.
     func start(store: AgentStore, l10n: L10n, prepareSurfaces: @escaping () -> Void,
                finishSurfaces: @escaping (CaptureOutcome) -> Void) {
-        let editor = ScreenshotEditorController.shared
-        if editor.isOpen {
-            // A second press keeps the work in progress instead of replacing it.
-            editor.bringToFront()
+        if !ScreenshotEditors.shared.hasCapacity {
+            presentAlert(l10n.tr("Screenshot limit reached", "截图窗口已达上限"), ScreenshotEditors.capacityMessage(l10n))
             return
         }
         guard !capturing else { return }
         guard access.preflight() else {
-            askForPermission(l10n: l10n)
+            if let requestPermission { requestPermission(l10n) }
+            else { askForPermission(l10n: l10n) }
             return
         }
         prepareSurfaces()
         capturing = true
-        AgentStoreSnapshot.store = store
 
         // Which pane each terminal shows, read while the user is still selecting.
         var viewed: [String: Int64] = [:]
+        let readPanes = self.readPanes
         let lookup = DispatchGroup()
         lookup.enter()
         DispatchQueue.global(qos: .userInitiated).async {
-            viewed = ScreenshotTargets.viewedAt(fromPanesJSON: GtmuxCLI.capture(["panes", "--json"]) ?? Data())
+            viewed = ScreenshotTargets.viewedAt(fromPanesJSON: readPanes())
             lookup.leave()
         }
 
@@ -42,28 +45,35 @@ final class ScreenshotController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             let file = ScreenshotCapture.temporaryURL()
             self?.capture(file) { outcome in
-                self?.capturing = false
                 finishSurfaces(outcome)
                 switch outcome {
                 case .cancelled:
+                    self?.capturing = false
                     DiagLog.act("act.screenshot.capture", target: "", outcome: "refused", "screenshot cancelled")
                 case .failed(let why):
+                    self?.capturing = false
                     DiagLog.act("act.screenshot.capture", target: "", outcome: "failed", "screenshot failed", ["error": why])
-                    Self.alert(l10n.tr("The screenshot failed", "截图失败"), why)
+                    self?.presentAlert(l10n.tr("The screenshot failed", "截图失败"), why)
                 case .image(let url):
                     guard let doc = ScreenshotDocument(contentsOf: url) else {
+                        self?.capturing = false
                         try? FileManager.default.removeItem(at: url)
-                        Self.alert(l10n.tr("The screenshot could not be read", "读不了这张截图"), url.lastPathComponent)
+                        self?.presentAlert(l10n.tr("The screenshot could not be read", "无法读取截图"), url.lastPathComponent)
                         return
                     }
                     lookup.notify(queue: .main) {
+                        self?.capturing = false
                         let candidates = store.shareablePanes
                         let target = ScreenshotTargets.defaultTarget(
                             candidates: candidates, viewedAt: viewed, last: ScreenshotTarget.load())
-                        ScreenshotEditorController.shared.show(
+                        let opened = ScreenshotEditors.shared.open(
                             doc: doc, captureFile: url, target: target?.paneID,
                             recentPane: ScreenshotTargets.recentPane(candidates: candidates, viewedAt: viewed),
                             store: store, l10n: l10n)
+                        if !opened {
+                            try? FileManager.default.removeItem(at: url)
+                            self?.presentAlert(l10n.tr("Screenshot limit reached", "截图窗口已达上限"), ScreenshotEditors.capacityMessage(l10n))
+                        }
                     }
                 }
             }

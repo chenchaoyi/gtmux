@@ -576,9 +576,11 @@ gtmux restore --plan --pending --json  # only missing saved sessions + live deta
 
 `--pending` checks current tmux topology without starting a server. It excludes attached sessions, includes detached plain-shell sessions even without a save, and returns an error if topology is unknown. External agent histories do not affect it. The menu bar uses this projection independently of its radar count.
 
-One restore at a time: a run holds a lock (pid + start time) and a second run says so
-and does nothing. A lock whose process is gone, or older than 10 minutes, is taken over.
-`--plan` and `--dry-run` are exempt from the lock.
+One restore at a time: CLI, menu and remote workers share a non-expiring kernel lease. A second run refuses while its owner is alive; process exit releases it. An unavailable lock refuses before restore, rather than running unlocked. `--plan` and `--dry-run` are exempt.
+
+From the App, open **Servers → the server’s More menu → Restore sessions**. Preview the missing saved sessions, then explicitly start. Existing detached sessions are already available remotely and are not treated as missing. The operation runs headlessly on the server without opening a local terminal; close/reopen the page to read the same job’s progress. A lost reply remains unconfirmed: Check status or retry the same saved request, never start another automatically. Agent startup follows the displayed server setting (auto/type/off), and a sent command stays pending until the exact conversation is observed. The menu Restore action keeps its progress visible until you dismiss it. See [remote restore](design/remote-session-restore.md).
+
+App 入口：**服务器 → 对应服务器的更多菜单 → 恢复会话**。先预览缺失的存档会话，再明确开始。关闭页面或断线不会重复启动恢复；重新打开查看同一次任务进度。已在运行或仅未连接终端的会话不会作为缺失会话重新启动。命令已发送与会话已确认启动分别显示，菜单栏恢复时也会保留进度。
 
 A real `gtmux restore` starts with a compact table: session name, window count, pane
 count and agent types. Historical messages stay out of progress output. For a detailed

@@ -1,0 +1,70 @@
+{
+  "id": "screenshot-workflow-20261113",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review; not independent approval)",
+    "date": "2026-11-13",
+    "decision": "implement bounded independent editors, session search and truthful refusal feedback",
+    "notes": "Requested by the user with the screenshot. Source inspection confirms singleton reentry and agent-label/title mismatch. Six old send receipts record refused-waiting but omit evidence; their exact original cause remains unknown. Native frontend/target failures also use this state, so the old UI can falsely imply a human decision. Preserve all existing identity, draft, approval, idempotency, unknown-result and redaction guards. No actual screen capture, TCC, pane input, service change or old session restore is part of synthetic verification. The user confirmed the earlier system-update build pause ended after reboot and disk recovery. Resume normal verification. No test source is edited before this sealed design is committed. Test implementation and results remain pending."
+  },
+  "cases": [
+    {
+      "id": "SCW-001",
+      "layer": "L2",
+      "description": "Independent screenshot documents preserve drafts and callback ownership",
+      "setup": "Two synthetic images and two independent windows; first window sending or minimized",
+      "action": "Capture/open a second image; finish, fail, export or close either window in both orders",
+      "expected": "Every document retains its own image, marks, note, target, undo and receipt; a late result never closes/deletes/changes the other document; bounded document capacity refuses a new document without discarding existing ones; simultaneous sends from captures sharing a parent directory use different rendered files, retain their own pixel content, and closing one cannot remove the other attachment",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift"
+      ]
+    },
+    {
+      "id": "SCW-002",
+      "layer": "L2",
+      "description": "Session picker uses menu-bar identity and searchable keyboard navigation",
+      "setup": "Duplicate/long/Chinese titles, tmux session and pane IDs; working/waiting/gone targets; text input with marked composition",
+      "action": "Search exact/prefix/token/subsequence queries, move selection, submit or dismiss, refresh candidates",
+      "expected": "Primary title equals Agent.primary, location disambiguates identical titles; deterministic bounded fuzzy matching; arrows/Return/Escape work without sending the screenshot or changing annotation tools; IME Return commits composition only; no matches cannot pick a hidden row",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift"
+      ]
+    },
+    {
+      "id": "SCW-003",
+      "layer": "L2",
+      "description": "Screenshot refusal feedback distinguishes approval from connection and identity failures",
+      "setup": "Production receipt interpreter and real send refusal classification; synthetic known approval, stale/gone frontend, changed target, missing metadata and unknown outcomes",
+      "action": "Interpret receipts and inspect visible/accessible text, editable state and content-free diagnostics in both languages",
+      "expected": "Only explicit approval/menu evidence says waiting for a decision; known pre-mutation refusal states not sent, unknown receipt remains uncertain; no retry/fallback or approval answer; drafts survive; logs include stable reason and stage without screenshot path or message body; preserve the existing active-turn/next-turn/immediate receipt assertions and contradictory-exit protections when updating their explicit pre-mutation refusal expectation. Existing screenshot test assertions outside the changed copy remain unchanged.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift",
+        "macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift",
+        "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift"
+      ]
+    },
+    {
+      "id": "SCW-004",
+      "layer": "L2",
+      "description": "Repeated capture and CLI handoff use independent editor ownership",
+      "setup": "Injected selector and private image files, no actual screen recording or TCC",
+      "action": "Start a new capture while an editor exists; cancel/fail/capture twice; hand off CLI edit",
+      "expected": "Existing draft never causes capture shortcut to merely focus it; selection remains serialized, editor documents are independent; CLI handoff cannot replace a draft; permission denial and exhausted capacity preserve all open work; CLI-opened editors resolve targets from their own supplied store without requiring an earlier human capture or global snapshot",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift"
+      ]
+    },
+    {
+      "id": "SCW-005",
+      "layer": "L1",
+      "description": "Native active flags preserve refusal while distinguishing unknown state from known waiting",
+      "setup": "Production inputTurnPlan with synthetic metadata and bounded wire; known approval/input flags, future flags, empty/mixed lists",
+      "action": "Request image, direct user and coordination input under these states",
+      "expected": "Known waiting flags refuse before mutation with confirmation cause; unknown or mixed unknown flags also refuse before mutation but report unavailable state rather than asserting a human request. No queue/steer/start fallback is enabled, and existing clear-state behavior remains unchanged.",
+      "planned_files": [
+        "internal/codexrpc/screenshot_workflow_test.go"
+      ]
+    }
+  ],
+  "seal": "d4c8d8980f79395edebdccbaab41f93d22f1fc367b3e54dbea5f9e5d30aa62ca"
+}

@@ -48,6 +48,7 @@ func (a *accessReads) keep(key string, now time.Time) bool {
 }
 
 var accessRoutes = map[string]string{
+	"/api/restore": "sessions", "/api/restore/job": "sessions",
 	"/api/artifacts/resolve": "document", "/api/artifacts/content": "document",
 	"/api/tool-input":          "conversation",
 	"/api/participant-profile": "conversation",
@@ -61,7 +62,8 @@ var accessRoutes = map[string]string{
 	"/api/access-history": "history", "/api/options": "terminal", "/api/interaction": "terminal", "/api/session-follow": "settings",
 }
 var accessWrites = map[string]string{
-	"/api/send": "send", "/api/focus": "focus", "/api/sessions": "create_session", "/api/upload": "upload",
+	"/api/restore": "restore",
+	"/api/send":    "send", "/api/focus": "focus", "/api/sessions": "create_session", "/api/upload": "upload",
 	"/api/share/new": "sharing", "/api/share/set": "sharing", "/api/share/config": "sharing", "/api/share/link": "sharing", "/api/share/code": "sharing",
 	"/api/enroll/mint": "devices", "/api/devices/rename": "devices", "/api/devices/revoke": "devices",
 	"/api/push/register": "notifications", "/api/push/unregister": "notifications", "/api/push/activity": "notifications", "/api/push/test": "notifications", "/api/push/forget": "notifications",

@@ -33,6 +33,7 @@ type AccessEntry struct {
 // The vocabulary is deliberately limited: arbitrary paths, query strings and
 // request/response bodies never enter the access store or its remote projection.
 var accessOperations = map[string][2]string{
+	"restore":           {"Restore saved sessions", "恢复存档会话"},
 	"document":          {"View conversation file", "查看会话文件"},
 	"sessions":          {"View sessions", "查看会话列表"},
 	"terminal":          {"Read terminal", "读取终端画面"},
