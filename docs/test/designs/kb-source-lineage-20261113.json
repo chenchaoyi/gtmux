@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex KB source-lineage implementation owner (self-review; not independent approval)",
+    "date": "2026-11-13",
+    "decision": "Preserve omitted origin metadata in both ordinary supersede and reviewed revisions; retain explicit successor values and existing lifecycle contracts",
+    "notes": "Read the committed 1068df76 KLS design and the formal implementation checkpoint, which is WIP rather than a frozen candidate. Its three-field reasoning is reused; unavailable dirty bytes are not reconstructed as a prior patch. This fresh scope adds pane/task/legacy/migration and the ordinary mutation path explicitly requested for this task. Inherit only from the live predecessor, persist seven omitted origin fields under the normal write lock and repeat inheritance on replay. Seq remains the new event watermark, not a source identifier; CandidateResult remains the current operation receipt. Existing Sources merge-by-ID and axes/hits/privacy behavior remain. Ordinary supersede still rejudges distribution; reviewed revise retains intent/reopens landing; neither transfers stale translation or marks a card verified. No production KB, model, real proposals, App or HQ identity changes. Cloud CI is the complete gate; local large builds remain paused."
+  },
+  "cases": [
+    {
+      "id": "KBL-001",
+      "layer": "L2",
+      "description": "Ordinary supersede retains origin metadata through write, reload, JSON and render",
+      "setup": "Isolated HOME; synthetic seq_range-only, seqs+capture and all-origin entries with nested Sources; latest hit follows the original add.",
+      "action": "Use the actual CmdKnowledge supersede verb, inspect appended operation, latest show JSON and topic file.",
+      "expected": "All seven omitted origin fields survive in appended and live records; Sources/axes/tags/latest hits remain exact, nested candidate payloads survive. New Seq/At/OpID belong to this mutation; old ledger prefix stays byte-identical. Ordinary distribution reset and stale alternate removal remain intentional.",
+      "planned_files": [
+        "internal/knowledge/source_lineage_test.go"
+      ]
+    },
+    {
+      "id": "KBL-002",
+      "layer": "L2",
+      "description": "Review check/apply retains sources with CAS and idempotent retry",
+      "setup": "Same three synthetic source shapes; hypothesis, protected memory, sensitive confirmation, audience, language/alternate and a separately updated guard entry.",
+      "action": "Run dry-run, real ApplyReview, latest CLI show/render; apply a stale different proposal, retry the identical proposal, then read after another hit.",
+      "expected": "Dry-run changes no files. Prepared and appended operations retain seven origin fields; final live sources, language, privacy and protection survive; old translation is invalidated and landing reopens. New Seq/review evidence are new. Stale CAS writes nothing; identical retry appends nothing; later hit and unrelated guard remain current.",
+      "planned_files": [
+        "internal/knowledge/source_lineage_test.go"
+      ]
+    },
+    {
+      "id": "KBL-003",
+      "layer": "L2",
+      "description": "Replay and explicit successor origin precedence",
+      "setup": "In-memory ordinary and reviewed chains, omitted or explicit origin fields, merged duplicate/new Sources, retired and superseded predecessors.",
+      "action": "Replay full ledger without modifying input; mutate inherited seq slice to check independent storage.",
+      "expected": "Omitted seven origin fields inherit only from the named live predecessor; explicit nonzero successor values win, true legacy is sticky. Sources deduplicate by ID without dropping payload; no retired/stale predecessor metadata returns, no input aliasing, no new candidate receipt. Existing distribution/translation behavior stays distinct.",
+      "planned_files": [
+        "internal/knowledge/source_lineage_test.go"
+      ]
+    },
+    {
+      "id": "KBL-004",
+      "layer": "L2",
+      "description": "Normal candidate supersede coexists with inherited origins",
+      "setup": "Isolated actual pending capture and a predecessor with all origins plus existing Sources/hits.",
+      "action": "Commit ordinary supersede with a new capture through normal candidate selection, then reload receipt/pending/live state.",
+      "expected": "New candidate seqs/capture/pane/task take precedence; omitted range/legacy/migration survive; old and new Sources coexist once; hits increment exactly once; receipts refer only to actually consumed new candidates. Review never repeats an accepted receipt.",
+      "planned_files": [
+        "internal/knowledge/source_lineage_test.go"
+      ]
+    }
+  ],
+  "seal": "e44a013085d68b9d4cc809f485d278bfaef21e291c7ab5d6095a9d1813de3602"
+}
