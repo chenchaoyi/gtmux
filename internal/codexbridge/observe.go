@@ -22,13 +22,16 @@ type operation struct {
 // Only requests that can establish this client's primary conversation enter
 // pending. Catalog, history, turn and global notifications never claim a pane.
 type observer struct {
-	mu        sync.Mutex
-	pending   map[string]operation
-	home      string
-	ready     bool
-	homeReady atomic.Bool
-	latest    uint64
-	bind      func(string, string)
+	mu                sync.Mutex
+	pending           map[string]operation
+	home              string
+	ready             bool
+	homeReady         atomic.Bool
+	latest            uint64
+	initializeVersion uint64
+	bind              func(string, string)
+	selectRoot        func()
+	resetHome         func()
 }
 
 func (o *observer) request(data []byte) {
@@ -60,9 +63,19 @@ func (o *observer) request(data []byte) {
 	if o.pending == nil {
 		o.pending = make(map[string]operation)
 	}
-	if !op.initialize {
-		o.latest++
-		op.sequence = o.latest
+	o.latest++
+	op.sequence = o.latest
+	if op.initialize {
+		o.initializeVersion = op.sequence
+		o.ready = false
+		o.homeReady.Store(false)
+		if o.resetHome != nil {
+			o.resetHome()
+		}
+	} else {
+		if o.selectRoot != nil {
+			o.selectRoot()
+		}
 	}
 	if len(o.pending) < 64 {
 		o.pending[string(v.ID)] = op
@@ -123,8 +136,10 @@ func (o *observer) response(data []byte) {
 		return
 	}
 	if op.initialize {
-		o.ready = v.Result.Home != "" && transcript.CodexHomeIDForPath(v.Result.Home) == o.home
-		o.homeReady.Store(o.ready)
+		if op.sequence == o.initializeVersion {
+			o.ready = v.Result.Home != "" && transcript.CodexHomeIDForPath(v.Result.Home) == o.home
+			o.homeReady.Store(o.ready)
+		}
 		o.mu.Unlock()
 		return
 	}

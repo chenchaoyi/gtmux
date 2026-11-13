@@ -2401,5 +2401,83 @@
       "TestHQR009MixedRulesAreNotSilentlyRebuilt",
       "TestHQR010HardlinkedLockCannotChangeExternalPermissions"
     ]
+  },
+  "internal/codexbridge/binding_recovery_test.go": {
+    "cases": [
+      "CBA-002",
+      "CBA-003"
+    ],
+    "selectors": [
+      "TestCBA002TransientRootBindingRecoversFromTheActualObserver",
+      "TestCBA003NewSelectionAndEpochRetirePendingRecovery",
+      "TestCBA003PendingNewRootNeverRefreshesOldRoot",
+      "TestCBA003RetryPacingDeadlineAndHardRefusal",
+      "TestCBA003ReceiptFailureCommitsThenOnlyHeartbeats",
+      "TestCBA003ClosedConnectionCannotPublishLater",
+      "TestCBA003InitializeInvalidatesEarlierRootAndEarlierHomeResponse",
+      "TestCBA003NewVerifiedRootReplacesOnlyItsOwnPendingSelection",
+      "TestCBA003NoAttemptAtDeadlineOrAfterEpochChange",
+      "TestCBA003UnrelatedTrafficCannotReplacePendingRoot",
+      "TestCBA002SameRootReconnectRecoversWithoutRefreshingUnverifiedProof"
+    ]
+  },
+  "internal/resume/frontend_binding_readiness_test.go": {
+    "cases": [
+      "CBA-001"
+    ],
+    "selectors": [
+      "TestCBA001UnavailableProofIsRetryableButNeverPublishes",
+      "TestCBA001ObservedBirthHomeAndTargetChangesStayHard",
+      "TestCBA001MissingTerminalProofNeverBecomesInputAuthority"
+    ]
+  },
+  "internal/codexbridge/binding_publication_test.go": {
+    "cases": [
+      "CBA-004"
+    ],
+    "selectors": [
+      "TestCBA004PublicationAndAttachmentFinishBeforeNewEpochActivation",
+      "TestCBA004CanceledPublicationWaitNeverStartsBind",
+      "TestCBA004HeartbeatPublicationAlsoPrecedesNewEpoch",
+      "TestCBA004CancellationInsidePublicationPermitDoesNotRetry"
+    ]
+  },
+  "internal/codexbridge/binding_lifetime_test.go": {
+    "cases": [
+      "CBA-005"
+    ],
+    "selectors": [
+      "TestCBA005RunDisconnectRetiresBeforeTransportDrain",
+      "TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry",
+      "TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed"
+    ]
+  },
+  "internal/resume/frontend_binding_context_test.go": {
+    "cases": [
+      "CBA-004"
+    ],
+    "selectors": [
+      "TestCBA004CancellationDuringStrictProofCannotPublish",
+      "TestCBA004CanceledPartialCommitRetiresOnlyItsOwnLiveReceipt",
+      "TestCBA004CancellationNeverRemovesAReplacedOwner"
+    ]
+  },
+  "internal/codexbridge/binding_heartbeat_context_test.go": {
+    "cases": [
+      "CBA-006"
+    ],
+    "selectors": [
+      "TestCBA006ProductionFactoryHeartbeatRetainsConnectionContext"
+    ]
+  },
+  "internal/resume/frontend_heartbeat_context_test.go": {
+    "cases": [
+      "CBA-006"
+    ],
+    "selectors": [
+      "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
+      "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
+      "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
+    ]
   }
 }
