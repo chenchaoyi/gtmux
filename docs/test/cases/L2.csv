@@ -613,6 +613,7 @@ MAP-6f4234fa9eea,L2,reviewed implementation,internal/transcript/activity_action_
 MAP-86e4d7539d34,L2,reviewed implementation,internal/transcript/activity_action_test.go,145,reviewed-selector,TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput,False,"ASA-001,ASA-002,ASA-003"
 MAP-4ebad51532c4,L2,reviewed implementation,internal/transcript/activity_action_test.go,188,reviewed-selector,TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands,False,"ASA-001,ASA-002,ASA-003"
 MAP-82d0542c06e1,L2,reviewed implementation,internal/transcript/activity_action_test.go,221,reviewed-selector,TestASA003ActionMetadataParticipatesInRetentionBudget,False,"ASA-001,ASA-002,ASA-003"
+MAP-eb016323a1eb,L2,reviewed implementation,internal/transcript/activity_dsh_identity_test.go,8,reviewed-selector,TestASA009DSHDoesNotBorrowOpenCodeIdentity,False,ASA-009
 MAP-528289833275,L2,reviewed implementation,internal/transcript/activity_native_facts_test.go,9,reviewed-selector,TestASA006NativeSkillSchema,False,"ASA-006,ASA-007"
 MAP-fe36601b6e24,L2,reviewed implementation,internal/transcript/activity_native_facts_test.go,41,reviewed-selector,TestASA007NativeQueriesSchema,False,"ASA-006,ASA-007"
 MAP-79929223fc37,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,13,reviewed-selector,TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable,False,LCL-001
@@ -1683,6 +1684,7 @@ LEG-bd8a819ecc3d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,
 LEG-089667cd0076,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,97,test,"two turns minutes apart share one separator, at the start",False,legacy-not-retrospectively-reviewed
 LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,104,test,"a night and a pause each earn one, the turn between them earns none",False,legacy-not-retrospectively-reviewed
 LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,110,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
+MAP-14697d90a8f6,L2,reviewed implementation,mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx,10,reviewed-selector,ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace,False,ASA-010
 LEG-89ff3e67a8c8,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,60,test,native file changes are labeled as recorded changes and preserve complete copy,False,legacy-not-retrospectively-reviewed
 LEG-1f4a8322a751,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,96,test,whole group folds to a labelled summary and unmounts all command content,False,legacy-not-retrospectively-reviewed
 LEG-69fa3bc440bd,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,107,test,individual input wraps without horizontal controls and copies the complete recorded input,False,legacy-not-retrospectively-reviewed

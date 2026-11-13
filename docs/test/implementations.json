@@ -2508,5 +2508,21 @@
     "selectors": [
       "ASA008 native provider skill and queries facts agree in Chat and Trace"
     ]
+  },
+  "internal/transcript/activity_dsh_identity_test.go": {
+    "cases": [
+      "ASA-009"
+    ],
+    "selectors": [
+      "TestASA009DSHDoesNotBorrowOpenCodeIdentity"
+    ]
+  },
+  "mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx": {
+    "cases": [
+      "ASA-010"
+    ],
+    "selectors": [
+      "ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace"
+    ]
   }
 }

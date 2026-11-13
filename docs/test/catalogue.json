@@ -62963,6 +62963,38 @@
         }
       ],
       "sha256": "851d3820adccc69b8eab52dd19488ce236d320433572de68a53d886820d2b354"
+    },
+    "internal/transcript/activity_dsh_identity_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-eb016323a1eb",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestASA009DSHDoesNotBorrowOpenCodeIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASA-009"
+        }
+      ],
+      "sha256": "956e5879a732fec643b0a229c365603c823230298738649dd568d4eec5df8672"
+    },
+    "mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-14697d90a8f6",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "ASA-010"
+        }
+      ],
+      "sha256": "323c87df3607c909e9d81f2c131b419199f32734088241de1fcbf1c6c383c30f"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

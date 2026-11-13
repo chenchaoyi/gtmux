@@ -58,8 +58,18 @@ func readTargetFacts(step *Step, paths []string) {
 
 func activitySkill(name, provider string, args map[string]any) string {
 	keys := []string{"skill"}
-	if (provider == "dsh" || provider == "opencode") && strings.EqualFold(name, "skill") {
-		keys = append(keys, "name", "id")
+	if strings.EqualFold(name, "skill") {
+		switch provider {
+		case "dsh":
+			// DSH declares name, not OpenCode V2's id. Unknown mixed
+			// identity shapes stay neutral rather than borrowing that schema.
+			if _, present := args["id"]; present {
+				return ""
+			}
+			keys = append(keys, "name")
+		case "opencode":
+			keys = append(keys, "name", "id")
+		}
 	}
 	identity := ""
 	for _, key := range keys {
