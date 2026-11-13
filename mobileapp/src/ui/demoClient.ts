@@ -41,6 +41,7 @@ const ARC_MS = 5000; // waiting → working dwell before idle+latest (per MOBILE
  * A stub that appears to succeed would be worse than the call not existing.
  */
 type NotInDemo = 'accessHistory' | 'sessionFollow' | 'saveSessionFollow'
+  | 'restorePreview' | 'restoreStart' | 'restoreStatus' // Remote restore is unavailable in the read-only demo.
   | 'createSession' // The demo does not create a real server session.
   | 'devices'
   | 'enrollMint'

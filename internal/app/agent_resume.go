@@ -100,6 +100,9 @@ func resumeAgents() {
 			}
 			continue // a program is running here — don't type over it
 		}
+		if remoteRestoreSessions != nil && !remoteRestoreSessions[locSession(f[2])] {
+			continue
+		}
 		panes = append(panes, shellPane{id: f[0], loc: f[2], cwd: f[3]})
 	}
 
@@ -138,6 +141,13 @@ func resumeAgents() {
 	n := 0
 	var attempts []resumeAttempt
 	run := func(paneID string, rec resume.Record) bool {
+		if remoteRestoreError != nil {
+			return false
+		}
+		reportRemoteRestore("agents", attempts)
+		if remoteRestoreError != nil {
+			return false
+		}
 		loc := ""
 		for _, p := range panes {
 			if p.id == paneID {
@@ -165,6 +175,11 @@ func resumeAgents() {
 		}
 		cmd, ok := resume.CommandWithBridge(rec, selfPath())
 		if !ok {
+			return false
+		}
+		expected, allowed := remoteRestoreTargets[loc]
+		if (remoteRestoreSessions != nil && (!allowed || rec.Agent != expected.Agent || rec.SessionID != expected.SessionID || (expected.HomeID != "" && rec.HomeID != expected.HomeID))) || !remotePaneStillEligible(paneID, loc) {
+			attempts = append(attempts, resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: "target-changed"})
 			return false
 		}
 		before, _ := resume.Load(loc)
@@ -242,6 +257,7 @@ func resumeAgents() {
 		}
 	}
 
+	reportRemoteRestore("agents", attempts)
 	restoreLogf("restore.resume", "resumeAgents: done resumed=%d", n)
 	reportResume(mode, n)
 	if mode == resumeAuto && n > 0 {
@@ -259,6 +275,7 @@ func resumeAgents() {
 				"confirmed the target conversation after its resume command", "conversation", current.SessionID)
 		}
 	}
+	reportRemoteRestore("agents", attempts)
 	fmt.Print(renderResumeAttempts(attempts, termWidth()))
 }
 
