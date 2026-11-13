@@ -1,0 +1,24 @@
+{
+  "id": "remote-restore-progress-recovery-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Read an existing paired restore job independently of unrelated new preview availability",
+    "notes": "Follow up the independently reproduced P1 at exact Qf3dc7615. Existing paired pending ID must be checked first; a successful existing status does not require a new preview. If status fails, a read-only preview may still enable the existing explicit same-ID retry, never an automatic POST or new ID. Preserve original pending ID/revision, pairing token binding, owner-only, late-host epoch and original tests unchanged. When both status and preview fail expose a reachable read-only status retry. No-local-ID preview failure also has read-only retry. Keep local_record failures conservative, do not clear an unreadable pending record to enable a new request. Tests use actual sheet with synthetic Keychain/network/timers, including old Q target failure, late status after target change, and no real sessions/credentials/restore/service/deployment."
+  },
+  "cases": [
+    {
+      "id": "RSR-010",
+      "layer": "L2",
+      "description": "Existing restore progress does not depend on a new preview",
+      "setup": "Actual RestoreSessionsSheet and isolated Keychain/client mocks; persisted same-pairing ID; old Q source before production edits",
+      "action": "Preview503 with status available; both reads fail then explicit status retry; no-ID preview retry; late old-host status; corrupt local record",
+      "expected": "Existing status is queried without successful new preview. Status success shows the old job and reachable check action; failure retains ID and reachable read-only retry without POST/new ID/clear. Unknown old target cannot update or route to the new target. Corrupt local record never enables a new POST. Original assertions and timers remain.",
+      "planned_files": [
+        "mobileapp/src/screens/RestoreSessionsSheet.recovery.test.tsx"
+      ]
+    }
+  ],
+  "seal": "4c5ce358a519259890bdfbd8cbd9f6eb6d0fc8bf5093ecdc4a8914494ce2bcde"
+}

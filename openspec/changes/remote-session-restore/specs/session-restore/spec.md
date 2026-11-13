@@ -12,6 +12,11 @@ The server SHALL allow only an owner to preview missing saved sessions and expli
 - **WHEN** a restore command was sent but the exact agent identity has not been observed
 - **THEN** progress reports pending confirmation, never confirmed success
 
+#### Scenario: Existing progress is readable without a new preview
+- **WHEN** a paired pending request ID already exists
+- **THEN** the client reads that exact job independently of a new workspace preview
+- **AND** a failed read keeps the ID and exposes a read-only status retry without automatically starting work
+
 ### Requirement: Visible menu restore progress
 The menu SHALL keep its progress visible after Restore is chosen, without overriding explicit dismissal or stealing focus.
 
