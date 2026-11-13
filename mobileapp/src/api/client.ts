@@ -430,6 +430,8 @@ export interface TranscriptStep {
   title: string; // tool name (Edit, Bash, exec…)
   detail?: string; // short arg summary (path / command head)
   operation?: string;
+  action?: string;
+  subject_count?: number;
   input?: string; // selected original input; preserves whitespace
   input_kind?: string;
   workdir?: string;

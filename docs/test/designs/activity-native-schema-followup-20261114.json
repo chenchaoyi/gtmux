@@ -1,0 +1,46 @@
+{
+  "id": "activity-native-schema-followup-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review; not independent approval",
+    "date": "2026-11-14",
+    "decision": "Close independent F1/F2 with exact provider schemas rather than generic parameter guessing",
+    "notes": "Independent Q report and manifest fully read and SHA checked. F1: OpenCode v1/DSH skill name and OpenCode v2 skill id; F2: DSH web_search queries array. R476 is only a normal merge of reviewed association main and still inherits both gaps. Preserve ASA001..005 and native mirror/ref/redaction controls. Add explicit provider context only at the two known adapters; generic or MCP name/id cannot become a skill identity. Validate conflicts/types and bound arrays/summary without executing or querying tools. First demonstrate exact R production target failures, then new green and final actual-adapter output through existing generated presenters. No live user input, provider process, network search, session restore or App/service changes."
+  },
+  "cases": [
+    {
+      "id": "ASA-006",
+      "layer": "L2",
+      "description": "Native provider skill identities remain factual",
+      "setup": "Real DSH skill arguments/name string, OpenCode V1 name and V2 id through portable adapter, Claude legacy skill; invalid/conflicting fields and foreign/MCP names.",
+      "action": "Parse actual provider events and inspect the single recorded step and unchanged raw input/ref.",
+      "expected": "Only exact known provider/tool schemas permit name/id; valid forms show skill action and bounded identity once. Missing/wrong/conflicting/foreign parameters remain neutral; existing canonical path reads, legacy skill and native mirror controls stay unchanged.",
+      "planned_files": [
+        "internal/transcript/activity_native_facts_test.go"
+      ]
+    },
+    {
+      "id": "ASA-007",
+      "layer": "L2",
+      "description": "DSH multiple search queries retain a bounded target preview",
+      "setup": "Real dsh tool/call web_search with queries string array and mixed/empty/oversized array controls, ordinary query/web_fetch controls.",
+      "action": "Parse actual append events and inspect operation/action/detail/count/input.",
+      "expected": "A valid 1..64 typed nonblank query array supplies a clipped preview from at most three entries, preserving one call and the original input/ref. Invalid arrays do not create a guessed preview; only exact DSH web_search gains this schema.",
+      "planned_files": [
+        "internal/transcript/activity_native_facts_test.go"
+      ]
+    },
+    {
+      "id": "ASA-008",
+      "layer": "L3",
+      "description": "Native skill and query facts reach Chat and Trace",
+      "setup": "Recorded step shapes from the provider cases and old/malformed neutral controls.",
+      "action": "Run shared bilingual Chat/Trace presentation and separately pass actual Go adapter output to generated browser/Trace.",
+      "expected": "Skill name and search text match recorded facts across surfaces; one invocation remains one row/call, original objects/refs remain unchanged and unsupported records retain the existing fallback.",
+      "planned_files": [
+        "mobileapp/src/ui/native-action-facts.test.ts"
+      ]
+    }
+  ],
+  "seal": "2b5a63b25b61182bfa20d3701909a7d0e8dedce09d8e398c0dd5b733241fce8b"
+}

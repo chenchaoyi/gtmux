@@ -147,6 +147,9 @@ func codexNativeEvent(line string, st *parseState) bool {
 			}
 		}
 		step.Detail = recordedPathSummary(paths)
+		if step.Operation == "read" && len(paths) == len(item.ParsedCmd) {
+			readTargetFacts(&step, paths)
+		}
 		if step.Detail == "" {
 			step.Detail = clip(strings.Join(strings.Fields(step.Input), " "), 80)
 		}

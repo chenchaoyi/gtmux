@@ -1,0 +1,71 @@
+{
+  "id": "activity-action-facts-20261113",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review; not independent approval",
+    "date": "2026-11-13",
+    "decision": "Retain recorded operation intent and target identity in shared Activity without fabricating calls",
+    "notes": "Reconstruction from the retained reviewed five-case design and display fixtures; the prior uncommitted temporary source and patch are unavailable after reboot, so no byte-for-byte recovery is claimed. Fresh base is 1c7b84e02ed8f21024fb2be5e8ba4ebb38c17422. User lifted the old build hold; normal isolated Go/RN/browser gates are enabled under a 5GiB task budget and 2GiB free floor. Commit this sealed reviewed design before new test edits. Preserve recorded operation/raw input/ref/status and real call count. Optional bounded action and subject_count require explicit known method/complete typed input or native parsed read targets, never shell text/result guesses, file discovery or skill execution. One exec reading several files remains one real call. Shared presenter feeds App/browser/Trace for all five adapters. No live input, restore, TCC, App/service restart or deployment in these source tests. Author self-review is not independent approval; existing source/failed evidence and other candidates remain untouched."
+  },
+  "cases": [
+    {
+      "id": "ASA-001",
+      "layer": "L2",
+      "description": "Skill reading has a recorded source identity",
+      "setup": "Codex parsed_cmd read paths and Claude/Kimi/OpenCode/DSH-style explicit read_file/file_path or Skill arguments; canonical skills/name/SKILL.md, bare names, unrelated scripts and mixed files.",
+      "action": "Parse actual adapter records and replay exact-ID mirrors.",
+      "expected": "Only explicit skill methods or recorded read targets under a skills directory supply skill identity; no filesystem reads, frontmatter execution, shell-text guessing or claim of skill application. Mixed ordinary/skill reads remain file reads. Raw input/ref/name/status/order/count remain.",
+      "planned_files": [
+        "internal/transcript/activity_action_test.go"
+      ]
+    },
+    {
+      "id": "ASA-002",
+      "layer": "L2",
+      "description": "Web operations retain search, open and find intent",
+      "setup": "Recorded web_search/WebSearch, WebFetch/open_url, known web.run parameter objects for search_query/open/find/click, mixed/unknown/malformed and truncated sources.",
+      "action": "Parse actual toolStep/provider records; inspect selected metadata and raw details.",
+      "expected": "Specific web labels require a known method or complete recognized action structure. Search queries are not called page navigation; find patterns are not called web searches. Mixed/unknown remain a neutral web action. No result/body/credential scanning or additional arbitrary parameter retention.",
+      "planned_files": [
+        "internal/transcript/activity_action_test.go"
+      ]
+    },
+    {
+      "id": "ASA-003",
+      "layer": "L2",
+      "description": "Multiple source targets stay one real call",
+      "setup": "Native one exec with one/three/four read targets, duplicate basename/ID and generic function_call/native mirror order; code wrapper plus inner exec.",
+      "action": "Parse full and incremental sources; read scoped original input ref.",
+      "expected": "Recorded target count and bounded names are visible; count describes targets, not extra calls. Exact-ID merge enriches metadata without changing original input/ref or inventing records, parentage or execution success; unknown/mixed commands remain command.",
+      "planned_files": [
+        "internal/transcript/activity_action_test.go"
+      ]
+    },
+    {
+      "id": "ASA-004",
+      "layer": "L3",
+      "description": "App browser and Trace share precise bilingual labels and icons",
+      "setup": "Same canonical action metadata for all agents, three-file call, explicit skill name and unknown/incompatible action; generated browser presenter and actual RN rows.",
+      "action": "Compare titles/previews/icons/raw facts and loaded-window call counts in English and Chinese.",
+      "expected": "Read skill/name, Search web/query, Open webpage/target and Find in page/pattern agree across surfaces; plural target label is accurate. Unknown action falls back, invalid counts ignored, original record remains unchanged. Existing mouse/touch targets and inspector raw data remain.",
+      "planned_files": [
+        "mobileapp/src/ui/activity-action-facts.test.ts",
+        "internal/server/web/activity-action-facts.test.cjs",
+        "mobileapp/src/ui/ToolSteps.action-facts.test.tsx"
+      ]
+    },
+    {
+      "id": "ASA-005",
+      "layer": "L2",
+      "description": "Presentation stays bounded and backward compatible",
+      "setup": "Old payloads without action/count, large/malformed strings and mixed/unrecognized tools; explicit failed/cancelled calls and code text mentioning Skill or web.",
+      "action": "Generate compact previews and Trace events without executing commands or parsing results.",
+      "expected": "Old payloads retain useful fallback; only known explicit tool names refine old web labels. Bounds and raw fields survive; action metadata round-trips through Trace; no success claim, arbitrary decoding, file lookup or increased call counts.",
+      "planned_files": [
+        "mobileapp/src/ui/activity-action-facts.test.ts",
+        "internal/server/web/activity-action-facts.test.cjs"
+      ]
+    }
+  ],
+  "seal": "7690fc085f454245f56fad3f62e5fc48fcc385c64e0c41c1790f65db54c0ab7f"
+}

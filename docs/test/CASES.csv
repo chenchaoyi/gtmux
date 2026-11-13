@@ -2950,6 +2950,8 @@ LEG-09f518398798,L2,Go core / CLI / server,internal/server/transcript_history_te
 LEG-9d098d6161a4,L2,Go core / CLI / server,internal/server/upload_test.go,11,Test,TestUploadEnforcesTheCallersInputScope,False,legacy-not-retrospectively-reviewed
 LEG-50d7928d258f,L2,Go core / CLI / server,internal/server/upload_test.go,28,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-580a9541cf20,L2,Go core / CLI / server,internal/server/usage_test.go,11,Test,TestUsageEndpoint,False,legacy-not-retrospectively-reviewed
+MAP-9904691c1fa9,L3,reviewed implementation,internal/server/web/activity-action-facts.test.cjs,6,reviewed-selector,ASA004 browser Chat and Trace preserve factual action labels and one call per record,False,"ASA-004,ASA-005"
+MAP-861b36c25077,L3,reviewed implementation,internal/server/web/activity-action-facts.test.cjs,25,reviewed-selector,ASA005 browser fallback ignores contradictory facts without guessing scripts or changing raw input,False,"ASA-004,ASA-005"
 MAP-6acf30600cc5,L3,reviewed implementation,internal/server/web/activity-semantics.test.cjs,8,reviewed-selector,AOP001 generated browser presenter shows read/search while retaining actual calls,False,"AOP-001,AOP-002,AOP-003"
 MAP-9ce52cb7c368,L3,reviewed implementation,internal/server/web/activity-semantics.test.cjs,16,reviewed-selector,AOP002 browser command preview unwraps complete shell argv only for display,False,"AOP-001,AOP-002,AOP-003"
 MAP-86b06e4fbd45,L3,reviewed implementation,internal/server/web/activity-semantics.test.cjs,23,reviewed-selector,AOP003 compact density is pointer-scoped and focus/overflow affordances remain,False,"AOP-001,AOP-002,AOP-003"
@@ -3244,6 +3246,15 @@ LEG-56fd929bfb15,L1,Go core / CLI / server,internal/toolpath/toolpath_test.go,29
 LEG-208e026e1468,L1,Go core / CLI / server,internal/toolpath/toolpath_test.go,47,Test,TestLookToolReportsAGenuinelyAbsentTool,False,legacy-not-retrospectively-reviewed
 LEG-fc7d6bd84d17,L1,Go core / CLI / server,internal/toolpath/toolpath_test.go,56,Test,TestLookToolIgnoresANonExecutable,False,legacy-not-retrospectively-reviewed
 LEG-6fcc51131be5,L1,Go core / CLI / server,internal/toolpath/toolpath_test.go,72,Test,TestNVMDiscoveryUsesDefaultThenNumericVersionOrder,False,legacy-not-retrospectively-reviewed
+MAP-3cff5fa16242,L2,reviewed implementation,internal/transcript/activity_action_test.go,78,reviewed-selector,TestASA001RecordedSkillIdentityAcrossFiveAdapters,False,"ASA-001,ASA-002,ASA-003"
+MAP-005983dcced4,L2,reviewed implementation,internal/transcript/activity_action_test.go,96,reviewed-selector,TestASA001ShellTextAndBareNamesDoNotInventSkillReads,False,"ASA-001,ASA-002,ASA-003"
+MAP-6f4234fa9eea,L2,reviewed implementation,internal/transcript/activity_action_test.go,111,reviewed-selector,TestASA002WebIntentUsesExplicitMethodsOrCompleteActions,False,"ASA-001,ASA-002,ASA-003"
+MAP-86e4d7539d34,L2,reviewed implementation,internal/transcript/activity_action_test.go,145,reviewed-selector,TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput,False,"ASA-001,ASA-002,ASA-003"
+MAP-4ebad51532c4,L2,reviewed implementation,internal/transcript/activity_action_test.go,188,reviewed-selector,TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands,False,"ASA-001,ASA-002,ASA-003"
+MAP-82d0542c06e1,L2,reviewed implementation,internal/transcript/activity_action_test.go,221,reviewed-selector,TestASA003ActionMetadataParticipatesInRetentionBudget,False,"ASA-001,ASA-002,ASA-003"
+MAP-eb016323a1eb,L2,reviewed implementation,internal/transcript/activity_dsh_identity_test.go,8,reviewed-selector,TestASA009DSHDoesNotBorrowOpenCodeIdentity,False,ASA-009
+MAP-528289833275,L2,reviewed implementation,internal/transcript/activity_native_facts_test.go,9,reviewed-selector,TestASA006NativeSkillSchema,False,"ASA-006,ASA-007"
+MAP-fe36601b6e24,L2,reviewed implementation,internal/transcript/activity_native_facts_test.go,41,reviewed-selector,TestASA007NativeQueriesSchema,False,"ASA-006,ASA-007"
 LEG-7f066e9629ff,L1,Go core / CLI / server,internal/transcript/cache_budget_test.go,23,Test,TestTranscriptCacheEvictsSessionsAndReadsThemAgain,False,legacy-not-retrospectively-reviewed
 LEG-78cf0a18e433,L1,Go core / CLI / server,internal/transcript/cache_budget_test.go,60,Test,TestTranscriptCacheHasByteBudget,False,legacy-not-retrospectively-reviewed
 LEG-29e9ae4eccad,L1,Go core / CLI / server,internal/transcript/cache_budget_test.go,82,Test,TestTranscriptCacheKeepsRecentlyUsedAndExpiresIdle,False,legacy-not-retrospectively-reviewed
@@ -5946,6 +5957,8 @@ LEG-bd8a819ecc3d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,
 LEG-089667cd0076,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,97,test,"two turns minutes apart share one separator, at the start",False,legacy-not-retrospectively-reviewed
 LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,104,test,"a night and a pause each earn one, the turn between them earns none",False,legacy-not-retrospectively-reviewed
 LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,110,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
+MAP-b07036b224d7,L3,reviewed implementation,mobileapp/src/ui/ToolSteps.action-facts.test.tsx,7,reviewed-selector,ASA004 actual App rows identify skill web intent and file targets with unchanged inspector input,False,ASA-004
+MAP-14697d90a8f6,L2,reviewed implementation,mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx,10,reviewed-selector,ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace,False,ASA-010
 MAP-2d6c205f3027,L3,reviewed implementation,mobileapp/src/ui/ToolSteps.semantic.test.tsx,7,reviewed-selector,AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets,False,"AOP-001,AOP-003"
 LEG-89ff3e67a8c8,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,60,test,native file changes are labeled as recorded changes and preserve complete copy,False,legacy-not-retrospectively-reviewed
 LEG-1f4a8322a751,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,96,test,whole group folds to a labelled summary and unmounts all command content,False,legacy-not-retrospectively-reviewed
@@ -5967,6 +5980,8 @@ LEG-c1dcae648f3a,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,
 LEG-bde490778c31,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,91,test,no Pressable wraps the ScrollView,False,legacy-not-retrospectively-reviewed
 LEG-147ace8d3cd1,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,103,test,tapping the backdrop closes,False,legacy-not-retrospectively-reviewed
 LEG-f8eb4ad15194,L2,RN / mobile harness,mobileapp/src/ui/WhatsNewModal.test.tsx,121,test,the newest version opens even when the entries arrive after mount,False,legacy-not-retrospectively-reviewed
+MAP-5a69cc101040,L3,reviewed implementation,mobileapp/src/ui/activity-action-facts.test.ts,15,reviewed-selector,ASA004 recorded actions and targets agree across five agents and Trace without adding calls,False,"ASA-004,ASA-005"
+MAP-009536778cba,L3,reviewed implementation,mobileapp/src/ui/activity-action-facts.test.ts,33,reviewed-selector,ASA005 unknown incompatible and malformed facts use bounded neutral fallback,False,"ASA-004,ASA-005"
 MAP-4a512680e430,L3,reviewed implementation,mobileapp/src/ui/activity-semantics.test.ts,9,reviewed-selector,AOP001 semantic actions override raw transport names without rewriting tool facts,False,"AOP-001,AOP-002"
 MAP-8a7265b6c0d7,L3,reviewed implementation,mobileapp/src/ui/activity-semantics.test.ts,21,reviewed-selector,"AOP002 argv preview is bounded, cross-surface and leaves ambiguous input verbatim",False,"AOP-001,AOP-002"
 LEG-c8dea3de822d,L2,RN / mobile harness,mobileapp/src/ui/activity.test.ts,6,test,delegation previews the purpose instead of JSON or an internal task key,False,legacy-not-retrospectively-reviewed
@@ -6204,6 +6219,7 @@ LEG-719b2976f521,L2,RN / mobile harness,mobileapp/src/ui/markupGeometry.test.ts,
 LEG-84282da476a0,L2,RN / mobile harness,mobileapp/src/ui/markupGeometry.test.ts,78,test,canvas pan stays within the image and pinch preserves the focal point,False,legacy-not-retrospectively-reviewed
 LEG-62f4748984cb,L2,RN / mobile harness,mobileapp/src/ui/modalOrientations.test.ts,15,it,finds the modals it guards,False,legacy-not-retrospectively-reviewed
 LEG-206cc14bcec0,L2,RN / mobile harness,mobileapp/src/ui/modalOrientations.test.ts,19,it,gives every <Modal> the app’s orientations,False,legacy-not-retrospectively-reviewed
+MAP-989d715dab42,L3,reviewed implementation,mobileapp/src/ui/native-action-facts.test.ts,7,reviewed-selector,ASA008 native provider skill and queries facts agree in Chat and Trace,False,ASA-008
 LEG-2ea084f2d94c,L2,RN / mobile harness,mobileapp/src/ui/paneLines.test.ts,20,test,normalizes the glyph on its way through the parser,False,legacy-not-retrospectively-reviewed
 LEG-cafdd79804e4,L2,RN / mobile harness,mobileapp/src/ui/paneLines.test.ts,27,test,"is exactly normalize-then-parse, so the two cannot drift apart",False,legacy-not-retrospectively-reviewed
 LEG-bff5cf231806,L2,RN / mobile harness,mobileapp/src/ui/paneLines.test.ts,34,test,keeps the ANSI it was given,False,legacy-not-retrospectively-reviewed

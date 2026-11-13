@@ -7,7 +7,7 @@ const names: Record<string, ActivityOperation> = {
   grep: 'search', rg: 'search', search: 'search', search_query: 'search', find: 'search', find_files: 'search',
   bash: 'command', shell: 'command', exec: 'command', exec_command: 'command', local_shell: 'command', run_command: 'command',
   edit: 'edit', write: 'edit', apply_patch: 'edit', patch: 'edit', write_file: 'edit', edit_file: 'edit',
-  web_search: 'web', webfetch: 'web', web_fetch: 'web', browse: 'web', open_url: 'web', fetch: 'web',
+  web_search: 'web', websearch: 'web', webfetch: 'web', web_fetch: 'web', browse: 'web', open_url: 'web', fetch: 'web',
   js: 'code', python: 'code', wait: 'wait', wait_for: 'wait', waitfor: 'wait', sleep: 'wait', wait_agent: 'wait', taskoutput: 'wait',
   agent: 'agent', task: 'agent', spawn_agent: 'agent', delegate: 'agent', followup_task: 'agent', resume_agent: 'agent',
 };
@@ -18,15 +18,31 @@ const labels: Record<ActivityOperation, [string, string]> = {
 };
 export function activityOperation(step: TranscriptStep): ActivityOperation {
   if (step.operation && Object.prototype.hasOwnProperty.call(labels, step.operation)) { return step.operation as ActivityOperation; }
+  if (step.title === 'web.run' || step.title === 'web__run') return 'web';
   const name = (step.title || '').split(/__|\./).pop()?.toLowerCase() || '';
   return names[name] || 'tool';
 }
 export function activityLabel(operation: ActivityOperation, lang: 'en' | 'zh'): string {
   return labels[operation][lang === 'zh' ? 1 : 0];
 }
+// Action/count refine recorded facts; they never override a contradictory base
+// operation or turn a single multi-target invocation into several tool calls.
+export function activityActionLabel(step: TranscriptStep, lang: 'en' | 'zh'): string | undefined {
+  const operation = activityOperation(step), zh = lang === 'zh';
+  const count = typeof step.subject_count === 'number' && Number.isSafeInteger(step.subject_count) && step.subject_count >= 1 && step.subject_count <= 10000 ? step.subject_count : 0;
+  if (step.action === 'skill' && (operation === 'read' || operation === 'tool') && count <= 1) return zh ? '读取技能' : 'Read skill';
+  if (operation === 'read' && count > 1) return zh ? `读取 ${count} 个文件` : `Read ${count} files`;
+  if (operation !== 'web') return undefined;
+  const method = (step.title || '').split(/__|\./).pop()?.toLowerCase();
+  const action = step.action || (['websearch', 'web_search'].includes(method || '') ? 'web_search' : ['webfetch', 'web_fetch', 'open_url', 'fetchurl'].includes(method || '') ? 'web_open' : '');
+  if (action === 'web_search') return zh ? '搜索网页' : 'Search web';
+  if (action === 'web_open') return zh ? '打开网页' : 'Open webpage';
+  if (action === 'web_find') return zh ? '页内查找' : 'Find in page';
+  return undefined;
+}
 export function activitySummary(steps: TranscriptStep[], lang: 'en' | 'zh'): string {
-  const operations = [...new Set(steps.map(activityOperation))];
-  if (operations.length === 1) { return activityLabel(operations[0], lang); }
+  const titles = [...new Set(steps.map(step => activityActionLabel(step, lang) || activityLabel(activityOperation(step), lang)))];
+  if (titles.length === 1) { return titles[0]; }
   return lang === 'zh' ? '执行过程' : 'Activity';
 }
 function compactPreview(value: string): string {

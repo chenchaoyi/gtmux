@@ -1,5 +1,5 @@
-// Generated from shared App trace analysis and presentation; SHA256 c97ff0ace85efb74561eefddcf1fc804be73f59eb1e1c2c1dbeba06d31d85f76
-// Body SHA256 54747b1d224b32e9b3341b15b6693242a84adaa8258943dd82e4c623a9c1a7c0
+// Generated from shared App trace analysis and presentation; SHA256 b046f08b82df4b37b6d61379dadac5b43e5637768a8484b63a0ab63123e18d33
+// Body SHA256 c8a8d93a1197d9c7e671e396237b0f68a3cce6d01c4452c40bd08cb088b3b2c6
 (function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -204,6 +204,8 @@ function build(turns, context = {}) {
                     inputKind: string(step.input_kind),
                     workdir: string(step.workdir),
                     operation: string(step.operation),
+                    action: string(step.action).slice(0, 32),
+                    subjectCount: typeof step.subject_count === 'number' && Number.isSafeInteger(step.subject_count) && step.subject_count >= 1 && step.subject_count <= 10000 ? step.subject_count : undefined,
                     truncated: step.details_truncated === true,
                     inputRef: string(step.input_ref),
                     call: object(step.call),
@@ -241,6 +243,8 @@ function sourceInfo(event) {
             ? {
                 input_kind: event.step.inputKind,
                 operation: event.step.operation,
+                ...(event.step.action ? { action: event.step.action } : {}),
+                ...(event.step.subjectCount ? { subject_count: event.step.subjectCount } : {}),
                 truncated: event.step.truncated,
             }
             : {}),
@@ -448,6 +452,7 @@ function prependHistory(page, current) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.activityOperation = activityOperation;
 exports.activityLabel = activityLabel;
+exports.activityActionLabel = activityActionLabel;
 exports.activitySummary = activitySummary;
 exports.activityPreview = activityPreview;
 const names = {
@@ -456,7 +461,7 @@ const names = {
     grep: 'search', rg: 'search', search: 'search', search_query: 'search', find: 'search', find_files: 'search',
     bash: 'command', shell: 'command', exec: 'command', exec_command: 'command', local_shell: 'command', run_command: 'command',
     edit: 'edit', write: 'edit', apply_patch: 'edit', patch: 'edit', write_file: 'edit', edit_file: 'edit',
-    web_search: 'web', webfetch: 'web', web_fetch: 'web', browse: 'web', open_url: 'web', fetch: 'web',
+    web_search: 'web', websearch: 'web', webfetch: 'web', web_fetch: 'web', browse: 'web', open_url: 'web', fetch: 'web',
     js: 'code', python: 'code', wait: 'wait', wait_for: 'wait', waitfor: 'wait', sleep: 'wait', wait_agent: 'wait', taskoutput: 'wait',
     agent: 'agent', task: 'agent', spawn_agent: 'agent', delegate: 'agent', followup_task: 'agent', resume_agent: 'agent',
 };
@@ -469,16 +474,39 @@ function activityOperation(step) {
     if (step.operation && Object.prototype.hasOwnProperty.call(labels, step.operation)) {
         return step.operation;
     }
+    if (step.title === 'web.run' || step.title === 'web__run')
+        return 'web';
     const name = (step.title || '').split(/__|\./).pop()?.toLowerCase() || '';
     return names[name] || 'tool';
 }
 function activityLabel(operation, lang) {
     return labels[operation][lang === 'zh' ? 1 : 0];
 }
+// Action/count refine recorded facts; they never override a contradictory base
+// operation or turn a single multi-target invocation into several tool calls.
+function activityActionLabel(step, lang) {
+    const operation = activityOperation(step), zh = lang === 'zh';
+    const count = typeof step.subject_count === 'number' && Number.isSafeInteger(step.subject_count) && step.subject_count >= 1 && step.subject_count <= 10000 ? step.subject_count : 0;
+    if (step.action === 'skill' && (operation === 'read' || operation === 'tool') && count <= 1)
+        return zh ? '读取技能' : 'Read skill';
+    if (operation === 'read' && count > 1)
+        return zh ? `读取 ${count} 个文件` : `Read ${count} files`;
+    if (operation !== 'web')
+        return undefined;
+    const method = (step.title || '').split(/__|\./).pop()?.toLowerCase();
+    const action = step.action || (['websearch', 'web_search'].includes(method || '') ? 'web_search' : ['webfetch', 'web_fetch', 'open_url', 'fetchurl'].includes(method || '') ? 'web_open' : '');
+    if (action === 'web_search')
+        return zh ? '搜索网页' : 'Search web';
+    if (action === 'web_open')
+        return zh ? '打开网页' : 'Open webpage';
+    if (action === 'web_find')
+        return zh ? '页内查找' : 'Find in page';
+    return undefined;
+}
 function activitySummary(steps, lang) {
-    const operations = [...new Set(steps.map(activityOperation))];
-    if (operations.length === 1) {
-        return activityLabel(operations[0], lang);
+    const titles = [...new Set(steps.map(step => activityActionLabel(step, lang) || activityLabel(activityOperation(step), lang)))];
+    if (titles.length === 1) {
+        return titles[0];
     }
     return lang === 'zh' ? '执行过程' : 'Activity';
 }
@@ -625,6 +653,8 @@ function recordedStep(event) {
         input: step.input,
         detail: step.summary,
         operation: step.operation,
+        action: step.action,
+        subject_count: step.subjectCount,
         input_kind: step.inputKind,
     };
 }
@@ -730,6 +760,9 @@ const activity_1 = require("./activity");
 // Canonical Chat/Trace interpretation, also generated for the browser. These
 // fields describe recorded evidence; never infer success from a tool name.
 function callTitle(step, lang = 'en') {
+    const actionLabel = (0, activity_1.activityActionLabel)(step, lang);
+    if (actionLabel)
+        return actionLabel;
     const operation = (0, activity_1.activityOperation)(step);
     if (operation !== 'tool')
         return (0, activity_1.activityLabel)(operation, lang);

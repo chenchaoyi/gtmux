@@ -2173,35 +2173,6 @@
       "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read"
     ]
   },
-  "internal/codexbridge/binding_recovery_test.go": {
-    "cases": [
-      "CBA-002",
-      "CBA-003"
-    ],
-    "selectors": [
-      "TestCBA002TransientRootBindingRecoversFromTheActualObserver",
-      "TestCBA003NewSelectionAndEpochRetirePendingRecovery",
-      "TestCBA003PendingNewRootNeverRefreshesOldRoot",
-      "TestCBA003RetryPacingDeadlineAndHardRefusal",
-      "TestCBA003ReceiptFailureCommitsThenOnlyHeartbeats",
-      "TestCBA003ClosedConnectionCannotPublishLater",
-      "TestCBA003InitializeInvalidatesEarlierRootAndEarlierHomeResponse",
-      "TestCBA003NewVerifiedRootReplacesOnlyItsOwnPendingSelection",
-      "TestCBA003NoAttemptAtDeadlineOrAfterEpochChange",
-      "TestCBA003UnrelatedTrafficCannotReplacePendingRoot",
-      "TestCBA002SameRootReconnectRecoversWithoutRefreshingUnverifiedProof"
-    ]
-  },
-  "internal/resume/frontend_binding_readiness_test.go": {
-    "cases": [
-      "CBA-001"
-    ],
-    "selectors": [
-      "TestCBA001UnavailableProofIsRetryableButNeverPublishes",
-      "TestCBA001ObservedBirthHomeAndTargetChangesStayHard",
-      "TestCBA001MissingTerminalProofNeverBecomesInputAuthority"
-    ]
-  },
   "internal/knowledge/source_lineage_test.go": {
     "cases": [
       "KBL-001",
@@ -2256,89 +2227,47 @@
       "task t-9"
     ]
   },
-  "internal/codexbridge/binding_publication_test.go": {
+  "internal/transcript/activity_action_test.go": {
     "cases": [
-      "CBA-004"
+      "ASA-001",
+      "ASA-002",
+      "ASA-003"
     ],
     "selectors": [
-      "TestCBA004PublicationAndAttachmentFinishBeforeNewEpochActivation",
-      "TestCBA004CanceledPublicationWaitNeverStartsBind",
-      "TestCBA004HeartbeatPublicationAlsoPrecedesNewEpoch",
-      "TestCBA004CancellationInsidePublicationPermitDoesNotRetry"
+      "TestASA001RecordedSkillIdentityAcrossFiveAdapters",
+      "TestASA001ShellTextAndBareNamesDoNotInventSkillReads",
+      "TestASA002WebIntentUsesExplicitMethodsOrCompleteActions",
+      "TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput",
+      "TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands",
+      "TestASA003ActionMetadataParticipatesInRetentionBudget"
     ]
   },
-  "internal/codexbridge/binding_lifetime_test.go": {
+  "mobileapp/src/ui/activity-action-facts.test.ts": {
     "cases": [
-      "CBA-005"
+      "ASA-004",
+      "ASA-005"
     ],
     "selectors": [
-      "TestCBA005RunDisconnectRetiresBeforeTransportDrain",
-      "TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry",
-      "TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed"
+      "ASA004 recorded actions and targets agree across five agents and Trace without adding calls",
+      "ASA005 unknown incompatible and malformed facts use bounded neutral fallback"
     ]
   },
-  "internal/resume/frontend_binding_context_test.go": {
+  "mobileapp/src/ui/ToolSteps.action-facts.test.tsx": {
     "cases": [
-      "CBA-004"
+      "ASA-004"
     ],
     "selectors": [
-      "TestCBA004CancellationDuringStrictProofCannotPublish",
-      "TestCBA004CanceledPartialCommitRetiresOnlyItsOwnLiveReceipt",
-      "TestCBA004CancellationNeverRemovesAReplacedOwner"
+      "ASA004 actual App rows identify skill web intent and file targets with unchanged inspector input"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift": {
+  "internal/server/web/activity-action-facts.test.cjs": {
     "cases": [
-      "SCW-001",
-      "SCW-002",
-      "SCW-003",
-      "SCW-004"
+      "ASA-004",
+      "ASA-005"
     ],
     "selectors": [
-      "testSCW001WindowsKeepDraftsFilesAndLateReceiptsIndependent",
-      "testSCW001CapacityPreservesEveryExistingDocument",
-      "testSCW002SearchUsesTitlesLocationsAndStableFuzzyMatches",
-      "testSCW002ActualSearchFieldNavigationCompositionAndEmptyResults",
-      "testSCW003RefusalCategoriesNeverInventHumanApprovalOrDelivery",
-      "testSCW004NewCaptureIsSerializedThroughHandoffAndKeepsOldDraft",
-      "testSCW004CLIEditCanOpenBesideDraftAndResolveItsOwnStore",
-      "testSCW004PermissionAndCapacityRefusalsPreserveWorkWithoutCapture"
-    ]
-  },
-  "internal/codexrpc/screenshot_workflow_test.go": {
-    "cases": [
-      "SCW-005"
-    ],
-    "selectors": [
-      "TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift": {
-    "cases": [
-      "SCW-003"
-    ],
-    "selectors": [
-      "testStatusLineSaysWhatHappened",
-      "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
-      "testRefusedWaitingSaysWhetherTheTextWasPasted"
-    ]
-  },
-  "internal/codexbridge/binding_heartbeat_context_test.go": {
-    "cases": [
-      "CBA-006"
-    ],
-    "selectors": [
-      "TestCBA006ProductionFactoryHeartbeatRetainsConnectionContext"
-    ]
-  },
-  "internal/resume/frontend_heartbeat_context_test.go": {
-    "cases": [
-      "CBA-006"
-    ],
-    "selectors": [
-      "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
-      "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
-      "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
+      "ASA004 browser Chat and Trace preserve factual action labels and one call per record",
+      "ASA005 browser fallback ignores contradictory facts without guessing scripts or changing raw input"
     ]
   },
   "internal/app/restore_remote_test.go": {
@@ -2446,6 +2375,154 @@
       "RSR011 repeated native read rejection stays reachable without preview mutation or clear",
       "RSR011 confirmed empty local read can resume read-only preview after a native failure",
       "RSR011 late old-pairing local read %s cannot grant a new target readiness"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift": {
+    "cases": [
+      "SCW-001",
+      "SCW-002",
+      "SCW-003",
+      "SCW-004"
+    ],
+    "selectors": [
+      "testSCW001WindowsKeepDraftsFilesAndLateReceiptsIndependent",
+      "testSCW001CapacityPreservesEveryExistingDocument",
+      "testSCW002SearchUsesTitlesLocationsAndStableFuzzyMatches",
+      "testSCW002ActualSearchFieldNavigationCompositionAndEmptyResults",
+      "testSCW003RefusalCategoriesNeverInventHumanApprovalOrDelivery",
+      "testSCW004NewCaptureIsSerializedThroughHandoffAndKeepsOldDraft",
+      "testSCW004CLIEditCanOpenBesideDraftAndResolveItsOwnStore",
+      "testSCW004PermissionAndCapacityRefusalsPreserveWorkWithoutCapture"
+    ]
+  },
+  "internal/codexrpc/screenshot_workflow_test.go": {
+    "cases": [
+      "SCW-005"
+    ],
+    "selectors": [
+      "TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift": {
+    "cases": [
+      "SCW-003"
+    ],
+    "selectors": [
+      "testStatusLineSaysWhatHappened",
+      "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
+      "testRefusedWaitingSaysWhetherTheTextWasPasted"
+    ]
+  },
+  "internal/codexbridge/binding_recovery_test.go": {
+    "cases": [
+      "CBA-002",
+      "CBA-003"
+    ],
+    "selectors": [
+      "TestCBA002TransientRootBindingRecoversFromTheActualObserver",
+      "TestCBA003NewSelectionAndEpochRetirePendingRecovery",
+      "TestCBA003PendingNewRootNeverRefreshesOldRoot",
+      "TestCBA003RetryPacingDeadlineAndHardRefusal",
+      "TestCBA003ReceiptFailureCommitsThenOnlyHeartbeats",
+      "TestCBA003ClosedConnectionCannotPublishLater",
+      "TestCBA003InitializeInvalidatesEarlierRootAndEarlierHomeResponse",
+      "TestCBA003NewVerifiedRootReplacesOnlyItsOwnPendingSelection",
+      "TestCBA003NoAttemptAtDeadlineOrAfterEpochChange",
+      "TestCBA003UnrelatedTrafficCannotReplacePendingRoot",
+      "TestCBA002SameRootReconnectRecoversWithoutRefreshingUnverifiedProof"
+    ]
+  },
+  "internal/resume/frontend_binding_readiness_test.go": {
+    "cases": [
+      "CBA-001"
+    ],
+    "selectors": [
+      "TestCBA001UnavailableProofIsRetryableButNeverPublishes",
+      "TestCBA001ObservedBirthHomeAndTargetChangesStayHard",
+      "TestCBA001MissingTerminalProofNeverBecomesInputAuthority"
+    ]
+  },
+  "internal/codexbridge/binding_publication_test.go": {
+    "cases": [
+      "CBA-004"
+    ],
+    "selectors": [
+      "TestCBA004PublicationAndAttachmentFinishBeforeNewEpochActivation",
+      "TestCBA004CanceledPublicationWaitNeverStartsBind",
+      "TestCBA004HeartbeatPublicationAlsoPrecedesNewEpoch",
+      "TestCBA004CancellationInsidePublicationPermitDoesNotRetry"
+    ]
+  },
+  "internal/codexbridge/binding_lifetime_test.go": {
+    "cases": [
+      "CBA-005"
+    ],
+    "selectors": [
+      "TestCBA005RunDisconnectRetiresBeforeTransportDrain",
+      "TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry",
+      "TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed"
+    ]
+  },
+  "internal/resume/frontend_binding_context_test.go": {
+    "cases": [
+      "CBA-004"
+    ],
+    "selectors": [
+      "TestCBA004CancellationDuringStrictProofCannotPublish",
+      "TestCBA004CanceledPartialCommitRetiresOnlyItsOwnLiveReceipt",
+      "TestCBA004CancellationNeverRemovesAReplacedOwner"
+    ]
+  },
+  "internal/codexbridge/binding_heartbeat_context_test.go": {
+    "cases": [
+      "CBA-006"
+    ],
+    "selectors": [
+      "TestCBA006ProductionFactoryHeartbeatRetainsConnectionContext"
+    ]
+  },
+  "internal/resume/frontend_heartbeat_context_test.go": {
+    "cases": [
+      "CBA-006"
+    ],
+    "selectors": [
+      "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
+      "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
+      "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
+    ]
+  },
+  "internal/transcript/activity_native_facts_test.go": {
+    "cases": [
+      "ASA-006",
+      "ASA-007"
+    ],
+    "selectors": [
+      "TestASA006NativeSkillSchema",
+      "TestASA007NativeQueriesSchema"
+    ]
+  },
+  "mobileapp/src/ui/native-action-facts.test.ts": {
+    "cases": [
+      "ASA-008"
+    ],
+    "selectors": [
+      "ASA008 native provider skill and queries facts agree in Chat and Trace"
+    ]
+  },
+  "internal/transcript/activity_dsh_identity_test.go": {
+    "cases": [
+      "ASA-009"
+    ],
+    "selectors": [
+      "TestASA009DSHDoesNotBorrowOpenCodeIdentity"
+    ]
+  },
+  "mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx": {
+    "cases": [
+      "ASA-010"
+    ],
+    "selectors": [
+      "ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace"
     ]
   }
 }
