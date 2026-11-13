@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1201 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1203 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2164 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2173 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 132 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -209,6 +209,11 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | SSI-001 | Active eligible thread uses turn/steer with exact expectedTurnId; no queue/start, interrupt, full-history read or duplicate accepted input. Only explicitly unsupported read/steer methods can fall back to original queue behavior; generic errors/uncertain write never replay. Waiting flags and target/home/peer mismatch refuse before input. Byte/deadline bounds remain. |
 | SSI-002 | Only existing authorized image inputs request active submission; ordinary text stays existing queue. Exact target and image survive, accepted mode persists, retry does not resubmit, uncertain never enters queue or alternate pane; receipt mode backward compatible. |
 | SSI-003 | Queued never claims terminal receipt; active acceptance says current task, never task completion. Nonzero/unrecognized receipt cannot falsely succeed; accepted receipts keep existing fast-close semantics and failure preserves editable draft. Logs distinguish accepted queue from immediate input without content. |
+| SCW-001 | Every document retains its own image, marks, note, target, undo and receipt; a late result never closes/deletes/changes the other document; bounded document capacity refuses a new document without discarding existing ones; simultaneous sends from captures sharing a parent directory use different rendered files, retain their own pixel content, and closing one cannot remove the other attachment |
+| SCW-002 | Primary title equals Agent.primary, location disambiguates identical titles; deterministic bounded fuzzy matching; arrows/Return/Escape work without sending the screenshot or changing annotation tools; IME Return commits composition only; no matches cannot pick a hidden row |
+| SCW-003 | Only explicit approval/menu evidence says waiting for a decision; known pre-mutation refusal states not sent, unknown receipt remains uncertain; no retry/fallback or approval answer; drafts survive; logs include stable reason and stage without screenshot path or message body; preserve the existing active-turn/next-turn/immediate receipt assertions and contradictory-exit protections when updating their explicit pre-mutation refusal expectation. Existing screenshot test assertions outside the changed copy remain unchanged. |
+| SCW-004 | Existing draft never causes capture shortcut to merely focus it; selection remains serialized, editor documents are independent; CLI handoff cannot replace a draft; permission denial and exhausted capacity preserve all open work; CLI-opened editors resolve targets from their own supplied store without requiring an earlier human capture or global snapshot |
+| SCW-005 | Known waiting flags refuse before mutation with confirmation cause; unknown or mixed unknown flags also refuse before mutation but report unavailable state rather than asserting a human request. No queue/steer/start fallback is enabled, and existing clear-state behavior remains unchanged. |
 | SMC-001 | 26 and27.2 patch versions are verified; other or malformed versions retain unverified presentation. Supported() still requires macOS, recognized setting and readable kernel state before this classification; no permission, battery floor, enable/readback or server lifetime behavior changes. No independent real lid-close validation is claimed. |
 | SID-001 | Only a narrowly parsed display-only notification override is newly admitted. Arguments remain byte-for-byte unchanged at launch; provider/home/remote/profile/headless/unknown configuration remains native. Help admission consumes config values and still sees later subcommands. No permission, auth, proxy or user configuration change. |
 | SID-002 | A successful own non-ephemeral root operation from cli/vscode can bind despite analytics label. Response provenance and parent/ephemeral facts remain decisive. Global notifications, arbitrary reads/catalogs, subagent parents, errors, foreign home, old responses and missing provenance never bind. Keep bounded pending/observation limits and source payload forwarding unchanged. |

@@ -12,7 +12,10 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     private(set) var window: NSWindow?
     private(set) var model: ScreenshotEditorModel?
     private var sendState: AnyCancellable?
+    private(set) var renderedFile: URL?
     private weak var resumeResponder: NSResponder?
+    private weak var agentStore: AgentStore?
+    var onClose: () -> Void = {}
     var deliver: (String, String, String, URL, @escaping (ScreenshotSendResult) -> Void) -> Void = ScreenshotSender.send
     var rememberTarget: (ScreenshotTarget) -> Void = { $0.save() }
     var scheduleDeliveryClose: (TimeInterval, @escaping () -> Void) -> Void = { delay, action in
@@ -23,8 +26,8 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     /// editor must not act on a newer one.
     func isCurrent(_ w: NSWindow?) -> Bool { w != nil && window === w }
 
-    /// Open means the window exists, minimised or not: a second ⌥⌘4 must bring the work
-    /// back, never start a capture that throws it away.
+    /// Open means this document's window exists, minimised or not. The registry gives
+    /// another capture its own controller rather than replacing this document.
     var isOpen: Bool { window != nil }
 
     func bringToFront() {
@@ -37,7 +40,9 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
     func show(doc: ScreenshotDocument, captureFile: URL, target: String?, recentPane: String? = nil,
               store: AgentStore, l10n: L10n) {
         close(discarding: true)
+        agentStore = store
         let model = ScreenshotEditorModel(doc: doc, captureFile: captureFile, target: target, recentPane: recentPane)
+        model.targetSession = store.shareablePanes.first { $0.paneID == target }?.session
         let screen = NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main
         let visible = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1280, height: 800)
         let view = ScreenshotEditorView(model: model, store: store, l10n: l10n,
@@ -197,17 +202,25 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         }
         // A file of its own for the send: --attach copies it into the uploads dir under a
         // name taken from its content, so the same picture is the same message on a retry.
-        let file = model.captureFile.deletingLastPathComponent().appendingPathComponent("screenshot.png")
+        // Captures share the app's temporary directory. A fixed screenshot.png would
+        // let one window overwrite or delete another window's in-flight attachment.
+        let file = renderedFile ?? model.captureFile.deletingLastPathComponent()
+            .appendingPathComponent("gtmux-send-\(UUID().uuidString).png")
+        renderedFile = file
         do {
             try png.write(to: file, options: .atomic)
         } catch {
             model.status = .error(error.localizedDescription)
             return
         }
-        let agent = AgentStoreSnapshot.agent(pane)
+        let agent = agentStore?.shareablePanes.first { $0.paneID == pane }
+        if let session = model.targetSession, agent?.session != session {
+            model.status = .result(.paneGone)
+            return
+        }
         let target = ScreenshotSendTarget(
             paneID: pane, session: agent?.session ?? "",
-            name: agent.map { $0.agent.isEmpty ? $0.primary : $0.agent } ?? pane)
+            name: agent?.primary ?? pane)
         model.sendingTarget = target
         model.status = .sending
         let sentFrom = window
@@ -292,22 +305,19 @@ final class ScreenshotEditorController: NSObject, NSWindowDelegate, NSToolbarDel
         sendState = nil
         resumeResponder = nil
         if let model {
-            for url in [model.captureFile, model.captureFile.deletingLastPathComponent().appendingPathComponent("screenshot.png")] {
+            for url in [model.captureFile, renderedFile].compactMap({ $0 }) {
                 if !retainedExports.contains(url.standardizedFileURL.resolvingSymlinksInPath()) {
                     try? FileManager.default.removeItem(at: url)
                 }
             }
         }
         retainedExports.removeAll()
+        renderedFile = nil
         window = nil
         model = nil
+        agentStore = nil
+        onClose()
     }
-}
-
-/// The agent list as the store last read it, for remembering a target after a send.
-enum AgentStoreSnapshot {
-    static weak var store: AgentStore?
-    static func agent(_ pane: String) -> Agent? { store?.agents.first { $0.paneID == pane } }
 }
 
 enum ScreenshotLayout {
@@ -331,7 +341,7 @@ enum ScreenshotLayout {
     static let stageBottom: CGFloat = 30
     static let stageSide: CGFloat = 32
     /// The "Send to" row, tall enough for the chip and for two lines of status beside it.
-    static let targetRowHeight: CGFloat = 32
+    static let targetRowHeight: CGFloat = 46
     /// Everything in the content area that is not the capture: the stage's margins, the
     /// composer (target, note and Send, status).
     static let chromeHeight: CGFloat = stageTop + stageBottom + 1 + composerHeight
@@ -534,24 +544,31 @@ struct ScreenshotEditorView: View {
     }
 
     private func requestSend() {
-        guard model.canSend else { return }
+        guard model.canSend, !pickingTarget else { return }
         if let input = NSApp.keyWindow?.firstResponder as? NSTextView, input.hasMarkedText() { return }
         onSend()
     }
 
-    private var target: Agent? { store.shareablePanes.first { $0.paneID == model.targetID } }
+    private var target: Agent? {
+        store.shareablePanes.first {
+            $0.paneID == model.targetID && (model.targetSession == nil || $0.session == model.targetSession)
+        }
+    }
 
     private var targetChip: some View {
         Button { pickingTarget = true } label: {
             HStack(spacing: 8) {
                 if let a = target {
                     ScreenshotAgentMark(agent: a, size: 20)
-                    Text(a.agent.isEmpty ? a.primary : a.agent).fontWeight(.semibold)
-                    Text(a.secondary).foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(a.primary).fontWeight(.semibold).lineLimit(1).truncationMode(.middle)
+                        Text(ScreenshotTargetSearch.context(a)).font(.system(size: 11.5))
+                            .foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                    }.help(a.primary + " · " + ScreenshotTargetSearch.context(a))
                     StatusBadge(status: a.state, size: 13, errored: a.errored)
                 } else {
-                    Text(store.shareablePanes.isEmpty ? l10n.tr("No agent panes", "没有 agent pane")
-                                                      : l10n.tr("Choose an agent", "选一个 agent"))
+                    Text(store.shareablePanes.isEmpty ? l10n.tr("No available sessions", "暂无可用会话")
+                                                      : l10n.tr("Choose a session", "选择目标会话"))
                         .foregroundStyle(.secondary)
                 }
                 Image(systemName: "chevron.down")
@@ -561,7 +578,8 @@ struct ScreenshotEditorView: View {
             .font(.system(size: 13))
             .padding(.leading, target == nil ? 10 : 5)
             .padding(.trailing, 9)
-            .frame(height: 30)
+            .frame(height: 42)
+            .frame(maxWidth: 340, alignment: .leading)
             .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.primary.opacity(0.06)))
             .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous).strokeBorder(Color.primary.opacity(0.1)))
             .contentShape(Rectangle())
@@ -571,8 +589,9 @@ struct ScreenshotEditorView: View {
         .accessibilityLabel(l10n.tr("Send to", "发给") + " " + (target.map(targetLabel) ?? ""))
         .popover(isPresented: $pickingTarget, arrowEdge: .top) {
             ScreenshotTargetList(agents: store.shareablePanes, selected: model.targetID,
-                                 recent: model.recentPane, l10n: l10n) { pane in
+                                 recent: model.recentPane, l10n: l10n, dismiss: { pickingTarget = false }) { pane in
                 model.targetID = pane
+                model.targetSession = store.shareablePanes.first { $0.paneID == pane }?.session
                 pickingTarget = false
             }
         }
@@ -581,24 +600,23 @@ struct ScreenshotEditorView: View {
     /// Why this target is the default, while it still is.
     private var targetHint: String? {
         guard let t = model.targetID, t == model.recentPane else { return nil }
-        return l10n.tr("the pane you were just typing in", "你刚才在打字的 pane")
+        return l10n.tr("Most recently viewed session", "最近查看的会话")
     }
 
     /// What the field is: the words that go to the agent with the image.
     private var messagePrompt: String {
-        let name = target.map { $0.agent.isEmpty ? $0.primary : $0.agent } ?? ""
+        let name = target?.primary ?? ""
         return name.isEmpty ? l10n.tr("Message (optional)", "附言（可选）")
                             : l10n.tr("Message to \(name) (optional)", "给 \(name) 的话（可选）")
     }
 
     private var sendTitle: String {
-        if model.isRetry { return l10n.tr("Send Again", "再发一次") }
-        let name = target.map { $0.agent.isEmpty ? $0.primary : $0.agent } ?? ""
-        return name.isEmpty ? l10n.tr("Send", "发送") : l10n.tr("Send to \(name)", "发给 \(name)")
+        if model.isRetry { return l10n.tr("Retry Send", "重试发送") }
+        return l10n.tr("Send Screenshot", "发送截图")
     }
 
     private func targetLabel(_ a: Agent) -> String {
-        let who = a.agent.isEmpty ? a.primary : a.agent
+        let who = a.primary
         let waiting = a.state == .waiting ? l10n.tr(" · waiting on you", " · 待处理") : ""
         return "\(who) · \(a.session) \(a.paneID)\(waiting)"
     }
@@ -622,7 +640,7 @@ struct ScreenshotEditorView: View {
                 .help(statusText)
             Spacer(minLength: 0)
             if let pane = ScreenshotStatusText.paneToShow(model.status, target: model.sendingTarget) {
-                Button(l10n.tr("Show the pane", "去看那个 pane")) { onShowPane(pane) }
+                Button(l10n.tr("View Session", "查看会话")) { onShowPane(pane) }
                     .controlSize(.small)
             }
         }
@@ -644,7 +662,7 @@ struct ScreenshotEditorView: View {
     }
 
     private var targetName: String {
-        target.map { $0.agent.isEmpty ? $0.primary : $0.agent } ?? ""
+        target?.primary ?? ""
     }
 }
 
@@ -787,55 +805,10 @@ struct ScreenshotAgentMark: View {
     }
 }
 
-/// The target picker: every agent pane with its status. The pane a terminal showed most
-/// recently says so; a pane waiting on the user says so too, and can still be chosen.
-struct ScreenshotTargetList: View {
-    let agents: [Agent]
-    let selected: String?
-    let recent: String?
-    @ObservedObject var l10n: L10n
-    let pick: (String) -> Void
-
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 2) {
-                ForEach(agents) { a in
-                    Button { pick(a.paneID) } label: { row(a) }.buttonStyle(.plain)
-                }
-            }
-            .padding(6)
-        }
-        .frame(width: 420)
-        .frame(maxHeight: 360)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func row(_ a: Agent) -> some View {
-        let on = a.paneID == selected
-        return HStack(spacing: 10) {
-            ScreenshotAgentMark(agent: a, size: 22)
-            Text(a.agent.isEmpty ? a.primary : a.agent).font(.system(size: 13, weight: .semibold))
-            Text(a.secondary).font(.system(size: 12.5)).foregroundStyle(.secondary).lineLimit(1)
-            Spacer(minLength: 8)
-            if a.state == .waiting {
-                Text(l10n.tr("waiting on you", "待处理")).font(.system(size: 11.5)).foregroundStyle(Theme.Status.waiting)
-            } else if a.paneID == recent {
-                Text(l10n.tr("Recent input", "最近输入")).font(.system(size: 11.5)).foregroundStyle(.secondary)
-            }
-            StatusBadge(status: a.state, size: 13, errored: a.errored)
-        }
-        .padding(.horizontal, 10)
-        .frame(height: 40)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(Color.accentColor.opacity(on ? 0.18 : 0)))
-        .contentShape(Rectangle())
-        .accessibilityAddTraits(on ? .isSelected : [])
-    }
-}
-
 /// The status line's words, in one place so the tests read the same strings.
 enum ScreenshotStatusText {
     static func text(_ s: ScreenshotStatus, target: String, l10n: L10n) -> String {
-        let who = target.isEmpty ? l10n.tr("the agent", "agent") : target
+        let who = target.isEmpty ? l10n.tr("the target session", "目标会话") : target
         switch s {
         case .idle: return ""
         case .copied: return l10n.tr("Copied to the clipboard.", "已拷贝到剪贴板。")
@@ -849,13 +822,24 @@ enum ScreenshotStatusText {
             case .delivered(queued: true):
                 return l10n.tr("Queued for \(who).", "已加入 \(who) 的输入队列。")
             case .refusedWaiting:
-                return l10n.tr("Not sent: \(who) needs input or confirmation. Resolve the request first.",
-                               "未发送：\(who) 有待处理请求，请先完成处理。")
+                return l10n.tr("Not sent: \(who) reports a pending confirmation or question. Check the session first.",
+                               "未发送：\(who) 的状态报告有确认或提问待处理，请查看会话。")
+            case .refusedUnavailable(let code):
+                if ["expected-conversation-changed", "codex-input-target-changed", "input-metadata-mismatch"].contains(code) {
+                    return l10n.tr("Not sent: the target session changed. Select the session again.",
+                                   "未发送：目标会话已变化，请重新选择。")
+                }
+                if code == "codex-frontend-unavailable" {
+                    return l10n.tr("Not sent: the session input connection is not ready. Your screenshot and message are preserved.",
+                                   "未发送：会话输入连接尚未就绪，截图和文字已保留。")
+                }
+                return l10n.tr("Not sent: the session's input state could not be verified. Your screenshot and message are preserved.",
+                               "未发送：暂时无法确认会话能否接收输入，截图和文字已保留。")
             case .heldAfterPaste:
-                return l10n.tr("Not submitted: \(who) needs input. The note and image path may already be in its input box. Check the draft before retrying to avoid duplicates.",
-                               "未提交：\(who) 出现待处理请求。说明和图片路径可能已写入输入框，重试前请检查草稿，避免重复发送。")
+                return l10n.tr("Not submitted: the message and image path may be in \(who)'s input box. Check the draft before retrying.",
+                               "尚未提交：文字和图片路径可能已写入 \(who) 的输入框。重试前请检查草稿，避免重复发送。")
             case .paneGone:
-                return l10n.tr("Not sent: the target pane no longer exists. Select another pane.", "未发送：目标窗格不存在，请选择其他窗格。")
+                return l10n.tr("Not sent: the selected session is no longer available. Select a session again.", "未发送：所选会话已不可用，请重新选择。")
             case .agentsUnreadable:
                 return l10n.tr("Not sent: could not read the agent list, so the target was not checked. Try again.",
                                "未发送：无法读取 Agent 列表，请重试。")
@@ -863,8 +847,8 @@ enum ScreenshotStatusText {
                 return l10n.tr("Not sent: \(who)'s input box contains an unsent draft. Resolve it before retrying.",
                                "未发送：\(who) 的输入框中有未提交草稿，请处理后重试。")
             case .duplicate:
-                return l10n.tr("This screenshot and note were already sent to \(who).",
-                               "该截图和说明已发送至 \(who)，请勿重复发送。")
+                return l10n.tr("A matching send was recorded. Check \(who) before sending it again.",
+                               "检测到相同内容的发送记录，已拦截重复发送。请先确认 \(who) 的接收情况。")
             case .notConfirmed(let e):
                 return l10n.tr("Delivery not confirmed. The message may have arrived; check the pane before retrying. \(e)",
                                "无法确认发送结果。消息可能已送达，重试前请检查窗格。\(e)")
@@ -879,7 +863,7 @@ enum ScreenshotStatusText {
     static func paneToShow(_ s: ScreenshotStatus, target: ScreenshotSendTarget?) -> String? {
         guard case .result(let r) = s, let target else { return nil }
         switch r {
-        case .refusedWaiting, .heldAfterPaste, .notConfirmed: return target.paneID
+        case .refusedWaiting, .refusedUnavailable, .refusedDraft, .heldAfterPaste, .notConfirmed: return target.paneID
         default: return nil
         }
     }

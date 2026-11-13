@@ -728,7 +728,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self else { throw ScreenshotAgentFailure.refused("app-unavailable", "The screenshot editor is unavailable") }
                 let file = ScreenshotCapture.temporaryURL()
                 try data.write(to: file, options: .atomic)
-                ScreenshotEditorController.shared.show(doc: doc, captureFile: file, target: nil, store: self.store, l10n: self.l10n)
+                guard ScreenshotEditors.shared.open(doc: doc, captureFile: file, target: nil, store: self.store, l10n: self.l10n) else {
+                    try? FileManager.default.removeItem(at: file)
+                    throw ScreenshotAgentFailure.refused("editor-busy", "Screenshot window limit reached; existing drafts were preserved")
+                }
             }
             let host = try ScreenshotAgentSocket(service: service)
             try host.start()

@@ -31,6 +31,8 @@ final class ScreenshotEditorModel: ObservableObject {
     @Published var textValue = ""
     @Published var note = ""
     @Published var targetID: String?
+    /// Keep the chosen tmux session identity when the radar refreshes or reuses a pane ID.
+    var targetSession: String?
     @Published var status: ScreenshotStatus = .idle {
         didSet { doc.editingEnabled = !editingBlocked }
     }

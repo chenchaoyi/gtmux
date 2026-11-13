@@ -2936,3 +2936,11 @@ terminators. Regression coverage includes the last tab, CJK names, spaces, tabs 
 CRLF. Verify a focus by reading the foreground Ghostty tab and exact active tmux
 pane, rather than trusting the command's exit status alone. Do not rename the user's
 session, alter titles, open duplicate terminals or change permissions as a workaround.
+
+## Go 1.27 test temporary roots disagree
+
+Symptom: a child-process fixture rejects its HOME as outside the temporary tree, while the parent created it with `t.TempDir()`. In the observed Go 1.27.3 toolchain, `testing.TempDir` uses `GOTMPDIR`; the child's `os.TempDir()` uses `TMPDIR`. Setting only a task-specific `GOTMPDIR` can therefore make the existing isolation assertion fail. A long temporary root can also exceed Unix socket path limits.
+
+Before rerunning, preserve the failed log and record both values. Use the same normal short throwaway root for the command, for example `env TMPDIR=/private/tmp GOTMPDIR=/private/tmp make check` on macOS. The Go tool and test framework still create unique temporary directories beneath it; do not delete unrelated directories. Keep raw evidence and other explicit outputs in the task directory. Do not weaken the HOME guard or count an environment failure as a product regression or a pass. Verify the original failing child fixture and the temporary-prefix negative control before repeating the full gate.
+
+中文：Go 1.27.3 的 `t.TempDir()` 使用 `GOTMPDIR`，子进程的 `os.TempDir()` 使用 `TMPDIR`。仅设置任务构建目录会让原有的隔离断言把合法 fixture 拒绝。保留失败证据，并在命令内把两个变量对齐到同一短临时根；Go 自行创建独占子目录，不清理其他任务，也不修改安全断言。先复验失败用例和临时目录前缀反例，再跑完整门禁。

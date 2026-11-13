@@ -1239,7 +1239,7 @@
   },
   "macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift": {
     "cases": [
-      "SSI-003"
+      "SCW-003"
     ],
     "selectors": [
       "testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct",
@@ -2332,6 +2332,42 @@
       "RSR011 repeated native read rejection stays reachable without preview mutation or clear",
       "RSR011 confirmed empty local read can resume read-only preview after a native failure",
       "RSR011 late old-pairing local read %s cannot grant a new target readiness"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift": {
+    "cases": [
+      "SCW-001",
+      "SCW-002",
+      "SCW-003",
+      "SCW-004"
+    ],
+    "selectors": [
+      "testSCW001WindowsKeepDraftsFilesAndLateReceiptsIndependent",
+      "testSCW001CapacityPreservesEveryExistingDocument",
+      "testSCW002SearchUsesTitlesLocationsAndStableFuzzyMatches",
+      "testSCW002ActualSearchFieldNavigationCompositionAndEmptyResults",
+      "testSCW003RefusalCategoriesNeverInventHumanApprovalOrDelivery",
+      "testSCW004NewCaptureIsSerializedThroughHandoffAndKeepsOldDraft",
+      "testSCW004CLIEditCanOpenBesideDraftAndResolveItsOwnStore",
+      "testSCW004PermissionAndCapacityRefusalsPreserveWorkWithoutCapture"
+    ]
+  },
+  "internal/codexrpc/screenshot_workflow_test.go": {
+    "cases": [
+      "SCW-005"
+    ],
+    "selectors": [
+      "TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift": {
+    "cases": [
+      "SCW-003"
+    ],
+    "selectors": [
+      "testStatusLineSaysWhatHappened",
+      "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
+      "testRefusedWaitingSaysWhetherTheTextWasPasted"
     ]
   }
 }
