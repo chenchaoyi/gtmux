@@ -30,6 +30,7 @@ func HelpFlags() []HelpFlag {
 		{Name: "--export PATH", EN: "Export an encrypted backup", ZH: "导出加密备份", section: 2},
 		{Name: "--import PATH", EN: "Restore a full backup; stop HQ first", ZH: "恢复完整备份，需先退出 HQ", section: 2},
 		{Name: "migrate --help", EN: "Select content to move to another Mac", ZH: "查看换机迁移方法，按需选择内容", section: 2},
+		{Name: "--refresh-rules", EN: "Update managed rules only; leave sessions alone", ZH: "只更新受管规则，不操作会话", section: 3},
 		{Name: "--rotate", EN: "Request rotation after the current turn", ZH: "申请在当前回合结束后轮换会话", section: 3},
 		{Name: "--lang en|zh", EN: "Set the HQ playbook language (space syntax)", ZH: "设置 HQ 守则语言（参数使用空格分隔）", Values: []string{"en", "zh"}, section: 4},
 		{Name: "--json", EN: "JSON output with --board or --records", ZH: "与 --board 或 --records 一起输出 JSON", section: 4},
@@ -77,7 +78,7 @@ func HelpText(width int, all bool) string {
 	b.WriteString(choose("gtmux hq [options]\n", "gtmux hq [参数]\n"))
 	paragraph(choose("HQ follows your agents, reports progress and acts within your authorization.", "HQ 跟进 agent、汇报进展，并在你的授权范围内处理事务。"), 0)
 	paragraph(choose("Run gtmux hq to open HQ, or start it if needed.", "运行 gtmux hq 打开 HQ；尚未启动时会自动创建。"), 0)
-	sections := [][2]string{{"Start HQ", "启动位置与 agent"}, {"View information", "查看信息"}, {"Backup and migration", "备份与换机"}, {"Rotate the conversation", "会话轮换"}, {"Advanced options", "高级参数"}, {"HQ maintenance", "HQ 内部维护"}}
+	sections := [][2]string{{"Start HQ", "启动位置与 agent"}, {"View information", "查看信息"}, {"Backup and migration", "备份与换机"}, {"HQ maintenance", "HQ 维护"}, {"Advanced options", "高级参数"}, {"HQ maintenance", "HQ 内部维护"}}
 	flags := HelpFlags()
 	for section, title := range sections {
 		if section >= 4 && !all {

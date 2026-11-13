@@ -1752,6 +1752,17 @@ LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,347,T
 LEG-9d15885fe97d,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,25,Test,TestRotationDoesNotConfirmAnUnsavedNewThread,False,legacy-not-retrospectively-reviewed
 LEG-a65be3d25bf9,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,57,Test,TestRotationQueuesOneGuardedHandoffAfterReleasingInput,False,legacy-not-retrospectively-reviewed
 LEG-974db74f29ef,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,93,Test,TestRotationDoesNotTrustReissuedPaneNumbers,False,legacy-not-retrospectively-reviewed
+MAP-8b92ea364819,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,15,reviewed-selector,TestHQR007StandaloneTokenCannotBeConsumedAsAValue,False,"HQR-007,HQR-008,HQR-009,HQR-010"
+MAP-21d9bf41c0b2,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,35,reviewed-selector,TestHQR008BackupKeepsReplacement,False,"HQR-007,HQR-008,HQR-009,HQR-010"
+MAP-578e146c5570,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,98,reviewed-selector,TestHQR009MixedRulesAreNotSilentlyRebuilt,False,"HQR-007,HQR-008,HQR-009,HQR-010"
+MAP-44bbae26a68a,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,136,reviewed-selector,TestHQR010HardlinkedLockCannotChangeExternalPermissions,False,"HQR-007,HQR-008,HQR-009,HQR-010"
+MAP-2c176da9ae7f,L2,reviewed implementation,internal/hq/rulesrefresh_inline_block_test.go,14,reviewed-selector,TestHQR011InlineInSyncKnowledgeRemainsEffective,False,HQR-011
+MAP-f07cf6ea366b,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,84,reviewed-selector,TestHQR001RefreshOnlyUpdatesManagedRules,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-f3c6fa0664ed,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,137,reviewed-selector,TestHQR002RefreshKeepsLanguageAndConverges,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-26c222f9b436,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,180,reviewed-selector,TestHQR003RefreshRejectsConflictingOptions,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-27e9b5f03486,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,198,reviewed-selector,TestHQR004RefreshUsesExistingApplyLock,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-564acb685125,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,219,reviewed-selector,TestHQR005RefreshRefusesUnsafeManagedFiles,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-1b8457abb5dd,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,278,reviewed-selector,TestHQR006RefreshPreservesBackupNamesAndFailsSafely,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 LEG-2a593377c08f,L1,Go core / CLI / server,internal/hq/selfcheck_test.go,5,Test,TestShouldSelfCheck,False,legacy-not-retrospectively-reviewed
 LEG-aed11f21a248,L1,Go core / CLI / server,internal/hq/selfcheck_test.go,44,Test,TestSelfCheckMarkerRoundTrip,False,legacy-not-retrospectively-reviewed
 LEG-372c52d5f12f,L1,Go core / CLI / server,internal/hq/selfrotate_test.go,19,Test,TestSessionRefForLiveAgentRejectsPreviousHQAgent,False,legacy-not-retrospectively-reviewed

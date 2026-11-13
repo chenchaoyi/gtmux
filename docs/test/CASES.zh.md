@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1218 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1221 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3782 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2211 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2222 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 138 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -153,6 +153,17 @@
 | HRS-001 | Only first exact prompt after lower bound matches. First record remains stable across append; rewrite/replacement/continuation changes invalidate. Complete lines only; no result bodies retained. Cancelled/error reads do not grant attribution. |
 | HRS-002 | Only accepted exact canonical HQ reply in correct Codex home/thread at its first source record gets from.kind=hq. Wrong identity, receipt state, body, missing clock/record or later human copy remains unattributed; existing sender preserved; no new sends or ledger writes. |
 | HRS-003 | App/Web API turn JSON exposes identical HQ sender; new receipt invalidates prior human snapshot, unchanged snapshot is cacheable; old pages keep correct first-only attribution; policy/ledger/source unchanged by reads; CLI-origin and desktop-origin both work. |
+| HQR-007 | Standalone marker is validated before value consumption/actions; every incompatible combination exits2 without seed/enroll/launch/tmux/writes. Ordinary legitimate agent/language values and existing read-only help semantics remain. |
+| HQR-008 | Bounded no-follow verification returns conflict for changed identity; source and replacement bytes/inode remain, no unlink of an uncertain path, no blocking FIFO or arbitrary reads. A failed partial owned backup may remain visibly retained. Negative control reintroduces old path-read/unlink semantics at the same seam; not claimed old-binary concurrency. |
+| HQR-009 | Conservatively reject recognized external blocks or unknown post-LOCAL content without modifying original/LOCAL/knowledge; do not migrate private content automatically. Canonical managed-only files still upgrade with verified backup. Same/future-version limits remain honest. |
+| HQR-010 | Hardlink is rejected before mode/truncate changes, preserving external file and rules. Normal single-link private lock retains flock/owner/parent protections; no global weakening of private IO. Tests never change real permissions. |
+| HQR-011 | Exact R loses the active valid block at target assertion; the fixed command refuses safely without modifying effective instructions or creating backup. Knowledge remains in-sync. No tmux/new session/config widening. Original valid, unsafe leaf, line-start blocks and LOCAL-tail checks remain green. |
+| HQR-001 | Success publishes exactly playbookIn(current existing language), retains an exact old-file backup and all existing backups. LOCAL/notes/knowledge/board/CLAUDE pointer and unrelated status/enrollment/input bytes remain unchanged; zero tmux calls, no fresh seeding or session mutation. |
+| HQR-002 | Older rules upgrade in their existing language using the common generator. Equal/newer versions remain byte/mtime identical, no new backups or optional personal/pointer files. Common/help-all and HelpFlags expose the standalone flag. |
+| HQR-003 | Exit2 before lock/seeding/I/O/tmux, no files in fixture home; help retains ordinary nonmutating early return. No action precedence silently chooses a different mode. |
+| HQR-004 | Contention exits1 without changing AGENTS/backup/other files; after release exactly one upgrade succeeds, no session effects or deadlock. No sleep/probabilistic race proof. |
+| HQR-005 | Exit1 without following links/special files or blocking FIFO, without chmod repair of the source or seeding/migration. No downgrade of future versions. Only the pre-existing shared lock outside the HQ home may be created; no credentials/real homes read. |
+| HQR-006 | Collisions get a fresh bounded numbered backup and never overwrite/delete existing material; full namespace or backup I/O failure exits1 with the original AGENTS unchanged. Successful publication is atomic via the existing private state writer; a post-rename sync failure may leave complete new content plus backup and is an error, not promised rollback. |
 | HQP1-F1-001 | The empty read leaves cursor 10 and persists the gap notice. The next read durably queues exact event-11 with its own type/body/conversation, then cursor 11. Repeated reads leave the database byte-for-byte unchanged. Old code must fail without source mutation or sleeps. |
 | HQP1-F1-002 | Activation does not ingest history and writes an explicit events cursor even at zero. The new event at boundary+1 is queued with its actual identity, persists across reopen, and is never treated as historical on a second activation. |
 | HQP1-F1-003 | The empty gap keeps cursor 10 and one stable gap record; retry changes no bytes. Actual retained event 16 is queued atomically with cursor 16, and neither gaps nor duplicate reads erase it. Source epoch-reset repair remains out of scope. |

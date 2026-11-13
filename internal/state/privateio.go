@@ -33,13 +33,23 @@ func MkdirAll(path string, perm os.FileMode) error {
 // or writing so an existing public inode cannot expose new private bytes. Owner
 // bits are retained, including executable HQ tools. Links and special files fail.
 func OpenFile(path string, flags int, perm os.FileMode) (*os.File, error) {
-	// Read-only metadata inspection must not turn into an implicit repair.
-	if flags&(os.O_WRONLY|os.O_RDWR|os.O_CREATE) == 0 {
+	// Read-only inspection and foreign destinations retain conventional semantics.
+	if flags&(os.O_WRONLY|os.O_RDWR|os.O_CREATE) == 0 || managedRoot(path) == "" {
 		return os.OpenFile(path, flags, perm)
 	}
+	return openPolicyFile(path, flags, perm, false)
+}
+
+// OpenPrivateLock rejects a shared inode before any chmod or other mutation.
+// Only lock callers opt in; ordinary OpenFile semantics remain unchanged.
+func OpenPrivateLock(path string) (*os.File, error) {
 	if managedRoot(path) == "" {
-		return os.OpenFile(path, flags, perm)
+		return nil, fmt.Errorf("private lock is outside managed storage")
 	}
+	return openPolicyFile(path, os.O_CREATE|os.O_RDWR, PrivateFile, true)
+}
+
+func openPolicyFile(path string, flags int, perm os.FileMode, singleLink bool) (*os.File, error) {
 	absolute, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
@@ -57,6 +67,13 @@ func OpenFile(path string, flags int, perm os.FileMode) (*os.File, error) {
 	info, err := f.Stat()
 	if err == nil {
 		err = checkOwnedRegular(info)
+	}
+	if err == nil && singleLink {
+		var stat unix.Stat_t
+		err = unix.Fstat(fd, &stat)
+		if err == nil && stat.Nlink != 1 {
+			err = fmt.Errorf("private lock has multiple links")
+		}
 	}
 	if err == nil && info.Mode().Perm()&0077 != 0 {
 		err = f.Chmod(info.Mode().Perm() & 0700)

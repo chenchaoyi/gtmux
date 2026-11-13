@@ -2173,101 +2173,22 @@
       "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read"
     ]
   },
-  "internal/knowledge/source_lineage_test.go": {
+  "internal/hq/rulesrefresh_test.go": {
     "cases": [
-      "KBL-001",
-      "KBL-002",
-      "KBL-003",
-      "KBL-004"
+      "HQR-001",
+      "HQR-002",
+      "HQR-003",
+      "HQR-004",
+      "HQR-005",
+      "HQR-006"
     ],
     "selectors": [
-      "TestSourceLineageOrdinarySupersede",
-      "TestSourceLineageReviewApply",
-      "TestSourceLineageReplay",
-      "TestSourceLineageNewCapture"
-    ]
-  },
-  "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "\"task\":\"t-9\""
-    ]
-  },
-  "internal/knowledge/testdata/golden/api/index.json.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "\"task\":\"t-9\""
-    ]
-  },
-  "internal/knowledge/testdata/golden/cli/list.json.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "\"task\":\"t-9\""
-    ]
-  },
-  "internal/knowledge/testdata/golden/cli/show.txt.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "task t-9"
-    ]
-  },
-  "internal/knowledge/testdata/golden/render/workflows.md.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "task t-9"
-    ]
-  },
-  "internal/transcript/activity_action_test.go": {
-    "cases": [
-      "ASA-001",
-      "ASA-002",
-      "ASA-003"
-    ],
-    "selectors": [
-      "TestASA001RecordedSkillIdentityAcrossFiveAdapters",
-      "TestASA001ShellTextAndBareNamesDoNotInventSkillReads",
-      "TestASA002WebIntentUsesExplicitMethodsOrCompleteActions",
-      "TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput",
-      "TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands",
-      "TestASA003ActionMetadataParticipatesInRetentionBudget"
-    ]
-  },
-  "mobileapp/src/ui/activity-action-facts.test.ts": {
-    "cases": [
-      "ASA-004",
-      "ASA-005"
-    ],
-    "selectors": [
-      "ASA004 recorded actions and targets agree across five agents and Trace without adding calls",
-      "ASA005 unknown incompatible and malformed facts use bounded neutral fallback"
-    ]
-  },
-  "mobileapp/src/ui/ToolSteps.action-facts.test.tsx": {
-    "cases": [
-      "ASA-004"
-    ],
-    "selectors": [
-      "ASA004 actual App rows identify skill web intent and file targets with unchanged inspector input"
-    ]
-  },
-  "internal/server/web/activity-action-facts.test.cjs": {
-    "cases": [
-      "ASA-004",
-      "ASA-005"
-    ],
-    "selectors": [
-      "ASA004 browser Chat and Trace preserve factual action labels and one call per record",
-      "ASA005 browser fallback ignores contradictory facts without guessing scripts or changing raw input"
+      "TestHQR001RefreshOnlyUpdatesManagedRules",
+      "TestHQR002RefreshKeepsLanguageAndConverges",
+      "TestHQR003RefreshRejectsConflictingOptions",
+      "TestHQR004RefreshUsesExistingApplyLock",
+      "TestHQR005RefreshRefusesUnsafeManagedFiles",
+      "TestHQR006RefreshPreservesBackupNamesAndFailsSafely"
     ]
   },
   "internal/app/restore_remote_test.go": {
@@ -2366,6 +2287,60 @@
       "RSR010 unreadable local identity cannot be cleared into a new request"
     ]
   },
+  "internal/knowledge/source_lineage_test.go": {
+    "cases": [
+      "KBL-001",
+      "KBL-002",
+      "KBL-003",
+      "KBL-004"
+    ],
+    "selectors": [
+      "TestSourceLineageOrdinarySupersede",
+      "TestSourceLineageReviewApply",
+      "TestSourceLineageReplay",
+      "TestSourceLineageNewCapture"
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/index.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/list.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/show.txt.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
+  },
+  "internal/knowledge/testdata/golden/render/workflows.md.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
+  },
   "mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx": {
     "cases": [
       "RSR-011"
@@ -2411,6 +2386,20 @@
       "testStatusLineSaysWhatHappened",
       "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
       "testRefusedWaitingSaysWhetherTheTextWasPasted"
+    ]
+  },
+  "internal/hq/rulesrefresh_boundary_test.go": {
+    "cases": [
+      "HQR-007",
+      "HQR-008",
+      "HQR-009",
+      "HQR-010"
+    ],
+    "selectors": [
+      "TestHQR007StandaloneTokenCannotBeConsumedAsAValue",
+      "TestHQR008BackupKeepsReplacement",
+      "TestHQR009MixedRulesAreNotSilentlyRebuilt",
+      "TestHQR010HardlinkedLockCannotChangeExternalPermissions"
     ]
   },
   "internal/codexbridge/binding_recovery_test.go": {
@@ -2489,6 +2478,57 @@
       "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
       "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
       "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
+    ]
+  },
+  "internal/hq/rulesrefresh_inline_block_test.go": {
+    "cases": [
+      "HQR-011"
+    ],
+    "selectors": [
+      "TestHQR011InlineInSyncKnowledgeRemainsEffective"
+    ]
+  },
+  "internal/transcript/activity_action_test.go": {
+    "cases": [
+      "ASA-001",
+      "ASA-002",
+      "ASA-003"
+    ],
+    "selectors": [
+      "TestASA001RecordedSkillIdentityAcrossFiveAdapters",
+      "TestASA001ShellTextAndBareNamesDoNotInventSkillReads",
+      "TestASA002WebIntentUsesExplicitMethodsOrCompleteActions",
+      "TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput",
+      "TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands",
+      "TestASA003ActionMetadataParticipatesInRetentionBudget"
+    ]
+  },
+  "mobileapp/src/ui/activity-action-facts.test.ts": {
+    "cases": [
+      "ASA-004",
+      "ASA-005"
+    ],
+    "selectors": [
+      "ASA004 recorded actions and targets agree across five agents and Trace without adding calls",
+      "ASA005 unknown incompatible and malformed facts use bounded neutral fallback"
+    ]
+  },
+  "mobileapp/src/ui/ToolSteps.action-facts.test.tsx": {
+    "cases": [
+      "ASA-004"
+    ],
+    "selectors": [
+      "ASA004 actual App rows identify skill web intent and file targets with unchanged inspector input"
+    ]
+  },
+  "internal/server/web/activity-action-facts.test.cjs": {
+    "cases": [
+      "ASA-004",
+      "ASA-005"
+    ],
+    "selectors": [
+      "ASA004 browser Chat and Trace preserve factual action labels and one call per record",
+      "ASA005 browser fallback ignores contradictory facts without guessing scripts or changing raw input"
     ]
   },
   "internal/transcript/activity_native_facts_test.go": {

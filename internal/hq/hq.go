@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -448,31 +449,53 @@ var legacyBackupNow = time.Now
 // per day, written with os.WriteFile: a second migration the same day (AGENTS.md deleted,
 // `gtmux hq` run again) replaced the original playbook in it with the one-line pointer
 // the first migration had written. A taken name now gets a numbered sibling, and nothing
-// that exists is ever opened for writing. On any failure the partial copy, which only this
-// call created, is removed and the caller migrates nothing.
+// that exists is ever opened for writing. A failed copy is retained: its path may
+// already name another writer's object, so failure never authorizes unlinking it.
 func writeLegacyBackup(path string, body []byte) (string, error) {
 	stem := path + ".bak-legacy-" + legacyBackupNow().Format("20060102")
+	return writeHQBackup(path, stem, body)
+}
+
+// writeHQBackup creates an exclusive, verified backup without retiring prior copies.
+func writeHQBackup(path, stem string, body []byte) (string, error) {
 	for i := 1; i <= 100; i++ {
 		bak := stem
 		if i > 1 {
 			bak = fmt.Sprintf("%s-%d", stem, i)
 		}
-		f, err := state.OpenFile(bak, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		f, err := state.OpenFile(bak, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0o644)
 		if errors.Is(err, os.ErrExist) {
 			continue
 		}
 		if err != nil {
 			return "", err
 		}
-		_, werr := f.Write(body)
-		serr := f.Sync()
-		if err := errors.Join(werr, serr, f.Close()); err != nil {
-			_ = os.Remove(bak)
+		defer f.Close()
+		created, err := f.Stat()
+		if err != nil {
 			return "", err
 		}
-		if got, err := os.ReadFile(bak); err != nil || !bytes.Equal(got, body) {
-			_ = os.Remove(bak)
+		_, werr := f.Write(body)
+		serr := f.Sync()
+		if err := errors.Join(werr, serr); err != nil {
+			return "", err
+		}
+		if hqBackupWritten != nil {
+			hqBackupWritten(bak)
+		}
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			return "", err
+		}
+		got, err := io.ReadAll(io.LimitReader(f, int64(len(body))+1))
+		if err != nil || !bytes.Equal(got, body) {
 			return "", fmt.Errorf("the backup %s did not read back", bak)
+		}
+		current, err := os.Lstat(bak)
+		if err != nil || !current.Mode().IsRegular() || !os.SameFile(created, current) {
+			return "", fmt.Errorf("the backup %s changed during verification; retained without cleanup", bak)
+		}
+		if err := f.Close(); err != nil {
+			return "", err
 		}
 		return bak, nil
 	}
@@ -505,6 +528,12 @@ func upgradePlaybookIfNewer(r *seedResult, wantLang string) error {
 	if err != nil {
 		return err
 	}
+	return upgradePlaybookBody(r, wantLang, body, publishStartupPlaybook)
+}
+
+// The renderer and version/language decision are shared; rules-only maintenance
+// uses a stricter reader and publisher without invoking startup's other actions.
+func upgradePlaybookBody(r *seedResult, wantLang string, body []byte, publish func(string, []byte, []byte) (string, error)) error {
 	installed := parsePlaybookVersion(string(body))
 	installedLang := parsePlaybookLang(string(body))
 
@@ -540,11 +569,8 @@ func upgradePlaybookIfNewer(r *seedResult, wantLang string) error {
 		bakLang = "legacy"
 	}
 	bak := hqInstructionsPath() + fmt.Sprintf(".bak-v%d-%s", installed, bakLang)
-	if err := state.WriteFile(bak, body, 0o644); err != nil {
-		return err
-	}
-	prunePlaybookBackups()
-	if err := state.WriteFile(hqInstructionsPath(), []byte(playbookIn(writeLang)), 0o644); err != nil {
+	bak, err := publish(bak, body, []byte(playbookIn(writeLang)))
+	if err != nil {
 		return err
 	}
 	r.Upgraded = true
@@ -555,6 +581,15 @@ func upgradePlaybookIfNewer(r *seedResult, wantLang string) error {
 	r.BackupPath = bak
 	r.Migrated = installed == 0
 	return nil
+}
+
+// Startup retains its existing backup retention and overwrite behavior.
+func publishStartupPlaybook(backup string, prior, replacement []byte) (string, error) {
+	if err := state.WriteFile(backup, prior, 0o644); err != nil {
+		return "", err
+	}
+	prunePlaybookBackups()
+	return backup, state.WriteFile(hqInstructionsPath(), replacement, 0o644)
 }
 
 // seedHQLocal writes the LOCAL.md personalization template IF ABSENT (seed-once,
@@ -809,6 +844,24 @@ func agentAliveByCmd(cmd string) bool {
 
 // CmdHQ implements `gtmux hq`: focus the live supervisor, or seed + spawn one.
 func CmdHQ(args []string) int {
+	// Inspect the standalone token before another option can consume it as a
+	// value or choose a mode with startup/enrollment side effects.
+	for _, arg := range args {
+		if arg != "--refresh-rules" {
+			continue
+		}
+		for _, help := range args {
+			if help == "-h" || help == "--help" || help == "--help-all" {
+				fmt.Print(HelpText(helpWidth(), help == "--help-all"))
+				return 0
+			}
+		}
+		if len(args) != 1 {
+			i18n.Sae("gtmux hq: --refresh-rules must be used on its own", "gtmux hq：--refresh-rules 请单独使用")
+			return 2
+		}
+		return refreshHQRulesCmd()
+	}
 	if len(args) > 0 && args[0] == "migrate" {
 		return migrationCmd(args[1:])
 	}

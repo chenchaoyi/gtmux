@@ -949,6 +949,9 @@ language (`GTMUX_LANG` en/zh) and a version change regenerates it in that same l
 (prior file backed up; LOCAL.md untouched); `gtmux hq --lang en|zh` is the one thing
 that switches it.
 
+Use `gtmux hq --refresh-rules` on its own to update an existing managed HQ playbook without starting, focusing, rotating or enrolling sessions. It keeps the installed language, personal rules, notes and knowledge, saves the previous text without pruning old backups, and does nothing when the rules are already current or newer. Missing, legacy, read-only or unsafe rule files are refused. Finish manual editing first; this action does not coordinate with external editors.
+
+
 On a fresh launch with no `--agent`, `gtmux hq` asks which installed hook-equipped agent
 to run and remembers the pick; `gtmux hq --agent codex` or `GTMUX_HQ_AGENT` names it
 outright, and a script falls back to the default without prompting. Personalize HQ in
