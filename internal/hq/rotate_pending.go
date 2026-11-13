@@ -390,7 +390,7 @@ func failRotation(r rotationRequest, reason string, now int64) {
 	}
 	events.AuditRotateFailed(r.Agent, r.Retiring, reason, now)
 	notify.Send(notify.Options{
-		Kind: "input", Title: i18n.Tr("HQ handoff did not complete", "HQ 轮换未完成"),
+		Kind: "attention", Title: i18n.Tr("HQ handoff did not complete", "HQ 轮换未完成"),
 		Subtitle: "gtmux", Message: reason, Pane: r.Pane, Session: "gtmux HQ",
 	})
 	_ = os.Remove(rotationPendingPath())

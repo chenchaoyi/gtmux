@@ -2501,5 +2501,34 @@
       "TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity",
       "TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource"
     ]
+  },
+  "internal/hqnudge/native_recovery_test.go": {
+    "cases": [
+      "HRW-009",
+      "HRW-010"
+    ],
+    "selectors": [
+      "TestHRW009NativeOutcomeCrashCannotRebatchOldInput",
+      "TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer",
+      "TestHRW009JournalFailuresAndForeignReplacementHoldWithoutMutation",
+      "TestHRW010ClaimReturnPreservesForeignConflictAndInterruptedPublication",
+      "TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate"
+    ]
+  },
+  "internal/hq/rotation_attention_test.go": {
+    "cases": [
+      "HRW-011"
+    ],
+    "selectors": [
+      "TestHRW011RotationFailureUsesNonWaitingAttention"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/RotationAttentionTests.swift": {
+    "cases": [
+      "HRW-011"
+    ],
+    "selectors": [
+      "testHRW011AttentionUsesActualConsumerWithoutWaitingAndRespectsGuards"
+    ]
   }
 }

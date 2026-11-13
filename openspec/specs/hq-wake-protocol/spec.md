@@ -1099,7 +1099,7 @@ HQ unread debt, default event pulls, attention checks and history SHALL use the 
 - **THEN** only activity in the new interval is observed and prior records are retained
 
 ### Requirement: Automatic wakes preserve a maintenance window
-Automatic Codex wakes SHALL start only an explicitly loaded idle thread, SHALL remain durably held while busy or uncertain, and SHALL NOT use turn steering or future queue fallback.
+Automatic Codex wakes SHALL freshly verify an exact loaded idle thread before at most one ordinary turn/start attempt. Known busy or unknown input SHALL remain local; uncertain submissions SHALL NOT be automatically replayed. The path SHALL NOT use explicit steering, persistent future queue, resume or fallback. The public protocol has no atomic idle-only precondition: an external turn may start between sampling and submission. Acceptance and an acknowledged turn ID SHALL NOT be represented as proof of a causally new turn, model-read or source-event consumption.
 
 #### Scenario: A rotation is queued while automatic wakes are pending
 - **GIVEN** an unsent rotation for the exact HQ pane and durable wake batches
@@ -1109,4 +1109,16 @@ Automatic Codex wakes SHALL start only an explicitly loaded idle thread, SHALL r
 
 #### Scenario: No safe maintenance window arrives
 - **WHEN** the existing rotation deadline expires
-- **THEN** one important audit and normal desktop notification request report failure without repeating reset or removing old native queue entries
+- **THEN** the original routine failure audit and one independent attention notification request report failure without repeating reset or removing old native queue entries
+- **AND** the desktop consumer does not require an agent waiting prompt, offers Jump-only actions and respects notification settings, system permission, stale suppression and Focus; enqueue/center acceptance is not OS presentation proof
+
+#### Scenario: A native outcome is durable but local cleanup is interrupted
+- **GIVEN** original A has a pre-submission batch intent with its exact payload, delivery identity and claim fingerprints
+- **WHEN** the process stops after possible native submission and a genuinely new B later arrives
+- **THEN** A is retained uncertain or closed from a known terminal result without regrouping or resubmitting it, while B may proceed normally
+- **AND** malformed or conflicting recovery evidence does not authorize input or deletion of replacement work; a fresh same-text event is not body-hash deduplicated
+
+#### Scenario: A newer keyed producer writes while the old batch is busy
+- **WHEN** A is claimed, a delayed producer publishes newest B in the same key slot, and native delivery refuses while busy
+- **THEN** returning A never replaces B; the latest payload and original key/due/priority survive
+- **AND** recovery from interrupted no-clobber publication preserves the already-published queue inode and any legitimate producer update

@@ -1752,6 +1752,7 @@ LEG-6f4981876ca1,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,291,s
 LEG-81183b11a80b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,318,Test,TestRotationEventsThatDoNotConfirm,False,legacy-not-retrospectively-reviewed
 LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,347,Test,TestRotationNotSentIsNotConfirmedByEvents,False,legacy-not-retrospectively-reviewed
 MAP-fc5da55172ab,L2,reviewed implementation,internal/hq/rotation_admission_test.go,11,reviewed-selector,TestHRW007RegistrationSharesTheInputClaimLease,False,HRW-007
+MAP-5fb504a908e7,L2,reviewed implementation,internal/hq/rotation_attention_test.go,14,reviewed-selector,TestHRW011RotationFailureUsesNonWaitingAttention,False,HRW-011
 LEG-9d15885fe97d,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,25,Test,TestRotationDoesNotConfirmAnUnsavedNewThread,False,legacy-not-retrospectively-reviewed
 LEG-a65be3d25bf9,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,57,Test,TestRotationQueuesOneGuardedHandoffAfterReleasingInput,False,legacy-not-retrospectively-reviewed
 LEG-974db74f29ef,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,93,Test,TestRotationDoesNotTrustReissuedPaneNumbers,False,legacy-not-retrospectively-reviewed
@@ -1895,6 +1896,11 @@ LEG-5bf683206f0a,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1299
 LEG-3d3b90b863d9,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1315,Test,TestRepair_UserClearsAfterHandBack_LateReceiptCloses,False,legacy-not-retrospectively-reviewed
 LEG-5bf7aa693c7c,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1409,Test,TestRepair_UneditedBatch_IsSubmittedAtEveryWidth,False,legacy-not-retrospectively-reviewed
 LEG-0fe4e8035179,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1425,Test,TestRepair_EditedBatch_IsNeverSubmittedAtAnyWidth,False,legacy-not-retrospectively-reviewed
+MAP-0983f7043ede,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,17,reviewed-selector,TestHRW009NativeOutcomeCrashCannotRebatchOldInput,False,"HRW-009,HRW-010"
+MAP-10606a0f2e3f,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,113,reviewed-selector,TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer,False,"HRW-009,HRW-010"
+MAP-0d1dc15a6a6e,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,167,reviewed-selector,TestHRW009JournalFailuresAndForeignReplacementHoldWithoutMutation,False,"HRW-009,HRW-010"
+MAP-62be7306061f,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,277,reviewed-selector,TestHRW010ClaimReturnPreservesForeignConflictAndInterruptedPublication,False,"HRW-009,HRW-010"
+MAP-cbf26a49e444,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,317,reviewed-selector,TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate,False,"HRW-009,HRW-010"
 LEG-9bd5cd8afd4f,G,Go core / CLI / server,internal/hqnudge/native_test.go,10,Test,TestNativeWakeAcceptanceAndUncertaintyNeverPasteOrReplay,False,legacy-not-retrospectively-reviewed
 LEG-096a5372e6f5,L1,Go core / CLI / server,internal/hqnudge/native_test.go,12,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 MAP-2f393b4dfbb1,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,28,reviewed-selector,TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority,False,"HRW-004,HRW-005,HRW-008"
@@ -3924,6 +3930,7 @@ LEG-bb40d3a7a366,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvai
 LEG-cd538ac4e707,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvailabilityTests.swift,127,XCTest,testPendingSectionExpandsAndStaysUntilRecoveryCompletes,False,legacy-not-retrospectively-reviewed
 LEG-dcbaaa41b810,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/RestoreAvailabilityTests.swift,184,XCTest,testRestoreFailureRemainsVisibleAndRetryClearsIt,False,legacy-not-retrospectively-reviewed
 MAP-9a1f99f206ec,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/RestoreMenuActionTests.swift,5,reviewed-selector,testRestoreDispatchPolicyKeepsActualProgressPopoverVisible,False,RSR-008
+MAP-fffefe900850,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/RotationAttentionTests.swift,29,reviewed-selector,testHRW011AttentionUsesActualConsumerWithoutWaitingAndRespectsGuards,False,HRW-011
 MAP-a968227ee19e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift,7,reviewed-selector,testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct,False,SSI-003
 MAP-f5d04607e020,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift,30,reviewed-selector,testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully,False,SSI-003
 MAP-31d7a6a6f502,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift,6,reviewed-selector,testASC002ProtocolAndDescriptorsRefuseUnexpectedAuthority,False,"ASC-002,ASC-006"
