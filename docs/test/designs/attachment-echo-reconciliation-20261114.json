@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-14",
     "decision": "Implement a minimal shared attachment identity correction and render-time echo retirement",
-    "notes": "Installed179 actual GET history for current57 contains text, a bare attachment path and a generated Markdown Image#1 for the same file. Existing identity counts both representations as separate images, unlike the outgoing Composer payload. Preserve original prompt display, distinct text/path/order/count, code fences, malformed/remote references, prior occurrence protection, send IDs/target identity/unknown no-replay. Treat matching complete ordered bare and rendered inventories as two representations of the same attachments; do not globally deduplicate files. Hide a newly recorded optimistic echo in the first committed render instead of waiting for effect cleanup. Both HQ and Detail plus the generated browser contract. No real sends/queues, HQ exit/resume, new release/install or permissions in tests. CUA currently cgWindowNotFound; component tests do not certify physical phone UI."
+    "notes": "Installed179 actual GET history for current57 contains text, a bare attachment path and a generated Markdown Image#1 for the same file. Existing identity counts both representations as separate images, unlike the outgoing Composer payload. Preserve original prompt display, distinct text/path/order/count, code fences, malformed/remote references, prior occurrence protection, send IDs/target identity/unknown no-replay. Treat matching complete ordered bare and rendered inventories as two representations of the same attachments; do not globally deduplicate files. Hide a newly recorded optimistic echo in the first committed render instead of waiting for effect cleanup. Both HQ and Detail plus the generated browser contract. No real sends/queues, HQ exit/resume, new release/install or permissions in tests. CUA currently cgWindowNotFound; component tests do not certify physical phone UI. Mapping review before final test publication: split the unchanged identity assertions into attachmentEchoIdentity.test.ts (L1), leaving real component commit assertions in attachmentEchoReconciliation.test.tsx (L2), so file-level catalogue layers remain accurate. Preserve the earlier draft old-red evidence and all assertion expectations; this is a test organization correction, not added scope. The original draft path remains an allowed historical plan path; the final implementation map binds AEC-001 only to the new L1 file."
   },
   "cases": [
     {
@@ -17,6 +17,7 @@
       "expected": "Matching complete ordered bare/rendered inventories count once per actual attachment; different body/path/order/count, malformed/remote links and fenced examples stay distinct. Repeated identical pre-existing history is never a new receipt. Source display text remains unchanged. Old production must fail the dual-representation positive cases.",
       "planned_files": [
         "mobileapp/src/screens/attachmentEchoReconciliation.test.tsx",
+        "mobileapp/src/screens/attachmentEchoIdentity.test.ts",
         "mobileapp/src/screens/promptIdentityCases.json"
       ]
     },
@@ -32,5 +33,5 @@
       ]
     }
   ],
-  "seal": "d0d03b084eb0647bb356067a8850f88decf5a2f446e154ef6d935d6979e2c0f8"
+  "seal": "e0e07dc0b97b8a93cf2bcad9eaa41b4f9477b954693dbdba3d65e7c7b1b9802f"
 }
