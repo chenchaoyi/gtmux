@@ -1,0 +1,79 @@
+{
+  "id": "doctor-conversation-health-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Implement read-only actual association diagnostics and source-owned automatic recovery of a missing primary index after its own proof aged out",
+    "notes": "User reported repeated unassociated sessions and asked doctor identification/self-healing after180 normal resume. Current57 exact180/strict+App interfaces independently read200 verified; no real fault injection or actor restart. Doctor must not guess sessions from history, manufacture fresh proof, bypass5s reader freshness, alter roles/config/queue or silently restart active agents. Recovery belongs to the already authenticated producer normal heartbeat, not a new doctor write/control protocol: require saved==previous in-memory exact owner, current process self, missing physical primary index (not unknown/malformed incumbent), full strict rebased process/TTY/root/backend identity, bounded conservative receipt-store scan rejecting fresh/newer/ambiguous/unknown owners, existing epoch/context and shared publication lease. Only missing-index expired-proof case is extended; existing location and first-root contracts remain. No new MCP/socket/polling/control authority, no automatic old-binary reload. Legacy/unsupported capabilities remain explicitly distinguished. Design precedes new tests. Old main production overlay must be meaningful assertion red rather than compile/environment red; all original valid guards preserved. Hardware/realTTY/continuous runtime not claimed."
+  },
+  "cases": [
+    {
+      "id": "DCA-001",
+      "layer": "L2",
+      "description": "Doctor exposes a managed association failure, even without newer neighbouring history; Terminal/menubar/phone/iPad/Web inherit shared diagnosis; no new direct UI code",
+      "setup": "Bind a synthetic Codex record to a missing or expired frontend receipt; use the existing production staleBindingsFor signature and isolated HOME/CODEX_HOME",
+      "action": "Read doctor row for the active synthetic pane; retain record/proof bytes before/after",
+      "expected": "A missing/expired managed proof is not OK/live; reason and exact pane are visible, no state changes or guessed thread",
+      "planned_files": [
+        "internal/app/doctor_conversation_health_test.go"
+      ]
+    },
+    {
+      "id": "DCA-002",
+      "layer": "L2",
+      "description": "Missing associations are reported without treating unsupported agents or plain shells as failures; Terminal/menubar/phone/iPad/Web inherit shared diagnosis; no new direct UI code",
+      "setup": "Supported agent with no primary association, unsupported agent registry entry, and plain shell; verified control and legacy directory-only hint",
+      "action": "Run same row classification with exact explicit pane metadata and existing verification seam",
+      "expected": "Supported missing association is visible as recommended/unassociated; unsupported/plain are neutral; strict verified control remains OK; nearby history never authorizes repair",
+      "planned_files": [
+        "internal/app/doctor_conversation_health_test.go"
+      ]
+    },
+    {
+      "id": "DCA-003",
+      "layer": "L2",
+      "description": "Doctor retains a clear non-destructive recovery explanation; Terminal/menubar/phone/iPad/Web inherit shared diagnosis; no new direct UI code",
+      "setup": "Managed stale proof and mixed healthy/unassociated panes, bounded per-pane explanations",
+      "action": "Render row and JSON doctor presentation using the same finding",
+      "expected": "Explains automatic producer retry and normal per-session continuation when evidence is insufficient; does not claim doctor repaired state, restart clients, clear drafts or offer directory-derived binding",
+      "planned_files": [
+        "internal/app/doctor_conversation_health_test.go"
+      ]
+    },
+    {
+      "id": "DCA-004",
+      "layer": "L2",
+      "description": "The original current producer renews its own expired proof and missing index; Terminal/menubar/phone/iPad/Web inherit shared diagnosis; no new direct UI code",
+      "setup": "Actual resume Bind/Refresh production functions with existing synthetic kernel seams; same source-owned memory/receipt, valid unchanged process incarnation, missing primary index, proof older than5s",
+      "action": "Assert reader rejects stale receipt first; run normal producer heartbeat; inspect exact original nonce/SID/index and reader after publication",
+      "expected": "Old exact main must fail target assertion. New producer reobserves full strict identity and publishes only its own same thread; reader5s gate unchanged; normal same-fresh path remains valid",
+      "planned_files": [
+        "internal/resume/frontend_index_recovery_test.go"
+      ]
+    },
+    {
+      "id": "DCA-005",
+      "layer": "L2",
+      "description": "Conflicts and unknown evidence cannot be repaired by the old producer; Terminal/menubar/phone/iPad/Web inherit shared diagnosis; no new direct UI code",
+      "setup": "Cross expired/missing index with changed bridge/backend/client/root birth/TTY/home, conflicting persisted owner, newer sequence/instance, malformed or oversized receipt store, unreadable/malformed incumbent index",
+      "action": "Call actual production Refresh and compare proof/index bytes; include valid positive baseline",
+      "expected": "All conflict/unknown/canceled controls stay refused with no resurrection/overwrite; no thread RPC, input, real process stop or real state mutation",
+      "planned_files": [
+        "internal/resume/frontend_index_recovery_test.go"
+      ]
+    },
+    {
+      "id": "DCA-006",
+      "layer": "L2",
+      "description": "Recovery obeys publication lock and current connection lifetime; Terminal/menubar/phone/iPad/Web inherit shared diagnosis; no new direct UI code",
+      "setup": "Actual producer refresh under held shared publication lease, canceled context and subsequent legitimate retry; bridge tick seam control",
+      "action": "Observe lease refusal/cancellation and one successful later metadata-only refresh",
+      "expected": "No recursive lock/deadlock, no disk commit after cancellation; exact current producer only; new code performs no additional healthy heartbeat polling or diagnostic thread/history search",
+      "planned_files": [
+        "internal/resume/frontend_index_recovery_test.go"
+      ]
+    }
+  ],
+  "seal": "d36f31c0b2697dc66379204e84a3361074be8d59dba630f6b10ff4bab7827356"
+}
