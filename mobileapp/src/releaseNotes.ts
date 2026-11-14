@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.180',
+    en: [
+      '- Image messages no longer keep waiting for confirmation after appearing in conversation history.',
+      '- Recorded messages replace their temporary copies immediately, avoiding a brief duplicate in session and HQ chats.',
+      '- Browser conversations use the same attachment matching rule.',
+    ],
+    zh: [
+      '- 图片消息出现在对话记录后，不再持续显示“等待确认”。',
+      '- 消除发送后短暂出现两份消息的现象，HQ 和普通会话均适用。',
+      '- 浏览器也采用相同的附件匹配规则。',
+    ],
+  },
+  {
     version: '1.0.179',
     en: [
       'Restore sessions on your connected server from the App, with a selectable list and progress.',

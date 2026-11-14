@@ -7,7 +7,7 @@
 })(typeof window === 'undefined' ? null : window, function () {
   function promptIdentity(value) {
     const text = String(value || '').replace(/\r\n/g, '\n').trim();
-    const lines = text.split('\n'), prose = [], images = [], labels = new Set();
+    const lines = text.split('\n'), prose = [], images = [], bareImages = [], renderedImages = [], labels = new Set();
     let fence = null;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i], trimmed = line.trim();
@@ -31,16 +31,21 @@
         }
         if (path && /^\/(?!\/)[^\x00\r\n]+\.(?:png|jpe?g|webp|gif|heic|heif|bmp|tiff?)$/i.test(path)) {
           if (closesOnNextLine) { i++; }
-          images.push(path); labels.add('[' + match[1] + ']'); continue;
+          images.push(path); renderedImages.push(path); labels.add('[' + match[1] + ']'); continue;
         }
         if (/^\/(?!\/)[^\x00\r\n]+\.(?:png|jpe?g|webp|gif|heic|heif|bmp|tiff?)$/i.test(line)) {
-          images.push(line); continue;
+          images.push(line); bareImages.push(line); continue;
         }
         if (line.startsWith('[') && labels.has(trimmed)) { continue; }
       }
       prose.push(line);
     }
-    return JSON.stringify([prose.join('\n').trim(), images]);
+    // A transcript can retain the Composer's path list AND add image links.
+    // Collapse only complete, equal ordered inventories: these are two views of
+    // the same attachments. Keep multiplicity, order and unmatched references.
+    const dualInventory = bareImages.length > 0 && bareImages.length === renderedImages.length &&
+      bareImages.every((path, i) => path === renderedImages[i]);
+    return JSON.stringify([prose.join('\n').trim(), dualInventory ? bareImages : images]);
   }
   return {promptIdentity};
 });

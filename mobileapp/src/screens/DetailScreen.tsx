@@ -341,6 +341,8 @@ function PaneDetailView({
   const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean}>({identity: chatIdentity, turns: [], dropped: 0, loaded: false});
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
   const latestTurns = useRef(turns); latestTurns.current = turns;
+  // Retire the optimistic row in this commit, before passive effect cleanup.
+  const visiblePendingPrompt = pendingEcho.current && !chatEchoRecorded(pendingEcho.current, turns) ? pendingPrompt : '';
   useEffect(() => {
     if (pendingEcho.current && chatEchoRecorded(pendingEcho.current, turns)) {
       pendingEcho.current = null; setPendingPrompt(''); setBusyHint(null);
@@ -689,9 +691,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onRetry={() => retryTurnsRef.current()} pendingPrompt={pendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onRetry={() => retryTurnsRef.current()} pendingPrompt={visiblePendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, pendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
+    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, visiblePendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation

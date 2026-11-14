@@ -134,6 +134,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const [pending, setPending] = useState<string | undefined>();
   const [pendingDelivered, setPendingDelivered] = useState(false);
   const [pendingDelivery, setPendingDelivery] = useState<SendDelivery | undefined>();
+  // Retire the optimistic row in this commit, before passive effect cleanup.
+  const visiblePendingPrompt = pendingEcho.current && !chatEchoRecorded(pendingEcho.current, turns) ? pending : undefined;
   const [selected, setSelected] = useState<DigestRow | null>(null);
   const [zone, setZone] = useState<Zone | null>(null); // null until the first digest picks it
   const [boardOpen, setBoardOpen] = useState(openResource?.page === 'board');
@@ -637,7 +639,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
               associationFailed={chatRecord.identity === chatIdentity && chatRecord.associationFailed}
               failed={chatRecord.identity === chatIdentity && chatRecord.failed}
               onRetry={() => traceRetry.current()}
-              pendingPrompt={pending}
+              pendingPrompt={visiblePendingPrompt}
               pendingDelivered={pendingDelivered}
               pendingDelivery={pendingDelivery}
               // Header shows at the live tail (newest), hides when you scroll up into

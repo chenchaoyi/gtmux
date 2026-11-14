@@ -323,3 +323,8 @@ The full worktree path is owner-only. Shared guests retain the authorized branch
 ### Pending-history Live source
 
 An expanded Live preview for last-known history labels the current pane and its unconfirmed conversation association. The existing authorized pane read is independent of transcript input restrictions. Pending-history input remains unavailable; disclosure, bounded tail, cancellation and credential guards remain unchanged.
+
+
+### Attachment echo identity
+
+The shared attachment identity treats an original path list and an equal ordered generated-link list as two representations of the same attachments. It preserves repeated-file count, path/order differences and human prose. A newly recorded occurrence replaces its pending row; an older identical occurrence does not acknowledge a new send.

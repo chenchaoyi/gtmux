@@ -5161,6 +5161,10 @@ LEG-cfbaf865cec0,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryExplo
 LEG-ea43bb282de3,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryPresentation.test.ts,4,test,"groups by local date across UTC midnight, formats Chinese independently of system locale",False,legacy-not-retrospectively-reviewed
 LEG-03ea9657cf3b,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryPresentation.test.ts,11,test,invalid times remain visible and cannot crash the page,False,legacy-not-retrospectively-reviewed
 LEG-d3ae384ff85c,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryPresentation.test.ts,14,test,retains full identifiers and distinguishes HTTP acceptance from a failed export,False,legacy-not-retrospectively-reviewed
+MAP-7f66e0d7556c,L1,reviewed implementation,mobileapp/src/screens/attachmentEchoIdentity.test.ts,7,reviewed-selector,AEC-001 dual-representation identity preserves ordered attachment multiplicity,False,AEC-001
+MAP-a18aa405051e,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,63,reviewed-selector,AEC-002 %s retires image echo in its first recorded commit and ignores late receipt,False,AEC-002
+MAP-ccf9121e82e2,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,79,reviewed-selector,AEC-002 %s keeps an old identical occurrence pending but retires a new one,False,AEC-002
+MAP-6021aa4402f5,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,92,reviewed-selector,AEC-002 %s retires plain-text echo without one duplicate committed frame,False,AEC-002
 LEG-f7d329675b52,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,4,it,splits at ## and keeps the heading text,False,legacy-not-retrospectively-reviewed
 LEG-a7119188bab4,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,11,it,keeps content that comes before the first heading,False,legacy-not-retrospectively-reviewed
 LEG-0ea6bd6606ab,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,18,it,does not split on a ## inside a fenced code block,False,legacy-not-retrospectively-reviewed
