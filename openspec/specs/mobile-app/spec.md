@@ -2852,3 +2852,14 @@ Last-known history SHALL retain the authorized current-pane Live disclosure whil
 #### Scenario: The pane or API client changes
 - **WHEN** a screen from the previous client or pane is cached or arrives late
 - **THEN** it is absent from the new Live preview until the current scope supplies its own screen
+
+
+### Requirement: Recorded attachment messages replace temporary echoes atomically
+
+HQ and ordinary session Chat SHALL compare dual image representations using complete equal ordered path/link inventories, preserving human prose and actual attachment multiplicity. A newly recorded matching prompt SHALL replace its temporary echo in the same committed UI render. This SHALL NOT confirm a new send using an older identical occurrence, change delivery/target authority, or automatically resend.
+
+#### Scenario: One attachment has both its path and generated link in history
+- **GIVEN** a pending message contains text and an image path
+- **WHEN** a new transcript occurrence contains that same text and path plus a generated image link for the same attachment
+- **THEN** the UI shows the recorded message once with no pending confirmation row, including the first committed render and a late delivery receipt
+- **AND** different paths, order, repeated-file count, prose, or only an old occurrence do not acknowledge this send

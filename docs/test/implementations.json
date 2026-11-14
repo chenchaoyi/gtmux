@@ -2705,5 +2705,23 @@
       "TestHRW016FailedPublicationIsNotAReasonToReplayOrBlockRecovery",
       "TestHRW016UnknownSourcesAndReasonChangesKeepOriginalOwnership"
     ]
+  },
+  "mobileapp/src/screens/attachmentEchoReconciliation.test.tsx": {
+    "cases": [
+      "AEC-002"
+    ],
+    "selectors": [
+      "AEC-002 %s retires image echo in its first recorded commit and ignores late receipt",
+      "AEC-002 %s keeps an old identical occurrence pending but retires a new one",
+      "AEC-002 %s retires plain-text echo without one duplicate committed frame"
+    ]
+  },
+  "mobileapp/src/screens/attachmentEchoIdentity.test.ts": {
+    "cases": [
+      "AEC-001"
+    ],
+    "selectors": [
+      "AEC-001 dual-representation identity preserves ordered attachment multiplicity"
+    ]
   }
 }

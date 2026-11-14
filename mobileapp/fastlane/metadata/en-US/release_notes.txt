@@ -1,5 +1,3 @@
-Restore sessions on your connected server from the App, with a selectable list and progress.
-Activity identifies recorded skill reads, file reads and web searches more accurately while keeping original tool details available.
-Improve Codex session association when startup evidence is temporarily unavailable.
-Keep automatic HQ notices local while busy and preserve a pending rotation after its identity warning.
-Keep knowledge source references when entries are revised.
+- Image messages no longer keep waiting for confirmation after appearing in conversation history.
+- Recorded messages replace their temporary copies immediately, avoiding a brief duplicate in session and HQ chats.
+- Browser conversations use the same attachment matching rule.

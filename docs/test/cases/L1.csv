@@ -3601,6 +3601,7 @@ LEG-cc3b6d925fb9,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,108,it,c
 LEG-f898dfb4693c,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,128,it,does not start a push request while already backgrounded,False,legacy-not-retrospectively-reviewed
 LEG-77bf282237b3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,134,it,a request rejected just before a brief inactive interval cannot start an old alternate attempt,False,legacy-not-retrospectively-reviewed
 LEG-cd3d33f35f35,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,147,it,retains the write queue barrier until an aborted transport actually settles,False,legacy-not-retrospectively-reviewed
+MAP-7f66e0d7556c,L1,reviewed implementation,mobileapp/src/screens/attachmentEchoIdentity.test.ts,7,reviewed-selector,AEC-001 dual-representation identity preserves ordered attachment multiplicity,False,AEC-001
 LEG-1d362d67d68f,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.liveActivity.test.tsx,50,test,on: the card is kept in step and its token reaches the Mac,False,legacy-not-retrospectively-reviewed
 LEG-d8fc4d4ae3c0,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.liveActivity.test.tsx,58,test,"turned off: the Mac forgets the token, the card ends, and nothing restarts it",False,legacy-not-retrospectively-reviewed
 LEG-b3168453fd95,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.liveActivity.test.tsx,77,test,"off from the start: no card, and an unreachable Mac still loses the card here",False,legacy-not-retrospectively-reviewed
