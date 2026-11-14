@@ -1,0 +1,36 @@
+{
+  "id": "attachment-echo-reconciliation-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-14",
+    "decision": "Implement a minimal shared attachment identity correction and render-time echo retirement",
+    "notes": "Installed179 actual GET history for current57 contains text, a bare attachment path and a generated Markdown Image#1 for the same file. Existing identity counts both representations as separate images, unlike the outgoing Composer payload. Preserve original prompt display, distinct text/path/order/count, code fences, malformed/remote references, prior occurrence protection, send IDs/target identity/unknown no-replay. Treat matching complete ordered bare and rendered inventories as two representations of the same attachments; do not globally deduplicate files. Hide a newly recorded optimistic echo in the first committed render instead of waiting for effect cleanup. Both HQ and Detail plus the generated browser contract. No real sends/queues, HQ exit/resume, new release/install or permissions in tests. CUA currently cgWindowNotFound; component tests do not certify physical phone UI."
+  },
+  "cases": [
+    {
+      "id": "AEC-001",
+      "layer": "L1",
+      "description": "Native/browser identity matches dual attachment representations without conflating distinct attachments",
+      "setup": "Synthetic Composer body/path inventory and transcript body plus matching rendered image links or empty XML envelopes; paths with spaces, two files and repeated same-file attachments",
+      "action": "Compare shared production identity and existing native/browser echo matching on new and old transcript occurrences",
+      "expected": "Matching complete ordered bare/rendered inventories count once per actual attachment; different body/path/order/count, malformed/remote links and fenced examples stay distinct. Repeated identical pre-existing history is never a new receipt. Source display text remains unchanged. Old production must fail the dual-representation positive cases.",
+      "planned_files": [
+        "mobileapp/src/screens/attachmentEchoReconciliation.test.tsx",
+        "mobileapp/src/screens/promptIdentityCases.json"
+      ]
+    },
+    {
+      "id": "AEC-002",
+      "layer": "L2",
+      "description": "HQ and Detail retire the confirmed echo in the first committed transcript render",
+      "setup": "Production React screens with controlled synthetic transcript and sendResult, layout-effect commit observer, empty/old matching history and accepted/queued or late receipt",
+      "action": "Submit one synthetic message then publish its new same-session dual-representation transcript; also test plain text, prior identical occurrences and late receipt after confirmation",
+      "expected": "One underlying send only. New recorded prompt is visible and no committed frame includes its optimistic duplicate; pending/awaiting status disappears at that same commit and late receipt cannot restore it. A historical identical occurrence still leaves a new send pending. Shared behavior applies independently to HQ and Detail; existing retry/ordering guards remain. Tests never contact a live server.",
+      "planned_files": [
+        "mobileapp/src/screens/attachmentEchoReconciliation.test.tsx"
+      ]
+    }
+  ],
+  "seal": "d0d03b084eb0647bb356067a8850f88decf5a2f446e154ef6d935d6979e2c0f8"
+}
