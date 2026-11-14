@@ -2,13 +2,13 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1254 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1257 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3783 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2292 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 140 | [L3.csv](cases/L3.csv) |
+| L1 · 单元/纯逻辑 | 3785 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2293 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 141 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
@@ -308,6 +308,10 @@
 | TCV-003 | Queries expose named parameters and readable structured/text results; commands keep original source, files retain changes, unknown tools have factual fallback; pending/failed/empty/unrecorded are distinct, raw contains recorded sanitized fields and does not silently truncate. |
 | TCV-004 | Tool-specific name, provider/status/duration, parameters/results are visible; no false summary-only warning, stale responses cannot cross sessions, original source remains verbatim, copy is complete and disabled while incomplete. |
 | TCV-005 | Both surfaces show the same facts and nonempty recorded values; controls remain reachable, no horizontal document overflow or console errors, pending/error states are actionable and old-server fallback remains meaningful. |
+| TSV-001 | Command is initial preview when static extraction is safe; one command has no redundant outline; parameter/raw data and original full-copy remain accessible; unknown/dynamic inputs retain original. Default Markdown code reader behavior unchanged |
+| TSV-002 | Preview strips actual controls and recognized paired terminal SGR; lone literal markers and JSON/raw results stay unchanged. Exact raw/copy source remains original. Only local file URI converts to decoded path; unknown/foreign URI stays literal |
+| CRX-007 | Only labels/selectors updated for clear Reload conversation and short actionable code error; click exercises real read; no lower assertion/authorization/empty-state guard weakened |
+| TSV-003 | Command is initial preview when static extraction is safe; one command has no redundant outline; parameter/raw data and original full-copy remain accessible; unknown/dynamic inputs retain original. Default Markdown code reader behavior unchanged Actual rendered DOM, no horizontal overflow or send mutation. |
 | UR-001 | The 34-second HTTP-200-equivalent report is shown; the stalled read is classified as timeout, the next valid report is shown, and the late old report cannot overwrite it. |
 | UR-002 | Valid empty reports remain data, 404 is unsupported, other failures throw typed causes; no failure becomes zero usage or a fabricated report. |
 | UR-003 | Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels. |

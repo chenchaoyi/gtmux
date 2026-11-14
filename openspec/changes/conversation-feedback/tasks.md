@@ -1,4 +1,4 @@
 - [x] Review and commit case design before implementation.
-- [ ] Implement scoped reload feedback and echo handoff.
-- [ ] Group identical process presentations and simplify copy.
-- [ ] Run meaningful regressions, source binding, core/design gates and independent review.
+- [x] Implement scoped reload feedback and echo handoff.
+- [x] Group identical process presentations and simplify copy.
+- [ ] Verify the installed phone/tablet UI after device availability; synthetic renderer/browser checks are recorded separately.

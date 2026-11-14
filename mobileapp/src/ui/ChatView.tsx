@@ -588,7 +588,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </TouchableOpacity>
       )}
 
-      {history.failed && !history.denied && <Text testID="chat-history-error" style={styles.earlierText}>{lang === 'zh' ? '未能加载更早的消息。' : 'Could not load earlier messages.'}</Text>}
+      {history.failed && !history.denied && <Text testID="chat-history-error" style={styles.earlierText}>{lang === 'zh' ? '未能加载更早的消息。' : 'Earlier history could not be loaded.'}</Text>}
 
       {/* the conversation: prompt → interleaved (text bubble / step group) segments */}
       {displayTurns.map((t, w) => {

@@ -779,11 +779,14 @@
   },
   "internal/server/web/app.test.cjs": {
     "cases": [
-      "CAS-004"
+      "CAS-004",
+      "CRX-007"
     ],
     "selectors": [
       "CAS004 focused and tile chats disclose association failures and recover without losing messages",
-      "CAS004 stale tile association failure cannot repaint a changed target"
+      "CAS004 stale tile association failure cannot repaint a changed target",
+      "rejected code stays editable and shows a clear error",
+      "the rejected-code message also applies to the owner pairing a browser"
     ]
   },
   "internal/server/web/argv-reading.test.cjs": {
@@ -2911,6 +2914,31 @@
     ],
     "selectors": [
       "Historical profile reads current ancestry only on expansion and only for the same conversation"
+    ]
+  },
+  "mobileapp/src/ui/ToolReading.test.tsx": {
+    "cases": [
+      "TSV-001"
+    ],
+    "selectors": [
+      "TSV-001 command preview is direct, single-command outline absent, original input and result copy remain exact"
+    ]
+  },
+  "mobileapp/src/ui/toolOutput.test.ts": {
+    "cases": [
+      "TSV-002"
+    ],
+    "selectors": [
+      "TSV-002 terminal preview removes controls while preserving literal and raw evidence",
+      "TSV-002 local file URI presentation does not reinterpret foreign or malformed paths"
+    ]
+  },
+  "tests/web/tool-reading.test.cjs": {
+    "cases": [
+      "TSV-003"
+    ],
+    "selectors": [
+      "TSV-003 compact recorded command and readable result "
     ]
   }
 }

@@ -225,7 +225,7 @@ test('rejected code stays editable and shows a clear error', async () => {
   await submit(h, 'WRONG-1234');
   assert.equal(h.node('gate-code-go').disabled, false);
   assert.equal(h.node('gate-code-why').hidden, false);
-  assert.match(h.node('gate-code-why').textContent, /expired or was already used/);
+  assert.match(h.node('gate-code-why').textContent, /Check it or request a new one/);
   assert.equal(h.node('gate-code-input').selected, true);
   assert.equal(h.saved.has('gtmux.token'), false);
 });
@@ -233,7 +233,7 @@ test('rejected code stays editable and shows a clear error', async () => {
 test('the rejected-code message also applies to the owner pairing a browser', async () => {
   const h = harness({ok: false}, 'zh-CN');
   await submit(h, 'WRONG-1234');
-  assert.match(h.node('gate-code-why').textContent, /已过期或已用过/);
+  assert.match(h.node('gate-code-why').textContent, /检查或重新获取/);
   assert.doesNotMatch(h.node('gate-code-why').textContent, /让对方/);
 });
 
@@ -1342,7 +1342,7 @@ test('CAS004 focused and tile chats disclose association failures and recover wi
     assert.match(text(), language === 'zh-CN' ? /会话关联/ : /Conversation association/);
     assert.match(text(), /kept reply/);
     assert.doesNotMatch(text(), /No conversation yet|还没有对话/);
-    const retry = descendants(root).find(n => n.tagName === 'button' && n.textContent === (language === 'zh-CN' ? '重试' : 'Retry'));
+    const retry = descendants(root).find(n => n.tagName === 'button' && n.textContent === (language === 'zh-CN' ? '重新加载对话' : 'Reload conversation'));
     assert.ok(retry, 'visible Retry missing'); failed = false; retry.onclick(); await flush();
     assert.match(text(), /kept reply/); assert.doesNotMatch(text(), /Conversation association|会话关联/);
   }

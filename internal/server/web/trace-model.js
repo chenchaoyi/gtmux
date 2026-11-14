@@ -1,5 +1,5 @@
-// Generated from shared App trace analysis and presentation; SHA256 b046f08b82df4b37b6d61379dadac5b43e5637768a8484b63a0ab63123e18d33
-// Body SHA256 c8a8d93a1197d9c7e671e396237b0f68a3cce6d01c4452c40bd08cb088b3b2c6
+// Generated from shared App trace analysis and presentation; SHA256 832430e0c49fdd50d7087d0633b9117e1479469e1a7b9582f49531b88fb247c9
+// Body SHA256 84e987933a8ee90b38ec696d1abdd0e0b6245df81d474a33523bebe61a6662da
 (function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -756,6 +756,8 @@ exports.callRaw = callRaw;
 exports.toolDetailRefs = toolDetailRefs;
 exports.loadToolDetails = loadToolDetails;
 exports.callPage = callPage;
+exports.readableToolOutput = readableToolOutput;
+exports.displayWorkdir = displayWorkdir;
 const activity_1 = require("./activity");
 // Canonical Chat/Trace interpretation, also generated for the browser. These
 // fields describe recorded evidence; never infer success from a tool name.
@@ -1040,6 +1042,28 @@ function callPage(source, page) {
         page: index,
         pages,
     };
+}
+/** Readable output only. Raw source, call sections and full-copy remain unchanged. */
+function readableToolOutput(source, terminal) {
+    // eslint-disable-next-line no-control-regex -- Interpret recorded ANSI output, not command input.
+    let text = source.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '');
+    // eslint-disable-next-line no-control-regex -- CSI and its C1 representation are terminal presentation controls.
+    text = text.replace(/(?:\x1b\[|\u009b)[0-?]*[ -/]*[@-~]/g, '');
+    // Some recorded terminal text has already lost ESC. Require an SGR pair and
+    // a known terminal result; preserve lone literal markers and nonterminal data.
+    if (terminal && /\[(?:[1-9]\d{0,2}(?:;\d{0,3})*)m[\s\S]*?\[(?:0)?m/.test(text)) {
+        text = text.replace(/\[(?:\d{1,3}(?:;\d{0,3})*)?m/g, '');
+    }
+    return text;
+}
+function displayWorkdir(value) {
+    try {
+        const uri = new URL(value);
+        if (uri.protocol === 'file:' && (!uri.hostname || uri.hostname === 'localhost'))
+            return decodeURIComponent(uri.pathname);
+    }
+    catch { /* Unknown or malformed text remains the recorded value. */ }
+    return value;
 }
 
 }},cache={};function load(key){if(cache[key])return cache[key];var exports={};cache[key]=exports;modules[key](exports,function(name){var id={"./model":"model","../ui/activity":"activity","./activity":"activity","./timeline":"timeline","../ui/toolPresentation":"toolPresentation"}[name];if(!id)throw new Error("Unknown shared trace module");return load(id);});return exports;}var api=Object.assign({},load("model"),load("presentation"),load("toolPresentation"));

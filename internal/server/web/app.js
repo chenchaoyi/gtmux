@@ -2441,8 +2441,8 @@
         var inspector = el('div', 'step-inspector'), pending = false, loaded = !window.GtmuxTrace.toolDetailRefs(s).length, formatted = true, rendered = false;
         function renderInput(message) {
           rendered = true; inspector.replaceChildren();
-          var meta = el('dl', 'step-meta'); meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));
-          if (s.workdir) { meta.appendChild(el('dt', '', T('Working directory', '工作目录'))); meta.appendChild(el('dd', '', s.workdir)); } inspector.appendChild(meta);
+          var meta = el('dl', 'step-meta'); if (!s.call) {meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));}
+          if (s.workdir) { meta.appendChild(el('dt', '', T('Working directory', '工作目录'))); meta.appendChild(el('dd', '', window.GtmuxTrace.displayWorkdir(s.workdir))); } inspector.appendChild(meta);
           var input = s.input || s.detail || '';
           var inputLabel = !s.input ? T('Recorded detail','已记录详情') : s.input_kind === 'changes' ? T('Recorded changes','已记录修改') : s.input_kind === 'code' ? T('Recorded code','已记录代码') : s.input_kind === 'command' ? T('Recorded command','已记录命令') : ['parameters','arguments'].includes(s.input_kind) ? T('Recorded parameters','已记录参数') : T('Recorded input','已记录输入');
           var codePanel = s.call ? toolDetailsEl(s,false,!loaded) : codePanelEl(input, {hint: s.input_kind === 'code' || s.operation === 'code' ? 'javascript' : s.input_kind === 'command' ? 'shell' : s.input_kind,
@@ -2476,13 +2476,15 @@
       var part=el('section','call-section'), head=el('div','call-section-head'), body=el('div','call-section-body'), page=0;
       part.dataset.callSection=section.id; head.appendChild(el('h4','',section.label));
       if(section.hint!=='notice' && !disabled) head.appendChild(clipboardAction(T('Copy full ','复制完整')+section.label,'copy',section.source));
-      part.appendChild(head); part.appendChild(body); root.appendChild(part);
+      head.hidden = !section.rows && section.hint !== 'notice'; part.appendChild(head); part.appendChild(body); root.appendChild(part);
       function draw() {
         body.replaceChildren();
         if(section.rows) { var rows=el('dl','call-parameters'); section.rows.forEach(function(row){rows.appendChild(el('dt','',row.label));rows.appendChild(el('dd','',row.value));}); body.appendChild(rows); return; }
         if(section.hint==='notice') {body.appendChild(el('p','call-notice',section.source));return;}
-        var view=model.callPage(section.source,page);
-        body.appendChild(codePanelEl(view.source,{hint:section.hint,copy:false,allowFormat:!raw&&view.pages===1&&!section.verbatim,formatted:!raw&&view.pages===1&&!section.verbatim,embedded:section.id==='input',disabled:disabled}));
+        var terminal=['command','read','list','search'].includes(step.operation || '');
+        var display=section.id.indexOf('result')===0 && section.hint==='text' ? model.readableToolOutput(section.source,terminal) : section.source;
+        var view=model.callPage(display,page);
+        body.appendChild(codePanelEl(view.source,{hint:section.hint,copy:true,copySource:section.source,copyLabel:T('Copy full ','复制完整')+section.label,headerLabel:section.id==='input'&&terminal?T('Command','命令'):section.label,compact:!raw,preferEmbedded:section.id==='input'&&terminal,allowFormat:!raw&&view.pages===1&&!section.verbatim,formatted:!raw&&view.pages===1&&!section.verbatim,embedded:section.id==='input',disabled:disabled}));
         if(view.pages>1) {var nav=el('div','call-pages'), prev=el('button','','‹'), next=el('button','','›');prev.type=next.type='button';prev.setAttribute('aria-label',T('Previous page','上一页'));next.setAttribute('aria-label',T('Next page','下一页'));prev.disabled=view.page===0;next.disabled=view.page===view.pages-1;prev.onclick=function(){page--;draw();};next.onclick=function(){page++;draw();};nav.append(prev,el('span','',(view.page+1)+' / '+view.pages),next);body.appendChild(nav);}
       } draw();
     }); return root;
@@ -3030,17 +3032,21 @@
   function codePanelEl(source, options) {
     options = options || {};
     var parts = options.embedded === false ? [{id: 'original', source: source, hint: options.hint, path: ''}] : window.GtmuxCodeFormat.codeParts(source, options.hint);
-    var current = parts[0], formatted = options.formatted !== false;
-    var root = el('section', 'code-panel'), toolbar = el('div', 'step-toolbar code-panel-toolbar');
+    var outline=window.GtmuxCodeFormat.commandOutline(parts);
+    var current = options.preferEmbedded && outline.length===1 ? parts.find(function(p){return p.id===outline[0].partID;}) || parts[0] : parts[0], formatted = options.formatted !== false;
+    var singleCommand=options.compact && options.preferEmbedded && parts.length===2 && parts[1].hint==='shell' && outline.length===1;
+    var root = el('section', 'code-panel' + (options.compact ? ' compact' : '')), toolbar = el('div', 'step-toolbar code-panel-toolbar');
     var language = el('span', 'code-language'); toolbar.appendChild(language);
+    var rawToggle;
+    if(singleCommand) {rawToggle=el('button','code-raw-toggle','');rawToggle.type='button';rawToggle.onclick=function(){current=current.id==='original'?parts[1]:parts[0];draw();};toolbar.appendChild(rawToggle);}
     var format;
     if (options.allowFormat !== false) {
       format = el('button', 'code-format', '{ }'); format.type = 'button'; if(options.focusKey)format.dataset.chatFocus=options.focusKey+'-format';
       format.onclick = function () { formatted = !formatted; draw(); }; toolbar.appendChild(format);
     }
-    if (!options.disabled && options.copy !== false) toolbar.appendChild(clipboardAction(T('Copy recorded input', '复制调用原文'), '', source, options.focusKey && options.focusKey + '-copy'));
+    if (!options.disabled && options.copy !== false) toolbar.appendChild(clipboardAction(options.copyLabel || T('Copy recorded input', '复制调用原文'), '', options.copySource === undefined ? source : options.copySource, options.focusKey && options.focusKey + '-copy'));
     root.appendChild(toolbar);
-    var tabs = el('div', 'code-parts'); tabs.setAttribute('role', 'tablist'); tabs.hidden = parts.length < 2;
+    var tabs = el('div', 'code-parts'); tabs.setAttribute('role', 'tablist'); tabs.hidden = parts.length < 2 || singleCommand;
     var tabButtons = parts.map(function(part) {
       var name = part.id === 'original' ? T('Full call', '完整调用') : window.GtmuxCodeReading.codeLabel(part.source, part.hint) + ' · ' + (part.path || T('Script', '脚本'));
       var button = el('button', '', name); button.type = 'button'; button.setAttribute('role', 'tab'); if(options.focusKey)button.dataset.chatFocus=options.focusKey+'-part-'+part.id;
@@ -3053,8 +3059,8 @@
       current = parts[next]; draw(); tabButtons[next].focus();
     };
     var outline=window.GtmuxCodeFormat.commandOutline(parts);
-    if(outline.length){
-      var commands=el('details','code-call-outline');commands.open=true;
+    if(outline.length>(options.compact?1:0)){
+      var commands=el('details','code-call-outline');commands.open=!options.compact;
       commands.appendChild(el('summary','',T('Commands in code','代码内命令')+' · '+outline.length));
       var list=el('div','code-call-commands');
       outline.forEach(function(item){var button=el('button','code-call-command');button.type='button';button.appendChild(activityIcon(item.operation));button.appendChild(el('span','',item.preview));button.onclick=function(){current=parts.find(function(p){return p.id===item.partID;});draw();};list.appendChild(button);});
@@ -3066,8 +3072,9 @@
     if(options.focusKey) pre.dataset.chatFocus = options.focusKey;
     root.appendChild(pre);
     function draw() {
-      language.textContent = window.GtmuxCodeReading.codeLabel(current.source, current.hint);
-      if(format) format.hidden = !['JavaScript','TypeScript','JSON','HTML','CSS','YAML','Python'].includes(language.textContent);
+      var syntax=window.GtmuxCodeReading.codeLabel(current.source,current.hint); language.textContent = singleCommand && current.id==='original' ? T('Original arguments','原始参数') : options.headerLabel || syntax;
+      if(rawToggle) {rawToggle.textContent=current.id==='original'?T('Command','命令'):T('Arguments','参数');rawToggle.setAttribute('aria-label',current.id==='original'?T('View command','查看命令'):T('View original arguments','查看原始参数'));rawToggle.setAttribute('aria-expanded',String(current.id==='original'));}
+      if(format) format.hidden = !['JavaScript','TypeScript','JSON','HTML','CSS','YAML','Python'].includes(syntax);
       if(format) { format.setAttribute('aria-pressed',String(formatted)); format.title = T(formatted ? 'Show original' : 'Format code', formatted ? '查看原文' : '格式化代码'); format.setAttribute('aria-label',format.title); }
       tabButtons.forEach(function(button,i) { var selected = parts[i] === current; button.setAttribute('aria-selected',String(selected)); button.tabIndex = selected ? 0 : -1; });
       renderCode(pre, formatted && options.allowFormat !== false ? window.GtmuxCodeFormat.formatCode(current.source,current.hint || window.GtmuxCodeReading.codeLanguage(current.source)) : current.source,current.hint);

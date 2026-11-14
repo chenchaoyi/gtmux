@@ -1658,3 +1658,6 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .conversation-reload {min-height:44px; padding:10px 16px; border:1px solid #72727e; border-radius:10px; background:#2c2c32; color:#f2f2f7; font-weight:600; cursor:pointer;}
 .conversation-reload:focus-visible {outline:2px solid #27c7e6; outline-offset:3px;}
 .conversation-reload:disabled {cursor:wait;}
+
+.tool-call-details .code-panel.compact {border:0; background:transparent;}
+.tool-call-details .code-panel.compact .code-panel-toolbar {padding-left:0;}

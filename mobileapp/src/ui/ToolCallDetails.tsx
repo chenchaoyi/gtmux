@@ -10,6 +10,7 @@ import {
   callRaw,
   callSections,
   CallSection,
+  readableToolOutput,
 } from './toolPresentation';
 
 export function ToolCallDetails({
@@ -50,7 +51,7 @@ export function ToolCallDetails({
       : callSections(record, lang);
   }, [raw, lang, title, input, input_kind, operation, call, detail]);
   return (
-    <View testID="tool-call-details" style={{ gap: 16 }}>
+    <View testID="tool-call-details" style={{ gap: 12 }}>
       {sections.map(section => (
         <Section
           key={section.id + section.source.length}
@@ -59,6 +60,9 @@ export function ToolCallDetails({
           dark={dark}
           fontSize={fontSize}
           disabled={disabled}
+          terminalOutput={['command', 'read', 'list', 'search'].includes(
+            operation || '',
+          )}
         />
       ))}
     </View>
@@ -70,16 +74,25 @@ function Section({
   dark,
   fontSize,
   disabled,
+  terminalOutput,
 }: {
   section: CallSection;
   lang: 'en' | 'zh';
   dark: boolean;
   fontSize: number;
   disabled: boolean;
+  terminalOutput: boolean;
 }) {
   const [page, setPage] = useState(0),
     [copied, setCopied] = useState(false),
-    view = callPage(section.source, page),
+    display = useMemo(
+      () =>
+        section.id.startsWith('result') && section.hint === 'text'
+          ? readableToolOutput(section.source, terminalOutput)
+          : section.source,
+      [section.id, section.hint, section.source, terminalOutput],
+    ),
+    view = callPage(display, page),
     color = dark ? '#D8DEE9' : '#24292F',
     dim = dark ? '#A4A4AD' : '#626975',
     accent = dark ? '#86BFFC' : '#006F82';
@@ -91,33 +104,37 @@ function Section({
   };
   return (
     <View testID={'call-section-' + section.id} style={{ gap: 6 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <ChromeText style={{ color: dim, flex: 1 }}>{section.label}</ChromeText>
-        {section.hint !== 'notice' && (
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={
-              (lang === 'zh' ? '复制完整' : 'Copy full ') + section.label
-            }
-            disabled={disabled}
-            style={button}
-            onPress={() => {
-              try {
-                Clipboard.setString(section.source);
-                setCopied(true);
-              } catch {
-                setCopied(false);
+      {(section.rows || section.hint === 'notice') && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <ChromeText style={{ color: dim, flex: 1 }}>
+            {section.label}
+          </ChromeText>
+          {section.hint !== 'notice' && (
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={
+                (lang === 'zh' ? '复制完整' : 'Copy full ') + section.label
               }
-            }}
-          >
-            {copied ? (
-              <ChromeText style={{ color: accent }}>✓</ChromeText>
-            ) : (
-              <CopyIcon size={19} color={dim} />
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
+              disabled={disabled}
+              style={button}
+              onPress={() => {
+                try {
+                  Clipboard.setString(section.source);
+                  setCopied(true);
+                } catch {
+                  setCopied(false);
+                }
+              }}
+            >
+              {copied ? (
+                <ChromeText style={{ color: accent }}>✓</ChromeText>
+              ) : (
+                <CopyIcon size={19} color={dim} />
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
       {section.rows ? (
         section.rows.map((row, i) => (
           <View
@@ -150,6 +167,19 @@ function Section({
       ) : (
         <CodeBlock
           source={view.source}
+          compact={section.id !== 'raw'}
+          preferEmbedded={section.id === 'input' && terminalOutput}
+          headerLabel={
+            section.id === 'input' && terminalOutput
+              ? lang === 'zh'
+                ? '命令'
+                : 'Command'
+              : section.label
+          }
+          copySource={section.source}
+          copyLabel={
+            (lang === 'zh' ? '复制完整' : 'Copy full ') + section.label
+          }
           hint={section.hint}
           lang={lang}
           dark={dark}
@@ -163,7 +193,7 @@ function Section({
           }
           maxHeight={360}
           disabled={disabled}
-          showCopy={false}
+          showCopy
           testIDPrefix="call-code"
         />
       )}

@@ -6039,6 +6039,7 @@ LEG-bd8a819ecc3d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,
 LEG-089667cd0076,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,97,test,"two turns minutes apart share one separator, at the start",False,legacy-not-retrospectively-reviewed
 LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,104,test,"a night and a pause each earn one, the turn between them earns none",False,legacy-not-retrospectively-reviewed
 LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,110,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
+MAP-8a5ed6f91907,L2,reviewed implementation,mobileapp/src/ui/ToolReading.test.tsx,10,reviewed-selector,"TSV-001 command preview is direct, single-command outline absent, original input and result copy remain exact",False,TSV-001
 MAP-b07036b224d7,L3,reviewed implementation,mobileapp/src/ui/ToolSteps.action-facts.test.tsx,7,reviewed-selector,ASA004 actual App rows identify skill web intent and file targets with unchanged inspector input,False,ASA-004
 MAP-14697d90a8f6,L2,reviewed implementation,mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx,10,reviewed-selector,ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace,False,ASA-010
 MAP-2d6c205f3027,L3,reviewed implementation,mobileapp/src/ui/ToolSteps.semantic.test.tsx,7,reviewed-selector,AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets,False,"AOP-001,AOP-003"
@@ -6488,6 +6489,8 @@ LEG-ac99204d2c70,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,68,it,"mea
 LEG-8581910a0160,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,74,it,is invisible to a turn with no usable clock,False,legacy-not-retrospectively-reviewed
 LEG-a7b4039749f8,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,79,it,speaks the reader’s language and honours the gap it is given,False,legacy-not-retrospectively-reviewed
 LEG-fe83c539204c,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,84,it,holds its own on an empty conversation,False,legacy-not-retrospectively-reviewed
+MAP-bb12d62f506f,L1,reviewed implementation,mobileapp/src/ui/toolOutput.test.ts,2,reviewed-selector,TSV-002 terminal preview removes controls while preserving literal and raw evidence,False,TSV-002
+MAP-3e96471ccce3,L1,reviewed implementation,mobileapp/src/ui/toolOutput.test.ts,10,reviewed-selector,TSV-002 local file URI presentation does not reinterpret foreign or malformed paths,False,TSV-002
 MAP-47222e9f745a,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,27,reviewed-selector,"query details show named parameters, structured results, provenance and complete raw",False,TCV-003
 MAP-3813fdfe8df1,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,75,reviewed-selector,"command, file changes, waits, text/errors and missing/empty results stay distinct",False,TCV-003
 MAP-f94f19b784ef,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,152,reviewed-selector,full reads preserve original command and distinct native result references,False,TCV-003
@@ -6753,6 +6756,7 @@ LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Termina
 LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
 MAP-8fceb6b39ede,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005
 MAP-e962ab9f86bc,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,20,reviewed-selector,Recorded query failure retries and large results page without losing full copy,False,TCV-005
+MAP-3324af6a64a6,L3,reviewed implementation,tests/web/tool-reading.test.cjs,5,reviewed-selector,TSV-003 compact recorded command and readable result ,False,TSV-003
 LEG-a36e634d1bf3,L3,Browser,tests/web/trace-folding.test.cjs,28,scenario,"`Trace turn and call folds stay independent, survive refresh, and reveal context detail at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-87996649b4e7,L3,Browser,tests/web/trace-folding.test.cjs,68,scenario,`Settings categories and theme icons remain clear and keyboard accessible at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-f2a40296ac42,L3,Browser,tests/web/trace-history.test.cjs,7,scenario,'trace-history-'+width,True,legacy-not-retrospectively-reviewed

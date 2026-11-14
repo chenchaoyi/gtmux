@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1254 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1257 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3783 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2292 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 140 | [L3.csv](cases/L3.csv) |
+| L1 · Unit / pure logic | 3785 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 2293 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 141 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
@@ -308,6 +308,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | TCV-003 | Queries expose named parameters and readable structured/text results; commands keep original source, files retain changes, unknown tools have factual fallback; pending/failed/empty/unrecorded are distinct, raw contains recorded sanitized fields and does not silently truncate. |
 | TCV-004 | Tool-specific name, provider/status/duration, parameters/results are visible; no false summary-only warning, stale responses cannot cross sessions, original source remains verbatim, copy is complete and disabled while incomplete. |
 | TCV-005 | Both surfaces show the same facts and nonempty recorded values; controls remain reachable, no horizontal document overflow or console errors, pending/error states are actionable and old-server fallback remains meaningful. |
+| TSV-001 | Command is initial preview when static extraction is safe; one command has no redundant outline; parameter/raw data and original full-copy remain accessible; unknown/dynamic inputs retain original. Default Markdown code reader behavior unchanged |
+| TSV-002 | Preview strips actual controls and recognized paired terminal SGR; lone literal markers and JSON/raw results stay unchanged. Exact raw/copy source remains original. Only local file URI converts to decoded path; unknown/foreign URI stays literal |
+| CRX-007 | Only labels/selectors updated for clear Reload conversation and short actionable code error; click exercises real read; no lower assertion/authorization/empty-state guard weakened |
+| TSV-003 | Command is initial preview when static extraction is safe; one command has no redundant outline; parameter/raw data and original full-copy remain accessible; unknown/dynamic inputs retain original. Default Markdown code reader behavior unchanged Actual rendered DOM, no horizontal overflow or send mutation. |
 | UR-001 | The 34-second HTTP-200-equivalent report is shown; the stalled read is classified as timeout, the next valid report is shown, and the late old report cannot overwrite it. |
 | UR-002 | Valid empty reports remain data, 404 is unsupported, other failures throw typed causes; no failure becomes zero usage or a fabricated report. |
 | UR-003 | Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels. |

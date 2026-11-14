@@ -379,3 +379,24 @@ export function callPage(source: string, page: number) {
     pages,
   };
 }
+
+/** Readable output only. Raw source, call sections and full-copy remain unchanged. */
+export function readableToolOutput(source: string, terminal: boolean): string {
+  // eslint-disable-next-line no-control-regex -- Interpret recorded ANSI output, not command input.
+  let text = source.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '');
+  // eslint-disable-next-line no-control-regex -- CSI and its C1 representation are terminal presentation controls.
+  text = text.replace(/(?:\x1b\[|\u009b)[0-?]*[ -/]*[@-~]/g, '');
+  // Some recorded terminal text has already lost ESC. Require an SGR pair and
+  // a known terminal result; preserve lone literal markers and nonterminal data.
+  if (terminal && /\[(?:[1-9]\d{0,2}(?:;\d{0,3})*)m[\s\S]*?\[(?:0)?m/.test(text)) {
+    text = text.replace(/\[(?:\d{1,3}(?:;\d{0,3})*)?m/g, '');
+  }
+  return text;
+}
+export function displayWorkdir(value: string): string {
+  try {
+    const uri = new URL(value);
+    if (uri.protocol === 'file:' && (!uri.hostname || uri.hostname === 'localhost')) return decodeURIComponent(uri.pathname);
+  } catch { /* Unknown or malformed text remains the recorded value. */ }
+  return value;
+}

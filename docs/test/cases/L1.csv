@@ -3744,6 +3744,8 @@ LEG-4b5a90342a0d,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,78,
 MAP-b958aa95a388,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,5,reviewed-selector,ARGV-001 shell argv,False,ARGV-001
 MAP-952a93df29d6,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,20,reviewed-selector,ARGV-001 cmd fields,False,ARGV-001
 MAP-c8ee897131ac,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,40,reviewed-selector,ARGV-001 ordinary argv,False,ARGV-001
+MAP-bb12d62f506f,L1,reviewed implementation,mobileapp/src/ui/toolOutput.test.ts,2,reviewed-selector,TSV-002 terminal preview removes controls while preserving literal and raw evidence,False,TSV-002
+MAP-3e96471ccce3,L1,reviewed implementation,mobileapp/src/ui/toolOutput.test.ts,10,reviewed-selector,TSV-002 local file URI presentation does not reinterpret foreign or malformed paths,False,TSV-002
 MAP-47222e9f745a,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,27,reviewed-selector,"query details show named parameters, structured results, provenance and complete raw",False,TCV-003
 MAP-3813fdfe8df1,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,75,reviewed-selector,"command, file changes, waits, text/errors and missing/empty results stay distinct",False,TCV-003
 MAP-f94f19b784ef,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,152,reviewed-selector,full reads preserve original command and distinct native result references,False,TCV-003

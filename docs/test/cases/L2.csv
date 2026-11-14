@@ -1765,6 +1765,7 @@ LEG-bd8a819ecc3d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,
 LEG-089667cd0076,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,97,test,"two turns minutes apart share one separator, at the start",False,legacy-not-retrospectively-reviewed
 LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,104,test,"a night and a pause each earn one, the turn between them earns none",False,legacy-not-retrospectively-reviewed
 LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,110,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
+MAP-8a5ed6f91907,L2,reviewed implementation,mobileapp/src/ui/ToolReading.test.tsx,10,reviewed-selector,"TSV-001 command preview is direct, single-command outline absent, original input and result copy remain exact",False,TSV-001
 MAP-14697d90a8f6,L2,reviewed implementation,mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx,10,reviewed-selector,ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace,False,ASA-010
 LEG-89ff3e67a8c8,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,60,test,native file changes are labeled as recorded changes and preserve complete copy,False,legacy-not-retrospectively-reviewed
 LEG-1f4a8322a751,L2,RN / mobile harness,mobileapp/src/ui/ToolSteps.test.tsx,96,test,whole group folds to a labelled summary and unmounts all command content,False,legacy-not-retrospectively-reviewed

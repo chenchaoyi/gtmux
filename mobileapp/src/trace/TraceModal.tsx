@@ -41,7 +41,7 @@ import { MarkdownView } from '../ui/MarkdownView';
 import { CodeText } from '../ui/CodeText';
 import { CodeBlock } from '../ui/CodeBlock';
 import { ToolCallDetails } from '../ui/ToolCallDetails';
-import { callRaw } from '../ui/toolPresentation';
+import { callRaw, displayWorkdir } from '../ui/toolPresentation';
 import { recordedStep } from './presentation';
 import { useToolInput } from '../ui/useToolInput';
 import { darkCodeBackground, toolCodeHint } from '../ui/codeReading';
@@ -1124,7 +1124,7 @@ export function TraceReader({
               {!!chosen.event.step?.workdir && (
                 <Text selectable style={[styles.meta, { color: pal.fg2 }]}>
                   {zh ? '工作目录：' : 'Working directory: '}
-                  {chosen.event.step.workdir}
+                  {displayWorkdir(chosen.event.step.workdir)}
                 </Text>
               )}
               {(detailTab === 'overview' || detailTab === 'origin') &&

@@ -121,6 +121,7 @@ LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Termina
 LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
 MAP-8fceb6b39ede,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005
 MAP-e962ab9f86bc,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,20,reviewed-selector,Recorded query failure retries and large results page without losing full copy,False,TCV-005
+MAP-3324af6a64a6,L3,reviewed implementation,tests/web/tool-reading.test.cjs,5,reviewed-selector,TSV-003 compact recorded command and readable result ,False,TSV-003
 LEG-a36e634d1bf3,L3,Browser,tests/web/trace-folding.test.cjs,28,scenario,"`Trace turn and call folds stay independent, survive refresh, and reveal context detail at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-87996649b4e7,L3,Browser,tests/web/trace-folding.test.cjs,68,scenario,`Settings categories and theme icons remain clear and keyboard accessible at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-f2a40296ac42,L3,Browser,tests/web/trace-history.test.cjs,7,scenario,'trace-history-'+width,True,legacy-not-retrospectively-reviewed
