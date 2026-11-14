@@ -17,11 +17,13 @@ export const RELEASE_NOTES: ReleaseNote[] = [
       '- Image messages no longer keep waiting for confirmation after appearing in conversation history.',
       '- Recorded messages replace their temporary copies immediately, avoiding a brief duplicate in session and HQ chats.',
       '- Browser conversations use the same attachment matching rule.',
+      '- Keep Codex conversation association when its live tmux pane moves, a window is renumbered or the session is renamed; association failures now explain the actual problem.',
     ],
     zh: [
       '- 图片消息出现在对话记录后，不再持续显示“等待确认”。',
       '- 消除发送后短暂出现两份消息的现象，HQ 和普通会话均适用。',
       '- 浏览器也采用相同的附件匹配规则。',
+      '- 修复移动窗格、窗口重新编号或重命名会话后，Codex 对话关联丢失的问题；关联不可用时给出准确提示。',
     ],
   },
   {

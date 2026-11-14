@@ -1,3 +1,4 @@
 - Image messages no longer keep waiting for confirmation after appearing in conversation history.
 - Recorded messages replace their temporary copies immediately, avoiding a brief duplicate in session and HQ chats.
 - Browser conversations use the same attachment matching rule.
+- Keep Codex conversation association when its live tmux pane moves, a window is renumbered or the session is renamed; association failures now explain the actual problem.

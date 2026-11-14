@@ -2723,5 +2723,77 @@
     "selectors": [
       "AEC-001 dual-representation identity preserves ordered attachment multiplicity"
     ]
+  },
+  "internal/app/send_association_test.go": {
+    "cases": [
+      "CFL-004"
+    ],
+    "selectors": [
+      "TestCFL004CLIAssociationRefusalDoesNotInventHumanDecision",
+      "TestCFL004PhoneSendReportsActualMissingAssociationWithoutInput"
+    ]
+  },
+  "internal/codexbridge/binding_location_test.go": {
+    "cases": [
+      "CFL-005"
+    ],
+    "selectors": [
+      "TestCFL005HeartbeatFailuresAreBoundedAndRecoveryIsVisible",
+      "TestCFL005HeartbeatDiagnosticsNeverPrintArbitraryRefreshError",
+      "TestCFL005HeartbeatWindowCapsChangingCausesAndReportsRelocation"
+    ]
+  },
+  "internal/dispatchbridge/codex_location_test.go": {
+    "cases": [
+      "CFL-004"
+    ],
+    "selectors": [
+      "TestCFL004MissingAssociationNeverPreparesClaimsOrCallsNativeInput"
+    ]
+  },
+  "internal/resume/frontend_location_test.go": {
+    "cases": [
+      "CFL-001",
+      "CFL-002",
+      "CFL-003"
+    ],
+    "selectors": [
+      "TestCFL001HeartbeatMigratesOnlyItsCurrentLocation",
+      "TestCFL001ObservedRootBindsAfterVerifiedLocationChange",
+      "TestCFL002LocationChangeCannotHideIdentityOrOwnerConflicts",
+      "TestCFL003MigrationCancellationKeepsOnlyCommittedHistory",
+      "TestCFL003PartialMigrationCanRetryOnlyTheSameLiveOwner",
+      "TestCFL003LateOldOwnerCannotReclaimMovedSameSID",
+      "TestCFL001FirstObservedRootCanFollowPostAdmissionLayoutChange",
+      "TestCFL003TwoLivePanesExchangePositionsWithoutLosingTheirOwners",
+      "TestCFL003HistoryWriteFailureRefusesMigrationBeforeLivePublication",
+      "TestCFL003ObservedNewRootRetriesItsOwnPartialMovedPublication"
+    ]
+  },
+  "internal/app/frontend_location_restore_test.go": {
+    "cases": [
+      "CFL-001"
+    ],
+    "selectors": [
+      "TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory"
+    ]
+  },
+  "internal/resume/frontend_first_root_retry_test.go": {
+    "cases": [
+      "CFL-006"
+    ],
+    "selectors": [
+      "TestCFL006FirstRootAndExistingRootFinishTheirOwnPartialMovedPublication",
+      "TestCFL006FirstRootRetryRejectsOtherRootsGenerationsAndInvalidReceipts",
+      "TestCFL006LateFirstRootRetryCannotReplaceANewerDestinationOwner"
+    ]
+  },
+  "internal/codexbridge/binding_first_root_retry_test.go": {
+    "cases": [
+      "CFL-006"
+    ],
+    "selectors": [
+      "TestCFL006InitialRootMetadataRetryCommitsThenResumesHeartbeats"
+    ]
   }
 }

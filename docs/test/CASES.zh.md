@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1237 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1244 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3783 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2255 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2276 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 138 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -104,6 +104,12 @@
 | CET-006 | A real manual PostCompact receipt is recorded once, active stays absent and exact completion/current turn remain intact. Only actual rearm decisions are eligible for the completed-turn fence. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
+| CFL-006 | Unmodified exact R must fail a real production-package target assertion for empty first root/move/index IO/same-root retry while controls are meaningful. Fixed same owner completes with same nonce, correct current location/root and live association, no second root operation/input. Existing-root and proof-failure behavior stay intact. Conflicting, unknown, stale/future, canceled or retired evidence cannot authorize or resurrect publication. Bridge positive controller controls may pass R and are not called an old-red guard; they verify pending/suspended/attachment and later ticks. Full source maps and command evidence distinguish this production-package coverage from independent extracted model and from actual TTY/runtime acceptance |
+| CFL-001 | Old production is target-assertion red. Current producer publishes A at new location; strict/read/input target agree on same home/SID/instance, old location grants no input; actual restore selection uses the current saved layout once while original historical records remain available. No new thread/restore/message/queue/input RPC is issued. Only producer migration updates state; read-only calls do not repair state. |
+| CFL-002 | All conflicts and unknown proof stay refused, no destination publication or input.5000/5001ms and future1000/1001ms reader boundaries remain. SameSID never substitutes for instance or process generation. Existing CAS/CBA/CBP negative assertions remain unchanged. |
+| CFL-003 | No stale owner overwrite, foreign deletion, double live authority, deadlock or new input. Partial committed history remains; readers refuse incomplete state. Exact current producer can recover safe publication failures within normal tick/recovery contracts, while canceled/retired writers cannot. Original index/receipt history remains auditable. |
+| CFL-004 | CLI/App provide explicit association/target-unavailable feedback without claiming a pending decision. JSON retains structured evidence. Missing association issues no Prepare, Claim or native input; real approval/draft remain refused and no automatic retry, fallback channel or raw keys are introduced. |
+| CFL-005 | Bounded rate-limited value-free reason/latency/last-success or relocation outcome can diagnose the producer. Recovery resumes only current lifetime; no repeated root RPC/input, stale state resurrection or unlimited logging. Scope and5s reader freshness are unchanged. |
 | CFR-001 | Only stable unique foreground Codex with verified stdin and exact launch ancestry is accepted. Missing reads classify transient; explicit conflicts classify hard refusal. Direct child snapshots are scoped to pane/bridge/client; generic ancestry keeps existing protections. Cancellation does not extend the parent deadline; legacy Resolve behavior is unchanged. No real process or terminal mutation. |
 | CFR-002 | Known peer/launch mismatch, invalid identity and changed pane cannot acquire authority; transient unreadable evidence is distinguishable from mismatch. No thread discovery/resume/input or persisted binding occurs during admission. Legacy Begin API and current binding/freshness checks remain valid. |
 | CFR-003 | No check executes before publication; successful transient retry authorizes exactly once. Hard refusal runs once, no second child or native fallback, failures preserve specific nonsecret reason and retry eligibility. All attempts share a 4s parent budget and at most four checks; canceled/deadline work cannot later authorize. Old immediate refusal fails the transient/early-publication expectations; cancellation does not require a timing-race sleep. |

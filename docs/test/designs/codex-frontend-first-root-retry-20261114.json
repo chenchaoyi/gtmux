@@ -1,0 +1,25 @@
+{
+  "id": "codex-frontend-first-root-retry-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Close independent R P1/F1 with exact first-root publication idempotency; do not weaken existing owner or reader checks",
+    "notes": "Read complete independent REVIEW.zh.md12919B SHA42a77782332ced58ff3062aaca74b5b3cf7543a47121b8f3856767b69e6b7dd1 and manifest16824B SHA8f41ffbfb12f2b0b22575758a6287e8614ddf4a7d1fc298a2a44ea39e059421e. R initial-empty-SID admission plus layout change plus successful proof and failed index rejects its own metadata retry solely because the file exists. R valid14 cloud gates do not close this. Only a fresh private receipt matching this exact connection instance/sequence/home/bridge/backend/client/root birth/TTY/physical cwd/start time and the exact currently observed root/thread cwd may continue a partial first publication under current epoch/lifetime/publication lease and original budget. Missing file permits original first publication; malformed/foreign/residual/different-root/generation evidence stays refused, cancellation preserved. Never repeat root RPC or input, restart a real session or reader-repair state. Preserve prior CFL001..005 and originals unchanged. Production resume package tests are actual Bind/Refresh with synthetic identity and private state; separate actual bridge stage/tick controls exercise controller transitions with a bind seam, not a claimed cross-package WebSocket/realTTY E2E. Source fix must be separately frozen/reviewed."
+  },
+  "cases": [
+    {
+      "id": "CFL-006",
+      "layer": "L2",
+      "description": "First successful root completes only its own partially published moved attachment",
+      "setup": "Actual production resume Bind/Refresh/readers in isolated HOME/CODEX_HOME/process/pane seams; actual bridge binding stage/tick with a controlled metadata binder contract. No real current pane, proof, queue, process restart or input",
+      "action": "Cross initially empty versus existing root with moved layout and one-time proof/index failure; keep the same admitted attachment and exact observed root across metadata retries. For empty-root partial proof/index success, mutate stored root/home/instance/sequence/start/bridge/backend/client identity, stale/future receipt and cancellation; verify rejection without publication. Check bounded retry->commit->later heartbeat and retirement/selection controls in the production bridge state machine",
+      "expected": "Unmodified exact R must fail a real production-package target assertion for empty first root/move/index IO/same-root retry while controls are meaningful. Fixed same owner completes with same nonce, correct current location/root and live association, no second root operation/input. Existing-root and proof-failure behavior stay intact. Conflicting, unknown, stale/future, canceled or retired evidence cannot authorize or resurrect publication. Bridge positive controller controls may pass R and are not called an old-red guard; they verify pending/suspended/attachment and later ticks. Full source maps and command evidence distinguish this production-package coverage from independent extracted model and from actual TTY/runtime acceptance",
+      "planned_files": [
+        "internal/resume/frontend_first_root_retry_test.go",
+        "internal/codexbridge/binding_first_root_retry_test.go"
+      ]
+    }
+  ],
+  "seal": "ab24e8de93aea42bccec708cd9bc7b173780dd253a458195b6ff9e7ff1578d27"
+}

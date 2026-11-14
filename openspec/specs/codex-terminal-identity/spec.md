@@ -106,3 +106,25 @@ A verified same-home frontend MAY mirror an existing effective trusted main repo
 - **WHEN** a project key resolves to the same owned directory or an ancestor through a symlink or other same-directory alias
 - **THEN** its explicit refusal is preserved for a canonical-cwd request
 - **AND** unknown ownership, unresolved or changing project identities keep the original response within the existing bounded proof worker
+
+### Requirement: Authenticated frontend location follows layout changes
+Only the current authenticated producer SHALL migrate a mutable tmux layout address.
+It SHALL verify the unchanged complete terminal/process incarnation, its saved receipt
+and the destination owner under the existing publication lease and connection epoch.
+Readers SHALL retain exact location and five-second freshness. Historical metadata
+SHALL NOT grant input authority or trigger reader-side repair. A displaced frontend's
+recovery record SHALL be preserved before its index is replaced, and only that exact
+producer MAY reuse its own checkpoint after strict verification. Cancellation, partial
+IO, unknown ownership and late older connections SHALL NOT publish live authority.
+Association refusal SHALL remain distinct from a real pending human decision.
+Heartbeat failures SHALL have bounded value-free diagnostics without repeating input.
+
+#### Scenario: The same live pane moves or is renumbered
+- **WHEN** only the current authenticated frontend's layout address changes
+- **THEN** its producer publishes the same home/thread/instance at the new address
+- **AND** the old address does not grant live input authority
+
+#### Scenario: Two live panes exchange positions
+- **WHEN** both producers reobserve their unchanged identities at their new positions
+- **THEN** both converge to their own exact current owners and recovery checkpoints
+- **AND** original historical metadata is preserved without authorizing another pane

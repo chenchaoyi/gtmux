@@ -134,6 +134,10 @@ func Run(bin string, args []string, pane string) int {
 			"pane", pane, "attempts", attempts, "elapsed_ms", time.Since(started).Milliseconds())
 		down.SetReadLimit(64 << 20)
 		binding := newConnectionBinding(ctx, attachment, &sequence, func(kind string, err error, count int) {
+			if kind == "relocated" {
+				diag.For("codex-bridge").Info("codex.frontend.location.updated", "verified frontend followed its current pane location", "pane", pane)
+				return
+			}
 			if kind == "ready" {
 				diag.For("codex-bridge").Info("codex.frontend.binding.ready", "verified frontend binding recovered", "pane", pane, "attempts", count)
 				return

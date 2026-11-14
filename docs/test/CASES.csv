@@ -343,6 +343,7 @@ LEG-752bc75bd93e,L1,Go core / CLI / server,internal/app/follow_test.go,14,Test,T
 LEG-2f8348a37e4c,L1,Go core / CLI / server,internal/app/follow_test.go,57,Test,TestDesktopPushDoesNotOfferUnusablePaneActions,False,legacy-not-retrospectively-reviewed
 LEG-f56017086a37,L1,Go core / CLI / server,internal/app/follow_test.go,68,Test,TestUnconfirmedPushDoesNotInventChatGPTOrigin,False,legacy-not-retrospectively-reviewed
 LEG-2376c7d42fd0,L1,Go core / CLI / server,internal/app/follow_test.go,70,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
 LEG-37fb01f41683,L1,Go core / CLI / server,internal/app/goalfile_test.go,32,Test,TestSpawnGoal_FileIsByteExact,False,legacy-not-retrospectively-reviewed
 LEG-d06a739bf417,L1,Go core / CLI / server,internal/app/goalfile_test.go,45,Test,TestSpawnGoal_Stdin,False,legacy-not-retrospectively-reviewed
 LEG-dd89a73c3a55,L1,Go core / CLI / server,internal/app/goalfile_test.go,54,Test,TestSpawnGoal_FileAndPositionalConflict,False,legacy-not-retrospectively-reviewed
@@ -654,6 +655,8 @@ MAP-a7175f174f65,L2,reviewed implementation,internal/app/screenshot_send_input_b
 MAP-8890e9017044,L2,reviewed implementation,internal/app/screenshot_send_test.go,16,reviewed-selector,TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance,False,"ASC-004,ASC-005"
 MAP-15420f2c2dd0,L2,reviewed implementation,internal/app/screenshot_test.go,31,reviewed-selector,TestASC001ScreenshotCLIRefusesAmbiguousOrUnsupportedInput,False,"ASC-001,ASC-006"
 MAP-b25f69eecf52,L2,reviewed implementation,internal/app/screenshot_test.go,49,reviewed-selector,TestASC006UnavailableNativeCapabilityIsTruthfulAndNonMutating,False,"ASC-001,ASC-006"
+MAP-369bebd75e3a,L2,reviewed implementation,internal/app/send_association_test.go,15,reviewed-selector,TestCFL004CLIAssociationRefusalDoesNotInventHumanDecision,False,CFL-004
+MAP-0a7c46985229,L2,reviewed implementation,internal/app/send_association_test.go,43,reviewed-selector,TestCFL004PhoneSendReportsActualMissingAssociationWithoutInput,False,CFL-004
 LEG-7da71da6d8fe,L1,Go core / CLI / server,internal/app/sendattach_test.go,17,Test,TestSaveAttachmentIsNamedByContent,False,legacy-not-retrospectively-reviewed
 LEG-d9b48bc703cf,L1,Go core / CLI / server,internal/app/sendattach_test.go,51,Test,TestSaveAttachmentKeepsAnAwkwardNameInsideUploads,False,legacy-not-retrospectively-reviewed
 LEG-9477fc989e3b,L1,Go core / CLI / server,internal/app/sendattach_test.go,67,Test,TestWithAttachmentsPutsEachPathOnItsOwnLine,False,legacy-not-retrospectively-reviewed
@@ -882,10 +885,14 @@ LEG-77f52af6f569,G,Go core / CLI / server,internal/artifact/store_test.go,126,Te
 LEG-5cd7ac080740,L1,Go core / CLI / server,internal/artifact/store_test.go,169,Test,TestRegistryQuotaAndRemoval,False,legacy-not-retrospectively-reviewed
 MAP-087141967dfd,L2,reviewed implementation,internal/codexbridge/analytics_identity_test.go,9,reviewed-selector,TestSID002AnalyticsLabelDoesNotEraseRootIdentity,False,SID-002
 MAP-e319389af183,L2,reviewed implementation,internal/codexbridge/analytics_identity_test.go,22,reviewed-selector,TestSID002AnalyticsCannotPromoteChildOrGlobalTraffic,False,SID-002
+MAP-0b049de792fb,L2,reviewed implementation,internal/codexbridge/binding_first_root_retry_test.go,12,reviewed-selector,TestCFL006InitialRootMetadataRetryCommitsThenResumesHeartbeats,False,CFL-006
 MAP-01ae39f2f61d,L2,reviewed implementation,internal/codexbridge/binding_heartbeat_context_test.go,11,reviewed-selector,TestCBA006ProductionFactoryHeartbeatRetainsConnectionContext,False,CBA-006
 MAP-3350a2c15a53,L2,reviewed implementation,internal/codexbridge/binding_lifetime_test.go,17,reviewed-selector,TestCBA005RunDisconnectRetiresBeforeTransportDrain,False,CBA-005
 MAP-a9d70d810c9d,L2,reviewed implementation,internal/codexbridge/binding_lifetime_test.go,55,reviewed-selector,TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry,False,CBA-005
 MAP-cea0125b012a,L2,reviewed implementation,internal/codexbridge/binding_lifetime_test.go,85,reviewed-selector,TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed,False,CBA-005
+MAP-ba1e8bfeead0,L2,reviewed implementation,internal/codexbridge/binding_location_test.go,12,reviewed-selector,TestCFL005HeartbeatFailuresAreBoundedAndRecoveryIsVisible,False,CFL-005
+MAP-21fe46e93e6c,L2,reviewed implementation,internal/codexbridge/binding_location_test.go,66,reviewed-selector,TestCFL005HeartbeatDiagnosticsNeverPrintArbitraryRefreshError,False,CFL-005
+MAP-9a813fda1d1d,L2,reviewed implementation,internal/codexbridge/binding_location_test.go,85,reviewed-selector,TestCFL005HeartbeatWindowCapsChangingCausesAndReportsRelocation,False,CFL-005
 MAP-eac5223b18f0,L2,reviewed implementation,internal/codexbridge/binding_publication_test.go,14,reviewed-selector,TestCBA004PublicationAndAttachmentFinishBeforeNewEpochActivation,False,CBA-004
 MAP-a893dbc2e4a4,L2,reviewed implementation,internal/codexbridge/binding_publication_test.go,69,reviewed-selector,TestCBA004CanceledPublicationWaitNeverStartsBind,False,CBA-004
 MAP-6f03d92adb14,L2,reviewed implementation,internal/codexbridge/binding_publication_test.go,108,reviewed-selector,TestCBA004HeartbeatPublicationAlsoPrecedesNewEpoch,False,CBA-004
@@ -1202,6 +1209,7 @@ LEG-90bbf46cdfed,L1,Go core / CLI / server,internal/dispatch/settle_test.go,14,T
 LEG-ad7be3f66460,L1,Go core / CLI / server,internal/dispatch/settle_test.go,25,Test,TestSettleIsCappedSoADeliveryCannotStall,False,legacy-not-retrospectively-reviewed
 LEG-1c024361394e,L1,Go core / CLI / server,internal/dispatch/settle_test.go,35,Test,TestSettleIsAnUpperBoundNotADelay,False,legacy-not-retrospectively-reviewed
 LEG-4f3937503f20,L1,Go core / CLI / server,internal/dispatch/settle_test.go,46,Test,TestSettleBaseIsAtLeastOneFrame,False,legacy-not-retrospectively-reviewed
+MAP-435b786290a2,L2,reviewed implementation,internal/dispatchbridge/codex_location_test.go,14,reviewed-selector,TestCFL004MissingAssociationNeverPreparesClaimsOrCallsNativeInput,False,CFL-004
 LEG-d20b4f517384,L1,Go core / CLI / server,internal/dispatchbridge/codexinput_test.go,18,Test,TestCodexNativeInputKeepsExactTargetAndUncertainRetry,False,legacy-not-retrospectively-reviewed
 LEG-cc1cccdd73ac,L1,Go core / CLI / server,internal/dispatchbridge/codexinput_test.go,20,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-52820930ba83,L1,Go core / CLI / server,internal/dispatchbridge/codexinput_test.go,59,Test,TestCodexQueueRechecksDestinationBeforeClaim,False,legacy-not-retrospectively-reviewed
@@ -2655,10 +2663,23 @@ MAP-8bd80450b6d7,L2,reviewed implementation,internal/resume/frontend_binding_con
 MAP-1c1e4be8a53f,L2,reviewed implementation,internal/resume/frontend_binding_readiness_test.go,12,reviewed-selector,TestCBA001UnavailableProofIsRetryableButNeverPublishes,False,CBA-001
 MAP-39ddbf3063f8,L2,reviewed implementation,internal/resume/frontend_binding_readiness_test.go,40,reviewed-selector,TestCBA001ObservedBirthHomeAndTargetChangesStayHard,False,CBA-001
 MAP-7904cc643f1d,L2,reviewed implementation,internal/resume/frontend_binding_readiness_test.go,68,reviewed-selector,TestCBA001MissingTerminalProofNeverBecomesInputAuthority,False,CBA-001
+MAP-d093d1c50adb,L2,reviewed implementation,internal/resume/frontend_first_root_retry_test.go,40,reviewed-selector,TestCFL006FirstRootAndExistingRootFinishTheirOwnPartialMovedPublication,False,CFL-006
+MAP-fb06902199c4,L2,reviewed implementation,internal/resume/frontend_first_root_retry_test.go,113,reviewed-selector,TestCFL006FirstRootRetryRejectsOtherRootsGenerationsAndInvalidReceipts,False,CFL-006
+MAP-5ce76c76c48d,L2,reviewed implementation,internal/resume/frontend_first_root_retry_test.go,169,reviewed-selector,TestCFL006LateFirstRootRetryCannotReplaceANewerDestinationOwner,False,CFL-006
 MAP-3cee131e3a9d,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,12,reviewed-selector,TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex,False,CBA-006
 MAP-38c7cef4bfeb,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,60,reviewed-selector,TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt,False,CBA-006
 MAP-8b4dde286a90,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,123,reviewed-selector,TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery,False,CBA-006
 MAP-1aa7a26187d9,L2,reviewed implementation,internal/resume/frontend_live_diagnostic_test.go,10,reviewed-selector,TestHRW013LiveDiagnosticsDoNotChangeExistingAuthority,False,HRW-013
+MAP-bfc9dee20cfe,L2,reviewed implementation,internal/resume/frontend_location_test.go,52,reviewed-selector,TestCFL001HeartbeatMigratesOnlyItsCurrentLocation,False,"CFL-001,CFL-002,CFL-003"
+MAP-185a9834a214,L2,reviewed implementation,internal/resume/frontend_location_test.go,99,reviewed-selector,TestCFL001ObservedRootBindsAfterVerifiedLocationChange,False,"CFL-001,CFL-002,CFL-003"
+MAP-cfc1b4d5efcd,L2,reviewed implementation,internal/resume/frontend_location_test.go,114,reviewed-selector,TestCFL002LocationChangeCannotHideIdentityOrOwnerConflicts,False,"CFL-001,CFL-002,CFL-003"
+MAP-dc9c9ddf9806,L2,reviewed implementation,internal/resume/frontend_location_test.go,213,reviewed-selector,TestCFL003MigrationCancellationKeepsOnlyCommittedHistory,False,"CFL-001,CFL-002,CFL-003"
+MAP-cf23edb32e6c,L2,reviewed implementation,internal/resume/frontend_location_test.go,252,reviewed-selector,TestCFL003PartialMigrationCanRetryOnlyTheSameLiveOwner,False,"CFL-001,CFL-002,CFL-003"
+MAP-623b4d1e24f9,L2,reviewed implementation,internal/resume/frontend_location_test.go,288,reviewed-selector,TestCFL003LateOldOwnerCannotReclaimMovedSameSID,False,"CFL-001,CFL-002,CFL-003"
+MAP-9a1717e72629,L2,reviewed implementation,internal/resume/frontend_location_test.go,320,reviewed-selector,TestCFL001FirstObservedRootCanFollowPostAdmissionLayoutChange,False,"CFL-001,CFL-002,CFL-003"
+MAP-27e3343f9bf5,L2,reviewed implementation,internal/resume/frontend_location_test.go,343,reviewed-selector,TestCFL003TwoLivePanesExchangePositionsWithoutLosingTheirOwners,False,"CFL-001,CFL-002,CFL-003"
+MAP-2803d4ff4366,L2,reviewed implementation,internal/resume/frontend_location_test.go,424,reviewed-selector,TestCFL003HistoryWriteFailureRefusesMigrationBeforeLivePublication,False,"CFL-001,CFL-002,CFL-003"
+MAP-79d8babbf0d2,L2,reviewed implementation,internal/resume/frontend_location_test.go,465,reviewed-selector,TestCFL003ObservedNewRootRetriesItsOwnPartialMovedPublication,False,"CFL-001,CFL-002,CFL-003"
 LEG-e73e8edb8618,L1,Go core / CLI / server,internal/resume/launcher_test.go,11,Test,TestResumeUsesTheRecordedLauncher,False,legacy-not-retrospectively-reviewed
 LEG-333f100efdb6,L1,Go core / CLI / server,internal/resume/launcher_test.go,26,Test,TestLauncherKeepsTheAgentsOwnFlags,False,legacy-not-retrospectively-reviewed
 LEG-75667cf67db3,L1,Go core / CLI / server,internal/resume/launcher_test.go,34,Test,TestNoLauncherResumesAsBefore,False,legacy-not-retrospectively-reviewed

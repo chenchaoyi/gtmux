@@ -3,6 +3,7 @@ package codexbridge
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -23,20 +24,25 @@ type pendingRootBinding struct {
 // The connection serializes observer and heartbeat access here. No method emits
 // a protocol frame, searches for a thread, or trusts inherited pane metadata.
 type frontendBinding struct {
-	mu         sync.Mutex
-	attachment resume.CodexFrontend
-	current    func() bool
-	bind       func(resume.CodexFrontend, string, string) (resume.CodexFrontend, error)
-	refresh    func(resume.CodexFrontend) (resume.CodexFrontend, error)
-	end        func(resume.CodexFrontend)
-	report     func(string, error, int)
-	now        func() time.Time
-	pending    *pendingRootBinding
-	suspended  bool
-	closed     bool
-	ctx        context.Context
-	cancel     context.CancelFunc
-	publish    func(func()) error
+	mu                   sync.Mutex
+	attachment           resume.CodexFrontend
+	current              func() bool
+	bind                 func(resume.CodexFrontend, string, string) (resume.CodexFrontend, error)
+	refresh              func(resume.CodexFrontend) (resume.CodexFrontend, error)
+	end                  func(resume.CodexFrontend)
+	report               func(string, error, int)
+	now                  func() time.Time
+	pending              *pendingRootBinding
+	suspended            bool
+	closed               bool
+	ctx                  context.Context
+	cancel               context.CancelFunc
+	publish              func(func()) error
+	heartbeatReason      string
+	heartbeatWindow      time.Time
+	heartbeatReports     int
+	lastHeartbeatReport  time.Time
+	lastHeartbeatSuccess time.Time
 }
 
 func newFrontendBinding(f resume.CodexFrontend, current func() bool, report func(string, error, int)) *frontendBinding {
@@ -189,11 +195,68 @@ func (b *frontendBinding) tick() {
 			if b.ctx.Err() != nil {
 				return
 			}
+			started := b.now()
+			previousLocation := b.attachment.Loc
 			if f, e := b.refresh(b.attachment); e == nil {
 				b.attachment = f
+				b.lastHeartbeatSuccess = b.now()
+				if b.heartbeatReason != "" {
+					b.log("ready", nil, 0)
+				} else if previousLocation != f.Loc {
+					b.log("relocated", nil, 0)
+				}
+				b.heartbeatReason = "" // recovery does not replenish the failure log budget
+			} else {
+				b.heartbeatFailed(e, started)
 			}
 		})
 	}
+}
+
+// Heartbeat errors used to disappear. Log bounded, value-free diagnostics rather
+// than arbitrary IO errors (which may contain paths or content). At most two
+// failure reports per 30-second window; repeated equal reasons are coalesced.
+func (b *frontendBinding) heartbeatFailed(err error, started time.Time) {
+	reason := "publication-unavailable"
+	var proof *resume.FrontendBindingError
+	if errors.As(err, &proof) && safeHeartbeatCode(proof.Code) {
+		reason = proof.Code
+	} else if errors.Is(err, state.ErrLeaseHeld) {
+		reason = "publication-busy"
+	} else if errors.Is(err, context.Canceled) {
+		reason = "connection-canceled"
+	} else if errors.Is(err, context.DeadlineExceeded) {
+		reason = "heartbeat-deadline"
+	}
+	now := b.now()
+	if b.heartbeatWindow.IsZero() || now.Sub(b.heartbeatWindow) >= 30*time.Second {
+		b.heartbeatWindow, b.heartbeatReports = now, 0
+	}
+	changed := b.heartbeatReason != reason
+	b.heartbeatReason = reason
+	if b.heartbeatReports >= 2 || !changed && now.Sub(b.lastHeartbeatReport) < 30*time.Second {
+		return
+	}
+	b.heartbeatReports++
+	b.lastHeartbeatReport = now
+	last := int64(0)
+	if !b.lastHeartbeatSuccess.IsZero() {
+		last = b.lastHeartbeatSuccess.UnixMilli()
+	}
+	elapsed := max(int64(0), now.Sub(started).Milliseconds())
+	b.log("heartbeat", fmt.Errorf("frontend heartbeat: %s; elapsed_ms=%d; last_success_ms=%d", reason, elapsed, last), 0)
+}
+
+func safeHeartbeatCode(code string) bool {
+	if code == "" || len(code) > 64 {
+		return false
+	}
+	for _, r := range code {
+		if r != '-' && (r < 'a' || r > 'z') {
+			return false
+		}
+	}
+	return true
 }
 
 func (b *frontendBinding) close() {

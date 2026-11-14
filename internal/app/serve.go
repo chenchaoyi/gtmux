@@ -1201,11 +1201,11 @@ func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe
 		opts := phoneDeliverOpts(id, agentCmd, sendID, dispatch.LoadTuning())
 		var nativeResult *dispatch.Result
 		dio := dispatchbridge.DispatchIO(id)
-		if native := dio.SubmitNative; native != nil && observe != nil {
+		if native := dio.SubmitNative; native != nil {
 			dio.SubmitNative = func(o dispatch.Opts, text string, hold func() string) dispatch.Result {
 				result := native(o, text, hold)
 				nativeResult = &result
-				if result.Delivered || result.State == dispatch.StateQueued {
+				if observe != nil && (result.Delivered || result.State == dispatch.StateQueued) {
 					observe(result)
 				}
 				return result
@@ -1213,6 +1213,9 @@ func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe
 		}
 		if ok, refused := dispatch.PasteAndSubmit(dio, opts, text); !ok {
 			if nativeResult != nil {
+				if en, _ := associationRefusalMessage(nativeResult.Evidence); en != "" {
+					return fmt.Errorf("%s", en)
+				}
 				if strings.Contains(nativeResult.Evidence, "input-thread-not-loaded") {
 					return fmt.Errorf("not sent: the session is not loaded; open it on the Mac first")
 				}
