@@ -166,6 +166,7 @@ function Section({
         </Text>
       ) : (
         <CodeBlock
+          title={section.label}
           source={view.source}
           compact={section.id !== 'raw'}
           preferEmbedded={section.id === 'input' && terminalOutput}
@@ -177,6 +178,7 @@ function Section({
               : section.label
           }
           copySource={section.source}
+          readerRange={view.pages > 1 ? (lang === 'zh' ? `第 ${view.page + 1} / ${view.pages} 页` : `Page ${view.page + 1} / ${view.pages}`) : undefined}
           copyLabel={
             (lang === 'zh' ? '复制完整' : 'Copy full ') + section.label
           }

@@ -216,13 +216,15 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   if (echoRows.current.scope !== liveScope) echoRows.current = {scope: liveScope, aliases: new Map()};
   const echoState = echoRows.current;
   if (pendingPrompt && (!echoState.pending || echoState.pending.text !== pendingPrompt || pendingEcho && echoState.pending.id !== pendingEcho.id)) {
-    echoState.pending = pendingEcho ?? beginChatEcho(`local:${Date.now()}`, pendingPrompt, turns);
+    echoState.pending = pendingEcho ?? beginChatEcho(`local:${Date.now()}`, pendingPrompt, recentTurns);
   }
   let pendingKey: string | undefined;
   if (echoState.pending) {
-    const index = chatEchoRecord(echoState.pending, turns);
+    // The parent captured its occurrence baseline from this same recent window.
+    // A newly loaded earlier page is display history, never evidence of a send.
+    const index = chatEchoRecord(echoState.pending, recentTurns);
     if (index >= 0) {
-      echoState.aliases.set(turnIdentity(turns[index], index), {key: `echo:${echoState.pending.id}`, prompt: echoState.pending.text});
+      echoState.aliases.set(turnIdentity(recentTurns[index], index), {key: `echo:${echoState.pending.id}`, prompt: echoState.pending.text});
       while (echoState.aliases.size > 16) echoState.aliases.delete(echoState.aliases.keys().next().value!);
       echoState.pending = undefined;
     } else if (pendingPrompt) pendingKey = `echo:${echoState.pending.id}`;

@@ -12,6 +12,25 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.181',
+    en: [
+      '- Reload failed conversations with a clear button and visible progress.',
+      '- Keep sent messages in place as their conversation history arrives, with shorter delivery status.',
+      '- Read tool commands and results with less clutter; original arguments and full output remain available.',
+      '- Show repeated launch processes with a count, and simplify empty-state messages.',
+      '- Improve diagnosis of unlinked sessions and let verified current clients restore their own missing association.',
+      '- Keep existing knowledge translations when a review changes only the original text.',
+    ],
+    zh: [
+      '- 对话加载失败后，重新加载按钮更醒目，点击即可看到进度。',
+      '- 已发送消息在历史同步后原位更新，减少重复气泡和画面跳动，发送状态也更简洁。',
+      '- 工具详情优先显示命令和结果，减少重复层级，原始参数和完整输出仍可查看。',
+      '- 同名启动进程合并显示数量，空状态等提示更简短。',
+      '- 更准确地诊断未关联会话，当前客户端通过身份核验后可恢复自己的缺失关联。',
+      '- 知识审阅只修改原文时，保留已有译文。',
+    ],
+  },
+  {
     version: '1.0.180',
     en: [
       '- Image messages no longer keep waiting for confirmation after appearing in conversation history.',

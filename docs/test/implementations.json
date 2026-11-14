@@ -2964,5 +2964,21 @@
     "selectors": [
       "TSV-003 compact recorded command and readable result "
     ]
+  },
+  "mobileapp/src/screens/HistoryEchoHandoff.test.tsx": {
+    "cases": [
+      "CRR-001"
+    ],
+    "selectors": [
+      "CRR-001"
+    ]
+  },
+  "mobileapp/src/ui/ToolReaderCopy.test.tsx": {
+    "cases": [
+      "CRR-002"
+    ],
+    "selectors": [
+      "CRR-002"
+    ]
   }
 }

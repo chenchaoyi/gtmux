@@ -826,3 +826,16 @@ An ingress receipt SHALL remain distinct from execution. The source occurrence m
 - WHEN a newly recorded matching prompt becomes visible
 - THEN the existing pending bubble becomes the recorded turn without a second bubble or removal and reinsertion
 - AND matching never sends or replays a message.
+
+#### Scenario: An earlier page contains the same prompt
+- WHEN a send baseline was captured from the recent-message window and an earlier page contains an identical prompt
+- THEN the earlier page does not acknowledge that send or consume its optimistic bubble
+- AND a genuinely new recent record hands off the bubble by exact source identity after history is merged.
+
+### Requirement: Complete recorded tool copy across reader expansion
+Expanding a readable or paged tool result SHALL preserve the complete original section as its copy source, separately from the display text. The copy label and source SHALL remain bound to the displayed snapshot. A paged expanded view SHALL identify its page range.
+
+#### Scenario: A readable result omits terminal controls and later pages
+- WHEN the user expands that result and copies the complete recorded section
+- THEN the copied text includes the original controls and all pages
+- AND Raw, inline complete copy and ordinary code readers keep their existing exact-copy behavior.

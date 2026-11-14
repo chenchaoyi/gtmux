@@ -26,6 +26,9 @@ export function CodeReaderModal({
   initialFormatted = true,
   allowEmbedded = true,
   allowFormat = true,
+  copySource,
+  copyLabel,
+  range,
   onClose,
 }: {
   source: string;
@@ -38,6 +41,9 @@ export function CodeReaderModal({
   initialFormatted?: boolean;
   allowEmbedded?: boolean;
   allowFormat?: boolean;
+  copySource?: string;
+  copyLabel?: string;
+  range?: string;
   onClose: () => void;
 }) {
   useModalEscape(true, onClose);
@@ -54,13 +60,16 @@ export function CodeReaderModal({
       <SafeAreaProvider>
         <SafeAreaView style={[styles.root, { backgroundColor: pal.bg }]}>
           <View style={[styles.header, { borderBottomColor: pal.divider }]}>
-            <ChromeText
-              accessibilityRole="header"
-              style={[styles.title, { color: pal.fg }]}
-              numberOfLines={2}
-            >
-              {title}
-            </ChromeText>
+            <View style={{flex: 1, minWidth: 0}}>
+              <ChromeText
+                accessibilityRole="header"
+                style={[styles.title, { color: pal.fg }]}
+                numberOfLines={2}
+              >
+                {title}
+              </ChromeText>
+              {!!range && <ChromeText testID="code-reader-range" style={{color: pal.fg2, fontSize: 12}}>{range}</ChromeText>}
+            </View>
             <TouchableOpacity
               testID="code-reader-close"
               style={styles.button}
@@ -84,6 +93,8 @@ export function CodeReaderModal({
           >
             <CodePanel
               source={source}
+              copySource={copySource}
+              copyLabel={copyLabel}
               hint={hint}
               lang={lang}
               fontSize={fontSize}
@@ -112,7 +123,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#343439',
   },
   title: {
-    flex: 1,
     minWidth: 0,
     fontSize: 16,
     fontWeight: '600',

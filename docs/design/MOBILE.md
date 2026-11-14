@@ -1847,3 +1847,7 @@ Launch processes group only adjacent equal sanitized presentations as name ×N, 
 ### Tool detail reading
 
 Recognized single shell input opens directly, with one Original arguments toggle instead of nested JSON, command outline and duplicate headers. Tool sections have one toolbar; complete-copy and the raw record stay exact. Multiple/unknown inputs retain context and the existing bounded code reader. Result previews remove terminal controls, including paired SGR fragments from sanitized terminal output; raw/JSON data stays unchanged. Local file URIs are displayed as paths, without using them to grant access.
+
+Echo confirmation uses the same recent-message window that captured its send baseline. Loading earlier history cannot acknowledge a send. The confirmed source record's session/record identity supplies the presentation alias after history is merged.
+
+Expanded tool results keep the complete recorded copy source and its label with the displayed snapshot. A paged reader shows its page number; Copy full Result still copies the whole original section, including bytes omitted from the readable preview.

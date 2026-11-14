@@ -5051,6 +5051,7 @@ LEG-a6d4bed85074,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.te
 MAP-f38035a7c2fe,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,112,reviewed-selector,pending HQ question opens the original matter,False,"CT-DRAFT,CT-HQ"
 MAP-f119dbaabb64,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,162,reviewed-selector,late HQ overview and matter responses,False,"CT-DRAFT,CT-HQ"
 MAP-acb5ed213eb0,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,209,reviewed-selector,a prepared HQ question stays scoped,False,"CT-DRAFT,CT-HQ"
+MAP-f74e6b218e01,L2,reviewed implementation,mobileapp/src/screens/HistoryEchoHandoff.test.tsx,41,reviewed-selector,CRR-001,False,CRR-001
 LEG-22a168587a71,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,58,test,"the promotion queue leads, and an overdue one is marked",False,legacy-not-retrospectively-reviewed
 LEG-515eaf56d0e0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,77,test,"a base nobody has written to says so once, with no sections",False,legacy-not-retrospectively-reviewed
 LEG-a37ada8694d8,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,83,test,an empty topic is not listed,False,legacy-not-retrospectively-reviewed
@@ -6044,6 +6045,7 @@ LEG-bd8a819ecc3d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,
 LEG-089667cd0076,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,97,test,"two turns minutes apart share one separator, at the start",False,legacy-not-retrospectively-reviewed
 LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,104,test,"a night and a pause each earn one, the turn between them earns none",False,legacy-not-retrospectively-reviewed
 LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,110,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
+MAP-b9aeb044c6cb,L2,reviewed implementation,mobileapp/src/ui/ToolReaderCopy.test.tsx,34,reviewed-selector,CRR-002,False,CRR-002
 MAP-8a5ed6f91907,L2,reviewed implementation,mobileapp/src/ui/ToolReading.test.tsx,10,reviewed-selector,"TSV-001 command preview is direct, single-command outline absent, original input and result copy remain exact",False,TSV-001
 MAP-b07036b224d7,L3,reviewed implementation,mobileapp/src/ui/ToolSteps.action-facts.test.tsx,7,reviewed-selector,ASA004 actual App rows identify skill web intent and file targets with unchanged inspector input,False,ASA-004
 MAP-14697d90a8f6,L2,reviewed implementation,mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx,10,reviewed-selector,ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace,False,ASA-010
