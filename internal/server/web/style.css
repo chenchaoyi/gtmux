@@ -1661,3 +1661,6 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 
 .tool-call-details .code-panel.compact {border:0; background:transparent;}
 .tool-call-details .code-panel.compact .code-panel-toolbar {padding-left:0;}
+.code-raw-toggle {min-height:44px; padding:8px 10px; border:0; border-radius:6px; background:transparent; color:var(--accent-ink); font:inherit; font-size:12px; cursor:pointer;}
+.code-raw-toggle:hover {background:var(--control);}
+.code-raw-toggle:focus-visible {outline:2px solid var(--accent-ink); outline-offset:-2px;}
