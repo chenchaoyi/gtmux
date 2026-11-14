@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex KB Alt implementation owner (agent self-review; not independent approval)",
-    "date": "2026-11-14",
+    "date": "2026-11-15",
     "decision": "Freshly review KBL-001 through KBL-004 for review-only alternate preservation; keep all source, ordinary supersede and lifecycle assertions",
-    "notes": "Fresh review before the Alt test implementation edits source_lineage_test.go. The earlier source-lineage design and its prior translation-drop expectation remain auditable in Git history. KBL-001 ordinary supersede still resets its alternate and distribution. KBL-002 now requires exact retained Alt in prepare, append and live state; all seven origins, full Sources, latest hits, guards, CAS, idempotency, privacy, status/audience, protection/card demotion and reopened landing checks remain. KBL-003 replay and explicit-origin precedence and KBL-004 new capture/receipts remain unchanged, with review-only Alt inheritance covered by KBA-003. All four mapped cases were reviewed together; no assertion or selector is removed. ReviewChange omitted/null preserves, an explicit complete alternate is validated and replaces atomically; no clear API or machine translation is introduced. Historical reviewed replay uses only the live predecessor and respects explicit ledger clears, ordinary reset and dead predecessors. This is byte retention, not a claim of translation equivalence. See the paired KBA-001 through KBA-004 design. No real KB, proof, queue, model, client or release actions."
+    "notes": "Fresh review before the Alt test implementation edits source_lineage_test.go. The earlier source-lineage design and its prior translation-drop expectation remain auditable in Git history. KBL-001 ordinary supersede still resets its alternate and distribution. KBL-002 now requires exact retained Alt in prepare, append and live state; all seven origins, full Sources, latest hits, guards, CAS, idempotency, privacy, status/audience, protection/card demotion and reopened landing checks remain. KBL-003 replay and explicit-origin precedence and KBL-004 new capture/receipts remain unchanged, with historical-reset and future-persistence replay covered by KBAR-001 through KBAR-003. All four mapped cases were reviewed together; no assertion or selector is removed. ReviewChange omitted/null preserves, an explicit complete alternate is validated and replaces atomically; no clear API or machine translation is introduced. Historical serialized nil retains its old reset semantics; new prepare explicitly records retained Alt. Replay respects explicit ledger clears, ordinary reset and dead predecessors. Independent P1 correction does not change any KBL case object or source/lifecycle assertion. This is byte retention, not a claim of translation equivalence. See the paired KBA-001 through KBA-004 design. No real KB, proof, queue, model, client or release actions."
   },
   "cases": [
     {
@@ -53,5 +53,5 @@
       ]
     }
   ],
-  "seal": "d94e25085aaed5d3944ddf5fc4ef24e02e4f34e5f9d903cf50c13bb487a5501f"
+  "seal": "a6f6373a66647d0f796c81b5cee731ebaa635d32cc4f7f24697fb302f1e7e64d"
 }

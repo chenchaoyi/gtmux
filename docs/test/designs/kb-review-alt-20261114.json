@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex KB Alt implementation owner (agent self-review; not independent approval)",
-    "date": "2026-11-14",
-    "decision": "Preserve the exact alternate half on review revise unless a valid replacement is supplied; retain ordinary supersede reset and explicit ledger clear semantics",
-    "notes": "Based on 73e77ec53a3e1702a6268c4f67cf08a4e14dcab2. ReviewChange currently cannot express Alt at all. Add optional alt object; omitted/null means preserve, a nonnull object replaces after normal language/title/content validation. No review clear feature is introduced. Reviewed replay inherits only the live predecessor, so an explicit alt operation with nil or an ordinary supersede reset cannot resurrect an earlier alternate. A historical reviewed omission can recover retained predecessor text; this is byte preservation, never evidence that translation matches revised source. Inputs and inherited objects must not alias. Preserve CAS, atomic batch validation, idempotent receipts, distribution reopening, protected tentative memory, sensitive confirmation, seven origins, full Sources, hit history and unrelated guards. Existing ordinary supersede translation-drop assertions remain. No production HOME/CODEX_HOME/KB, queue or model use. Source-only local tests; complete core gate/PR CI and later independent exact-head review are distinct evidence."
+    "date": "2026-11-15",
+    "decision": "Preserve alternate text explicitly in new review records; retire the rejected historical-inheritance expectation",
+    "notes": "Incremental self-review after independent P1 on 6afe22bcbc3c56c0e1d9bab6c92cb977fdd7f29a. Existing B documentation and KBL-002 explicitly invalidated stale translations, so the lack of an explicit clear field never justified restoring historical omitted Alt. KBA-001/002/004 case objects remain unchanged and still cover new prepare/check/apply, updates and protections. KBA-003 is retired and replaced by KBAR-001 through KBAR-003 in a new test file, preserving the rejected expectation and its red/green records in Git and the old package. This move makes the changed replay contract auditable with a fresh design before the new file first exists, without rewriting pushed history or weakening unrelated checks. New prepare persists retained Alt explicitly; fold only clones serialized Alt, never inherits nil. Omission/null in new proposals preserves; omission in old serialized supersedes retains historical reset semantics. No clear API or version marker introduced. Independent re-review and exact new CI remain pending."
   },
   "cases": [
     {
@@ -33,10 +33,10 @@
     {
       "id": "KBA-003",
       "layer": "L2",
-      "description": "Reviewed replay uses the current live predecessor and respects explicit clears and ordinary resets",
+      "description": "Retired historical-inheritance expectation, replaced by KBAR-001 through KBAR-003",
       "setup": "In-memory historical reviewed ops lacking Alt, explicit replacement, consecutive reviews, explicit alt(nil) before/after a review, ordinary supersede before review, retired/re-added or retitled predecessors.",
       "action": "Fold without writes; compare input serialization; mutate inherited Alt; inspect live entries and original objects.",
-      "expected": "Only reviewed omission inherits a cloned half from its named live predecessor. Explicit alternate wins; clear stays cleared across later reviews. Ordinary supersede remains monolingual, absent/dead predecessor never resurrects bytes, retitled live predecessor supplies current value, no input aliasing or disk writes.",
+      "expected": "Retired after the independent P1 on Q6afe22bc: historical nil supersedes must not restore old translations. Corrected historical fallback, future explicit persistence and replay boundaries live in KBAR-001 through KBAR-003; the rejected old expectation and source remain auditable in earlier Git and package snapshots.",
       "planned_files": [
         "internal/knowledge/review_alt_test.go"
       ]
@@ -53,5 +53,5 @@
       ]
     }
   ],
-  "seal": "94583ac169013245d2587fb068afb9af8d7eedd1143bba61ed9438015f4c22f9"
+  "seal": "73566994d9eb95bfa849b51c7a882e5fb93eca18ab7514f937129dafbd37cb23"
 }
