@@ -137,7 +137,7 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     : failure.code === 'owner_only' || failure.code === 'unauthorized'
     ? (zh ? '无法创建会话，请检查与这台服务器的配对。' : 'Creation is not authorized. Check your pairing with this server.')
     : uncertain
-    ? (zh ? '未收到创建结果。重试将核对同一请求，也可先查看会话列表。' : 'Creation could not be confirmed. Retry checks the same request, or check the session list first.')
+    ? (zh ? '创建结果待确认，可先查看会话列表。' : 'Creation not confirmed. Check the session list or retry.')
     : (zh ? '无法创建会话，请检查名称后重试。' : 'Could not create the session. Check the name and try again.');
   const create = async () => {
     if (inFlight.current || blocked) return;

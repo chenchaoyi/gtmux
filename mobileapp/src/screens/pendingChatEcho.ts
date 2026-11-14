@@ -17,6 +17,16 @@ export function beginChatEcho(id: string, text: string, turns: TranscriptTurn[])
 // Match any newly recorded occurrence, not only the tail: polling may skip turns.
 // A pre-existing identical prompt cannot confirm a new send. Missing timestamps
 // use occurrence counts; a bounded transcript can leave such a send unconfirmed.
+export function chatEchoRecord(echo: PendingChatEcho, turns: TranscriptTurn[]): number {
+  const counts = new Map<string, number>();
+  const identity = promptIdentity(echo.text);
+  return turns.findIndex(turn => {
+    if (promptIdentity(turn.prompt) !== identity) return false;
+    const key = turn.time || '';
+    const count = (counts.get(key) || 0) + 1; counts.set(key, count);
+    return count > (echo.observed.get(key) || 0);
+  });
+}
 export function chatEchoRecorded(echo: PendingChatEcho, turns: TranscriptTurn[]): boolean {
-  return [...occurrences(echo.text, turns)].some(([key, count]) => count > (echo.observed.get(key) || 0));
+  return chatEchoRecord(echo, turns) >= 0;
 }

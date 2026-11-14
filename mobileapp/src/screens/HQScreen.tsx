@@ -327,10 +327,14 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // the chat-transcript spec asks for a refresh that needs no status change, and the
   // worker Detail already polls this way. Conditional on the last ETag, so an unchanged
   // conversation costs a 304; one request at a time; nothing is set after unmount.
+  const [reload, setReload] = useState<{identity: typeof chatIdentity; busy: boolean; attempted: boolean}>({identity: chatIdentity, busy: false, attempted: false});
+  const retrying = reload.identity === chatIdentity && reload.busy;
+  const retryFailed = reload.identity === chatIdentity && reload.attempted && !reload.busy && !!chatRecord.failed;
   const etagRef = useRef<string | undefined>(undefined);
   const etagIdentity = useRef(chatIdentity);
   if (etagIdentity.current !== chatIdentity) {etagIdentity.current = chatIdentity; etagRef.current = undefined;}
   useEffect(() => {setChatRecord({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false}); setEarlier(0); setEarlierLoading(false); setTraceOpen(false); setDiffOpen(false);}, [chatIdentity]);
+  const receiptRefresh = useRef<() => void>(() => {});
   const traceRetry = useRef<() => void>(() => {});
   useEffect(() => {const task = createReadTask(
     signal => client.transcript(hq.pane_id, etagRef.current, earlier, signal, true, true),
@@ -345,11 +349,12 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         setTraceOpen(false); setDiffOpen(false);
         setChatRecord({identity: chatIdentity, turns: [], loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
       } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
-    }, onSettled: () => setEarlierLoading(false)},
+    }, onSettled: () => {setEarlierLoading(false); setReload(prev => prev.identity === chatIdentity ? {...prev, busy: false} : prev);}},
   );
+    receiptRefresh.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};
     // Retry replaces a pending conditional read and requests a fresh body;
     // normal polling can still reuse the quiet conversation's ETag.
-    traceRetry.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};
+    traceRetry.current = () => {setReload({identity: chatIdentity, busy: true, attempted: true}); task.invalidate(); etagRef.current = undefined; task.run();};
     return startReadPolling(task, live.status === 'working' ? HQ_ACTIVE_POLL_MS : HQ_IDLE_POLL_MS);
   },
   [client, hq.pane_id, chatIdentity, live.status, pending, earlier]);
@@ -416,12 +421,12 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
       client.sendResult(hq.pane_id, payload).then(result => {
         if (!currentResult()) return;
         if (!result.ok) {fail(result.reason, result.status); return;}
-        if (currentEcho()) {setPendingDelivered(true); setPendingDelivery(result.delivery);}
+        if (currentEcho()) {setPendingDelivered(true); setPendingDelivery(result.delivery); receiptRefresh.current();}
         // Receipt settlement and the terminal capture are separate generations.
         if (attempt === sendAttempt.current && result.pane) setPaneText(result.pane.text ?? '');
       }).catch(() => fail(zh
-        ? '未能确认发送结果，请先查看会话；重试会沿用同一消息编号。'
-        : 'Send confirmation unavailable. Check the conversation first; Retry keeps the same message ID.'));
+        ? '发送结果未确认，请先查看对话。'
+        : 'Send status unknown. Check the conversation before retrying.'));
     },
     [client, hq.pane_id, chatIdentity, zh],
   );
@@ -640,6 +645,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
               failed={chatRecord.identity === chatIdentity && chatRecord.failed}
               onRetry={() => traceRetry.current()}
               pendingPrompt={visiblePendingPrompt}
+              pendingEcho={pendingEcho.current ?? undefined}
+              retrying={retrying} retryFailed={retryFailed}
               pendingDelivered={pendingDelivered}
               pendingDelivery={pendingDelivery}
               // Header shows at the live tail (newest), hides when you scroll up into
@@ -793,7 +800,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   );
   const sheetsEl = (
     <>
-      <TraceModal visible={traceOpen} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!loaded} failed={chatRecord.identity === chatIdentity && chatRecord.failed} onRetry={() => traceRetry.current()} earlierAvailable={earlierAvailable} loadingEarlier={earlierLoading} onLoadEarlier={loadEarlier} pal={pal} lang={lang} onClose={() => setTraceOpen(false)} />
+      <TraceModal visible={traceOpen} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!loaded} failed={chatRecord.identity === chatIdentity && chatRecord.failed} retrying={retrying} retryFailed={retryFailed} onRetry={() => traceRetry.current()} earlierAvailable={earlierAvailable} loadingEarlier={earlierLoading} onLoadEarlier={loadEarlier} pal={pal} lang={lang} onClose={() => setTraceOpen(false)} />
       <DiffModal visible={diffOpen} paneId={hq.pane_id} client={client} pal={pal} lang={lang} onClose={() => setDiffOpen(false)} />
       {/* The situation board, read-only — the supervisor's own working memory. */}
       {/* The situation board, read-only.

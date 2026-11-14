@@ -17,7 +17,7 @@ import {
 import { Chevron } from './Icons';
 import { CodeBlock } from './CodeBlock';
 import { ToolCallDetails } from './ToolCallDetails';
-import { callTitle } from './toolPresentation';
+import { callTitle, displayWorkdir } from './toolPresentation';
 import { toolCodeHint } from './codeReading';
 import { useToolInput } from './useToolInput';
 import { ChromeText } from './ChromeText';
@@ -252,8 +252,8 @@ function ToolInput({
             ? lang === 'zh'
               ? '文件修改'
               : 'File changes'
-            : step.title || 'tool'}
-          {step.input_kind === 'arguments'
+            : step.call ? callTitle(step, lang) : step.title || 'tool'}
+          {step.input_kind === 'arguments' && !step.call
             ? ' · JSON'
             : step.input_kind === 'parameters'
             ? lang === 'zh'
@@ -270,8 +270,8 @@ function ToolInput({
         </View>
       </View>
       {!!step.workdir && (
-        <Text selectable style={[styles.workdir, { fontSize: size - 2 }]}>
-          {lang === 'zh' ? '目录' : 'Directory'} · {step.workdir}
+        <Text selectable numberOfLines={2} style={[styles.workdir, { fontSize: size - 2 }]}>
+          {lang === 'zh' ? '工作目录' : 'Working directory'} · {displayWorkdir(step.workdir)}
         </Text>
       )}
       {step.call ? (

@@ -47,6 +47,8 @@ import {TestIds} from '../constants/testIds';
 import {CHAT_WINDOW, SessionReset, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
 import {edgeDistance} from './liveEdge';
 import {useChatHistory} from './useChatHistory';
+import {ConversationReload} from './ConversationReload';
+import {beginChatEcho, chatEchoRecord, type PendingChatEcho} from '../screens/pendingChatEcho';
 
 interface Props {
   client?: GtmuxClient;
@@ -82,6 +84,10 @@ interface Props {
   associationFailed?: boolean;
   readOnlyHistory?: boolean;
   onRetry?: () => void;
+  onOpenTerminal?: () => void;
+  retrying?: boolean;
+  retryFailed?: boolean;
+  pendingEcho?: PendingChatEcho;
   /** Desktop reader: no terminal fallback or suggestion to type in this view. */
   readOnly?: boolean;
   // The just-sent prompt, echoed optimistically as a trailing bubble until the
@@ -186,7 +192,7 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, onRetry, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, onRetry, onOpenTerminal, retrying = false, retryFailed = false, pendingEcho, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   // Radar timestamps and temporary status changes are observations, not a new reader.
   const conversationReadOnly = readOnly || readOnlyHistory;
   const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
@@ -204,6 +210,26 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const historyOperation = React.useRef(0);
   const history = useChatHistory(client, agent, recentTurns, () => {prependAnchor.current = {height: contentHeight.current, y: offRef.current};});
   const turns = history.turns;
+  // Keep the optimistic turn's React key when its source record first arrives.
+  // This is a bounded presentation alias, never send/association authority.
+  const echoRows = React.useRef<{scope: string; pending?: PendingChatEcho; aliases: Map<string, {key: string; prompt: string}>}>({scope: liveScope, aliases: new Map()});
+  if (echoRows.current.scope !== liveScope) echoRows.current = {scope: liveScope, aliases: new Map()};
+  const echoState = echoRows.current;
+  if (pendingPrompt && (!echoState.pending || echoState.pending.text !== pendingPrompt || pendingEcho && echoState.pending.id !== pendingEcho.id)) {
+    echoState.pending = pendingEcho ?? beginChatEcho(`local:${Date.now()}`, pendingPrompt, recentTurns);
+  }
+  let pendingKey: string | undefined;
+  if (echoState.pending) {
+    // The parent captured its occurrence baseline from this same recent window.
+    // A newly loaded earlier page is display history, never evidence of a send.
+    const index = chatEchoRecord(echoState.pending, recentTurns);
+    if (index >= 0) {
+      echoState.aliases.set(turnIdentity(recentTurns[index], index), {key: `echo:${echoState.pending.id}`, prompt: echoState.pending.text});
+      while (echoState.aliases.size > 16) echoState.aliases.delete(echoState.aliases.keys().next().value!);
+      echoState.pending = undefined;
+    } else if (pendingPrompt) pendingKey = `echo:${echoState.pending.id}`;
+    else echoState.pending = undefined;
+  }
   const historyDropped = turns[0]?.turn_ordinal ? Math.max(0, turns[0].turn_ordinal - 1) : droppedTurns;
   const frames = React.useRef<Set<number>>(new Set());
   const busyTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -381,6 +407,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const visibleTurns = savedEnd >= 0 && turns.length > windowSize && !stick.current ? turns.slice(0, savedEnd + 1) : turns;
   const hiddenAfter = turns.length - visibleTurns.length;
   const {shown, hiddenHere} = windowedTurns(visibleTurns, windowSize);
+  const displayTurns: TranscriptTurn[] = pendingKey ? [...shown, {prompt: pendingPrompt!, response: ''}] : shown;
   const offset = visibleTurns.length - shown.length;
   // The recorded acts, placed against the MOUNTED turns (an act older than the oldest
   // mounted turn waits with the history it belongs to).
@@ -499,11 +526,11 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
 
-      {readOnlyHistory && <Text testID="history-read-only" accessibilityRole="text" style={styles.earlierText}>{lang === 'zh' ? '以下为上次关联的对话，只供查看；当前会话关联待确认，请在终端继续。' : 'Last-known conversation, read only. The current association is unconfirmed; continue in Terminal.'}</Text>}
+      {readOnlyHistory && <Text testID="history-read-only" accessibilityRole="text" style={styles.earlierText}>{lang === 'zh' ? '上次关联的对话 · 只读' : 'Last-known conversation · Read only'}</Text>}
       {(failed || associationFailed || history.denied) && (
         <View testID="chat-read-error" style={styles.seamRow}>
-          <Text style={styles.earlierText}>{associationFailed ? (lang === 'zh' ? '会话关联暂不可用，无法确认这段终端对应的对话。当前内容已保留，可切换到终端查看。' : 'Conversation association is unavailable. Existing messages are kept; switch to Terminal to view this session.') : lang === 'zh' ? (turns.length ? '暂时无法更新，已保留当前内容。' : '对话暂时无法载入。') : (turns.length ? 'Could not refresh. Your conversation is still shown.' : 'Conversation could not be loaded.')}</Text>
-          {onRetry && <TouchableOpacity testID="chat-read-retry" accessibilityRole="button" onPress={onRetry} style={styles.earlierRow}><Text style={styles.earlierText}>{lang === 'zh' ? '重试' : 'Retry'}</Text></TouchableOpacity>}
+          <Text style={styles.earlierText}>{associationFailed ? (lang === 'zh' ? '会话关联暂不可用。' : 'Conversation association unavailable.') : lang === 'zh' ? (turns.length ? '暂时无法更新，已保留当前内容。' : '对话暂时无法载入。') : (turns.length ? 'Could not update. Showing saved messages.' : 'Conversation could not be loaded.')}</Text>
+          {onRetry && <ConversationReload onRetry={onRetry} busy={retrying} failed={retryFailed} zh={lang === 'zh'} />}
         </View>
       )}
 
@@ -518,10 +545,14 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       {!loading && !failed && !associationFailed && !history.failed && turns.length === 0 && (
         <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
           {lang === 'zh'
-            ? (conversationReadOnly ? '尚无已记录的对话。' : '还没有对话历史。\n历史来自 agent 在服务器上的会话记录，你们聊起来就会出现。想看当前屏幕，切到「终端」。')
-            : (conversationReadOnly ? 'No messages have been recorded yet.' : 'No conversation history yet.\nHistory comes from the agent’s session log on the server, and fills in once you start talking. Switch to Terminal for the current screen.')}
+            ? (conversationReadOnly ? '暂无消息。' : '暂无对话，开始聊聊吧。')
+            : (conversationReadOnly ? 'No messages yet.' : 'No messages yet. Start a conversation.')}
         </Text>
       )}
+
+      {onOpenTerminal && !readOnly && (failed || associationFailed || !loading && turns.length === 0) && <TouchableOpacity testID="chat-open-terminal" accessibilityRole="button" onPress={onOpenTerminal} style={styles.terminalLink}>
+        <Text style={styles.terminalLinkText}>{lang === 'zh' ? '查看终端' : 'View Terminal'}</Text>
+      </TouchableOpacity>}
 
       {/* Only the newest turns are mounted; older ones are one tap away (or, when the
           server dropped them to bound the payload, disclosed as not loadable). Without
@@ -559,10 +590,11 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </TouchableOpacity>
       )}
 
-      {history.failed && !history.denied && <Text testID="chat-history-error" style={styles.earlierText}>{lang === 'zh' ? '更早的对话暂时无法载入，请重试。当前内容已保留。' : 'Earlier history could not be loaded. Retry above; current content is preserved.'}</Text>}
+      {history.failed && !history.denied && <Text testID="chat-history-error" style={styles.earlierText}>{lang === 'zh' ? '未能加载更早的消息。' : 'Earlier history could not be loaded.'}</Text>}
 
       {/* the conversation: prompt → interleaved (text bubble / step group) segments */}
-      {shown.map((t, w) => {
+      {displayTurns.map((t, w) => {
+        const isPending = w === shown.length;
         const i = w + offset; // the turn's REAL index — per-turn state is keyed by it
         // each segment = one assistant message's text bubble + the tool steps that
         // ran after it; rendering them in order puts intermediate process BETWEEN
@@ -571,7 +603,10 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         const firstText = segs.findIndex(s => !!s.text); // first reply bubble (preview + hasReply)
         const lastText = segs.reduce((last, seg, index) => seg.text ? index : last, -1);
         const hasReply = firstText !== -1;
-        const turnKey = turnIdentity(t, i);
+        const sourceKey = turnIdentity(t, i);
+        const alias = echoState.aliases.get(sourceKey);
+        const turnKey = isPending ? pendingKey! : alias?.key ?? sourceKey;
+        const displayedPrompt = alias?.prompt ?? t.prompt;
         const open = turnOpen[turnKey] ?? !collapsedAll; // collapsed turns hide the reply
         const replyActions = hasReply ? <ReplyActions text={segs.map(seg => seg.text || '').filter(Boolean).join('\n\n')} lang={lang} open={open} onToggle={() => toggleTurn(turnKey, open)} /> : null;
         // one-line reply preview, shown next to the toggle while collapsed so a
@@ -597,36 +632,37 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
           : '';
         return (
           <View key={turnKey} style={styles.turn}>
-            {actRows(placed.before[w])}
+            {!isPending && actRows(placed.before[w])}
             {!!seam && (
               <View testID="chat-session-seam" style={styles.seamRow}>
                 <Text style={styles.seamText}>{seam}</Text>
               </View>
             )}
-            {!!timeLabels[i] && <TimeSeparator label={timeLabels[i]} testID={TestIds.detail.timeSeparator} />}
+            {!isPending && !!timeLabels[i] && <TimeSeparator label={timeLabels[i]} testID={TestIds.detail.timeSeparator} />}
             {!!t.prompt && (() => {
-              const nLines = t.prompt.split('\n').length;
+              const nLines = displayedPrompt.split('\n').length;
               // HQ's messages are instructions the reader is here to read, never a pasted
               // dump: they are shown whole (2026-10-04, a 9-line HQ relay hid its ask
               // behind "…").
-              const long = t.from?.kind !== 'hq' && (t.prompt.length > 600 || nLines > 12);
+              const long = t.from?.kind !== 'hq' && (displayedPrompt.length > 600 || nLines > 12);
               const collapsed = long && !promptOpen[turnKey];
               return (
                 <>
                   <View testID="chat-user-row" style={styles.userRow}>
-                    <View testID="chat-user-bubble" style={styles.userBubble}>
+                    <View testID="chat-user-bubble" style={[styles.userBubble, isPending && !pendingDelivered && styles.userBubblePending]}>
                       {collapsed ? (
                         <CopyableText lang={lang} selectable selectionColor={SEL_COLOR} numberOfLines={8}
                           style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>
-                          {t.prompt}
+                          {displayedPrompt}
                         </CopyableText>
                       ) : (
-                        <MarkdownView openFile={ref => openFile(ref, t.session_id || agent.session_id || '')} source={t.prompt} colors={USER_MD_COLORS} fontSize={fontSize}
+                        <MarkdownView openFile={ref => openFile(ref, t.session_id || agent.session_id || '')} source={displayedPrompt} colors={USER_MD_COLORS} fontSize={fontSize}
                           fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
                       )}
                     </View>
                     {avatar(t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />, t.from ? {kind: 'sender', agent, sender: t.from, turn: t} : {kind: 'human', agent})}
                   </View>
+                  {(isPending || alias) && <Text testID={isPending ? "chat-pending-echo" : "chat-send-receipt"} style={styles.echoStatus}>{isPending ? sendReceiptLabel(pendingDelivery, pendingDelivered, lang === 'zh') : (lang === 'zh' ? '已接收' : 'Received')}</Text>}
                   {/* Whose words these are. Only ever shown when it was NOT the reader,
                       so an ordinary conversation gains no chrome (who-sent-this-turn). */}
                   {!!t.from && (
@@ -695,17 +731,6 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       })}
       {actRows(placed.after)}
 
-      {/* optimistic echo: the just-sent prompt, until the transcript catches up */}
-      {!!pendingPrompt && (
-        <View style={styles.userRow}>
-          <View testID="chat-pending-echo" style={[styles.userBubble, !pendingDelivered && styles.userBubblePending]}>
-            <Text style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>{pendingPrompt}</Text>
-            <Text style={styles.echoStatus}>{sendReceiptLabel(pendingDelivery, pendingDelivered, lang === 'zh')}</Text>
-          </View>
-          {avatar(<UserAvatar size={26} />, {kind: 'human', agent})}
-        </View>
-      )}
-
       {/* The conversation owns this preference even while the working row is absent. */}
       {status === 'working' && <LiveProgress
         open={liveOpen} onToggle={() => setLiveDisclosure({scope: liveScope, open: !liveOpen})}
@@ -735,6 +760,8 @@ const styles = StyleSheet.create({
   globalFold: {minWidth: 44, minHeight: 44, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center'},
   body: {flex: 1, backgroundColor: '#0D0D0F'},
   content: {padding: 12, gap: 10},
+  terminalLink: {alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, justifyContent: 'center'},
+  terminalLinkText: {color: '#27C7E6', fontSize: 14, fontWeight: '500'},
   center: {paddingVertical: 24, alignItems: 'center'},
   empty: {fontSize: 12.5, textAlign: 'center', lineHeight: 19, paddingHorizontal: 16, paddingVertical: 20},
   stateRow: {flexDirection: 'row', alignItems: 'center', gap: 9},

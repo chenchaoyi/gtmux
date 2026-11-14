@@ -225,6 +225,9 @@ LEG-719a9427867d,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,
 LEG-660aed6940d9,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,356,Test,TestPinKeepsBigNumbersAndLiteralCharacters,False,legacy-not-retrospectively-reviewed
 LEG-7bb100699073,L1,Go core / CLI / server,internal/app/doctor_claudetui_test.go,378,Test,TestCountClaudeAltPanes,False,legacy-not-retrospectively-reviewed
 LEG-57fb770dae38,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,388,Test,TestNullSettingsAreUnreadableNotACrash,False,legacy-not-retrospectively-reviewed
+MAP-69939dd4afa9,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,48,reviewed-selector,TestDCA001DoctorReportsFailedManagedAssociation,False,"DCA-001,DCA-002,DCA-003"
+MAP-bf49b210b7cf,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,79,reviewed-selector,TestDCA002DoctorDistinguishesMissingUnsupportedAndVerified,False,"DCA-001,DCA-002,DCA-003"
+MAP-37c101d9ff65,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,105,reviewed-selector,TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary,False,"DCA-001,DCA-002,DCA-003"
 LEG-d32679597013,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,12,Test,TestRowDiskUsage,False,legacy-not-retrospectively-reviewed
 LEG-59e77ab9e3c1,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,43,Test,TestStorageSeparatesRetainedDeliverablesFromWorkingGrowth,False,legacy-not-retrospectively-reviewed
 LEG-b2647ff53c45,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,79,Test,TestStorageDoesNotFollowExternalSymlinks,False,legacy-not-retrospectively-reviewed
@@ -2674,6 +2677,10 @@ MAP-5ce76c76c48d,L2,reviewed implementation,internal/resume/frontend_first_root_
 MAP-3cee131e3a9d,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,12,reviewed-selector,TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex,False,CBA-006
 MAP-38c7cef4bfeb,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,60,reviewed-selector,TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt,False,CBA-006
 MAP-8b4dde286a90,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,123,reviewed-selector,TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery,False,CBA-006
+MAP-297e9f1c9c7e,L2,reviewed implementation,internal/resume/frontend_index_recovery_test.go,38,reviewed-selector,TestDCA004CurrentProducerRecoversExpiredOwnMissingIndex,False,"DCA-004,DCA-005,DCA-006"
+MAP-208fe3206087,L2,reviewed implementation,internal/resume/frontend_index_recovery_test.go,56,reviewed-selector,TestDCA005RecoveryRejectsConflictAndUnknownEvidence,False,"DCA-004,DCA-005,DCA-006"
+MAP-e75082da0277,L2,reviewed implementation,internal/resume/frontend_index_recovery_test.go,166,reviewed-selector,TestDCA005OwnerReplacementDuringStrictVerification,False,"DCA-004,DCA-005,DCA-006"
+MAP-4f4b76bb489a,L2,reviewed implementation,internal/resume/frontend_index_recovery_test.go,143,reviewed-selector,TestDCA006RecoveryHonorsLeaseAndCancellation,False,"DCA-004,DCA-005,DCA-006"
 MAP-1aa7a26187d9,L2,reviewed implementation,internal/resume/frontend_live_diagnostic_test.go,10,reviewed-selector,TestHRW013LiveDiagnosticsDoNotChangeExistingAuthority,False,HRW-013
 MAP-bfc9dee20cfe,L2,reviewed implementation,internal/resume/frontend_location_test.go,52,reviewed-selector,TestCFL001HeartbeatMigratesOnlyItsCurrentLocation,False,"CFL-001,CFL-002,CFL-003"
 MAP-185a9834a214,L2,reviewed implementation,internal/resume/frontend_location_test.go,99,reviewed-selector,TestCFL001ObservedRootBindsAfterVerifiedLocationChange,False,"CFL-001,CFL-002,CFL-003"
@@ -3104,6 +3111,7 @@ MAP-e2feefc515a3,L3,Browser,internal/server/web/app.test.cjs,1324,reviewed-selec
 MAP-328002d4dfc3,L3,Browser,internal/server/web/app.test.cjs,1351,reviewed-selector,CAS004 stale tile association failure cannot repaint a changed target,False,CAS-004
 MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
 LEG-a24ee8487c6a,G,Browser,internal/server/web/documents.test.cjs,7,test,browser document references and validation are generated from the App contract,False,legacy-not-retrospectively-reviewed
+MAP-e63e89176901,L2,reviewed implementation,internal/server/web/execution-chain.test.cjs,8,reviewed-selector,"CRX-005 adjacent equal process presentations retain count, order and distinct arguments",False,CRX-005
 MAP-452a61a1d04e,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,25,reviewed-selector,AOP004 Restore layout occupies the actual header before the title,False,AOP-004
 MAP-cd44b26604d6,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,31,reviewed-selector,AOP004 switching and restoring keep one control and restore prior dimensions,False,AOP-004
 MAP-f159c36e253b,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,38,reviewed-selector,AOP004 maximized header reserves grid space and names its narrow icon,False,AOP-004
@@ -4959,6 +4967,7 @@ LEG-383eef0af50a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.t
 LEG-27bb0cdcad2a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,136,test.each(),pane denial %s closes tools and clears old records,True,legacy-not-retrospectively-reviewed
 MAP-4811f4f9249d,L3,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,150,reviewed-selector,"CAS005 Detail propagates association failures, preserves history and clears on retry",False,CAS-005
 MAP-761f8dca626a,L3,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,160,reviewed-selector,CAS007 unchanged transcript polls reuse the ChatView element,False,"CAS-005,CAS-007"
+MAP-38405ffb484b,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,169,reviewed-selector,CRX-002 manual reload publishes immediate busy feedback to Chat and Trace until the current read settles,False,"CAS-005,CAS-007,CRX-001,CRX-002"
 LEG-bdaca444f3d6,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,35,test,"lists what HQ did: what the list is for, the 24-hour tally, and every act",False,legacy-not-retrospectively-reviewed
 LEG-9439b91c1a3b,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,43,test,"an act leads where it acted: the session, or the knowledge entry it wrote",False,legacy-not-retrospectively-reviewed
 LEG-06208debd045,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,53,test,"nothing recent says so, and the sheet closes",False,legacy-not-retrospectively-reviewed
@@ -4984,6 +4993,8 @@ LEG-ba61977b1dfa,L2,RN / mobile harness,mobileapp/src/screens/HQOverview.test.ts
 LEG-bd72cd6835fc,L2,RN / mobile harness,mobileapp/src/screens/HQOverview.test.tsx,15,test,`HQ card shows an identical question once and keeps its reason (${zh}/${mode})`,True,legacy-not-retrospectively-reviewed
 LEG-68a52ff962ec,L2,RN / mobile harness,mobileapp/src/screens/HQOverview.test.tsx,28,test,`HQ remaining cards stay discoverable with fallback preview (wide=${wide})`,True,legacy-not-retrospectively-reviewed
 LEG-fd4c523aa2bc,L2,RN / mobile harness,mobileapp/src/screens/HQOverview.test.tsx,49,test,stale overview IDs cannot hide canonical matters or inflate visible counts,False,legacy-not-retrospectively-reviewed
+MAP-c5d7fac97833,L2,reviewed implementation,mobileapp/src/screens/HQReload.test.tsx,30,reviewed-selector,CRX-002 HQ reload is pending immediately and late superseded results cannot settle it,False,"CRX-002,CRX-004"
+MAP-c10de2c7b4d1,L2,reviewed implementation,mobileapp/src/screens/HQReload.test.tsx,38,reviewed-selector,CRX-004 a send receipt invalidates the pre-send read and refreshes once without waiting for poll interval,False,"CRX-002,CRX-004"
 LEG-3791df07c7cd,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,56,test,Board is a static briefing while Knowledge and Usage retain their own destinations,False,legacy-not-retrospectively-reviewed
 LEG-676004ffc6bc,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,73,test.each(),machine %s warning is visible in Board rather than the token card,True,legacy-not-retrospectively-reviewed
 LEG-57bed87db168,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,91,test,a retained resource warning stays labelled as a previous reading after refresh failure,False,legacy-not-retrospectively-reviewed
@@ -5040,6 +5051,7 @@ LEG-a6d4bed85074,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.te
 MAP-f38035a7c2fe,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,112,reviewed-selector,pending HQ question opens the original matter,False,"CT-DRAFT,CT-HQ"
 MAP-f119dbaabb64,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,162,reviewed-selector,late HQ overview and matter responses,False,"CT-DRAFT,CT-HQ"
 MAP-acb5ed213eb0,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,209,reviewed-selector,a prepared HQ question stays scoped,False,"CT-DRAFT,CT-HQ"
+MAP-f74e6b218e01,L2,reviewed implementation,mobileapp/src/screens/HistoryEchoHandoff.test.tsx,41,reviewed-selector,CRR-001,False,CRR-001
 LEG-22a168587a71,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,58,test,"the promotion queue leads, and an overdue one is marked",False,legacy-not-retrospectively-reviewed
 LEG-515eaf56d0e0,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,77,test,"a base nobody has written to says so once, with no sections",False,legacy-not-retrospectively-reviewed
 LEG-a37ada8694d8,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,83,test,an empty topic is not listed,False,legacy-not-retrospectively-reviewed
@@ -5503,6 +5515,7 @@ LEG-897ff1b3d6af,L1,RN / mobile harness,mobileapp/src/state/activityItems.test.t
 LEG-0fe2583adee1,L1,RN / mobile harness,mobileapp/src/state/activityItems.test.ts,64,it,keeps the supervisor out of the listed sessions,False,legacy-not-retrospectively-reviewed
 LEG-7b6d40a0a799,L1,RN / mobile harness,mobileapp/src/state/activityItems.test.ts,69,it,leaves nothing to list when only the supervisor is busy,False,legacy-not-retrospectively-reviewed
 LEG-9aad95d47415,L1,RN / mobile harness,mobileapp/src/state/activityItems.test.ts,75,it,"excludes a watched plain pane too, as the radar list does",False,legacy-not-retrospectively-reviewed
+MAP-114ecc94ce0f,L2,reviewed implementation,mobileapp/src/state/desktopReload.test.tsx,6,reviewed-selector,"CRX-002 external reload retains content, enforces parent deadline and retires old scope",False,CRX-002
 LEG-57d1d15d8d7d,L1,RN / mobile harness,mobileapp/src/state/drafts.test.ts,6,it,keeps a half-typed message under its own pane,False,legacy-not-retrospectively-reviewed
 LEG-5481c3840f32,L1,RN / mobile harness,mobileapp/src/state/drafts.test.ts,18,it,"treats an emptied box as no draft, not a blank one",False,legacy-not-retrospectively-reviewed
 LEG-68384acc2786,L1,RN / mobile harness,mobileapp/src/state/drafts.test.ts,24,it,drops the oldest once more panes hold drafts than the cap,False,legacy-not-retrospectively-reviewed
@@ -5667,6 +5680,7 @@ LEG-e6e7b244f26a,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,43
 LEG-a2ee828f06f8,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,56,it,still slides when you dismiss it by the backdrop — there the motion IS the answer,False,legacy-not-retrospectively-reviewed
 LEG-9ebc3d2fb720,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,63,it,runs the chosen action only after the sheet has actually gone,False,legacy-not-retrospectively-reviewed
 LEG-8b9b6cbb1dad,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,76,it,slides again the next time it opens,False,legacy-not-retrospectively-reviewed
+MAP-bc8cc6baa2e3,L2,reviewed implementation,mobileapp/src/ui/ChatEchoHandoff.test.tsx,9,reviewed-selector,CRX-004 %s confirmed echo keeps the same mounted bubble,False,CRX-004
 MAP-23737a6180b1,L3,reviewed implementation,mobileapp/src/ui/ChatView.association.test.tsx,8,reviewed-selector,CAS005 association banner preserves messages and retries without claiming empty history,False,CAS-005
 LEG-10b2f4580849,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,45,test,"a new turn does not drag a reader out of history, nor tell the host it did",False,legacy-not-retrospectively-reviewed
 LEG-067d2f8bfcb3,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,71,test,a new turn DOES follow for a reader sitting at the tail,False,legacy-not-retrospectively-reviewed
@@ -5764,6 +5778,8 @@ LEG-f6cd838784d1,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,9
 LEG-f57985c2680b,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,110,test,"symbol keys have readable glyphs, 44pt targets and spoken labels",False,legacy-not-retrospectively-reviewed
 LEG-a649b68a0a4a,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,125,test,a terminal key blocks even a text-send callback captured before the next render,False,legacy-not-retrospectively-reviewed
 LEG-582590149374,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,144,test,draft send and expand controls expose actionable native semantics,False,legacy-not-retrospectively-reviewed
+MAP-2dadc610ad24,L2,reviewed implementation,mobileapp/src/ui/ConversationCopy.test.tsx,8,reviewed-selector,CRX-006 %s empty state is concise and its Terminal action works,False,CRX-006
+MAP-3b3304b11ffa,L2,reviewed implementation,mobileapp/src/ui/ConversationReload.test.tsx,8,reviewed-selector,"CRX-001 %s reload is visible, busy and keeps messages",False,CRX-001
 LEG-7d0bd8dfcfd9,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.fallback.test.tsx,9,test,an older binary without the native view keeps the original selectable Text,False,legacy-not-retrospectively-reviewed
 LEG-30e4d7819427,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,20,test,"iOS block copy retains rich text and links, moving only outer layout to the menu wrapper",False,legacy-not-retrospectively-reviewed
 LEG-e5fc93de4577,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,36,test,the labelled accessibility action copies exactly the rendered block and keeps other actions,False,legacy-not-retrospectively-reviewed
@@ -5782,6 +5798,7 @@ LEG-12947bbfb7b6,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,182,
 LEG-0a6ffbb0563a,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,232,test,wrapping preserves recorded layout and code rows use one compact source gutter,False,legacy-not-retrospectively-reviewed
 MAP-85ca470caec6,L3,reviewed implementation,mobileapp/src/ui/DiffTreeModal.test.tsx,11,reviewed-selector,DTV002 native Diff starts with directory summaries and identifies its worktree,False,DTV-002
 MAP-4cea8e8aaefc,L3,reviewed implementation,mobileapp/src/ui/DiffTreeModal.test.tsx,38,reviewed-selector,DTV002 a clean worktree keeps context without showing metadata as code,False,DTV-002
+MAP-b814092cff72,L2,reviewed implementation,mobileapp/src/ui/ExecutionChainPresentation.test.tsx,8,reviewed-selector,"CRX-005 %s equal adjacent process displays are grouped, not hidden",False,CRX-005
 LEG-5d47ba2c967a,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,26,test,fleetHeadline synthesizes a chief-of-staff conclusion,False,legacy-not-retrospectively-reviewed
 LEG-8e4d3be1c3c6,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,41,test,one other session reads in the singular,False,legacy-not-retrospectively-reviewed
 LEG-5a7992f8e39b,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,46,test,no fleet pips are rendered anymore,False,legacy-not-retrospectively-reviewed
@@ -5905,7 +5922,7 @@ LEG-ad8c82ec5913,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal
 LEG-c3fe876fd4ed,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,130,test,"initial loading never claims that facts were not recorded, and failure can retry",False,legacy-not-retrospectively-reviewed
 LEG-e1c1ba198394,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,146,test,a stitched older session never requests the pane’s different current runtime,False,legacy-not-retrospectively-reviewed
 LEG-29360d62fe57,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,155,test,switching targets hides previous facts immediately and rejects late responses,False,legacy-not-retrospectively-reviewed
-LEG-502caf9b17cd,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,170,test.each(),a chain returned for another source never appears or becomes copyable: %j,True,legacy-not-retrospectively-reviewed
+LEG-502caf9b17cd,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,173,test.each(),a chain returned for another source never appears or becomes copyable: %j,True,legacy-not-retrospectively-reviewed
 LEG-41f5ace94205,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,184,test,a current profile reuses its already-read chain and distinguishes an empty record,False,legacy-not-retrospectively-reviewed
 LEG-a79056267e5c,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,194,test,a current header shows recorded ancestry without implying a historical message,False,legacy-not-retrospectively-reviewed
 LEG-6a8742105e11,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,207,test,a failed same-session chain can retry without replacing message facts,False,legacy-not-retrospectively-reviewed
@@ -6028,6 +6045,8 @@ LEG-bd8a819ecc3d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,
 LEG-089667cd0076,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,97,test,"two turns minutes apart share one separator, at the start",False,legacy-not-retrospectively-reviewed
 LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,104,test,"a night and a pause each earn one, the turn between them earns none",False,legacy-not-retrospectively-reviewed
 LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,110,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
+MAP-b9aeb044c6cb,L2,reviewed implementation,mobileapp/src/ui/ToolReaderCopy.test.tsx,34,reviewed-selector,CRR-002,False,CRR-002
+MAP-8a5ed6f91907,L2,reviewed implementation,mobileapp/src/ui/ToolReading.test.tsx,10,reviewed-selector,"TSV-001 command preview is direct, single-command outline absent, original input and result copy remain exact",False,TSV-001
 MAP-b07036b224d7,L3,reviewed implementation,mobileapp/src/ui/ToolSteps.action-facts.test.tsx,7,reviewed-selector,ASA004 actual App rows identify skill web intent and file targets with unchanged inspector input,False,ASA-004
 MAP-14697d90a8f6,L2,reviewed implementation,mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx,10,reviewed-selector,ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace,False,ASA-010
 MAP-2d6c205f3027,L3,reviewed implementation,mobileapp/src/ui/ToolSteps.semantic.test.tsx,7,reviewed-selector,AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets,False,"AOP-001,AOP-003"
@@ -6477,6 +6496,8 @@ LEG-ac99204d2c70,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,68,it,"mea
 LEG-8581910a0160,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,74,it,is invisible to a turn with no usable clock,False,legacy-not-retrospectively-reviewed
 LEG-a7b4039749f8,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,79,it,speaks the reader’s language and honours the gap it is given,False,legacy-not-retrospectively-reviewed
 LEG-fe83c539204c,L2,RN / mobile harness,mobileapp/src/ui/time.test.ts,84,it,holds its own on an empty conversation,False,legacy-not-retrospectively-reviewed
+MAP-bb12d62f506f,L1,reviewed implementation,mobileapp/src/ui/toolOutput.test.ts,2,reviewed-selector,TSV-002 terminal preview removes controls while preserving literal and raw evidence,False,TSV-002
+MAP-3e96471ccce3,L1,reviewed implementation,mobileapp/src/ui/toolOutput.test.ts,10,reviewed-selector,TSV-002 local file URI presentation does not reinterpret foreign or malformed paths,False,TSV-002
 MAP-47222e9f745a,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,27,reviewed-selector,"query details show named parameters, structured results, provenance and complete raw",False,TCV-003
 MAP-3813fdfe8df1,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,75,reviewed-selector,"command, file changes, waits, text/errors and missing/empty results stay distinct",False,TCV-003
 MAP-f94f19b784ef,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.test.ts,152,reviewed-selector,full reads preserve original command and distinct native result references,False,TCV-003
@@ -6670,6 +6691,8 @@ LEG-d2bf02df9c62,L3,Browser,tests/web/client-consistency.test.cjs,61,scenario,"E
 LEG-442537cf0526,L3,Browser,tests/web/client-consistency.test.cjs,82,scenario,Readable external conversations can be dragged into a board panel,False,legacy-not-retrospectively-reviewed
 LEG-1bc6a21bf12a,L3,Browser,tests/web/client-consistency.test.cjs,88,scenario,A late Chat history page cannot enter another conversation,False,legacy-not-retrospectively-reviewed
 MAP-23fe7f83abc2,L3,reviewed implementation,tests/web/command-argv.test.cjs,4,reviewed-selector,ARGV-003 Trace argv scripts,False,ARGV-003
+MAP-44d6ccd7a09b,L3,reviewed implementation,tests/web/conversation-feedback.test.cjs,4,reviewed-selector,CRX-003 visible conversation reload ,False,"CRX-003,CRX-006"
+MAP-fa7c1073837b,L3,reviewed implementation,tests/web/conversation-feedback.test.cjs,30,reviewed-selector,CRX-006 empty conversation uses an actionable short message,False,"CRX-003,CRX-006"
 LEG-53dd1b9dbd14,L3,Browser,tests/web/conversation-map.test.cjs,6,scenario,`Long chat overview lens and navigation at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-cb54ae23ca64,L3,Browser,tests/web/conversation-map.test.cjs,48,scenario,`Overview formatted preview and persistent bookmarks at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-4ea9a2309839,L3,Browser,tests/web/conversation-map.test.cjs,96,scenario,"Overview bookmarks retain unsampled turns, isolate homes and handle cleared storage",False,legacy-not-retrospectively-reviewed
@@ -6740,6 +6763,7 @@ LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Termina
 LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
 MAP-8fceb6b39ede,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005
 MAP-e962ab9f86bc,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,20,reviewed-selector,Recorded query failure retries and large results page without losing full copy,False,TCV-005
+MAP-3324af6a64a6,L3,reviewed implementation,tests/web/tool-reading.test.cjs,5,reviewed-selector,TSV-003 compact recorded command and readable result ,False,TSV-003
 LEG-a36e634d1bf3,L3,Browser,tests/web/trace-folding.test.cjs,28,scenario,"`Trace turn and call folds stay independent, survive refresh, and reveal context detail at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-87996649b4e7,L3,Browser,tests/web/trace-folding.test.cjs,68,scenario,`Settings categories and theme icons remain clear and keyboard accessible at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-f2a40296ac42,L3,Browser,tests/web/trace-history.test.cjs,7,scenario,'trace-history-'+width,True,legacy-not-retrospectively-reviewed

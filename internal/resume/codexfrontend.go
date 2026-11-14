@@ -295,6 +295,9 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 		saved, exists := readFrontend(f.Instance)
 		unique, verified := conversationFrontend(f.Loc)
 		eligible := exists && saved == previous && verified && unique == saved && freshFrontend(saved, true)
+		if !eligible && exists {
+			eligible = producerCanRenewMissingIndex(previous, f, saved)
+		}
 		if err := canceled(); err != nil {
 			return f, err
 		}

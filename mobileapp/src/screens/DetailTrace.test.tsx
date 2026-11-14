@@ -161,6 +161,21 @@ test('CAS007 unchanged transcript polls reuse the ChatView element', async () =>
   await mount();
   const before = tree.root.findByType(ChatView).props;
   client.transcript.mockResolvedValueOnce({turns: [], dropped: 0, unchanged: true, etag: 'one'});
-  await act(async () => before.onRetry());
+  await act(async () => jest.advanceTimersByTime(2000));
   expect(tree.root.findByType(ChatView).props).toBe(before);
+});
+
+
+test('CRX-002 manual reload publishes immediate busy feedback to Chat and Trace until the current read settles', async () => {
+  await mount();
+  const pending = deferred(); client.transcript.mockReturnValueOnce(pending.promise);
+  act(() => tree.root.findByType(ChatView).props.onRetry());
+  expect(tree.root.findByType(ChatView).props.retrying).toBe(true);
+  expect(tree.root.findByType(TraceModal).props.retrying).toBe(true);
+  expect(tree.root.findByType(ChatView).props.turns[0].response).toBe('answer');
+  await act(async () => {});
+  expect(client.transcript.mock.calls.at(-1)[1]).toBeUndefined();
+  await act(async () => pending.resolve({turns: [{prompt:'new',response:'reloaded'}],dropped:0}));
+  expect(tree.root.findByType(ChatView).props.retrying).toBe(false);
+  expect(tree.root.findByType(ChatView).props.turns[0].response).toBe('reloaded');
 });

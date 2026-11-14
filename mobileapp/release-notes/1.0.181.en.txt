@@ -1,0 +1,6 @@
+- Reload failed conversations with a clear button and visible progress.
+- Keep sent messages in place as their conversation history arrives, with shorter delivery status.
+- Read tool commands and results with less clutter; original arguments and full output remain available.
+- Show repeated launch processes with a count, and simplify empty-state messages.
+- Improve diagnosis of unlinked sessions and let verified current clients restore their own missing association.
+- Keep existing knowledge translations when a review changes only the original text.

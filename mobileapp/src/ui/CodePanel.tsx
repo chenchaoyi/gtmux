@@ -28,6 +28,11 @@ export type CodePanelProps = {
   selectable?: boolean;
   selectionColor?: string;
   showCopy?: boolean;
+  compact?: boolean;
+  preferEmbedded?: boolean;
+  headerLabel?: string;
+  copySource?: string;
+  copyLabel?: string;
 };
 
 /** One reading surface for Chat, Trace and the full-screen code reader. */
@@ -48,6 +53,11 @@ export function CodePanel({
   selectable = true,
   selectionColor,
   showCopy = true,
+  compact = false,
+  preferEmbedded = false,
+  headerLabel,
+  copySource,
+  copyLabel,
   onExpand,
 }: CodePanelProps & {
   onExpand?: (state: { partID: string; formatted: boolean }) => void;
@@ -60,9 +70,20 @@ export function CodePanel({
     [source, hint, allowEmbedded],
   );
   const outline = useMemo(() => commandOutline(parts), [parts]);
-  const [outlineOpen, setOutlineOpen] = useState(true);
+  const [outlineOpen, setOutlineOpen] = useState(!compact);
   const [partID, setPartID] = useState<string | null>(initialPartID || null);
-  const part = parts.find(p => p.id === partID) || parts[0];
+  const initial =
+    preferEmbedded && outline.length === 1
+      ? parts.find(p => p.id === outline[0].partID) || parts[0]
+      : parts[0];
+  const part = parts.find(p => p.id === partID) || initial;
+  const copyText = copySource ?? source;
+  const singleCommand =
+    compact &&
+    preferEmbedded &&
+    parts.length === 2 &&
+    parts[1].hint === 'shell' &&
+    outline.length === 1;
   const canFormat =
     allowFormat &&
     [
@@ -103,13 +124,48 @@ export function CodePanel({
       style={[
         styles.root,
         { backgroundColor: dark ? '#1C1C21' : '#F4F4F8', borderColor: border },
+        compact && { borderWidth: 0, backgroundColor: 'transparent' },
       ]}
     >
       <View style={[styles.toolbar, { borderBottomColor: border }]}>
         <ChromeText numberOfLines={1} style={[styles.language, { color: dim }]}>
-          {codeLabel(part.source, part.hint)}
+          {singleCommand && part.id === 'original'
+            ? lang === 'zh'
+              ? '原始参数'
+              : 'Original arguments'
+            : headerLabel ?? codeLabel(part.source, part.hint)}
         </ChromeText>
         <View style={styles.actions}>
+          {singleCommand && (
+            <TouchableOpacity
+              testID={testIDPrefix + '-raw-toggle'}
+              accessibilityRole="button"
+              accessibilityLabel={
+                part.id === 'original'
+                  ? lang === 'zh'
+                    ? '查看命令'
+                    : 'View command'
+                  : lang === 'zh'
+                  ? '查看原始参数'
+                  : 'View original arguments'
+              }
+              accessibilityState={{ expanded: part.id === 'original' }}
+              style={[styles.button, { paddingHorizontal: 8 }]}
+              onPress={() =>
+                setPartID(part.id === 'original' ? parts[1].id : 'original')
+              }
+            >
+              <ChromeText style={{ color: accent, fontSize: 12 }}>
+                {part.id === 'original'
+                  ? lang === 'zh'
+                    ? '命令'
+                    : 'Command'
+                  : lang === 'zh'
+                  ? '参数'
+                  : 'Arguments'}
+              </ChromeText>
+            </TouchableOpacity>
+          )}
           {canFormat && (
             <TouchableOpacity
               testID={testIDPrefix + '-format'}
@@ -160,21 +216,22 @@ export function CodePanel({
               accessibilityState={{ disabled }}
               disabled={disabled}
               accessibilityLabel={
-                lang === 'zh'
-                  ? copied === source
+                copyLabel ??
+                (lang === 'zh'
+                  ? copied === copyText
                     ? '已复制'
                     : '复制调用原文'
-                  : copied === source
+                  : copied === copyText
                   ? 'Copied'
-                  : 'Copy recorded input'
+                  : 'Copy recorded input')
               }
               onPress={() => {
-                Clipboard.setString(source);
-                setCopied(source);
+                Clipboard.setString(copyText);
+                setCopied(copyText);
               }}
               style={styles.button}
             >
-              {copied === source ? (
+              {copied === copyText ? (
                 <CheckIcon size={20} color={dim} />
               ) : (
                 <CopyIcon size={20} color={disabled ? dim : fg} />
@@ -183,7 +240,7 @@ export function CodePanel({
           )}
         </View>
       </View>
-      {outline.length > 0 && (
+      {outline.length > (compact ? 1 : 0) && (
         <View
           style={{
             borderBottomColor: border,
@@ -233,7 +290,7 @@ export function CodePanel({
           )}
         </View>
       )}
-      {parts.length > 1 && (
+      {parts.length > 1 && !singleCommand && (
         <View accessibilityRole="tablist" style={styles.parts}>
           {parts.map(p => (
             <TouchableOpacity

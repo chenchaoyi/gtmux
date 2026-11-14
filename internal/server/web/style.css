@@ -1652,3 +1652,15 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .diff-directory-children{margin-left:12px;padding-left:8px;border-left:1px solid var(--divider)}
 .diff-folder-count{color:var(--fg3);font-size:12px}.diff-partial{padding:8px 12px;color:var(--fg2)}
 .diff-collapse{min-height:44px;padding:0 8px}.diff-summary{flex-wrap:wrap}
+
+/* Conversation read recovery, shared by full and tiled readers. */
+.chat-read-error {display:flex; flex-direction:column; align-items:center; gap:12px; padding:20px 12px; text-align:center;}
+.conversation-reload {min-height:44px; padding:10px 16px; border:1px solid #72727e; border-radius:10px; background:#2c2c32; color:#f2f2f7; font-weight:600; cursor:pointer;}
+.conversation-reload:focus-visible {outline:2px solid #27c7e6; outline-offset:3px;}
+.conversation-reload:disabled {cursor:wait;}
+
+.tool-call-details .code-panel.compact {border:0; background:transparent;}
+.tool-call-details .code-panel.compact .code-panel-toolbar {padding-left:0;}
+.code-raw-toggle {min-height:44px; padding:8px 10px; border:0; border-radius:6px; background:transparent; color:var(--accent-ink); font:inherit; font-size:12px; cursor:pointer;}
+.code-raw-toggle:hover {background:var(--control);}
+.code-raw-toggle:focus-visible {outline:2px solid var(--accent-ink); outline-offset:-2px;}

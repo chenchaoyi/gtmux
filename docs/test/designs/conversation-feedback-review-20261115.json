@@ -1,0 +1,35 @@
+{
+  "id": "conversation-feedback-review-20261115",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; design self-review, not independent fix approval",
+    "date": "2026-11-15",
+    "decision": "Repair the two independently confirmed P2 findings in exact T without changing send or association authority",
+    "notes": "Full independent REVIEW T976f SHA5e3537e841e55870bd791c34696bdce335f1dc71cefb182ec52af90458aaae7b read and verified before new tests/production edits. R1 parent baseline uses recent turns, while child matches merged earlier history; R2 expanded reader loses exact copySource/copyLabel. Keep immutable T, its failures, original valid assertions, strict producer/reader and current KB author's approved source unchanged. First commit this reviewed design, then add actual HQ/Detail/ChatView/history and shared ToolCallDetails/reader component tests. Record exact T UI production bytes with the new tests as genuine target assertion red, not earlier B feature-red. Fix uses the same recent-domain occurrence verdict, then source identity for render-key handoff; loading historical records never acknowledges a send. Exact copy source/label must be frozen with the reader's display state and passed through modal/panel. If expansion remains a page, show a concise page range while copying the full original section. Preserve raw/inline/default reader, attachment order/count, prior identical prompts, late-result/target/attempt/sendID, existing history cancellation and authorization. Synthetic component/native mocks only; no real sessions, clipboard, device, service, KB writes or new transport. Normal forward integration of reviewed KB main and regenerated union indices; no second implementer or changed gates. Accurate new candidate and necessary bounded delta review/CI remain required."
+  },
+  "cases": [
+    {
+      "id": "CRR-001",
+      "layer": "L2",
+      "description": "HQ and Detail sent-message handoff excludes older loaded history on phone/iPad; shared renderer and desktop interfaces retain their read/send contracts",
+      "setup": "Mount actual HQConsoleView or DetailView with actual ChatView/useChatHistory and a controlled synthetic client. Recent ordinal200 differs, earlier ordinal199 has the repeated prompt and identical attachment identity. Defer send receipt, pagination and snapshots independently, with stable exact source record IDs.",
+      "action": "Load earlier then send the same text/image; also finish an in-flight older page after sending. Exercise accepted then true new source, rejected send, and receipt/snapshot ordering. Observe actual mounted user bubble identity and parent send payloads.",
+      "expected": "Exact T UI must fail target assertions: earlier records cannot consume or label the new pending bubble, failure leaves the old row unchanged, and only a true new recent occurrence hands off the same rendered bubble. The new source record is located by exact session/record identity, independently of prepended indices. Original stable sendID/target/attempt and attachment distinction tests remain unchanged; no dispatch or input outside the fixture.",
+      "planned_files": [
+        "mobileapp/src/screens/HistoryEchoHandoff.test.tsx"
+      ]
+    },
+    {
+      "id": "CRR-002",
+      "layer": "L2",
+      "description": "Expanded tool readers keep complete recorded copy bytes on phone/iPad Chat and Trace; Web raw/copy behavior remains covered by existing browser cases",
+      "setup": "Mount actual shared ToolCallDetails through Chat/Trace tool entry and CodeBlock\u2192CodeReaderModal\u2192CodePanel, with mocked clipboard/native shell only. Use ANSI text and output larger than one call page with a unique final marker, plus Raw/inline and ordinary reader controls.",
+      "action": "Expand the recorded result and press the actual modal copy button, switch inline pages and Raw, then copy ordinary code through the same reader. Compare copied strings with complete original section bytes and inspect the modal's concise page-range label.",
+      "expected": "Exact T must fail ANSI and full-result copy target assertions. New expanded copy equals the complete recorded section including escapes and last marker, regardless of readable display/pagination; copy label stays truthful and reader snapshot stays internally consistent. Inline/Raw/default reader copies and existing code formatting/pagination remain valid. No real system clipboard, model success claim, file access or execution.",
+      "planned_files": [
+        "mobileapp/src/ui/ToolReaderCopy.test.tsx"
+      ]
+    }
+  ],
+  "seal": "f3d0705423cb07c8a99f368eca1334e626af8bb6309c9760b7af7be13dd28ee4"
+}

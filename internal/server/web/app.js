@@ -41,7 +41,7 @@
     readLanes.delete(key); lane.cancel();
   }
   function cancelReads() { Array.from(readLanes.keys()).forEach(cancelRead); }
-  function runRead(key, work, timeoutMs, onTimeout) {
+  function runRead(key, work, timeoutMs, onTimeout, onSettled) {
     var held = readLanes.get(key);
     if (held && held.epoch === viewEpoch && held.credential === token) return;
     cancelRead(key);
@@ -61,7 +61,7 @@
     try { request = work(controller.signal); } catch (error) { request = Promise.reject(error); }
     Promise.race([request, deadline]).catch(function () {}).finally(function () {
       clearTimeout(timer);
-      if (readLanes.get(key) === lane) readLanes.delete(key);
+      if (readLanes.get(key) === lane) { readLanes.delete(key); if (onSettled) onSettled(); }
     });
   }
   var term = null, fit = null, lastText = '', curPane = null, lastSig = '', theme = null;
@@ -143,8 +143,8 @@
       }).catch(function () {
         go.disabled = false;
         go.textContent = T('Open', '打开');
-        why.textContent = T('Could not use this code. Check it and try again. If it has expired or was already used, get a new code.',
-                            '无法使用此码。请核对后重试；如果已过期或已用过，请获取新码。');
+        why.textContent = T('Could not use this code. Check it or request a new one.',
+                            '未能使用此验证码，请检查或重新获取。');
         why.hidden = false;
         input.select();
       });
@@ -1657,7 +1657,7 @@
     sheet.foot.hidden = false; var original = document.createElement('button'); original.type = 'button'; original.className = 'dialog-secondary'; original.textContent = T('Use original', '使用原图'); original.onclick = sheet.close; sheet.foot.appendChild(original);
     var scale = document.createElement('button'); scale.type = 'button'; scale.className = 'dialog-secondary'; scale.textContent = T('Scale to 4096 px', '缩小至 4096 像素'); scale.hidden = true; sheet.foot.appendChild(scale);
     scale.onclick = function () { var ratio = 4096 / Math.max(canvas.width, canvas.height); if (ratio >= 1) return; strokes.forEach(function (stroke) { stroke.points.forEach(function (point) { point.x *= ratio; point.y *= ratio; }); }); canvas.width = Math.round(canvas.width * ratio); canvas.height = Math.round(canvas.height * ratio); loaded = true; done.disabled = false; scale.hidden = true; message.textContent = T('Export size: ', '导出尺寸：') + canvas.width + ' × ' + canvas.height; draw(); };
-    function exportFailure() { message.textContent = T('Export failed. Your marks are preserved. Retry, use the original, or choose a smaller export.', '导出失败，标注已保留。可重试、使用原图，或选择缩小尺寸。'); scale.hidden = Math.max(canvas.width, canvas.height) <= 4096; done.disabled = false; }
+    function exportFailure() { message.textContent = T('Export failed. Your marks are kept. Try a smaller size.', '导出失败，标注已保留。可缩小后重试。'); scale.hidden = Math.max(canvas.width, canvas.height) <= 4096; done.disabled = false; }
     var done = document.createElement('button'); done.type = 'button'; done.className = 'dialog-primary'; done.textContent = T('Done', '完成'); done.disabled = true; sheet.foot.appendChild(done);
     done.onclick = function () {
       if (!strokes.length) { sheet.close(); return; } done.disabled = true;
@@ -1991,6 +1991,7 @@
     chatTimer = setInterval(pollConversation, 2500);
   }
   function pollConversation() {
+    var reload = chatReload;
     if (!readableConversation(curAgent) || $('chat').hidden) return;
     pollConversationStatus();
     runRead(
@@ -2028,7 +2029,7 @@
           .then(function (turns) {
             if (!current(true)) return;
             setConn(true);
-            externalError = '';
+            externalError = ''; chatReadFailure = '';
             hideChatLoader();
             if (turns !== null) renderChat(turns || []);
           })
@@ -2036,15 +2037,15 @@
             if (current()) {
               setConn(false);
               hideChatLoader();
-              externalError = T('Could not update this conversation. Retry shortly.', '暂时无法更新此对话，将稍后重试。');
+              chatReadFailure = 'failed';
               drawChat(lastTurns);
             }
           });
       },
       15000,
       function () {
-        setConn(false);
-      }
+        setConn(false); hideChatLoader(); chatReadFailure = 'failed'; drawChat(lastTurns);
+      }, function () {settleConversationReload(reload);}
     );
     if (!externalBusy)
       runRead('follow', function (signal) {
@@ -2207,22 +2208,38 @@
   // ---- chat (对话 mode) -------------------------------------------------
   // Renders the parsed transcript (GET /api/transcript) as prompt → collapsed
   // steps → final response, mirroring the phone's ChatView. Input uses the shared composer.
-  var chatReadFailure = '';
+  var chatReadFailure = '', chatReload = null;
   function chatReadResponse(r) {
     if (r.ok) return r.json();
     return r.json().catch(function () { return null; }).then(function (body) {
       throw Object.assign(new Error('transcript'), {association: r.status === 409 && body && body.code === 'conversation-unassociated'});
     });
   }
-  function lastKnownBanner() { return el('p', 'chat-history', T('Last-known conversation, read only. The current association is unconfirmed; continue in Terminal.', '以下为上次关联的对话，只供查看；当前会话关联待确认，请在终端继续。')); }
-  function chatReadBanner(reason, retry) {
-    var box = el('div', 'chat-history chat-read-error'); box.setAttribute('role', 'alert');
+  function lastKnownBanner() { return el('p', 'chat-history', T('Last-known conversation · Read only', '上次关联的对话 · 只读')); }
+  function chatReadBanner(reason, retry, state) {
+    var busy = state && state.busy;
+    var box = el('div', 'chat-history chat-read-error'); box.setAttribute('role', 'status');
     box.appendChild(el('span', '', reason === 'association'
-      ? T('Conversation association is unavailable. Existing messages are kept; switch to Terminal to view this session.', '会话关联暂不可用，无法确认这段终端对应的对话。当前内容已保留，可切换到终端查看。')
+      ? T('Conversation association unavailable.', '会话关联暂不可用。')
+      : state && state.attempted && !busy ? T('Still unable to load. Check the connection and try again.', '仍无法加载，请检查连接后重试。')
       : T('Could not load the conversation. Existing messages are kept.', '对话暂时无法载入，当前内容已保留。')));
-    var button = el('button', '', T('Retry', '重试')); button.type = 'button'; button.onclick = retry; box.appendChild(button); return box;
+    var button = el('button', 'conversation-reload', busy ? T('Reloading…', '正在重新加载…') : T('Reload conversation', '重新加载对话'));
+    button.type = 'button'; button.disabled = !!busy; button.setAttribute('aria-busy', String(!!busy));
+    button.onclick = function () { if (!busy) retry(); }; box.appendChild(button); return box;
+  }
+  function reloadConversation() {
+    chatReload = {scope: chatScope(curAgent), credential: token, busy: true, attempted: true};
+    cancelRead(readableConversation(curAgent) ? 'conversation' : 'chat');
+    externalEtag = ''; chatSig = ''; drawChat(lastTurns);
+    if (readableConversation(curAgent)) pollConversation(); else pollChat();
+  }
+  function settleConversationReload(reload) {
+    if (reload && reload === chatReload && reload.scope === chatScope(curAgent) && reload.credential === token && reload.busy) {
+      reload.busy = false; if (chatReadFailure) {chatSig = ''; drawChat(lastTurns);}
+    }
   }
   function pollChat() {
+    var reload = chatReload;
     pollConversationStatus();
     runRead('chat', function (signal) {
       if (!curPane) return;
@@ -2237,7 +2254,7 @@
         return chatReadResponse(r);
       }).then(function (turns) { if (turns === null || !current(true)) return; setConn(true); hideChatLoader(); chatReadFailure = ''; renderChat(turns || []); })
         .catch(function (error) { if (current()) { hideChatLoader(); chatReadFailure = error.association ? 'association' : 'failed'; renderChat(lastTurns); } });
-    }, 15000, function () { setConn(false); });
+    }, 15000, function () { setConn(false); hideChatLoader(); chatReadFailure = 'failed'; chatSig = ''; renderChat(lastTurns); }, function () {settleConversationReload(reload);});
   }
 
   // The same bounded history contract and stable merge as App/Trace. Each reader
@@ -2337,12 +2354,12 @@
     }
 
     if (observedReadOnly(a)) col.appendChild(lastKnownBanner());
-    if (chatReadFailure) col.appendChild(chatReadBanner(chatReadFailure, pollChat));
+    if (chatReadFailure) col.appendChild(chatReadBanner(chatReadFailure, reloadConversation, chatReload && chatReload.scope === chatScope(curAgent) && chatReload.credential === token ? chatReload : null));
     if (!chatReadFailure && !turns.length && !(pendingPrompts[curPane] || []).length) {
       var e = document.createElement('div'); e.className = 'chat-empty';
-      e.textContent = readableConversation(a) ? T('No recorded conversation yet.','尚无已记录的对话。') : T('No conversation yet. Switch to Terminal to see the current screen.',
-        '暂无对话记录。可切换到「终端」查看当前屏幕。');
+      e.textContent = readableConversation(a) ? T('No messages yet.','暂无消息。') : T('No messages yet. Start a conversation.', '暂无对话，开始聊聊吧。');
       col.appendChild(e);
+      if (hasPane(a)) {var terminal = el('button', 'conversation-reload', T('View Terminal', '查看终端')); terminal.type = 'button'; terminal.onclick = function () {setMode('term');}; col.appendChild(terminal);}
     }
     var history = chatHistoryControl(chatHistory, a, function () { lastTurns = chatHistory.turns; chatSig = JSON.stringify([lastTurns, chatReadFailure]); drawChat(lastTurns); }, function () { return chatHistory && chatHistory.scope === chatScope(a) && chatScope(curAgent) === chatScope(a) && !$('chat').hidden; });
     if(history) col.appendChild(history);
@@ -2424,8 +2441,8 @@
         var inspector = el('div', 'step-inspector'), pending = false, loaded = !window.GtmuxTrace.toolDetailRefs(s).length, formatted = true, rendered = false;
         function renderInput(message) {
           rendered = true; inspector.replaceChildren();
-          var meta = el('dl', 'step-meta'); meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));
-          if (s.workdir) { meta.appendChild(el('dt', '', T('Working directory', '工作目录'))); meta.appendChild(el('dd', '', s.workdir)); } inspector.appendChild(meta);
+          var meta = el('dl', 'step-meta'); if (!s.call) {meta.appendChild(el('dt', '', T('Tool', '工具'))); meta.appendChild(el('dd', 'step-name', s.title || 'tool'));}
+          if (s.workdir) { meta.appendChild(el('dt', '', T('Working directory', '工作目录'))); meta.appendChild(el('dd', '', window.GtmuxTrace.displayWorkdir(s.workdir))); } inspector.appendChild(meta);
           var input = s.input || s.detail || '';
           var inputLabel = !s.input ? T('Recorded detail','已记录详情') : s.input_kind === 'changes' ? T('Recorded changes','已记录修改') : s.input_kind === 'code' ? T('Recorded code','已记录代码') : s.input_kind === 'command' ? T('Recorded command','已记录命令') : ['parameters','arguments'].includes(s.input_kind) ? T('Recorded parameters','已记录参数') : T('Recorded input','已记录输入');
           var codePanel = s.call ? toolDetailsEl(s,false,!loaded) : codePanelEl(input, {hint: s.input_kind === 'code' || s.operation === 'code' ? 'javascript' : s.input_kind === 'command' ? 'shell' : s.input_kind,
@@ -2459,13 +2476,15 @@
       var part=el('section','call-section'), head=el('div','call-section-head'), body=el('div','call-section-body'), page=0;
       part.dataset.callSection=section.id; head.appendChild(el('h4','',section.label));
       if(section.hint!=='notice' && !disabled) head.appendChild(clipboardAction(T('Copy full ','复制完整')+section.label,'copy',section.source));
-      part.appendChild(head); part.appendChild(body); root.appendChild(part);
+      head.hidden = !section.rows && section.hint !== 'notice'; part.appendChild(head); part.appendChild(body); root.appendChild(part);
       function draw() {
         body.replaceChildren();
         if(section.rows) { var rows=el('dl','call-parameters'); section.rows.forEach(function(row){rows.appendChild(el('dt','',row.label));rows.appendChild(el('dd','',row.value));}); body.appendChild(rows); return; }
         if(section.hint==='notice') {body.appendChild(el('p','call-notice',section.source));return;}
-        var view=model.callPage(section.source,page);
-        body.appendChild(codePanelEl(view.source,{hint:section.hint,copy:false,allowFormat:!raw&&view.pages===1&&!section.verbatim,formatted:!raw&&view.pages===1&&!section.verbatim,embedded:section.id==='input',disabled:disabled}));
+        var terminal=['command','read','list','search'].includes(step.operation || '');
+        var display=section.id.indexOf('result')===0 && section.hint==='text' ? model.readableToolOutput(section.source,terminal) : section.source;
+        var view=model.callPage(display,page);
+        body.appendChild(codePanelEl(view.source,{hint:section.hint,copy:true,copySource:section.source,copyLabel:T('Copy full ','复制完整')+section.label,headerLabel:section.id==='input'&&terminal?T('Command','命令'):section.label,compact:!raw,preferEmbedded:section.id==='input'&&terminal,allowFormat:!raw&&view.pages===1&&!section.verbatim,formatted:!raw&&view.pages===1&&!section.verbatim,embedded:section.id==='input',disabled:disabled}));
         if(view.pages>1) {var nav=el('div','call-pages'), prev=el('button','','‹'), next=el('button','','›');prev.type=next.type='button';prev.setAttribute('aria-label',T('Previous page','上一页'));next.setAttribute('aria-label',T('Next page','下一页'));prev.disabled=view.page===0;next.disabled=view.page===view.pages-1;prev.onclick=function(){page--;draw();};next.onclick=function(){page++;draw();};nav.append(prev,el('span','',(view.page+1)+' / '+view.pages),next);body.appendChild(nav);}
       } draw();
     }); return root;
@@ -2817,31 +2836,41 @@
     }
     read();
   }
+  function groupProfileChain(chain) {
+    var groups = [];
+    chain.slice(0, 8).forEach(function (p) {
+      if (!p || typeof p.name !== 'string') return;
+      var path = typeof p.path === 'string' ? p.path : undefined;
+      var args = Array.isArray(p.arguments) ? p.arguments.filter(function (v) {return typeof v === 'string';}).slice(0,16) : [];
+      var previous = groups[groups.length - 1];
+      if (previous && previous.name === p.name && previous.path === path && JSON.stringify(previous.arguments) === JSON.stringify(args)) previous.count++;
+      else groups.push({name:p.name, path:path, arguments:args, count:1});
+    });
+    return groups;
+  }
   function renderProfileChain(sheet, source, profile) {
     var section = el('details', 'profile-provenance profile-chain'), content = el('div');
-    section.appendChild(el('summary', '', T('Execution chain', '执行链'))); section.appendChild(content); sheet.body.appendChild(section);
+    section.appendChild(el('summary', '', T('Launch processes', '启动进程'))); section.appendChild(content); sheet.body.appendChild(section);
     var turn = source.profileTurn, credential = token, closed = false, controller, timer, loaded = false;
     var priorClose = sheet.onClose; sheet.onClose = function () { closed = true; clearTimeout(timer); if (controller) controller.abort(); if (priorClose) priorClose(); };
     function current() { return !closed && sheet.el.open && token === credential; }
     function render(value) {
       if (!current()) return; content.textContent = '';
       var chain = value.historical === false && Array.isArray(value.execution_chain) ? value.execution_chain : [];
-      content.appendChild(el('p', '', chain.length ? turn ? T('Latest observations for this conversation, not the processes at this message’s time.', '当前会话的最近观察，不代表这条消息当时的进程。') : T('Recorded launch ancestry; processes may have changed since.', '最近记录的启动链；进程可能已有变化。') : T('No launch chain has been recorded for this conversation.', '此会话尚未记录启动链。')));
-      if (chain.length && Number.isFinite(value.chain_observed_at)) content.appendChild(el('p', '', new Date(value.chain_observed_at).toLocaleString()));
-      chain.slice(0, 16).forEach(function (process) {
+      content.appendChild(el('p', '', chain.length ? T('Last observed', '最近采集') + (Number.isFinite(value.chain_observed_at) && value.chain_observed_at > 0 ? ' · ' + new Date(value.chain_observed_at).toLocaleString() : '') : T('No process details available.', '暂无进程信息。')));
+      groupProfileChain(chain).forEach(function (process) {
         if (!process || typeof process.name !== 'string') return;
         var command = [typeof process.path === 'string' ? process.path : process.name].concat(Array.isArray(process.arguments) ? process.arguments.filter(function (v) { return typeof v === 'string'; }) : []).join(' ');
-        var row = el('div', 'profile-process'); row.appendChild(el('strong', '', process.name));
+        var row = el('div', 'profile-process'); row.appendChild(el('strong', '', process.name + (process.count > 1 ? ' ×' + process.count : '')));
         var line = el('div', 'profile-command'), status = el('span', 'action-status'), button = el('button', 'profile-copy'); status.setAttribute('role', 'status');
-        button.type = 'button'; button.innerHTML = uiIcon('copy'); button.setAttribute('aria-label', T('Copy sanitized command observation', '复制脱敏命令记录'));
+        button.type = 'button'; button.innerHTML = uiIcon('copy'); button.setAttribute('aria-label', T('Copy process details', '复制进程信息'));
         button.onclick = function () { copyWithFeedback(button, command, button.getAttribute('aria-label'), 'copy', status); };
         line.appendChild(el('pre', '', command)); line.appendChild(button); row.appendChild(line); row.appendChild(status); content.appendChild(row);
       });
-      if (chain.length) content.appendChild(el('p', '', T('Other arguments omitted. These observations are not replayable commands.', '非展示参数已隐藏，记录不可直接重放。')));
     }
     function failed() {
       if (!current()) return; content.textContent = '';
-      content.appendChild(el('p', '', T('Launch-chain observations could not be verified. Try again.', '暂时无法核对启动链，请重试。')));
+      content.appendChild(el('p', '', T('Process details could not be verified.', '未能加载进程信息。')));
       var retry = el('button', 'dialog-secondary', T('Retry', '重试')); retry.type = 'button'; retry.onclick = read; content.appendChild(retry);
     }
     function read() {
@@ -3003,17 +3032,21 @@
   function codePanelEl(source, options) {
     options = options || {};
     var parts = options.embedded === false ? [{id: 'original', source: source, hint: options.hint, path: ''}] : window.GtmuxCodeFormat.codeParts(source, options.hint);
-    var current = parts[0], formatted = options.formatted !== false;
-    var root = el('section', 'code-panel'), toolbar = el('div', 'step-toolbar code-panel-toolbar');
+    var outline=window.GtmuxCodeFormat.commandOutline(parts);
+    var current = options.preferEmbedded && outline.length===1 ? parts.find(function(p){return p.id===outline[0].partID;}) || parts[0] : parts[0], formatted = options.formatted !== false;
+    var singleCommand=options.compact && options.preferEmbedded && parts.length===2 && parts[1].hint==='shell' && outline.length===1;
+    var root = el('section', 'code-panel' + (options.compact ? ' compact' : '')), toolbar = el('div', 'step-toolbar code-panel-toolbar');
     var language = el('span', 'code-language'); toolbar.appendChild(language);
+    var rawToggle;
+    if(singleCommand) {rawToggle=el('button','code-raw-toggle','');rawToggle.type='button';rawToggle.onclick=function(){current=current.id==='original'?parts[1]:parts[0];draw();};toolbar.appendChild(rawToggle);}
     var format;
     if (options.allowFormat !== false) {
       format = el('button', 'code-format', '{ }'); format.type = 'button'; if(options.focusKey)format.dataset.chatFocus=options.focusKey+'-format';
       format.onclick = function () { formatted = !formatted; draw(); }; toolbar.appendChild(format);
     }
-    if (!options.disabled && options.copy !== false) toolbar.appendChild(clipboardAction(T('Copy recorded input', '复制调用原文'), '', source, options.focusKey && options.focusKey + '-copy'));
+    if (!options.disabled && options.copy !== false) toolbar.appendChild(clipboardAction(options.copyLabel || T('Copy recorded input', '复制调用原文'), '', options.copySource === undefined ? source : options.copySource, options.focusKey && options.focusKey + '-copy'));
     root.appendChild(toolbar);
-    var tabs = el('div', 'code-parts'); tabs.setAttribute('role', 'tablist'); tabs.hidden = parts.length < 2;
+    var tabs = el('div', 'code-parts'); tabs.setAttribute('role', 'tablist'); tabs.hidden = parts.length < 2 || singleCommand;
     var tabButtons = parts.map(function(part) {
       var name = part.id === 'original' ? T('Full call', '完整调用') : window.GtmuxCodeReading.codeLabel(part.source, part.hint) + ' · ' + (part.path || T('Script', '脚本'));
       var button = el('button', '', name); button.type = 'button'; button.setAttribute('role', 'tab'); if(options.focusKey)button.dataset.chatFocus=options.focusKey+'-part-'+part.id;
@@ -3026,8 +3059,8 @@
       current = parts[next]; draw(); tabButtons[next].focus();
     };
     var outline=window.GtmuxCodeFormat.commandOutline(parts);
-    if(outline.length){
-      var commands=el('details','code-call-outline');commands.open=true;
+    if(outline.length>(options.compact?1:0)){
+      var commands=el('details','code-call-outline');commands.open=!options.compact;
       commands.appendChild(el('summary','',T('Commands in code','代码内命令')+' · '+outline.length));
       var list=el('div','code-call-commands');
       outline.forEach(function(item){var button=el('button','code-call-command');button.type='button';button.appendChild(activityIcon(item.operation));button.appendChild(el('span','',item.preview));button.onclick=function(){current=parts.find(function(p){return p.id===item.partID;});draw();};list.appendChild(button);});
@@ -3039,8 +3072,9 @@
     if(options.focusKey) pre.dataset.chatFocus = options.focusKey;
     root.appendChild(pre);
     function draw() {
-      language.textContent = window.GtmuxCodeReading.codeLabel(current.source, current.hint);
-      if(format) format.hidden = !['JavaScript','TypeScript','JSON','HTML','CSS','YAML','Python'].includes(language.textContent);
+      var syntax=window.GtmuxCodeReading.codeLabel(current.source,current.hint); language.textContent = singleCommand && current.id==='original' ? T('Original arguments','原始参数') : options.headerLabel || syntax;
+      if(rawToggle) {rawToggle.textContent=current.id==='original'?T('Command','命令'):T('Arguments','参数');rawToggle.setAttribute('aria-label',current.id==='original'?T('View command','查看命令'):T('View original arguments','查看原始参数'));rawToggle.setAttribute('aria-expanded',String(current.id==='original'));}
+      if(format) format.hidden = !['JavaScript','TypeScript','JSON','HTML','CSS','YAML','Python'].includes(syntax);
       if(format) { format.setAttribute('aria-pressed',String(formatted)); format.title = T(formatted ? 'Show original' : 'Format code', formatted ? '查看原文' : '格式化代码'); format.setAttribute('aria-label',format.title); }
       tabButtons.forEach(function(button,i) { var selected = parts[i] === current; button.setAttribute('aria-selected',String(selected)); button.tabIndex = selected ? 0 : -1; });
       renderCode(pre, formatted && options.allowFormat !== false ? window.GtmuxCodeFormat.formatCode(current.source,current.hint || window.GtmuxCodeReading.codeLanguage(current.source)) : current.source,current.hint);
@@ -3704,9 +3738,14 @@
     });
   }
 
+  function reloadTileConversation(t) {
+    t.chatReload = {busy: true, attempted: true}; cancelRead('tile:' + t.id);
+    t.chatSig = ''; renderTileChat(t, t.lastTurns || []); tilePollChat(t);
+  }
   function tilePollChat(t) {
     if (t.removed || !WB.on) return;
     if (t.mode === 'chat') { var host = t.body.querySelector('.conversation-main'); if (host) syncChatLive(host, t.agent, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; }); }
+    var reload = t.chatReload, readEpoch = t.readEpoch, readScope = chatScope(t.agent);
     runRead('tile:' + t.id, function (signal) {
       var epoch = t.readEpoch, scope = chatScope(t.agent);
       return api(transcriptPath(t.agent), {signal: signal}).then(function (r) {
@@ -3725,6 +3764,12 @@
           t.chatReadFailure = error.association ? 'association' : 'failed'; t.chatSig = ''; renderTileChat(t, t.lastTurns || []);
         }
       });
+    }, 15000, function () {
+      if (!t.removed && readEpoch === t.readEpoch && readScope === chatScope(t.agent) && t.mode === 'chat') {t.chatReadFailure = 'failed'; t.chatSig = ''; renderTileChat(t, t.lastTurns || []);}
+    }, function () {
+      if (!t.removed && reload && reload === t.chatReload && readEpoch === t.readEpoch && readScope === chatScope(t.agent) && t.mode === 'chat') {
+        reload.busy = false; if (t.chatReadFailure) {t.chatSig = ''; renderTileChat(t, t.lastTurns || []);}
+      }
     });
   }
 
@@ -3736,7 +3781,7 @@
     var top = old ? old.scrollTop : 0, anchor=readingAnchor(old), prepended=hasPrependedTurns(old,turns,t.agent);
     var wrap = document.createElement('div'); wrap.className = 'tile-chat';
     if (observedReadOnly(t.agent)) wrap.appendChild(lastKnownBanner());
-    if (t.chatReadFailure) wrap.appendChild(chatReadBanner(t.chatReadFailure, function () { tilePollChat(t); }));
+    if (t.chatReadFailure) wrap.appendChild(chatReadBanner(t.chatReadFailure, function () { reloadTileConversation(t); }, t.chatReload));
     if (!t.chatReadFailure && !turns.length && !(pendingPrompts[t.id] || []).length) { var e = document.createElement('div'); e.className = 'chat-empty'; e.textContent = T('No conversation yet.', '还没有对话。'); wrap.appendChild(e); }
     var history = chatHistoryControl(t.history, t.agent, function () { t.chatSig = JSON.stringify(t.history.turns); renderTileChat(t, t.history.turns); }, function () { return WB.on && !t.removed && t.mode === 'chat' && t.history && t.history.scope === chatScope(t.agent); });
     if(history) wrap.appendChild(history);
