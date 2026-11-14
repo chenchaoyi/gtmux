@@ -297,7 +297,11 @@ func appendKnowledgeOpLocked(op knowledgeOp) (bool, error) {
 // readKnowledgeOps loads the ledger (empty when absent). A malformed line is
 // skipped, never fatal — one bad write must not take the whole base hostage.
 func readKnowledgeOps() ([]knowledgeOp, error) {
-	f, err := os.Open(knowledgeLedgerPath())
+	return readKnowledgeOpsFrom(knowledgeLedgerPath())
+}
+
+func readKnowledgeOpsFrom(path string) ([]knowledgeOp, error) {
+	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil

@@ -1,0 +1,24 @@
+{
+  "id": "doctor-distill-count-20261115",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; design self-review, not independent approval",
+    "date": "2026-11-15",
+    "decision": "Use the existing settled-candidate projection for doctor pending counts; retain original observations and maintenance contracts",
+    "notes": "Read and SHA-verified maintenance-count-clarification report8bf587eb/EVIDENCEe1de3ffb/MANIFEST1e7d1ef6. Accurate mainN7fad420d rowHQKnowledge counts raw nonblank lines; official capture and sensor filter parsed retained observations by committed accepted/dismissed source IDs. Reuse exactly that projection, without a third counter, scheduling changes, native/account reads, real KB fixture writes or cleanup. Expose a read-only directory-scoped form of the existing projection by factoring its current file opens; current capture/sensor/writer wrappers still resolve the same Dir and same parsers. Factor doctor row to accept its already-computed knowledge directory, so actual Go tests can use t.TempDir without changing HOME, XDG, real HQ identity or global path hooks. First run the new assertions with unchanged N raw-count logic behind this directory seam, then replace only its count with the formal projection. That negative control is exact N counting semantics plus the explicit directory seam, not an oldN binary. Preserve topic/empty-state behavior and unchanged source/ledger bytes; I/O errors cannot be presented as a successful numeric count. No App/native source or181version-note change. Design is committed before seam, tests and repair. Full core and exact final source/history/CI evidence, first failures and existing U/N gates retained; same72 necessary delta review and only one181 release after actual final main gates."
+  },
+  "cases": [
+    {
+      "id": "DKC-001",
+      "layer": "L2",
+      "description": "CLI doctor knowledge row counts unsettled parsed candidates using the same projection as capture; retained settled sources never appear as new pending work",
+      "setup": "Actual doctor directory-scoped row and knowledge projection with a synthetic topic, retained JSONL observations and settlement ledger under t.TempDir. No environment HOME change or production state access. Include all-settled accepted/dismissed, mixed pending/settled/malformed/blank, legacy observations without IDs, empty sources and absent files.",
+      "action": "Read the row and official projection, assert explicit expected pending count and topic state; compare directory inventory and exact source/ledger/topic bytes before and after. Run unchanged N raw-count logic with the explicit directory seam as the red control, then the minimal projection-based repair.",
+      "expected": "All-settled retained lines report0; mixed parsed unsettled rows report the exact remaining count, matching official capture semantics. Invalid JSON and blanks are ignored, legacy IDs remain read-time-only, and no source, ledger, receipt, lock or marker is created/modified/deleted. Missing sources are empty; real read failures are visibly unavailable rather than an invented pending count. Both English and Chinese notes remain concise. The old count must fail the genuine settled/mixed assertions; existing capture/sensor and translation/receipt contracts remain unchanged.",
+      "planned_files": [
+        "internal/app/doctor_knowledge_count_test.go"
+      ]
+    }
+  ],
+  "seal": "e46794a2f589dfb638a333e2f25de13673f8eb668eb3725616e2b89f4c859e2e"
+}

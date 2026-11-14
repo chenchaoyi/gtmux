@@ -232,7 +232,11 @@ func candidateDigest(c Candidate) string {
 // readCandidateSources retains originals. Legacy IDs are derived without a rewrite;
 // occurrence numbers distinguish identical legacy observations.
 func readCandidateSources() ([]Candidate, error) {
-	f, err := os.Open(pendingDistillPath())
+	return readCandidateSourcesFrom(pendingDistillPath())
+}
+
+func readCandidateSourcesFrom(path string) ([]Candidate, error) {
+	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -267,11 +271,18 @@ func readCandidateSources() ([]Candidate, error) {
 
 // readCandidates is a projection: only a committed settlement removes an ID.
 func readCandidates() ([]Candidate, error) {
-	all, err := readCandidateSources()
+	return ReadPendingCandidatesAt(Dir())
+}
+
+// ReadPendingCandidatesAt reads the same pending projection used by capture and
+// its sensor from an explicit knowledge directory. Retained sources and ledger
+// settlements are read only; legacy identities are never written back.
+func ReadPendingCandidatesAt(dir string) ([]Candidate, error) {
+	all, err := readCandidateSourcesFrom(filepath.Join(dir, ".pending-distill.jsonl"))
 	if err != nil {
 		return nil, err
 	}
-	ops, err := readKnowledgeOps()
+	ops, err := readKnowledgeOpsFrom(filepath.Join(dir, ".ledger.jsonl"))
 	if err != nil {
 		return nil, err
 	}

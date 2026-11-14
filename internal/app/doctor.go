@@ -1517,8 +1517,11 @@ func rowHQBoard(now int64) dcheck {
 // rowHQKnowledge reports the knowledge base's shape: curated topics + how much is queued
 // for the next distill pass (the learning loop's inbox).
 func rowHQKnowledge() dcheck {
+	return rowHQKnowledgeAt(knowledge.Dir())
+}
+
+func rowHQKnowledgeAt(kdir string) dcheck {
 	label := i18n.Tr("knowledge base", "知识库")
-	kdir := filepath.Join(state.HQHome(), "knowledge")
 	topics := 0
 	entries, _ := os.ReadDir(kdir)
 	for _, e := range entries {
@@ -1530,25 +1533,13 @@ func rowHQKnowledge() dcheck {
 		return dcheck{stInfo, label, i18n.Tr("none", "无"),
 			i18n.Tr("no knowledge topics yet; HQ files its lessons here", "尚无知识主题，HQ 会在此沉淀教训")}
 	}
-	pending := countNonEmptyLines(filepath.Join(kdir, ".pending-distill.jsonl"))
 	val := fmt.Sprintf(i18n.Tr("%d topics", "%d 主题"), topics)
-	note := fmt.Sprintf(i18n.Tr("curated lessons; %d pending distill", "沉淀的教训；%d 条待蒸馏"), pending)
-	return dcheck{stOK, label, val, note}
-}
-
-// countNonEmptyLines counts non-blank lines in a file (0 if absent).
-func countNonEmptyLines(path string) int {
-	b, err := os.ReadFile(path)
+	pending, err := knowledge.ReadPendingCandidatesAt(kdir)
 	if err != nil {
-		return 0
+		return dcheck{stRec, label, val, i18n.Tr("Pending candidates could not be read", "无法读取待处理候选")}
 	}
-	n := 0
-	for _, ln := range strings.Split(string(b), "\n") {
-		if strings.TrimSpace(ln) != "" {
-			n++
-		}
-	}
-	return n
+	note := fmt.Sprintf(i18n.Tr("curated lessons; %d pending distill", "沉淀的教训；%d 条待蒸馏"), len(pending))
+	return dcheck{stOK, label, val, note}
 }
 
 // brewOutdatedVersion returns the newer version Homebrew has for a formula, or "" when
