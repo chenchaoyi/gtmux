@@ -15,3 +15,7 @@ Surfaces: phone, iPad, Web and Trace. macOS menu bar diagnosis inherits the doct
 - phone and iPad: visible reload, stable message bubbles and concise states.
 - Web: full/tiled reload and compact process presentation.
 - Trace: shares the parent read and concise read feedback.
+
+## Tool reading refinement
+
+Use the recognized static command as the initial tool preview. Keep exact original parameters available, use one section header, hide redundant single-command outlines, and clean terminal control sequences only in the readable result preview. Raw source and complete-copy/pagination remain unchanged. These are shared App, iPad, Web and Trace presentation rules for all agent providers. Unknown or dynamic input keeps its original representation.
