@@ -427,7 +427,24 @@ func refusedWaiting(pane, text, why string, attached []string, asJSON bool) int 
 		b, _ := json.Marshal(sendJSON{State: st, Evidence: why, Attachments: attached})
 		fmt.Println(string(b))
 	}
+	if en, zh := associationRefusalMessage(why); en != "" {
+		i18n.Sae("gtmux send: "+en+"\n"+why, "gtmux send: "+zh+"\n"+why)
+		return 1
+	}
 	i18n.Sae("gtmux send: refused. The agent is waiting on a decision (a permission prompt or a question); answer it first.\n"+why,
 		"gtmux send: 已拒发，该 agent 正在等你做决定（权限提示或提问），请先回应它。\n"+why)
 	return 1
+}
+
+// Adapter evidence distinguishes a missing attachment from an observed menu.
+// Keep the legacy structured state/evidence for older clients; do not invent a
+// human decision, force a retry, or switch transport when identity is unavailable.
+func associationRefusalMessage(evidence string) (string, string) {
+	switch evidence {
+	case "codex-frontend-unavailable":
+		return "not sent: conversation association is unavailable; no input was submitted", "未发送：当前会话关联不可用，内容未提交。"
+	case "expected-conversation-changed", "codex-input-target-changed":
+		return "not sent: the target conversation changed; select the current session before sending", "未发送：目标会话已变化，请重新选择当前会话。"
+	}
+	return "", ""
 }

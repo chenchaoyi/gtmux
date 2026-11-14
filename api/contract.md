@@ -531,6 +531,11 @@ heartbeat, under the existing binding lease and epoch guard, can republish its o
 primary record from its exact still-fresh saved receipt. Valid replacement records
 are never reclaimed. Missing independent proof requires a new verified binding;
 old JSON prefixes, launch arguments, titles and directory similarity are not proof.
+Native send refusal evidence `codex-frontend-unavailable` identifies unavailable
+conversation association, not a human permission/question prompt. The existing
+structured delivery state is preserved; this refusal occurs before preparing or
+claiming input and does not authorize retry through another transport.
+
 Browser and App preserve already displayed messages, show association-specific
 guidance and offer Retry instead of claiming the conversation is empty.
 

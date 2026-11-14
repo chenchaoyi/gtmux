@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -105,6 +106,7 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 	if err := ctx.Err(); err != nil {
 		return f, err
 	}
+	previousAttachment := f
 	if f.SessionID != sid {
 		f.ThreadCwd = f.Cwd
 	}
@@ -118,7 +120,9 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 	if !validFrontend(f) {
 		return f, &FrontendBindingError{Code: "invalid-attachment"}
 	}
-	if err := frontendProof(f, true); err != nil {
+	var err error
+	f, err = producerFrontendLocation(f)
+	if err != nil {
 		return f, err
 	}
 	if err := state.MkdirAll(filepath.Dir(frontendPath(f.Instance)), 0700); err != nil {
@@ -129,6 +133,12 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 		return f, err
 	}
 	defer lease.Close()
+	moved := f.Loc != previousAttachment.Loc
+	if moved {
+		if err := validateFrontendRelocation(previousAttachment, f); err != nil {
+			return f, err
+		}
+	}
 	wroteReceipt := false
 	canceled := func() error {
 		err := ctx.Err()
@@ -147,20 +157,28 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 		return err
 	}
 	previous, _ := Load(f.Loc)
-	if previous.Frontend != "" && previous.Frontend != f.Instance {
+	if !moved && previous.Frontend != "" && previous.Frontend != f.Instance {
 		old, ok := readFrontend(previous.Frontend)
 		if ok && (old.StartedAt > f.StartedAt || old.BridgePID == f.BridgePID && old.BridgeStart == f.BridgeStart && old.Sequence > f.Sequence) {
 			return f, errors.New("a newer frontend owns this location")
 		}
 	}
-	if err := frontendProof(f, true); err != nil {
+	if err := producerFrontendProof(f); err != nil {
 		return f, err
 	}
 	if err := canceled(); err != nil {
 		return f, err
 	}
+	if moved {
+		if err := preserveFrontendLocationHistory(previousAttachment, f); err != nil {
+			return f, frontendLocationWriteError(err, moved)
+		}
+		if err := canceled(); err != nil {
+			return f, err
+		}
+	}
 	if err := frontendBindingWrite(frontendPath(f.Instance), f); err != nil {
-		return f, err
+		return f, frontendLocationWriteError(err, moved)
 	}
 	wroteReceipt = true
 	if err := canceled(); err != nil {
@@ -168,12 +186,19 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 	}
 	r := Record{Agent: "codex", HomeID: f.HomeID, SessionID: sid, Cwd: f.ThreadCwd,
 		UpdatedAt: f.UpdatedAt / 1000, Frontend: f.Instance}
+	if moved {
+		history := frontendLocationHistory(previousAttachment)
+		if history.SessionID == "" && previous.Frontend == previousAttachment.Instance && previous.HomeID == previousAttachment.HomeID && previous.SessionID == previousAttachment.SessionID {
+			history = previous
+		}
+		previous = history // never inherit another moved frontend's checkpoint
+	}
 	r = withRecoveryCheckpoint(r, previous)
 	if err := canceled(); err != nil {
 		return f, err
 	}
 	if err := frontendBindingWrite(fileFor(f.Loc), r); err != nil {
-		return f, err
+		return f, frontendLocationWriteError(err, moved)
 	}
 	if err := canceled(); err != nil {
 		return f, err
@@ -216,6 +241,16 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 	if !validFrontend(f) || f.BridgePID != os.Getpid() {
 		return f, errors.New("invalid frontend heartbeat")
 	}
+	// Normal ticks retain the existing bounded fast path. A layout change must
+	// instead reobserve the entire strict terminal incarnation before publishing.
+	if frontendPaneView(f.Pane, "#{pane_id}\t#{pane_pid}\t#{session_name}:#{window_index}.#{pane_index}") !=
+		f.Pane+"\t"+strconv.Itoa(f.PanePID)+"\t"+f.Loc {
+		var err error
+		f, err = producerFrontendLocation(f)
+		if err != nil {
+			return f, err
+		}
+	}
 	lease, err := state.TryLease("codex-frontend-binding")
 	if err != nil {
 		return f, err
@@ -240,6 +275,20 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 		return f, err
 	}
 	r, ok := Load(f.Loc)
+	if f.Loc != previous.Loc {
+		if err := validateFrontendRelocation(previous, f); err != nil {
+			return f, err
+		}
+		old := frontendLocationHistory(previous)
+		r = withRecoveryCheckpoint(frontendRecord(f), old)
+		if old.Frontend == previous.Instance && old.HomeID == previous.HomeID && old.SessionID == previous.SessionID {
+			r.TerminalClient, r.Launcher = old.TerminalClient, old.Launcher
+		}
+		publishIndex, ok = true, true
+		if err := producerFrontendProof(f); err != nil {
+			return f, err
+		}
+	}
 	if !ok {
 		// Only the authenticated current bridge can republish its own index. A
 		// standalone history read never writes or gains terminal-input authority.
@@ -279,6 +328,14 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 	// Publish the exact receipt before any recovered index. If cancellation
 	// races an already-started atomic write, only this publication's live proof
 	// is retired; already committed history and replaced owners are preserved.
+	if f.Loc != previous.Loc {
+		if err := preserveFrontendLocationHistory(previous, f); err != nil {
+			return f, err
+		}
+		if err := canceled(); err != nil {
+			return f, err
+		}
+	}
 	if err := frontendBindingWrite(frontendPath(f.Instance), f); err != nil {
 		return f, err
 	}

@@ -61,3 +61,30 @@ This is saved-process evidence, never permission for live input or ownership.
 Tests cover parser/command round trips, preview selection and production resume
 sending on a verified private tmux server in type-only mode; no real Codex or HQ
 conversation is resumed by those tests.
+
+## Layout changes of a live frontend
+
+A tmux pane ID and its foreground process incarnation can remain unchanged when a
+window is renumbered, a pane moves or a session is renamed. Only the authenticated
+producer may update its published layout address. It rechecks the complete strict
+terminal target, allowing only the location to differ, then compares its saved
+receipt and the destination owner while holding the shared publication lease and
+connection epoch permission. Readers retain exact location and five-second freshness;
+reading history does not repair the index or authorize input.
+
+The producer publishes the new proof before the destination index. Cancellation and
+partial writes fail closed. Before replacing a displaced frontend's index, it preserves
+that record in private `resume/codex-location-history/` metadata. Only the displaced
+producer can reuse its own matching checkpoint after full identity verification;
+readers and input resolvers do not consult this history. Two live panes can therefore
+exchange positions without inheriting each other's recovery checkpoint. Existing
+restore planning uses the saved layout and deduplicates conversation IDs; original
+historical records are not filtered out of `AllLocated`.
+
+Heartbeat failures report only bounded reason codes, elapsed time and last success,
+at most twice per 30-second failure window. Recovery and successful relocation are
+observable without issuing another root or input request. An association refusal is
+reported as unavailable conversation identity, rather than a permission question.
+Existing approvals, drafts, uncertain delivery and retry guards remain in force.
+Updating CLI/serve does not replace an already running older frontend producer;
+that frontend needs a normal new-version launch before it can use this behavior.
