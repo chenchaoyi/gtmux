@@ -51,9 +51,10 @@ func producerFrontendProof(f CodexFrontend) error {
 func validateFrontendRelocation(previous, next CodexFrontend) error {
 	fail := func(code string, retry bool) error { return &FrontendBindingError{Code: code, Retryable: retry} }
 	saved, ok := readFrontend(previous.Instance)
-	if previous.SessionID == "" {
-		// The first observed successful root can follow a layout change after
-		// admission. There must not already be any publication for this nonce.
+	if previous.SessionID == "" && !ok {
+		// An absent nonce permits its first publication. A present valid receipt
+		// instead takes the exact owner/pending-root checks below: the first
+		// attempt may have written its own proof before an index IO failure.
 		if _, err := os.Lstat(frontendPath(previous.Instance)); !errors.Is(err, os.ErrNotExist) {
 			return fail("frontend-owner-changed", false)
 		}

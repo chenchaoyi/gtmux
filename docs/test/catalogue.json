@@ -63721,6 +63721,56 @@
         }
       ],
       "sha256": "c1dc38591f5deec7d0534e1e049ffadc8d0127f4cf924e8668fd575c0e5e76d4"
+    },
+    "internal/codexbridge/binding_first_root_retry_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0b049de792fb",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestCFL006InitialRootMetadataRetryCommitsThenResumesHeartbeats",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CFL-006"
+        }
+      ],
+      "sha256": "4badb532b5adac095f2e8c099b77393716d001ea7e25625d4b3b547ae13f59da"
+    },
+    "internal/resume/frontend_first_root_retry_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d093d1c50adb",
+          "line": 40,
+          "kind": "reviewed-selector",
+          "name": "TestCFL006FirstRootAndExistingRootFinishTheirOwnPartialMovedPublication",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CFL-006"
+        },
+        {
+          "id": "MAP-fb06902199c4",
+          "line": 113,
+          "kind": "reviewed-selector",
+          "name": "TestCFL006FirstRootRetryRejectsOtherRootsGenerationsAndInvalidReceipts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CFL-006"
+        },
+        {
+          "id": "MAP-5ce76c76c48d",
+          "line": 169,
+          "kind": "reviewed-selector",
+          "name": "TestCFL006LateFirstRootRetryCannotReplaceANewerDestinationOwner",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CFL-006"
+        }
+      ],
+      "sha256": "b788bcbf280f9d1fc15fa8822823605f1acb4165fc1b93004e1b168d4e3ef062"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

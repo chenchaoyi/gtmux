@@ -2777,5 +2777,23 @@
     "selectors": [
       "TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory"
     ]
+  },
+  "internal/resume/frontend_first_root_retry_test.go": {
+    "cases": [
+      "CFL-006"
+    ],
+    "selectors": [
+      "TestCFL006FirstRootAndExistingRootFinishTheirOwnPartialMovedPublication",
+      "TestCFL006FirstRootRetryRejectsOtherRootsGenerationsAndInvalidReceipts",
+      "TestCFL006LateFirstRootRetryCannotReplaceANewerDestinationOwner"
+    ]
+  },
+  "internal/codexbridge/binding_first_root_retry_test.go": {
+    "cases": [
+      "CFL-006"
+    ],
+    "selectors": [
+      "TestCFL006InitialRootMetadataRetryCommitsThenResumesHeartbeats"
+    ]
   }
 }
