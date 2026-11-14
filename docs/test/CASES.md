@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1237 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1241 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3783 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2255 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2266 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 138 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -104,7 +104,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CET-006 | A real manual PostCompact receipt is recorded once, active stays absent and exact completion/current turn remain intact. Only actual rearm decisions are eligible for the completed-turn fence. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
-| CFL-001 | Old production is target-assertion red. Current producer publishes A at new location; strict/read/input target agree on same home/SID/instance, old location grants no input and restore enumeration does not duplicate one moved frontend. No new thread/restore/message/queue/input RPC is issued. Only producer migration updates state; read-only calls do not repair state. |
+| CFL-001 | Old production is target-assertion red. Current producer publishes A at new location; strict/read/input target agree on same home/SID/instance, old location grants no input; actual restore selection uses the current saved layout once while original historical records remain available. No new thread/restore/message/queue/input RPC is issued. Only producer migration updates state; read-only calls do not repair state. |
 | CFL-002 | All conflicts and unknown proof stay refused, no destination publication or input.5000/5001ms and future1000/1001ms reader boundaries remain. SameSID never substitutes for instance or process generation. Existing CAS/CBA/CBP negative assertions remain unchanged. |
 | CFL-003 | No stale owner overwrite, foreign deletion, double live authority, deadlock or new input. Partial committed history remains; readers refuse incomplete state. Exact current producer can recover safe publication failures within normal tick/recovery contracts, while canceled/retired writers cannot. Original index/receipt history remains auditable. |
 | CFL-004 | CLI/App provide explicit association/target-unavailable feedback without claiming a pending decision. JSON retains structured evidence. Missing association issues no Prepare, Claim or native input; real approval/draft remain refused and no automatic retry, fallback channel or raw keys are introduced. |
