@@ -125,10 +125,10 @@ MAP-fc5da55172ab,L2,reviewed implementation,internal/hq/rotation_admission_test.
 MAP-5fb504a908e7,L2,reviewed implementation,internal/hq/rotation_attention_test.go,14,reviewed-selector,TestHRW011RotationFailureUsesNonWaitingAttention,False,HRW-011
 MAP-5ca00611b9a2,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,8,reviewed-selector,TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity,False,HRW-012
 MAP-5c6873f6e524,L2,reviewed implementation,internal/hq/rotation_priority_test.go,13,reviewed-selector,TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert,False,HRW-006
-MAP-a7d7073f2ddc,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,41,reviewed-selector,TestHRW016WarningThenRecoveryKeepsRequestAndEveryGuard,False,HRW-016
-MAP-9e462ad3d392,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,121,reviewed-selector,TestHRW016RepeatedUnknownNeverExtendsExpiryOrRepeatsWarning,False,HRW-016
-MAP-17dec06ce996,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,178,reviewed-selector,TestHRW016FailedPublicationIsNotAReasonToReplayOrBlockRecovery,False,HRW-016
-MAP-40ca707ff43e,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,221,reviewed-selector,TestHRW016UnknownSourcesAndReasonChangesKeepOriginalOwnership,False,HRW-016
+MAP-a7d7073f2ddc,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,52,reviewed-selector,TestHRW016WarningThenRecoveryKeepsRequestAndEveryGuard,False,HRW-016
+MAP-9e462ad3d392,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,132,reviewed-selector,TestHRW016RepeatedUnknownNeverExtendsExpiryOrRepeatsWarning,False,HRW-016
+MAP-17dec06ce996,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,189,reviewed-selector,TestHRW016FailedPublicationIsNotAReasonToReplayOrBlockRecovery,False,HRW-016
+MAP-40ca707ff43e,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,233,reviewed-selector,TestHRW016UnknownSourcesAndReasonChangesKeepOriginalOwnership,False,HRW-016
 MAP-8b92ea364819,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,15,reviewed-selector,TestHQR007StandaloneTokenCannotBeConsumedAsAValue,False,"HQR-007,HQR-008,HQR-009,HQR-010"
 MAP-21d9bf41c0b2,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,35,reviewed-selector,TestHQR008BackupKeepsReplacement,False,"HQR-007,HQR-008,HQR-009,HQR-010"
 MAP-578e146c5570,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,98,reviewed-selector,TestHQR009MixedRulesAreNotSilentlyRebuilt,False,"HQR-007,HQR-008,HQR-009,HQR-010"

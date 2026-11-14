@@ -9,8 +9,19 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
+
+// A warning attempt is persisted on every host. Its desktop queue is only a
+// supported transport on hosts that advertise that capability; do not skip the
+// request/timing/input assertions on headless CI.
+func expectedWarningFiles(n int) int {
+	if hostplatform.Current().DesktopNotifications {
+		return n
+	}
+	return 0
+}
 
 func warningFiles(t *testing.T) int {
 	t.Helper()
@@ -52,10 +63,10 @@ func TestHRW016WarningThenRecoveryKeepsRequestAndEveryGuard(t *testing.T) {
 			}
 			advanceHQRotation(r, "%6", "codex", "old-session", p.io(), boundary, now.Add(61*time.Second), "proof-expired")
 			warned, ok, err := readRotationRequest()
-			if err != nil || !ok || warned.CreatedAt != r.CreatedAt || warned.IdentityUnavailableAt != first.IdentityUnavailableAt || warned.SentAt != 0 {
+			if err != nil || !ok || warned.CreatedAt != r.CreatedAt || warned.IdentityUnavailableAt != first.IdentityUnavailableAt || warned.SentAt != 0 || warned.IdentityWarnedAt != now.Add(61*time.Second).Unix() {
 				t.Fatal("60-second warning retired or extended original pending request", warned, ok, err)
 			}
-			if warningFiles(t) != 1 || len(p.pasted) != 0 || p.enters != 0 {
+			if warningFiles(t) != expectedWarningFiles(1) || len(p.pasted) != 0 || p.enters != 0 {
 				t.Fatal("warning missing, repeated or authorized input")
 			}
 			for _, e := range testRotationEvents(t) {
@@ -66,7 +77,7 @@ func TestHRW016WarningThenRecoveryKeepsRequestAndEveryGuard(t *testing.T) {
 			// Reconstruct from disk and change the cause. This is still the same request,
 			// not another warning and not another thirty-minute grant.
 			advanceHQRotation(warned, "%6", "codex", "old-session", p.io(), boundary, now.Add(62*time.Second), "bridge-proof-unavailable")
-			if warningFiles(t) != 1 {
+			if warningFiles(t) != expectedWarningFiles(1) {
 				t.Fatal("cause change/reload repeated warning")
 			}
 			at := now.Add(63 * time.Second)
@@ -142,11 +153,11 @@ func TestHRW016RepeatedUnknownNeverExtendsExpiryOrRepeatsWarning(t *testing.T) {
 					}
 					advanceHQRotation(cur, "%6", "codex", "old-session", p.io(), boundary, now.Add(time.Duration(s)*time.Second), "arbitrary private details\n/home/private")
 					cur, exists, err = readRotationRequest()
-					if err != nil || !exists || cur.CreatedAt != r.CreatedAt || cur.IdentityUnavailableAt != firstAt.Unix() || cur.IdentityCause != "unknown" {
+					if err != nil || !exists || cur.CreatedAt != r.CreatedAt || cur.IdentityUnavailableAt != firstAt.Unix() || cur.IdentityCause != "unknown" || cur.IdentityWarnedAt != now.Add(61*time.Second).Unix() {
 						t.Fatal("diagnostic changed original deadline/identity", cur, err)
 					}
 				}
-				if warningFiles(t) != 1 {
+				if warningFiles(t) != expectedWarningFiles(1) {
 					t.Fatal("repeat/reload/cause change republished warning")
 				}
 			}
@@ -189,8 +200,8 @@ func TestHRW016FailedPublicationIsNotAReasonToReplayOrBlockRecovery(t *testing.T
 	advanceHQRotation(r, "%6", "codex", "", p.io(), boundary, now.Add(time.Second))
 	advanceHQRotation(r, "%6", "codex", "", p.io(), boundary, now.Add(61*time.Second))
 	cur, exists, err := readRotationRequest()
-	if err != nil || !exists || cur.CreatedAt != r.CreatedAt {
-		t.Fatal("notification failure dropped pending", err)
+	if err != nil || !exists || cur.CreatedAt != r.CreatedAt || cur.IdentityWarnedAt != now.Add(61*time.Second).Unix() {
+		t.Fatal("notification failure dropped pending or warning attempt", err)
 	}
 	if err := os.Remove(state.NotifyDir()); err != nil {
 		t.Fatal(err)
@@ -213,7 +224,8 @@ func TestHRW016FailedPublicationIsNotAReasonToReplayOrBlockRecovery(t *testing.T
 	}
 	advanceHQRotation(next, "%6", "codex", "", p.io(), boundary, now.Add(66*time.Second))
 	advanceHQRotation(next, "%6", "codex", "", p.io(), boundary, now.Add(126*time.Second))
-	if warningFiles(t) != 2 {
+	cur, exists, err = readRotationRequest()
+	if err != nil || !exists || cur.CreatedAt != next.CreatedAt || cur.IdentityWarnedAt != now.Add(126*time.Second).Unix() || warningFiles(t) != expectedWarningFiles(2) {
 		t.Fatal("new request warning inherited old ownership")
 	}
 }
@@ -246,13 +258,13 @@ func TestHRW016UnknownSourcesAndReasonChangesKeepOriginalOwnership(t *testing.T)
 			advanceHQRotation(r, "%6", agent, sid, p.io(), boundary, now.Add(30*time.Second))
 			advanceHQRotation(r, "%6", agent, sid, p.io(), boundary, now.Add(61*time.Second))
 			current, exists, err := readRotationRequest()
-			if err != nil || !exists || current.IdentityUnavailableAt != first.IdentityUnavailableAt || current.CreatedAt != r.CreatedAt || warningFiles(t) != 1 || len(p.pasted) != 0 || p.enters != 0 {
+			if err != nil || !exists || current.IdentityUnavailableAt != first.IdentityUnavailableAt || current.CreatedAt != r.CreatedAt || current.IdentityWarnedAt != now.Add(61*time.Second).Unix() || warningFiles(t) != expectedWarningFiles(1) || len(p.pasted) != 0 || p.enters != 0 {
 				t.Fatal("unknown sources changed timing, failed or granted input", current)
 			}
 			advanceHQRotation(r, "%6", "codex", "old-session", p.io(), boundary, now.Add(62*time.Second), "proof-expired")
 			advanceHQRotation(r, "%6", "codex", "old-session", p.io(), boundary, now.Add(63*time.Second), "arbitrary private text")
 			current, exists, err = readRotationRequest()
-			if err != nil || !exists || current.IdentityCause != "unknown" || current.IdentityUnavailableAt != first.IdentityUnavailableAt || warningFiles(t) != 1 || len(p.pasted) != 0 {
+			if err != nil || !exists || current.IdentityCause != "unknown" || current.IdentityUnavailableAt != first.IdentityUnavailableAt || warningFiles(t) != expectedWarningFiles(1) || len(p.pasted) != 0 {
 				t.Fatal("reason change extended time, repeated warning or granted input", current)
 			}
 			state.Remove(state.ActivePath("%6"))
