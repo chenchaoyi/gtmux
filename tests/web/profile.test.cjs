@@ -108,5 +108,5 @@ scenario('Historical profile reads current ancestry only on expansion and only f
  const requests=[];page.on('request',r=>{if(r.url().includes('/participant-profile'))requests.push(new URL(r.url()));});
  await openChat(page,fixture);await page.locator('#chat .arow > .speaker-avatar').click();const dialog=page.locator('.participant-profile');await dialog.getByText('old-recorded-model',{exact:true}).waitFor();assert.equal(requests.length,1);
  await dialog.locator('.profile-chain summary').click();await dialog.getByText('verified-client',{exact:true}).waitFor();assert.equal(requests.length,2);assert.equal(requests[1].searchParams.get('session_id'),'current-session');assert.equal(requests[1].searchParams.has('at'),false);
- assert.match(await dialog.locator('.profile-chain').innerText(),/not the processes at this message/);assert.doesNotMatch(await dialog.innerText(),/current-recorded-model/);
+ assert.match(await dialog.locator('.profile-chain').innerText(),/Last observed/);assert.doesNotMatch(await dialog.innerText(),/current-recorded-model/);
 });

@@ -662,7 +662,7 @@ export const Composer = React.memo(function Composer({
       )}
       {sendError && <Text style={[styles.sendError, {color: StatusColor.waiting}]}>{sendError}</Text>}
       {draftOnly && !enabled && <Text testID="composer-draft-only" style={{color: pal.fg2, fontSize: 12, lineHeight: 18, paddingHorizontal: 16, paddingBottom: 6}}>
-        {lang === 'zh' ? '会话关联待确认。可以先写草稿，确认后才能发送。' : 'Session association pending. You can write a draft; sending is unavailable until confirmed.'}
+        {lang === 'zh' ? '会话未关联，暂不能发送。可以先写草稿。' : 'Conversation not linked. You can draft, but cannot send yet.'}
       </Text>}
       <View style={styles.inputRow}>
         <TouchableOpacity

@@ -127,11 +127,11 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
     : error === 'owner_only' ? say('Restoring requires an owner pairing.', '只有服务器所有者可以恢复会话。')
     : error === 'plan_changed' ? say('The saved workspace changed. Refresh its preview before starting.', '存档工作区已变化，请刷新预览后再开始。')
     : error === 'restore_busy' ? say('Another restore is running. Check its progress.', '已有恢复正在进行，请查看进度。')
-    : error === 'request_expired' ? say('This request expired and was not started again. Check the server sessions before making a new request.', '请求已过期，没有再次执行。请核对服务器会话后再创建新请求。')
+    : error === 'request_expired' ? say('Request expired. Check the server sessions before trying again.', '请求已过期，请先查看服务器会话。')
     : error === 'local_record' ? say('The saved request could not be read. No new restore was sent.', '无法读取上次请求记录，未发送新的恢复请求。')
     : pending ? plan
-      ? say('The result is not confirmed. Check status or submit the same request again; a new request has not been created.', '尚未确认结果。可核对状态或重试同一请求，不会创建新的恢复请求。')
-      : say('The result is not confirmed. Check the saved request’s status; no new request will be sent.', '尚未确认结果。核对状态会继续查询上次请求，不会发送新请求。')
+      ? say('Result pending. Check status or retry this request.', '结果待确认，可查看状态或重试此请求。')
+      : say('Result pending. Check this request’s status.', '结果待确认，请查看请求状态。')
       : say('Could not reach the restore service. Nothing new was started.', '暂时无法查询恢复服务，未启动新的恢复。');
   const control = (id: string, title: string, onPress: () => void, disabled = false, primary = false) => <TouchableOpacity testID={id} accessibilityRole="button" accessibilityState={{disabled}} disabled={disabled} onPress={onPress} style={[styles.button, {borderColor: pal.divider, backgroundColor: primary ? BRAND : pal.raised, opacity: disabled ? 0.5 : 1}]}><Text style={[styles.buttonText, {color: primary ? '#fff' : pal.fg}]}>{title}</Text></TouchableOpacity>;
   return <SheetShell visible={!!mac} pal={pal} onClose={onClose}>
@@ -147,10 +147,10 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
         {control('restore-check', say('Check status', '核对状态'), check, busy)}
         {restoreTerminal(job.phase) && control('restore-new-preview', say('Preview remaining sessions', '预览仍未恢复的会话'), previewAgain, busy)}
       </> : plan && <>
-        <Text style={[styles.note, {color: pal.fg2}]}>{say('Restore missing sessions from the server’s saved workspace. Sessions already running stay as they are. No local terminal windows will open.', '从服务器存档恢复缺失的会话，已有会话保持运行，不在服务器打开终端窗口。')}</Text>
+        <Text style={[styles.note, {color: pal.fg2}]}>{say('Restore saved sessions that are not running.', '恢复服务器上尚未运行的存档会话。')}</Text>
         {!!plan.saved_at && <Text style={[styles.note, {color: pal.fg2}]}>{say('Saved: ', '存档时间：')}{new Date(plan.saved_at * 1000).toLocaleString(lang)}</Text>}
         {plan.sessions.map(s => <View key={s.name} style={[styles.row, {borderColor: pal.divider}]}><Text style={[styles.rowTitle, {color: pal.fg}]}>{s.name}</Text><Text style={{color: pal.fg2}}>{say(`${s.windows} windows · ${s.panes} panes · ${s.resumable}/${s.agents} conversations available`, `${s.windows} 个窗口 · ${s.panes} 个窗格 · ${s.resumable}/${s.agents} 个对话可恢复`)}</Text></View>)}
-        <Text style={[styles.note, {color: pal.fg2}]}>{plan.resume_mode === 'auto' ? say('Starting restores saved agent conversations; it does not send a new task.', '开始后会启动存档中的助手对话，不会发送新任务。') : plan.resume_mode === 'type' ? say('Server settings prefill agent commands. They still need Enter in the corresponding pane.', '服务器设置为仅预填助手命令，仍需在对应窗格按回车。') : say('Server settings restore the layout only, without starting agents.', '服务器设置为仅恢复布局，不启动助手。')}</Text>
+        <Text style={[styles.note, {color: pal.fg2}]}>{plan.resume_mode === 'auto' ? say('Starting restores saved agent conversations; it does not send a new task.', '开始后会启动存档中的助手对话，不会发送新任务。') : plan.resume_mode === 'type' ? say('Press Enter in each terminal to start the agent.', '命令已预填，请在对应终端按 Enter 启动。') : say('Server settings restore the layout only, without starting agents.', '服务器设置为仅恢复布局，不启动助手。')}</Text>
         {!plan.sessions.length && <Text style={[styles.subtitle, {color: pal.fg}]}>{say('No missing saved sessions', '没有待恢复的存档会话')}</Text>}
         {control('restore-start', pending ? say('Retry the same request', '重试同一请求') : say(`Restore ${plan.sessions.length} sessions`, `恢复 ${plan.sessions.length} 个会话`), start, busy || !plan.sessions.length || mac?.scope === 'guest' || error === 'local_record', true)}
         {control('restore-check', pending ? say('Check status', '核对状态') : say('Refresh preview', '刷新预览'), check, busy)}

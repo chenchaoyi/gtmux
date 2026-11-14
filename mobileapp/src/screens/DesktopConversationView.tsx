@@ -1,5 +1,5 @@
 import React, {useContext, useEffect, useState} from 'react';
-import {AppState, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {AppState, StyleSheet, Text, View} from 'react-native';
 import {NavigationContext} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {Agent, sameAgent} from '../api/types';
@@ -7,6 +7,7 @@ import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
 import {useDesktopTranscript} from '../state/useDesktopTranscript';
 import {ChatView} from '../ui/ChatView';
+import {ConversationReload} from '../ui/ConversationReload';
 import {SessionToolsMenu} from '../ui/SessionToolsMenu';
 import {ExternalConversationDetails, ExternalConversationHeader} from '../ui/ExternalConversationHeader';
 import {TraceModal} from '../trace/TraceModal';
@@ -48,10 +49,10 @@ export function DesktopConversationView({agent, onBack}: {agent: Agent; onBack?:
     {detailsOpen && <ExternalConversationDetails agent={live} pal={pal} lang={lang} onClose={() => setDetailsOpen(false)} />}
     {(failed || isGuest) && <View testID="desktop-transcript-error" style={[styles.error, {backgroundColor: pal.surface}]}>
       <Text style={[styles.message, {color: pal.fg}]}>{message}</Text>
-      {!isGuest && <TouchableOpacity onPress={state.retry} accessibilityRole="button"><Text style={{color: pal.fg}}>{zh ? '重试' : 'Retry'}</Text></TouchableOpacity>}
+      {!isGuest && <ConversationReload noteColor={pal.fg2} onRetry={state.retry} busy={state.retrying} failed={state.retryFailed} zh={zh}/>}
     </View>}
     {!isGuest && (!failed || state.turns.length > 0) && <ChatView client={client} key={`${client.base}:${agent.home_id ?? ""}:${agent.session_id}`} readOnly agent={live} lines={[]} status={live.status} fontSize={13} fontPref={fontPref} pal={pal} lang={lang} turns={state.turns} droppedTurns={state.dropped} loading={state.loading} workingSince={live.since} maxWidth={wide ? READING_WIDTH : undefined} />}
-    <TraceModal visible={traceOpen && !isGuest} agent={live} client={client} turns={state.turns} loading={state.loading} failed={failed} onRetry={state.retry} dropped={state.dropped} pal={pal} lang={lang} onClose={() => setTraceOpen(false)} />
+    <TraceModal visible={traceOpen && !isGuest} agent={live} client={client} turns={state.turns} loading={state.loading} failed={failed} retrying={state.retrying} retryFailed={state.retryFailed} onRetry={state.retry} dropped={state.dropped} pal={pal} lang={lang} onClose={() => setTraceOpen(false)} />
   </SafeAreaView>;
 }
 const styles = StyleSheet.create({root: {flex: 1}, error: {padding: 14, flexDirection: 'row', gap: 12, alignItems: 'center'}, message: {flex: 1, fontSize: 13}});

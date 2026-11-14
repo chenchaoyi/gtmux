@@ -1835,3 +1835,11 @@ The full worktree path is owner-only. Shared guests retain the authorized branch
 ### Live preview while history association is pending
 
 A last-known transcript restricts conversation input, independently of the existing authorized current-pane read. Its working row still offers Show live view. The expanded preview identifies the current pane and the unconfirmed history association; it does not claim that terminal output belongs to the saved conversation. Explicit desktop-only readers, native sources and missing panes keep a status-only row. Detail and HQ scope captures to the exact API client and pane: switching either immediately retires the old capture, including late replies, before showing the new screen. Existing send, key, upload and strict session-binding gates remain. No additional polling loop is introduced.
+
+## Conversation feedback (2026-11-14)
+
+Empty, failed and read-only states stay distinct. Use one short state and a clear action, with no log-storage tutorial. Reload conversation has a visible 44pt target, immediately shows Reloading, blocks repeated taps while pending and reports another failure while retaining readable messages. Chat and Trace share the parent read; explicit reload retires the older read and requests a fresh body. External conversations keep their read-only and access checks.
+
+Send receipts say Received or Submitted; queued work remains explicit. An ingress receipt does not establish execution. After a receipt, request the current transcript once without adding a fast poll. A newly recorded matching prompt takes over the existing optimistic bubble key and presentation, keeping attachment identity, content and scroll continuity. Old identical prompts cannot acknowledge a new send.
+
+Launch processes group only adjacent equal sanitized presentations as name ×N, retaining actual process count and order. Show a short Last observed time. Do not infer a role from the executable name, expose omitted arguments or mix a current process observation into historical message facts.

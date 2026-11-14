@@ -542,7 +542,7 @@ function PaneDetailView({
             return;
           }
           if (pendingEcho.current?.id === p.send_id) {
-            setPendingDelivered(true); setPendingDelivery(r.delivery);
+            setPendingDelivered(true); setPendingDelivery(r.delivery); receiptRefresh.current();
             const note = busyNote(live.status, lang === 'zh');
             // A late receipt cannot resurrect a notice after transcript confirmation
             // or replace feedback for a newer submission/control key.
@@ -562,7 +562,7 @@ function PaneDetailView({
         })
         .catch(() => {
           if (!lane?.isActive() || paneRead.current !== lane || (attempt !== sendAttempt.current && pendingEcho.current?.id !== p.send_id)) return;
-          setFailedReason(lang === 'zh' ? '未能确认发送结果，请先查看会话；重试会沿用同一消息编号。' : 'Send confirmation unavailable. Check the conversation first; Retry keeps the same message ID.');
+          setFailedReason(lang === 'zh' ? '发送结果未确认，请先查看对话。' : 'Send status unknown. Check the conversation before retrying.');
           setFailedSend(p); clearEcho();
         })
         .finally(bumpPane);
@@ -642,6 +642,10 @@ function PaneDetailView({
   // response carried, so an unchanged conversation costs a 304 with no body. `turns` is
   // never cleared, so a background refetch swaps in fresh history without flashing the
   // spinner — and a mode switch is instant.
+  const [reload, setReload] = useState<{identity: typeof chatIdentity; busy: boolean; attempted: boolean}>({identity: chatIdentity, busy: false, attempted: false});
+  const retrying = reload.identity === chatIdentity && reload.busy;
+  const retryFailed = reload.identity === chatIdentity && reload.attempted && !reload.busy && chatFailed;
+  const receiptRefresh = useRef<() => void>(() => {});
   const etagRef = useRef<string | undefined>(undefined);
   const etagIdentity = useRef(chatIdentity);
   if (etagIdentity.current !== chatIdentity) {etagIdentity.current = chatIdentity; etagRef.current = undefined;}
@@ -667,12 +671,13 @@ function PaneDetailView({
           setTraceOpen(false); setDiffOpen(false);
           setChatRecord({identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association});
         } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association});
-      }},
+      }, onSettled: () => setReload(prev => prev.identity === chatIdentity ? {...prev, busy: false} : prev)},
     );
     // A page refusal may have retired the hook's snapshot while this parent
     // still has its ETag. Explicit Retry must fetch a body, even for quiet chat.
     loadTurnsRef.current = task.run;
-    retryTurnsRef.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};
+    receiptRefresh.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};
+    retryTurnsRef.current = () => {setReload({identity: chatIdentity, busy: true, attempted: true}); task.invalidate(); etagRef.current = undefined; task.run();};
     if (pollTranscript) return startReadPolling(task, live.status === 'working' ? CHAT_ACTIVE_POLL_MS : CHAT_IDLE_POLL_MS);
     task.run();
     return task.dispose;
@@ -691,9 +696,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onRetry={() => retryTurnsRef.current()} pendingPrompt={visiblePendingPrompt} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onOpenTerminal={isNative ? undefined : () => pickModeRef.current('terminal')} onRetry={() => retryTurnsRef.current()} pendingPrompt={visiblePendingPrompt} pendingEcho={pendingEcho.current ?? undefined} retrying={retrying} retryFailed={retryFailed} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [client, isGuest, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, visiblePendingPrompt, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
+    [client, isGuest, isNative, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, visiblePendingPrompt, retrying, retryFailed, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation
@@ -1153,7 +1158,7 @@ function PaneDetailView({
         }}
       />
 
-      <TraceModal visible={traceOpen && !isPlainPane && !isNative} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!chatLoaded} failed={chatFailed} onRetry={() => retryTurnsRef.current()} dropped={droppedTurns} pal={pal} lang={lang} fontSize={fontSize} onClose={() => setTraceOpen(false)} />
+      <TraceModal visible={traceOpen && !isPlainPane && !isNative} agent={live} client={isGuest ? undefined : client} turns={turns} loading={!chatLoaded} failed={chatFailed} retrying={retrying} retryFailed={retryFailed} onRetry={() => retryTurnsRef.current()} dropped={droppedTurns} pal={pal} lang={lang} fontSize={fontSize} onClose={() => setTraceOpen(false)} />
       <DiffModal
         fontSize={fontSize}
         visible={diffOpen}

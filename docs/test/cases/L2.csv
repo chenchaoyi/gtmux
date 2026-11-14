@@ -17,6 +17,9 @@ LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_tes
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 MAP-f767974bfca8,L2,reviewed implementation,internal/app/conversation_read_test.go,14,reviewed-selector,TestCAS003PaneAssociationIsNotAnEmptyConversation,False,CAS-003
 LEG-ba12d8af1486,L2,Go core / CLI / server,internal/app/devices_push_test.go,16,Test,TestListPush_ShowsEveryPausedToken,False,legacy-not-retrospectively-reviewed
+MAP-69939dd4afa9,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,48,reviewed-selector,TestDCA001DoctorReportsFailedManagedAssociation,False,"DCA-001,DCA-002,DCA-003"
+MAP-bf49b210b7cf,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,79,reviewed-selector,TestDCA002DoctorDistinguishesMissingUnsupportedAndVerified,False,"DCA-001,DCA-002,DCA-003"
+MAP-37c101d9ff65,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,105,reviewed-selector,TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary,False,"DCA-001,DCA-002,DCA-003"
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
 MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
 MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
@@ -261,6 +264,10 @@ MAP-5ce76c76c48d,L2,reviewed implementation,internal/resume/frontend_first_root_
 MAP-3cee131e3a9d,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,12,reviewed-selector,TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex,False,CBA-006
 MAP-38c7cef4bfeb,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,60,reviewed-selector,TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt,False,CBA-006
 MAP-8b4dde286a90,L2,reviewed implementation,internal/resume/frontend_heartbeat_context_test.go,123,reviewed-selector,TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery,False,CBA-006
+MAP-297e9f1c9c7e,L2,reviewed implementation,internal/resume/frontend_index_recovery_test.go,38,reviewed-selector,TestDCA004CurrentProducerRecoversExpiredOwnMissingIndex,False,"DCA-004,DCA-005,DCA-006"
+MAP-208fe3206087,L2,reviewed implementation,internal/resume/frontend_index_recovery_test.go,56,reviewed-selector,TestDCA005RecoveryRejectsConflictAndUnknownEvidence,False,"DCA-004,DCA-005,DCA-006"
+MAP-e75082da0277,L2,reviewed implementation,internal/resume/frontend_index_recovery_test.go,166,reviewed-selector,TestDCA005OwnerReplacementDuringStrictVerification,False,"DCA-004,DCA-005,DCA-006"
+MAP-4f4b76bb489a,L2,reviewed implementation,internal/resume/frontend_index_recovery_test.go,143,reviewed-selector,TestDCA006RecoveryHonorsLeaseAndCancellation,False,"DCA-004,DCA-005,DCA-006"
 MAP-1aa7a26187d9,L2,reviewed implementation,internal/resume/frontend_live_diagnostic_test.go,10,reviewed-selector,TestHRW013LiveDiagnosticsDoNotChangeExistingAuthority,False,HRW-013
 MAP-bfc9dee20cfe,L2,reviewed implementation,internal/resume/frontend_location_test.go,52,reviewed-selector,TestCFL001HeartbeatMigratesOnlyItsCurrentLocation,False,"CFL-001,CFL-002,CFL-003"
 MAP-185a9834a214,L2,reviewed implementation,internal/resume/frontend_location_test.go,99,reviewed-selector,TestCFL001ObservedRootBindsAfterVerifiedLocationChange,False,"CFL-001,CFL-002,CFL-003"
@@ -647,6 +654,7 @@ LEG-4fd9f327715a,L2,Browser,internal/server/web/app.test.cjs,1276,test,Return se
 LEG-3eddecec9a49,L2,Browser,internal/server/web/app.test.cjs,1289,test,"pending prompts require a newly recorded occurrence, including identical messages without clocks",False,legacy-not-retrospectively-reviewed
 LEG-46dcc46b1b27,L2,Browser,internal/server/web/app.test.cjs,1299,test,an unchanged retry keeps its send id while a new acknowledged message gets a new id,False,legacy-not-retrospectively-reviewed
 LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1313,test,radar keyboard selection skips rows inside a collapsed section,False,legacy-not-retrospectively-reviewed
+MAP-e63e89176901,L2,reviewed implementation,internal/server/web/execution-chain.test.cjs,8,reviewed-selector,"CRX-005 adjacent equal process presentations retain count, order and distinct arguments",False,CRX-005
 MAP-ec276ea47d43,L2,reviewed implementation,internal/server/web/state-duration.test.cjs,19,reviewed-selector,CSR-004 browser row,False,CSR-004
 LEG-3f958826505e,L2,Browser,internal/server/web/terminal-keys.test.cjs,26,test,unsupported combinations are not fabricated,False,legacy-not-retrospectively-reviewed
 LEG-7b336ba3e7c5,L2,Browser,internal/server/web/terminal-keys.test.cjs,31,test,legacy fallback stops after an uncertain response and cannot chain a digit or Enter,False,legacy-not-retrospectively-reviewed
@@ -839,6 +847,7 @@ MAP-1dd1e525111d,L2,reviewed implementation,mobileapp/src/screens/DetailSendSnap
 LEG-3311f5104ff9,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,82,test,opening and closing Trace shares Chat’s in-flight read without aborting or starting a second subscription,False,legacy-not-retrospectively-reviewed
 LEG-383eef0af50a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,109,test,the same pane and session in a different home cannot show or accept the old reply,False,legacy-not-retrospectively-reviewed
 LEG-27bb0cdcad2a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,136,test.each(),pane denial %s closes tools and clears old records,True,legacy-not-retrospectively-reviewed
+MAP-38405ffb484b,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,169,reviewed-selector,CRX-002 manual reload publishes immediate busy feedback to Chat and Trace until the current read settles,False,"CAS-005,CAS-007,CRX-001,CRX-002"
 LEG-bdaca444f3d6,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,35,test,"lists what HQ did: what the list is for, the 24-hour tally, and every act",False,legacy-not-retrospectively-reviewed
 LEG-9439b91c1a3b,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,43,test,"an act leads where it acted: the session, or the knowledge entry it wrote",False,legacy-not-retrospectively-reviewed
 LEG-06208debd045,L2,RN / mobile harness,mobileapp/src/screens/HQActsSheet.test.tsx,53,test,"nothing recent says so, and the sheet closes",False,legacy-not-retrospectively-reviewed
@@ -864,6 +873,8 @@ LEG-ba61977b1dfa,L2,RN / mobile harness,mobileapp/src/screens/HQOverview.test.ts
 LEG-bd72cd6835fc,L2,RN / mobile harness,mobileapp/src/screens/HQOverview.test.tsx,15,test,`HQ card shows an identical question once and keeps its reason (${zh}/${mode})`,True,legacy-not-retrospectively-reviewed
 LEG-68a52ff962ec,L2,RN / mobile harness,mobileapp/src/screens/HQOverview.test.tsx,28,test,`HQ remaining cards stay discoverable with fallback preview (wide=${wide})`,True,legacy-not-retrospectively-reviewed
 LEG-fd4c523aa2bc,L2,RN / mobile harness,mobileapp/src/screens/HQOverview.test.tsx,49,test,stale overview IDs cannot hide canonical matters or inflate visible counts,False,legacy-not-retrospectively-reviewed
+MAP-c5d7fac97833,L2,reviewed implementation,mobileapp/src/screens/HQReload.test.tsx,30,reviewed-selector,CRX-002 HQ reload is pending immediately and late superseded results cannot settle it,False,"CRX-002,CRX-004"
+MAP-c10de2c7b4d1,L2,reviewed implementation,mobileapp/src/screens/HQReload.test.tsx,38,reviewed-selector,CRX-004 a send receipt invalidates the pre-send read and refreshes once without waiting for poll interval,False,"CRX-002,CRX-004"
 LEG-3791df07c7cd,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,56,test,Board is a static briefing while Knowledge and Usage retain their own destinations,False,legacy-not-retrospectively-reviewed
 LEG-676004ffc6bc,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,73,test.each(),machine %s warning is visible in Board rather than the token card,True,legacy-not-retrospectively-reviewed
 LEG-57bed87db168,L2,RN / mobile harness,mobileapp/src/screens/HQResourceCards.test.tsx,91,test,a retained resource warning stays labelled as a previous reading after refresh failure,False,legacy-not-retrospectively-reviewed
@@ -1334,6 +1345,7 @@ LEG-26fdef392a94,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.te
 LEG-5eeb3f5fa726,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,40,test,a late response from the previous Mac cannot populate the new Mac,False,legacy-not-retrospectively-reviewed
 LEG-41532acf05f3,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,48,test,choices appear before probes; a late probe cannot undo a move,False,legacy-not-retrospectively-reviewed
 LEG-27e3a51521d5,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,57,test,guest/offline callers make no requests,False,legacy-not-retrospectively-reviewed
+MAP-114ecc94ce0f,L2,reviewed implementation,mobileapp/src/state/desktopReload.test.tsx,6,reviewed-selector,"CRX-002 external reload retains content, enforces parent deadline and retires old scope",False,CRX-002
 LEG-3f9ca980a593,L2,RN / mobile harness,mobileapp/src/trace/TraceModal.test.tsx,113,test,session name leads the heading; each expanded call opens its own fully wrapped input,False,legacy-not-retrospectively-reviewed
 LEG-d0e57172ba4f,L2,RN / mobile harness,mobileapp/src/trace/TraceModal.test.tsx,193,test,bulk disclosures survive streaming and programmatic scroll without reopening calls or turns,False,legacy-not-retrospectively-reviewed
 LEG-ac5b4fc71f15,L2,RN / mobile harness,mobileapp/src/trace/TraceModal.test.tsx,244,test,"context has four detail tabs, exact raw content and frozen recorded provenance for copy",False,legacy-not-retrospectively-reviewed
@@ -1398,6 +1410,7 @@ LEG-e6e7b244f26a,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,43
 LEG-a2ee828f06f8,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,56,it,still slides when you dismiss it by the backdrop — there the motion IS the answer,False,legacy-not-retrospectively-reviewed
 LEG-9ebc3d2fb720,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,63,it,runs the chosen action only after the sheet has actually gone,False,legacy-not-retrospectively-reviewed
 LEG-8b9b6cbb1dad,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,76,it,slides again the next time it opens,False,legacy-not-retrospectively-reviewed
+MAP-bc8cc6baa2e3,L2,reviewed implementation,mobileapp/src/ui/ChatEchoHandoff.test.tsx,9,reviewed-selector,CRX-004 %s confirmed echo keeps the same mounted bubble,False,CRX-004
 LEG-10b2f4580849,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,45,test,"a new turn does not drag a reader out of history, nor tell the host it did",False,legacy-not-retrospectively-reviewed
 LEG-067d2f8bfcb3,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,71,test,a new turn DOES follow for a reader sitting at the tail,False,legacy-not-retrospectively-reviewed
 LEG-dc47da40588f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,89,test,the host revealing its chrome does not count as leaving the tail,False,legacy-not-retrospectively-reviewed
@@ -1489,6 +1502,8 @@ LEG-f6cd838784d1,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,9
 LEG-f57985c2680b,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,110,test,"symbol keys have readable glyphs, 44pt targets and spoken labels",False,legacy-not-retrospectively-reviewed
 LEG-a649b68a0a4a,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,125,test,a terminal key blocks even a text-send callback captured before the next render,False,legacy-not-retrospectively-reviewed
 LEG-582590149374,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,144,test,draft send and expand controls expose actionable native semantics,False,legacy-not-retrospectively-reviewed
+MAP-2dadc610ad24,L2,reviewed implementation,mobileapp/src/ui/ConversationCopy.test.tsx,8,reviewed-selector,CRX-006 %s empty state is concise and its Terminal action works,False,CRX-006
+MAP-3b3304b11ffa,L2,reviewed implementation,mobileapp/src/ui/ConversationReload.test.tsx,8,reviewed-selector,"CRX-001 %s reload is visible, busy and keeps messages",False,CRX-001
 LEG-7d0bd8dfcfd9,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.fallback.test.tsx,9,test,an older binary without the native view keeps the original selectable Text,False,legacy-not-retrospectively-reviewed
 LEG-30e4d7819427,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,20,test,"iOS block copy retains rich text and links, moving only outer layout to the menu wrapper",False,legacy-not-retrospectively-reviewed
 LEG-e5fc93de4577,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,36,test,the labelled accessibility action copies exactly the rendered block and keeps other actions,False,legacy-not-retrospectively-reviewed
@@ -1505,6 +1520,7 @@ LEG-4e88520e6ccc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,97,t
 LEG-1878ffde2d08,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,152,test,"file cards, hunk folding, line numbers and full source reader share the original diff",False,legacy-not-retrospectively-reviewed
 LEG-12947bbfb7b6,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,182,test,large Dynamic Type keeps chrome and six-digit line numbers within the wrapped viewport,False,legacy-not-retrospectively-reviewed
 LEG-0a6ffbb0563a,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,232,test,wrapping preserves recorded layout and code rows use one compact source gutter,False,legacy-not-retrospectively-reviewed
+MAP-b814092cff72,L2,reviewed implementation,mobileapp/src/ui/ExecutionChainPresentation.test.tsx,8,reviewed-selector,"CRX-005 %s equal adjacent process displays are grouped, not hidden",False,CRX-005
 LEG-5d47ba2c967a,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,26,test,fleetHeadline synthesizes a chief-of-staff conclusion,False,legacy-not-retrospectively-reviewed
 LEG-8e4d3be1c3c6,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,41,test,one other session reads in the singular,False,legacy-not-retrospectively-reviewed
 LEG-5a7992f8e39b,L2,RN / mobile harness,mobileapp/src/ui/HQCard.test.tsx,46,test,no fleet pips are rendered anymore,False,legacy-not-retrospectively-reviewed
@@ -1628,7 +1644,7 @@ LEG-ad8c82ec5913,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal
 LEG-c3fe876fd4ed,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,130,test,"initial loading never claims that facts were not recorded, and failure can retry",False,legacy-not-retrospectively-reviewed
 LEG-e1c1ba198394,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,146,test,a stitched older session never requests the pane’s different current runtime,False,legacy-not-retrospectively-reviewed
 LEG-29360d62fe57,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,155,test,switching targets hides previous facts immediately and rejects late responses,False,legacy-not-retrospectively-reviewed
-LEG-502caf9b17cd,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,170,test.each(),a chain returned for another source never appears or becomes copyable: %j,True,legacy-not-retrospectively-reviewed
+LEG-502caf9b17cd,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,173,test.each(),a chain returned for another source never appears or becomes copyable: %j,True,legacy-not-retrospectively-reviewed
 LEG-41f5ace94205,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,184,test,a current profile reuses its already-read chain and distinguishes an empty record,False,legacy-not-retrospectively-reviewed
 LEG-a79056267e5c,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,194,test,a current header shows recorded ancestry without implying a historical message,False,legacy-not-retrospectively-reviewed
 LEG-6a8742105e11,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,207,test,a failed same-session chain can retry without replacing message facts,False,legacy-not-retrospectively-reviewed

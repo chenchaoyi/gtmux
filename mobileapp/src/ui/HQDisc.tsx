@@ -288,8 +288,8 @@ export function HQDisc({
             </View>
             <Text style={[styles.sheetBody, {color: pal.fg2}]}>
               {zh
-                ? 'HQ 负责协调 Agent 会话、汇总进度，并在授权范围内分派任务和审阅结果。当前未运行。'
-                : 'HQ coordinates agent sessions, summarizes progress, and dispatches and reviews work within your authorization. It is not running.'}
+                ? 'HQ 尚未启动。启动后可统一查看进度、安排任务。'
+                : 'HQ is not running. Start it to track progress and coordinate tasks.'}
             </Text>
             <Text style={[styles.sheetHow, {color: pal.fg3}]}>
               {zh ? '启动方式：服务器菜单栏 gtmux → 启动 HQ，或在终端运行 ' : 'Start it on your server: menu bar → Start HQ, or run '}

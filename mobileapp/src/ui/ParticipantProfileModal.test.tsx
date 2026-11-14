@@ -50,7 +50,7 @@ test('message facts stay historical while a same-session launch chain loads on d
   await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
   expect(read.mock.calls[1][0]).toMatchObject({id: '%4', session_id: 'old'});
   expect(read.mock.calls[1][0].at).toBeUndefined();
-  expect(text()).toContain('不代表这条消息当时的进程');
+  expect(text()).toContain('最近采集');
   expect(text()).toContain('old-model');
   expect(text()).not.toContain('new-model');
   act(() => buttons('profile-copy-0')[0].props.onPress());
@@ -78,7 +78,7 @@ test('a tmux message can verify its chain when the radar row has no session id',
   expect(read.mock.calls[1][0]).toEqual({id: '%4', session_id: 's'});
   expect(text()).toContain('message-model');
   expect(text()).not.toContain('current-model');
-  expect(text()).toContain('Latest observations for this conversation');
+  expect(text()).toContain('Last observed');
   act(() => buttons('profile-copy-0')[0].props.onPress());
   expect(Clipboard.setString).toHaveBeenLastCalledWith('/tools/codex');
 });
@@ -94,7 +94,7 @@ test('a changed pane binding cannot substitute its new runtime for a tmux messag
   expect(read.mock.calls[1][0]).toEqual({id: '%4', session_id: 'old'});
   expect(text()).toContain('old-model');
   expect(text()).toContain('could not be verified');
-  expect(text()).not.toContain('No launch chain has been recorded');
+  expect(text()).not.toContain('No process details available.');
   expect(buttons('profile-copy-0')).toHaveLength(0);
 });
 
@@ -148,7 +148,7 @@ test('a stitched older session never requests the pane’s different current run
   const client = {participantProfile: read} as unknown as GtmuxClient;
   await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 'new'}, turn: {session_id: 'old', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
   expect(buttons('profile-chain-toggle')).toHaveLength(0);
-  expect(text()).toContain('Launch chain not recorded for this message.');
+  expect(text()).toContain('No process details available.');
   expect(read).toHaveBeenCalledTimes(1);
 });
 
@@ -187,7 +187,7 @@ test('a current profile reuses its already-read chain and distinguishes an empty
   await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}}} client={client} lang="en" onClose={() => {}} />);});
   await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
   expect(read).toHaveBeenCalledTimes(1);
-  expect(text()).toContain('No launch chain has been recorded');
+  expect(text()).toContain('No process details available.');
   expect(buttons('profile-chain-retry')).toHaveLength(1);
 });
 
@@ -198,7 +198,7 @@ test('a current header shows recorded ancestry without implying a historical mes
   await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}}} client={client} lang="en" onClose={() => {}} />);});
   await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
   expect(read).toHaveBeenCalledTimes(1);
-  expect(text()).toContain('processes may have changed since');
+  expect(text()).toContain('Last observed');
   expect(text()).not.toContain('this message’s time');
   act(() => buttons('profile-copy-0')[0].props.onPress());
   expect(Clipboard.setString).toHaveBeenLastCalledWith('/tools/codex');
@@ -226,7 +226,7 @@ test('an unavailable current read does not claim the chain was never recorded', 
   await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}}} client={client} lang="en" onClose={() => {}} />);});
   await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
   expect(text()).toContain('could not be verified');
-  expect(text()).not.toContain('No launch chain has been recorded');
+  expect(text()).not.toContain('No process details available.');
   expect(buttons('profile-chain-retry')).toHaveLength(1);
 });
 

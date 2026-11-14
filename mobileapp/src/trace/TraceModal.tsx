@@ -48,6 +48,7 @@ import { darkCodeBackground, toolCodeHint } from '../ui/codeReading';
 import { CopyFeedbackContext } from '../ui/CopyableText';
 import { ArrowToBottomIcon, CopyIcon, SearchIcon, Chevron } from '../ui/Icons';
 import { ChromeText } from '../ui/ChromeText';
+import {ConversationReload} from '../ui/ConversationReload';
 import { SIcon } from '../ui/SettingsIcons';
 import { StatusBadge } from '../ui/StatusBadge';
 import { nativeDocumentPreview } from '../documents/nativePreview';
@@ -84,6 +85,8 @@ type Props = {
   onClose: () => void;
   failed?: boolean;
   onRetry?: () => void;
+  retrying?: boolean;
+  retryFailed?: boolean;
   earlierAvailable?: boolean;
   loadingEarlier?: boolean;
   onLoadEarlier?: () => void;
@@ -140,6 +143,8 @@ export function TraceReader({
   onClose,
   failed,
   onRetry,
+  retrying,
+  retryFailed,
   earlierAvailable,
   loadingEarlier,
   onLoadEarlier,
@@ -849,17 +854,7 @@ export function TraceReader({
               ? '暂时无法读取轨迹。'
               : 'Could not load trace records.'}
           </ChromeText>
-          {onRetry && (
-            <TouchableOpacity
-              accessibilityRole="button"
-              onPress={onRetry}
-              style={styles.iconButton}
-            >
-              <ChromeText style={{ color: BRAND }}>
-                {zh ? '重试' : 'Retry'}
-              </ChromeText>
-            </TouchableOpacity>
-          )}
+          {onRetry && <ConversationReload noteColor={pal.fg2} testID="trace-read-retry" onRetry={onRetry} busy={retrying} failed={retryFailed} zh={zh} />}
         </View>
       )}
       <View
