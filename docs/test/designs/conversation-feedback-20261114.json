@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner; self-review, not independent approval",
     "date": "2026-11-14",
     "decision": "Implement visible read retry, compact grouped process display and stable echo handoff",
-    "notes": "User screenshot reports weak/no-op Retry, identical chain rows with verbose replay caveat, long awaiting-confirmation and jumping duplicate echo. Producer already tracks unique PID with repeated-incarnation validation; identical sanitized nodes are distinct processes, so group count rather than claim duplicate source. Presentation only: no raw argv or authority/privacy changes. Read lanes stay bounded, explicit retry invalidates stale lane/ETag; no model-mutation retry. Echo uses existing attachment-aware identity+new occurrence baseline, stable source/optimistic key, never receipt-only execution proof; no rapid polling or fake timing. Schema/installed180 sources unchanged. All UI tests synthetic; no real screen/TCC/session send. Design committed before test edits; preserve meaningful older identity/permission guards and re-review copy expectations. Harness correction before browser test implementation: this repository uses Node+Playwright .test.cjs, not .spec.ts. Before browser regression edits, include existing browser profile assertions: only obsolete verbosity/action label expectations change; session/time, late result, authorization and copying guards remain. Echo mount test counts native View instances rather than composite/host duplicates; dependency setup failures retained separately."
+    "notes": "User screenshot reports weak/no-op Retry, identical chain rows with verbose replay caveat, long awaiting-confirmation and jumping duplicate echo. Producer already tracks unique PID with repeated-incarnation validation; identical sanitized nodes are distinct processes, so group count rather than claim duplicate source. Presentation only: no raw argv or authority/privacy changes. Read lanes stay bounded, explicit retry invalidates stale lane/ETag; no model-mutation retry. Echo uses existing attachment-aware identity+new occurrence baseline, stable source/optimistic key, never receipt-only execution proof; no rapid polling or fake timing. Schema/installed180 sources unchanged. All UI tests synthetic; no real screen/TCC/session send. Design committed before test edits; preserve meaningful older identity/permission guards and re-review copy expectations. Harness correction before browser test implementation: this repository uses Node+Playwright .test.cjs, not .spec.ts. Before browser regression edits, include existing browser profile assertions: only obsolete verbosity/action label expectations change; session/time, late result, authorization and copying guards remain. Echo mount test counts native View instances rather than composite/host duplicates; dependency setup failures retained separately. New user asks all analogous user-facing state copy audited: remove implementation explanations, keep concise distinct empty/loading/failed/read-only/queued states and actionable reload or existing Terminal navigation; do not change legal/security grants or invent action availability."
   },
   "cases": [
     {
@@ -71,7 +71,19 @@
         "internal/server/web/execution-chain.test.cjs",
         "tests/web/profile.test.cjs"
       ]
+    },
+    {
+      "id": "CRX-006",
+      "layer": "L2",
+      "description": "Plain bilingual state copy across agents and phone/tablet/Web/Trace; normal empty state and actual Terminal action",
+      "setup": "Render normal empty, read-only empty, failed association, retained history and busy read states; injectable existing Terminal navigation callback only when pane reader supports it",
+      "action": "Inspect rendered text and press the actual existing per-pane Terminal action; compare browser state copy",
+      "expected": "One short state, no log/implementation tutorial, clear action only when available; failure never becomes empty; readonly and queued meaning survives. Existing permission, draft and identity checks unchanged. Include production string audit inventory with reviewed exclusions rather than claim all product strings rewritten.",
+      "planned_files": [
+        "mobileapp/src/ui/ConversationCopy.test.tsx",
+        "tests/web/conversation-feedback.test.cjs"
+      ]
     }
   ],
-  "seal": "28d46b93868011689cc7c16673ea0f635c3e1ad7cf1a5744a58c56eff9df15c2"
+  "seal": "e371307dab3e98d1b9da3dffc87fc2949e176ad213dd231153e9ff5e23675de0"
 }
