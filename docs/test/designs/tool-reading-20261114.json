@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner; self-review, not independent approval",
-    "date": "2026-11-14",
+    "date": "2026-11-15",
     "decision": "Simplify existing tool inspector from screenshot: command and result first, one header row, raw arguments on demand",
-    "notes": "User sees duplicate nested labels/JSON and one-command outline plus ANSI remnants. Reuse bounded existing static command extraction; compact presentation only for tool sections, not a global formatter default. Preserve exact full input/result/raw copy and pagination, lossless numbers, truncation identity, disabled actions and provider-neutral schema. Do not execute code or infer success. Raw view never cleans output. Real access/data policy unchanged. New screenshot drives existing-source refinement, not a new prototype. Synthetic rendered tests only; no live input/device operation. New cases and existing browser CAS004 review precede their first edits in this branch. Layer review before first committed tool tests: split the real browser scenario into TSV-003/L3; RN renderer remains TSV-001/L2. This corrects inventory classification only, without claiming installed-device acceptance or changing test behavior. A single recognized shell body uses one Original arguments toggle rather than a redundant two-tab row."
+    "notes": "User sees duplicate nested labels/JSON and one-command outline plus ANSI remnants. Reuse bounded existing static command extraction; compact presentation only for tool sections, not a global formatter default. Preserve exact full input/result/raw copy and pagination, lossless numbers, truncation identity, disabled actions and provider-neutral schema. Do not execute code or infer success. Raw view never cleans output. Real access/data policy unchanged. New screenshot drives existing-source refinement, not a new prototype. Synthetic rendered tests only; no live input/device operation. New cases and existing browser CAS004 review precede their first edits in this branch. Layer review before first committed tool tests: split the real browser scenario into TSV-003/L3; RN renderer remains TSV-001/L2. This corrects inventory classification only, without claiming installed-device acceptance or changing test behavior. A single recognized shell body uses one Original arguments toggle rather than a redundant two-tab row. This renewed layer/presentation review is recorded after midnight; earlier14th review and WIP results remain in history."
   },
   "cases": [
     {
@@ -53,5 +53,5 @@
       ]
     }
   ],
-  "seal": "aca401e509d8e53422f4e48c98459cb3dd64b076291cb774988f9c2e533894a8"
+  "seal": "68128e53bc5a8b21d3aca8eb7125517fa6b12dda8ab41f12544a2cbaee1cbb0f"
 }
