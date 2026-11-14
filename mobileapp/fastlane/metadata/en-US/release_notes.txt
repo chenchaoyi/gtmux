@@ -1,3 +1,5 @@
-Knowledge landing keeps the revision you viewed; changed entries require a fresh review before confirmation.
-Failed publication stays pending. Retrying confirms the complete durable write before settling and preserves personal rules.
-The companion core adds a knowledge review workspace and resumable Dreaming. Model results remain proposals and never apply knowledge changes automatically.
+Restore sessions on your connected server from the App, with a selectable list and progress.
+Activity identifies recorded skill reads, file reads and web searches more accurately while keeping original tool details available.
+Improve Codex session association when startup evidence is temporarily unavailable.
+Keep automatic HQ notices local while busy and preserve a pending rotation after its identity warning.
+Keep knowledge source references when entries are revised.

@@ -1,5 +1,22 @@
 [
   {
+    "version": "1.0.179",
+    "en": [
+      "Restore sessions on your connected server from the App, with a selectable list and progress.",
+      "Activity identifies recorded skill reads, file reads and web searches more accurately while keeping original tool details available.",
+      "Improve Codex session association when startup evidence is temporarily unavailable.",
+      "Keep automatic HQ notices local while busy and preserve a pending rotation after its identity warning.",
+      "Keep knowledge source references when entries are revised."
+    ],
+    "zh": [
+      "App 新增服务器会话恢复入口，可查看列表、选择会话并跟踪恢复进度。",
+      "Activity 更准确地区分技能、文件读取和网页搜索，保留原始工具详情。",
+      "改善 Codex 会话关联，减少短暂启动失败后一直显示为外部会话的情况。",
+      "HQ 忙时自动提醒留在本地；身份暂时无法确认时，告警后仍保留原轮换请求。",
+      "知识条目修订后继续保留原有来源。"
+    ]
+  },
+  {
     "version": "1.0.178",
     "en": [
       "Knowledge landing keeps the revision you viewed; changed entries require a fresh review before confirmation.",
