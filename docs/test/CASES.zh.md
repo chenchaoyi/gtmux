@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1244 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1246 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3783 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2276 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2281 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 138 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -217,8 +217,15 @@
 | KBMEM-USAGE | Record reported stages with card/revision identity; no hits update; deduplicate, bounded size and strict input, audit excluded |
 | KBMEM-DREAM | Deterministic candidates and fingerprint; budget split input/generation; spent and unknown usage explicit; no session collection, model call or mutation |
 | KBMEM-HQ-WORKFLOW | Both seeds teach scoped consult, explicit missing_required handling, durable evidence admission, existing dream plan and review check/apply workflow, non-causal self reports and unknown-usage disclosure, HQ-selected CLI execution, persisted per-item progress and interruption inspection. Charter version is greater than installed 62. |
+| KBA-001 | Exact alternate lang/title/body survives when absent or null, no-Alt remains nil. Dry run changes no files; ledger stores preserved Alt, input is immutable, identity/receipts remain normal; identical retry does not append and stale CAS changes no bytes. |
+| KBA-002 | New alternate replaces every field exactly and contributes to proposal digest. Unknown fields remain errors; invalid alternates and an Alt attached to retire are refused rather than ignored. Omitted/null preserves and does not mean deletion; no clear API invented. New bytes reach pick/API readers; CAS, batch atomicity and idempotence remain. |
+| KBA-003 | Retired after the independent P1 on Q6afe22bc: historical nil supersedes must not restore old translations. Corrected historical fallback, future explicit persistence and replay boundaries live in KBAR-001 through KBAR-003; the rejected old expectation and source remain auditable in earlier Git and package snapshots. |
+| KBA-004 | Review now retains exact Alt in prepare, append and live entry while existing seven-origin/full-source, latest hit, guard, language/status/audience/privacy, card demotion, landing reopen, CAS and retry assertions stay effective. Ordinary write contracts remain unchanged. This design supersedes only prior KBL-002 alternate invalidation expectation. |
+| KBAR-001 | Historical nil stays nil; API has no alternate fields and an English reader gets revised Chinese with zh fallback, not stale English. Reads do not write. This assertion must fail on rejected Q, whose fold resurrects the old English. |
+| KBAR-002 | New records carry complete retained Alt explicitly and replay preserves exact bytes without predecessor fallback; a later clear stays nil. Preparation and replay do not mutate proposal or predecessor. Existing full CLI check/apply/retry cases still cover omitted/null, explicit update and no-Alt compatibility. |
+| KBAR-003 | Every omitted serialized alternate stays nil, regardless of live/dead/retitled predecessor; explicit serialized alternate wins and is cloned. Clears and ordinary resets never resurrect earlier English, no input aliasing. The former historical recovery expectations are intentionally replaced, not treated as successes. |
 | KBL-001 | All seven omitted origin fields survive in appended and live records; Sources/axes/tags/latest hits remain exact, nested candidate payloads survive. New Seq/At/OpID belong to this mutation; old ledger prefix stays byte-identical. Ordinary distribution reset and stale alternate removal remain intentional. |
-| KBL-002 | Dry-run changes no files. Prepared and appended operations retain seven origin fields; final live sources, language, privacy and protection survive; old translation is invalidated and landing reopens. New Seq/review evidence are new. Stale CAS writes nothing; identical retry appends nothing; later hit and unrelated guard remain current. |
+| KBL-002 | Dry-run changes no files. Prepared and appended operations retain seven origin fields; final live sources, language, privacy and protection survive; the exact alternate is retained and landing reopens. New Seq/review evidence are new. Stale CAS writes nothing; identical retry appends nothing; later hit and unrelated guard remain current. |
 | KBL-003 | Omitted seven origin fields inherit only from the named live predecessor; explicit nonzero successor values win, true legacy is sticky. Sources deduplicate by ID without dropping payload; no retired/stale predecessor metadata returns, no input aliasing, no new candidate receipt. Existing distribution/translation behavior stays distinct. |
 | KBL-004 | New candidate seqs/capture/pane/task take precedence; omitted range/legacy/migration survive; old and new Sources coexist once; hits increment exactly once; receipts refer only to actually consumed new candidates. Review never repeats an accepted receipt. |
 | KBL-GOLDEN | Only the successor gains task t-9 in API entry/index and CLI list, task t-9 in CLI show/topic footer, and the matching changed revision. No body, sequence, timestamp, other metadata, other entry, test runner or assertion is changed. |

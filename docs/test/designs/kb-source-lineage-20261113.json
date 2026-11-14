@@ -2,10 +2,10 @@
   "version": 1,
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex KB source-lineage implementation owner (self-review; not independent approval)",
-    "date": "2026-11-13",
-    "decision": "Preserve omitted origin metadata in both ordinary supersede and reviewed revisions; retain explicit successor values and existing lifecycle contracts",
-    "notes": "Read the committed 1068df76 KLS design and the formal implementation checkpoint, which is WIP rather than a frozen candidate. Its three-field reasoning is reused; unavailable dirty bytes are not reconstructed as a prior patch. This fresh scope adds pane/task/legacy/migration and the ordinary mutation path explicitly requested for this task. Inherit only from the live predecessor, persist seven omitted origin fields under the normal write lock and repeat inheritance on replay. Seq remains the new event watermark, not a source identifier; CandidateResult remains the current operation receipt. Existing Sources merge-by-ID and axes/hits/privacy behavior remain. Ordinary supersede still rejudges distribution; reviewed revise retains intent/reopens landing; neither transfers stale translation or marks a card verified. No production KB, model, real proposals, App or HQ identity changes. Cloud CI is the complete gate; local large builds remain paused."
+    "reviewer": "Codex KB Alt implementation owner (agent self-review; not independent approval)",
+    "date": "2026-11-15",
+    "decision": "Freshly review KBL-001 through KBL-004 for review-only alternate preservation; keep all source, ordinary supersede and lifecycle assertions",
+    "notes": "Fresh review before the Alt test implementation edits source_lineage_test.go. The earlier source-lineage design and its prior translation-drop expectation remain auditable in Git history. KBL-001 ordinary supersede still resets its alternate and distribution. KBL-002 now requires exact retained Alt in prepare, append and live state; all seven origins, full Sources, latest hits, guards, CAS, idempotency, privacy, status/audience, protection/card demotion and reopened landing checks remain. KBL-003 replay and explicit-origin precedence and KBL-004 new capture/receipts remain unchanged, with historical-reset and future-persistence replay covered by KBAR-001 through KBAR-003. All four mapped cases were reviewed together; no assertion or selector is removed. ReviewChange omitted/null preserves, an explicit complete alternate is validated and replaces atomically; no clear API or machine translation is introduced. Historical serialized nil retains its old reset semantics; new prepare explicitly records retained Alt. Replay respects explicit ledger clears, ordinary reset and dead predecessors. Independent P1 correction does not change any KBL case object or source/lifecycle assertion. This is byte retention, not a claim of translation equivalence. See the paired KBA-001 through KBA-004 design. No real KB, proof, queue, model, client or release actions."
   },
   "cases": [
     {
@@ -25,7 +25,7 @@
       "description": "Review check/apply retains sources with CAS and idempotent retry",
       "setup": "Same three synthetic source shapes; hypothesis, protected memory, sensitive confirmation, audience, language/alternate and a separately updated guard entry.",
       "action": "Run dry-run, real ApplyReview, latest CLI show/render; apply a stale different proposal, retry the identical proposal, then read after another hit.",
-      "expected": "Dry-run changes no files. Prepared and appended operations retain seven origin fields; final live sources, language, privacy and protection survive; old translation is invalidated and landing reopens. New Seq/review evidence are new. Stale CAS writes nothing; identical retry appends nothing; later hit and unrelated guard remain current.",
+      "expected": "Dry-run changes no files. Prepared and appended operations retain seven origin fields; final live sources, language, privacy and protection survive; the exact alternate is retained and landing reopens. New Seq/review evidence are new. Stale CAS writes nothing; identical retry appends nothing; later hit and unrelated guard remain current.",
       "planned_files": [
         "internal/knowledge/source_lineage_test.go"
       ]
@@ -53,5 +53,5 @@
       ]
     }
   ],
-  "seal": "e44a013085d68b9d4cc809f485d278bfaef21e291c7ab5d6095a9d1813de3602"
+  "seal": "a6f6373a66647d0f796c81b5cee731ebaa635d32cc4f7f24697fb302f1e7e64d"
 }

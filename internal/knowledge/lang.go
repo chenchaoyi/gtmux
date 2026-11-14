@@ -29,6 +29,21 @@ type altHalf struct {
 	Body  string `json:"body,omitempty"`
 }
 
+// reviewAlternate copies a replacement or the current live half during preparation,
+// without claiming translation equivalence. New operations persist this explicitly.
+// Replay passes no predecessor so historical omissions retain their reset semantics.
+// Keep preparation/replay independent of inputs.
+func reviewAlternate(replacement, previous *altHalf) *altHalf {
+	if replacement == nil {
+		replacement = previous
+	}
+	if replacement == nil {
+		return nil
+	}
+	copy := *replacement
+	return &copy
+}
+
 // inferLang guesses the language an entry was written in. The title decides when it
 // can: it is short and in the author's language, so any Han character makes it Chinese
 // and Latin letters alone make it English. Only a title with no letters at all (a bare

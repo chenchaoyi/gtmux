@@ -2178,6 +2178,11 @@ LEG-3a3b0ab2e658,L1,Go core / CLI / server,internal/knowledge/retrieve_test.go,1
 LEG-d530a53cc97a,L1,Go core / CLI / server,internal/knowledge/retrieve_test.go,40,Test,TestATinyBaseStillMatches,False,legacy-not-retrospectively-reviewed
 LEG-5d7c60772948,L1,Go core / CLI / server,internal/knowledge/retrieve_test.go,55,Test,TestSearchNarrowsByTopic,False,legacy-not-retrospectively-reviewed
 LEG-74e7858d3763,L1,Go core / CLI / server,internal/knowledge/retrieve_test.go,70,Test,TestSearchIsQuietWhenNothingIsClose,False,legacy-not-retrospectively-reviewed
+MAP-5f7f41cf456a,L2,reviewed implementation,internal/knowledge/review_alt_replay_test.go,12,reviewed-selector,TestHistoricalReviewAltReadFallback,False,"KBAR-001,KBAR-002,KBAR-003"
+MAP-2afdf3478090,L2,reviewed implementation,internal/knowledge/review_alt_replay_test.go,47,reviewed-selector,TestPreparedReviewAltReplay,False,"KBAR-001,KBAR-002,KBAR-003"
+MAP-37dac3d37b1e,L2,reviewed implementation,internal/knowledge/review_alt_replay_test.go,86,reviewed-selector,TestReviewedAltReplayBoundaries,False,"KBAR-001,KBAR-002,KBAR-003"
+MAP-d17be9623e2e,L2,reviewed implementation,internal/knowledge/review_alt_test.go,61,reviewed-selector,TestReviewAltJSONTransaction,False,"KBA-001,KBA-002,KBA-003"
+MAP-03c21bf26182,L2,reviewed implementation,internal/knowledge/review_alt_test.go,144,reviewed-selector,TestReviewAltInvalidBatch,False,"KBA-001,KBA-002,KBA-003"
 MAP-0f80e5899da6,L2,reviewed implementation,internal/knowledge/review_test.go,30,reviewed-selector,TestReviewAtomicConflictAndIdempotentRetry,False,KBMEM-REVIEW
 MAP-def3fe83ca29,L2,reviewed implementation,internal/knowledge/review_test.go,64,reviewed-selector,TestReviewRejectsWholeBatchBeforeAnyAppend,False,KBMEM-REVIEW
 MAP-32cc723818f0,L2,reviewed implementation,internal/knowledge/review_test.go,103,reviewed-selector,TestReviewDryRunWritesNothingAndProtectedRetireRefused,False,KBMEM-REVIEW
@@ -2189,8 +2194,8 @@ LEG-d6b1859d0bad,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,
 LEG-693f614997fb,L1,Go core / CLI / server,internal/knowledge/sensitive_test.go,83,Test,TestLintNamesACredentialWrittenWithoutAsking,False,legacy-not-retrospectively-reviewed
 MAP-afe47be3eae8,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,127,reviewed-selector,TestSourceLineageOrdinarySupersede,False,"KBL-001,KBL-002,KBL-003,KBL-004"
 MAP-612f85bd86d7,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,190,reviewed-selector,TestSourceLineageReviewApply,False,"KBL-001,KBL-002,KBL-003,KBL-004"
-MAP-653639d05776,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,291,reviewed-selector,TestSourceLineageReplay,False,"KBL-001,KBL-002,KBL-003,KBL-004"
-MAP-01de870ed64f,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,342,reviewed-selector,TestSourceLineageNewCapture,False,"KBL-001,KBL-002,KBL-003,KBL-004"
+MAP-653639d05776,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,297,reviewed-selector,TestSourceLineageReplay,False,"KBL-001,KBL-002,KBL-003,KBL-004"
+MAP-01de870ed64f,L2,reviewed implementation,internal/knowledge/source_lineage_test.go,348,reviewed-selector,TestSourceLineageNewCapture,False,"KBL-001,KBL-002,KBL-003,KBL-004"
 MAP-e5314cedb7a1,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,78,reviewed-selector,TestPublicSyncSerializesSnapshotAndPublication,False,KBSYNC-SERIALIZATION
 MAP-59a004277dc8,L2,reviewed implementation,internal/knowledge/sync_serialization_test.go,218,reviewed-selector,TestPublicSyncReleasesLockOnErrorAndRefusal,False,KBSYNC-SERIALIZATION
 MAP-e7a25aaee18c,L2,reviewed implementation,internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden,1,reviewed-selector,"""task"":""t-9""",False,KBL-GOLDEN

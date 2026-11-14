@@ -2207,7 +2207,8 @@
       "KBL-001",
       "KBL-002",
       "KBL-003",
-      "KBL-004"
+      "KBL-004",
+      "KBA-004"
     ],
     "selectors": [
       "TestSourceLineageOrdinarySupersede",
@@ -2794,6 +2795,29 @@
     ],
     "selectors": [
       "TestCFL006InitialRootMetadataRetryCommitsThenResumesHeartbeats"
+    ]
+  },
+  "internal/knowledge/review_alt_test.go": {
+    "cases": [
+      "KBA-001",
+      "KBA-002"
+    ],
+    "selectors": [
+      "TestReviewAltJSONTransaction",
+      "TestReviewAltInvalidBatch"
+    ],
+    "reason": "Retire the rejected KBA-003 historical recovery contract; its corrected replay matrix moves to review_alt_replay_test.go under design-first KBAR-001..003. Keep KBA-001/002 transaction assertions unchanged."
+  },
+  "internal/knowledge/review_alt_replay_test.go": {
+    "cases": [
+      "KBAR-001",
+      "KBAR-002",
+      "KBAR-003"
+    ],
+    "selectors": [
+      "TestHistoricalReviewAltReadFallback",
+      "TestPreparedReviewAltReplay",
+      "TestReviewedAltReplayBoundaries"
     ]
   }
 }
