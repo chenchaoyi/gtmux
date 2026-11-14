@@ -23,3 +23,5 @@ Before submission, a bounded private hard-link pin keeps each original claim ino
 ### Identity warning and request expiry
 
 A one-minute identity warning keeps the same pending rotation. Persist its one-shot warning ownership before attempting an attention notification; acceptance does not prove display or reading. Unknown evidence, a changed reason or a reload never extends the original thirty-minute deadline. Exact recovery within that deadline still passes all existing input, identity, target, completed-turn and lease guards. Expiry remains a terminal no-input outcome. This supersedes the earlier HRW012 sixty-second terminal-failure expectation; HRW016 migrates its valid protections.
+
+Desktop notification files are only expected when the host advertises that capability. Headless hosts retain the same pending, warning-attempt marker, deadline and input guards without creating a macOS notification queue. Tests assert both paths from the shared capability source; a queue attempt is not presentation proof.
