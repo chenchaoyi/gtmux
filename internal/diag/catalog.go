@@ -77,6 +77,7 @@ var Catalog = []CatalogEntry{
 	{"act.unwatch", []string{"panes"}},
 	{"act.update", []string{"update"}},
 	{"act.upload", []string{"serve"}},
+	{"act.wake.accepted", []string{"hq", "relay", "serve", "hook"}},
 	{"act.wake.delivered", []string{"serve", "hook"}},
 	{"act.wake.dropped", []string{"serve", "hook"}},
 	{"act.wait.suppressed", []string{"hook"}},

@@ -152,20 +152,21 @@ type io struct {
 	receipt func(pane, needle string, since int64) driver.Verdict
 	// foreground names the pane's foreground command, so a drain can tell a shell
 	// waiting for an agent to start from the agent itself. nil → unknown → proceed.
-	nativeSubmit func(pane, payload, id string) (dispatch.Result, bool)
-	foreground   func(pane string) string
+	nativePrepare func(pane string) func(payload, id string) (dispatch.Result, bool)
+	nativeSubmit  func(pane, payload, id string) (dispatch.Result, bool) // isolated legacy transport seam
+	foreground    func(pane string) string
 }
 
 var prod = io{
-	nativeSubmit: nativeWakeSubmit,
-	capture:      tmux.CapturePane,
-	captureColor: tmux.CaptureFullColor,
-	captureFull:  tmux.CaptureFull,
-	paste:        tmux.Paste,
-	enter:        func(pane string) error { return tmux.SendKey(pane, "Enter") },
-	sleep:        func() { time.Sleep(twoFrameGap) },
-	nowNano:      func() int64 { return time.Now().UnixNano() },
-	inMode:       tmux.InMode,
+	nativePrepare: prepareNativeWake,
+	capture:       tmux.CapturePane,
+	captureColor:  tmux.CaptureFullColor,
+	captureFull:   tmux.CaptureFull,
+	paste:         tmux.Paste,
+	enter:         func(pane string) error { return tmux.SendKey(pane, "Enter") },
+	sleep:         func() { time.Sleep(twoFrameGap) },
+	nowNano:       func() int64 { return time.Now().UnixNano() },
+	inMode:        tmux.InMode,
 	receipt: func(pane, needle string, since int64) driver.Verdict {
 		d := driver.For(strings.TrimSpace(tmux.Display(pane, "#{pane_current_command}")))
 		if d.Receipt == nil {
@@ -389,9 +390,9 @@ func isOrphanClaim(e os.DirEntry) bool {
 // A reclaim can race a live-but-slow drainer, in which case the batch delivers twice —
 // with the SAME batch id, which is the documented (and recognizable) duplicate. The
 // alternative it replaces was a permanent silent loss.
-func reclaimOrphans() {
+func reclaimOrphansExcept(protected map[string]bool) {
 	for _, e := range readQueue() {
-		if !isOrphanClaim(e) {
+		if protected[e.Name()] || !isOrphanClaim(e) {
 			continue
 		}
 		src := filepath.Join(queueDir(), e.Name())
@@ -613,9 +614,39 @@ func batchID(claims []string, payload string) string {
 // A claim is REMOVED only once the delivery is acked; otherwise it is returned to the
 // queue for a later attempt.
 func drainInto(x io, pane string) {
-	reclaimOrphans()
+	if pending, err := hqinput.RotationPending(pane); err != nil || pending {
+		return // own stranded repair ran first; do not claim a NEW batch
+	}
+	// Recover possible native submissions before ordinary orphan handling, even
+	// if the current pane now selects a legacy route. A restart is not a retry.
+	protected, err := recoverNativeIntentsWithProtection()
+	if err != nil {
+		diag.ReportStoreFailure("hq-native-wake", err)
+		if protected == nil {
+			return
+		} // unreadable/malformed intent holds the whole channel
+	}
+	var submit func(string, string) (dispatch.Result, bool)
+	if x.nativePrepare != nil {
+		submit = x.nativePrepare(pane)
+	} else if x.nativeSubmit != nil {
+		submit = func(payload, id string) (dispatch.Result, bool) { return x.nativeSubmit(pane, payload, id) }
+	}
+	if submit != nil {
+		for _, e := range readQueue() {
+			if !protected[e.Name()] && strings.HasSuffix(e.Name(), sendingSuffix) && isOrphanClaim(e) {
+				// Pre-journal native runtimes cannot prove these old claims unsent.
+				if err := parkNativeClaim(filepath.Join(queueDir(), e.Name())); err != nil {
+					diag.ReportStoreFailure("hq-native-wake", err)
+					return
+				}
+			}
+		}
+	}
+	reclaimOrphansExcept(protected)
 	settleEarlierAttempts(x, pane)
-	due := queuedNames(func(n string) bool { return dueOf(n) <= x.nowNano() })
+	// Never rename a queued replacement onto a held foreign/changed claim.
+	due := queuedNames(func(n string) bool { return !protected[n+sendingSuffix] && dueOf(n) <= x.nowNano() })
 	claimed, msgs, held := claimBatch(due)
 	if len(msgs) == 0 {
 		for _, c := range claimed {
@@ -631,27 +662,56 @@ func drainInto(x io, pane string) {
 	id := "#" + batchID(claimed, payload)
 	payload += " · " + id
 
-	if x.nativeSubmit != nil {
-		if result, managed := x.nativeSubmit(pane, payload, id); managed {
+	if submit != nil {
+		intent, err := prepareNativeIntent(pane, id, payload, claimed)
+		if err != nil {
+			diag.ReportStoreFailure("hq-native-wake", err)
+			return
+		}
+		result, managed := submit(payload, id)
+		if managed {
 			switch result.State {
-			case dispatch.StateQueued, dispatch.StateLanded:
-				finishDelivered(pane, payload, claimed)
+			case dispatch.StateQueued:
+				intent.Outcome = "accepted"
+			case dispatch.StateLanded:
+				intent.Outcome = "delivered"
 			case dispatch.StateRefusedDraft, dispatch.StateRefusedWaiting:
-				for _, c := range claimed {
-					_ = os.Rename(c, claimBase(c))
-				}
+				intent.Outcome = "refused"
 			default:
-				// Never form a new batch ID for entries whose native acceptance
-				// is uncertain. Retain the exact payload for manual reconciliation.
-				for _, c := range claimed {
-					_ = os.Rename(c, claimBase(c)+nativeUncertainSuffix)
-				}
+				intent.Outcome = "uncertain"
+			}
+			if err := writeNativeIntent(intent); err != nil {
+				diag.ReportStoreFailure("hq-native-wake", err)
+				return
+			}
+			if err := settleNativeIntent(intent); err != nil {
+				diag.ReportStoreFailure("hq-native-wake", err)
+				return
+			}
+			switch intent.Outcome {
+			case "accepted":
+				finishAccepted(pane, payload, nil)
+			case "delivered":
+				finishDelivered(pane, payload, nil)
+			case "uncertain":
 				writeFailCount(readFailCount() + 1)
 				events.AuditWakeDropped(events.DropUnconfirmed, payload, time.Now().Unix())
 			}
 			return
 		}
+		// Only an isolated legacy seam can decline after preparation; no native
+		// attempt has occurred. Production selects the route before journaling.
+		intent.Outcome = "refused"
+		if err := writeNativeIntent(intent); err != nil {
+			diag.ReportStoreFailure("hq-native-wake", err)
+			return
+		}
+		if err := os.Remove(nativeIntentPath(intent)); err != nil {
+			diag.ReportStoreFailure("hq-native-wake", err)
+			return
+		}
 	}
+
 	since := x.nowNano()/int64(time.Second) - 1 // receipt window opens just before the paste
 	switch deliverPayload(x, pane, payload, id, since) {
 	case delivered:
@@ -773,6 +833,16 @@ func queuedEntries(ids []string) []string {
 // own receipt records only the six-hex id.
 func finishDelivered(pane, payload string, claimed []string) {
 	events.AuditWakeDelivered(pane, payload, time.Now().Unix())
+	for _, c := range claimed {
+		_ = os.Remove(c)
+	}
+	writeFailCount(0)
+}
+
+// Native acceptance is durable transport evidence, not a conversation receipt
+// or consumption of any source event. The exact native spool receipt remains.
+func finishAccepted(pane, payload string, claimed []string) {
+	events.AuditWakeAccepted(pane, payload, time.Now().Unix())
 	for _, c := range claimed {
 		_ = os.Remove(c)
 	}

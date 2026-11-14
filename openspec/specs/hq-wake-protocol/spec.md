@@ -1097,3 +1097,57 @@ HQ unread debt, default event pulls, attention checks and history SHALL use the 
 #### Scenario: Observation interval
 - **WHEN** the user stops and later reenrolls a conversation
 - **THEN** only activity in the new interval is observed and prior records are retained
+
+### Requirement: Automatic wakes preserve a maintenance window
+Automatic Codex wakes SHALL freshly verify an exact loaded idle thread before at most one ordinary turn/start attempt. Known busy or unknown input SHALL remain local; uncertain submissions SHALL NOT be automatically replayed. The path SHALL NOT use explicit steering, persistent future queue, resume or fallback. The public protocol has no atomic idle-only precondition: an external turn may start between sampling and submission. Acceptance and an acknowledged turn ID SHALL NOT be represented as proof of a causally new turn, model-read or source-event consumption.
+
+#### Scenario: A rotation is queued while automatic wakes are pending
+- **GIVEN** an unsent rotation for the exact HQ pane and durable wake batches
+- **WHEN** wake delivery or draining runs
+- **THEN** no new automatic batch is claimed, pasted or submitted until the reservation ends
+- **AND** existing exact stranded-batch repair and all identity/draft guards remain
+
+#### Scenario: No safe maintenance window arrives
+- **WHEN** the existing rotation deadline expires
+- **THEN** the original routine failure audit and one independent attention notification request report failure without repeating reset or removing old native queue entries
+- **AND** the desktop consumer does not require an agent waiting prompt, offers Jump-only actions and respects notification settings, system permission, stale suppression and Focus; enqueue/center acceptance is not OS presentation proof
+
+#### Scenario: A native outcome is durable but local cleanup is interrupted
+- **GIVEN** original A has a pre-submission batch intent with its exact payload, delivery identity and claim fingerprints (device/inode, payload hash and observed ctime generation)
+- **WHEN** the process stops after possible native submission and a genuinely new B later arrives
+- **THEN** A is retained uncertain or closed from a known terminal result without regrouping or resubmitting it, while B may proceed normally
+- **AND** malformed or conflicting recovery evidence does not authorize input or deletion of replacement work; a fresh same-text event is not body-hash deduplicated
+
+#### Scenario: A newer keyed producer writes while the old batch is busy
+- **WHEN** A is claimed, a delayed producer publishes newest B in the same key slot, and native delivery refuses while busy
+- **THEN** returning A never replaces B; the latest payload and original key/due/priority survive
+- **AND** recovery from interrupted no-clobber publication preserves the already-published queue inode and any legitimate producer update
+
+#### Scenario: HQ identity evidence temporarily disappears
+- **WHEN** a queued unsent rotation cannot verify its current agent/session/frontend/active identity
+- **THEN** it sends no reset, reports a bounded known reason or explicit unknown, and does not claim that a different session was observed
+- **AND** repeated missing evidence or a changed diagnostic reason does not extend the first unavailable time or original deadline; persistent unavailability attempts one attention warning after 60 seconds while preserving the same request; only the original 30-minute deadline is terminal
+- **AND** exact identity recovery still passes the original completed-turn, draft, active/waiting and target checks; an observed nonempty different session or agent remains a hard refusal
+
+#### Scenario: A file identifier is reused or claim generation changes
+- **WHEN** a cleanup candidate has the same device/inode and body but differs from saved ctime evidence
+- **THEN** recovery holds without deleting or resubmitting the claim
+- **AND** only an observed owned interrupted publication permits its expected metadata change: refused shared queue ownership may carry newest B, while an uncertain parked link must retain the exact original payload and inode
+
+### Requirement: Warning ownership does not replace request expiry
+A queued unsent rotation SHALL persist one request-owned identity warning attempt before publishing an attention. It SHALL retain the exact pending request, original CreatedAt and thirty-minute deadline after that warning. A changed diagnostic reason or process reload SHALL NOT repeat the warning or extend either original observation or request time. Exact identity recovery within the original deadline SHALL pass every existing admission guard before advancing at most once. Original expiry SHALL fail without input even if identity first became unavailable less than a minute earlier or has just recovered. Best-effort notification acceptance SHALL NOT be reported as OS display or user reading and an unknown publication SHALL NOT authorize retries.
+
+#### Scenario: Warning followed by exact recovery
+- **GIVEN** the same unsent request is identity-unavailable at one second
+- **WHEN** it is still unknown at sixty-one seconds, then exactly recovers at sixty-two seconds
+- **THEN** the first tick attempts one attention and retains the request without keys; the recovery tick may proceed only through all existing identity, target, draft, active, waiting, completed-turn and lease guards
+- **AND** stale ticks, reason changes and reloads do not repeat the warning/reset or extend the original deadline
+
+### Requirement: Persistent native claim incarnation evidence
+Before publishing a native intent or attempting native input, the drainer SHALL create and verify a private same-inode hard-link anchor for each claim and synchronize the anchor directory. The durable intent SHALL retain exact anchor names, payload, delivery identity and observed generation metadata. A naturally unlinked and recreated claim cannot reuse the still-live original inode, independently of timestamp precision. Missing, foreign or unobservable anchors SHALL NOT authorize cleanup or input. Prepared/uncertain outcomes SHALL retain original evidence; known terminal cleanup SHALL retire only verified own references after its claim transition and remove the journal last. Pin admission SHALL stop at 1,600 retained references; recovery SHALL scan at most 200 intents and hold on overflow, with 128 KiB per evidence read. An unknown pre-intent orphan SHALL be retained rather than automatically replayed or removed. These checks apply under the cooperating-writer lease, not as atomic compare-and-unlink against arbitrary same-user replacement of every anchor and journal.
+
+#### Scenario: An uncertain parked batch loses its anchor
+- **GIVEN** an original batch has already been parked with an uncertain native result
+- **WHEN** its retained anchor is missing or belongs to a different file
+- **THEN** recovery protects that exact claim slot without replaying or deleting original evidence
+- **AND** valid conflicting batches do not prevent genuinely independent entries from obtaining their own strict admission; malformed or unreadable intent holds the whole channel

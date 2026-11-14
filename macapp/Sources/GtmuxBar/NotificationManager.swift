@@ -283,6 +283,13 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             content.sound = .default
             content.interruptionLevel = .active // respect the user's Focus settings
             id = waitID(req.pane)
+        } else if req.kind == "attention" {
+            // A failed maintenance operation is not a waiting question or a
+            // finished turn. Keep Jump-only actions and normal Focus behavior.
+            content.categoryIdentifier = doneCategory
+            content.sound = .default
+            content.interruptionLevel = .active
+            id = req.pane.isEmpty ? UUID().uuidString : "gtmux-attention-\(req.pane)"
         } else {
             content.categoryIdentifier = doneCategory
             content.sound = nil // finished is calm
@@ -356,6 +363,12 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             let cy = rect.midY - bh / 2
             NSBezierPath(roundedRect: NSRect(x: rect.midX - gap / 2 - bw, y: cy, width: bw, height: bh), xRadius: bw / 2, yRadius: bw / 2).fill()
             NSBezierPath(roundedRect: NSRect(x: rect.midX + gap / 2, y: cy, width: bw, height: bh), xRadius: bw / 2, yRadius: bw / 2).fill()
+        } else if kind == "attention" {
+            NSColor.white.setFill(); NSBezierPath(ovalIn: ring).fill()
+            NSColor.systemOrange.setFill(); NSBezierPath(ovalIn: rect).fill()
+            NSColor.white.setFill()
+            NSBezierPath(roundedRect: NSRect(x: rect.midX - 2, y: rect.minY + 16, width: 4, height: 18), xRadius: 2, yRadius: 2).fill()
+            NSBezierPath(ovalIn: NSRect(x: rect.midX - 2, y: rect.minY + 8, width: 4, height: 4)).fill()
         } else {
             NSColor.white.setFill(); NSBezierPath(ovalIn: ring).fill()
             Theme.Status.idleNS.setFill(); NSBezierPath(ovalIn: rect).fill()

@@ -222,9 +222,15 @@ func breachSet(bs []rotateBreach) string {
 // when the pane has not run a turn yet (a just-launched HQ), which is not an error: there is
 // simply no session to judge.
 func hqSessionRef(pane string) (agent, sessionID string) {
+	agent, sessionID, _ = hqSessionEvidence(pane)
+	return agent, sessionID
+}
+
+// Diagnostic evidence never replaces the existing session/driver predicates.
+func hqSessionEvidence(pane string) (agent, sessionID, reason string) {
 	loc := strings.TrimSpace(tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"))
 	if loc == "" {
-		return "", ""
+		return "", "", "pane-location-unavailable"
 	}
 	live := radar.AgentDriverKey(pane)
 	if live == "" {
@@ -236,8 +242,12 @@ func hqSessionRef(pane string) (agent, sessionID string) {
 			live = cmd
 		}
 	}
-	rec, ok := resume.LoadLive(loc)
-	return sessionRefForLiveAgent(live, rec, ok)
+	rec, ok, reason := resume.LoadLiveDiagnostic(loc)
+	agent, sessionID = sessionRefForLiveAgent(live, rec, ok)
+	if live == "" && reason == "" {
+		reason = "agent-driver-unavailable"
+	}
+	return agent, sessionID, reason
 }
 
 // A resume record can outlive the agent in its pane. In particular, a Codex HQ

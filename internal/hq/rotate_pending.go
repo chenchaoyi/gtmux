@@ -18,6 +18,8 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqinput"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -27,23 +29,27 @@ import (
 // Codex will accept /new. The resident serve owns delivery and settlement; the
 // command only queues, and never calls a pasted slash command "success".
 type rotationRequest struct {
-	TargetStamp string `json:"targetStamp,omitempty"`
-	Successor   string `json:"successor,omitempty"`
-	SwitchedAt  int64  `json:"switchedAt,omitempty"`
-	BootstrapAt int64  `json:"bootstrapAt,omitempty"`
-	Pane        string `json:"pane"`
-	Agent       string `json:"agent"`
-	Retiring    string `json:"retiring"`
-	Input       string `json:"input"`
-	CreatedAt   int64  `json:"createdAt"`
-	SentAt      int64  `json:"sentAt,omitempty"`
+	IdentityUnavailableAt int64  `json:"identityUnavailableAt,omitempty"`
+	IdentityCause         string `json:"identityCause,omitempty"`
+	IdentityWarnedAt      int64  `json:"identityWarnedAt,omitempty"`
+	TargetStamp           string `json:"targetStamp,omitempty"`
+	Successor             string `json:"successor,omitempty"`
+	SwitchedAt            int64  `json:"switchedAt,omitempty"`
+	BootstrapAt           int64  `json:"bootstrapAt,omitempty"`
+	Pane                  string `json:"pane"`
+	Agent                 string `json:"agent"`
+	Retiring              string `json:"retiring"`
+	Input                 string `json:"input"`
+	CreatedAt             int64  `json:"createdAt"`
+	SentAt                int64  `json:"sentAt,omitempty"`
 }
 
 const (
-	rotationReadyDelay = 3 * time.Second
-	rotationSettleWait = 45 * time.Second
-	rotationQueueLimit = 30 * time.Minute
-	rotationReadyWait  = 3 * time.Minute
+	rotationReadyDelay   = 3 * time.Second
+	rotationSettleWait   = 45 * time.Second
+	rotationQueueLimit   = 30 * time.Minute
+	rotationReadyWait    = 3 * time.Minute
+	rotationIdentityWait = time.Minute
 )
 
 // Use the existing guarded HQ startup channel, after releasing the shared input
@@ -78,7 +84,7 @@ func rotationTargetMatches(expected, actual string) bool {
 func rotationPendingPath() string { return filepath.Join(state.Dir(), "hqwake", "rotate-pending.json") }
 
 func readRotationRequest() (rotationRequest, bool, error) {
-	b, err := os.ReadFile(rotationPendingPath())
+	b, err := hqinput.ReadRotationFile()
 	if errors.Is(err, os.ErrNotExist) {
 		return rotationRequest{}, false, nil
 	}
@@ -149,6 +155,18 @@ func RequestHQRotation() (rotationRequest, bool, string) {
 }
 
 func queueHQRotation(r rotationRequest) (rotationRequest, bool, string) {
+	release, acquired, err := hqinput.Acquire()
+	if err != nil {
+		return rotationRequest{}, false, err.Error()
+	}
+	if !acquired {
+		return rotationRequest{}, false, "HQ input is busy; rotation was not registered"
+	}
+	defer release()
+	return queueHQRotationLocked(r)
+}
+
+func queueHQRotationLocked(r rotationRequest) (rotationRequest, bool, string) {
 	if current, exists, err := readRotationRequest(); err != nil {
 		return rotationRequest{}, false, err.Error()
 	} else if exists {
@@ -159,7 +177,14 @@ func queueHQRotation(r rotationRequest) (rotationRequest, bool, string) {
 	}
 	if err := writeRotationFile(r, true); err != nil {
 		if errors.Is(err, os.ErrExist) {
-			return queueHQRotation(r) // another CLI won creation; report its request
+			current, exists, readErr := readRotationRequest()
+			if readErr != nil {
+				return rotationRequest{}, false, readErr.Error()
+			}
+			if exists && current.Pane == r.Pane && current.Agent == r.Agent && current.Retiring == r.Retiring {
+				return current, true, ""
+			}
+			return rotationRequest{}, false, "HQ rotation changed during registration"
 		}
 		return rotationRequest{}, false, err.Error()
 	}
@@ -167,7 +192,7 @@ func queueHQRotation(r rotationRequest) (rotationRequest, bool, string) {
 	return r, true, ""
 }
 
-// ProcessPendingHQRotation runs only from serve's slow tick. An unfinished turn,
+// ProcessPendingHQRotation runs before draining on fast and slow ticks. An unfinished turn,
 // a draft, or an unreadable composer leaves the durable request untouched.
 func ProcessPendingHQRotation() {
 	r, exists, err := readRotationRequest()
@@ -179,19 +204,19 @@ func ProcessPendingHQRotation() {
 	}
 	pane := hqpane.Find()
 	if pane == "" {
-		failRotation(r, "HQ pane disappeared", time.Now().Unix())
+		failQueuedRotation(r, "HQ pane disappeared", time.Now().Unix())
 		return
 	}
 	if !rotationTargetMatches(r.TargetStamp, rotationTargetStamp(pane)) {
-		failRotation(r, "HQ target changed or its pre-reboot identity is unavailable; no input sent", time.Now().Unix())
+		failQueuedRotation(r, "HQ target changed or its pre-reboot identity is unavailable; no input sent", time.Now().Unix())
 		return
 	}
-	agent, sid := hqSessionRef(pane)
-	advanceHQRotation(r, pane, agent, sid, dispatchbridge.DispatchIO(pane), transcript.CodexLastTurnBoundary, time.Now())
+	agent, sid, reason := hqSessionEvidence(pane)
+	advanceHQRotation(r, pane, agent, sid, dispatchbridge.DispatchIO(pane), transcript.CodexLastTurnBoundary, time.Now(), reason)
 }
 
 func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.IO,
-	boundary func(string) (string, time.Time), now time.Time) {
+	boundary func(string) (string, time.Time), now time.Time, identityReason ...string) {
 	release, acquired, err := hqinput.Acquire()
 	if err != nil {
 		diag.ReportStoreFailure("hq-input", err)
@@ -222,11 +247,15 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 		failRotation(r, "HQ target changed while waiting for input; no input sent", now.Unix())
 		return
 	}
-	if pane != r.Pane || agent != r.Agent {
+	if pane != r.Pane || agent != "" && agent != r.Agent {
 		failRotation(r, "HQ pane or agent changed", now.Unix())
 		return
 	}
 	if r.SentAt != 0 {
+		if agent == "" {
+			failRotation(r, "HQ agent identity unavailable after reset; no reset will be repeated", now.Unix())
+			return
+		}
 		if sid == "" || sid == r.Retiring {
 			// Legacy hooks can precede the location record. Modern bridges also bind
 			// empty threads, so a changed ID alone is no durability acknowledgement.
@@ -274,9 +303,37 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 		}
 		return
 	}
-	if sid != r.Retiring {
+	if sid != "" && sid != r.Retiring {
 		failRotation(r, "HQ session changed before reset was sent", now.Unix())
 		return
+	}
+	reason := ""
+	if len(identityReason) > 0 {
+		reason = rotationIdentityCode(identityReason[0])
+	}
+	if reason == "" && agent == "" {
+		reason = "agent-evidence-unavailable"
+	}
+	if reason == "" && sid == "" {
+		reason = "session-evidence-unavailable"
+	}
+	if active := state.ReadMarker(state.ActivePath(pane)); reason == "" && state.Exists(state.ActivePath(pane)) {
+		if active == "" {
+			reason = "active-evidence-unavailable"
+		} else if active != r.Retiring {
+			reason = "active-identity-mismatch"
+		}
+	}
+	if reason != "" {
+		holdRotationIdentity(r, reason, now)
+		return
+	}
+	if r.IdentityUnavailableAt != 0 || r.IdentityCause != "" {
+		r.IdentityUnavailableAt, r.IdentityCause = 0, ""
+		if err := writeRotationFile(r, false); err != nil {
+			diag.ReportStoreFailure("hq-rotation", err)
+			return
+		}
 	}
 	if now.Unix()-r.CreatedAt >= int64(rotationQueueLimit.Seconds()) {
 		failRotation(r, "no safe idle input box within 30 minutes", now.Unix())
@@ -349,7 +406,71 @@ func rotationTurnFinished(r rotationRequest, boundary func(string) (string, time
 	return state.Exists(state.FinishedPath(r.Pane))
 }
 
+// The early identity refusals keep their original checks. Their failure cleanup
+// also owns admission, so it cannot delete a concurrently registered request.
+func failQueuedRotation(r rotationRequest, reason string, now int64) {
+	release, acquired, err := hqinput.Acquire()
+	if err != nil || !acquired {
+		return
+	}
+	defer release()
+	failRotation(r, reason, now)
+}
+
 func failRotation(r rotationRequest, reason string, now int64) {
+	// Every production caller owns the registration/input lease. A stale snapshot
+	// cannot repeat an alert or remove a successor request.
+	current, exists, err := readRotationRequest()
+	if err != nil || !exists || current != r {
+		return
+	}
 	events.AuditRotateFailed(r.Agent, r.Retiring, reason, now)
+	notify.Send(notify.Options{
+		Kind: "attention", Title: i18n.Tr("HQ handoff did not complete", "HQ 轮换未完成"),
+		Subtitle: "gtmux", Message: reason, Pane: r.Pane, Session: "gtmux HQ",
+	})
 	_ = os.Remove(rotationPendingPath())
+}
+
+// Only known, value-free observation codes enter persisted diagnostics or logs.
+func rotationIdentityCode(reason string) string {
+	switch reason {
+	case "", "pane-location-unavailable", "agent-driver-unavailable", "resume-record-unavailable",
+		"frontend-record-unavailable", "frontend-index-mismatch", "frontend-proof-unknown",
+		"proof-expired", "bridge-proof-unavailable", "bridge-changed", "pane-changed":
+		return reason
+	default:
+		return "unknown"
+	}
+}
+func holdRotationIdentity(r rotationRequest, reason string, now time.Time) {
+	// Expiry belongs to the original request, not the diagnostic clock. It wins
+	// even when identity first becomes unavailable shortly before that deadline.
+	if now.Unix()-r.CreatedAt >= int64(rotationQueueLimit.Seconds()) {
+		failRotation(r, "HQ identity unavailable for reset ("+reason+"); no input sent", now.Unix())
+		return
+	}
+	changed := r.IdentityCause != reason || r.IdentityUnavailableAt == 0 || r.IdentityUnavailableAt > now.Unix()
+	if r.IdentityUnavailableAt == 0 || r.IdentityUnavailableAt > now.Unix() {
+		r.IdentityUnavailableAt = now.Unix()
+	}
+	r.IdentityCause = reason
+	warn := r.IdentityWarnedAt == 0 && now.Unix()-r.IdentityUnavailableAt >= int64(rotationIdentityWait.Seconds())
+	if warn {
+		r.IdentityWarnedAt = now.Unix()
+	}
+	if changed || warn {
+		if err := writeRotationFile(r, false); err != nil {
+			diag.ReportStoreFailure("hq-rotation", err)
+			return
+		}
+		if changed {
+			diag.For("hq").Info("hq.rotation.identity-unavailable", "HQ identity cannot currently be verified; no reset sent", "reason", reason)
+		}
+	}
+	if warn {
+		// Persist one attempted publication first. A best-effort queue write (or a
+		// crash after it) is never proof of display/read or permission to republish.
+		notify.Send(notify.Options{Kind: "attention", Title: i18n.Tr("HQ is waiting for identity verification", "HQ 轮换等待身份确认"), Subtitle: "gtmux", Message: i18n.Tr("HQ identity could not be verified. The request remains pending; no reset was sent.", "暂时无法确认 HQ 身份，轮换请求仍保留，未发送重置命令。"), Pane: r.Pane, Session: "gtmux HQ"})
+	}
 }

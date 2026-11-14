@@ -22,7 +22,7 @@ import (
 
 // Options describes one notification request.
 type Options struct {
-	Kind     string // "done" (finished) or "input" (needs you) — picks copy/sound
+	Kind     string // "done", "input" (waiting prompt), or "attention" (independent failure)
 	Title    string // bold line, e.g. the session name
 	Subtitle string // dimmer line, e.g. the agent name
 	Message  string // body

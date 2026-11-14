@@ -10,16 +10,30 @@ import (
 // delivery identity. The input spool carries the exact acceptance uncertainty.
 const nativeUncertainSuffix = ".native-uncertain"
 
-func nativeWakeSubmit(pane, payload, id string) (dispatch.Result, bool) {
-	io := dispatchbridge.DispatchIO(pane, "codex")
+var nativeWakeIO = dispatchbridge.DispatchIO
+var nativeWakeTarget = hqpane.Find
+
+// Preparation performs no input mutation; journal admission happens before submit.
+func prepareNativeWake(pane string) func(payload, id string) (dispatch.Result, bool) {
+	io := nativeWakeIO(pane, "codex")
 	if io.SubmitNative == nil {
-		return dispatch.Result{}, false
+		return nil
 	}
 	io.Hold = func() string {
-		if hqpane.Find() != pane {
+		if nativeWakeTarget() != pane {
 			return "hq-target-changed"
 		}
 		return ""
 	}
-	return dispatch.Deliver(io, dispatch.Opts{Pane: pane, HasComposer: true, DeliveryID: "hq-wake-" + id}, payload), true
+	return func(payload, id string) (dispatch.Result, bool) {
+		return dispatch.Deliver(io, dispatch.Opts{Pane: pane, HasComposer: true, DeliveryID: "hq-wake-" + id, IdleWakeInput: true}, payload), true
+	}
+}
+
+func nativeWakeSubmit(pane, payload, id string) (dispatch.Result, bool) {
+	submit := prepareNativeWake(pane)
+	if submit == nil {
+		return dispatch.Result{}, false
+	}
+	return submit(payload, id)
 }

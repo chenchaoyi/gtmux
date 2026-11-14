@@ -19,9 +19,13 @@ var codexInputTarget = resume.CodexFrontendForPane
 var codexQueueInputs = codexrpc.QueueInputs
 var codexImageInputs = codexrpc.ImageInputs
 var codexUserInputs = codexrpc.UserInputs
+var codexIdleWakeInputs = codexrpc.IdleWakeInputs
 
 func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) dispatch.Result {
 	return func(opts dispatch.Opts, text string, hold func() string) dispatch.Result {
+		if opts.IdleWakeInput && (opts.DirectUserInput || opts.ActiveImageInput) {
+			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "conflicting-native-input-policy"}
+		}
 		f, ok := codexInputTarget(pane)
 		if !ok {
 			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "codex-frontend-unavailable"}
@@ -37,6 +41,9 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 			return dispatch.Result{State: dispatch.StateFailed, Evidence: "codex-input-retry-held: " + err.Error()}
 		}
 		if receipt, known := agentclient.ReadReceipt(r); known && receipt.State == "accepted" {
+			if receipt.Delivery == "wake-accepted" {
+				return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: receipt.Delivery, Evidence: "codex-wake-already-accepted"}
+			}
 			if receipt.Delivery == "active-turn" || receipt.Delivery == "started-turn" {
 				evidence := "codex-active-already-accepted"
 				if receipt.Delivery == "started-turn" {
@@ -66,7 +73,9 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 		}
 		inputs := codexInputs(text)
 		submit := codexQueueInputs
-		if opts.DirectUserInput {
+		if opts.IdleWakeInput {
+			submit = codexIdleWakeInputs
+		} else if opts.DirectUserInput {
 			submit = codexUserInputs
 		} else if opts.ActiveImageInput && len(inputs) > 1 {
 			submit = codexImageInputs
@@ -84,7 +93,10 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 			if outcome.StartedTurnID != "" {
 				delivery, evidence = "started-turn", "codex-turn-accepted:"+outcome.StartedTurnID
 			}
-			if err := agentclient.FinishNativeDelivery(r, "accepted", "", delivery); err != nil {
+			if outcome.AcknowledgedTurnID != "" {
+				delivery, evidence = "wake-accepted", "codex-wake-accepted:"+outcome.AcknowledgedTurnID
+			}
+			if err := agentclient.FinishNativeDelivery(r, "accepted", outcome.AcknowledgedTurnID, delivery); err != nil {
 				return dispatch.Result{State: dispatch.StateFailed, Evidence: "codex-input-receipt-unconfirmed"}
 			}
 			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: delivery, Evidence: evidence, Attempts: 1}
@@ -95,6 +107,9 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 				verdict = "refused"
 			}
 			_ = agentclient.FinishNative(r, verdict, outcome.Reason)
+			if opts.IdleWakeInput && !outcome.Attempted {
+				return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: outcome.Reason}
+			}
 			return dispatch.Result{State: dispatch.StateFailed, Evidence: "codex-input-" + verdict + ":" + outcome.Reason}
 		}
 		return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: outcome.Reason}

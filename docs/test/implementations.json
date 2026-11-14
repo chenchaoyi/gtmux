@@ -2173,22 +2173,172 @@
       "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read"
     ]
   },
-  "internal/hq/rulesrefresh_test.go": {
+  "internal/codexbridge/binding_recovery_test.go": {
     "cases": [
-      "HQR-001",
-      "HQR-002",
-      "HQR-003",
-      "HQR-004",
-      "HQR-005",
-      "HQR-006"
+      "CBA-002",
+      "CBA-003"
     ],
     "selectors": [
-      "TestHQR001RefreshOnlyUpdatesManagedRules",
-      "TestHQR002RefreshKeepsLanguageAndConverges",
-      "TestHQR003RefreshRejectsConflictingOptions",
-      "TestHQR004RefreshUsesExistingApplyLock",
-      "TestHQR005RefreshRefusesUnsafeManagedFiles",
-      "TestHQR006RefreshPreservesBackupNamesAndFailsSafely"
+      "TestCBA002TransientRootBindingRecoversFromTheActualObserver",
+      "TestCBA003NewSelectionAndEpochRetirePendingRecovery",
+      "TestCBA003PendingNewRootNeverRefreshesOldRoot",
+      "TestCBA003RetryPacingDeadlineAndHardRefusal",
+      "TestCBA003ReceiptFailureCommitsThenOnlyHeartbeats",
+      "TestCBA003ClosedConnectionCannotPublishLater",
+      "TestCBA003InitializeInvalidatesEarlierRootAndEarlierHomeResponse",
+      "TestCBA003NewVerifiedRootReplacesOnlyItsOwnPendingSelection",
+      "TestCBA003NoAttemptAtDeadlineOrAfterEpochChange",
+      "TestCBA003UnrelatedTrafficCannotReplacePendingRoot",
+      "TestCBA002SameRootReconnectRecoversWithoutRefreshingUnverifiedProof"
+    ]
+  },
+  "internal/resume/frontend_binding_readiness_test.go": {
+    "cases": [
+      "CBA-001"
+    ],
+    "selectors": [
+      "TestCBA001UnavailableProofIsRetryableButNeverPublishes",
+      "TestCBA001ObservedBirthHomeAndTargetChangesStayHard",
+      "TestCBA001MissingTerminalProofNeverBecomesInputAuthority"
+    ]
+  },
+  "internal/knowledge/source_lineage_test.go": {
+    "cases": [
+      "KBL-001",
+      "KBL-002",
+      "KBL-003",
+      "KBL-004"
+    ],
+    "selectors": [
+      "TestSourceLineageOrdinarySupersede",
+      "TestSourceLineageReviewApply",
+      "TestSourceLineageReplay",
+      "TestSourceLineageNewCapture"
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/index.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/list.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/show.txt.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
+  },
+  "internal/knowledge/testdata/golden/render/workflows.md.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
+  },
+  "internal/codexbridge/binding_publication_test.go": {
+    "cases": [
+      "CBA-004"
+    ],
+    "selectors": [
+      "TestCBA004PublicationAndAttachmentFinishBeforeNewEpochActivation",
+      "TestCBA004CanceledPublicationWaitNeverStartsBind",
+      "TestCBA004HeartbeatPublicationAlsoPrecedesNewEpoch",
+      "TestCBA004CancellationInsidePublicationPermitDoesNotRetry"
+    ]
+  },
+  "internal/codexbridge/binding_lifetime_test.go": {
+    "cases": [
+      "CBA-005"
+    ],
+    "selectors": [
+      "TestCBA005RunDisconnectRetiresBeforeTransportDrain",
+      "TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry",
+      "TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed"
+    ]
+  },
+  "internal/resume/frontend_binding_context_test.go": {
+    "cases": [
+      "CBA-004"
+    ],
+    "selectors": [
+      "TestCBA004CancellationDuringStrictProofCannotPublish",
+      "TestCBA004CanceledPartialCommitRetiresOnlyItsOwnLiveReceipt",
+      "TestCBA004CancellationNeverRemovesAReplacedOwner"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift": {
+    "cases": [
+      "SCW-001",
+      "SCW-002",
+      "SCW-003",
+      "SCW-004"
+    ],
+    "selectors": [
+      "testSCW001WindowsKeepDraftsFilesAndLateReceiptsIndependent",
+      "testSCW001CapacityPreservesEveryExistingDocument",
+      "testSCW002SearchUsesTitlesLocationsAndStableFuzzyMatches",
+      "testSCW002ActualSearchFieldNavigationCompositionAndEmptyResults",
+      "testSCW003RefusalCategoriesNeverInventHumanApprovalOrDelivery",
+      "testSCW004NewCaptureIsSerializedThroughHandoffAndKeepsOldDraft",
+      "testSCW004CLIEditCanOpenBesideDraftAndResolveItsOwnStore",
+      "testSCW004PermissionAndCapacityRefusalsPreserveWorkWithoutCapture"
+    ]
+  },
+  "internal/codexrpc/screenshot_workflow_test.go": {
+    "cases": [
+      "SCW-005"
+    ],
+    "selectors": [
+      "TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift": {
+    "cases": [
+      "SCW-003"
+    ],
+    "selectors": [
+      "testStatusLineSaysWhatHappened",
+      "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
+      "testRefusedWaitingSaysWhetherTheTextWasPasted"
+    ]
+  },
+  "internal/codexbridge/binding_heartbeat_context_test.go": {
+    "cases": [
+      "CBA-006"
+    ],
+    "selectors": [
+      "TestCBA006ProductionFactoryHeartbeatRetainsConnectionContext"
+    ]
+  },
+  "internal/resume/frontend_heartbeat_context_test.go": {
+    "cases": [
+      "CBA-006"
+    ],
+    "selectors": [
+      "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
+      "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
+      "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
     ]
   },
   "internal/app/restore_remote_test.go": {
@@ -2287,60 +2437,6 @@
       "RSR010 unreadable local identity cannot be cleared into a new request"
     ]
   },
-  "internal/knowledge/source_lineage_test.go": {
-    "cases": [
-      "KBL-001",
-      "KBL-002",
-      "KBL-003",
-      "KBL-004"
-    ],
-    "selectors": [
-      "TestSourceLineageOrdinarySupersede",
-      "TestSourceLineageReviewApply",
-      "TestSourceLineageReplay",
-      "TestSourceLineageNewCapture"
-    ]
-  },
-  "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "\"task\":\"t-9\""
-    ]
-  },
-  "internal/knowledge/testdata/golden/api/index.json.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "\"task\":\"t-9\""
-    ]
-  },
-  "internal/knowledge/testdata/golden/cli/list.json.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "\"task\":\"t-9\""
-    ]
-  },
-  "internal/knowledge/testdata/golden/cli/show.txt.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "task t-9"
-    ]
-  },
-  "internal/knowledge/testdata/golden/render/workflows.md.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "task t-9"
-    ]
-  },
   "mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx": {
     "cases": [
       "RSR-011"
@@ -2352,40 +2448,105 @@
       "RSR011 late old-pairing local read %s cannot grant a new target readiness"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift": {
+  "internal/codexrpc/idle_wake_test.go": {
     "cases": [
-      "SCW-001",
-      "SCW-002",
-      "SCW-003",
-      "SCW-004"
+      "HRW-001"
     ],
     "selectors": [
-      "testSCW001WindowsKeepDraftsFilesAndLateReceiptsIndependent",
-      "testSCW001CapacityPreservesEveryExistingDocument",
-      "testSCW002SearchUsesTitlesLocationsAndStableFuzzyMatches",
-      "testSCW002ActualSearchFieldNavigationCompositionAndEmptyResults",
-      "testSCW003RefusalCategoriesNeverInventHumanApprovalOrDelivery",
-      "testSCW004NewCaptureIsSerializedThroughHandoffAndKeepsOldDraft",
-      "testSCW004CLIEditCanOpenBesideDraftAndResolveItsOwnStore",
-      "testSCW004PermissionAndCapacityRefusalsPreserveWorkWithoutCapture"
+      "TestHRW001AutomaticWakeUsesFreshIdleWithoutQueueOrSteer"
     ]
   },
-  "internal/codexrpc/screenshot_workflow_test.go": {
+  "internal/dispatchbridge/idle_wake_test.go": {
     "cases": [
-      "SCW-005"
+      "HRW-002"
     ],
     "selectors": [
-      "TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval"
+      "TestHRW002ActualNativeWakePolicyKeepsTargetAndAtMostOnce"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift": {
+  "internal/hqinput/rotation_test.go": {
     "cases": [
-      "SCW-003"
+      "HRW-003"
     ],
     "selectors": [
-      "testStatusLineSaysWhatHappened",
-      "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
-      "testRefusedWaitingSaysWhetherTheTextWasPasted"
+      "TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize"
+    ]
+  },
+  "internal/hq/rotation_admission_test.go": {
+    "cases": [
+      "HRW-007"
+    ],
+    "selectors": [
+      "TestHRW007RegistrationSharesTheInputClaimLease"
+    ]
+  },
+  "internal/hq/rotation_priority_test.go": {
+    "cases": [
+      "HRW-006"
+    ],
+    "selectors": [
+      "TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert"
+    ]
+  },
+  "internal/hqnudge/rotation_priority_test.go": {
+    "cases": [
+      "HRW-004",
+      "HRW-005",
+      "HRW-008"
+    ],
+    "selectors": [
+      "TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority",
+      "TestHRW004RotationDoesNotSubmitOrRepairUserDraft",
+      "TestHRW004ExactOwnStrandedRepairPrecedesReservation",
+      "TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity",
+      "TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource"
+    ]
+  },
+  "internal/hqnudge/native_recovery_test.go": {
+    "cases": [
+      "HRW-009",
+      "HRW-010"
+    ],
+    "selectors": [
+      "TestHRW009NativeOutcomeCrashCannotRebatchOldInput",
+      "TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer",
+      "TestHRW009JournalFailuresAndForeignReplacementHoldWithoutMutation",
+      "TestHRW010ClaimReturnPreservesForeignConflictAndInterruptedPublication",
+      "TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate"
+    ]
+  },
+  "internal/hq/rotation_attention_test.go": {
+    "cases": [
+      "HRW-011"
+    ],
+    "selectors": [
+      "TestHRW011RotationFailureUsesNonWaitingAttention"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/RotationAttentionTests.swift": {
+    "cases": [
+      "HRW-011"
+    ],
+    "selectors": [
+      "testHRW011AttentionUsesActualConsumerWithoutWaitingAndRespectsGuards"
+    ]
+  },
+  "internal/hq/rulesrefresh_test.go": {
+    "cases": [
+      "HQR-001",
+      "HQR-002",
+      "HQR-003",
+      "HQR-004",
+      "HQR-005",
+      "HQR-006"
+    ],
+    "selectors": [
+      "TestHQR001RefreshOnlyUpdatesManagedRules",
+      "TestHQR002RefreshKeepsLanguageAndConverges",
+      "TestHQR003RefreshRejectsConflictingOptions",
+      "TestHQR004RefreshUsesExistingApplyLock",
+      "TestHQR005RefreshRefusesUnsafeManagedFiles",
+      "TestHQR006RefreshPreservesBackupNamesAndFailsSafely"
     ]
   },
   "internal/hq/rulesrefresh_boundary_test.go": {
@@ -2400,84 +2561,6 @@
       "TestHQR008BackupKeepsReplacement",
       "TestHQR009MixedRulesAreNotSilentlyRebuilt",
       "TestHQR010HardlinkedLockCannotChangeExternalPermissions"
-    ]
-  },
-  "internal/codexbridge/binding_recovery_test.go": {
-    "cases": [
-      "CBA-002",
-      "CBA-003"
-    ],
-    "selectors": [
-      "TestCBA002TransientRootBindingRecoversFromTheActualObserver",
-      "TestCBA003NewSelectionAndEpochRetirePendingRecovery",
-      "TestCBA003PendingNewRootNeverRefreshesOldRoot",
-      "TestCBA003RetryPacingDeadlineAndHardRefusal",
-      "TestCBA003ReceiptFailureCommitsThenOnlyHeartbeats",
-      "TestCBA003ClosedConnectionCannotPublishLater",
-      "TestCBA003InitializeInvalidatesEarlierRootAndEarlierHomeResponse",
-      "TestCBA003NewVerifiedRootReplacesOnlyItsOwnPendingSelection",
-      "TestCBA003NoAttemptAtDeadlineOrAfterEpochChange",
-      "TestCBA003UnrelatedTrafficCannotReplacePendingRoot",
-      "TestCBA002SameRootReconnectRecoversWithoutRefreshingUnverifiedProof"
-    ]
-  },
-  "internal/resume/frontend_binding_readiness_test.go": {
-    "cases": [
-      "CBA-001"
-    ],
-    "selectors": [
-      "TestCBA001UnavailableProofIsRetryableButNeverPublishes",
-      "TestCBA001ObservedBirthHomeAndTargetChangesStayHard",
-      "TestCBA001MissingTerminalProofNeverBecomesInputAuthority"
-    ]
-  },
-  "internal/codexbridge/binding_publication_test.go": {
-    "cases": [
-      "CBA-004"
-    ],
-    "selectors": [
-      "TestCBA004PublicationAndAttachmentFinishBeforeNewEpochActivation",
-      "TestCBA004CanceledPublicationWaitNeverStartsBind",
-      "TestCBA004HeartbeatPublicationAlsoPrecedesNewEpoch",
-      "TestCBA004CancellationInsidePublicationPermitDoesNotRetry"
-    ]
-  },
-  "internal/codexbridge/binding_lifetime_test.go": {
-    "cases": [
-      "CBA-005"
-    ],
-    "selectors": [
-      "TestCBA005RunDisconnectRetiresBeforeTransportDrain",
-      "TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry",
-      "TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed"
-    ]
-  },
-  "internal/resume/frontend_binding_context_test.go": {
-    "cases": [
-      "CBA-004"
-    ],
-    "selectors": [
-      "TestCBA004CancellationDuringStrictProofCannotPublish",
-      "TestCBA004CanceledPartialCommitRetiresOnlyItsOwnLiveReceipt",
-      "TestCBA004CancellationNeverRemovesAReplacedOwner"
-    ]
-  },
-  "internal/codexbridge/binding_heartbeat_context_test.go": {
-    "cases": [
-      "CBA-006"
-    ],
-    "selectors": [
-      "TestCBA006ProductionFactoryHeartbeatRetainsConnectionContext"
-    ]
-  },
-  "internal/resume/frontend_heartbeat_context_test.go": {
-    "cases": [
-      "CBA-006"
-    ],
-    "selectors": [
-      "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
-      "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
-      "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
     ]
   },
   "internal/hq/rulesrefresh_inline_block_test.go": {
@@ -2563,6 +2646,64 @@
     ],
     "selectors": [
       "ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace"
+    ]
+  },
+  "internal/resume/frontend_live_diagnostic_test.go": {
+    "cases": [
+      "HRW-013"
+    ],
+    "selectors": [
+      "TestHRW013LiveDiagnosticsDoNotChangeExistingAuthority"
+    ]
+  },
+  "internal/hq/rotation_identity_diagnostic_test.go": {
+    "cases": [
+      "HRW-012"
+    ],
+    "selectors": [
+      "TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity"
+    ],
+    "retired_selectors": [
+      {
+        "selector": "TestHRW012UnavailableIdentityIsNotChangedAndEscalatesOnce",
+        "reason": "HRW016 supersedes obsolete 60-second terminal-failure expectation; unknown/no-input, cause normalization, original timing and exact recovery safeguards migrated after sealed design19582eee."
+      },
+      {
+        "selector": "TestHRW012DiagnosticReasonChangesDoNotExtendDeadlineOrGrantReset",
+        "reason": "HRW016 supersedes obsolete 60-second terminal-failure expectation; unknown/no-input, cause normalization, original timing and exact recovery safeguards migrated after sealed design19582eee."
+      }
+    ]
+  },
+  "internal/hqnudge/native_generation_test.go": {
+    "cases": [
+      "HRW-014"
+    ],
+    "selectors": [
+      "TestHRW014GenerationChangeWithSameInodeBodyAndMtimeCannotBeDeleted",
+      "TestHRW014UncertainPublicationOnlyRetiresItsExactOwnedLink"
+    ]
+  },
+  "internal/hqnudge/native_pin_test.go": {
+    "cases": [
+      "HRW-015"
+    ],
+    "selectors": [
+      "TestHRW015NativeIntentKeepsOriginalIncarnationAlive",
+      "TestHRW015TerminalCleanupAndUnknownAnchorsStayDistinct",
+      "TestHRW015UnknownMetadataCannotSupplyAnIdentity",
+      "TestHRW015AnchorBudgetHoldsBeforeJournalOrInput",
+      "TestHRW015UncertainRestartRequiresItsRetainedAnchor"
+    ]
+  },
+  "internal/hq/rotation_warning_recovery_test.go": {
+    "cases": [
+      "HRW-016"
+    ],
+    "selectors": [
+      "TestHRW016WarningThenRecoveryKeepsRequestAndEveryGuard",
+      "TestHRW016RepeatedUnknownNeverExtendsExpiryOrRepeatsWarning",
+      "TestHRW016FailedPublicationIsNotAReasonToReplayOrBlockRecovery",
+      "TestHRW016UnknownSourcesAndReasonChangesKeepOriginalOwnership"
     ]
   }
 }

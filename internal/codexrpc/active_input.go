@@ -2,7 +2,8 @@ package codexrpc
 
 import "encoding/json"
 
-// startIdle is permitted only for explicit user ingress, never background queueing.
+// startIdle requires the caller's direct-input policy and verified loaded-idle
+// metadata. Automatic wakes separately refuse every non-idle plan and fallback.
 func inputTurnPlan(thread string, id int, send func(int, string, any) error, read func(int) (wireResponse, error), userInput bool) (string, bool, int, string) {
 	if send(id, "thread/read", map[string]any{"threadId": thread, "includeTurns": false}) != nil {
 		return "", false, id, "input-metadata-unavailable"

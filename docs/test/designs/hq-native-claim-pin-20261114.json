@@ -1,0 +1,24 @@
+{
+  "id": "hq-native-claim-pin-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Anchor each native claim with a bounded owned persistent hard link before submission",
+    "notes": "Ctime adds useful observed evidence but alone is not sufficient to defeat device/inode reuse on a coarse timestamp filesystem. Keep HRW014 and every published T assertion unchanged. Before native intent publication/mutation, create and verify a private same-inode pin under the same managed filesystem, synchronize its directory, then capture final metadata and persist its exact basename. A cooperating writer never releases this reference until known terminal local cleanup; natural unlink/recreate cannot reuse the pinned inode, regardless of timestamp granularity. Pin absence/foreign/unknown metadata cannot authorize cleanup/input. Prepared/uncertain retains pins and exact payload; known accepted/refused retires only verified own pins after its claim transition, journal last. Orphan pre-intent pins are bounded, retained for operator inspection, not guessed/replayed/deleted. Limit1600 pins and existing200 intents; 128KiB reads. Unknown/invalid intent holds the channel. A valid bounded intent with a changed claim protects that exact batch/claim destination from every reclaim/rename; independent new events may still obtain fresh admission, preserving HRW009 Aonce/Bprogress. Known refused shared queue and exact uncertain publication remain explicit legitimate metadata transitions. Private cooperating-writer evidence is not atomic compare-and-unlink against an adversary replacing every anchor/journal. No real state or input."
+  },
+  "cases": [
+    {
+      "id": "HRW-015",
+      "layer": "L2",
+      "description": "Persistent native claim anchors prevent identifier reuse independently of timestamp precision",
+      "setup": "Real private pins and intents in fixture HOME. Keep a pin while removing the original claim and recreating identical bytes with original mtime; inspect the original inode through the pin and verify the replacement cannot be that still-live inode. Include missing/foreign pin, metadata read error/zero time, known accepted/refused cleanup, uncertain restart and pin-cap controls. Preserve HRW009..014 assertions and actual RPC/spool path.",
+      "action": "Attempt recovery with replaced or missing anchors, settle valid terminal states, and inspect pins/claims/journal plus mutation counts.",
+      "expected": "Only a verified same-inode anchor can support native cleanup; original inode remains alive across process loss and cannot naturally be reused. Missing/foreign/unknown pin holds without deletion or native call. Accepted/refused closes only own references, uncertain preserves exact original input and pin; valid conflicting batches cannot overwrite protected claims or block independent fresh events. Pin count is bounded before mutation; errors never fall back or replay. No sleep, allocator-luck or relaxed cloud assertion.",
+      "planned_files": [
+        "internal/hqnudge/native_pin_test.go"
+      ]
+    }
+  ],
+  "seal": "72d153c8a2d7d56edf59e0c8c4d0c4a8ff1574443fd18e8e3ad415db21c49499"
+}
