@@ -29,9 +29,10 @@ type altHalf struct {
 	Body  string `json:"body,omitempty"`
 }
 
-// reviewAlternate preserves omitted text, without claiming that it matches the
-// revised source. Use only the live predecessor: an explicit alt(nil) or ordinary
-// supersede reset must stay cleared. Keep preparation/replay independent of inputs.
+// reviewAlternate copies a replacement or the current live half during preparation,
+// without claiming translation equivalence. New operations persist this explicitly.
+// Replay passes no predecessor so historical omissions retain their reset semantics.
+// Keep preparation/replay independent of inputs.
 func reviewAlternate(replacement, previous *altHalf) *altHalf {
 	if replacement == nil {
 		replacement = previous

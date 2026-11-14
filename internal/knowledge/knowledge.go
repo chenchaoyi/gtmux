@@ -392,7 +392,9 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 					}
 				}
 				if op.Reviewed {
-					op.Alt = reviewAlternate(op.Alt, pred.Alt)
+					// Historical reviewed omissions intentionally reset translations.
+					// New preparation records retained Alt explicitly; only clone it.
+					op.Alt = reviewAlternate(op.Alt, nil)
 					op.Status = pred.Status
 					op.PromotedAt, op.PromoteWhy, op.PromoteTarget = pred.PromotedAt, pred.PromoteWhy, pred.PromoteTarget
 					op.Audience, op.AudienceRepo = pred.Audience, pred.AudienceRepo
@@ -419,8 +421,8 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 				if !op.Sensitive && pred.Sensitive {
 					op.Sensitive, op.Confirmed = true, pred.Confirmed
 				}
-				// Ordinary supersede still resets the alternate. Reviewed revisions
-				// preserve omitted text above; preservation does not verify translation.
+				// Ordinary supersede and historical reviewed omissions reset Alt.
+				// New reviewed revisions retain text by explicitly recording it.
 			}
 			kill(op.Supersedes)
 			applyMigration(&op)

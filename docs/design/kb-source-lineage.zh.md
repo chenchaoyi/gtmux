@@ -13,8 +13,9 @@
 历史继续按原规则折叠。摘要、CAS、原子提交、幂等重试和只读 check 不变。
 普通 supersede 仍重新判断分发；review 保留受众、状态和保护并重新打开
 落地状态；继承行动卡转为 tentative。普通 supersede 仍重置译文；review 对
-省略/null 的译文完整保留，并在同一事务中验证显式替换。历史 review 重放只
-使用仍存活的前项，尊重显式 ledger 清除和普通重置。保留内容不证明双语语义
+省略/null 的译文完整保留，并在同一事务中验证显式替换。新的 review 准备操作
+显式保存保留的译文，重放读取已记录的值；历史省略值仍保持当时的清除语义，
+尊重显式 ledger 清除和普通重置。保留内容不证明双语语义
 一致，详见[审阅契约](../guides/knowledge-review.zh.md)。
 
 测试只用隔离 HOME 的合成数据，经过实际 CLI、apply、show 与 render；

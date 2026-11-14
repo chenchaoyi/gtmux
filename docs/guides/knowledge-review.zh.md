@@ -30,7 +30,7 @@ gtmux knowledge review check /path/to/project/proposal.json
 
 需要在同一版本校验事务中更新双语时，在 change 中提供完整 `alt` 对象，例如中文条目的 `"alt":{"lang":"en","title":"Check written bytes","body":"Compare the complete content."}`。它整体替换译文，未提供 body 时正文变为空。语言必须是另一种支持语言（`en` 或 `zh`），标题必须非空且为单行，标题和正文遵循原有长度限制。无效译文、未知字段和 `retire` 携带的译文更新会在整批写入前拒绝。编辑后清空提案 `id`，再执行 `review check` 和已授权的 `review apply`。省略/null 不表示删除，review 没有清译文操作。原有 `knowledge alt` 仍可单独新增或替换译文。
 
-历史 review 修订重放时，从指定且仍存活的前项保留未提供的译文，不改写台账。显式 ledger `alt` 清除与普通 `supersede` 重置仍保持清除状态，不回查失活前项。普通 `supersede` 仍沿用独立的译文重置契约。若重放导致 base revision 改变，需刷新提案。已晋升规则重新待落地，需通过原 land/sync 流程核对载体；不会自动写所有指令文件。LOCAL 的精确历史生成段可以更新，人工改写或重复标记会拒绝覆盖。
+新的 review 操作会显式保存保留或替换后的译文。重放读取已记录的值，不从前项继承被省略的译文。历史 review 操作未提供 `alt` 时，继续遵循当时清除旧译文的契约，不自动恢复过去已丢弃的内容。需要恢复目标译文时，应核对双语后，在新的已授权提案中提供完整 `alt`。显式 ledger `alt` 清除与普通 `supersede` 重置仍保持清除状态，不回查失活前项。普通 `supersede` 仍沿用独立的译文重置契约。base revision 不再匹配时，需刷新提案。已晋升规则重新待落地，需通过原 land/sync 流程核对载体；不会自动写所有指令文件。LOCAL 的精确历史生成段可以更新，人工改写或重复标记会拒绝覆盖。
 
 敏感标记和 accounts 默认不导出。后来改成敏感的条目若已导出，刷新会明确报告旧副本需要人工清除；软件不能替你删除 Obsidian 历史、备份或云副本。不要启用未获授权的同步。工作台基线和属性是冲突检测资料，不是签名或身份凭据。
 

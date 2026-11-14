@@ -18,8 +18,9 @@ remain read-only. Ordinary supersede still rejudges distribution; reviewed revis
 keeps audience/status/protection and reopens landing. Inherited action cards become
 tentative. Ordinary supersede resets its alternate; review preserves omitted/null
 alternates exactly and validates an explicit replacement in the same transaction.
-Historical reviewed replay uses only the live predecessor, respecting explicit ledger
-clears and ordinary resets. Retained text is not proof of translation equivalence;
+New review preparation explicitly stores the retained alternate. Replay uses that
+recorded value; historical omitted alternates keep their original reset semantics,
+respecting explicit ledger clears and ordinary resets. Retained text is not proof of translation equivalence;
 see the [review contract](../guides/knowledge-review.md).
 
 Tests use synthetic disposable HOME fixtures and actual CLI/apply/read/render

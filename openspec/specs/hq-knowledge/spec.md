@@ -865,7 +865,7 @@ HQ/owner apply SHALL validate all 1–25 changes before a single atomic ledger a
 
 A review `revise` SHALL preserve the live predecessor's alternate language, title and body exactly when `alt` is omitted or null. A complete `alt` object SHALL replace that half in the same digest/CAS-checked atomic transaction; the alternate language, required single-line title and normal content bounds SHALL be validated before any batch append. Alternate updates on `retire` SHALL be rejected. Omission/null SHALL NOT request deletion. Review SHALL NOT invent translations or claim retained text is semantically synchronized with revised source.
 
-Replay of historical reviewed omissions SHALL inherit only from the named live predecessor without rewriting history. Explicit ledger alternate clears, ordinary supersede resets and dead predecessors SHALL NOT resurrect old alternate text. Ordinary supersede SHALL retain its separate reset behavior. Existing sources, hit history, privacy, audience, card protection, distribution reopening and idempotency SHALL remain in force.
+New review preparation SHALL explicitly record the retained or replaced alternate. Replay SHALL use the serialized value and SHALL NOT inherit an omitted alternate from a predecessor. Historical reviewed omissions SHALL retain their original reset semantics without restoring old translations or rewriting history. Explicit ledger alternate clears, ordinary supersede resets and dead predecessors SHALL NOT resurrect old alternate text. Ordinary supersede SHALL retain its separate reset behavior. Existing sources, hit history, privacy, audience, card protection, distribution reopening and idempotency SHALL remain in force.
 
 #### Scenario: Revising Chinese while retaining English
 - **WHEN** a reviewed revision changes the source prose without providing an alternate
@@ -878,6 +878,10 @@ Replay of historical reviewed omissions SHALL inherit only from the named live p
 #### Scenario: Replaying a cleared alternate
 - **WHEN** a live predecessor has no alternate after an explicit ledger clear or ordinary supersede reset
 - **THEN** a later reviewed omission remains monolingual
+
+#### Scenario: Reading a historical reviewed omission
+- **WHEN** an old bilingual add is followed by a historical reviewed supersede without an alternate
+- **THEN** replay and public entry reads retain the cleared alternate and an English reader falls back to the revised Chinese, without a new write or implicit translation restoration
 
 ### Requirement: Use reports do not become recurrence or causal evidence
 
