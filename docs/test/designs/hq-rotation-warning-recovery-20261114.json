@@ -1,0 +1,24 @@
+{
+  "id": "hq-rotation-warning-recovery-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Separate the one-minute identity attention threshold from the original thirty-minute request deadline",
+    "notes": "HQ dcd2635c confirms the original two-clock contract. T held identity for sixty seconds then called terminal failRotation and removed pending. The previous reviewer D1 was withdrawn correctly: recovery first observed at61 seconds must remain possible. A different actual sequence unknown1 -> unknown61 warning -> exact recovery62 is now proven to lose pending. Supersede only HRW012 obsolete sixty-second terminal-failure expectations, retaining the same unknown/no-input, precise reason, original timestamp, true-change, draft, active/waiting, completed boundary, target, lease and no reset-retry guards. Retire obsolete selectors with explicit migration rationale and move their valid coverage into new HRW016 file; preserve the HRW012 exact-recovery/changed-identity test. Keep HRW001..011/013..015 and all unrelated T test bytes unchanged. Persist one request-owned warning marker before attempting notification; a publication error/unknown cannot justify repeatedly publishing or changing state authority. Notification queue acceptance is not OS display/read. Reason changes, reconstruction from disk and repeated missing evidence do not repeat warning or extend CreatedAt. Recovery can clear unavailable diagnostics but not warning ownership. Original30-minute deadline always wins before warning/reset, including after recovery or late initial observation. No real identity, pending, input or service operations."
+  },
+  "cases": [
+    {
+      "id": "HRW-016",
+      "layer": "L2",
+      "description": "One identity attention preserves the same pending rotation until its original deadline",
+      "setup": "Actual advanceHQRotation, fixture HOME and fake clock, spy pane, original pending timestamps/target and notification queue. Establish unknown at1s, warning tick at61s, reread pending, then recover62s. Include repeated/cause-changed/reloaded unknown, draft, active, waiting, incomplete boundary, expiry-before-warning, recovery past expiry, notification publication failure and a separate new request.",
+      "action": "Run deterministic actual-entry warning/recovery/expiry sequences against exact T and revised source; inspect pending ownership, original CreatedAt, one attention and actual Paste/Enter counts.",
+      "expected": "At61s exactly one attempt at an attention warning preserves the same pending request and original30-minute deadline with no input. Reload/cause change/recovery do not repeat warning or extend time. At62s exact recovery only advances once when every original guard passes; draft/active/waiting/boundary/target conflicts cannot grant input. At original expiry a request settles failed without reset even if identity just recovered or warning would be later. Real nonempty changed identities remain hard failures. Unknown publication is not replay permission, and no notification claims shown/read. New requests have separate ownership.",
+      "planned_files": [
+        "internal/hq/rotation_warning_recovery_test.go"
+      ]
+    }
+  ],
+  "seal": "1b9ea028eca15a3e58e1fcd3fb70aef75843763de63dfce4ddf48936d38d258b"
+}
