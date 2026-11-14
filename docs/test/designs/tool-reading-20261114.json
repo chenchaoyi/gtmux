@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner; self-review, not independent approval",
     "date": "2026-11-14",
     "decision": "Simplify existing tool inspector from screenshot: command and result first, one header row, raw arguments on demand",
-    "notes": "User sees duplicate nested labels/JSON and one-command outline plus ANSI remnants. Reuse bounded existing static command extraction; compact presentation only for tool sections, not a global formatter default. Preserve exact full input/result/raw copy and pagination, lossless numbers, truncation identity, disabled actions and provider-neutral schema. Do not execute code or infer success. Raw view never cleans output. Real access/data policy unchanged. New screenshot drives existing-source refinement, not a new prototype. Synthetic rendered tests only; no live input/device operation. New cases and existing browser CAS004 review precede their first edits in this branch."
+    "notes": "User sees duplicate nested labels/JSON and one-command outline plus ANSI remnants. Reuse bounded existing static command extraction; compact presentation only for tool sections, not a global formatter default. Preserve exact full input/result/raw copy and pagination, lossless numbers, truncation identity, disabled actions and provider-neutral schema. Do not execute code or infer success. Raw view never cleans output. Real access/data policy unchanged. New screenshot drives existing-source refinement, not a new prototype. Synthetic rendered tests only; no live input/device operation. New cases and existing browser CAS004 review precede their first edits in this branch. Layer review before first committed tool tests: split the real browser scenario into TSV-003/L3; RN renderer remains TSV-001/L2. This corrects inventory classification only, without claiming installed-device acceptance or changing test behavior. A single recognized shell body uses one Original arguments toggle rather than a redundant two-tab row."
   },
   "cases": [
     {
@@ -16,8 +16,7 @@
       "action": "Render/read the production presentation with isolated fixture; inspect initial section then reveal raw and compare source bytes",
       "expected": "Command is initial preview when static extraction is safe; one command has no redundant outline; parameter/raw data and original full-copy remain accessible; unknown/dynamic inputs retain original. Default Markdown code reader behavior unchanged",
       "planned_files": [
-        "mobileapp/src/ui/ToolReading.test.tsx",
-        "tests/web/tool-reading.test.cjs"
+        "mobileapp/src/ui/ToolReading.test.tsx"
       ]
     },
     {
@@ -41,7 +40,18 @@
       "planned_files": [
         "internal/server/web/app.test.cjs"
       ]
+    },
+    {
+      "id": "TSV-003",
+      "layer": "L3",
+      "description": "Browser tool detail runtime on narrow/wide Chat and Trace",
+      "setup": "Existing repository Chromium and loopback synthetic API; static shell argv, ANSI result, file URI, raw record, one command and no real input",
+      "action": "Open the real tool inspector, switch original arguments, inspect Trace raw and assert clipboard/data/overflow boundaries",
+      "expected": "Command is initial preview when static extraction is safe; one command has no redundant outline; parameter/raw data and original full-copy remain accessible; unknown/dynamic inputs retain original. Default Markdown code reader behavior unchanged Actual rendered DOM, no horizontal overflow or send mutation.",
+      "planned_files": [
+        "tests/web/tool-reading.test.cjs"
+      ]
     }
   ],
-  "seal": "ecd509f45b451757591233b20812af053d5a5f29810d2f69e1d6e2c62dc864d8"
+  "seal": "aca401e509d8e53422f4e48c98459cb3dd64b076291cb774988f9c2e533894a8"
 }
