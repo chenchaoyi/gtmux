@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex KB Alt implementation owner (agent self-review; independent P1 accepted, new candidate not independently approved)",
+    "date": "2026-11-15",
+    "decision": "Keep historical serialized nil alternates cleared; preserve new omitted/null proposal alternates by explicit prepare persistence",
+    "notes": "Incremental correction to Q6afe22bc, whose live-predecessor replay reintroduced old English despite the baseline guide and KBL-002 invalidation contract. Remove only the nil fallback in fold; preserve prepare cloning/persistence, valid explicit replacement and all normal atomic CAS/receipt/protection behavior. No clear API, version marker or migration rewrite. Keep old failure/source/CI receipts. Retire rejected KBA-003 with rationale, move its corrected boundary matrix to this new reviewed file, and retain stable executable selector TestReviewedAltReplayBoundaries. Old catalogue selector row is replaced by the new file row with this rationale; KBA-001/002/004 and source-lineage checks stay. Design precedes new file creation. Tests use disposable fixture HOME only; public entry projection and language picker are real reads, not a model or production KB. Review type remains self-review until the same independent reviewer reassesses the new exact candidate."
+  },
+  "cases": [
+    {
+      "id": "KBAR-001",
+      "layer": "L2",
+      "description": "Historical reviewed omission remains cleared through public reads",
+      "setup": "Normal synthetic Chinese+English add, then append an old-shaped Reviewed same-ID supersede with new Chinese and no Alt; no new prepare or migration.",
+      "action": "Reload the ledger, read KnowledgeEntry and rowOf, pick English and CLI show --lang en; compare ledger bytes before/after reads.",
+      "expected": "Historical nil stays nil; API has no alternate fields and an English reader gets revised Chinese with zh fallback, not stale English. Reads do not write. This assertion must fail on rejected Q, whose fold resurrects the old English.",
+      "planned_files": [
+        "internal/knowledge/review_alt_replay_test.go"
+      ]
+    },
+    {
+      "id": "KBAR-002",
+      "layer": "L2",
+      "description": "New prepare writes retained alternate explicitly for later replay",
+      "setup": "Synthetic bilingual seed and normal omitted/null proposals via existing JSON transaction coverage; pure prepared operation and JSON roundtrip; subsequent explicit clear.",
+      "action": "Prepare a new review, inspect serialized alt, unmarshal and replay; prepare a second revision; clear via existing ledger alt(nil), then prepare/replay another omitted review.",
+      "expected": "New records carry complete retained Alt explicitly and replay preserves exact bytes without predecessor fallback; a later clear stays nil. Preparation and replay do not mutate proposal or predecessor. Existing full CLI check/apply/retry cases still cover omitted/null, explicit update and no-Alt compatibility.",
+      "planned_files": [
+        "internal/knowledge/review_alt_replay_test.go"
+      ]
+    },
+    {
+      "id": "KBAR-003",
+      "layer": "L2",
+      "description": "Serialized replay boundaries preserve explicit values and historical resets",
+      "setup": "Corrected old KBA-003 matrix: historical nil/consecutive nil/current predecessor/retitle, explicit replacement, clear before/after, ordinary reset, dead and re-added predecessors.",
+      "action": "Replay without writes, compare input serialization, and mutate an explicit result to check independent storage.",
+      "expected": "Every omitted serialized alternate stays nil, regardless of live/dead/retitled predecessor; explicit serialized alternate wins and is cloned. Clears and ordinary resets never resurrect earlier English, no input aliasing. The former historical recovery expectations are intentionally replaced, not treated as successes.",
+      "planned_files": [
+        "internal/knowledge/review_alt_replay_test.go"
+      ]
+    }
+  ],
+  "seal": "f13d73a1777a9bf1adf350d84c51897628f58826ff1a9e0679dd0d991c4f7f15"
+}

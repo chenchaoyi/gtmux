@@ -28,14 +28,16 @@ type ReviewProposal struct {
 }
 
 type ReviewChange struct {
-	ID           string      `json:"id"`
-	BaseRevision string      `json:"base_revision"`
-	Operation    string      `json:"operation"` // revise, retire
-	Title        string      `json:"title,omitempty"`
-	Body         string      `json:"body,omitempty"`
-	Why          string      `json:"why"`
-	Evidence     []string    `json:"evidence"`
-	Memory       *MemoryRule `json:"memory,omitempty"`
+	ID           string `json:"id"`
+	BaseRevision string `json:"base_revision"`
+	Operation    string `json:"operation"` // revise, retire
+	Title        string `json:"title,omitempty"`
+	Body         string `json:"body,omitempty"`
+	// Omitted/null preserves the live alternate; an object replaces it on revise.
+	Alt      *altHalf    `json:"alt,omitempty"`
+	Why      string      `json:"why"`
+	Evidence []string    `json:"evidence"`
+	Memory   *MemoryRule `json:"memory,omitempty"`
 }
 
 type ReviewResult struct {
@@ -166,6 +168,9 @@ func prepareReview(p ReviewProposal, ops []knowledgeOp, now int64) ([]knowledgeO
 		op := knowledgeOp{ID: e.ID, Topic: e.Topic, At: now, Why: c.Why, OpID: fmt.Sprintf("%s%d", prefix, i), ReviewEvidence: c.Evidence, ReviewOrigin: p.Origin}
 		switch c.Operation {
 		case "retire":
+			if c.Alt != nil {
+				return nil, r, fmt.Errorf("%s: alternate updates require revise", e.ID)
+			}
 			if protectedEntry(e) {
 				return nil, r, fmt.Errorf("%s is protected; ordinary review cannot retire a correction or distributed rule", e.ID)
 			}
@@ -194,6 +199,12 @@ func prepareReview(p ReviewProposal, ops []knowledgeOp, now int64) ([]knowledgeO
 			}
 			op.Op, op.Supersedes, op.Title, op.Body = knowledgeOpSupersede, e.ID, c.Title, c.Body
 			op.Reviewed, op.Memory, op.Lang = true, c.Memory, e.Lang
+			op.Alt = reviewAlternate(c.Alt, e.Alt)
+			if c.Alt != nil {
+				if err := validateKnowledgeContent(c.Alt.Title, c.Alt.Body, ""); err != nil {
+					return nil, r, err
+				}
+			}
 			inheritSourceOrigins(&op, e)
 			op.Status = e.Status
 			// Store the reopened distribution intent explicitly as well, so a

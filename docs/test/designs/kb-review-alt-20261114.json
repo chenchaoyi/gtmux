@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex KB Alt implementation owner (agent self-review; not independent approval)",
+    "date": "2026-11-15",
+    "decision": "Preserve alternate text explicitly in new review records; retire the rejected historical-inheritance expectation",
+    "notes": "Incremental self-review after independent P1 on 6afe22bcbc3c56c0e1d9bab6c92cb977fdd7f29a. Existing B documentation and KBL-002 explicitly invalidated stale translations, so the lack of an explicit clear field never justified restoring historical omitted Alt. KBA-001/002/004 case objects remain unchanged and still cover new prepare/check/apply, updates and protections. KBA-003 is retired and replaced by KBAR-001 through KBAR-003 in a new test file, preserving the rejected expectation and its red/green records in Git and the old package. This move makes the changed replay contract auditable with a fresh design before the new file first exists, without rewriting pushed history or weakening unrelated checks. New prepare persists retained Alt explicitly; fold only clones serialized Alt, never inherits nil. Omission/null in new proposals preserves; omission in old serialized supersedes retains historical reset semantics. No clear API or version marker introduced. Independent re-review and exact new CI remain pending."
+  },
+  "cases": [
+    {
+      "id": "KBA-001",
+      "layer": "L2",
+      "description": "Review JSON omission and null preserve bilingual bytes through prepare/check/apply/retry",
+      "setup": "Synthetic Chinese entry with English alternate containing whitespace, multiline Markdown and Unicode; separate no-Alt variant under disposable test HOME.",
+      "action": "Read proposal JSON through readReview; prepare and mutate prepared Alt to check aliasing; check and apply through normal CLI; inspect appended op and live state; repeat identical apply and stale competing proposal.",
+      "expected": "Exact alternate lang/title/body survives when absent or null, no-Alt remains nil. Dry run changes no files; ledger stores preserved Alt, input is immutable, identity/receipts remain normal; identical retry does not append and stale CAS changes no bytes.",
+      "planned_files": [
+        "internal/knowledge/review_alt_test.go"
+      ]
+    },
+    {
+      "id": "KBA-002",
+      "layer": "L2",
+      "description": "Explicit bilingual update is parsed, validated and committed atomically",
+      "setup": "Same synthetic live entry; complete replacement Alt supplied in JSON, plus invalid alternate language/same language/blank or multiline or oversized title/body and a retire carrying an Alt.",
+      "action": "Read/check/apply valid JSON, compare digest when only Alt differs, test pure preparation and mutate replacement input; reject invalid whole batches before append; retry changed proposal against old revision.",
+      "expected": "New alternate replaces every field exactly and contributes to proposal digest. Unknown fields remain errors; invalid alternates and an Alt attached to retire are refused rather than ignored. Omitted/null preserves and does not mean deletion; no clear API invented. New bytes reach pick/API readers; CAS, batch atomicity and idempotence remain.",
+      "planned_files": [
+        "internal/knowledge/review_alt_test.go"
+      ]
+    },
+    {
+      "id": "KBA-003",
+      "layer": "L2",
+      "description": "Retired historical-inheritance expectation, replaced by KBAR-001 through KBAR-003",
+      "setup": "In-memory historical reviewed ops lacking Alt, explicit replacement, consecutive reviews, explicit alt(nil) before/after a review, ordinary supersede before review, retired/re-added or retitled predecessors.",
+      "action": "Fold without writes; compare input serialization; mutate inherited Alt; inspect live entries and original objects.",
+      "expected": "Retired after the independent P1 on Q6afe22bc: historical nil supersedes must not restore old translations. Corrected historical fallback, future explicit persistence and replay boundaries live in KBAR-001 through KBAR-003; the rejected old expectation and source remain auditable in earlier Git and package snapshots.",
+      "planned_files": [
+        "internal/knowledge/review_alt_test.go"
+      ]
+    },
+    {
+      "id": "KBA-004",
+      "layer": "L2",
+      "description": "Alt retention coexists with existing complete source and lifecycle regression",
+      "setup": "Existing KBL source shapes with protected memory, sensitive confirmation, distribution intent, full Sources and seven origins plus post-add hit/unrelated guard.",
+      "action": "Refresh reviewed KBL-002 expectation to exact Alt preservation; run full source-lineage and knowledge tests including ordinary supersede and subsequent hits.",
+      "expected": "Review now retains exact Alt in prepare, append and live entry while existing seven-origin/full-source, latest hit, guard, language/status/audience/privacy, card demotion, landing reopen, CAS and retry assertions stay effective. Ordinary write contracts remain unchanged. This design supersedes only prior KBL-002 alternate invalidation expectation.",
+      "planned_files": [
+        "internal/knowledge/source_lineage_test.go"
+      ]
+    }
+  ],
+  "seal": "73566994d9eb95bfa849b51c7a882e5fb93eca18ab7514f937129dafbd37cb23"
+}

@@ -216,6 +216,9 @@ func TestSourceLineageReviewApply(t *testing.T) {
 				t.Fatal(err)
 			}
 			lineageAssertOrigins(t, prepared[0], e)
+			if !reflect.DeepEqual(prepared[0].Alt, e.Alt) {
+				t.Fatal("review preparation lost alternate bytes")
+			}
 			if len(prepared[0].Seqs) > 0 {
 				originalOps, _ := json.Marshal(ops)
 				prepared[0].Seqs[0]++
@@ -234,6 +237,9 @@ func TestSourceLineageReviewApply(t *testing.T) {
 			}
 			op := ops[len(ops)-1]
 			lineageAssertOrigins(t, op, e)
+			if !reflect.DeepEqual(op.Alt, e.Alt) {
+				t.Fatal("review append lost alternate bytes")
+			}
 			got := lineageLive(t, e.ID)
 			lineageAssertOrigins(t, got, e)
 			if got.Seq != seq || got.Seq == e.Seq || got.At <= e.At || got.OpID == e.OpID || got.OpID != "review-"+p.ID+"-0" {
@@ -248,7 +254,7 @@ func TestSourceLineageReviewApply(t *testing.T) {
 			if got.Hits != 7 || got.HitLast != 20 || got.Provenance != e.Provenance || !reflect.DeepEqual(got.Tags, e.Tags) || !reflect.DeepEqual(got.Sources, e.Sources) {
 				t.Fatal("review lost latest observations or structured sources")
 			}
-			if got.Lang != e.Lang || got.Alt != nil || got.Status != e.Status || got.Audience != e.Audience || got.LandedAt != 0 || got.LandedRef != "" || !promotionPending(got) {
+			if got.Lang != e.Lang || !reflect.DeepEqual(got.Alt, e.Alt) || got.Status != e.Status || got.Audience != e.Audience || got.LandedAt != 0 || got.LandedRef != "" || !promotionPending(got) {
 				t.Fatal("review changed language/status/distribution contract")
 			}
 			if !got.Sensitive || got.Confirmed != e.Confirmed || got.Memory.ProtectedReason != e.Memory.ProtectedReason || got.Memory.Scope != e.Memory.Scope || got.Memory.VerifiedAt != 0 || got.Memory.Confidence != "tentative" {
