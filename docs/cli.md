@@ -2014,6 +2014,8 @@ code, and open the same access.
 
 `gtmux doctor --progress` also shows progress in piped output; `--bundle` collects diagnostics. See [installation](install.md) for setup.
 
+The knowledge queue count matches `gtmux capture --list --json`: processed observations remain in history but no longer count as pending. If the queue cannot be read, doctor reports it as unavailable.
+
 `gtmux update` installs release assets using local code and never executes a downloaded
 installer script. Defaults first authenticate a signed release manifest from the owned
 download origins; CLI and app bytes must match its SHA256 and size. Invalid metadata

@@ -2615,7 +2615,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane’s different current runtime",
+      "a stitched older session never requests the pane\u2019s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -2979,6 +2979,14 @@
     ],
     "selectors": [
       "CRR-002"
+    ]
+  },
+  "internal/app/doctor_knowledge_count_test.go": {
+    "cases": [
+      "DKC-001"
+    ],
+    "selectors": [
+      "TestDKC001DoctorPendingCountMatchesCaptureProjection"
     ]
   }
 }

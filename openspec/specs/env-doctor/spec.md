@@ -512,6 +512,13 @@ consumption/distill/self-check cadences.
 - **THEN** the "HQ" section reports the board's freshness and the knowledge base's shape in
   addition to the maintenance cadences
 
+#### Scenario: Knowledge queue counts exclude retained settled observations
+
+- **WHEN** retained capture observations include committed accepted or dismissed source IDs
+- **THEN** doctor uses the same parsed pending-candidate projection as capture, excluding settled IDs and malformed rows without rewriting or deleting source history
+- **AND** an empty projection reports zero even when the retained source file has nonblank lines
+- **AND** a read failure is reported as unavailable rather than a successful numeric count
+
 ### Requirement: Reports whether panes can be told apart on screen
 
 `doctor` SHALL report two things about pane identity, and SHALL measure the OUTCOME rather
