@@ -2,13 +2,13 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1244 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1254 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3783 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2276 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 138 | [L3.csv](cases/L3.csv) |
+| L2 · 组件/契约 | 2292 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 140 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
@@ -144,11 +144,23 @@
 | CT-BROWSER-POLICY | Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure. |
 | CT-BROWSER | Reuse one browser process per test worker while every case retains a fresh context/server and isolated storage/failure traces; closed browsers are replaced, resources close on setup/assertion failure. |
 | CT-SCOPE | Only proven non-product RN unit test edits may omit native builds; mixed/shared/unknown paths, test fixtures consumed by journeys and production imports fail closed; all selected checks still aggregate. |
+| CRX-001 | One clear button starts actual caller reload; immediately busy; messages retained; never claims send or association repair |
+| CRX-002 | No false settled state or forever pending; success/error/identity retirement each settle once; auth continues to clear unauthorized snapshots |
+| CRX-003 | Fresh read starts immediately under same scope, current request only; no duplicated subscription or auto mutation |
+| CRX-004 | No duplicate or remount of matched user row; no temporary disappear/reappear; status Received/Submitted is ingress only, queued stays explicit; no timeout pretending model received; synthetic post-receipt refresh real read |
+| CRX-005 | Group adjacent identical displayed nodes as ×N retaining process count/order and details; never collapse nonadjacent or differing arguments; no guessed roles/PID or raw argv; short current-process observation heading/time; historical fact source guard unchanged |
+| CRX-006 | One short state, no log/implementation tutorial, clear action only when available; failure never becomes empty; readonly and queued meaning survives. Existing permission, draft and identity checks unchanged. Include production string audit inventory with reviewed exclusions rather than claim all product strings rewritten. |
 | DTV-001 | Default rows are folder/root-file summaries only; deterministic hierarchy and directory aggregate counts, stable keys. Expanded original patch lines/numbers remain unchanged. Worktree path/branch parsed from preamble only; untracked filenames never inflate added lines, partial payload is labeled truncated. Deep/unsafe-looking names do not mutate prototypes or overflow recursion. Legacy diffPresentation semantics remain unchanged for callers not using tree mode. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
 | DTV-002 | Header identifies actual supplied worktree/branch and file/add/delete totals. All folder/file/hunk content starts collapsed, can be opened by44pt controls and collapsed together. FlatList windowing, wrap/scroll gutter, original source and line numbering remain. Unknown metadata stays unnamed instead of guessing a worktree. Stale replies cannot replace new pane context. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
 | DTV-003 | Correct worktree/branch/stat totals and directory grouping, no pre-opened code. Explicit expansion reveals original colored diff lines; collapse-all hides contents. Existing smoke assertion opens the file/hunk before checking original code. No unsafe HTML for context/path names. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
 | DTV-004 | JSON-quoted root identifies linked worktree, branch matches that worktree, diff/untracked data stay present. Existing8s deadline,400KiB cap and no-repo/error semantics remain; the extra metadata read uses the same deadline. Server pane authorization and response envelope are unchanged. |
 | DTV-005 | Owner receives original root/branch/patch byte-for-byte. Allowed guest receives branch and original patch without the new absolute root preamble; root-looking code remains. Denied/unauthenticated requests do not call the capture dependency. No audience/credential/permission setting changes. |
+| DCA-001 | A missing/expired managed proof is not OK/live; reason and exact pane are visible, no state changes or guessed thread |
+| DCA-002 | Supported missing association is visible as recommended/unassociated; unsupported/plain are neutral; strict verified control remains OK; nearby history never authorizes repair |
+| DCA-003 | Explains automatic producer retry and normal per-session continuation when evidence is insufficient; does not claim doctor repaired state, restart clients, clear drafts or offer directory-derived binding |
+| DCA-004 | Old exact main must fail target assertion. New producer reobserves full strict identity and publishes only its own same thread; reader5s gate unchanged; normal same-fresh path remains valid |
+| DCA-005 | All conflict/unknown/canceled controls stay refused with no resurrection/overwrite; no thread RPC, input, real process stop or real state mutation |
+| DCA-006 | No recursive lock/deadlock, no disk commit after cancellation; exact current producer only; new code performs no additional healthy heartbeat polling or diagnostic thread/history search |
 | FOCUS-001 | Literal and decorated versions of the complete session match; differently quoted, truncated, unrelated, wrong-separator and empty identities do not. Existing ordinary/decorated titles and bare trailing-whitespace tolerance remain supported. |
 | FOCUS-002 | A literal match wins across all tabs before tolerant decoration fallback. With only a decorated match it is selected. The chosen record, indices and trailing title bytes remain unchanged; no match and empty session return false. Multiple literal tabs retain first-match order. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |

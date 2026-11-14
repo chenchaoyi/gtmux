@@ -810,3 +810,19 @@ Optional action metadata SHALL distinguish a recorded skill read, web search, pa
 - **WHEN** a native record with the same exact call identity adds three parsed read targets to an existing generic call
 - **THEN** the row shows one call with three file targets and retains its original input and scoped reference
 - **AND** App, browser and Trace use the same factual action label without claiming success
+
+### Requirement: Visible scoped conversation reload
+Readers SHALL keep empty, failed and read-only states distinct. An explicit reload SHALL show pending feedback immediately, request fresh content for the same identity and reject stale completions. Chat and Trace SHALL share the same request. A deadline SHALL settle the visible pending state even if the transport does not cooperate.
+
+#### Scenario: A failed reload preserves readable content
+- WHEN the reader retries a failed current conversation read
+- THEN existing authorized content remains visible and a pending action is shown until that read succeeds or fails
+- AND old or differently scoped replies cannot settle the new request.
+
+### Requirement: Stable sent-message presentation
+An ingress receipt SHALL remain distinct from execution. The source occurrence matching a pending message SHALL replace that message in place, preserving its presentation key and attachments; an old identical prompt SHALL NOT acknowledge a new send.
+
+#### Scenario: A recorded attachment echo arrives
+- WHEN a newly recorded matching prompt becomes visible
+- THEN the existing pending bubble becomes the recorded turn without a second bubble or removal and reinsertion
+- AND matching never sends or replays a message.

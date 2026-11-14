@@ -105,8 +105,8 @@ export function HQHumanInputCard({
       {!!q?.answer_id && (
         <Text style={[s.body, { color: pal.fg2 }]}>
           {zh
-            ? '接下来由 HQ 确认并跟进；答复已保存不代表操作已执行。'
-            : 'HQ will confirm receipt and follow up. A saved reply does not mean the action has run.'}
+            ? '回复已保存，等待 HQ 处理。'
+            : 'Reply saved. Waiting for HQ.'}
         </Text>
       )}
     </View>

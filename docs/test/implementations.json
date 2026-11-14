@@ -1407,11 +1407,14 @@
   "mobileapp/src/screens/DetailTrace.test.tsx": {
     "cases": [
       "CAS-005",
-      "CAS-007"
+      "CAS-007",
+      "CRX-001",
+      "CRX-002"
     ],
     "selectors": [
       "CAS005 Detail propagates association failures, preserves history and clears on retry",
-      "CAS007 unchanged transcript polls reuse the ChatView element"
+      "CAS007 unchanged transcript polls reuse the ChatView element",
+      "CRX-002 manual reload publishes immediate busy feedback to Chat and Trace until the current read settles"
     ]
   },
   "mobileapp/src/screens/HQScreen.association.test.tsx": {
@@ -1598,7 +1601,8 @@
   },
   "mobileapp/src/ui/sendReceipt.test.ts": {
     "cases": [
-      "MSD-005"
+      "MSD-005",
+      "CRX-004"
     ],
     "selectors": [
       "MSD-005 receipt wording distinguishes queueing and acceptance without claiming execution"
@@ -2794,6 +2798,117 @@
     ],
     "selectors": [
       "TestCFL006InitialRootMetadataRetryCommitsThenResumesHeartbeats"
+    ]
+  },
+  "internal/app/doctor_conversation_health_test.go": {
+    "cases": [
+      "DCA-001",
+      "DCA-002",
+      "DCA-003"
+    ],
+    "selectors": [
+      "TestDCA001DoctorReportsFailedManagedAssociation",
+      "TestDCA002DoctorDistinguishesMissingUnsupportedAndVerified",
+      "TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary"
+    ]
+  },
+  "internal/resume/frontend_index_recovery_test.go": {
+    "cases": [
+      "DCA-004",
+      "DCA-005",
+      "DCA-006"
+    ],
+    "selectors": [
+      "TestDCA004CurrentProducerRecoversExpiredOwnMissingIndex",
+      "TestDCA005RecoveryRejectsConflictAndUnknownEvidence",
+      "TestDCA005OwnerReplacementDuringStrictVerification",
+      "TestDCA006RecoveryHonorsLeaseAndCancellation"
+    ]
+  },
+  "mobileapp/src/ui/ConversationReload.test.tsx": {
+    "cases": [
+      "CRX-001"
+    ],
+    "selectors": [
+      "CRX-001 %s reload is visible, busy and keeps messages"
+    ]
+  },
+  "mobileapp/src/ui/ChatEchoHandoff.test.tsx": {
+    "cases": [
+      "CRX-004"
+    ],
+    "selectors": [
+      "CRX-004 %s confirmed echo keeps the same mounted bubble"
+    ]
+  },
+  "mobileapp/src/ui/ConversationCopy.test.tsx": {
+    "cases": [
+      "CRX-006"
+    ],
+    "selectors": [
+      "CRX-006 %s empty state is concise and its Terminal action works"
+    ]
+  },
+  "mobileapp/src/ui/ExecutionChainPresentation.test.tsx": {
+    "cases": [
+      "CRX-005"
+    ],
+    "selectors": [
+      "CRX-005 %s equal adjacent process displays are grouped, not hidden"
+    ]
+  },
+  "mobileapp/src/ui/ParticipantProfileModal.test.tsx": {
+    "cases": [
+      "CRX-005"
+    ],
+    "selectors": [
+      "message facts stay historical while a same-session launch chain loads on demand",
+      "a tmux message can verify its chain when the radar row has no session id",
+      "a current header shows recorded ancestry without implying a historical message"
+    ]
+  },
+  "mobileapp/src/screens/HQReload.test.tsx": {
+    "cases": [
+      "CRX-002",
+      "CRX-004"
+    ],
+    "selectors": [
+      "CRX-002 HQ reload is pending immediately and late superseded results cannot settle it",
+      "CRX-004 a send receipt invalidates the pre-send read and refreshes once without waiting for poll interval"
+    ]
+  },
+  "mobileapp/src/state/desktopReload.test.tsx": {
+    "cases": [
+      "CRX-002"
+    ],
+    "selectors": [
+      "CRX-002 external reload retains content, enforces parent deadline and retires old scope"
+    ]
+  },
+  "internal/server/web/execution-chain.test.cjs": {
+    "cases": [
+      "CRX-005"
+    ],
+    "selectors": [
+      "CRX-005 adjacent equal process presentations retain count, order and distinct arguments"
+    ]
+  },
+  "tests/web/conversation-feedback.test.cjs": {
+    "cases": [
+      "CRX-003",
+      "CRX-006"
+    ],
+    "selectors": [
+      "CRX-003 visible conversation reload ",
+      "CRX-006 empty conversation uses an actionable short message"
+    ]
+  },
+  "tests/web/profile.test.cjs": {
+    "cases": [
+      "CRX-005"
+    ],
+    "selectors": [
+      "Historical profile reads current ancestry only on expansion and only for the same conversation"
     ]
   }
 }

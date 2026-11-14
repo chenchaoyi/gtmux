@@ -8,6 +8,10 @@ Doctor remains read-only. Only the authenticated producer normal heartbeat may r
 
 ## Surfaces
 
+- Terminal / CLI: read-only doctor diagnosis and client-owned metadata recovery.
+- Menubar: inherits shared diagnosis; no new window controls.
+
+
 - Terminal: doctor exposes exact affected panes and reason; existing normal heartbeat self-heals eligible missing indices.
 - Menu bar: consumes the same doctor JSON/result; no client-specific repair authority.
 - Phone: shared server association improves after producer recovery; no forced restart or new phone release in this source step.

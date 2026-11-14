@@ -17,6 +17,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
@@ -1818,13 +1820,25 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 	}
 	var bounds []bound
 	verified := 0
+	var unavailable, missing, unverified []string
 	claimed := map[string]bool{} // every session id some pane already owns
+	currentClients := map[string]bool{}
+	for _, attachment := range agentclient.All() {
+		currentClients[attachment.Pane] = true
+	}
 	for _, p := range panes {
 		if p.Tier != "agent" || p.Loc == "" {
 			continue
 		}
+		if currentClients[p.PaneID] {
+			verified++ // same exact current-client override as the transcript API
+			continue
+		}
 		rec, ok := resume.Load(p.Loc)
 		if !ok || rec.SessionID == "" {
+			if doctorExpectsConversation(p.Agent) {
+				missing = append(missing, p.PaneID+" (resume-record-unavailable)")
+			}
 			continue
 		}
 		claimed[rec.SessionID] = true
@@ -1833,6 +1847,15 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 			// A newer file beside this conversation cannot contradict this
 			// exact live frontend. Codex threads share the date directory.
 			continue
+		}
+		if rec.Agent == "codex" && rec.Frontend != "" {
+			_, live, reason := resume.LoadLiveDiagnostic(p.Loc)
+			if !live {
+				unavailable = append(unavailable, p.PaneID+" ("+reason+")")
+			} else {
+				unverified = append(unverified, p.PaneID+" (current-client-unverified)")
+			}
+			continue // current proof failure is not a directory-recency question
 		}
 		path := transcript.LogPath(rec.Agent, rec.SessionID)
 		if path == "" {
@@ -1853,16 +1876,50 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 		}
 	}
 	switch {
+	case len(unavailable) > 0:
+		return dcheck{stMiss, label, fmt.Sprintf(i18n.Tr("%d unavailable", "%d 个未关联"), len(unavailable)),
+			doctorAssociationDetails(unavailable, missing, unverified) + i18n.Tr(
+				". The current client will retry. If the problem persists after updating, normally exit and resume only this conversation.",
+				"。客户端会自动重试。更新后若仍未恢复，请在对应终端正常退出并续开这段对话。")}
+	case len(missing)+len(unverified) > 0:
+		return dcheck{stRec, label, fmt.Sprintf(i18n.Tr("%d need verification", "%d 个待核实"), len(missing)+len(unverified)),
+			doctorAssociationDetails(missing, unverified) + i18n.Tr(
+				". Select a conversation in this terminal, or resume it normally if it stays unlinked.",
+				"。请在对应终端选定对话；若仍未关联，可正常退出后续开。")}
 	case len(bounds) == 0 && verified == 0:
 		return dcheck{stInfo, label, i18n.Tr("nothing bound yet", "暂无绑定"), note}
-	case len(stale) == 0:
+	case len(bounds) == 0:
 		return dcheck{stOK, label,
 			fmt.Sprintf(i18n.Tr("%d live", "%d 个在跟"), len(bounds)+verified), note}
+	case len(stale) == 0:
+		return dcheck{stInfo, label, fmt.Sprintf(i18n.Tr("%d historical bindings; %d current verified", "%d 个历史绑定，%d 个当前关联已核实"), len(bounds), verified),
+			i18n.Tr("Retained history is available; it does not prove that an older client is still the current conversation. No automatic rebinding is inferred from log timestamps.", "历史记录仍可读取，但不能据此确认旧客户端仍属于当前对话；不会根据日志时间自动改绑。")}
 	default:
 		return dcheck{stInfo, label, i18n.Tr("Directory hint only · binding fault unconfirmed", "仅有目录线索，未确认绑定异常"),
 			i18n.Tr("Current managed frontends verify their own thread automatically. Nearby history alone does not establish a binding fault; no repair is proposed from directory recency.",
 				"受管客户端会自动确认当前线程。同目录下出现较新的历史不足以判定绑定错误，因此不据此要求修复或重新绑定。")}
 	}
+}
+
+func doctorExpectsConversation(label string) bool {
+	key := agents.KeyForLabel(label)
+	for _, manifest := range agents.All() {
+		if manifest.Key == key {
+			return manifest.Content != "" || len(manifest.TerminalClients) > 0
+		}
+	}
+	return false
+}
+
+func doctorAssociationDetails(groups ...[]string) string {
+	var all []string
+	for _, group := range groups {
+		all = append(all, group...)
+	}
+	if len(all) <= 8 {
+		return strings.Join(all, "; ")
+	}
+	return strings.Join(all[:8], "; ") + fmt.Sprintf(i18n.Tr("; and %d more", "；另有 %d 个"), len(all)-8)
 }
 
 func verifiedCodexChatBinding(loc string, rec resume.Record) bool {

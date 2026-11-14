@@ -7,3 +7,11 @@ Delivery receipts show Received or Submitted immediately, with queued work expli
 The execution chain is unique process ancestry, but multiple processes may have equal sanitized executable names/paths. Group adjacent equal presentations with a process count, retain order and differing metadata, and show a concise observation time. No role is inferred from the executable name and no previously omitted argument is exposed. This applies across agent providers.
 
 Surfaces: phone, iPad, Web and Trace. macOS menu bar diagnosis inherits the doctor work; no menu-bar rendering changes here. Synthetic tests do not establish installed UI or real message delivery.
+
+## Surfaces
+
+- Terminal / CLI: shared association health, no input replay.
+- Menubar: inherited doctor health only; no new UI.
+- Phone and iPad: visible reload, stable message bubbles and concise states.
+- Web: full/tiled reload and compact process presentation.
+- Trace: shares the parent read and concise read feedback.

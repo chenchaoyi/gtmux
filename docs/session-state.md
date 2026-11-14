@@ -45,3 +45,9 @@ An already running older bridge needs a normal reconnect with the updated CLI;
 updating the App's list alone does not upgrade that process.
 
 Connection activation and association writes share one publication permission. A replacement connection waiting for it keeps its original readiness budget; failure leaves the incumbent active. Disconnect retires the connection before transports drain. Cancellation during validation stops pending live publication; committed history is preserved.
+
+## Diagnosing an unlinked conversation
+
+`gtmux doctor` lists active panes with missing or invalid managed conversation proof, including the pane and reason. A saved historical log alone is not a healthy live association. Unsupported conversation readers and plain shells stay informational. Doctor only reads this state and does not choose a thread or restart an agent.
+
+If a current Codex client loses its primary index during a storage failure, its normal heartbeat can rebuild its own index after repeating strict process, terminal, home and root checks. The persisted receipt must still equal that client’s committed in-memory owner. Unknown, replaced or ambiguous owners remain refused, and normal reader freshness does not change. Older clients need a normal exit/resume to load updated code. This is metadata recovery, without message replay or session restore.

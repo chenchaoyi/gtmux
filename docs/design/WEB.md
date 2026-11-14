@@ -328,3 +328,7 @@ An expanded Live preview for last-known history labels the current pane and its 
 ### Attachment echo identity
 
 The shared attachment identity treats an original path list and an equal ordered generated-link list as two representations of the same attachments. It preserves repeated-file count, path/order differences and human prose. A newly recorded occurrence replaces its pending row; an older identical occurrence does not acknowledge a new send.
+
+## Conversation recovery feedback (2026-11-14)
+
+Full and tiled readers provide a visible Reload conversation button with busy/disabled state. Explicit reload cancels the old read and retains messages until a scoped fresh response arrives; deadline failure settles visibly and late old responses cannot publish. Empty states use a short message and the existing Terminal action where available. External readers preserve access boundaries. Launch-process rows group adjacent identical sanitized displays with a count; short observation time replaces implementation caveats.
