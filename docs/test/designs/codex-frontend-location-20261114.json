@@ -1,0 +1,70 @@
+{
+  "id": "codex-frontend-location-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Let the authenticated live frontend migrate its own mutable tmux location under the existing publication and connection permissions",
+    "notes": "Current57 read-only evidence and independent diagnosis agree: same179 bridge/client/root/SID/home/TTY, fresh106ms proof, but actual location0.0 differs from published0.1 and the destination retains another instance whose proof is absent. First source-derived failure is frontend-record-unavailable; real strict/observation APIs report409 only. This is not proof expiry, automatic compaction causation or a running Codex menu. M799922c0 contains the separately approved echo fix; 180 tag/publication/install are blocked until this new delta is reviewed and gated. Reobserve the same pane's full strict terminal identity; only location may change, not home/SID/instance/sequence, bridge/backend/client/root PID or birth, TTY, foreground/ancestry, physical cwd or thread cwd. Readers keep exact location and5s freshness; never merely ignore Loc or promote last-known history to input authority. Only the current authenticated producer, inside its existing epoch/lifetime and shared kernel publication lease, may migrate. Recheck its own receipt and both old/new owners before publication; stale same-SID destination instance is not the current instance. Reject ambiguous, unknown or conflicting evidence and newer owners, including late old publication/close. Publish current proof and destination index so partial writes fail closed; preserve prior history, but it cannot grant authority at the old location or cause duplicate restore of the same moved frontend. Do not restart/rebind real current57 or alter its proof/index/marker from task scripts. Running179bridge does not acquire new producer behavior when serve is updated; actual post-install bridge-version handoff and lifecycle observations are separate, never faked by a reader-side bypass. Add bounded value-free heartbeat diagnostics without repeated input/root RPC. Preserve all existing valid CAS/CBA/CBP assertions. Design precedes added test code; subsequent source review must be independent."
+  },
+  "cases": [
+    {
+      "id": "CFL-001",
+      "layer": "L2",
+      "description": "Authenticated producer migration preserves one pane conversation through layout changes",
+      "setup": "Actual resume Bind/Refresh/LoadLive/ConversationRecord/frontend resolvers in temporary HOME/CODEX_HOME with existing isolated pane/process seams; real current57 metadata is not used as a writable fixture",
+      "action": "BindA atwork0.1; place old sameSID/differentinstance missingproof atwork0.0, then change only live pane location and heartbeat. Repeat with absent destination, rename and another window. Run both Refresh and newly observed successful root Bind paths, plus long elapsed work using independently ticking producer and unchanged root selection",
+      "expected": "Old production is target-assertion red. Current producer publishes A at new location; strict/read/input target agree on same home/SID/instance, old location grants no input and restore enumeration does not duplicate one moved frontend. No new thread/restore/message/queue/input RPC is issued. Only producer migration updates state; read-only calls do not repair state.",
+      "planned_files": [
+        "internal/resume/frontend_location_test.go"
+      ]
+    },
+    {
+      "id": "CFL-002",
+      "layer": "L2",
+      "description": "Location is mutable only inside a completely proven unchanged pane incarnation",
+      "setup": "Actual isolated producer and readers; independently change one identity/ownership field at a time",
+      "action": "Combine relocation with changed pane/root/client PID or birth, bridge/backend birth, TTY, foreground/ancestry, physical cwd, home, instance/sequence, newer owner, ambiguous clients, absent/malformed/expired proof and future age boundaries; include other live destination owner and sameSID new instance",
+      "expected": "All conflicts and unknown proof stay refused, no destination publication or input.5000/5001ms and future1000/1001ms reader boundaries remain. SameSID never substitutes for instance or process generation. Existing CAS/CBA/CBP negative assertions remain unchanged.",
+      "planned_files": [
+        "internal/resume/frontend_location_test.go"
+      ]
+    },
+    {
+      "id": "CFL-003",
+      "layer": "L2",
+      "description": "Migration publication is fenced against cancellation, partial IO and late writers",
+      "setup": "Real resume publication lease, injected writes and actual production connection binding/lifetime with isolated closures",
+      "action": "Pause before publication; change destination/receipt, activate newer epoch, cancel or fail proof/index/native receipt writes; retry only the same live owner. Release late old heartbeat/root/hook/close after normal sameSID replacement. Include location changes between observations and two live panes exchanging positions",
+      "expected": "No stale owner overwrite, foreign deletion, double live authority, deadlock or new input. Partial committed history remains; readers refuse incomplete state. Exact current producer can recover safe publication failures within normal tick/recovery contracts, while canceled/retired writers cannot. Original index/receipt history remains auditable.",
+      "planned_files": [
+        "internal/resume/frontend_location_test.go",
+        "internal/codexbridge/binding_location_test.go"
+      ]
+    },
+    {
+      "id": "CFL-004",
+      "layer": "L2",
+      "description": "Association failure is not reported as a human decision or a draft",
+      "setup": "Actual CLI/API refusal mapping and production native submit boundary with injected missing/changed frontend; isolated request and capture seams",
+      "action": "Return association-unavailable before Prepare/RPC; compare real approval/menu and unsent draft cases; retain same delivery identity and unknown-outcome protections",
+      "expected": "CLI/App provide explicit association/target-unavailable feedback without claiming a pending decision. JSON retains structured evidence. Missing association issues no Prepare, Claim or native input; real approval/draft remain refused and no automatic retry, fallback channel or raw keys are introduced.",
+      "planned_files": [
+        "internal/app/send_association_test.go",
+        "internal/dispatchbridge/codex_location_test.go"
+      ]
+    },
+    {
+      "id": "CFL-005",
+      "layer": "L2",
+      "description": "Heartbeat failures are observable without leaking content or altering lifetime",
+      "setup": "Actual per-connection binding tick/report callbacks with controlled clock and refresh outcomes, no real process failure",
+      "action": "Repeated identical failures, changed failure cause, successful recovery, receipt-only committed error, selection/cancel/close and later ticks",
+      "expected": "Bounded rate-limited value-free reason/latency/last-success or relocation outcome can diagnose the producer. Recovery resumes only current lifetime; no repeated root RPC/input, stale state resurrection or unlimited logging. Scope and5s reader freshness are unchanged.",
+      "planned_files": [
+        "internal/codexbridge/binding_location_test.go"
+      ]
+    }
+  ],
+  "seal": "f3155316893755091edc8c034e7f032b610f3af1e7610579ec91b59d7e49936c"
+}
