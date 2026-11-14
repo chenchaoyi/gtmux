@@ -62072,7 +62072,7 @@
         },
         {
           "id": "MAP-653639d05776",
-          "line": 291,
+          "line": 297,
           "kind": "reviewed-selector",
           "name": "TestSourceLineageReplay",
           "dynamic": false,
@@ -62081,7 +62081,7 @@
         },
         {
           "id": "MAP-01de870ed64f",
-          "line": 342,
+          "line": 348,
           "kind": "reviewed-selector",
           "name": "TestSourceLineageNewCapture",
           "dynamic": false,
@@ -62089,7 +62089,7 @@
           "design": "KBL-001,KBL-002,KBL-003,KBL-004"
         }
       ],
-      "sha256": "c7f0b92d6e8a029ffd0be1499859944920f9a89139923c3ae168c8acf50fa80d"
+      "sha256": "e368fd6052ce192a447669809efe43706a74cdd923e374766c4d620f18be1d77"
     },
     "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
       "layer": "L2",
@@ -63771,6 +63771,40 @@
         }
       ],
       "sha256": "b788bcbf280f9d1fc15fa8822823605f1acb4165fc1b93004e1b168d4e3ef062"
+    },
+    "internal/knowledge/review_alt_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d17be9623e2e",
+          "line": 61,
+          "kind": "reviewed-selector",
+          "name": "TestReviewAltJSONTransaction",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBA-001,KBA-002,KBA-003"
+        },
+        {
+          "id": "MAP-03c21bf26182",
+          "line": 144,
+          "kind": "reviewed-selector",
+          "name": "TestReviewAltInvalidBatch",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBA-001,KBA-002,KBA-003"
+        },
+        {
+          "id": "MAP-15eb42ebb67c",
+          "line": 195,
+          "kind": "reviewed-selector",
+          "name": "TestReviewedAltReplayBoundaries",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBA-001,KBA-002,KBA-003"
+        }
+      ],
+      "sha256": "fa97a2bf9b61acf0925b732db792bcaf31a7caf26752342b7c3c0009587f372b"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

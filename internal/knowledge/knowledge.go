@@ -392,6 +392,7 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 					}
 				}
 				if op.Reviewed {
+					op.Alt = reviewAlternate(op.Alt, pred.Alt)
 					op.Status = pred.Status
 					op.PromotedAt, op.PromoteWhy, op.PromoteTarget = pred.PromotedAt, pred.PromoteWhy, pred.PromoteTarget
 					op.Audience, op.AudienceRepo = pred.Audience, pred.AudienceRepo
@@ -418,10 +419,8 @@ func foldKnowledge(ops []knowledgeOp) []knowledgeOp {
 				if !op.Sensitive && pred.Sensitive {
 					op.Sensitive, op.Confirmed = true, pred.Confirmed
 				}
-				// The alternate half does NOT transfer: the content changed, and an
-				// alternate of the old text would be a translation of a lesson that no
-				// longer reads that way. Lint counts the successor as monolingual until
-				// HQ writes the other half again.
+				// Ordinary supersede still resets the alternate. Reviewed revisions
+				// preserve omitted text above; preservation does not verify translation.
 			}
 			kill(op.Supersedes)
 			applyMigration(&op)

@@ -2207,7 +2207,8 @@
       "KBL-001",
       "KBL-002",
       "KBL-003",
-      "KBL-004"
+      "KBL-004",
+      "KBA-004"
     ],
     "selectors": [
       "TestSourceLineageOrdinarySupersede",
@@ -2794,6 +2795,18 @@
     ],
     "selectors": [
       "TestCFL006InitialRootMetadataRetryCommitsThenResumesHeartbeats"
+    ]
+  },
+  "internal/knowledge/review_alt_test.go": {
+    "cases": [
+      "KBA-001",
+      "KBA-002",
+      "KBA-003"
+    ],
+    "selectors": [
+      "TestReviewAltJSONTransaction",
+      "TestReviewAltInvalidBatch",
+      "TestReviewedAltReplayBoundaries"
     ]
   }
 }

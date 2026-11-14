@@ -861,6 +861,24 @@ HQ/owner apply SHALL validate all 1–25 changes before a single atomic ledger a
 - **WHEN** a tracked Markdown file is missing
 - **THEN** diff reports it without proposing retirement
 
+### Requirement: Review revisions preserve omitted alternate text
+
+A review `revise` SHALL preserve the live predecessor's alternate language, title and body exactly when `alt` is omitted or null. A complete `alt` object SHALL replace that half in the same digest/CAS-checked atomic transaction; the alternate language, required single-line title and normal content bounds SHALL be validated before any batch append. Alternate updates on `retire` SHALL be rejected. Omission/null SHALL NOT request deletion. Review SHALL NOT invent translations or claim retained text is semantically synchronized with revised source.
+
+Replay of historical reviewed omissions SHALL inherit only from the named live predecessor without rewriting history. Explicit ledger alternate clears, ordinary supersede resets and dead predecessors SHALL NOT resurrect old alternate text. Ordinary supersede SHALL retain its separate reset behavior. Existing sources, hit history, privacy, audience, card protection, distribution reopening and idempotency SHALL remain in force.
+
+#### Scenario: Revising Chinese while retaining English
+- **WHEN** a reviewed revision changes the source prose without providing an alternate
+- **THEN** its prepared and appended operation and live readers retain the existing English bytes without claiming the translation has been checked
+
+#### Scenario: Updating both languages with one review
+- **WHEN** a revision supplies a valid complete alternate object
+- **THEN** both halves change atomically and an invalid alternate prevents the entire batch from committing
+
+#### Scenario: Replaying a cleared alternate
+- **WHEN** a live predecessor has no alternate after an explicit ledger clear or ordinary supersede reset
+- **THEN** a later reviewed omission remains monolingual
+
 ### Requirement: Use reports do not become recurrence or causal evidence
 
 Explicit CLI usage receipts SHALL be labeled self_report, store hashed task/plan keys and item revisions/card hashes, distinguish retrieved/shown/adopted/outcome, deduplicate retries and exclude audit activity. Evaluation SHALL be separate. Summaries SHALL NOT infer causal reuse or non-use from missing records. An 8 MiB storage ceiling SHALL require explicit archival rather than silently deleting history.

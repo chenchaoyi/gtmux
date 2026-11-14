@@ -15,8 +15,12 @@ receipt and is not inherited. Review evidence/reason/time/operation ID remain ne
 Existing provenance, tags and current hit history still fold normally. Review
 continues to enforce digest/CAS, atomic append and idempotent retries. Dry runs
 remain read-only. Ordinary supersede still rejudges distribution; reviewed revise
-keeps audience/status/protection and reopens landing. Stale translations are
-invalidated and inherited action cards become tentative, as before.
+keeps audience/status/protection and reopens landing. Inherited action cards become
+tentative. Ordinary supersede resets its alternate; review preserves omitted/null
+alternates exactly and validates an explicit replacement in the same transaction.
+Historical reviewed replay uses only the live predecessor, respecting explicit ledger
+clears and ordinary resets. Retained text is not proof of translation equivalence;
+see the [review contract](../guides/knowledge-review.md).
 
 Tests use synthetic disposable HOME fixtures and actual CLI/apply/read/render
 paths. No production KB proposals or private conversation bodies are fixtures.
