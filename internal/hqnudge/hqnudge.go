@@ -390,9 +390,9 @@ func isOrphanClaim(e os.DirEntry) bool {
 // A reclaim can race a live-but-slow drainer, in which case the batch delivers twice —
 // with the SAME batch id, which is the documented (and recognizable) duplicate. The
 // alternative it replaces was a permanent silent loss.
-func reclaimOrphans() {
+func reclaimOrphansExcept(protected map[string]bool) {
 	for _, e := range readQueue() {
-		if !isOrphanClaim(e) {
+		if protected[e.Name()] || !isOrphanClaim(e) {
 			continue
 		}
 		src := filepath.Join(queueDir(), e.Name())
@@ -619,9 +619,12 @@ func drainInto(x io, pane string) {
 	}
 	// Recover possible native submissions before ordinary orphan handling, even
 	// if the current pane now selects a legacy route. A restart is not a retry.
-	if err := recoverNativeIntents(); err != nil {
+	protected, err := recoverNativeIntentsWithProtection()
+	if err != nil {
 		diag.ReportStoreFailure("hq-native-wake", err)
-		return
+		if protected == nil {
+			return
+		} // unreadable/malformed intent holds the whole channel
 	}
 	var submit func(string, string) (dispatch.Result, bool)
 	if x.nativePrepare != nil {
@@ -631,7 +634,7 @@ func drainInto(x io, pane string) {
 	}
 	if submit != nil {
 		for _, e := range readQueue() {
-			if strings.HasSuffix(e.Name(), sendingSuffix) && isOrphanClaim(e) {
+			if !protected[e.Name()] && strings.HasSuffix(e.Name(), sendingSuffix) && isOrphanClaim(e) {
 				// Pre-journal native runtimes cannot prove these old claims unsent.
 				if err := parkNativeClaim(filepath.Join(queueDir(), e.Name())); err != nil {
 					diag.ReportStoreFailure("hq-native-wake", err)
@@ -640,9 +643,10 @@ func drainInto(x io, pane string) {
 			}
 		}
 	}
-	reclaimOrphans()
+	reclaimOrphansExcept(protected)
 	settleEarlierAttempts(x, pane)
-	due := queuedNames(func(n string) bool { return dueOf(n) <= x.nowNano() })
+	// Never rename a queued replacement onto a held foreign/changed claim.
+	due := queuedNames(func(n string) bool { return !protected[n+sendingSuffix] && dueOf(n) <= x.nowNano() })
 	claimed, msgs, held := claimBatch(due)
 	if len(msgs) == 0 {
 		for _, c := range claimed {

@@ -2661,9 +2661,49 @@
       "HRW-012"
     ],
     "selectors": [
-      "TestHRW012UnavailableIdentityIsNotChangedAndEscalatesOnce",
-      "TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity",
-      "TestHRW012DiagnosticReasonChangesDoNotExtendDeadlineOrGrantReset"
+      "TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity"
+    ],
+    "retired_selectors": [
+      {
+        "selector": "TestHRW012UnavailableIdentityIsNotChangedAndEscalatesOnce",
+        "reason": "HRW016 supersedes obsolete 60-second terminal-failure expectation; unknown/no-input, cause normalization, original timing and exact recovery safeguards migrated after sealed design19582eee."
+      },
+      {
+        "selector": "TestHRW012DiagnosticReasonChangesDoNotExtendDeadlineOrGrantReset",
+        "reason": "HRW016 supersedes obsolete 60-second terminal-failure expectation; unknown/no-input, cause normalization, original timing and exact recovery safeguards migrated after sealed design19582eee."
+      }
+    ]
+  },
+  "internal/hqnudge/native_generation_test.go": {
+    "cases": [
+      "HRW-014"
+    ],
+    "selectors": [
+      "TestHRW014GenerationChangeWithSameInodeBodyAndMtimeCannotBeDeleted",
+      "TestHRW014UncertainPublicationOnlyRetiresItsExactOwnedLink"
+    ]
+  },
+  "internal/hqnudge/native_pin_test.go": {
+    "cases": [
+      "HRW-015"
+    ],
+    "selectors": [
+      "TestHRW015NativeIntentKeepsOriginalIncarnationAlive",
+      "TestHRW015TerminalCleanupAndUnknownAnchorsStayDistinct",
+      "TestHRW015UnknownMetadataCannotSupplyAnIdentity",
+      "TestHRW015AnchorBudgetHoldsBeforeJournalOrInput",
+      "TestHRW015UncertainRestartRequiresItsRetainedAnchor"
+    ]
+  },
+  "internal/hq/rotation_warning_recovery_test.go": {
+    "cases": [
+      "HRW-016"
+    ],
+    "selectors": [
+      "TestHRW016WarningThenRecoveryKeepsRequestAndEveryGuard",
+      "TestHRW016RepeatedUnknownNeverExtendsExpiryOrRepeatsWarning",
+      "TestHRW016FailedPublicationIsNotAReasonToReplayOrBlockRecovery",
+      "TestHRW016UnknownSourcesAndReasonChangesKeepOriginalOwnership"
     ]
   }
 }

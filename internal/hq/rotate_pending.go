@@ -31,6 +31,7 @@ import (
 type rotationRequest struct {
 	IdentityUnavailableAt int64  `json:"identityUnavailableAt,omitempty"`
 	IdentityCause         string `json:"identityCause,omitempty"`
+	IdentityWarnedAt      int64  `json:"identityWarnedAt,omitempty"`
 	TargetStamp           string `json:"targetStamp,omitempty"`
 	Successor             string `json:"successor,omitempty"`
 	SwitchedAt            int64  `json:"switchedAt,omitempty"`
@@ -443,19 +444,33 @@ func rotationIdentityCode(reason string) string {
 	}
 }
 func holdRotationIdentity(r rotationRequest, reason string, now time.Time) {
+	// Expiry belongs to the original request, not the diagnostic clock. It wins
+	// even when identity first becomes unavailable shortly before that deadline.
+	if now.Unix()-r.CreatedAt >= int64(rotationQueueLimit.Seconds()) {
+		failRotation(r, "HQ identity unavailable for reset ("+reason+"); no input sent", now.Unix())
+		return
+	}
 	changed := r.IdentityCause != reason || r.IdentityUnavailableAt == 0 || r.IdentityUnavailableAt > now.Unix()
 	if r.IdentityUnavailableAt == 0 || r.IdentityUnavailableAt > now.Unix() {
 		r.IdentityUnavailableAt = now.Unix()
 	}
 	r.IdentityCause = reason
-	if changed {
+	warn := r.IdentityWarnedAt == 0 && now.Unix()-r.IdentityUnavailableAt >= int64(rotationIdentityWait.Seconds())
+	if warn {
+		r.IdentityWarnedAt = now.Unix()
+	}
+	if changed || warn {
 		if err := writeRotationFile(r, false); err != nil {
 			diag.ReportStoreFailure("hq-rotation", err)
 			return
 		}
-		diag.For("hq").Info("hq.rotation.identity-unavailable", "HQ identity cannot currently be verified; no reset sent", "reason", reason)
+		if changed {
+			diag.For("hq").Info("hq.rotation.identity-unavailable", "HQ identity cannot currently be verified; no reset sent", "reason", reason)
+		}
 	}
-	if now.Unix()-r.IdentityUnavailableAt >= int64(rotationIdentityWait.Seconds()) || now.Unix()-r.CreatedAt >= int64(rotationQueueLimit.Seconds()) {
-		failRotation(r, "HQ identity unavailable for reset ("+reason+"); no input sent", now.Unix())
+	if warn {
+		// Persist one attempted publication first. A best-effort queue write (or a
+		// crash after it) is never proof of display/read or permission to republish.
+		notify.Send(notify.Options{Kind: "attention", Title: i18n.Tr("HQ is waiting for identity verification", "HQ 轮换等待身份确认"), Subtitle: "gtmux", Message: i18n.Tr("HQ identity could not be verified. The request remains pending; no reset was sent.", "暂时无法确认 HQ 身份，轮换请求仍保留，未发送重置命令。"), Pane: r.Pane, Session: "gtmux HQ"})
 	}
 }

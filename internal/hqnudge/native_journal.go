@@ -10,10 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"golang.org/x/sys/unix"
 )
 
 // Intent is durable BEFORE any native call. Neither a crash nor a changed batch
@@ -28,12 +28,18 @@ type nativeIntent struct {
 	Entries []nativeEntry `json:"entries"`
 }
 type nativeEntry struct {
-	Name   string `json:"name"`
-	SHA256 string `json:"sha256"`
-	FileID string `json:"file_id"`
+	Name      string `json:"name"`
+	SHA256    string `json:"sha256"`
+	FileID    string `json:"file_id"`
+	ChangedAt string `json:"changed_at"`
+	Pin       string `json:"pin"`
 }
 
 const nativeIntentLimit = 128 << 10
+
+// A valid intent can protect its exact conflicting claim without preventing
+// genuinely independent new entries from obtaining their own fresh admission.
+var errNativeClaimConflict = errors.New("native wake claim conflict")
 
 func nativeIntentDir() string { return filepath.Join(state.Dir(), "hq-nudge-native-batches") }
 func nativeIntentPath(r nativeIntent) string {
@@ -56,36 +62,39 @@ func readNativeBytes(path string) ([]byte, error) {
 	}
 	return b, err
 }
-func nativeFingerprint(path string) (string, string, error) {
+func nativeFingerprint(path string) (nativeEntry, error) {
+	return nativeFingerprintWithStat(path, unix.Fstat)
+}
+func nativeFingerprintWithStat(path string, stat func(int, *unix.Stat_t) error) (nativeEntry, error) {
 	f, err := state.OpenPrivateRead(path)
 	if err != nil {
-		return "", "", err
+		return nativeEntry{}, err
 	}
 	defer f.Close()
-	info, err := f.Stat()
-	if err != nil {
-		return "", "", err
+	var before, after unix.Stat_t
+	if err := stat(int(f.Fd()), &before); err != nil {
+		return nativeEntry{}, err
 	}
-	stat, ok := info.Sys().(*syscall.Stat_t)
-	if !ok {
-		return "", "", errors.New("native wake inode evidence unavailable")
+	if before.Ctim.Sec <= 0 || before.Ctim.Nsec < 0 || before.Ctim.Nsec >= 1_000_000_000 {
+		return nativeEntry{}, errors.New("native claim generation metadata unavailable")
 	}
 	b, err := stdio.ReadAll(stdio.LimitReader(f, nativeIntentLimit+1))
 	if err != nil {
-		return "", "", err
+		return nativeEntry{}, err
 	}
 	if len(b) > nativeIntentLimit {
-		return "", "", errors.New("native wake claim exceeds budget")
+		return nativeEntry{}, errors.New("native wake claim exceeds budget")
 	}
-	after, err := f.Stat()
-	if err != nil {
-		return "", "", err
+	if err := stat(int(f.Fd()), &after); err != nil {
+		return nativeEntry{}, err
 	}
-	if info.Size() != after.Size() || !info.ModTime().Equal(after.ModTime()) {
-		return "", "", errors.New("native wake claim changed during read")
+	if before.Dev != after.Dev || before.Ino != after.Ino || before.Size != after.Size || before.Mtim != after.Mtim || before.Ctim != after.Ctim {
+		return nativeEntry{}, errors.New("native wake claim changed during read")
 	}
 	h := sha256.Sum256(b)
-	return hex.EncodeToString(h[:]), fmt.Sprintf("%d:%d", uint64(stat.Dev), stat.Ino), nil
+	return nativeEntry{Name: filepath.Base(path), SHA256: hex.EncodeToString(h[:]),
+		FileID:    fmt.Sprintf("%d:%d", uint64(before.Dev), before.Ino),
+		ChangedAt: fmt.Sprintf("%d:%d", before.Ctim.Sec, before.Ctim.Nsec)}, nil
 }
 func writeNativeIntent(r nativeIntent) error {
 	b, err := json.Marshal(r)
@@ -98,24 +107,30 @@ func writeNativeIntent(r nativeIntent) error {
 	return state.WritePrivateFile(nativeIntentPath(r), b)
 }
 func prepareNativeIntent(pane, id, payload string, claims []string) (nativeIntent, error) {
-	r := nativeIntent{Version: 1, Pane: pane, ID: id, Payload: payload, Outcome: "prepared"}
+	r := nativeIntent{Version: 2, Pane: pane, ID: id, Payload: payload, Outcome: "prepared"}
+	if err := admitNativePins(len(claims)); err != nil {
+		return r, err
+	}
 	for _, c := range claims {
-		h, fileID, err := nativeFingerprint(c)
+		entry, err := pinNativeClaim(r, c)
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
 		if err != nil {
 			return r, err
 		}
-		r.Entries = append(r.Entries, nativeEntry{Name: filepath.Base(c), SHA256: h, FileID: fileID})
+		r.Entries = append(r.Entries, entry)
 	}
 	if len(r.Entries) == 0 {
 		return r, errors.New("native wake claim evidence missing")
 	}
+	if err := syncNativeDirectory(nativePinDir()); err != nil {
+		return r, err
+	}
 	return r, writeNativeIntent(r)
 }
 func validNativeIntent(r nativeIntent) bool {
-	if r.Version != 1 || r.Pane == "" || len(r.ID) != 7 || r.ID[0] != '#' || strings.Trim(r.ID[1:], "0123456789abcdef") != "" || r.Payload == "" || len(r.Entries) == 0 || len(r.Entries) > maxQueueEntries {
+	if r.Version != 2 || r.Pane == "" || len(r.ID) != 7 || r.ID[0] != '#' || strings.Trim(r.ID[1:], "0123456789abcdef") != "" || r.Payload == "" || len(r.Entries) == 0 || len(r.Entries) > maxQueueEntries {
 		return false
 	}
 	switch r.Outcome {
@@ -125,7 +140,7 @@ func validNativeIntent(r nativeIntent) bool {
 	}
 	seen := map[string]bool{}
 	for _, e := range r.Entries {
-		if filepath.Base(e.Name) != e.Name || !strings.HasSuffix(e.Name, ".txt"+sendingSuffix) || len(e.SHA256) != 64 || strings.Trim(e.SHA256, "0123456789abcdef") != "" || e.FileID == "" || seen[e.Name] {
+		if filepath.Base(e.Name) != e.Name || !strings.HasSuffix(e.Name, ".txt"+sendingSuffix) || len(e.SHA256) != 64 || strings.Trim(e.SHA256, "0123456789abcdef") != "" || e.FileID == "" || e.ChangedAt == "" || len(e.Pin) != 68 || !strings.HasSuffix(e.Pin, ".pin") || strings.Trim(strings.TrimSuffix(e.Pin, ".pin"), "0123456789abcdef") != "" || seen[e.Name] {
 			return false
 		}
 		seen[e.Name] = true
@@ -136,21 +151,27 @@ func validNativeIntent(r nativeIntent) bool {
 // Recovery is serialized by the existing HQ input lease. Prepared means unknown,
 // including a stop before the call: retain it, never infer an unsent transaction.
 func recoverNativeIntents() error {
+	_, err := recoverNativeIntentsWithProtection()
+	return err
+}
+func recoverNativeIntentsWithProtection() (map[string]bool, error) {
 	if err := state.MkdirAll(nativeIntentDir(), 0700); err != nil {
-		return err
+		return nil, err
 	}
 	dir, err := os.Open(nativeIntentDir())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer dir.Close()
 	files, err := dir.ReadDir(maxQueueEntries + 1)
 	if err != nil && err != stdio.EOF {
-		return err
+		return nil, err
 	}
 	if len(files) > maxQueueEntries {
-		return errors.New("native wake recovery budget exhausted")
+		return nil, errors.New("native wake recovery budget exhausted")
 	}
+	protected := map[string]bool{}
+	var conflicts []error
 	for _, e := range files {
 		if strings.HasPrefix(e.Name(), ".private-") {
 			continue
@@ -158,43 +179,72 @@ func recoverNativeIntents() error {
 		p := filepath.Join(nativeIntentDir(), e.Name())
 		b, err := readNativeBytes(p)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		var r nativeIntent
 		if json.Unmarshal(b, &r) != nil || !validNativeIntent(r) || nativeIntentPath(r) != p {
-			return errors.New("native wake recovery evidence invalid")
+			return nil, errors.New("native wake recovery evidence invalid")
 		}
 		if err := settleNativeIntent(r); err != nil {
-			return err
+			if !errors.Is(err, errNativeClaimConflict) {
+				return nil, err
+			}
+			// The record is bounded/valid; its filenames can safely be excluded
+			// from ALL orphan reclaim and new claims, without touching the leaf.
+			for _, entry := range r.Entries {
+				protected[entry.Name] = true
+			}
+			conflicts = append(conflicts, err)
 		}
 	}
-	return nil
+	return protected, errors.Join(conflicts...)
 }
 func settleNativeIntent(r nativeIntent) error {
 	// Validate every extant claim first. A replaced/corrupted leaf is not ours to
 	// delete or overwrite, even when other members already reached a terminal state.
 	for _, e := range r.Entries {
+		// An uncertain claim may already be parked (no .sending leaf). Its pin
+		// is still required evidence; losing it must protect this original slot,
+		// not silently classify the record as successfully recovered.
+		if r.Outcome == "prepared" || r.Outcome == "uncertain" {
+			pin, err := nativeAnchor(e)
+			if err != nil {
+				return err
+			}
+			if pin.SHA256 != e.SHA256 {
+				return fmt.Errorf("%w: uncertain anchor payload changed", errNativeClaimConflict)
+			}
+		}
 		p := filepath.Join(queueDir(), e.Name)
-		h, fileID, err := nativeFingerprint(p)
+		observed, err := nativeFingerprint(p)
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
 		if err != nil {
 			return err
 		}
-		if fileID != e.FileID {
-			return errors.New("native wake claim was replaced")
+		if observed.FileID != e.FileID {
+			return fmt.Errorf("%w: identity no longer matches saved evidence", errNativeClaimConflict)
 		}
-		if h != e.SHA256 {
-			// Refused work may have been published before an interrupted unlink.
-			// The queue then owns this SAME inode and producers can update it;
-			// retire only the extra claim link, never freeze or overwrite B.
+		pin, err := nativeAnchor(e)
+		if err != nil {
+			return err
+		}
+		if pin.SHA256 != observed.SHA256 {
+			return fmt.Errorf("%w: anchor and claim payload differ", errNativeClaimConflict)
+		}
+		if observed.SHA256 != e.SHA256 || observed.ChangedAt != e.ChangedAt || pin.ChangedAt != observed.ChangedAt {
+			// Publication changes ctime. Only a recognized shared-inode handoff
+			// may account for it; accepted cleanup has no such exception.
 			claim, claimErr := os.Lstat(p)
 			queued, queueErr := os.Lstat(claimBase(p))
-			published := r.Outcome == "refused" && claimErr == nil && queueErr == nil && os.SameFile(claim, queued)
-			if !published {
-				return errors.New("native wake claim was replaced")
+			refused := r.Outcome == "refused" && claimErr == nil && queueErr == nil && os.SameFile(claim, queued)
+			parked, parkErr := os.Lstat(claimBase(p) + nativeUncertainSuffix)
+			uncertain := (r.Outcome == "prepared" || r.Outcome == "uncertain") && observed.SHA256 == e.SHA256 && claimErr == nil && parkErr == nil && os.SameFile(claim, parked)
+			if !refused && !uncertain {
+				return fmt.Errorf("%w: saved generation or payload changed", errNativeClaimConflict)
 			}
+
 		}
 	}
 	for _, e := range r.Entries {
@@ -221,6 +271,14 @@ func settleNativeIntent(r nativeIntent) error {
 	if r.Outcome == "uncertain" {
 		return nil
 	} // retain exact original payload/delivery identity
+	for _, entry := range r.Entries {
+		if err := retireNativePin(r, entry); err != nil {
+			return err
+		}
+	}
+	if err := syncNativeDirectory(nativePinDir()); err != nil {
+		return err
+	}
 	return ignoreNativeMissing(os.Remove(nativeIntentPath(r)))
 }
 func ignoreNativeMissing(err error) error {
