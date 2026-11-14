@@ -1,0 +1,4 @@
+- [x] Review and commit case design before implementation.
+- [ ] Implement scoped reload feedback and echo handoff.
+- [ ] Group identical process presentations and simplify copy.
+- [ ] Run meaningful regressions, source binding, core/design gates and independent review.

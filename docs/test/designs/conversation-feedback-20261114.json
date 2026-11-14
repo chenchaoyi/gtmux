@@ -1,0 +1,89 @@
+{
+  "id": "conversation-feedback-20261114",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-14",
+    "decision": "Implement visible read retry, compact grouped process display and stable echo handoff",
+    "notes": "User screenshot reports weak/no-op Retry, identical chain rows with verbose replay caveat, long awaiting-confirmation and jumping duplicate echo. Producer already tracks unique PID with repeated-incarnation validation; identical sanitized nodes are distinct processes, so group count rather than claim duplicate source. Presentation only: no raw argv or authority/privacy changes. Read lanes stay bounded, explicit retry invalidates stale lane/ETag; no model-mutation retry. Echo uses existing attachment-aware identity+new occurrence baseline, stable source/optimistic key, never receipt-only execution proof; no rapid polling or fake timing. Schema/installed180 sources unchanged. All UI tests synthetic; no real screen/TCC/session send. Design committed before test edits; preserve meaningful older identity/permission guards and re-review copy expectations. Harness correction before browser test implementation: this repository uses Node+Playwright .test.cjs, not .spec.ts. Before browser regression edits, include existing browser profile assertions: only obsolete verbosity/action label expectations change; session/time, late result, authorization and copying guards remain. Echo mount test counts native View instances rather than composite/host duplicates; dependency setup failures retained separately. New user asks all analogous user-facing state copy audited: remove implementation explanations, keep concise distinct empty/loading/failed/read-only/queued states and actionable reload or existing Terminal navigation; do not change legal/security grants or invent action availability."
+  },
+  "cases": [
+    {
+      "id": "CRX-001",
+      "layer": "L2",
+      "description": "Visible reload feedback on shared phone/tablet Chat and Trace; all agent types",
+      "setup": "Render a read failure with cached messages, press reload, expose pending then success/failure; disabled busy state and >=44pt target",
+      "action": "Exercise production renderer/read boundary with isolated fixtures and deferred completions",
+      "expected": "One clear button starts actual caller reload; immediately busy; messages retained; never claims send or association repair",
+      "planned_files": [
+        "mobileapp/src/ui/ConversationReload.test.tsx",
+        "mobileapp/src/screens/DetailTrace.test.tsx",
+        "mobileapp/src/trace/TraceModal.test.tsx"
+      ]
+    },
+    {
+      "id": "CRX-002",
+      "layer": "L2",
+      "description": "HQ/Detail/external transcript reload lifecycle on phone and tablet",
+      "setup": "Use deferred reads; explicit retry replaces conditional read, clears ETag, rejects late old identity; external reader timeout ignores non-cooperative transport",
+      "action": "Exercise production renderer/read boundary with isolated fixtures and deferred completions",
+      "expected": "No false settled state or forever pending; success/error/identity retirement each settle once; auth continues to clear unauthorized snapshots",
+      "planned_files": [
+        "mobileapp/src/screens/HQReload.test.tsx",
+        "mobileapp/src/screens/DetailTrace.test.tsx",
+        "mobileapp/src/state/desktopReload.test.tsx"
+      ]
+    },
+    {
+      "id": "CRX-003",
+      "layer": "L3",
+      "description": "Browser full/tile conversation reload feedback and real replacement",
+      "setup": "Synthetic browser API delays old/new reads; press retry, check busy/accessibility/retained history then result and no stale publication",
+      "action": "Exercise production renderer/read boundary with isolated fixtures and deferred completions",
+      "expected": "Fresh read starts immediately under same scope, current request only; no duplicated subscription or auto mutation",
+      "planned_files": [
+        "tests/web/conversation-feedback.test.cjs"
+      ]
+    },
+    {
+      "id": "CRX-004",
+      "layer": "L2",
+      "description": "Phone/tablet pending-to-recorded message keeps one mounted user bubble and concise honest receipt across agents",
+      "setup": "Actual ChatView updates pending text/image echo to source turn using source/time occurrence baseline, then later polls; explicit older identical send control; late receipt; bounded map/reset",
+      "action": "Exercise production renderer/read boundary with isolated fixtures and deferred completions",
+      "expected": "No duplicate or remount of matched user row; no temporary disappear/reappear; status Received/Submitted is ingress only, queued stays explicit; no timeout pretending model received; synthetic post-receipt refresh real read",
+      "planned_files": [
+        "mobileapp/src/ui/ChatEchoHandoff.test.tsx",
+        "mobileapp/src/ui/sendReceipt.test.ts",
+        "mobileapp/src/screens/HQReload.test.tsx"
+      ]
+    },
+    {
+      "id": "CRX-005",
+      "layer": "L2",
+      "description": "Execution chain is a compact process summary on phone/tablet/Web and all agents",
+      "setup": "Existing producer walks unique PID ancestry but sanitized display can have equal name/path; two equal adjacent presentations, separated equal process names, mixed runtimes and distinct arguments",
+      "action": "Exercise production renderer/read boundary with isolated fixtures and deferred completions",
+      "expected": "Group adjacent identical displayed nodes as \u00d7N retaining process count/order and details; never collapse nonadjacent or differing arguments; no guessed roles/PID or raw argv; short current-process observation heading/time; historical fact source guard unchanged",
+      "planned_files": [
+        "mobileapp/src/ui/ExecutionChainPresentation.test.tsx",
+        "mobileapp/src/ui/ParticipantProfileModal.test.tsx",
+        "internal/server/web/execution-chain.test.cjs",
+        "tests/web/profile.test.cjs"
+      ]
+    },
+    {
+      "id": "CRX-006",
+      "layer": "L2",
+      "description": "Plain bilingual state copy across agents and phone/tablet/Web/Trace; normal empty state and actual Terminal action",
+      "setup": "Render normal empty, read-only empty, failed association, retained history and busy read states; injectable existing Terminal navigation callback only when pane reader supports it",
+      "action": "Inspect rendered text and press the actual existing per-pane Terminal action; compare browser state copy",
+      "expected": "One short state, no log/implementation tutorial, clear action only when available; failure never becomes empty; readonly and queued meaning survives. Existing permission, draft and identity checks unchanged. Include production string audit inventory with reviewed exclusions rather than claim all product strings rewritten.",
+      "planned_files": [
+        "mobileapp/src/ui/ConversationCopy.test.tsx",
+        "tests/web/conversation-feedback.test.cjs"
+      ]
+    }
+  ],
+  "seal": "e371307dab3e98d1b9da3dffc87fc2949e176ad213dd231153e9ff5e23675de0"
+}
