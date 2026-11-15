@@ -1,0 +1,46 @@
+{
+  "id": "mobile-knowledge-semantics-20261115",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-15",
+    "decision": "Repair the two confirmed P2 sectioning defects from exact fad5 independent review without changing source content, action/read semantics or Markdown parser",
+    "notes": "Original 84 report0b6bc997 and 4 manifest items fully read and SHA-verified. F1 History API is not history; peer/higher current rules after History must remain open. F2 split HTML comments become visible via actual parseBlocks. Retain original report, pure-repro and red outcomes. New tests in a separate file; original15 parser and all action/CAS/draft/refusal assertions stay unchanged. Prefer a whole-body conservative fallback where three source slices cannot safely preserve scope. No security severity expansion, source rewrite, dependencies, native/phone or broad audit."
+  },
+  "cases": [
+    {
+      "id": "KRDS-001",
+      "layer": "L1",
+      "description": "Only complete supported historical headings qualify for folding",
+      "setup": "Synthetic English/Chinese exact historical titles, parenthesis/colon descriptions, closing ATX hashes, and History API/current title prefix controls",
+      "action": "Run production knowledgeReading and inspect actual current/history membership",
+      "expected": "History API and extra ordinary title words remain current; exact supported titles with clear descriptors can fold, headings inside fences/quotes remain current; ordered source bytes remain identical",
+      "planned_files": [
+        "mobileapp/src/screens/knowledgeReading.semantics.test.ts"
+      ]
+    },
+    {
+      "id": "KRDS-002",
+      "layer": "L1",
+      "description": "Current sections after a historical section remain visible by default",
+      "setup": "Explicit History followed by lower historical subheadings or same/higher current headings; fenced and blockquoted heading lookalikes",
+      "action": "Inspect production section slices as consumed by the reader",
+      "expected": "Historical subheadings can stay in history; same/higher following headings cause conservative whole-body current fallback, retaining original order and all text. Non-heading code/quote lookalikes do not end history",
+      "planned_files": [
+        "mobileapp/src/screens/knowledgeReading.semantics.test.ts"
+      ]
+    },
+    {
+      "id": "KRDS-003",
+      "layer": "L1",
+      "description": "Section boundaries preserve hidden HTML comments through the real Markdown parser",
+      "setup": "The independent multiline comment crossing first blank and History-like annotation, inline comments and separated comments, plus ordinary no-comment control",
+      "action": "Compare actual parseBlocks visible blocks for whole source and separately parsed display slices",
+      "expected": "Hidden comment markers/content never become visible. Conservative whole-body fallback retains the exact source. Ordinary supported split still retains guidance and history; existing reference-definition fallback stays unchanged",
+      "planned_files": [
+        "mobileapp/src/screens/knowledgeReading.semantics.test.ts"
+      ]
+    }
+  ],
+  "seal": "31c032183632a7b98509a47592aaed66c720ca26f34ea1b4c3bf78e5dd268ab7"
+}
