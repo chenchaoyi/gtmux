@@ -82,7 +82,7 @@ test('refused: pair again, no retry, and the text is back in the box', async () 
   const bar = t.root.findByType(SendFailedBar);
   expect(bar.props.status).toBe(401);
   expect(t.root.findAllByProps({testID: 'send-failed-retry'})).toHaveLength(0);
-  expect(t.root.findByType(ComposerFn).props.prefill).toMatchObject({text: 'please look at the build'});
+  expect(t.root.findByType(ComposerFn).props.restore).toMatchObject({text: 'please look at the build'});
   await act(async () => {
     t.root.findByProps({testID: 'send-failed-pair-again'}).props.onPress();
   });
@@ -95,7 +95,7 @@ test('any other refusal keeps its retry and does not refill the box', async () =
   const t = await mount(sendResult);
   await send(t, 'run the tests');
   expect(t.root.findByProps({testID: 'send-failed-retry'})).toBeDefined();
-  expect(t.root.findByType(ComposerFn).props.prefill).toBeNull();
+  expect(t.root.findByType(ComposerFn).props.restore).toBeNull();
 });
 
 test('a pane not shared for typing (403): no pairing, no retry, the text back in the box', async () => {
@@ -105,7 +105,7 @@ test('a pane not shared for typing (403): no pairing, no retry, the text back in
   await send(t, 'can I type here');
   expect(t.root.findAllByProps({testID: 'send-failed-pair-again'})).toHaveLength(0);
   expect(t.root.findAllByProps({testID: 'send-failed-retry'})).toHaveLength(0);
-  expect(t.root.findByType(ComposerFn).props.prefill).toMatchObject({text: 'can I type here'});
+  expect(t.root.findByType(ComposerFn).props.restore).toMatchObject({text: 'can I type here'});
   expect(navigate).not.toHaveBeenCalled();
 });
 

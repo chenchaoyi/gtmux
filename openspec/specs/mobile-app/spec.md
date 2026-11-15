@@ -2987,3 +2987,27 @@ During staged attachment upload, the shared Composer SHALL show one compact stat
 - **WHEN** upload bytes finish and the server response is pending
 - **THEN** the row shows Saving instead of a successful 100% label, and no message is submitted
 - **AND** if the response fails, every staged attachment and the caption remain for an explicit retry
+
+### Requirement: Send recovery distinguishes unavailable input from a verified question
+
+The shared Detail and HQ recovery row SHALL describe the last failed send without inferring a current question from generic waiting text. Only the known native question code SHALL identify a reply requirement. HTTP 401/403 SHALL retain their authority-specific recovery regardless of a body code. The row SHALL use a compact neutral surface with readable text and 44pt actions. History-only views SHALL offer draft editing without a send retry.
+
+#### Scenario: Unknown native input state was called a question by an older server
+
+- **WHEN** a send is refused with legacy generic asking text or an unavailable-input code
+- **THEN** the row gives a neutral explanation and an explicit Retry, without claiming the session currently needs an answer
+- **AND** no dispatch, identity, draft or permission guard is bypassed and no automatic retry occurs
+
+#### Scenario: The user retries or edits the held message
+
+- **WHEN** an explicit retry starts
+- **THEN** the row remains mounted with busy and disabled actions until the real response, and the original send ID is reused
+- **AND** duplicate captured actions and callbacks after client/conversation change or unmount cannot replay a send or alter another scope
+- **WHEN** the user chooses Edit
+- **THEN** the old notice clears, the composer opens with the held text appended to any newer text, and staged attachments remain
+
+#### Scenario: Authority refusal arrives after the user starts a new draft
+
+- **WHEN** a 401 or 403 arrives after the user types newer text or stages new attachments
+- **THEN** the held message is restored once alongside the newer text without replacing it or the attachments
+- **AND** Edit focuses the restored draft without appending it a second time, while pairing and retry restrictions remain unchanged

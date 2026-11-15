@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1279 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1287 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2355 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3804 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2372 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 141 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -281,6 +281,14 @@
 | RDR-002 | Only one HTTP read is active per scope; at most one trailing refresh is kept per in-flight burst, rather than losing the event. Refreshing stays true until the owned lane really settles; full response deadline15s retires late results, releases lane and allows explicit retry. No new timerpoll. Existing two401/403, share and activity behavior stays. |
 | RDR-003 | Initial loading has BrandLoader/copy and no zero summary/tutorial/quote. Failure/access remains actionable without a playful quote; cached rows remain. Only successful unfiltered worker-empty shows stable existing browser short Dune excerpt/attribution, with existing gated New session for owner; guests never gain creation. Expired share messaging remains both banner and state. Pull refresh uses actual provider settlement, no decorative600ms timer. |
 | RDR-004 | [] remains successful empty; non-array2xx throws instead of becoming an empty fleet. Valid mapping, credentials, non-ok/auth failures and original usage-read contract assertions remain unchanged. |
+| SFR-001 | Only explicit native question yields question code. Generic waiting and unknown native evidence remain neutral. Existing association text, draft refusal and unconfirmed no-replay advice stay; no dispatch mutation. |
+| SFR-002 | 400/error wrapper stays compatible; valid code survives errors.As, absent/unknown code omitted. 401/403 and callback count unchanged; no receipt is invented. Old server must fail the code assertion semantically, not due to compilation. |
+| SFR-003 | Only known codes survive, legacy send shape unchanged, auth classification always takes precedence; no background retries. |
+| SFR-004 | Legacy asking is neutral, not a current request claim. Retry pending stays mounted and busy/disabled; no dead primary action or send-anyway. Neutral compact surface has readable title/one-line held preview and 44pt controls. Auth routes retain Pair/noRetry or no-input permission, held text retained. |
+| SFR-005 | Only one matching retry begins synchronously; same payload/send_id reused, notice remains busy until actual result. Stale scope/action cannot send, clear or restore another scope; no timers or automatic send. |
+| SFR-006 | Actual busy UI persists, one retry with original send_id; success clears matching notice, failed retry updates reason, old callbacks/results cannot affect new target. Existing echo and authority contracts remain, no real send or repair. |
+| SFR-007 | Restoration appears once, opens editor and appends to any newer text; never overwrites current text/attachments. Draft loader cannot overwrite restore. Scope-keyed remount receives no old restore; no upload or auto send. |
+| SFR-008 | Held text is appended exactly once to newer text, photos and current input remain; Edit clears notice and focuses without duplicating the restored payload. 401 offers only available pairing,403 no retry/pairing, original same-ID/late echo/scope and no-auto-send behavior remain. The final new deferred fixture must fail semantically against6610 consumers before repair. |
 | MSD-006 | No pending request is reused or claimed for a changed target; bridge rechecks prepared identity before RPC mutation. An already accepted historical receipt remains a no-op; unchanged pending preserves its ID and unknown outcomes never replay. |
 | MSD-007 | HQ uses sendResult and a stable ID reused on explicit retry; exposes actual receipt, not endless Sending; old identical history cannot clear new echo. Failed reason retained, no automatic retry or real input. |
 | MSD-008 | Only corresponding current echo receives receipt; old failure cannot erase newer success. Old results/retry cannot move to a rotated HQ/client/pane; newer control-key screen remains. Confirmation retires only the matching new turn and accepted echo is not resurrected. |

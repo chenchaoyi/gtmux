@@ -2387,7 +2387,7 @@
       "replaces the index with results, rather than showing both",
       "says so when nothing matches, naming what was typed",
       "gives the index back when the query is cleared",
-      "is closed by default \u2014 it is read once, then it is just height",
+      "is closed by default — it is read once, then it is just height",
       "opens on tap",
       "describes the result instead of the ledger verb",
       "write-it-in sends carry with no text, after one confirmation",
@@ -2639,7 +2639,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane\u2019s different current runtime",
+      "a stitched older session never requests the pane’s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -3055,10 +3055,14 @@
   },
   "mobileapp/src/screens/DetailSendRefused.test.tsx": {
     "cases": [
-      "CAR-003"
+      "CAR-003",
+      "SFR-008"
     ],
     "selectors": [
-      "retires the sent echo after a poll containing its prompt and later turns; it stays gone"
+      "retires the sent echo after a poll containing its prompt and later turns; it stays gone",
+      "any other refusal keeps its retry and does not refill the box",
+      "a pane not shared for typing (403): no pairing, no retry, the text back in the box",
+      "refused: pair again, no retry, and the text is back in the box"
     ]
   },
   "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
@@ -3183,6 +3187,87 @@
       "a higher current heading after historical subheadings keeps the whole body open",
       "nested history and code or quote heading lookalikes stay within history",
       "comment-containing source retains one Markdown scope: %s"
+    ]
+  },
+  "internal/server/send_failure_code_test.go": {
+    "cases": [
+      "SFR-002"
+    ],
+    "selectors": [
+      "TestSFR002SendFailureCodeBody",
+      "TestSFR002SendCodeCannotBypassAuthority"
+    ]
+  },
+  "mobileapp/src/api/sendFailureCode.test.ts": {
+    "cases": [
+      "SFR-003"
+    ],
+    "selectors": [
+      "SFR-003 keeps the optional known %s refusal",
+      "SFR-003 ignores unknown code %p and retains the legacy response",
+      "SFR-003 status %i takes priority over a question code"
+    ]
+  },
+  "mobileapp/src/ui/sendFailure.test.ts": {
+    "cases": [
+      "SFR-004"
+    ],
+    "selectors": [
+      "SFR-004 legacy refusal %s",
+      "an explicit question describes the last attempt and can be checked again after answering"
+    ]
+  },
+  "mobileapp/src/ui/SendFailedBar.recovery.test.tsx": {
+    "cases": [
+      "SFR-004"
+    ],
+    "selectors": [
+      "SFR-004 %s recovery is neutral, readable and exposes busy actions"
+    ]
+  },
+  "mobileapp/src/ui/useSendRecovery.test.tsx": {
+    "cases": [
+      "SFR-005"
+    ],
+    "selectors": [
+      "SFR-005 retry is synchronous, keeps its record visible and cannot replay a settled action",
+      "SFR-005 edits once and captured actions cannot cross a changed client or ABA scope"
+    ]
+  },
+  "mobileapp/src/screens/SendRecovery.test.tsx": {
+    "cases": [
+      "SFR-006"
+    ],
+    "selectors": [
+      "SFR-006 %s retries once with the same ID and retains visible busy feedback",
+      "SFR-006 %s failed retry updates its reason and Edit keeps a newer composer draft",
+      "SFR-006 %s old retry and late result cannot cross %s scope",
+      "SFR-006 %s status %i keeps authority refusal and restores text"
+    ]
+  },
+  "mobileapp/src/ui/Composer.restore.test.tsx": {
+    "cases": [
+      "SFR-007"
+    ],
+    "selectors": [
+      "SFR-007 restore appends once without replacing a newer draft or staged photos",
+      "SFR-007 empty recovery opens the editor, outranks a delayed stored draft and avoids duplicate restored text"
+    ]
+  },
+  "internal/app/phone_send_failure_test.go": {
+    "cases": [
+      "SFR-001"
+    ],
+    "selectors": [
+      "TestSFR001PhoneRefusalNeedsExplicitNativeQuestion"
+    ]
+  },
+  "mobileapp/src/screens/SendRecovery.authDraft.test.tsx": {
+    "cases": [
+      "SFR-008"
+    ],
+    "selectors": [
+      "SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once"
     ]
   },
   "mobileapp/src/state/AgentsContext.readState.test.tsx": {

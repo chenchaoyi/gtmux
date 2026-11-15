@@ -46973,7 +46973,7 @@
       "sha256": "e92b2ddb0267b69e75322cfb0b03174f083ad756e204f2366248a01fed45439f"
     },
     "mobileapp/src/screens/DetailSendRefused.test.tsx": {
-      "sha256": "8e8c66a61499c5f22d30114e7df3c7bc941f6f8ee150705670ee5988c53ddc3c",
+      "sha256": "4bc9f7b43fce40ea7e0c93834ebc0780aee5dc2bb9daa084a16834739a5362a6",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -59558,13 +59558,13 @@
       ]
     },
     "mobileapp/src/ui/sendFailure.test.ts": {
-      "sha256": "cee1a829b464a0b19307fa095cfc1af6854f945d5cd1bde8a38fa23e78dc711d",
+      "sha256": "783355abc0d0fb76c7432ec6476f13f7469ba456856c080d09a18472fdee439c",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-6344e7ef51db",
-          "line": 6,
+          "line": 14,
           "kind": "test.each()",
           "name": "%s",
           "dynamic": true,
@@ -59657,6 +59657,24 @@
           "name": "says so, offers neither a retry nor pairing again, and keeps the text",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-bba08ee5746b",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "SFR-004 legacy refusal %s",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-004"
+        },
+        {
+          "id": "MAP-fc474ab5add5",
+          "line": 32,
+          "kind": "reviewed-selector",
+          "name": "an explicit question describes the last attempt and can be checked again after answering",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-004"
         }
       ]
     },
@@ -64728,6 +64746,206 @@
         }
       ],
       "sha256": "3aa0a97fa7dfd1c138de635760475fbceab14b4fe2ee0c63c8d139debd411562"
+    },
+    "internal/app/phone_send_failure_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0c3ff7dbdf82",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestSFR001PhoneRefusalNeedsExplicitNativeQuestion",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SFR-001"
+        }
+      ],
+      "sha256": "5b216bbf52b723019ae9e0df92dae3ff8291182186e3652d2cfaf3d0251e9264"
+    },
+    "internal/server/send_failure_code_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f6ad1fd1a6f9",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestSFR002SendFailureCodeBody",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-002"
+        },
+        {
+          "id": "MAP-02ad8161b6de",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "TestSFR002SendCodeCannotBypassAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-002"
+        }
+      ],
+      "sha256": "9c2c8428e6f6bf66c9f5f4f6e279c5320b9e9701c5fc765a2703f5fb23f79491"
+    },
+    "mobileapp/src/api/sendFailureCode.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c2a5d2e02192",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "SFR-003 keeps the optional known %s refusal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-003"
+        },
+        {
+          "id": "MAP-44495107cd6b",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "SFR-003 ignores unknown code %p and retains the legacy response",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-003"
+        },
+        {
+          "id": "MAP-32b00c052ce4",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "SFR-003 status %i takes priority over a question code",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-003"
+        }
+      ],
+      "sha256": "b2322f4764e0fcbbb3628eae7918c494f12507fc565a25da7d87d50f828fb3b5"
+    },
+    "mobileapp/src/screens/SendRecovery.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fb1ca220a1d0",
+          "line": 31,
+          "kind": "reviewed-selector",
+          "name": "SFR-006 %s retries once with the same ID and retains visible busy feedback",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-006"
+        },
+        {
+          "id": "MAP-95d48bdd6e53",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "SFR-006 %s failed retry updates its reason and Edit keeps a newer composer draft",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-006"
+        },
+        {
+          "id": "MAP-0ffc05dd3bf0",
+          "line": 62,
+          "kind": "reviewed-selector",
+          "name": "SFR-006 %s old retry and late result cannot cross %s scope",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-006"
+        },
+        {
+          "id": "MAP-269c6ea1bc54",
+          "line": 78,
+          "kind": "reviewed-selector",
+          "name": "SFR-006 %s status %i keeps authority refusal and restores text",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-006"
+        }
+      ],
+      "sha256": "26ee53d1245edbc2c068bb07b80ddb40558d29ae8853050448977e98321e0a98"
+    },
+    "mobileapp/src/ui/Composer.restore.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f1f46a9b9458",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "SFR-007 restore appends once without replacing a newer draft or staged photos",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-007"
+        },
+        {
+          "id": "MAP-27ec0ef0147d",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "SFR-007 empty recovery opens the editor, outranks a delayed stored draft and avoids duplicate restored text",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-007"
+        }
+      ],
+      "sha256": "e958f2776be7840894830e46e5667838c633ceed1d650a0bef6c95a8360bb4bd"
+    },
+    "mobileapp/src/ui/SendFailedBar.recovery.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a69e5d06a0d4",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "SFR-004 %s recovery is neutral, readable and exposes busy actions",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-004"
+        }
+      ],
+      "sha256": "a3f4d2a174950691d183877b79122978829c1c7f52b3bb3ffe65a521680c2af9"
+    },
+    "mobileapp/src/ui/useSendRecovery.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5ecd0bde4943",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "SFR-005 retry is synchronous, keeps its record visible and cannot replay a settled action",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-005"
+        },
+        {
+          "id": "MAP-08699e656120",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "SFR-005 edits once and captured actions cannot cross a changed client or ABA scope",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-005"
+        }
+      ],
+      "sha256": "84a17c7773fe86faa50a147aa359fc298f35103380af92b6bad1fc4a1868a4bf"
+    },
+    "mobileapp/src/screens/SendRecovery.authDraft.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-751a1129956a",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-008"
+        }
+      ],
+      "sha256": "07002047f758a66b96129c3b5b04faa41fb20b00f0db7a63a023cc92c1200a23"
     },
     "mobileapp/src/api/agentsRead.test.ts": {
       "layer": "L2",

@@ -1212,29 +1212,7 @@ func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe
 			}
 		}
 		if ok, refused := dispatch.PasteAndSubmit(dio, opts, text); !ok {
-			if nativeResult != nil {
-				if en, _ := associationRefusalMessage(nativeResult.Evidence); en != "" {
-					return fmt.Errorf("%s", en)
-				}
-				if strings.Contains(nativeResult.Evidence, "input-thread-not-loaded") {
-					return fmt.Errorf("not sent: the session is not loaded; open it on the Mac first")
-				}
-				if strings.Contains(nativeResult.Evidence, "uncertain") || strings.Contains(nativeResult.Evidence, "receipt-unconfirmed") {
-					return fmt.Errorf("send outcome unconfirmed; inspect the conversation before retrying; the same message ID will not be replayed")
-				}
-			}
-			if refused == dispatch.StateRefusedDraft {
-				// Say WHOSE text stopped it. A generic "not confirmed" would read as a gtmux
-				// fault and invite a retry, when the honest answer is that someone is typing
-				// in that pane and the send would have swallowed their line.
-				return fmt.Errorf("not sent: that pane has unsent text in its input box; clear it, or send from the Mac")
-			}
-			if refused == dispatch.StateRefusedWaiting {
-				// The "box" was the agent's choice menu: it is asking something. Calling that
-				// unsent text sent the reader off to wait for a typist who was not there.
-				return fmt.Errorf("not sent: the agent is asking something (a permission prompt or a question); answer it first")
-			}
-			return fmt.Errorf("not confirmed: the pane's input box did not settle on the full message")
+			return phoneSendRefusal(refused, nativeResult)
 		}
 		dispatch.MarkAwaited(id)
 		if sendID != "" {
