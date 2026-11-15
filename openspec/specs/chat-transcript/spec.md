@@ -839,3 +839,19 @@ Expanding a readable or paged tool result SHALL preserve the complete original s
 - WHEN the user expands that result and copies the complete recorded section
 - THEN the copied text includes the original controls and all pages
 - AND Raw, inline complete copy and ordinary code readers keep their existing exact-copy behavior.
+
+### Requirement: Recover bounded participant reads without historical metadata
+
+A message lacking a timestamp SHALL keep its historical details unavailable. Its explicitly recorded raw agent and session MAY independently verify current launch observations when no historical profile identity is available. The reader SHALL retain exact session/agent and server/home binding checks, SHALL NOT infer source identity from a radar display name, and SHALL NOT present current model or tier as historical facts. Unknown source identity SHALL NOT offer a futile read. Profile and process reads SHALL include body parsing in a 15-second deadline, retire superseded attempts and ignore late replies. Retry SHALL provide a visible accent button and immediate busy feedback.
+
+#### Scenario: Reply has a source identity but no timestamp
+
+- **WHEN** the owner opens such a reply and expands launch processes
+- **THEN** only a current response matching the recorded source session and agent is shown
+- **AND** missing historical details remain separate; current facts are not substituted
+
+#### Scenario: Read ignores cancellation
+
+- **WHEN** a profile read remains unresolved past its deadline
+- **THEN** the reader shows a timeout and allows a fresh explicit retry
+- **AND** the retired response cannot replace the retry's result
