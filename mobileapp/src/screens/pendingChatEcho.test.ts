@@ -1,4 +1,4 @@
-import {beginChatEcho, chatEchoRecorded} from './pendingChatEcho';
+import {beginChatEcho, chatEchoRecorded, noteChatEchoReceipt} from './pendingChatEcho';
 import cases from './promptIdentityCases.json';
 import {promptIdentity} from './promptIdentity';
 const turn = (prompt: string, time?: string) => ({prompt, time, response: ''});
@@ -27,4 +27,24 @@ test.each(cases)('attachment prompt identity $same: $sent -> $recorded', ({sent,
   expect(chatEchoRecorded(repeated, [turn(recorded, 'old')])).toBe(false);
   expect(chatEchoRecorded(repeated, [turn(recorded, 'new')])).toBe(same);
   expect(chatEchoRecorded(echo, [{prompt: 'another request', response: recorded}])).toBe(false);
+});
+
+
+test('CAR-004 successful receipt lifetime is owned by its stable echo identity', () => {
+  const echo = beginChatEcho('one', 'repeat', [turn('repeat', 'old')]);
+  const observed = echo.observed;
+  noteChatEchoReceipt(echo, 'queued', 1000);
+  expect(echo.receiptExpiresAt).toBeUndefined();
+  noteChatEchoReceipt(echo, 'accepted', 2000);
+  expect(echo.receiptExpiresAt).toBe(4500);
+  noteChatEchoReceipt(echo, 'submitted', 8000);
+  expect(echo.receiptExpiresAt).toBe(4500);
+  expect(echo.observed).toBe(observed);
+  expect(echo.id).toBe('one'); expect(echo.text).toBe('repeat');
+  expect(chatEchoRecorded(echo, [turn('repeat', 'old')])).toBe(false);
+  expect(chatEchoRecorded(echo, [turn('repeat', 'new')])).toBe(true);
+  const next = beginChatEcho('two', 'repeat', []);
+  noteChatEchoReceipt(next, undefined, 8000);
+  expect(next.receiptExpiresAt).toBe(10500);
+  expect(echo.receiptExpiresAt).toBe(4500);
 });

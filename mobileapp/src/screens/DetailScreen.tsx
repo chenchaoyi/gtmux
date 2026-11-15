@@ -33,7 +33,7 @@ import {Debug} from '../debug';
 import {isAuthError, SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
 import {createReadTask, startReadPolling} from '../state/readTask';
-import {beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
+import {noteChatEchoReceipt, beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
 import {AgentAvatar} from '../ui/AgentAvatar';
@@ -542,6 +542,7 @@ function PaneDetailView({
             return;
           }
           if (pendingEcho.current?.id === p.send_id) {
+            noteChatEchoReceipt(pendingEcho.current!, r.delivery);
             setPendingDelivered(true); setPendingDelivery(r.delivery); receiptRefresh.current();
             const note = busyNote(live.status, lang === 'zh');
             // A late receipt cannot resurrect a notice after transcript confirmation

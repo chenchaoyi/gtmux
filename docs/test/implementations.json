@@ -3036,5 +3036,21 @@
     "selectors": [
       "retires the sent echo after a poll containing its prompt and later turns; it stays gone"
     ]
+  },
+  "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
+    "cases": [
+      "CAR-004"
+    ],
+    "selectors": [
+      "CAR-004"
+    ]
+  },
+  "mobileapp/src/screens/pendingChatEcho.test.ts": {
+    "cases": [
+      "CAR-004"
+    ],
+    "selectors": [
+      "CAR-004"
+    ]
   }
 }

@@ -6,16 +6,19 @@ import {sendReceiptLabel, type SendDelivery} from './sendReceipt';
 import {useReadingPalette} from './ReadingPalette';
 
 /** Visual ingress feedback only. Expiry never confirms, drops or resends a message. */
-export function MessageReceipt({delivery, delivered, zh}: {delivery?: SendDelivery; delivered: boolean; zh: boolean}) {
+export function MessageReceipt({delivery, delivered, expiresAt, zh}: {delivery?: SendDelivery; delivered: boolean; expiresAt?: number; zh: boolean}) {
   const pal = useReadingPalette();
-  const [expired, setExpired] = useState<string | null>(null);
-  const receipt = delivered && delivery !== 'queued' ? delivery ?? 'sent' : null;
+  const [expired, setExpired] = useState<number | null>(null);
+  const receipt = delivered && delivery !== 'queued';
   useEffect(() => {
-    if (!receipt) return;
-    const timer = setTimeout(() => setExpired(receipt), 2500);
+    if (!receipt || expiresAt === undefined || !Number.isFinite(expiresAt)) return;
+    const remaining = expiresAt - Date.now();
+    if (remaining <= 0) return;
+    const timer = setTimeout(() => setExpired(expiresAt), remaining);
     return () => clearTimeout(timer);
-  }, [receipt]);
-  if (receipt && expired === receipt) return null;
+  }, [receipt, expiresAt]);
+  // Unknown lifetime stays quiet; mounting a view must never create a new deadline.
+  if (receipt && (expiresAt === undefined || !Number.isFinite(expiresAt) || Date.now() >= expiresAt || expired === expiresAt)) return null;
   return <View testID="chat-pending-echo" pointerEvents="none" accessible
     accessibilityLabel={sendReceiptLabel(delivery, delivered, zh)} accessibilityLiveRegion="polite" style={styles.slot}>
     {!delivered ? <ActivityIndicator size={10} color={pal.fg2} />

@@ -2,22 +2,23 @@ import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {Text, View, StyleSheet} from 'react-native';
 import {ChatView} from './ChatView';
-import {beginChatEcho} from '../screens/pendingChatEcho';
+import {beginChatEcho, noteChatEchoReceipt} from '../screens/pendingChatEcho';
 import {paletteFor} from './theme';
 import type {Agent} from '../api/types';
 
 const prompt = 'fixture message\n/tmp/public-icon.png';
 const old = {record_id:'old',turn_ordinal:1,session_id:'fixture',prompt,response:'old answer'};
-const echo = beginChatEcho('send-fixture', prompt, [old]);
+let echo: ReturnType<typeof beginChatEcho>;
 const source = {...old, record_id:'new', turn_ordinal:2, prompt:prompt+'\n![Image #1](/tmp/public-icon.png)', response:'new answer'};
 const base = {agent:{pane_id:'%fixture',session_id:'fixture',source:'tmux',agent:'Codex',status:'working'} as Agent, lines:[], status:'working' as const, fontSize:13, pal:paletteFor('dark'), lang:'en' as const, loading:false};
 let tree: renderer.ReactTestRenderer;
 const views = (id: string) => tree.root.findAllByType(View).filter(n => n.props.testID === id);
 const text = () => tree.root.findAllByType(Text).map(n => n.props.children).filter(x => typeof x === 'string');
-beforeEach(() => jest.useFakeTimers());
+beforeEach(() => {jest.useFakeTimers(); echo = beginChatEcho('send-fixture', prompt, [old]);});
 afterEach(async () => {await act(async () => {await Promise.resolve();}); act(() => tree?.unmount()); jest.clearAllTimers(); jest.useRealTimers();});
 
 test.each(['Codex','Claude Code','OpenCode'])('CAR-003 %s confirmed source removes receipt without replacing or resizing its row', agent => {
+ noteChatEchoReceipt(echo, 'accepted');
  const props = {...base, agent:{...base.agent, agent}};
  act(() => {tree=renderer.create(<ChatView {...props} turns={[old]} pendingPrompt={prompt} pendingEcho={echo} pendingDelivered pendingDelivery="accepted"/>);});
  const bubble=views('chat-user-bubble')[1], row=views('chat-user-row')[1];
@@ -33,6 +34,7 @@ test.each(['Codex','Claude Code','OpenCode'])('CAR-003 %s confirmed source remov
 });
 
 test.each(['accepted','submitted'] as const)('CAR-003 %s mark expires visually without dropping an unconfirmed message', delivery => {
+ noteChatEchoReceipt(echo, delivery);
  act(() => {tree=renderer.create(<ChatView {...base} turns={[old]} pendingPrompt={prompt} pendingEcho={echo} pendingDelivered pendingDelivery={delivery}/>);});
  const bubble=views('chat-user-bubble')[1];
  expect(views('chat-pending-echo')[0].props.accessibilityLabel).toBe(delivery === 'accepted' ? 'Received' : 'Submitted');

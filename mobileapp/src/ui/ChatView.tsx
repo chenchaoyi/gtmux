@@ -650,7 +650,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                     </View>
                     <View testID="chat-user-avatar" style={styles.userIdentity}>
                       {avatar(t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />, t.from ? {kind: 'sender', agent, sender: t.from, turn: t} : {kind: 'human', agent}, true)}
-                      {isPending && <MessageReceipt key={pendingKey} delivery={pendingDelivery} delivered={pendingDelivered} zh={lang === 'zh'} />}
+                      {isPending && <MessageReceipt key={pendingKey} delivery={pendingDelivery} delivered={pendingDelivered} expiresAt={pendingEcho?.receiptExpiresAt} zh={lang === 'zh'} />}
                     </View>
                   </View>
                   {/* Whose words these are. Only ever shown when it was NOT the reader,

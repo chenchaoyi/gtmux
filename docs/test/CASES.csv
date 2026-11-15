@@ -4913,6 +4913,7 @@ LEG-317e581f5a92,L2,RN / mobile harness,mobileapp/src/screens/BrowserPlaceholder
 LEG-15ad74d5c228,L2,RN / mobile harness,mobileapp/src/screens/BrowserPlaceholder.test.tsx,35,test,the caption reads in the reader language,False,legacy-not-retrospectively-reviewed
 LEG-fad576930dbf,L2,RN / mobile harness,mobileapp/src/screens/BrowserPlaceholder.test.tsx,39,test,"once read, an empty result is stated and the mark is gone",False,legacy-not-retrospectively-reviewed
 LEG-488ded2a04fe,L2,RN / mobile harness,mobileapp/src/screens/BrowserPlaceholder.test.tsx,46,test,"a search with no match says so, without the hint about opening a window",False,legacy-not-retrospectively-reviewed
+MAP-dc21674f533e,L2,reviewed implementation,mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx,56,reviewed-selector,CAR-004,False,CAR-004
 LEG-5b6b4fab0a07,L2,RN / mobile harness,mobileapp/src/screens/ConnectionScreens.test.tsx,29,test,Settings retains the owner entry and saved name after a route request failure,False,legacy-not-retrospectively-reviewed
 LEG-5dde9bdb73ad,L2,RN / mobile harness,mobileapp/src/screens/ConnectionScreens.test.tsx,39,test,guest Settings has neither an entry nor an owner route request,False,legacy-not-retrospectively-reviewed
 LEG-5488587de04a,L2,RN / mobile harness,mobileapp/src/screens/ConnectionScreens.test.tsx,45,test,route failure has Reload and never pretends there is one route,False,legacy-not-retrospectively-reviewed
@@ -5397,6 +5398,7 @@ LEG-2413084a27a5,L2,RN / mobile harness,mobileapp/src/screens/pendingChatEcho.te
 LEG-720efdce51e7,L2,RN / mobile harness,mobileapp/src/screens/pendingChatEcho.test.ts,9,test,a previous identical prompt cannot confirm a repeated send,False,legacy-not-retrospectively-reviewed
 LEG-0ae50f0bbce3,L2,RN / mobile harness,mobileapp/src/screens/pendingChatEcho.test.ts,15,test,missing timestamps require a new occurrence; response text is not confirmation,False,legacy-not-retrospectively-reviewed
 LEG-d24217de68c1,L2,RN / mobile harness,mobileapp/src/screens/pendingChatEcho.test.ts,22,test.each(),attachment prompt identity $same: $sent -> $recorded,True,legacy-not-retrospectively-reviewed
+MAP-c67e93a9f960,L2,RN / mobile harness,mobileapp/src/screens/pendingChatEcho.test.ts,33,reviewed-selector,CAR-004,False,CAR-004
 LEG-e555dc3acce5,L2,RN / mobile harness,mobileapp/src/screens/radarHeader.test.ts,14,it,overlapped in the shape that was shipped,False,legacy-not-retrospectively-reviewed
 LEG-d1ea939dcf43,L2,RN / mobile harness,mobileapp/src/screens/radarHeader.test.ts,21,it,does not overlap as 40pt squares 4pt apart,False,legacy-not-retrospectively-reviewed
 LEG-82b52c2b4f44,L2,RN / mobile harness,mobileapp/src/screens/radarHeader.test.ts,27,it,keeps each target big enough to hit,False,legacy-not-retrospectively-reviewed

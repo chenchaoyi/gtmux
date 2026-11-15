@@ -50921,7 +50921,7 @@
       ]
     },
     "mobileapp/src/screens/pendingChatEcho.test.ts": {
-      "sha256": "041f0261b1066e77899b5bbc38d89093dc0ee167fb87e01e4c953cb828008777",
+      "sha256": "40c725d7aff0c14b0199a226b40dd5b9e2946aa1b688fde08c20cf99589ca1a3",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -50956,6 +50956,15 @@
           "name": "attachment prompt identity $same: $sent -> $recorded",
           "dynamic": true,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-c67e93a9f960",
+          "line": 33,
+          "kind": "reviewed-selector",
+          "name": "CAR-004",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAR-004"
         }
       ]
     },
@@ -64232,7 +64241,23 @@
           "design": "CAR-003"
         }
       ],
-      "sha256": "cbbfe18885bf6c6e709bd3bf8a898992f9ec1e02780fed59ffc0356203ab6fe7"
+      "sha256": "3c94651ce112a7fa2fde557ce93d4ef8f466e32f2f7429b2228b434a1b2d465f"
+    },
+    "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-dc21674f533e",
+          "line": 56,
+          "kind": "reviewed-selector",
+          "name": "CAR-004",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAR-004"
+        }
+      ],
+      "sha256": "bb9b4931474e5d6fd76e5de5884596cb992f33f4e6aa6ae492a0c92f7bd65848"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

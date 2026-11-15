@@ -1,6 +1,6 @@
 import {ConversationReadError} from '../api/client';
 import {newSendId} from '../api/sendId';
-import {beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
+import {noteChatEchoReceipt, beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
 import type {SendDelivery} from '../ui/sendReceipt';
 import {HQWorkspaceView} from './HQWorkspaceView';
 // HQ opens the shared matter overview when supported. HQConsoleView retains the
@@ -421,7 +421,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
       client.sendResult(hq.pane_id, payload).then(result => {
         if (!currentResult()) return;
         if (!result.ok) {fail(result.reason, result.status); return;}
-        if (currentEcho()) {setPendingDelivered(true); setPendingDelivery(result.delivery); receiptRefresh.current();}
+        if (currentEcho()) {noteChatEchoReceipt(pendingEcho.current!, result.delivery); setPendingDelivered(true); setPendingDelivery(result.delivery); receiptRefresh.current();}
         // Receipt settlement and the terminal capture are separate generations.
         if (attempt === sendAttempt.current && result.pane) setPaneText(result.pane.text ?? '');
       }).catch(() => fail(zh

@@ -2879,3 +2879,8 @@ Successful send acknowledgements SHALL appear only as a compact accessible check
 - **WHEN** the new matching source record replaces the optimistic presentation
 - **THEN** the same user row and bubble remain mounted with unchanged dimensions and no persistent Received label
 - **AND** an older identical prompt or late receipt cannot acknowledge another send or restore its status line
+
+#### Scenario: Return to an unconfirmed successful send
+- **WHEN** the user leaves and returns before or after the successful send's original display deadline
+- **THEN** the same send uses only its remaining lifetime and never starts a new success indicator window
+- **AND** queued/sending states retain their own meaning, while a new send has an independent lifetime and transcript confirmation removes the indicator immediately
