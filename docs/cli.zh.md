@@ -236,7 +236,11 @@ JSON 才省略整个电池对象）。低电量只在放电时
 loadAmber 1.0 / loadRed 1.5 / orphanRssMB 300 / batteryAmberPct 20 / batteryRedPct 10）。
 可回收候选会排除正在运行的工作所依赖的进程，包括 tmux 服务、gtmux 常驻进程和 agent 本身，无论其资源占用大小。
 
-进程回收建议仅出现在内存或负载告警中，并标明资源占用。磁盘和电量告警不附带此建议，因为结束进程不能直接释放磁盘空间或恢复电量。
+HQ 告警尾部仅在内存或负载告警中附带进程回收建议，并将采样 RSS 标为内存占用。磁盘和电量告警尾部不附带此建议；完整的 `gtmux resource` 读数仍可在不同区块同时展示磁盘状态与回收候选。
+
+RSS 衡量驻留内存占用，不是可回收磁盘量，也不保证能释放等量内存。结束进程本身不会删除它的磁盘文件或恢复电量。间接磁盘影响取决于当前状态，例如 swap 使用情况，或该进程是否持有已取消链接文件的最后一个打开引用；不能承诺节省空间。任何获准操作都要对相关资源做实际前后量测。机制见 Apple 的[内存用量说明](https://support.apple.com/guide/activity-monitor/view-memory-usage-actmntr1004/mac)和 [unlink 文档](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/unlink.2.html)。
+
+候选只是建议，不是结束进程的许可。先核对当前身份、用途和依赖，再沿既有授权范围处置；不能由 RSS 推导终止权限。本地开发清理遵循既有[存储范围与归属规则](development-storage.zh.md#3-删除前核准精确范围)。
 
 `GET /api/usage` 的 `resource.agents` 按 pane ID 给出 `rss_mb` 和 `cpu`，与
 `resource.machine`、`resource.orphans` 并列；这些不是 token 用量会话行里的字段。

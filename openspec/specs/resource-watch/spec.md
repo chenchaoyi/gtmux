@@ -94,11 +94,15 @@ A suggestion SHALL be re-read with the alarm before a queued warning is delivere
 suggestion whose candidate no longer holds SHALL be dropped (or replaced by the current
 one for the same condition) WITHOUT dropping the alarm.
 
-The suggestion SHALL accompany only a shortage it can relieve, and SHALL name the quantity
-it would free together with its unit. A reclaim candidate is a PROCESS and its size is
-resident memory, so ending one returns memory and no disk at all; a suggestion riding a
-disk warning therefore answers a question nobody asked, in a sentence that reads as an
-answer. It SHALL ride a memory or load warning, and SHALL NOT ride a disk or battery one.
+In HQ warning tails, the suggestion SHALL ride a memory or load warning, and SHALL NOT
+ride a disk or battery one. It SHALL label sampled RSS as memory use, not as guaranteed
+memory or disk savings. The full resource CLI may still show disk status and candidates
+in separate sections. Ending a process does not itself delete its disk files; indirect
+disk effects depend on current swap use or open references to already unlinked files.
+No saving is promised: the relevant resource must be measured before and after any
+authorized action. A candidate is advice, not termination authority: verify current
+identity, purpose and dependencies within the existing authorized scope. For local
+development cleanup, use the existing [storage scope rules](../../../docs/development-storage.md#3-verify-cleanup-scope-before-removing-anything).
 
 A candidate SHALL first survive the question: if this process ends, what ends with it? A
 process the running work STANDS ON — the terminal multiplexer every session lives inside,
