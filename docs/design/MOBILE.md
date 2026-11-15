@@ -735,13 +735,9 @@ during which the input bar fills the screen, and only then does the system picke
 trip back to the input bar in the middle (user feedback 2026-09-07). Closing by tapping the backdrop or the back gesture
 still slides: there the card's disappearance is the result, and the motion is the feedback.
 
-A chosen photo goes straight into the annotation editor, enters the staging area only when editing finishes, and leaves nothing behind on cancel. This was tried the other way round for a whole
-version (photo straight into staging, annotation by tapping the thumbnail) and reverted the same day on the user's actual usage: most of the images he sends
-need annotation, so moving the editor to a second tap saves one tap on the few "send as-is" images by adding one to nearly every
-photo. **Defaults of this kind follow frequency of use**, and a count of steps is the wrong yardstick.
+Photo Library supports multiple selection. One valid selected photo opens the annotation editor and enters staging only on Done; cancelling adds nothing. Multiple valid photos enter staging together in picker order, without stepping through editors. Tap an individual staged image to annotate it; Done replaces that image in place and Cancel preserves it. Camera and image paste retain their editor-first flow. Choosing or cancelling never uploads or sends.
 
-That attempt left one thing worth keeping: thumbnails are tappable, opening the same editor, and the edit replaces the original
-(appending would send the same image twice). So re-annotating works, and images arriving by other routes can be annotated too.
+During Send, one compact row below the thumbnails names the current file and its position in the batch. Preparation, uploading and server saving are separate phases. A measured transfer shows its actual percentage with a gently interpolated bar; unknown totals stay indeterminate. The bar never advances beyond observed bytes and respects Reduce Motion. Uploading all bytes means saving, not success; only a valid server response completes the file. Waiting thumbnails have no 0% overlays. Failed uploads retain the caption and every staged attachment for an explicit retry. This is the same Composer in Detail/HQ and phone/iPad layouts; input and target authorization remain unchanged.
 
 Paste also goes into the editor first, but that is unrelated to the interface: the clipboard hands over a data: URI, and the editor is the step that turns it into a file.
 

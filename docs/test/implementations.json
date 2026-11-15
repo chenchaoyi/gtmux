@@ -3052,5 +3052,38 @@
     "selectors": [
       "CAR-004"
     ]
+  },
+  "mobileapp/src/ui/Composer.multiPhoto.test.tsx": {
+    "cases": [
+      "MPU-001",
+      "MPU-002",
+      "MPU-004"
+    ],
+    "selectors": [
+      "batch photos stage in picker order and one edit replaces only its thumbnail",
+      "cancelling or failing a later selection preserves caption and staged batch",
+      "a late picker result after unmount cannot stage or submit images",
+      "upload phases keep the batch and caption on failure until an explicit successful retry"
+    ]
+  },
+  "mobileapp/src/api/uploadState.test.ts": {
+    "cases": [
+      "MPU-003"
+    ],
+    "selectors": [
+      "real byte progress stays distinct from processing and saved completion",
+      "unknown and invalid byte totals stay indeterminate rather than fabricating a percentage",
+      "a fully transferred file refused by the server never reports a successful save"
+    ]
+  },
+  "mobileapp/src/ui/AttachmentUploadStatus.test.tsx": {
+    "cases": [
+      "MPU-004"
+    ],
+    "selectors": [
+      "upload status names the active file and hides percent during preparation and saving",
+      "Reduce Motion presents measured values without starting progress animation",
+      "progress animation only targets the latest measured byte fraction"
+    ]
   }
 }

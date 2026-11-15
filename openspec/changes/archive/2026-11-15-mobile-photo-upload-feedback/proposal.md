@@ -4,9 +4,9 @@ Allow Photo Library multi-selection in the existing shared Composer. One photo o
 
 ## Surfaces
 
-- Terminal: no selection or HTTP protocol change.
-- Menu bar: no change; the native screenshot editor is separate.
-- Phone: system multi-picker, staged edit and upload feedback in shared Composer.
+- terminal: no selection or HTTP protocol change.
+- menubar: no change; the native screenshot editor is separate.
+- phone: system multi-picker, staged edit and upload feedback in shared Composer.
 - iPad: the same Composer and native picker in compact/regular layouts.
 - Web: existing browser selection remains unchanged; no fabricated upload completion is introduced.
 

@@ -2884,3 +2884,23 @@ Successful send acknowledgements SHALL appear only as a compact accessible check
 - **WHEN** the user leaves and returns before or after the successful send's original display deadline
 - **THEN** the same send uses only its remaining lifetime and never starts a new success indicator window
 - **AND** queued/sending states retain their own meaning, while a new send has an independent lifetime and transcript confirmation removes the indicator immediately
+
+### Requirement: Photo batches stage together and remain individually editable
+
+The shared phone/iPad Composer SHALL permit multiple photos in the system library picker. One valid photo SHALL retain editor-first behavior; multiple valid photos SHALL stage together in picker order without sequential editors. Each staged image SHALL remain individually editable in place. Cancellation SHALL preserve existing text and staged images, and a late picker response after unmount SHALL be ignored. Selection SHALL never upload or send.
+
+#### Scenario: Select several photos and edit one
+
+- **WHEN** the user selects multiple photos, then opens and finishes the second thumbnail's editor
+- **THEN** all valid photos stage in picker order without an automatic editor queue, and only the second image is replaced
+- **AND** no upload or message occurs until an authorized explicit Send
+
+### Requirement: Upload feedback distinguishes measured transfer from saving
+
+During staged attachment upload, the shared Composer SHALL show one compact status row with the active filename and batch position. Preparing, uploading and server processing SHALL be distinguishable. A progress bar MAY interpolate smoothly toward the measured fraction but SHALL NOT invent transfer progress or completion, and SHALL honor Reduce Motion. Unknown totals SHALL remain indeterminate. Body completion SHALL mean processing, not a successful save; only a valid successful response SHALL complete a file. Settled transports SHALL ignore late progress events. Failure SHALL preserve the caption and all staged attachments without automatic submission. Existing input, target and send guards SHALL remain.
+
+#### Scenario: File transferred but server has not saved it
+
+- **WHEN** upload bytes finish and the server response is pending
+- **THEN** the row shows Saving instead of a successful 100% label, and no message is submitted
+- **AND** if the response fails, every staged attachment and the caption remain for an explicit retry
