@@ -947,7 +947,7 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		}
 		lg.Act("act.send", actorOf(r.Context()), req.ID, outcome, "typing into a pane did not happen",
 			"error", err, "bytes", len(req.Text), "key", req.Key)
-		writeJSON(w, http.StatusBadRequest, errBody("send failed: "+err.Error()))
+		writeJSON(w, http.StatusBadRequest, sendFailureBody(err))
 		return
 	}
 	lg.Act("act.send", actorOf(r.Context()), req.ID, diag.OK, "accepted input for a pane",

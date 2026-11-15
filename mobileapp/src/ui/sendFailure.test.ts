@@ -5,13 +5,13 @@ import {busyNote, classifySendFailure, failureCopy} from './sendFailure';
 describe('classifying what the server said', () => {
   test.each([
     ['send failed: not sent: that pane has unsent text in its input box — clear it or send from the Mac', 'draft'],
-    ['send failed: not sent: the agent is asking something (a permission prompt or a question); answer it first', 'asking'],
+    ['send failed: not sent: the agent is asking something (a permission prompt or a question); answer it first', 'unavailable'],
     ['send failed: pane not found', 'gone'],
     ['send failed: key not allowed', 'key'],
     ["send failed: not confirmed: the pane's input box did not settle on the full message", 'unconfirmed'],
     ['send failed: something nobody has written yet', 'unknown'],
     ['', 'unknown'],
-  ])('%s', (reason, want) => {
+  ])('SFR-004 legacy refusal %s', (reason, want) => {
     expect(classifySendFailure(reason)).toBe(want);
   });
 });
@@ -29,11 +29,11 @@ describe('what the reader is offered', () => {
     expect(c.title).toMatch(/Mac|again/);
   });
 
-  test('a pane that is asking says to answer it, and offers no retry that cannot get past it', () => {
+  test('an explicit question describes the last attempt and can be checked again after answering', () => {
     const c = failureCopy('asking', false);
     expect(c.show).toBe(true);
-    expect(c.action).toBe('none');
-    expect(c.title).toMatch(/asking/);
+    expect(c.action).toBe('retry');
+    expect(c.title).toMatch(/last send needed a reply/);
     expect(failureCopy('asking', true).title).toMatch(/[一-龥]/);
   });
 
@@ -107,7 +107,7 @@ describe('a pane not open to this connection for typing (403)', () => {
       const c = failureCopy('not-shared', zh);
       expect(c.action).toBe('none');
       expect(c.show).toBe(true);
-      expect(c.title).toMatch(zh ? /没有此窗格的输入权限/ : /no input access/);
+      expect(c.title).toMatch(zh ? /没有此窗格的输入权限/ : /no input access/i);
       expect(c.title).not.toMatch(zh ? /配对/ : /pair again/);
     }
   });

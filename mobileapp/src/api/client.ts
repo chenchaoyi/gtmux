@@ -1,3 +1,4 @@
+import {sendFailureCode, type SendFailureCode} from './sendFailureCode';
 import {RestoreError, parseRestoreJob, parseRestoreSnapshot, type RestoreJob, type RestoreSnapshot} from './restore';
 import {withSendDeadline, type SendDelivery} from './sendDeadline';
 import type {HQWorkspace, HQMatterDetail} from './hqWorkspace';
@@ -571,7 +572,7 @@ export function isAuthError(e: unknown): boolean {
 /** What a send did, including the server's own words when it refused. */
 export type SendResult =
   | {ok: true; pane: PaneResponse | null; delivery?: SendDelivery}
-  | {ok: false; status: number; reason: string};
+  | {ok: false; status: number; reason: string; code?: SendFailureCode};
 
 // How long an upload may go quiet before it is given up on. While the body is going out
 // the phone gets a progress event every few KB, so twenty seconds of silence means the
@@ -1200,7 +1201,8 @@ export class GtmuxClient {
             ? (j as {error: string}).error
             : `send failed (${r.status})`;
         if (Debug.logNet) Debug.record({event: 'send-refused', id, status: r.status, reason});
-        return {ok: false, status: r.status, reason};
+        const code = sendFailureCode(j && typeof j === 'object' ? (j as {code?: unknown}).code : undefined);
+        return {ok: false, status: r.status, reason, ...(code ? {code} : {})};
       }
       try {
         const pane = (await r.json()) as PaneResponse & {delivery?: {state?: unknown; send_id?: unknown}};

@@ -295,6 +295,17 @@ interlock.
 503 {"error":"input not available"}                                // Send not wired
 ```
 
+A send callback refusal may add an optional `code` beside the existing `error` string;
+HTTP status and legacy error wrapping are unchanged. Known values are
+`input-awaiting-confirmation`, `input-state-unavailable`, `draft-present`,
+`conversation-unavailable`, `target-changed`, `session-not-loaded`,
+`outcome-unconfirmed` and `input-unconfirmed`. Unknown codes are omitted by the
+server and ignored by clients. Only explicit native `input-awaiting-confirmation`
+evidence identifies a question; a generic waiting/unavailable verdict does not.
+These codes describe the failed attempt, not current agent state or permission to
+replay it. Authorization remains authoritative: 401/403 are never overridden by
+a body code. No target repair, automatic retry or input-policy override is added.
+
 The successful response includes the post-send pane snapshot when it can be read.
 `cols` and `cursor` are optional, with the same meanings as `GET /api/pane`.
 

@@ -398,6 +398,7 @@ LEG-e74a5cb0ba7f,L1,Go core / CLI / server,internal/app/panes_hq_test.go,9,Test,
 LEG-99051be6780b,L1,Go core / CLI / server,internal/app/participantprofile_test.go,10,Test,TestParticipantProfileBindsHistoricalExternalConversation,False,legacy-not-retrospectively-reviewed
 LEG-78edea1b6214,L1,Go core / CLI / server,internal/app/participantprofile_test.go,45,Test,TestProfileTurnIntervalRejectsAmbiguity,False,legacy-not-retrospectively-reviewed
 LEG-dd7f444b9c39,L1,Go core / CLI / server,internal/app/pendingask_test.go,14,Test,TestHasPendingAsk,False,legacy-not-retrospectively-reviewed
+MAP-0c3ff7dbdf82,L1,reviewed implementation,internal/app/phone_send_failure_test.go,12,reviewed-selector,TestSFR001PhoneRefusalNeedsExplicitNativeQuestion,False,SFR-001
 LEG-5a268635ada6,L1,Go core / CLI / server,internal/app/phonedraft_test.go,14,Test,TestPhoneSendKeepsTheDraftGuard,False,legacy-not-retrospectively-reviewed
 LEG-fffbc5a11383,L1,Go core / CLI / server,internal/app/plainsend_test.go,14,Test,TestPlainTermPane,False,legacy-not-retrospectively-reviewed
 LEG-f3542ee21c1a,L1,Go core / CLI / server,internal/app/plainsend_test.go,61,Test,TestStaleScrollbackBoxHidesPlainPaneEcho,False,legacy-not-retrospectively-reviewed

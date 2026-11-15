@@ -1,3 +1,4 @@
+import {NavigationContext} from '@react-navigation/native';
 import {ConversationReadError} from '../api/client';
 import {newSendId} from '../api/sendId';
 import {noteChatEchoReceipt, beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
@@ -37,6 +38,8 @@ import {KnowledgeSheet} from './KnowledgeSheet';
 import {UsageSheet} from './UsageSheet';
 import {knowledgeValue, knowledgeOverdue} from './knowledgeModel';
 import {SendFailedBar} from '../ui/SendFailedBar';
+import {useSendRecovery} from '../ui/useSendRecovery';
+import type {SendFailureCode} from '../api/sendFailureCode';
 import {RunningRow} from '../ui/RunningRow';
 import {TasksSheet} from '../ui/TasksSheet';
 import {HQActsSheet} from './HQActsSheet';
@@ -249,14 +252,13 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const [paneText, setPaneText] = useState('');
   const paneReadIdentity = useMemo(() => ({client, pane: hq.pane_id}), [client, hq.pane_id]);
   const [captureIdentity, setCaptureIdentity] = useState<typeof paneReadIdentity>();
-  // A command the server declined to submit — held so it can be retried, not lost.
-  const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
-  const [failedReason, setFailedReason] = useState('');
-  const [failedStatus, setFailedStatus] = useState<number | undefined>();
+  const navigation = React.useContext(NavigationContext) as {navigate: (route: string) => void} | undefined;
+  const recovery = useSendRecovery(chatIdentity);
+  const failure = recovery.failure;
+  const failedSend = failure?.payload;
   useEffect(() => {
     pendingEcho.current = null; echoAttempts.current.clear();
     setPending(undefined); setPendingDelivered(false); setPendingDelivery(undefined);
-    setFailedSend(null); setFailedReason(''); setFailedStatus(undefined);
   }, [chatIdentity]);
 
   // The live supervisor row (status can change) — fall back to the route agent.
@@ -399,6 +401,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
       const body = input.text?.trim() ?? '';
       if (!body && !input.key) return;
       const payload: SendPayload = input.key ? {key: input.key, send_id: input.send_id ?? newSendId()} : {text: body, enter: input.enter ?? true, send_id: input.send_id ?? newSendId()};
+      if (!recovery.begin(payload)) return;
       const attempt = ++sendAttempt.current;
       if (body) {
         const echo = echoAttempts.current.get(payload.send_id!) ?? beginChatEcho(payload.send_id!, body, latestTurns.current);
@@ -408,27 +411,27 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         pendingAttempt.current = attempt;
         setPending(pendingEcho.current?.text); setPendingDelivered(false); setPendingDelivery(undefined);
       }
-      setFailedSend(null); setFailedReason(''); setFailedStatus(undefined);
       setZone('console');
-      const current = () => sendMounted.current && sendIdentity.current === chatIdentity;
+      const current = () => recovery.isCurrent() && sendMounted.current && sendIdentity.current === chatIdentity;
       const currentEcho = () => pendingEcho.current?.id === payload.send_id && pendingAttempt.current === attempt;
       const currentResult = () => current() && (attempt === sendAttempt.current || currentEcho());
-      const fail = (reason: string, status?: number) => {
+      const fail = (reason: string, status?: number, code?: SendFailureCode) => {
         if (!currentResult()) return;
-        setFailedSend(payload); setFailedReason(reason); setFailedStatus(status);
+        if (!recovery.record(payload, reason, status, code)) return;
         if (currentEcho()) {pendingEcho.current = null; setPending(undefined);}
       };
       client.sendResult(hq.pane_id, payload).then(result => {
         if (!currentResult()) return;
-        if (!result.ok) {fail(result.reason, result.status); return;}
+        if (!result.ok) {fail(result.reason, result.status, result.code); return;}
+        recovery.accept(payload);
         if (currentEcho()) {noteChatEchoReceipt(pendingEcho.current!, result.delivery); setPendingDelivered(true); setPendingDelivery(result.delivery); receiptRefresh.current();}
         // Receipt settlement and the terminal capture are separate generations.
         if (attempt === sendAttempt.current && result.pane) setPaneText(result.pane.text ?? '');
       }).catch(() => fail(zh
         ? '发送结果未确认，请先查看对话。'
-        : 'Send status unknown. Check the conversation before retrying.'));
+        : 'Send status unknown. Check the conversation before retrying.', undefined, 'outcome-unconfirmed'));
     },
-    [client, hq.pane_id, chatIdentity, zh],
+    [client, hq.pane_id, chatIdentity, zh, recovery],
   );
   const onComposerUpload = useCallback(
     (uri: string, name: string, type: string, onProgress?: (fraction: number) => void) => client.upload(uri, name, type, onProgress, hq.pane_id),
@@ -688,15 +691,21 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
             ))}
           </ScrollView>
         </View>}
-        {failedSend && (
+        {failure && failedSend && (
           <SendFailedBar
             text={failedSend.text ?? failedSend.key ?? ''}
-            reason={failedReason}
-            status={failedStatus}
+            reason={failure.reason}
+            status={failure.status}
+            code={failure.code}
+            retrying={failure.retrying}
             pal={pal}
             lang={lang}
-            onRetry={() => sendHQ(failedSend)}
-            onDismiss={() => setFailedSend(null)}
+            onRetry={() => recovery.retry(failure, sendHQ)}
+            onBackToRadar={onBack}
+            onPairAgain={navigation ? () => navigation.navigate('Servers') : undefined}
+            canEdit={!!failedSend.text}
+          canRetry={!historyReadOnly}
+            onDismiss={() => recovery.edit(failure)}
           />
         )}
         <Composer
@@ -715,6 +724,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
             onLoadKeys={onLoadKeys}
             onSendKey={onSendKey}
             prefill={prefill}
+            restore={recovery.restore}
           />
     </>
   );
