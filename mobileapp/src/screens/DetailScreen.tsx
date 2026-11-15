@@ -45,6 +45,7 @@ import {ExitFullScreenIcon} from '../ui/Icons';
 import {ChatView} from '../ui/ChatView';
 import {SessionReset} from '../ui/chatWindow';
 import {SendFailedBar} from '../ui/SendFailedBar';
+import {useSendRecovery} from '../ui/useSendRecovery';
 import {busyNote} from '../ui/sendFailure';
 import {BrandLoader} from '../ui/BrandLoader';
 import {SessionInteractionCard} from '../ui/SessionInteractionCard';
@@ -359,13 +360,9 @@ function PaneDetailView({
   // Set when this session began with a `/clear`/`/new` — the chat then holds the whole
   // conversation and still isn't the whole story, so the view says where it restarts.
   const sessionReset = chatRecord.identity === chatIdentity ? chatRecord.reset : undefined;
-  // A send the server declined to submit. Held (not dropped) so the text survives and
-  // can be retried — see SendFailedBar.
-  const [failedSend, setFailedSend] = useState<SendPayload | null>(null);
-  // The server's own words for that refusal, so the bar can say which one it was.
-  const [failedReason, setFailedReason] = useState('');
-  // Its HTTP status: 401/403 is the Mac refusing this phone, which no retry can fix.
-  const [failedStatus, setFailedStatus] = useState<number | undefined>();
+  const recovery = useSendRecovery(chatIdentity);
+  const failure = recovery.failure;
+  const failedSend = failure?.payload;
   // Text handed back to the box when a send can never land as it is (Composer prefill).
   const [refill, setRefill] = useState<{text: string; at: number} | null>(null);
   // Outside the navigator (the demo) there is nowhere to pair again, and it is not offered.
@@ -506,6 +503,7 @@ function PaneDetailView({
       // send may have landed on the Mac but the response never came back — can be retried
       // without double-sending: the server no-ops a send_id that already landed.
       const p: SendPayload = payload.send_id ? payload : {...payload, send_id: newSendId()};
+      if (!recovery.begin(p)) return;
       if (p.text) {
         const echo = echoAttempts.current.get(p.send_id!) ?? beginChatEcho(p.send_id!, p.text, latestTurns.current);
         echoAttempts.current.set(echo.id, echo);
@@ -517,9 +515,6 @@ function PaneDetailView({
         if (pendingEcho.current?.id !== p.send_id) return;
         pendingEcho.current = null; setPendingPrompt('');
       };
-      setFailedSend(null);
-      setFailedReason('');
-      setFailedStatus(undefined);
       setBusyHint(null);
       const attempt = ++sendAttempt.current;
       // sendResult keeps the server's own refusal, which is what lets the bar say
@@ -528,19 +523,18 @@ function PaneDetailView({
       client
         .sendResult(agent.pane_id, p)
         .then(r => {
-          if (!lane?.isActive() || paneRead.current !== lane || (attempt !== sendAttempt.current && pendingEcho.current?.id !== p.send_id)) return;
+          if (!recovery.isCurrent() || !lane?.isActive() || paneRead.current !== lane || (attempt !== sendAttempt.current && pendingEcho.current?.id !== p.send_id)) return;
           if (!r.ok) {
             // KEEP the text: a silently dropped message is the one failure the user
             // can't recover from without retyping.
-            setFailedSend(p);
-            setFailedReason(r.reason);
-            setFailedStatus(r.status);
+            if (!recovery.record(p, r.reason, r.status, r.code)) return;
             clearEcho();
             // Refused (401: pair again) or not shared (403): no retry can land, so the
             // text goes back into the box, where it is kept as the pane's draft.
             if ((r.status === 401 || r.status === 403) && p.text) setRefill({text: p.text, at: Date.now()});
             return;
           }
+          recovery.accept(p);
           if (pendingEcho.current?.id === p.send_id) {
             noteChatEchoReceipt(pendingEcho.current!, r.delivery);
             setPendingDelivered(true); setPendingDelivery(r.delivery); receiptRefresh.current();
@@ -562,13 +556,13 @@ function PaneDetailView({
           }
         })
         .catch(() => {
-          if (!lane?.isActive() || paneRead.current !== lane || (attempt !== sendAttempt.current && pendingEcho.current?.id !== p.send_id)) return;
-          setFailedReason(lang === 'zh' ? '发送结果未确认，请先查看对话。' : 'Send status unknown. Check the conversation before retrying.');
-          setFailedSend(p); clearEcho();
+          if (!recovery.isCurrent() || !lane?.isActive() || paneRead.current !== lane || (attempt !== sendAttempt.current && pendingEcho.current?.id !== p.send_id)) return;
+          recovery.record(p, 'Send status unknown. Check the conversation before retrying.', undefined, 'outcome-unconfirmed');
+          clearEcho();
         })
         .finally(bumpPane);
     },
-    [client, agent.pane_id, bumpPane, live.status, lang],
+    [client, agent.pane_id, bumpPane, live.status, lang, recovery],
   );
 
   useEffect(() => {
@@ -1096,17 +1090,21 @@ function PaneDetailView({
           {busyHint.text}
         </Text>
       )}
-      {failedSend && (
+      {failure && failedSend && (
         <SendFailedBar
           text={failedSend.text ?? failedSend.key ?? ''}
-          reason={failedReason}
-          status={failedStatus}
+          reason={failure.reason}
+          status={failure.status}
+          code={failure.code}
+          retrying={failure.retrying}
+          canEdit={!!failedSend.text}
+          canRetry={!historyReadOnly}
           pal={pal}
           lang={lang}
-          onRetry={() => sendPane(failedSend)}
+          onRetry={() => recovery.retry(failure, sendPane)}
           onBackToRadar={onBack}
           onPairAgain={navigation ? () => navigation.navigate('Servers') : undefined}
-          onDismiss={() => setFailedSend(null)}
+          onDismiss={() => recovery.edit(failure)}
         />
       )}
       {/* Full-screen = a READING mode (阅读空间最大化): only the content shows —
@@ -1132,6 +1130,7 @@ function PaneDetailView({
           showActions={false}
           returnSends={returnSends}
           prefill={refill}
+          restore={recovery.restore}
           onSend={onComposerSend}
           keyTarget={`${client.base}|${agent.pane_id}`}
           onLoadKeys={onLoadKeys}

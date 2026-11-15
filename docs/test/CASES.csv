@@ -487,6 +487,7 @@ LEG-78edea1b6214,L1,Go core / CLI / server,internal/app/participantprofile_test.
 LEG-dd7f444b9c39,L1,Go core / CLI / server,internal/app/pendingask_test.go,14,Test,TestHasPendingAsk,False,legacy-not-retrospectively-reviewed
 MAP-7a5ae9fb2039,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,10,reviewed-selector,TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection,False,MSD-002
 MAP-308489bd281c,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,20,reviewed-selector,TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry,False,MSD-002
+MAP-0c3ff7dbdf82,L1,reviewed implementation,internal/app/phone_send_failure_test.go,12,reviewed-selector,TestSFR001PhoneRefusalNeedsExplicitNativeQuestion,False,SFR-001
 LEG-5a268635ada6,L1,Go core / CLI / server,internal/app/phonedraft_test.go,14,Test,TestPhoneSendKeepsTheDraftGuard,False,legacy-not-retrospectively-reviewed
 LEG-fffbc5a11383,L1,Go core / CLI / server,internal/app/plainsend_test.go,14,Test,TestPlainTermPane,False,legacy-not-retrospectively-reviewed
 LEG-f3542ee21c1a,L1,Go core / CLI / server,internal/app/plainsend_test.go,61,Test,TestStaleScrollbackBoxHidesPlainPaneEcho,False,legacy-not-retrospectively-reviewed
@@ -2938,6 +2939,8 @@ LEG-b3c2ead7e7fd,L2,Go core / CLI / server,internal/server/routes_test.go,84,Tes
 LEG-41bc7f2b3094,L2,Go core / CLI / server,internal/server/routes_test.go,107,Test,TestARouteThisMacMayNotUseIsRefusedWithoutMoving,False,legacy-not-retrospectively-reviewed
 LEG-fc69cefac1e9,L2,Go core / CLI / server,internal/server/routes_test.go,119,Test,TestNamingNoRouteIsABadRequest,False,legacy-not-retrospectively-reviewed
 LEG-72095df06f97,L2,Go core / CLI / server,internal/server/routes_test.go,128,Test,TestNoRoutesConfiguredSaysSo,False,legacy-not-retrospectively-reviewed
+MAP-f6ad1fd1a6f9,L2,reviewed implementation,internal/server/send_failure_code_test.go,17,reviewed-selector,TestSFR002SendFailureCodeBody,False,SFR-002
+MAP-02ad8161b6de,L2,reviewed implementation,internal/server/send_failure_code_test.go,63,reviewed-selector,TestSFR002SendCodeCannotBypassAuthority,False,SFR-002
 MAP-5c6d75362085,L3,reviewed implementation,internal/server/send_receipt_test.go,9,reviewed-selector,TestMSD003HTTPPreservesActualReceiptAndLegacySend,False,MSD-003
 MAP-7d2c5e5ac242,L3,reviewed implementation,internal/server/send_receipt_test.go,48,reviewed-selector,TestMSD003PreferredReceiptCannotBypassGuestScope,False,MSD-003
 LEG-01715e1c5fa7,L2,Go core / CLI / server,internal/server/server_test.go,43,Test,TestPanesEndpoint,False,legacy-not-retrospectively-reviewed
@@ -4636,6 +4639,9 @@ LEG-5e72fc2ccb19,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,3
 LEG-9317901a472a,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,17,test,records the configured deadline independently of delayed JS execution,False,legacy-not-retrospectively-reviewed
 MAP-d269546f4a32,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,10,reviewed-selector,MSD-004 bounds a hung %s and never retries or accepts a late answer,False,MSD-004
 MAP-b95d01602bb2,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,29,reviewed-selector,"MSD-004 keeps exact receipts, legacy success and the server refusal",False,MSD-004
+MAP-c2a5d2e02192,L2,reviewed implementation,mobileapp/src/api/sendFailureCode.test.ts,6,reviewed-selector,SFR-003 keeps the optional known %s refusal,False,SFR-003
+MAP-44495107cd6b,L2,reviewed implementation,mobileapp/src/api/sendFailureCode.test.ts,14,reviewed-selector,SFR-003 ignores unknown code %p and retains the legacy response,False,SFR-003
+MAP-32b00c052ce4,L2,reviewed implementation,mobileapp/src/api/sendFailureCode.test.ts,20,reviewed-selector,SFR-003 status %i takes priority over a question code,False,SFR-003
 LEG-95727cbfc7d0,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,4,it,decodes a fully populated agent,False,legacy-not-retrospectively-reviewed
 LEG-b118b4a2d386,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,27,it,decodes the errored-idle modifier,False,legacy-not-retrospectively-reviewed
 LEG-dc0cc85093ef,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,37,it,decodes the background-running modifier,False,legacy-not-retrospectively-reviewed
@@ -5148,6 +5154,10 @@ MAP-19a9941dbee1,L2,reviewed implementation,mobileapp/src/screens/RestoreSession
 MAP-157d7028a843,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,58,reviewed-selector,local persistence failure prevents POST; stale preview refresh discards only an explicitly refused request,False,RSR-007
 LEG-387d5b0c6c01,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,13,test.each(),scan window leaves controls reachable at %i × %i,True,legacy-not-retrospectively-reviewed
 LEG-1cb0f6c7d8ad,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,24,test,native camera callbacks emit once; cancel makes a queued frame inert,False,legacy-not-retrospectively-reviewed
+MAP-fb1ca220a1d0,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.test.tsx,31,reviewed-selector,SFR-006 %s retries once with the same ID and retains visible busy feedback,False,SFR-006
+MAP-95d48bdd6e53,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.test.tsx,46,reviewed-selector,SFR-006 %s failed retry updates its reason and Edit keeps a newer composer draft,False,SFR-006
+MAP-0ffc05dd3bf0,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.test.tsx,62,reviewed-selector,SFR-006 %s old retry and late result cannot cross %s scope,False,SFR-006
+MAP-269c6ea1bc54,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.test.tsx,78,reviewed-selector,SFR-006 %s status %i keeps authority refusal and restores text,False,SFR-006
 MAP-00de085feb2a,L2,reviewed implementation,mobileapp/src/screens/ServerModeBehavior.test.tsx,85,reviewed-selector,awake and reconnect subscription events,False,CT-SUB
 MAP-32838a7dcdf1,L2,reviewed implementation,mobileapp/src/screens/ServerModeBehavior.test.tsx,104,reviewed-selector,late server mode response,False,CT-SUB
 LEG-6d9df3872034,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,60,test,connect and notification controls are independent; guests have no switch,False,legacy-not-retrospectively-reviewed
@@ -5777,6 +5787,8 @@ MAP-8f2c8637a6cc,L3,reviewed implementation,mobileapp/src/ui/Composer.readonly-d
 MAP-b3a080fcff12,L3,reviewed implementation,mobileapp/src/ui/Composer.readonly-draft.test.tsx,42,reviewed-selector,CKD001 verified sends remain enabled and ordinary disabled input stays disabled,False,CKD-001
 LEG-d38db74e25e1,L2,RN / mobile harness,mobileapp/src/ui/Composer.rerender.test.tsx,28,test,the key row is not torn down and rebuilt by a keystroke,False,legacy-not-retrospectively-reviewed
 LEG-3401c7d12df9,L2,RN / mobile harness,mobileapp/src/ui/Composer.rerender.test.tsx,47,test,a re-render above with the same props does not re-render the composer,False,legacy-not-retrospectively-reviewed
+MAP-f1f46a9b9458,L2,reviewed implementation,mobileapp/src/ui/Composer.restore.test.tsx,18,reviewed-selector,SFR-007 restore appends once without replacing a newer draft or staged photos,False,SFR-007
+MAP-27ec0ef0147d,L2,reviewed implementation,mobileapp/src/ui/Composer.restore.test.tsx,42,reviewed-selector,"SFR-007 empty recovery opens the editor, outranks a delayed stored draft and avoids duplicate restored text",False,SFR-007
 LEG-a46fc739513d,L2,RN / mobile harness,mobileapp/src/ui/Composer.test.ts,8,it,"NEVER drops a button send (fromSubmit=false), even within the window",False,legacy-not-retrospectively-reviewed
 LEG-04af9ce8f1f3,L2,RN / mobile harness,mobileapp/src/ui/Composer.test.ts,12,it,drops a Return re-fire within the window (the iOS duplicate onSubmitEditing),False,legacy-not-retrospectively-reviewed
 LEG-c659d6fbb8c1,L2,RN / mobile harness,mobileapp/src/ui/Composer.test.ts,15,it,allows a Return send once the window has passed,False,legacy-not-retrospectively-reviewed
@@ -5997,6 +6009,7 @@ LEG-8bd9311e3acc,L2,RN / mobile harness,mobileapp/src/ui/SectionList.test.tsx,62
 LEG-b54d4603046d,L2,RN / mobile harness,mobileapp/src/ui/SectionList.test.tsx,72,test,"words return only when a folded section makes ""that was all"" untrue",False,legacy-not-retrospectively-reviewed
 LEG-03b2aea64e81,L2,RN / mobile harness,mobileapp/src/ui/SectionList.test.tsx,94,it,mutes the rows and their section bars,False,legacy-not-retrospectively-reviewed
 LEG-c31b50e70ea2,L2,RN / mobile harness,mobileapp/src/ui/SectionList.test.tsx,98,it,leaves them alone while it is reachable,False,legacy-not-retrospectively-reviewed
+MAP-a69e5d06a0d4,L2,reviewed implementation,mobileapp/src/ui/SendFailedBar.recovery.test.tsx,8,reviewed-selector,"SFR-004 %s recovery is neutral, readable and exposes busy actions",False,SFR-004
 LEG-994f05553010,L2,RN / mobile harness,mobileapp/src/ui/SendFailedBar.test.tsx,37,test,"a pane someone is typing in says so, and does not pretend an override exists",False,legacy-not-retrospectively-reviewed
 LEG-fc19fc399751,L2,RN / mobile harness,mobileapp/src/ui/SendFailedBar.test.tsx,43,test,a session that is gone offers the way out rather than a retry that cannot work,False,legacy-not-retrospectively-reviewed
 LEG-7f7081eb354d,L2,RN / mobile harness,mobileapp/src/ui/SendFailedBar.test.tsx,54,test,a key the app chose and the server refuses shows nothing at all,False,legacy-not-retrospectively-reviewed
@@ -6360,7 +6373,7 @@ LEG-4a6ecd1359f3,L2,RN / mobile harness,mobileapp/src/ui/rowSheetModel.test.ts,1
 LEG-64b90d3f9879,L2,RN / mobile harness,mobileapp/src/ui/rowSheetModel.test.ts,177,it,never reorders — the order encodes a decision of its own,False,legacy-not-retrospectively-reviewed
 LEG-c92d2410f9e8,L2,RN / mobile harness,mobileapp/src/ui/rowSheetModel.test.ts,184,it,does not merge two runs of the same group that are apart,False,legacy-not-retrospectively-reviewed
 LEG-efb8f2e0a86f,L2,RN / mobile harness,mobileapp/src/ui/rowSheetModel.test.ts,191,it,has nothing to group when there is nothing,False,legacy-not-retrospectively-reviewed
-LEG-6344e7ef51db,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,6,test.each(),%s,True,legacy-not-retrospectively-reviewed
+LEG-6344e7ef51db,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,14,test.each(),%s,True,legacy-not-retrospectively-reviewed
 LEG-10e6c745cf1c,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,20,test,"the draft case names the cause and offers no override, because there is none",False,legacy-not-retrospectively-reviewed
 LEG-5de7bad6281d,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,32,test,"a pane that is asking says to answer it, and offers no retry that cannot get past it",False,legacy-not-retrospectively-reviewed
 LEG-9ccab058a42a,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,40,test,"a gone session offers the way out, not a retry that cannot work",False,legacy-not-retrospectively-reviewed
@@ -6372,6 +6385,8 @@ LEG-0c775f8b820d,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,70,
 LEG-b7d364a5d3ea,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,85,it,"is its own kind, read off the status, whatever the body says",False,legacy-not-retrospectively-reviewed
 LEG-3d2cf5c3d1c8,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,93,it,"offers pairing again, never a retry, in both languages",False,legacy-not-retrospectively-reviewed
 LEG-dc3744336a17,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,105,it,"says so, offers neither a retry nor pairing again, and keeps the text",False,legacy-not-retrospectively-reviewed
+MAP-bba08ee5746b,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,14,reviewed-selector,SFR-004 legacy refusal %s,False,SFR-004
+MAP-fc474ab5add5,L2,RN / mobile harness,mobileapp/src/ui/sendFailure.test.ts,32,reviewed-selector,an explicit question describes the last attempt and can be checked again after answering,False,SFR-004
 MAP-7bdcf65678f4,L2,reviewed implementation,mobileapp/src/ui/sendReceipt.test.ts,3,reviewed-selector,MSD-005 receipt wording distinguishes queueing and acceptance without claiming execution,False,MSD-005
 LEG-dace89ea2a33,L2,RN / mobile harness,mobileapp/src/ui/term.test.ts,5,it,resolves every pref to the system monospace (native links no picker fonts yet),False,legacy-not-retrospectively-reviewed
 LEG-8a4994c167f1,L2,RN / mobile harness,mobileapp/src/ui/term.test.ts,13,it,maps U+23FA record glyph to U+25CF black circle,False,legacy-not-retrospectively-reviewed
@@ -6531,6 +6546,8 @@ MAP-aedc42ce6351,L1,reviewed implementation,mobileapp/src/ui/toolPresentation.te
 LEG-7e1e7c1d7954,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,56,test,"keyboard timing folds the chrome, and dismissal preserves the current scroll state",False,legacy-not-retrospectively-reviewed
 LEG-bd6085e9a14d,L2,RN / mobile harness,mobileapp/src/ui/useKeyboardChrome.test.tsx,77,test,Reduce Motion folds and restores without animation,False,legacy-not-retrospectively-reviewed
 LEG-aab5aceea630,L2,RN / mobile harness,mobileapp/src/ui/useModalDismiss.test.tsx,6,test.each(),%s completes each modal lifecycle once,True,legacy-not-retrospectively-reviewed
+MAP-5ecd0bde4943,L2,reviewed implementation,mobileapp/src/ui/useSendRecovery.test.tsx,10,reviewed-selector,"SFR-005 retry is synchronous, keeps its record visible and cannot replay a settled action",False,SFR-005
+MAP-08699e656120,L2,reviewed implementation,mobileapp/src/ui/useSendRecovery.test.tsx,26,reviewed-selector,SFR-005 edits once and captured actions cannot cross a changed client or ABA scope,False,SFR-005
 LEG-3de06c104722,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,22,test,"pairing lifecycle sends only the current owner URL, including same-address token rotation",False,legacy-not-retrospectively-reviewed
 LEG-abfa9a8366d0,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,46,test,"a widget opens usage without HQ, dismisses, and ignores guest links and private URL parameters",False,legacy-not-retrospectively-reviewed
 LEG-7419b6327ede,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.test.tsx,73,test,widget links cannot select a server or smuggle credentials,False,legacy-not-retrospectively-reviewed

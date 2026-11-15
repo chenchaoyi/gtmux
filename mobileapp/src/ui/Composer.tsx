@@ -236,6 +236,7 @@ export const Composer = React.memo(function Composer({
   onSend,
   onUpload,
   prefill,
+  restore,
   keyTarget,
   onLoadKeys,
   onSendKey,
@@ -276,6 +277,8 @@ export const Composer = React.memo(function Composer({
    * so the same text twice still lands.
    */
   prefill?: {text: string; at: number} | null;
+  /** Explicit failure recovery appends to a newer draft and keeps staged files. */
+  restore?: {text: string; at: number} | null;
   onSend?: (p: SendPayload) => void;
   onUpload?: (
     uri: string,
@@ -321,6 +324,16 @@ export const Composer = React.memo(function Composer({
     const id = setTimeout(() => inputRef.current?.focus(), 50);
     return () => clearTimeout(id); // an unmount before the field exists has nothing to focus
   }, [prefill?.at]); // eslint-disable-line react-hooks/exhaustive-deps
+  const restored = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (!restore?.text || restored.current === restore.at) return;
+    restored.current = restore.at;
+    typed.current = true;
+    setText(current => current === restore.text ? current : current ? `${current}\n\n${restore.text}` : restore.text);
+    setComposing(true);
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => clearTimeout(timer);
+  }, [restore]);
   useEffect(() => {
     if (!draftKey || demo) return;
     let alive = true;
