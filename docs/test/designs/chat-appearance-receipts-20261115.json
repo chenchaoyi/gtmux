@@ -1,0 +1,50 @@
+{
+  "id": "chat-appearance-receipts-20261115",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-15",
+    "decision": "Implement existing App Appearance inheritance and compact stable ingress feedback",
+    "notes": "User delegates best settings placement and reports distracting long-lived Received. Reuse existing persisted system/light/dark with no second preference; derive reading colors, preserve Terminal host palette and actual Live output. Ingress is not execution. No expiry pretending delivery; recorded messages have no status, pending marks are small and accessible below the 26pt avatar within its existing 44pt footprint, queued state remains explicit until source confirmation. Reserve the same existing 44pt user-avatar footprint across pending/recorded handoff to prevent layout changes; retain exact source/attachment identity, aliases, no extra mutation/poll. Existing meaningful CRX-004 and MSD-005 guards preserved, new scenarios extend not weaken. Commit this self-reviewed design before test edits. Physical device/VoiceOver and real delivery not covered. Re-review CRR-001 actual HQ/Detail earlier-history/late-receipt scenarios only to replace obsolete persistent confirmed-receipt assertions; preserve all send counts, occurrence, authorization, refusal and mounted-bubble guards. Successful ingress marks fade out after 2.5 seconds at most, purely visual: keep the optimistic message and unconfirmed identity, never label execution or resend. Sending and queued indicators do not time out. Source confirmation removes marks immediately; late old completion cannot restore them."
+  },
+  "cases": [
+    {
+      "id": "CAR-001",
+      "layer": "L2",
+      "description": "App Appearance drives Chat on phone/iPad across agents",
+      "setup": "Render real ChatView light/dark for Codex, Claude Code and OpenCode with messages, activity, empty/retry/live states; update palette while mounted",
+      "action": "Exercise actual production React Native components with isolated fixtures and deferred state changes",
+      "expected": "Text, bubble, markdown, activity/code/reader chrome and avatars use matching palette; transcript/bubble/expansion identity survives; actual terminal Live output remains on its dark terminal canvas",
+      "planned_files": [
+        "mobileapp/src/ui/ChatAppearance.test.tsx",
+        "mobileapp/src/ui/SenderAvatar.test.tsx",
+        "mobileapp/src/ui/TimeSeparator.test.tsx"
+      ]
+    },
+    {
+      "id": "CAR-002",
+      "layer": "L2",
+      "description": "Existing persisted App Appearance owns Chat and follows system",
+      "setup": "Mount actual AppProvider with isolated storage/native mocks; choose light/dark/system and change mocked system scheme; unmount/remount",
+      "action": "Exercise actual production React Native components with isolated fixtures and deferred state changes",
+      "expected": "Only gtmux.themePref is used; overrides ignore system changes, system follows; saved choice survives; no per-chat preference or transport reset",
+      "planned_files": [
+        "mobileapp/src/state/ChatAppearancePreference.test.tsx"
+      ]
+    },
+    {
+      "id": "CAR-003",
+      "layer": "L2",
+      "description": "Quiet ingress feedback and stable source handoff across agents",
+      "setup": "Render optimistic text/image with accepted/submitted/queued/sending; advance to matching source record then update/revisit, including an older identical prompt and server switch",
+      "action": "Exercise actual production React Native components with isolated fixtures and deferred state changes",
+      "expected": "Sending/accepted/submitted use small accessible marks in the existing avatar footprint, no standalone Received line; pending and confirmed user row, avatar footprint and bubble remain mounted with same geometry; recorded aliases have no receipt; queued text stays explicit; old prompt cannot acknowledge new send; no fabricated execution or transport retry Successful mark hides after 2.5 seconds without removing the optimistic bubble or changing queue/send state; later source preserves mounted row.",
+      "planned_files": [
+        "mobileapp/src/ui/ChatReceiptPresentation.test.tsx",
+        "mobileapp/src/ui/ChatEchoHandoff.test.tsx",
+        "mobileapp/src/screens/HistoryEchoHandoff.test.tsx"
+      ]
+    }
+  ],
+  "seal": "923ba04aa0f4d69dd53ea440e37534a6bf2a2ac8a2c839b7d2490192cc734c16"
+}
