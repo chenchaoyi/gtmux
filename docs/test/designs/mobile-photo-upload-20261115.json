@@ -1,0 +1,58 @@
+{
+  "id": "mobile-photo-upload-20261115",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-15",
+    "decision": "Implement batch photo staging and measured upload feedback in the shared Composer",
+    "notes": "New user instruction supersedes single-photo-only selection: retain editor-first for one valid photo, stage multiple valid photos together in picker order, and retain tap-to-edit in place. No new dependency, file limit, native permission, server upload protocol, automatic resend or target-policy change. Progress reports only actual transport bytes; preparation and server processing are distinct from completion. Keep legacy fraction callbacks compatible. Tests use deferred synthetic picker/XHR callbacks; they are not physical iPhone, iPad or accessibility acceptance. Only new test files are planned; old assertions/fixtures stay unchanged."
+  },
+  "cases": [
+    {
+      "id": "MPU-001",
+      "layer": "L2",
+      "description": "Phone and iPad shared Composer stages selected photos in order and edits one in place",
+      "setup": "Production Composer with controlled picker response containing multiple valid photos and one missing URI; synthetic editor and upload/send observers",
+      "action": "Choose photos, edit/cancel individual staged photos, then Send",
+      "expected": "System picker permits multiple selection. Multiple returned photos stage in order with no automatic editor or upload; editing replaces only the chosen attachment and cancellation preserves it. One send uploads ordered staged images before submitting their paths once. Existing single-photo editor-first behavior stays pinned by unchanged tests.",
+      "planned_files": [
+        "mobileapp/src/ui/Composer.multiPhoto.test.tsx"
+      ]
+    },
+    {
+      "id": "MPU-002",
+      "layer": "L2",
+      "description": "Cancelled or failed batch selection preserves existing text and images",
+      "setup": "Production Composer with a caption and previously staged photos; cancelled/error/late picker response",
+      "action": "Open Photo Library again then cancel or receive an error; unmount while selection is pending",
+      "expected": "No draft or staged attachment is removed, uploaded or submitted. Invalid assets do not create thumbnails. An unmounted scope cannot open an editor or stage returned photos.",
+      "planned_files": [
+        "mobileapp/src/ui/Composer.multiPhoto.test.tsx"
+      ]
+    },
+    {
+      "id": "MPU-003",
+      "layer": "L1",
+      "description": "Upload transport reports real bytes and saving separately from a valid saved path",
+      "setup": "GtmuxClient with controlled XHR, legacy fraction callback plus optional state observer",
+      "action": "Emit noncomputable progress, byte events, upload body completion, valid/invalid/failed response and late progress",
+      "expected": "Only measured finite positive totals yield fractions. Unknown totals stay indeterminate. Body completion is processing, never successful save; only valid successful response completes. Legacy fraction callback remains byte-events-only. Settled callbacks are ignored; failure preserves failure result and existing watchdog bounds.",
+      "planned_files": [
+        "mobileapp/src/api/uploadState.test.ts"
+      ]
+    },
+    {
+      "id": "MPU-004",
+      "layer": "L2",
+      "description": "Composer exposes stable per-file upload phases and retains a failed batch",
+      "setup": "Production Composer with two staged photos, deferred upload state callbacks and reduced-motion status component",
+      "action": "Send; emit measured progress and processing for each file; fail a later file; retry explicitly",
+      "expected": "A compact status row names current file/count, shows measured progress or preparation/saving copy, uses a smooth bar limited to observed bytes and obeys Reduce Motion. Waiting files do not show fake zero percentages. Sending is gated and failure leaves caption and all images. No submit occurs until every upload succeeds.",
+      "planned_files": [
+        "mobileapp/src/ui/Composer.multiPhoto.test.tsx",
+        "mobileapp/src/ui/AttachmentUploadStatus.test.tsx"
+      ]
+    }
+  ],
+  "seal": "9aac7a3071f40875621c2a545486af007e9c3b8c1f9012deb3658c8767e96fd5"
+}

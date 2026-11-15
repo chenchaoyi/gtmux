@@ -1420,6 +1420,9 @@ LEG-e6e7b244f26a,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,43
 LEG-a2ee828f06f8,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,56,it,still slides when you dismiss it by the backdrop — there the motion IS the answer,False,legacy-not-retrospectively-reviewed
 LEG-9ebc3d2fb720,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,63,it,runs the chosen action only after the sheet has actually gone,False,legacy-not-retrospectively-reviewed
 LEG-8b9b6cbb1dad,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,76,it,slides again the next time it opens,False,legacy-not-retrospectively-reviewed
+MAP-0d5551b8fb45,L2,reviewed implementation,mobileapp/src/ui/AttachmentUploadStatus.test.tsx,22,reviewed-selector,upload status names the active file and hides percent during preparation and saving,False,MPU-004
+MAP-a80d799158ea,L2,reviewed implementation,mobileapp/src/ui/AttachmentUploadStatus.test.tsx,33,reviewed-selector,Reduce Motion presents measured values without starting progress animation,False,MPU-004
+MAP-0539f7a138fa,L2,reviewed implementation,mobileapp/src/ui/AttachmentUploadStatus.test.tsx,42,reviewed-selector,progress animation only targets the latest measured byte fraction,False,MPU-004
 MAP-ca6228d2bf6a,L2,reviewed implementation,mobileapp/src/ui/ChatAppearance.test.tsx,15,reviewed-selector,CAR-001,False,CAR-001
 MAP-bc8cc6baa2e3,L2,reviewed implementation,mobileapp/src/ui/ChatEchoHandoff.test.tsx,9,reviewed-selector,CRX-004 %s confirmed echo keeps the same mounted bubble,False,CRX-004
 MAP-2641a502533a,L2,reviewed implementation,mobileapp/src/ui/ChatReceiptPresentation.test.tsx,20,reviewed-selector,CAR-003,False,CAR-003
@@ -1489,6 +1492,13 @@ LEG-2472f87bf898,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx
 LEG-e21a3201ffea,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx,133,test,"the history picker shows this scope first, topped up from elsewhere",False,legacy-not-retrospectively-reviewed
 LEG-a780c6bf8b23,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx,167,test,a different scope does not show the first one’s entries at the top,False,legacy-not-retrospectively-reviewed
 LEG-28f705f86458,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx,198,test,switching Macs with the same pane discards the mounted box and never imports its draft,False,legacy-not-retrospectively-reviewed
+MAP-291296b7e5bc,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto.test.tsx,44,reviewed-selector,batch photos stage in picker order and one edit replaces only its thumbnail,False,"MPU-001,MPU-002,MPU-004"
+MAP-88c2a76e87c4,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto.test.tsx,68,reviewed-selector,cancelling or failing a later selection preserves caption and staged batch,False,"MPU-001,MPU-002,MPU-004"
+MAP-0e806a0076e7,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto.test.tsx,80,reviewed-selector,a late picker result after unmount cannot stage or submit images,False,"MPU-001,MPU-002,MPU-004"
+MAP-948f3ef4f0e9,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto.test.tsx,95,reviewed-selector,upload phases keep the batch and caption on failure until an explicit successful retry,False,"MPU-001,MPU-002,MPU-004"
+MAP-514d6a154aac,L2,reviewed implementation,mobileapp/src/ui/Composer.photoSelection.test.tsx,38,reviewed-selector,pending photo reading blocks button Return and captured callbacks until all photos stage,False,"PPR-001,PPR-002,PPR-003"
+MAP-dac1fa753f4c,L2,reviewed implementation,mobileapp/src/ui/Composer.photoSelection.test.tsx,64,reviewed-selector,cancel error and rejection release photo reading while preserving the existing draft,False,"PPR-001,PPR-002,PPR-003"
+MAP-c0f8e3373076,L2,reviewed implementation,mobileapp/src/ui/Composer.photoSelection.test.tsx,81,reviewed-selector,a successful send removes only its snapshot and preserves a file returned during upload,False,"PPR-001,PPR-002,PPR-003"
 LEG-c2d7f3008dfe,L2,RN / mobile harness,mobileapp/src/ui/Composer.prefill.test.tsx,29,it,rests as the key row with no field,False,legacy-not-retrospectively-reviewed
 LEG-9940bd4cbec0,L2,RN / mobile harness,mobileapp/src/ui/Composer.prefill.test.tsx,34,it,opens the field and fills it when a hand-off arrives,False,legacy-not-retrospectively-reviewed
 LEG-cf0c8df37025,L2,RN / mobile harness,mobileapp/src/ui/Composer.prefill.test.tsx,44,it,opens the field when mounted with one already,False,legacy-not-retrospectively-reviewed

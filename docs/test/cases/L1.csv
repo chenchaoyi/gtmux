@@ -3411,6 +3411,9 @@ LEG-37addcbbf49b,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,396,test
 LEG-0887da3ab80a,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,402,test,a tmux row is still the same row by its pane,False,legacy-not-retrospectively-reviewed
 LEG-f05e2dc122cb,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,410,test,native Codex scope separates equal IDs and creation does not claim current control,False,legacy-not-retrospectively-reviewed
 LEG-7b893fcb77af,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,419,test,"launch host is historical display metadata, not an input permission",False,legacy-not-retrospectively-reviewed
+MAP-c796b56b9ecf,L1,reviewed implementation,mobileapp/src/api/uploadState.test.ts,23,reviewed-selector,real byte progress stays distinct from processing and saved completion,False,MPU-003
+MAP-05bf7e503d9f,L1,reviewed implementation,mobileapp/src/api/uploadState.test.ts,47,reviewed-selector,unknown and invalid byte totals stay indeterminate rather than fabricating a percentage,False,MPU-003
+MAP-95663f9b385e,L1,reviewed implementation,mobileapp/src/api/uploadState.test.ts,65,reviewed-selector,a fully transferred file refused by the server never reports a successful save,False,MPU-003
 LEG-8c336f72f5dc,L1,RN / mobile harness,mobileapp/src/diag/index.test.ts,21,it,"writes the Mac store schema, stamped the way the Mac parses it",False,legacy-not-retrospectively-reviewed
 LEG-033061787809,L1,RN / mobile harness,mobileapp/src/diag/index.test.ts,30,it,"never keeps a credential, in any position",False,legacy-not-retrospectively-reviewed
 LEG-17a6149c5a62,L1,RN / mobile harness,mobileapp/src/diag/index.test.ts,54,it,redacts every link fragment without anyone registering it,False,legacy-not-retrospectively-reviewed

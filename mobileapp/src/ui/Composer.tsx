@@ -35,7 +35,8 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import {ErrorCode, launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {pick} from '@react-native-documents/picker';
 import {SendPayload} from '../api/client';
-import type {UploadFailure, UploadResult} from '../api/client';
+import type {UploadFailure, UploadResult, UploadState, UploadProgressCallback} from '../api/client';
+import {AttachmentUploadStatus} from './AttachmentUploadStatus';
 import {Lang} from '../i18n';
 import {TestIds} from '../constants/testIds';
 import {KeyBus} from '../keys/bus';
@@ -62,7 +63,7 @@ import {SessionQuestionBanner} from './SessionQuestionBanner';
 // default assistant bar instead of stacking another sparse row above it).
 const ACCESSORY_ID = 'gtmux-composer-keys';
 
-type UploadFn = (uri: string, name: string, type: string, onProgress: (fraction: number) => void) => Promise<UploadResult>;
+type UploadFn = (uri: string, name: string, type: string, onProgress: UploadProgressCallback) => Promise<UploadResult>;
 
 // uploadAll uploads every staged attachment in order and returns the saved paths, or
 // null if ANY upload fails. Crucially it NEVER throws: a rejected upload (a synchronous
@@ -82,16 +83,22 @@ export async function uploadAll(
   attachments: {id: string; uri: string; name: string; type: string}[],
   onUpload: UploadFn,
   onProgress: (id: string, fraction: number) => void,
+  onState?: (id: string, state: UploadState) => void,
 ): Promise<{paths: string[]} | {error: UploadFailure}> {
   const out: string[] = [];
   for (const att of attachments) {
+    onState?.(att.id, {phase: 'preparing'});
     let r: UploadResult;
     try {
-      r = await onUpload(att.uri, att.name, att.type, f => onProgress(att.id, f));
+      const observer: UploadProgressCallback = Object.assign((f: number) => onProgress(att.id, f), {
+        onState: (state: UploadState) => onState?.(att.id, state),
+      });
+      r = await onUpload(att.uri, att.name, att.type, observer);
     } catch {
       return {error: 'failed'};
     }
     if ('error' in r) return {error: r.error};
+    onState?.(att.id, {phase: 'complete', fraction: 1});
     out.push(r.path);
   }
   return {paths: out};
@@ -118,7 +125,7 @@ export function uploadFailureText(reason: UploadFailure, zh: boolean): string {
 }
 const ACCENT = '#06B6D4';
 
-// A staged attachment — picked (and, for images, edited) but not yet uploaded. It
+// A staged attachment — picked (and optionally edited) but not yet uploaded. It
 // uploads on SEND. `isImage` drives thumbnail vs file-chip rendering.
 type Attachment = {id: string; uri: string; name: string; type: string; isImage: boolean};
 
@@ -274,7 +281,7 @@ export const Composer = React.memo(function Composer({
     uri: string,
     name: string,
     type: string,
-    onProgress?: (fraction: number) => void,
+    onProgress?: UploadProgressCallback,
   ) => Promise<UploadResult>;
 }) {
   const insets = useSafeAreaInsets();
@@ -340,7 +347,10 @@ export const Composer = React.memo(function Composer({
   // failure so nothing is lost and the user can retry.
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [sending, setSending] = useState(false);
-  const [progress, setProgress] = useState<Record<string, number>>({});
+  const sendInFlight = useRef(false);
+  const photoReadInFlight = useRef(false);
+  const [readingPhotos, setReadingPhotos] = useState(false);
+  const [progress, setProgress] = useState<Record<string, UploadState>>({});
   const [sendError, setSendError] = useState<string | null>(null);
   const attachId = useRef(0);
   const [markupUri, setMarkupUri] = useState<string | null>(null);
@@ -430,26 +440,33 @@ export const Composer = React.memo(function Composer({
     // clear a local draft when Return/captured callbacks are invoked.
     if (!enabled || !onSend) return;
     if (terminalKeys.isBlocked()) return;
-    if (sending) return;
+    if (sending || sendInFlight.current || photoReadInFlight.current) return;
     const body = text.trim();
     if (!body && attachments.length === 0) return;
     const now = Date.now();
     if (dropDoubleSubmit(fromSubmit, now, lastSubmit.current)) return;
     if (fromSubmit) lastSubmit.current = now;
+    const sentAttachmentIDs = new Set(attachments.map(a => a.id));
 
     let paths: string[] = [];
     if (attachments.length > 0) {
       if (!onUpload) return;
+      sendInFlight.current = true;
       setSending(true);
       setSendError(null);
       setProgress({});
-      // uploadAll NEVER throws (a rejected upload maps to null), so setSending(false)
-      // below ALWAYS runs. `sending` disables the send button + gates sendText, so if it
-      // ever stuck true the box would wedge forever — this is the robustness fix.
-      const uploaded = await uploadAll(attachments, onUpload, (id, f) =>
-        setProgress(p => ({...p, [id]: f})),
-      );
-      setSending(false);
+      // Keep captured callbacks out of the upload lane too; state alone updates
+      // after render. Always release both guards when the upload settles.
+      let uploaded: Awaited<ReturnType<typeof uploadAll>>;
+      try {
+        uploaded = await uploadAll(attachments, onUpload, (id, f) =>
+          setProgress(p => ({...p, [id]: {phase: f >= 1 ? 'processing' : 'uploading', fraction: f}})),
+          (id, state) => setProgress(p => ({...p, [id]: state})),
+        );
+      } finally {
+        sendInFlight.current = false;
+        setSending(false);
+      }
       if ('error' in uploaded) {
         setSendError(uploadFailureText(uploaded.error, lang === 'zh'));
         return; // keep text + attachments staged for a retry
@@ -469,7 +486,7 @@ export const Composer = React.memo(function Composer({
       });
     }
     setText('');
-    setAttachments([]);
+    setAttachments(current => current.filter(a => !sentAttachmentIDs.has(a.id)));
     setProgress({});
     setSendError(null);
     // Collapse the keyboard once the message is on its way — after a send you're
@@ -520,23 +537,35 @@ export const Composer = React.memo(function Composer({
 
   // Attach → a branded bottom sheet (AttachSheet). Nothing uploads until send.
   //
-  // A picked photo opens the markup EDITOR, and that is the operator's call (2026-09-07):
-  // they annotate most of what they send, so making the editor a second tap would cost
-  // them one on nearly every photo to save one on the rare bare screenshot. Staging
-  // first was tried for exactly one release and reverted on that evidence.
-  //
-  // What the attempt DID leave behind is worth keeping: the editor is also reachable by
-  // tapping an already-staged thumbnail, so a photo can be re-annotated, and one that
-  // arrived by a path that does not open the editor can still be marked up.
+  // One photo retains editor-first. A batch stages together without an editor queue;
+  // each thumbnail remains editable in place before Send.
   const editPhoto = (a: {uri?: string}) => {
     if (a.uri) setMarkupUri(a.uri); // markupFor stays null — onDone STAGES it
   };
   const pickPhoto = async () => {
+    if (!mounted.current || photoReadInFlight.current || sendInFlight.current || sending) return;
+    photoReadInFlight.current = true;
+    setReadingPhotos(true);
     try {
-      const r = await launchImageLibrary({mediaType: 'photo', quality: 0.8});
-      if (r.assets?.[0]) editPhoto(r.assets[0]);
+      const r = await launchImageLibrary({mediaType: 'photo', quality: 0.8, selectionLimit: 0});
+      if (!mounted.current || r.didCancel) return;
+      if (r.errorCode) {
+        setSendError(lang === 'zh' ? '无法读取照片，请重新选择。' : 'Could not read the photos. Choose them again.');
+        return;
+      }
+      const photos = (r.assets ?? []).filter(a => !!a.uri);
+      if (photos.length === 1) editPhoto(photos[0]);
+      else if (photos.length > 1) {
+        const batch = photos.map(a => ({id: String(attachId.current++), uri: a.uri!, name: a.fileName || 'photo.jpg', type: a.type || 'image/jpeg', isImage: true}));
+        setAttachments(a => [...a, ...batch]);
+        setSendError(null);
+        openCompose();
+      }
     } catch {
       // cancelled or unsupported — ignore.
+    } finally {
+      photoReadInFlight.current = false;
+      if (mounted.current) setReadingPhotos(false);
     }
   };
   const takePhoto = async () => {
@@ -607,8 +636,8 @@ export const Composer = React.memo(function Composer({
   // TextInput auto-focuses on mount so the keyboard rises exactly then; on iOS the
   // key row rides up docked to the keyboard (inputAccessoryViewID). Staged
   // attachments show as a thumbnail strip ABOVE the input (the field wraps below),
-  // with a per-thumbnail upload % overlay during send and a × to remove before it.
-  const canSend = !keyBlocked && (text.trim().length > 0 || attachments.length > 0);
+  // with one compact upload-status row during send and a × to remove before it.
+  const canSend = !keyBlocked && !readingPhotos && (text.trim().length > 0 || attachments.length > 0);
   const renderInputRow = () => (
     <View>
       {attachments.length > 0 && (
@@ -641,12 +670,7 @@ export const Composer = React.memo(function Composer({
                   </Text>
                 </View>
               )}
-              {sending && progress[att.id] != null ? (
-                <View style={styles.thumbOverlay}>
-                  <Text style={styles.thumbPct}>{Math.round((progress[att.id] || 0) * 100)}%</Text>
-                </View>
-              ) : (
-                !sending && (
+              {!sending && (
                   <TouchableOpacity
                     onPress={() => removeAttachment(att.id)}
                     testID={`attach-remove-${att.id}`}
@@ -655,12 +679,13 @@ export const Composer = React.memo(function Composer({
                     style={styles.thumbRemove}>
                     <Text style={styles.thumbRemoveX}>×</Text>
                   </TouchableOpacity>
-                )
               )}
             </View>
           ))}
         </ScrollView>
       )}
+      {readingPhotos && <Text testID="composer-photo-reading" accessibilityLiveRegion="polite" style={{color: pal.fg2, fontSize: 12, lineHeight: 18, marginHorizontal: 12, marginBottom: 4}}>{lang === 'zh' ? '正在读取照片…' : 'Reading photos…'}</Text>}
+      {sending && <AttachmentUploadStatus attachments={attachments} states={progress} pal={pal} lang={lang} />}
       {sendError && <Text style={[styles.sendError, {color: StatusColor.waiting}]}>{sendError}</Text>}
       {draftOnly && !enabled && <Text testID="composer-draft-only" style={{color: pal.fg2, fontSize: 12, lineHeight: 18, paddingHorizontal: 16, paddingBottom: 6}}>
         {lang === 'zh' ? '会话未关联，暂不能发送。可以先写草稿。' : 'Conversation not linked. You can draft, but cannot send yet.'}
@@ -669,8 +694,8 @@ export const Composer = React.memo(function Composer({
         <TouchableOpacity
           testID={TestIds.composer.attach}
           accessibilityLabel={lang === 'zh' ? '添加附件' : 'Add attachment'}
-          onPress={() => setAttachOpen(true)}
-          disabled={!enabled || sending || !onUpload}
+          onPress={() => {if (!photoReadInFlight.current && !sendInFlight.current) setAttachOpen(true);}}
+          disabled={!enabled || sending || readingPhotos || !onUpload}
           style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
           <Text allowFontScaling={false} style={[styles.attachText, {color: pal.fg2}]}>+</Text>
         </TouchableOpacity>
@@ -965,8 +990,6 @@ const styles = StyleSheet.create({
   thumbFile: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4},
   thumbName: {fontSize: 8, marginTop: 3, maxWidth: 54},
   // dim overlay with the live upload %, shown per thumbnail during send.
-  thumbOverlay: {position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center'},
-  thumbPct: {color: '#fff', fontSize: 13, fontWeight: '800'},
   // the × remove chip, top-right of a thumbnail (hidden while uploading).
   thumbRemove: {position: 'absolute', top: 2, right: 2, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center'},
   thumbRemoveX: {color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 17},

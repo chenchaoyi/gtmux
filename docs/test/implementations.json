@@ -3064,5 +3064,50 @@
       "PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",
       "PCP-001 switching message source and client retires the previous process read"
     ]
+  },
+  "mobileapp/src/ui/Composer.multiPhoto.test.tsx": {
+    "cases": [
+      "MPU-001",
+      "MPU-002",
+      "MPU-004"
+    ],
+    "selectors": [
+      "batch photos stage in picker order and one edit replaces only its thumbnail",
+      "cancelling or failing a later selection preserves caption and staged batch",
+      "a late picker result after unmount cannot stage or submit images",
+      "upload phases keep the batch and caption on failure until an explicit successful retry"
+    ]
+  },
+  "mobileapp/src/api/uploadState.test.ts": {
+    "cases": [
+      "MPU-003"
+    ],
+    "selectors": [
+      "real byte progress stays distinct from processing and saved completion",
+      "unknown and invalid byte totals stay indeterminate rather than fabricating a percentage",
+      "a fully transferred file refused by the server never reports a successful save"
+    ]
+  },
+  "mobileapp/src/ui/AttachmentUploadStatus.test.tsx": {
+    "cases": [
+      "MPU-004"
+    ],
+    "selectors": [
+      "upload status names the active file and hides percent during preparation and saving",
+      "Reduce Motion presents measured values without starting progress animation",
+      "progress animation only targets the latest measured byte fraction"
+    ]
+  },
+  "mobileapp/src/ui/Composer.photoSelection.test.tsx": {
+    "cases": [
+      "PPR-001",
+      "PPR-002",
+      "PPR-003"
+    ],
+    "selectors": [
+      "pending photo reading blocks button Return and captured callbacks until all photos stage",
+      "cancel error and rejection release photo reading while preserving the existing draft",
+      "a successful send removes only its snapshot and preserves a file returned during upload"
+    ]
   }
 }
