@@ -1,0 +1,5 @@
+- [x] Review and seal selection/progress tests before implementation
+- [ ] Implement batch staging and measured upload states
+- [ ] Add reviewed synthetic regressions and retain old assertions
+- [ ] Update current spec and bilingual mobile design guidance
+- [ ] Complete App/source checks and independent review
