@@ -39570,7 +39570,7 @@
           "id": "LEG-6e4751cbc433",
           "line": 26,
           "kind": "it",
-          "name": "renders the agent\u2019s own words, sends the digit, and the session stops waiting",
+          "name": "renders the agent’s own words, sends the digit, and the session stops waiting",
           "dynamic": false,
           "layer": "L4"
         }
@@ -39668,7 +39668,7 @@
           "id": "LEG-ecf828c0a4a6",
           "line": 32,
           "kind": "it",
-          "name": "has no Space pill, orders \u23ce after \u2191/\u2193, and \u232b erases in the pane",
+          "name": "has no Space pill, orders ⏎ after ↑/↓, and ⌫ erases in the pane",
           "dynamic": false,
           "layer": "L4"
         }
@@ -39979,7 +39979,7 @@
           "id": "LEG-f0b92db135c4",
           "line": 24,
           "kind": "it",
-          "name": "shows the server\u2019s words and keeps what you typed",
+          "name": "shows the server’s words and keeps what you typed",
           "dynamic": false,
           "layer": "L4"
         }
@@ -40214,7 +40214,7 @@
           "id": "LEG-398163bb0c32",
           "line": 55,
           "kind": "it",
-          "name": "Dark and \u4e2d\u6587 apply at once and survive a relaunch",
+          "name": "Dark and 中文 apply at once and survive a relaunch",
           "dynamic": false,
           "layer": "L4"
         }
@@ -41082,7 +41082,7 @@
           "id": "LEG-f17f27ea8cb4",
           "line": 21,
           "kind": "it",
-          "name": "types + sends \u7ee7\u7eed and reports whether a failed-send bar appears",
+          "name": "types + sends 继续 and reports whether a failed-send bar appears",
           "dynamic": false,
           "layer": "M"
         }
@@ -41732,7 +41732,7 @@
           "id": "LEG-b6f73720d14b",
           "line": 8,
           "kind": "test",
-          "name": "manual handles nothing on the test\u2019s behalf",
+          "name": "manual handles nothing on the test’s behalf",
           "dynamic": false,
           "layer": "L1"
         },
@@ -43465,7 +43465,7 @@
           "id": "LEG-07f9af5b78a6",
           "line": 141,
           "kind": "it",
-          "name": "a 401/403 is an auth error (\u2192 re-pair, not \"offline\"); a 500 is not",
+          "name": "a 401/403 is an auth error (→ re-pair, not \"offline\"); a 500 is not",
           "dynamic": false,
           "layer": "L1"
         },
@@ -43473,7 +43473,7 @@
           "id": "LEG-4acb344668f3",
           "line": 151,
           "kind": "it",
-          "name": "encodeURIComponent escapes \"%12\" \u2192 \"%2512\" in the query",
+          "name": "encodeURIComponent escapes \"%12\" → \"%2512\" in the query",
           "dynamic": false,
           "layer": "L1"
         },
@@ -43489,7 +43489,7 @@
           "id": "LEG-940ebfeb8973",
           "line": 168,
           "kind": "it",
-          "name": "GETs /api/transcript?id=\u2026 and returns the turns array",
+          "name": "GETs /api/transcript?id=… and returns the turns array",
           "dynamic": false,
           "layer": "L1"
         },
@@ -43529,7 +43529,7 @@
           "id": "LEG-7ea964281958",
           "line": 223,
           "kind": "it",
-          "name": "POSTs /api/focus?id=\u2026 with bearer and returns r.ok",
+          "name": "POSTs /api/focus?id=… with bearer and returns r.ok",
           "dynamic": false,
           "layer": "L1"
         },
@@ -43769,7 +43769,7 @@
           "id": "LEG-fea0bedede4a",
           "line": 561,
           "kind": "it",
-          "name": "shareLink returns null on a non-ok (e.g. unknown id \u2192 404)",
+          "name": "shareLink returns null on a non-ok (e.g. unknown id → 404)",
           "dynamic": false,
           "layer": "L1"
         },
@@ -44246,7 +44246,7 @@
           "id": "LEG-c59ac37b6b7b",
           "line": 49,
           "kind": "it",
-          "name": "decodes the watched flag (a pinned plain pane \u2192 its own section, not RUNNING)",
+          "name": "decodes the watched flag (a pinned plain pane → its own section, not RUNNING)",
           "dynamic": false,
           "layer": "L1"
         },
@@ -44406,7 +44406,7 @@
           "id": "LEG-a24f4a06f3f5",
           "line": 196,
           "kind": "it",
-          "name": "for a tmux agent joins session and pane_id with \" \u00b7 \"",
+          "name": "for a tmux agent joins session and pane_id with \" · \"",
           "dynamic": false,
           "layer": "L1"
         },
@@ -45128,7 +45128,7 @@
           "id": "LEG-4c9ee1e4c37e",
           "line": 35,
           "kind": "test",
-          "name": "the native side gets titles in the reader\u2019s language",
+          "name": "the native side gets titles in the reader’s language",
           "dynamic": false,
           "layer": "L1"
         },
@@ -45720,7 +45720,7 @@
           "id": "LEG-c2e9f150458f",
           "line": 173,
           "kind": "it",
-          "name": "is null for a non-share link (no g=/t= token) \u2014 e.g. the #c= enroll handoff",
+          "name": "is null for a non-share link (no g=/t= token) — e.g. the #c= enroll handoff",
           "dynamic": false,
           "layer": "L1"
         },
@@ -45959,7 +45959,7 @@
           "id": "LEG-f3fee4848f23",
           "line": 75,
           "kind": "it",
-          "name": "renaming again keeps the Mac\u2019s own name, not the previous nickname",
+          "name": "renaming again keeps the Mac’s own name, not the previous nickname",
           "dynamic": false,
           "layer": "L1"
         },
@@ -45967,7 +45967,7 @@
           "id": "LEG-3ed870aa29e7",
           "line": 79,
           "kind": "it",
-          "name": "an empty name or the Mac\u2019s own name drops the rename",
+          "name": "an empty name or the Mac’s own name drops the rename",
           "dynamic": false,
           "layer": "L1"
         },
@@ -45975,7 +45975,7 @@
           "id": "LEG-dea438f2faf2",
           "line": 84,
           "kind": "it",
-          "name": "survives a reload and a re-pair; the re-pair refreshes the Mac\u2019s own name",
+          "name": "survives a reload and a re-pair; the re-pair refreshes the Mac’s own name",
           "dynamic": false,
           "layer": "L1"
         },
@@ -46416,7 +46416,7 @@
           "id": "LEG-e4e766d1f5d6",
           "line": 96,
           "kind": "test",
-          "name": "switching server resets identity filters instead of sending another server\u2019s device ID",
+          "name": "switching server resets identity filters instead of sending another server’s device ID",
           "dynamic": false,
           "layer": "L2"
         }
@@ -46439,7 +46439,7 @@
           "id": "LEG-067a76bb1796",
           "line": 65,
           "kind": "it",
-          "name": "shows an entry\u2019s heading without its body until you open it",
+          "name": "shows an entry’s heading without its body until you open it",
           "dynamic": false,
           "layer": "L2"
         },
@@ -46964,7 +46964,7 @@
       "sha256": "e92b2ddb0267b69e75322cfb0b03174f083ad756e204f2366248a01fed45439f"
     },
     "mobileapp/src/screens/DetailSendRefused.test.tsx": {
-      "sha256": "8e8c66a61499c5f22d30114e7df3c7bc941f6f8ee150705670ee5988c53ddc3c",
+      "sha256": "4bc9f7b43fce40ea7e0c93834ebc0780aee5dc2bb9daa084a16834739a5362a6",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -47091,7 +47091,7 @@
           "id": "LEG-3311f5104ff9",
           "line": 82,
           "kind": "test",
-          "name": "opening and closing Trace shares Chat\u2019s in-flight read without aborting or starting a second subscription",
+          "name": "opening and closing Trace shares Chat’s in-flight read without aborting or starting a second subscription",
           "dynamic": false,
           "layer": "L2"
         },
@@ -48041,7 +48041,7 @@
           "id": "LEG-5dafab2473bb",
           "line": 286,
           "kind": "it",
-          "name": "is closed by default \u2014 it is read once, then it is just height",
+          "name": "is closed by default — it is read once, then it is just height",
           "dynamic": false,
           "layer": "L2"
         },
@@ -48459,7 +48459,7 @@
           "id": "LEG-66046fd758e8",
           "line": 31,
           "kind": "it",
-          "name": "prefers the row\u2019s own agent name",
+          "name": "prefers the row’s own agent name",
           "dynamic": false,
           "layer": "L2"
         },
@@ -48467,7 +48467,7 @@
           "id": "LEG-a23cfaf9ab0f",
           "line": 35,
           "kind": "it",
-          "name": "falls back to the radar JOIN before ever showing the raw command (#659: a Claude 2.x pane\u2019s command is its VERSION)",
+          "name": "falls back to the radar JOIN before ever showing the raw command (#659: a Claude 2.x pane’s command is its VERSION)",
           "dynamic": false,
           "layer": "L2"
         },
@@ -48523,7 +48523,7 @@
           "id": "LEG-9aa06b97a474",
           "line": 88,
           "kind": "it",
-          "name": "lists every id \u2014 a COLLAPSED session must still say what it holds",
+          "name": "lists every id — a COLLAPSED session must still say what it holds",
           "dynamic": false,
           "layer": "L2"
         },
@@ -48555,7 +48555,7 @@
           "id": "LEG-5d721affd782",
           "line": 115,
           "kind": "it",
-          "name": "draws the band for a single window too \u2014 one predictable tree",
+          "name": "draws the band for a single window too — one predictable tree",
           "dynamic": false,
           "layer": "L2"
         },
@@ -48773,7 +48773,7 @@
           "id": "LEG-387d5b0c6c01",
           "line": 13,
           "kind": "test.each()",
-          "name": "scan window leaves controls reachable at %i \u00d7 %i",
+          "name": "scan window leaves controls reachable at %i × %i",
           "dynamic": true,
           "layer": "L2"
         },
@@ -49036,7 +49036,7 @@
           "id": "LEG-f259cfaf2c4d",
           "line": 114,
           "kind": "it",
-          "name": "asks for an icon at all \u2014 the fallback used to carry no hint",
+          "name": "asks for an icon at all — the fallback used to carry no hint",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49044,7 +49044,7 @@
           "id": "LEG-450351da14b3",
           "line": 133,
           "kind": "it",
-          "name": "states ctx ONCE \u2014 two roundings of it used to sit side by side",
+          "name": "states ctx ONCE — two roundings of it used to sit side by side",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49439,7 +49439,7 @@
           "id": "LEG-35de96ef1c69",
           "line": 100,
           "kind": "it",
-          "name": "leaves a section heading alone \u2014 only the preamble can hold a document title",
+          "name": "leaves a section heading alone — only the preamble can hold a document title",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49487,7 +49487,7 @@
           "id": "LEG-034622a839e5",
           "line": 170,
           "kind": "it",
-          "name": "quotes an item back to HQ by number and head, in the reader\u2019s language",
+          "name": "quotes an item back to HQ by number and head, in the reader’s language",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49518,7 +49518,7 @@
           "id": "LEG-d002ac73d57a",
           "line": 15,
           "kind": "it",
-          "name": "uses the server\u2019s own name",
+          "name": "uses the server’s own name",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49644,7 +49644,7 @@
           "id": "LEG-b07a83ee86d8",
           "line": 28,
           "kind": "it",
-          "name": "counts each band\u2019s height in chromeH",
+          "name": "counts each band’s height in chromeH",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49652,7 +49652,7 @@
           "id": "LEG-9909caa3185f",
           "line": 39,
           "kind": "it",
-          "name": "folds by sliding, never by resizing \u2014 the whole point of the rewrite",
+          "name": "folds by sliding, never by resizing — the whole point of the rewrite",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49660,7 +49660,7 @@
           "id": "LEG-d81d1316d8a4",
           "line": 54,
           "kind": "it",
-          "name": "pads the content by the chrome\u2019s height, in BOTH layers",
+          "name": "pads the content by the chrome’s height, in BOTH layers",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49723,7 +49723,7 @@
           "id": "LEG-58c8069b70b6",
           "line": 18,
           "kind": "it",
-          "name": "keeps the SIDE insets in both modes \u2014 in landscape the notch is on a side",
+          "name": "keeps the SIDE insets in both modes — in landscape the notch is on a side",
           "dynamic": false,
           "layer": "L2"
         }
@@ -49738,7 +49738,7 @@
           "id": "LEG-0609165a2e24",
           "line": 9,
           "kind": "it",
-          "name": "joins what it is, where from, and when \u2014 in that order",
+          "name": "joins what it is, where from, and when — in that order",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49856,7 +49856,7 @@
           "id": "LEG-af8c3297c4fe",
           "line": 23,
           "kind": "test",
-          "name": "the supervisor\u2019s acts are in",
+          "name": "the supervisor’s acts are in",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49872,7 +49872,7 @@
           "id": "LEG-776839e6bfba",
           "line": 35,
           "kind": "test",
-          "name": "the partition loses nothing \u2014 every record lands on exactly one side",
+          "name": "the partition loses nothing — every record lands on exactly one side",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49904,7 +49904,7 @@
           "id": "LEG-873d1101f826",
           "line": 65,
           "kind": "test",
-          "name": "a rotation shortens the session uuid \u2014 a phone reader compares its head at most",
+          "name": "a rotation shortens the session uuid — a phone reader compares its head at most",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49920,7 +49920,7 @@
           "id": "LEG-10b71e9a5328",
           "line": 77,
           "kind": "test",
-          "name": "renders in the reader\u2019s language",
+          "name": "renders in the reader’s language",
           "dynamic": false,
           "layer": "L2"
         },
@@ -49976,7 +49976,7 @@
           "id": "LEG-329b73379ef6",
           "line": 143,
           "kind": "test",
-          "name": "a kind gtmux does not rank still appears \u2014 last, not dropped",
+          "name": "a kind gtmux does not rank still appears — last, not dropped",
           "dynamic": false,
           "layer": "L2"
         },
@@ -50088,7 +50088,7 @@
           "id": "LEG-3a3c3251b831",
           "line": 244,
           "kind": "it",
-          "name": "keeps the minutes beside the hours \u2014 \"6h\" and \"6h 55m\" answer different questions",
+          "name": "keeps the minutes beside the hours — \"6h\" and \"6h 55m\" answer different questions",
           "dynamic": false,
           "layer": "L2"
         },
@@ -50128,7 +50128,7 @@
           "id": "LEG-2442bb660240",
           "line": 272,
           "kind": "it",
-          "name": "is false when a detail fills the limit exactly \u2014 nothing was lost",
+          "name": "is false when a detail fills the limit exactly — nothing was lost",
           "dynamic": false,
           "layer": "L2"
         },
@@ -50199,7 +50199,7 @@
           "id": "LEG-e3197474f5fc",
           "line": 48,
           "kind": "it",
-          "name": "gives every zone the chrome\u2019s height as top padding",
+          "name": "gives every zone the chrome’s height as top padding",
           "dynamic": false,
           "layer": "L2"
         },
@@ -50238,7 +50238,7 @@
           "id": "LEG-c92fcb55766f",
           "line": 55,
           "kind": "test",
-          "name": "a knowledge write is routine here too \u2014 the KNOWLEDGE row already counts it",
+          "name": "a knowledge write is routine here too — the KNOWLEDGE row already counts it",
           "dynamic": false,
           "layer": "L2"
         },
@@ -50374,7 +50374,7 @@
           "id": "LEG-7b8f83212f82",
           "line": 229,
           "kind": "test",
-          "name": "the report reads owed \u2192 did \u2192 context, in that order",
+          "name": "the report reads owed → did → context, in that order",
           "dynamic": false,
           "layer": "L2"
         },
@@ -50477,7 +50477,7 @@
           "id": "LEG-9586a62afe14",
           "line": 51,
           "kind": "test",
-          "name": "a quiet fleet says so \u2014 never an empty line",
+          "name": "a quiet fleet says so — never an empty line",
           "dynamic": false,
           "layer": "L2"
         },
@@ -50836,7 +50836,7 @@
           "id": "LEG-342ac65d19e4",
           "line": 229,
           "kind": "it",
-          "name": "returns nothing for an empty query \u2014 the caller shows the index, not everything",
+          "name": "returns nothing for an empty query — the caller shows the index, not everything",
           "dynamic": false,
           "layer": "L2"
         },
@@ -51025,7 +51025,7 @@
           "id": "LEG-1dcafd328070",
           "line": 23,
           "kind": "it",
-          "name": "has no \u21c4 square any more",
+          "name": "has no ⇄ square any more",
           "dynamic": false,
           "layer": "L2"
         },
@@ -51356,7 +51356,7 @@
           "id": "LEG-a158ec0c81cd",
           "line": 154,
           "kind": "it",
-          "name": "keeps an unknown agent\u2019s own spelling rather than inventing one",
+          "name": "keeps an unknown agent’s own spelling rather than inventing one",
           "dynamic": false,
           "layer": "L2"
         },
@@ -51412,7 +51412,7 @@
           "id": "LEG-9842c076169d",
           "line": 226,
           "kind": "it",
-          "name": "ignores session windows \u2014 a high one is a normal working day, not news",
+          "name": "ignores session windows — a high one is a normal working day, not news",
           "dynamic": false,
           "layer": "L2"
         },
@@ -51508,7 +51508,7 @@
           "id": "LEG-37a9ce360fda",
           "line": 341,
           "kind": "it",
-          "name": "names the kind in Chinese and keeps the agent\u2019s label in English",
+          "name": "names the kind in Chinese and keeps the agent’s label in English",
           "dynamic": false,
           "layer": "L2"
         },
@@ -51540,7 +51540,7 @@
           "id": "LEG-e2a64d946f94",
           "line": 378,
           "kind": "it",
-          "name": "shows an older serve\u2019s own sentence, and nothing when the machine is fine",
+          "name": "shows an older serve’s own sentence, and nothing when the machine is fine",
           "dynamic": false,
           "layer": "L2"
         },
@@ -52176,7 +52176,7 @@
           "id": "LEG-65a0d29484a8",
           "line": 51,
           "kind": "it",
-          "name": "keeps one project out of another project\u2019s list",
+          "name": "keeps one project out of another project’s list",
           "dynamic": false,
           "layer": "L1"
         },
@@ -52342,7 +52342,7 @@
           "id": "LEG-73b137405c39",
           "line": 51,
           "kind": "it",
-          "name": "treats a day as stale, matching the Mac\u2019s own snapshot cadence",
+          "name": "treats a day as stale, matching the Mac’s own snapshot cadence",
           "dynamic": false,
           "layer": "L1"
         },
@@ -52467,7 +52467,7 @@
           "id": "LEG-069fde4ed426",
           "line": 12,
           "kind": "it",
-          "name": "See off drops Type too (Type \u2286 See)",
+          "name": "See off drops Type too (Type ⊆ See)",
           "dynamic": false,
           "layer": "L1"
         },
@@ -53345,7 +53345,7 @@
           "id": "LEG-99b93d1468c9",
           "line": 122,
           "kind": "it",
-          "name": "fires ONE impact at recognition \u2014 the system s own language for a long press",
+          "name": "fires ONE impact at recognition — the system s own language for a long press",
           "dynamic": false,
           "layer": "L2"
         },
@@ -53526,7 +53526,7 @@
           "id": "LEG-a2ee828f06f8",
           "line": 56,
           "kind": "it",
-          "name": "still slides when you dismiss it by the backdrop \u2014 there the motion IS the answer",
+          "name": "still slides when you dismiss it by the backdrop — there the motion IS the answer",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54240,7 +54240,7 @@
           "id": "LEG-a780c6bf8b23",
           "line": 167,
           "kind": "test",
-          "name": "a different scope does not show the first one\u2019s entries at the top",
+          "name": "a different scope does not show the first one’s entries at the top",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54374,7 +54374,7 @@
           "id": "LEG-74b441f966ee",
           "line": 37,
           "kind": "it",
-          "name": "reports a failure (does NOT throw) when an upload REJECTS \u2014 this is the wedge fix",
+          "name": "reports a failure (does NOT throw) when an upload REJECTS — this is the wedge fix",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54453,7 +54453,7 @@
           "id": "LEG-696d19ef5ed0",
           "line": 35,
           "kind": "test",
-          "name": "resting key row: no Space, order Tab \u2191 \u2193 \u23ce \u232b Ctrl-C Esc",
+          "name": "resting key row: no Space, order Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54461,7 +54461,7 @@
           "id": "LEG-7455d56fda12",
           "line": 56,
           "kind": "test",
-          "name": "\u232b onPress sends {key: BSpace}; \u23ce sends {key: Enter}",
+          "name": "⌫ onPress sends {key: BSpace}; ⏎ sends {key: Enter}",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54772,7 +54772,7 @@
           "id": "LEG-de4e98da9ff8",
           "line": 53,
           "kind": "test",
-          "name": "HQ itself waiting \u2192 amber card border + red subtitle (\u6574\u5361\u7425\u73c0)",
+          "name": "HQ itself waiting → amber card border + red subtitle (整卡琥珀)",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54780,7 +54780,7 @@
           "id": "LEG-5eddb7bb7c7c",
           "line": 63,
           "kind": "test",
-          "name": "quiet fleet \u2192 neutral border, \"all normal\" subtitle, dim",
+          "name": "quiet fleet → neutral border, \"all normal\" subtitle, dim",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54835,7 +54835,7 @@
           "id": "LEG-8ae61f07c21d",
           "line": 78,
           "kind": "it",
-          "name": "not started (no HQ) \u2192 grey ring + \"?\" + explainer affordance",
+          "name": "not started (no HQ) → grey ring + \"?\" + explainer affordance",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54843,7 +54843,7 @@
           "id": "LEG-79822d7a6168",
           "line": 84,
           "kind": "it",
-          "name": "all normal \u2192 green ring, no badge",
+          "name": "all normal → green ring, no badge",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54851,7 +54851,7 @@
           "id": "LEG-f93047d34d62",
           "line": 90,
           "kind": "it",
-          "name": "HQ working \u2192 cyan ring",
+          "name": "HQ working → cyan ring",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54859,7 +54859,7 @@
           "id": "LEG-000e0c6cbc3f",
           "line": 96,
           "kind": "it",
-          "name": "a worker needs you \u2192 red ring + count badge",
+          "name": "a worker needs you → red ring + count badge",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54867,7 +54867,7 @@
           "id": "LEG-c55b514ae6df",
           "line": 102,
           "kind": "it",
-          "name": "resource bottleneck (red tier) \u2192 red ring + \u26a0 (when nothing needs a decision)",
+          "name": "resource bottleneck (red tier) → red ring + ⚠ (when nothing needs a decision)",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54875,7 +54875,7 @@
           "id": "LEG-4bad31f271b3",
           "line": 108,
           "kind": "it",
-          "name": "a soft resource warn does NOT redden the disc \u2192 green, no badge",
+          "name": "a soft resource warn does NOT redden the disc → green, no badge",
           "dynamic": false,
           "layer": "L2"
         },
@@ -54883,7 +54883,7 @@
           "id": "LEG-ce0b1e7e95ac",
           "line": 114,
           "kind": "it",
-          "name": "HQ itself needs you \u2192 red ring + \"!\" (outranks a worker + resource)",
+          "name": "HQ itself needs you → red ring + \"!\" (outranks a worker + resource)",
           "dynamic": false,
           "layer": "L2"
         },
@@ -55001,7 +55001,7 @@
           "id": "LEG-fafc8ca9711e",
           "line": 162,
           "kind": "it",
-          "name": "a 48 MP photo exports at 8064 \u00d7 6048, not scaled",
+          "name": "a 48 MP photo exports at 8064 × 6048, not scaled",
           "dynamic": false,
           "layer": "L2"
         },
@@ -55119,7 +55119,7 @@
           "id": "LEG-bfbf26c4c225",
           "line": 78,
           "kind": "it",
-          "name": "leaves every other caller alone \u2014 chat and the knowledge base do not fold",
+          "name": "leaves every other caller alone — chat and the knowledge base do not fold",
           "dynamic": false,
           "layer": "L2"
         },
@@ -55182,7 +55182,7 @@
           "id": "LEG-17cea6d58228",
           "line": 39,
           "kind": "it",
-          "name": "wears no background under calmEmphasis \u2014 a page of prose filled with white chips",
+          "name": "wears no background under calmEmphasis — a page of prose filled with white chips",
           "dynamic": false,
           "layer": "L2"
         },
@@ -55254,7 +55254,7 @@
           "id": "LEG-b5b88d078cf9",
           "line": 153,
           "kind": "it",
-          "name": "leaves ordinary prose alone \u2014 the budget is for a ledger, not a sentence",
+          "name": "leaves ordinary prose alone — the budget is for a ledger, not a sentence",
           "dynamic": false,
           "layer": "L2"
         },
@@ -55427,7 +55427,7 @@
           "id": "LEG-85dbf2829721",
           "line": 190,
           "kind": "it",
-          "name": "reports nothing when tapped \u2014 the arrival reports itself",
+          "name": "reports nothing when tapped — the arrival reports itself",
           "dynamic": false,
           "layer": "L2"
         },
@@ -55800,7 +55800,7 @@
           "id": "LEG-e1c1ba198394",
           "line": 146,
           "kind": "test",
-          "name": "a stitched older session never requests the pane\u2019s different current runtime",
+          "name": "a stitched older session never requests the pane’s different current runtime",
           "dynamic": false,
           "layer": "L2"
         },
@@ -55935,7 +55935,7 @@
           "id": "LEG-0c46be032f86",
           "line": 86,
           "kind": "test",
-          "name": "a short prompt is read whole, without a \"\u2026\", in either language",
+          "name": "a short prompt is read whole, without a \"…\", in either language",
           "dynamic": false,
           "layer": "L2"
         },
@@ -55974,7 +55974,7 @@
           "id": "LEG-2a0d3f8eafe8",
           "line": 11,
           "kind": "it",
-          "name": "counts them in Chinese with \u4e2a",
+          "name": "counts them in Chinese with 个",
           "dynamic": false,
           "layer": "L2"
         },
@@ -56382,7 +56382,7 @@
           "id": "LEG-14238fcb471c",
           "line": 91,
           "kind": "test",
-          "name": "it speaks the reader\u2019s language",
+          "name": "it speaks the reader’s language",
           "dynamic": false,
           "layer": "L2"
         },
@@ -56807,7 +56807,7 @@
           "id": "LEG-0865ad794a4b",
           "line": 124,
           "kind": "test",
-          "name": "speaks the reader\u2019s language",
+          "name": "speaks the reader’s language",
           "dynamic": false,
           "layer": "L2"
         }
@@ -56822,7 +56822,7 @@
           "id": "LEG-10567eb7ccc9",
           "line": 23,
           "kind": "test",
-          "name": "SnippetsPicker sheet titles: Quick replies / \u5e38\u7528\u8bed",
+          "name": "SnippetsPicker sheet titles: Quick replies / 常用语",
           "dynamic": false,
           "layer": "L2"
         },
@@ -56830,7 +56830,7 @@
           "id": "LEG-c34fd5ddf31e",
           "line": 29,
           "kind": "test",
-          "name": "SnippetsModal manage titles: Quick replies / \u5e38\u7528\u8bed",
+          "name": "SnippetsModal manage titles: Quick replies / 常用语",
           "dynamic": false,
           "layer": "L2"
         },
@@ -57425,7 +57425,7 @@
           "id": "LEG-7c3a606f9645",
           "line": 43,
           "kind": "it",
-          "name": "maps the full 30\u201337 normal range",
+          "name": "maps the full 30–37 normal range",
           "dynamic": false,
           "layer": "L2"
         },
@@ -57433,7 +57433,7 @@
           "id": "LEG-321e4c25b52d",
           "line": 50,
           "kind": "it",
-          "name": "maps bright colors 90\u201397 to palette indices 8\u201315",
+          "name": "maps bright colors 90–97 to palette indices 8–15",
           "dynamic": false,
           "layer": "L2"
         },
@@ -57529,7 +57529,7 @@
           "id": "LEG-8ff87b6dcc1d",
           "line": 130,
           "kind": "it",
-          "name": "maps the 6x6x6 color cube (16\u2013231)",
+          "name": "maps the 6x6x6 color cube (16–231)",
           "dynamic": false,
           "layer": "L2"
         },
@@ -57537,7 +57537,7 @@
           "id": "LEG-294e9ddf1fe4",
           "line": 139,
           "kind": "it",
-          "name": "maps the grayscale ramp (232\u2013255)",
+          "name": "maps the grayscale ramp (232–255)",
           "dynamic": false,
           "layer": "L2"
         },
@@ -57561,7 +57561,7 @@
           "id": "LEG-905adfa62a2f",
           "line": 156,
           "kind": "it",
-          "name": "clamps out-of-range channels to 0\u2013255",
+          "name": "clamps out-of-range channels to 0–255",
           "dynamic": false,
           "layer": "L2"
         },
@@ -57569,7 +57569,7 @@
           "id": "LEG-43e0707cf823",
           "line": 163,
           "kind": "it",
-          "name": "ignores background color codes (40\u201349)",
+          "name": "ignores background color codes (40–49)",
           "dynamic": false,
           "layer": "L2"
         },
@@ -57633,7 +57633,7 @@
           "id": "LEG-b469895121db",
           "line": 216,
           "kind": "it",
-          "name": "emits Span.bg for 40\u201347 when bg is on",
+          "name": "emits Span.bg for 40–47 when bg is on",
           "dynamic": false,
           "layer": "L2"
         },
@@ -57641,7 +57641,7 @@
           "id": "LEG-a97b7cc93d01",
           "line": 221,
           "kind": "it",
-          "name": "emits Span.bg for bright background 100\u2013107",
+          "name": "emits Span.bg for bright background 100–107",
           "dynamic": false,
           "layer": "L2"
         },
@@ -57681,7 +57681,7 @@
           "id": "LEG-ffc2d1f1f3a4",
           "line": 256,
           "kind": "it",
-          "name": "maps fg 30\u201337 through the supplied palette",
+          "name": "maps fg 30–37 through the supplied palette",
           "dynamic": false,
           "layer": "L2"
         },
@@ -57689,7 +57689,7 @@
           "id": "LEG-453f3fe657d5",
           "line": 261,
           "kind": "it",
-          "name": "maps bright fg 90\u201397 through palette[8..15]",
+          "name": "maps bright fg 90–97 through palette[8..15]",
           "dynamic": false,
           "layer": "L2"
         },
@@ -58347,7 +58347,7 @@
           "id": "LEG-d637047426f8",
           "line": 11,
           "kind": "it",
-          "name": "walks %7 waiting \u2192 working \u2192 idle(+latest) after approval",
+          "name": "walks %7 waiting → working → idle(+latest) after approval",
           "dynamic": false,
           "layer": "L2"
         },
@@ -58900,7 +58900,7 @@
           "id": "LEG-ecad0243737c",
           "line": 115,
           "kind": "it",
-          "name": "would freeze the decision forever \u2014 which is why the clock is named",
+          "name": "would freeze the decision forever — which is why the clock is named",
           "dynamic": false,
           "layer": "L2"
         },
@@ -59154,7 +59154,7 @@
           "id": "LEG-6e7ec7bc0a89",
           "line": 24,
           "kind": "it",
-          "name": "keeps the first cell as the row head \u2014 that is what the row IS",
+          "name": "keeps the first cell as the row head — that is what the row IS",
           "dynamic": false,
           "layer": "L2"
         },
@@ -59320,7 +59320,7 @@
           "id": "LEG-206cc14bcec0",
           "line": 19,
           "kind": "it",
-          "name": "gives every <Modal> the app\u2019s orientations",
+          "name": "gives every <Modal> the app’s orientations",
           "dynamic": false,
           "layer": "L2"
         }
@@ -59526,7 +59526,7 @@
           "id": "LEG-64b90d3f9879",
           "line": 177,
           "kind": "it",
-          "name": "never reorders \u2014 the order encodes a decision of its own",
+          "name": "never reorders — the order encodes a decision of its own",
           "dynamic": false,
           "layer": "L2"
         },
@@ -59589,7 +59589,7 @@
           "id": "LEG-24093e2b13f5",
           "line": 44,
           "kind": "test",
-          "name": "a key the server will never run is not the reader\u2019s problem",
+          "name": "a key the server will never run is not the reader’s problem",
           "dynamic": false,
           "layer": "L2"
         },
@@ -59726,7 +59726,7 @@
           "id": "LEG-76f7c9ce104d",
           "line": 26,
           "kind": "it",
-          "name": "forces text presentation on a BARE text-default symbol (\u23f8 manual mode)",
+          "name": "forces text presentation on a BARE text-default symbol (⏸ manual mode)",
           "dynamic": false,
           "layer": "L2"
         },
@@ -59734,7 +59734,7 @@
           "id": "LEG-85e1beb1ab7c",
           "line": 31,
           "kind": "it",
-          "name": "leaves an agent-requested emoji (\u2026U+FE0F) as color",
+          "name": "leaves an agent-requested emoji (…U+FE0F) as color",
           "dynamic": false,
           "layer": "L2"
         },
@@ -59742,7 +59742,7 @@
           "id": "LEG-7423ce8fed78",
           "line": 36,
           "kind": "it",
-          "name": "leaves a default-presentation emoji (\u2705) as color",
+          "name": "leaves a default-presentation emoji (✅) as color",
           "dynamic": false,
           "layer": "L2"
         },
@@ -59926,7 +59926,7 @@
           "id": "LEG-2e531978d9a6",
           "line": 254,
           "kind": "it",
-          "name": "rowHeightFor = round(fontSize * 1.6) \u2014 one uniform row height",
+          "name": "rowHeightFor = round(fontSize * 1.6) — one uniform row height",
           "dynamic": false,
           "layer": "L2"
         },
@@ -59942,7 +59942,7 @@
           "id": "LEG-9929bd9d3aab",
           "line": 265,
           "kind": "it",
-          "name": "colsFor bakes in the \u22122\u00d7PAD padding and the conservative \u22121 cell",
+          "name": "colsFor bakes in the −2×PAD padding and the conservative −1 cell",
           "dynamic": false,
           "layer": "L2"
         },
@@ -60142,7 +60142,7 @@
           "id": "LEG-68668d63d1c3",
           "line": 442,
           "kind": "it",
-          "name": "after `clear`: cursor on the TOP row, everything below blank \u2192 keep 1",
+          "name": "after `clear`: cursor on the TOP row, everything below blank → keep 1",
           "dynamic": false,
           "layer": "L2"
         },
@@ -60254,7 +60254,7 @@
           "id": "LEG-4054332d0040",
           "line": 552,
           "kind": "it",
-          "name": "survives the grid wrap \u2014 every visual row of a split URL opens the full URL",
+          "name": "survives the grid wrap — every visual row of a split URL opens the full URL",
           "dynamic": false,
           "layer": "L2"
         },
@@ -60357,7 +60357,7 @@
           "id": "LEG-1740dd28d1c1",
           "line": 46,
           "kind": "it",
-          "name": "shifted lines (scroll) still reuse identities \u2014 content-addressed, not index-addressed",
+          "name": "shifted lines (scroll) still reuse identities — content-addressed, not index-addressed",
           "dynamic": false,
           "layer": "L2"
         },
@@ -60437,7 +60437,7 @@
           "id": "LEG-d922264514b3",
           "line": 144,
           "kind": "it",
-          "name": "shifted lines (scroll) still reuse rows identity \u2014 content-addressed",
+          "name": "shifted lines (scroll) still reuse rows identity — content-addressed",
           "dynamic": false,
           "layer": "L2"
         },
@@ -60633,7 +60633,7 @@
           "id": "LEG-443cc630ca3b",
           "line": 29,
           "kind": "it",
-          "name": "uses the exact DESIGN \u00a71/\u00a79 status colors",
+          "name": "uses the exact DESIGN §1/§9 status colors",
           "dynamic": false,
           "layer": "L2"
         },
@@ -60713,7 +60713,7 @@
           "id": "LEG-27cfae005582",
           "line": 123,
           "kind": "it",
-          "name": "excludes the supervisor (role) \u2014 it renders as the HQ card, not a row",
+          "name": "excludes the supervisor (role) — it renders as the HQ card, not a row",
           "dynamic": false,
           "layer": "L2"
         },
@@ -60777,7 +60777,7 @@
           "id": "LEG-f9f0e8cb2bad",
           "line": 199,
           "kind": "it",
-          "name": "excludes watched plain panes \u2014 they are not agents (no inflated idle/total)",
+          "name": "excludes watched plain panes — they are not agents (no inflated idle/total)",
           "dynamic": false,
           "layer": "L2"
         },
@@ -60832,7 +60832,7 @@
           "id": "LEG-80aa53d0cfdb",
           "line": 13,
           "kind": "it",
-          "name": "labels same-day as Today/\u4eca\u5929 + HH:MM",
+          "name": "labels same-day as Today/今天 + HH:MM",
           "dynamic": false,
           "layer": "L2"
         },
@@ -60848,7 +60848,7 @@
           "id": "LEG-d93ea95c10b9",
           "line": 24,
           "kind": "it",
-          "name": "labels the previous day as Yesterday/\u6628\u5929",
+          "name": "labels the previous day as Yesterday/昨天",
           "dynamic": false,
           "layer": "L2"
         },
@@ -60912,7 +60912,7 @@
           "id": "LEG-a7b4039749f8",
           "line": 79,
           "kind": "it",
-          "name": "speaks the reader\u2019s language and honours the gap it is given",
+          "name": "speaks the reader’s language and honours the gap it is given",
           "dynamic": false,
           "layer": "L2"
         },
@@ -61127,7 +61127,7 @@
           "id": "LEG-b0f696691fdf",
           "line": 19,
           "kind": "test",
-          "name": "waiting alert \u2192 quick-reply category + mutable-content + routing fields",
+          "name": "waiting alert → quick-reply category + mutable-content + routing fields",
           "dynamic": false,
           "layer": "L2"
         },
@@ -61135,7 +61135,7 @@
           "id": "LEG-5e51c3095d37",
           "line": 43,
           "kind": "test",
-          "name": "non-waiting alert (done) \u2192 NO quick-reply category",
+          "name": "non-waiting alert (done) → NO quick-reply category",
           "dynamic": false,
           "layer": "L2"
         },
@@ -61143,7 +61143,7 @@
           "id": "LEG-5c4318bf80af",
           "line": 50,
           "kind": "test",
-          "name": "silent badge-sync \u2192 content-available only, background priority, no alert",
+          "name": "silent badge-sync → content-available only, background priority, no alert",
           "dynamic": false,
           "layer": "L2"
         },
@@ -61167,7 +61167,7 @@
           "id": "LEG-14d8300f2e11",
           "line": 80,
           "kind": "test",
-          "name": "live activity \u2192 timestamp + event + content-state + stale-date",
+          "name": "live activity → timestamp + event + content-state + stale-date",
           "dynamic": false,
           "layer": "L2"
         },
@@ -63572,7 +63572,7 @@
           "id": "LEG-8dd956a2c822",
           "line": 10,
           "kind": "scenario",
-          "name": "'Trace App parity for original turns 253\u2013256 at '+width+' '+locale",
+          "name": "'Trace App parity for original turns 253–256 at '+width+' '+locale",
           "dynamic": true,
           "layer": "L3"
         }
@@ -64854,7 +64854,7 @@
           "design": "SFR-006"
         }
       ],
-      "sha256": "db1b49818fe3c3dafef7d043deeccdc0fcd72e9f8e05be050223c3f8a3672600"
+      "sha256": "26ee53d1245edbc2c068bb07b80ddb40558d29ae8853050448977e98321e0a98"
     },
     "mobileapp/src/ui/Composer.restore.test.tsx": {
       "layer": "L2",
@@ -64921,6 +64921,22 @@
         }
       ],
       "sha256": "84a17c7773fe86faa50a147aa359fc298f35103380af92b6bad1fc4a1868a4bf"
+    },
+    "mobileapp/src/screens/SendRecovery.authDraft.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-751a1129956a",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SFR-008"
+        }
+      ],
+      "sha256": "07002047f758a66b96129c3b5b04faa41fb20b00f0db7a63a023cc92c1200a23"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

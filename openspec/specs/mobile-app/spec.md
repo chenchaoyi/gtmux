@@ -2960,3 +2960,9 @@ The shared Detail and HQ recovery row SHALL describe the last failed send withou
 - **AND** duplicate captured actions and callbacks after client/conversation change or unmount cannot replay a send or alter another scope
 - **WHEN** the user chooses Edit
 - **THEN** the old notice clears, the composer opens with the held text appended to any newer text, and staged attachments remain
+
+#### Scenario: Authority refusal arrives after the user starts a new draft
+
+- **WHEN** a 401 or 403 arrives after the user types newer text or stages new attachments
+- **THEN** the held message is restored once alongside the newer text without replacing it or the attachments
+- **AND** Edit focuses the restored draft without appending it a second time, while pairing and retry restrictions remain unchanged

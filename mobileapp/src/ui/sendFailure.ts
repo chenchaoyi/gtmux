@@ -32,7 +32,7 @@ export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
   const retry = (title: string): FailureCopy => ({title, action: 'retry', actionLabel: zh ? '重试' : 'Retry', show: true});
   switch (kind) {
     case 'draft': return retry(zh ? 'Mac 上有未提交草稿，处理后重试。' : 'Unsent draft on Mac. Resolve it and try again.');
-    case 'asking': return retry(zh ? '上次发送需要先回答会话，处理后重试。' : 'The last send needed a reply. Answer, then retry.');
+    case 'asking': return retry(zh ? '上次发送时有问题待回答，请处理后重试。' : 'The last send needed a reply. Answer, then retry.');
     case 'unavailable': return retry(zh ? '未发送，请查看会话后重试。' : 'Not sent. Check the session, then retry.');
     case 'gone': return {title: zh ? '未发送：目标窗格不存在。' : 'Not sent: the target pane no longer exists.', action: 'back-to-radar', actionLabel: zh ? '返回会话' : 'Sessions', show: true};
     case 'refused': return {title: zh ? '内容已恢复到输入框，请重新配对。' : 'Your text is back in the input box; pair again.', action: 'pair-again', actionLabel: zh ? '重新配对' : 'Pair again', show: true};

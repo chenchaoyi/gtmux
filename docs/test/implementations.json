@@ -3053,10 +3053,14 @@
   },
   "mobileapp/src/screens/DetailSendRefused.test.tsx": {
     "cases": [
-      "CAR-003"
+      "CAR-003",
+      "SFR-008"
     ],
     "selectors": [
-      "retires the sent echo after a poll containing its prompt and later turns; it stays gone"
+      "retires the sent echo after a poll containing its prompt and later turns; it stays gone",
+      "any other refusal keeps its retry and does not refill the box",
+      "a pane not shared for typing (403): no pairing, no retry, the text back in the box",
+      "refused: pair again, no retry, and the text is back in the box"
     ]
   },
   "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
@@ -3254,6 +3258,14 @@
     ],
     "selectors": [
       "TestSFR001PhoneRefusalNeedsExplicitNativeQuestion"
+    ]
+  },
+  "mobileapp/src/screens/SendRecovery.authDraft.test.tsx": {
+    "cases": [
+      "SFR-008"
+    ],
+    "selectors": [
+      "SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once"
     ]
   }
 }

@@ -326,10 +326,10 @@ export const Composer = React.memo(function Composer({
   }, [prefill?.at]); // eslint-disable-line react-hooks/exhaustive-deps
   const restored = useRef<number | undefined>(undefined);
   useEffect(() => {
-    if (!restore?.text || restored.current === restore.at) return;
+    if (!restore || restored.current === restore.at) return;
     restored.current = restore.at;
     typed.current = true;
-    setText(current => current === restore.text ? current : current ? `${current}\n\n${restore.text}` : restore.text);
+    if (restore.text) setText(current => current === restore.text ? current : current ? `${current}\n\n${restore.text}` : restore.text);
     setComposing(true);
     const timer = setTimeout(() => inputRef.current?.focus(), 50);
     return () => clearTimeout(timer);

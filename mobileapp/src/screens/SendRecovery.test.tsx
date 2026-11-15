@@ -78,7 +78,7 @@ test.each([['Detail', 'session'], ['HQ', 'session'], ['Detail', 'client'], ['HQ'
 test.each([['Detail', 401], ['HQ', 401], ['Detail', 403], ['HQ', 403]])('SFR-006 %s status %i keeps authority refusal and restores text', async (kind, status) => {
   mockContext.client.sendResult.mockResolvedValue({ok: false, status, reason: 'asking', code: 'input-awaiting-confirmation'});
   await mount(String(kind)); await send();
-  expect(tree.root.findByType(ComposerFn).props.prefill?.text).toBe('held message');
+  expect(tree.root.findByType(ComposerFn).props.restore?.text).toBe('held message');
   expect(tree.root.findAllByProps({testID: 'send-failed-retry'})).toHaveLength(0);
   expect(tree.root.findByType(SendFailedBar).props.status).toBe(status);
 });

@@ -9,6 +9,7 @@ export type HeldSendFailure = {
   status?: number;
   code?: SendFailureCode;
   retrying: boolean;
+  restored?: boolean;
 };
 
 /** One recoverable attempt, bound to the actual client/conversation identity. */
@@ -39,7 +40,9 @@ export function useSendRecovery(scope: object) {
   }, [isCurrent, scope, put]);
   const record = useCallback((payload: SendPayload, reason: string, status?: number, code?: SendFailureCode) => {
     if (!isCurrent()) return false;
-    put({scope, payload, reason, status, code, retrying: false});
+    const restored = !!payload.text && (status === 401 || status === 403);
+    if (restored) setRestoration({scope, text: payload.text!, at: ++restoreSequence.current});
+    put({scope, payload, reason, status, code, retrying: false, restored});
     return true;
   }, [isCurrent, scope, put]);
   const accept = useCallback((payload: SendPayload) => {
@@ -52,7 +55,7 @@ export function useSendRecovery(scope: object) {
   }, [isCurrent, scope]);
   const edit = useCallback((expected: HeldSendFailure) => {
     if (!isCurrent() || held.current !== expected || expected.scope !== scope || expected.retrying) return;
-    if (expected.payload.text) setRestoration({scope, text: expected.payload.text, at: ++restoreSequence.current});
+    if (expected.payload.text) setRestoration({scope, text: expected.restored ? '' : expected.payload.text, at: ++restoreSequence.current});
     put(null);
   }, [isCurrent, scope, put]);
   const failure = snapshot?.scope === scope ? snapshot : null;

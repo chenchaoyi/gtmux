@@ -418,7 +418,6 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
       const fail = (reason: string, status?: number, code?: SendFailureCode) => {
         if (!currentResult()) return;
         if (!recovery.record(payload, reason, status, code)) return;
-        if ((status === 401 || status === 403) && payload.text) setPrefill({text: payload.text, at: Date.now()});
         if (currentEcho()) {pendingEcho.current = null; setPending(undefined);}
       };
       client.sendResult(hq.pane_id, payload).then(result => {

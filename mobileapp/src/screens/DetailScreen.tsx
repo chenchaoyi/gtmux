@@ -363,8 +363,6 @@ function PaneDetailView({
   const recovery = useSendRecovery(chatIdentity);
   const failure = recovery.failure;
   const failedSend = failure?.payload;
-  // Text handed back to the box when a send can never land as it is (Composer prefill).
-  const [refill, setRefill] = useState<{text: string; at: number} | null>(null);
   // Outside the navigator (the demo) there is nowhere to pair again, and it is not offered.
   const navigation = React.useContext(NavigationContext) as {navigate: (r: string) => void} | undefined;
   // A short receipt, not a queue/liveness indicator. A continuous working turn
@@ -529,9 +527,7 @@ function PaneDetailView({
             // can't recover from without retyping.
             if (!recovery.record(p, r.reason, r.status, r.code)) return;
             clearEcho();
-            // Refused (401: pair again) or not shared (403): no retry can land, so the
-            // text goes back into the box, where it is kept as the pane's draft.
-            if ((r.status === 401 || r.status === 403) && p.text) setRefill({text: p.text, at: Date.now()});
+            // Authority failures restore through the same scoped append-only lane.
             return;
           }
           recovery.accept(p);
@@ -1129,7 +1125,6 @@ function PaneDetailView({
           keyController={keyControl}
           showActions={false}
           returnSends={returnSends}
-          prefill={refill}
           restore={recovery.restore}
           onSend={onComposerSend}
           keyTarget={`${client.base}|${agent.pane_id}`}

@@ -5166,6 +5166,7 @@ MAP-19a9941dbee1,L2,reviewed implementation,mobileapp/src/screens/RestoreSession
 MAP-157d7028a843,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,58,reviewed-selector,local persistence failure prevents POST; stale preview refresh discards only an explicitly refused request,False,RSR-007
 LEG-387d5b0c6c01,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,13,test.each(),scan window leaves controls reachable at %i × %i,True,legacy-not-retrospectively-reviewed
 LEG-1cb0f6c7d8ad,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,24,test,native camera callbacks emit once; cancel makes a queued frame inert,False,legacy-not-retrospectively-reviewed
+MAP-751a1129956a,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.authDraft.test.tsx,37,reviewed-selector,SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once,False,SFR-008
 MAP-fb1ca220a1d0,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.test.tsx,31,reviewed-selector,SFR-006 %s retries once with the same ID and retains visible busy feedback,False,SFR-006
 MAP-95d48bdd6e53,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.test.tsx,46,reviewed-selector,SFR-006 %s failed retry updates its reason and Edit keeps a newer composer draft,False,SFR-006
 MAP-0ffc05dd3bf0,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.test.tsx,62,reviewed-selector,SFR-006 %s old retry and late result cannot cross %s scope,False,SFR-006
