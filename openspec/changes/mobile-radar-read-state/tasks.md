@@ -1,5 +1,0 @@
-- [x] Review and seal observable read/error/empty invariants before test changes
-- [ ] Implement scoped bounded reads with preserved trailing refresh and legacy guards
-- [ ] Implement shared loading/genuine-empty/error presentation
-- [ ] Verify production counterexamples and preserve authorization assertions
-- [ ] Update bilingual design/current spec and complete required gates

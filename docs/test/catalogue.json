@@ -43401,7 +43401,7 @@
       "sha256": "eea663cfc633c71c1a79e2aa74a900891d5260792eda5a0f2f36541af0ec65eb"
     },
     "mobileapp/src/api/client.test.ts": {
-      "sha256": "2dd1b30cf9752ffade7368945659e32f9b14bdd5d7752b53289437a7b1ff9c3e",
+      "sha256": "cbfcb562e9e33d647d35bda94ea638c3fd67fc5e135666b6e423f64c804f5836",
       "layer": "L1",
       "stack": "RN / mobile harness",
       "cases": [
@@ -44021,6 +44021,15 @@
           "dynamic": false,
           "layer": "L2",
           "design": "UR-002"
+        },
+        {
+          "id": "MAP-2b86bce5e2ac",
+          "line": 131,
+          "kind": "reviewed-selector",
+          "name": "rejects a body that is not an array",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "UR-002,RDR-004"
         }
       ]
     },
@@ -48569,7 +48578,7 @@
       ]
     },
     "mobileapp/src/screens/RadarPanel.shareStale.test.tsx": {
-      "sha256": "d057d426d5e8d1a0d0cfd49a58eee31c84b01347d3e92975190a8d0faef69975",
+      "sha256": "b9bec57a2b6af59e84127586a310422ddb07b07c394fe2e4eb25963aed77e248",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -64310,6 +64319,135 @@
         }
       ],
       "sha256": "22e4c1962b05345b62ae76dcfcb04841c56ae0941266e6bc910cfd57dac4fd28"
+    },
+    "mobileapp/src/api/agentsRead.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a5b3bb5a1d5d",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "a real empty agents response is successful data and ordinary rows still map",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-004"
+        },
+        {
+          "id": "MAP-5e41be7d3f1b",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "a malformed successful agents body stays a read failure: %p",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-004"
+        }
+      ],
+      "sha256": "0a2d682808016097b6f87e7c189ff2297d4828628a64b740e4b1618def7ee06a"
+    },
+    "mobileapp/src/screens/RadarPanel.readState.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b28728f9d63d",
+          "line": 47,
+          "kind": "reviewed-selector",
+          "name": "stream connection before the first result displays loading rather than zero or empty",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-003"
+        },
+        {
+          "id": "MAP-3cb5a05e3dd6",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "confirmed empty is stable in ${variant} ${theme} ${lang}",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-003"
+        },
+        {
+          "id": "MAP-7ac4e613f331",
+          "line": 69,
+          "kind": "reviewed-selector",
+          "name": "failed and unavailable access reads never display a cheerful empty quote or owner creation for guests",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-003"
+        },
+        {
+          "id": "MAP-34a3f4f7a896",
+          "line": 80,
+          "kind": "reviewed-selector",
+          "name": "a pull indicator follows the actual request beyond 600ms and stale completions cannot clear a new pull",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-003"
+        },
+        {
+          "id": "MAP-26dece6fc9b0",
+          "line": 92,
+          "kind": "reviewed-selector",
+          "name": "cached worker rows remain during a failed refresh and a filter is not an empty fleet",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-003"
+        }
+      ],
+      "sha256": "a34d53bfbf2f7b6e79705ab2d868e6134303d89ce397561ba87ccc88e7c18258"
+    },
+    "mobileapp/src/state/AgentsContext.readState.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e3f062c180f1",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "a connected stream cannot establish an empty snapshot before its scoped read",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-001,RDR-002"
+        },
+        {
+          "id": "MAP-73646d97d363",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "bursty refreshes retain one trailing read and an owned refresh settles without waiting for future bursts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-001,RDR-002"
+        },
+        {
+          "id": "MAP-a47a81546af4",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "changed credentials never borrow a previous snapshot or admit a late retired response",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-001,RDR-002"
+        },
+        {
+          "id": "MAP-362630d8b2a2",
+          "line": 73,
+          "kind": "reviewed-selector",
+          "name": "a failed cached refresh preserves its last readable snapshot and timestamp",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-001,RDR-002"
+        },
+        {
+          "id": "MAP-208952908111",
+          "line": 82,
+          "kind": "reviewed-selector",
+          "name": "whole JSON-body timeout retires the real client read and an explicit retry can succeed",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDR-001,RDR-002"
+        }
+      ],
+      "sha256": "67b6266f2b6d010bed20972e12f621e72a9ce00648e803b572224ff60ed686bc"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

@@ -101,6 +101,14 @@ Every radar row starts with an agent avatar that tells you *which tool* it is (C
 
 ## 3. Radar interaction (the list)
 
+### Loading and genuine empty states
+
+The session list owns a current-client successful snapshot independently of stream connectivity. Before its first valid response, show the existing branded loader and **Loading sessions**; do not publish a zero tally or an empty tutorial. URL/credential changes cannot borrow a previous client's list, counts or errors. Demo explicitly declares its supplied snapshot.
+
+A successful unfiltered worker-empty list shows **Start with a session**, the existing gated New session action and the browser's stable short Dune opening-epigraph excerpt with [publisher attribution](https://sites.prh.com/dune/read-an-excerpt). It does not claim there are no underlying tmux panes. A waiting-only filter, access refusal, expired share, timeout or failed read never becomes this playful state. Error feedback stays concise and offers a 44pt retry/connection action; guests retain their owner-granted scope.
+
+Keep same-client cached data and last-update time during refresh/failure. Reject malformed successful bodies rather than inventing an empty list. One bounded read lane covers the full response for 15 seconds, coalesces an in-flight burst into one trailing refresh and retires late/cancelled answers. A manual pull ends when its own requested read settles, independent of later bursts; there is no decorative 600ms timer. Existing foreground/reconnect/idle cadence, two-401 confirmation, non-revoking403 behavior, badges and Live Activity rules stay unchanged. Both shells use the same reader/palette.
+
 ### Collapsible sections (must be discoverable)
 
 Every status section header is a tappable collapse bar. Discoverability is a hard requirement, so a small chevron on its own is not enough:

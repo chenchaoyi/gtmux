@@ -740,7 +740,8 @@ export class GtmuxClient {
     const r = await tfetch(`${this.base}/api/agents`, {headers: this.h(), ...(signal ? {signal} : {})});
     if (!r.ok) throw new ApiError(r.status, 'agents');
     const raw = await r.json();
-    return Array.isArray(raw) ? raw.map(toAgent) : [];
+    if (!Array.isArray(raw)) throw new Error('agents response is not a list');
+    return raw.map(toAgent);
   }
 
   // panes reads EVERY tmux pane (GET /api/panes, tiered-pane-control) — the superset

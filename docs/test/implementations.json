@@ -2192,10 +2192,12 @@
   },
   "mobileapp/src/api/client.test.ts": {
     "cases": [
-      "UR-002"
+      "UR-002",
+      "RDR-004"
     ],
     "selectors": [
-      "usage accepts a real empty report but keeps refusals, bad bodies and network failures"
+      "usage accepts a real empty report but keeps refusals, bad bodies and network failures",
+      "rejects a body that is not an array"
     ]
   },
   "mobileapp/src/api/conversation.test.ts": {
@@ -3063,6 +3065,48 @@
       "PCP-001 unknown message agent cannot borrow the current radar identity or offer a futile read",
       "PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",
       "PCP-001 switching message source and client retires the previous process read"
+    ]
+  },
+  "mobileapp/src/state/AgentsContext.readState.test.tsx": {
+    "cases": [
+      "RDR-001",
+      "RDR-002"
+    ],
+    "selectors": [
+      "a connected stream cannot establish an empty snapshot before its scoped read",
+      "bursty refreshes retain one trailing read and an owned refresh settles without waiting for future bursts",
+      "changed credentials never borrow a previous snapshot or admit a late retired response",
+      "a failed cached refresh preserves its last readable snapshot and timestamp",
+      "whole JSON-body timeout retires the real client read and an explicit retry can succeed"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.readState.test.tsx": {
+    "cases": [
+      "RDR-003"
+    ],
+    "selectors": [
+      "stream connection before the first result displays loading rather than zero or empty",
+      "confirmed empty is stable in ${variant} ${theme} ${lang}",
+      "failed and unavailable access reads never display a cheerful empty quote or owner creation for guests",
+      "a pull indicator follows the actual request beyond 600ms and stale completions cannot clear a new pull",
+      "cached worker rows remain during a failed refresh and a filter is not an empty fleet"
+    ]
+  },
+  "mobileapp/src/api/agentsRead.test.ts": {
+    "cases": [
+      "RDR-004"
+    ],
+    "selectors": [
+      "a real empty agents response is successful data and ordinary rows still map",
+      "a malformed successful agents body stays a read failure: %p"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.shareStale.test.tsx": {
+    "cases": [
+      "RDR-003"
+    ],
+    "selectors": [
+      "%s shows localized expired access only to stale guests"
     ]
   }
 }

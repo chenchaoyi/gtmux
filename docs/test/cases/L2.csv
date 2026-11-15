@@ -762,10 +762,13 @@ MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-con
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
+MAP-a5b3bb5a1d5d,L2,reviewed implementation,mobileapp/src/api/agentsRead.test.ts,10,reviewed-selector,a real empty agents response is successful data and ordinary rows still map,False,RDR-004
+MAP-5e41be7d3f1b,L2,reviewed implementation,mobileapp/src/api/agentsRead.test.ts,15,reviewed-selector,a malformed successful agents body stays a read failure: %p,False,RDR-004
 MAP-54a9492c8511,L2,reviewed implementation,mobileapp/src/api/client.restore.test.ts,11,reviewed-selector,preview and status are read only; start carries exact stable ID and revision,False,RSR-006
 MAP-80f11833eaaa,L2,reviewed implementation,mobileapp/src/api/client.restore.test.ts,20,reviewed-selector,normal 15s timeout is uncertain and never retries a mutation,False,RSR-006
 MAP-28339549d766,L2,reviewed implementation,mobileapp/src/api/client.restore.test.ts,25,reviewed-selector,"unsupported, malformed, foreign ID and typed conflicts never become success",False,RSR-006
 MAP-0d65b1b0bf00,L2,RN / mobile harness,mobileapp/src/api/client.test.ts,651,reviewed-selector,"usage accepts a real empty report but keeps refusals, bad bodies and network failures",False,UR-002
+MAP-2b86bce5e2ac,L2,RN / mobile harness,mobileapp/src/api/client.test.ts,131,reviewed-selector,rejects a body that is not an array,False,"UR-002,RDR-004"
 MAP-d269546f4a32,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,10,reviewed-selector,MSD-004 bounds a hung %s and never retries or accepts a late answer,False,MSD-004
 MAP-b95d01602bb2,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,29,reviewed-selector,"MSD-004 keeps exact receipts, legacy success and the server refusal",False,MSD-004
 LEG-81cfbfd439f8,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,21,test,same-name device choices expose full IDs and preserve the other filters,False,legacy-not-retrospectively-reviewed
@@ -1006,6 +1009,11 @@ LEG-50852e38e078,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.
 LEG-5d721affd782,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,115,it,draws the band for a single window too — one predictable tree,False,legacy-not-retrospectively-reviewed
 LEG-9bf974a93a06,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,121,it,still draws nothing when there are no windows at all,False,legacy-not-retrospectively-reviewed
 LEG-e3fa56652cd5,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,130,it,"is a runnable command, sigil included",False,legacy-not-retrospectively-reviewed
+MAP-b28728f9d63d,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,47,reviewed-selector,stream connection before the first result displays loading rather than zero or empty,False,RDR-003
+MAP-3cb5a05e3dd6,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,54,reviewed-selector,confirmed empty is stable in ${variant} ${theme} ${lang},False,RDR-003
+MAP-7ac4e613f331,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,69,reviewed-selector,failed and unavailable access reads never display a cheerful empty quote or owner creation for guests,False,RDR-003
+MAP-34a3f4f7a896,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,80,reviewed-selector,a pull indicator follows the actual request beyond 600ms and stale completions cannot clear a new pull,False,RDR-003
+MAP-26dece6fc9b0,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,92,reviewed-selector,cached worker rows remain during a failed refresh and a filter is not an empty fleet,False,RDR-003
 LEG-b897cb3494b1,L2,RN / mobile harness,mobileapp/src/screens/RadarPanel.shareStale.test.tsx,21,test.each(),%s shows localized expired access only to stale guests,True,legacy-not-retrospectively-reviewed
 MAP-7d46d9427e0a,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsEntry.test.tsx,17,reviewed-selector,owner server More offers restore and targets that server; guest does not,False,RSR-009
 MAP-da95b2a6169e,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx,35,reviewed-selector,RSR011 transient native read rejection cannot replace a saved pre-admission ID,False,RSR-011
@@ -1354,6 +1362,11 @@ LEG-26fdef392a94,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.te
 LEG-5eeb3f5fa726,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,40,test,a late response from the previous Mac cannot populate the new Mac,False,legacy-not-retrospectively-reviewed
 LEG-41532acf05f3,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,48,test,choices appear before probes; a late probe cannot undo a move,False,legacy-not-retrospectively-reviewed
 LEG-27e3a51521d5,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,57,test,guest/offline callers make no requests,False,legacy-not-retrospectively-reviewed
+MAP-e3f062c180f1,L2,reviewed implementation,mobileapp/src/state/AgentsContext.readState.test.tsx,39,reviewed-selector,a connected stream cannot establish an empty snapshot before its scoped read,False,"RDR-001,RDR-002"
+MAP-73646d97d363,L2,reviewed implementation,mobileapp/src/state/AgentsContext.readState.test.tsx,48,reviewed-selector,bursty refreshes retain one trailing read and an owned refresh settles without waiting for future bursts,False,"RDR-001,RDR-002"
+MAP-a47a81546af4,L2,reviewed implementation,mobileapp/src/state/AgentsContext.readState.test.tsx,60,reviewed-selector,changed credentials never borrow a previous snapshot or admit a late retired response,False,"RDR-001,RDR-002"
+MAP-362630d8b2a2,L2,reviewed implementation,mobileapp/src/state/AgentsContext.readState.test.tsx,73,reviewed-selector,a failed cached refresh preserves its last readable snapshot and timestamp,False,"RDR-001,RDR-002"
+MAP-208952908111,L2,reviewed implementation,mobileapp/src/state/AgentsContext.readState.test.tsx,82,reviewed-selector,whole JSON-body timeout retires the real client read and an explicit retry can succeed,False,"RDR-001,RDR-002"
 MAP-b48734ad467c,L2,reviewed implementation,mobileapp/src/state/ChatAppearancePreference.test.tsx,22,reviewed-selector,CAR-002,False,CAR-002
 MAP-114ecc94ce0f,L2,reviewed implementation,mobileapp/src/state/desktopReload.test.tsx,6,reviewed-selector,"CRX-002 external reload retains content, enforces parent deadline and retires old scope",False,CRX-002
 LEG-3f9ca980a593,L2,RN / mobile harness,mobileapp/src/trace/TraceModal.test.tsx,113,test,session name leads the heading; each expanded call opens its own fully wrapped input,False,legacy-not-retrospectively-reviewed
