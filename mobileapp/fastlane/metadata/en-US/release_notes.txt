@@ -1,6 +1,7 @@
-- Reload failed conversations with a clear button and visible progress.
-- Keep sent messages in place as their conversation history arrives, with shorter delivery status.
-- Read tool commands and results with less clutter; original arguments and full output remain available.
-- Show repeated launch processes with a count, and simplify empty-state messages.
-- Improve diagnosis of unlinked sessions and let verified current clients restore their own missing association.
-- Keep existing knowledge translations when a review changes only the original text.
+- Loading screens, buttons and inline indicators now share the three-pane gtmux animation.
+- Chat follows global Appearance settings: Light, Dark or System.
+- Choose several photos at once, edit each later, and see clearer upload progress.
+- Knowledge pages put core advice first, with history and record details available on demand.
+- Radar, conversations and HQ details now distinguish loading, empty and retry states.
+- Send receipts are quieter, and failed messages offer Retry or Restore draft.
+- Notification sync avoids duplicate requests, backs off unavailable routes, and lets you retry one Mac.

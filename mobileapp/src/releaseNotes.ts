@@ -12,6 +12,27 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.182',
+    en: [
+      '- Loading screens, buttons and inline indicators now share the three-pane gtmux animation.',
+      '- Chat follows global Appearance settings: Light, Dark or System.',
+      '- Choose several photos at once, edit each later, and see clearer upload progress.',
+      '- Knowledge pages put core advice first, with history and record details available on demand.',
+      '- Radar, conversations and HQ details now distinguish loading, empty and retry states.',
+      '- Send receipts are quieter, and failed messages offer Retry or Restore draft.',
+      '- Notification sync avoids duplicate requests, backs off unavailable routes, and lets you retry one Mac.',
+    ],
+    zh: [
+      '- 加载动画统一为 gtmux 三个方块依次变蓝。',
+      '- Chat 使用全局外观设置，支持浅色、深色和跟随系统。',
+      '- 支持一次选择多张照片，添加后可逐张编辑，上传进度更清楚。',
+      '- 知识详情优先展示核心建议，历史和记录详情按需展开。',
+      '- 会话列表、对话与 HQ 详情明确区分加载、空状态和重试。',
+      '- 发送状态更简洁，发送失败后可重试或恢复草稿。',
+      '- 通知同步减少重复请求，连接异常时延后重试，也可单独重试一台 Mac。',
+    ],
+  },
+  {
     version: '1.0.181',
     en: [
       '- Reload failed conversations with a clear button and visible progress.',
