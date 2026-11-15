@@ -20,7 +20,7 @@ afterEach(() => { act(() => tree?.unmount()); });
 
 test.each(['screen', 'sidebar'] as const)('%s shows localized expired access only to stale guests', async variant => {
   for (const lang of ['en', 'zh'] as const) {
-    const state = {agents: [], conn: 'live', isGuest: true, shareStale: true, refresh: jest.fn(),
+    const state = {read: {hasValue: true, refreshing: false, error: null}, agents: [], conn: 'live', isGuest: true, shareStale: true, refresh: jest.fn(),
       client: {host: jest.fn().mockResolvedValue({ok: false}), usage: jest.fn().mockResolvedValue(null), serverMode: jest.fn().mockResolvedValue(null)}};
     (useAgents as jest.Mock).mockImplementation(() => state);
     (useApp as jest.Mock).mockReturnValue({lang, pal: paletteFor('dark'), t: makeT(lang)});

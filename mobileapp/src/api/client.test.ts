@@ -128,9 +128,9 @@ describe('agents', () => {
     expect(init?.method).toBeUndefined(); // GET
   });
 
-  it('returns [] when the body is not an array', async () => {
+  it('rejects a body that is not an array', async () => {
     fetchMock.mockResolvedValueOnce(okJson({not: 'array'}));
-    expect(await client().agents()).toEqual([]);
+    await expect(client().agents()).rejects.toThrow('agents response is not a list');
   });
 
   it('throws on a non-ok response', async () => {

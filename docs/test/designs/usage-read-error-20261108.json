@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
-    "date": "2026-11-08",
+    "date": "2026-11-15",
     "decision": "Proceed with a phone Usage read and error-state repair",
-    "notes": "The supplied iPhone screenshot shows a blank Usage sheet with only Retrying. The actual 12:07 phone request reached GET /api/usage and returned HTTP 200 after 33.889 seconds; the phone retired the read at 15 seconds. A local phase probe attributed 14-24 seconds to full agent discovery, not limits, resource or daily history. Keep the established report semantics and allow this particular read to finish. Test the transport and RN component with synthetic responses. No installed phone/simulator, touch, VoiceOver, network route or release claim follows from these tests."
+    "notes": "The supplied iPhone screenshot shows a blank Usage sheet with only Retrying. The actual 12:07 phone request reached GET /api/usage and returned HTTP 200 after 33.889 seconds; the phone retired the read at 15 seconds. A local phase probe attributed 14-24 seconds to full agent discovery, not limits, resource or daily history. Keep the established report semantics and allow this particular read to finish. Test the transport and RN component with synthetic responses. No installed phone/simulator, touch, VoiceOver, network route or release claim follows from these tests. Fresh author review before Radar read-state edits to the mapped client.test.ts: UR-002 case and all usage/auth assertions stay unchanged. The separate old agents non-array=>empty assertion is intentionally replaced by rejection under reviewed RDR-004, because malformed data cannot establish an empty Radar. Valid empty array success remains required. No retrospective independent approval."
   },
   "cases": [
     {
@@ -51,5 +51,5 @@
       ]
     }
   ],
-  "seal": "e8e191d3fe1bba1bcb0d5b31b784be98f48b94d5bdcf496fca8c04651bdda772"
+  "seal": "71fb22fb5aac81c00ad4abb72154f5117e06c666c51de4da8bd13bd3ca008a54"
 }

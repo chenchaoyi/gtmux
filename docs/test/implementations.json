@@ -2194,10 +2194,12 @@
   },
   "mobileapp/src/api/client.test.ts": {
     "cases": [
-      "UR-002"
+      "UR-002",
+      "RDR-004"
     ],
     "selectors": [
-      "usage accepts a real empty report but keeps refusals, bad bodies and network failures"
+      "usage accepts a real empty report but keeps refusals, bad bodies and network failures",
+      "rejects a body that is not an array"
     ]
   },
   "mobileapp/src/api/conversation.test.ts": {
@@ -3059,10 +3061,14 @@
   },
   "mobileapp/src/screens/DetailSendRefused.test.tsx": {
     "cases": [
-      "CAR-003"
+      "CAR-003",
+      "SFR-008"
     ],
     "selectors": [
-      "retires the sent echo after a poll containing its prompt and later turns; it stays gone"
+      "retires the sent echo after a poll containing its prompt and later turns; it stays gone",
+      "any other refusal keeps its retry and does not refill the box",
+      "a pane not shared for typing (403): no pairing, no retry, the text back in the box",
+      "refused: pair again, no retry, and the text is back in the box"
     ]
   },
   "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
@@ -3188,6 +3194,150 @@
       "a higher current heading after historical subheadings keeps the whole body open",
       "nested history and code or quote heading lookalikes stay within history",
       "comment-containing source retains one Markdown scope: %s"
+    ]
+  },
+  "internal/server/send_failure_code_test.go": {
+    "cases": [
+      "SFR-002"
+    ],
+    "selectors": [
+      "TestSFR002SendFailureCodeBody",
+      "TestSFR002SendCodeCannotBypassAuthority"
+    ]
+  },
+  "mobileapp/src/api/sendFailureCode.test.ts": {
+    "cases": [
+      "SFR-003"
+    ],
+    "selectors": [
+      "SFR-003 keeps the optional known %s refusal",
+      "SFR-003 ignores unknown code %p and retains the legacy response",
+      "SFR-003 status %i takes priority over a question code"
+    ]
+  },
+  "mobileapp/src/ui/sendFailure.test.ts": {
+    "cases": [
+      "SFR-004"
+    ],
+    "selectors": [
+      "SFR-004 legacy refusal %s",
+      "an explicit question describes the last attempt and can be checked again after answering"
+    ]
+  },
+  "mobileapp/src/ui/SendFailedBar.recovery.test.tsx": {
+    "cases": [
+      "SFR-004"
+    ],
+    "selectors": [
+      "SFR-004 %s recovery is neutral, readable and exposes busy actions"
+    ]
+  },
+  "mobileapp/src/ui/useSendRecovery.test.tsx": {
+    "cases": [
+      "SFR-005"
+    ],
+    "selectors": [
+      "SFR-005 retry is synchronous, keeps its record visible and cannot replay a settled action",
+      "SFR-005 edits once and captured actions cannot cross a changed client or ABA scope"
+    ]
+  },
+  "mobileapp/src/screens/SendRecovery.test.tsx": {
+    "cases": [
+      "SFR-006"
+    ],
+    "selectors": [
+      "SFR-006 %s retries once with the same ID and retains visible busy feedback",
+      "SFR-006 %s failed retry updates its reason and Edit keeps a newer composer draft",
+      "SFR-006 %s old retry and late result cannot cross %s scope",
+      "SFR-006 %s status %i keeps authority refusal and restores text"
+    ]
+  },
+  "mobileapp/src/ui/Composer.restore.test.tsx": {
+    "cases": [
+      "SFR-007"
+    ],
+    "selectors": [
+      "SFR-007 restore appends once without replacing a newer draft or staged photos",
+      "SFR-007 empty recovery opens the editor, outranks a delayed stored draft and avoids duplicate restored text"
+    ]
+  },
+  "internal/app/phone_send_failure_test.go": {
+    "cases": [
+      "SFR-001"
+    ],
+    "selectors": [
+      "TestSFR001PhoneRefusalNeedsExplicitNativeQuestion"
+    ]
+  },
+  "mobileapp/src/screens/SendRecovery.authDraft.test.tsx": {
+    "cases": [
+      "SFR-008"
+    ],
+    "selectors": [
+      "SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once"
+    ]
+  },
+  "mobileapp/src/state/AgentsContext.readState.test.tsx": {
+    "cases": [
+      "RDR-001",
+      "RDR-002"
+    ],
+    "selectors": [
+      "a connected stream cannot establish an empty snapshot before its scoped read",
+      "bursty refreshes retain one trailing read and an owned refresh settles without waiting for future bursts",
+      "changed credentials never borrow a previous snapshot or admit a late retired response",
+      "a failed cached refresh preserves its last readable snapshot and timestamp",
+      "whole JSON-body timeout retires the real client read and an explicit retry can succeed"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.readState.test.tsx": {
+    "cases": [
+      "RDR-003"
+    ],
+    "selectors": [
+      "stream connection before the first result displays loading rather than zero or empty",
+      "confirmed empty is stable in ${variant} ${theme} ${lang}",
+      "failed and unavailable access reads never display a cheerful empty quote or owner creation for guests",
+      "a pull indicator follows the actual request beyond 600ms and stale completions cannot clear a new pull",
+      "cached worker rows remain during a failed refresh and a filter is not an empty fleet"
+    ]
+  },
+  "mobileapp/src/api/agentsRead.test.ts": {
+    "cases": [
+      "RDR-004"
+    ],
+    "selectors": [
+      "a real empty agents response is successful data and ordinary rows still map",
+      "a malformed successful agents body stays a read failure: %p"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.shareStale.test.tsx": {
+    "cases": [
+      "RDR-003"
+    ],
+    "selectors": [
+      "%s shows localized expired access only to stale guests"
+    ]
+  },
+  "mobileapp/src/screens/SplitShell.readState.test.tsx": {
+    "cases": [
+      "RDRC-001"
+    ],
+    "selectors": [
+      "regular main respects loading and timeout in ${lang} ${theme}",
+      "hidden sidebar does not turn an unfinished main read into an empty fleet",
+      "unselected access and expired guest states retain shared guidance and no owner creation",
+      "only a successful empty main welcomes creation while a populated roster keeps automatic selection"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx": {
+    "cases": [
+      "RDRC-002"
+    ],
+    "selectors": [
+      "a cached read failure remains visible when SSE reconnects before the next result: %s",
+      "changing the client drops cached failure and rejects a late old reread",
+      "cached access failure stays visible across reconnect with the existing %s authority"
     ]
   },
   "mobileapp/src/ui/LoadingMark.motion.test.tsx": {

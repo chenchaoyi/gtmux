@@ -1,108 +1,57 @@
-// SendFailedBar — "that didn't go through", with the text kept and the one action that
-// fits the reason.
-//
-// POST /api/send can refuse: the server pastes into the pane's input box and confirms
-// the FULL message landed before pressing Enter, and when it can't confirm it declines
-// to submit a draft it can't vouch for. That refusal used to be invisible on the phone —
-// the message looked sent while it sat unsubmitted in the box on the server, and the only
-// way to find out was to go look. A send that didn't happen has to say so, and it has to
-// keep what you wrote: retyping a long message because the app silently dropped it is
-// the worst possible ending.
-
 import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {ERRORED_COLOR, Palette} from './theme';
+import {BRAND, type Palette} from './theme';
 import {classifySendFailure, failureCopy} from './sendFailure';
+import type {SendFailureCode} from '../api/sendFailureCode';
 
-const hit = {top: 8, bottom: 8, left: 8, right: 8};
-
-export function SendFailedBar({
-  text,
-  reason,
-  status,
-  pal,
-  lang,
-  onRetry,
-  onSendAnyway,
-  onBackToRadar,
-  onPairAgain,
-  onDismiss,
-}: {
-  text: string;
-  /** The server's own words, when the client kept them. */
-  reason?: string;
-  /** The HTTP status of the refusal, when there was one (401/403: pair again). */
-  status?: number;
-  pal: Palette;
-  lang: string;
-  onRetry: () => void;
-  onSendAnyway?: () => void;
-  onBackToRadar?: () => void;
-  onPairAgain?: () => void;
-  onDismiss: () => void;
+/** Recovery for one attempted send, beside the composer that retains its content. */
+export function SendFailedBar({text, reason, status, code, retrying = false, canEdit = false, canRetry = true, pal, lang,
+  onRetry, onSendAnyway, onBackToRadar, onPairAgain, onDismiss}: {
+  text: string; reason?: string; status?: number; code?: SendFailureCode; retrying?: boolean; canEdit?: boolean; canRetry?: boolean;
+  pal: Palette; lang: string; onRetry: () => void; onSendAnyway?: () => void;
+  onBackToRadar?: () => void; onPairAgain?: () => void; onDismiss: () => void;
 }) {
   const zh = lang === 'zh';
-  // Which refusal this is decides both the sentence and the single action beside it
-  // (ui/sendFailure). One bar, one place on screen, three different next moves.
-  const copy = failureCopy(classifySendFailure(reason ?? '', status), zh);
+  const copy = failureCopy(classifySendFailure(reason ?? '', status, code), zh);
   if (!copy.show) return null;
-  const act =
-    copy.action === 'send-anyway'
-      ? onSendAnyway
-      : copy.action === 'back-to-radar'
-      ? onBackToRadar
-      : copy.action === 'pair-again'
-      ? onPairAgain
-      : onRetry;
+  const act = copy.action === 'send-anyway' ? onSendAnyway
+    : copy.action === 'back-to-radar' ? onBackToRadar
+    : copy.action === 'pair-again' ? onPairAgain
+    : copy.action === 'retry' && canRetry ? onRetry : undefined;
   return (
-    <View testID="send-failed-bar" style={[styles.bar, {backgroundColor: pal.surface, borderColor: ERRORED_COLOR}]}>
+    <View testID="send-failed-bar" style={[styles.bar, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
       <View style={styles.body}>
-        <Text style={[styles.title, {color: ERRORED_COLOR}]} numberOfLines={3}>
-          {copy.title}
+        <Text accessibilityLiveRegion="polite" style={[styles.title, {color: pal.fg}]} numberOfLines={2}>
+          {retrying ? (zh ? '正在重试…' : 'Retrying…') : copy.title}
         </Text>
-        {/* Show what is being held, so "retry" is a promise the user can check. */}
-        <Text style={[styles.preview, {color: pal.fg3}]} numberOfLines={1}>
-          {text}
-        </Text>
+        <Text style={[styles.preview, {color: pal.fg2}]} numberOfLines={1}>{text}</Text>
       </View>
-      {act && copy.action !== 'none' && (
-        <TouchableOpacity
-          testID={`send-failed-${copy.action}`}
-          onPress={act}
-          hitSlop={hit}
-          style={[styles.action, {borderColor: pal.divider}]}>
-          <Text style={[styles.actionText, {color: pal.fg}]}>{copy.actionLabel}</Text>
+      <View style={styles.actions}>
+        {act && <TouchableOpacity testID={`send-failed-${copy.action}`} accessibilityRole="button"
+          accessibilityState={{busy: retrying, disabled: retrying}} disabled={retrying}
+          onPress={() => {if (!retrying) act();}} style={styles.action}>
+          <Text style={[styles.actionText, {color: retrying ? pal.fg3 : BRAND}]}>
+            {retrying ? (zh ? '重试中' : 'Retrying') : copy.actionLabel}
+          </Text>
+        </TouchableOpacity>}
+        <TouchableOpacity testID="send-failed-edit" accessibilityRole="button"
+          accessibilityLabel={canEdit ? (zh ? '编辑未发送内容' : 'Edit unsent message') : (zh ? '关闭发送提示' : 'Dismiss send notice')}
+          accessibilityState={{disabled: retrying}} disabled={retrying}
+          onPress={() => {if (!retrying) onDismiss();}} style={styles.action}>
+          <Text style={[styles.edit, {color: pal.fg2}]}>{canEdit ? (zh ? '编辑' : 'Edit') : (zh ? '关闭' : 'Close')}</Text>
         </TouchableOpacity>
-      )}
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel={zh ? '关闭发送提示' : 'Dismiss send notice'}
-        onPress={onDismiss}
-        style={styles.dismiss}>
-        <Text style={[styles.close, {color: pal.fg3}]}>×</Text>
-      </TouchableOpacity>
+      </View>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
-  bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginHorizontal: 10,
-    marginTop: 8,
-    marginBottom: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  body: {flex: 1},
-  title: {fontSize: 12, lineHeight: 18, fontWeight: '600'},
-  preview: {fontSize: 11, lineHeight: 16, marginTop: 4},
-  action: {paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: StyleSheet.hairlineWidth},
-  actionText: {fontSize: 12, fontWeight: '600'},
-  dismiss: {minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center'},
-  close: {fontSize: 16, lineHeight: 22},
+  bar: {flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 10, marginTop: 8, marginBottom: 6,
+    paddingLeft: 12, paddingRight: 4, paddingVertical: 12, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth},
+  body: {flex: 1, minWidth: 0},
+  title: {fontSize: 13, lineHeight: 18, fontWeight: '500'},
+  preview: {fontSize: 12, lineHeight: 17, marginTop: 3},
+  actions: {flexDirection: 'row', alignItems: 'center', flexShrink: 0},
+  action: {minWidth: 44, minHeight: 44, paddingHorizontal: 8, justifyContent: 'center', alignItems: 'center'},
+  actionText: {fontSize: 13, fontWeight: '600'},
+  edit: {fontSize: 13},
 });

@@ -11,14 +11,14 @@
 // small floating button over the main pane brings it back.
 
 import React, {useEffect, useState} from 'react';
-import {StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import {StyleSheet, TouchableOpacity, View, useWindowDimensions} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {NavigationContext} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {agentId, paneRowToAgent} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
 import {useApp} from '../state/AppContext';
 import {initialSelection, useWorkspace} from '../state/WorkspaceContext';
-import {BrandMark} from '../ui/BrandMark';
 import {SidebarIcon} from '../ui/Icons';
 import {hqInspectorFits, sidebarWidth} from '../ui/layout';
 import {TestIds} from '../constants/testIds';
@@ -27,12 +27,14 @@ import {DetailView} from './DetailScreen';
 import {HQView} from './HQScreen';
 import {PaneBrowserView} from './PaneBrowserScreen';
 import {DemoChrome, RadarPanel} from './RadarPanel';
+import {RadarReadState} from './RadarReadState';
 
 const SIDEBAR_KEY = 'workspace.sidebarHidden';
 
 export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
-  const {agents} = useAgents();
-  const {t, pal, lang} = useApp();
+  const {agents, read, conn, isGuest, shareStale, refresh} = useAgents();
+  const {pal, lang} = useApp();
+  const navigation = React.useContext(NavigationContext) as {navigate: (route: string) => void} | undefined;
   const {selection, select} = useWorkspace();
   const {width} = useWindowDimensions();
   const [hidden, setHidden] = useState(false);
@@ -79,13 +81,11 @@ export function SplitShell({demo}: {demo?: DemoChrome} = {}) {
     main = <PaneBrowserView key="panes" layout="regular" />;
   } else {
     main = (
-      <View style={styles.mainEmpty}>
-        <BrandMark size={56} neutral={pal.fg3} />
-        <Text style={[styles.mainEmptyText, {color: pal.fg3}]}>{t('noAgents')}</Text>
-        <Text style={[styles.mainEmptyHint, {color: pal.fg3}]}>
-          {lang === 'zh' ? '在服务器上启动一个 coding agent 就会出现在这里' : 'Start a coding agent on your server and it shows up here'}
-        </Text>
-      </View>
+      <RadarReadState read={read ?? {hasValue: false, refreshing: false, error: null}} conn={conn ?? 'connecting'}
+        isGuest={isGuest} staleShare={shareStale} filtered={false} lang={lang} pal={pal} demo={!!demo}
+        hasSessions={agents.length > 0} showQuote={false}
+        onRetry={() => {void refresh();}} onConnections={navigation ? () => navigation.navigate('Servers') : undefined}
+        onShowAll={() => {}} />
     );
   }
 
@@ -123,7 +123,4 @@ const styles = StyleSheet.create({
     position: 'absolute', left: 10, top: 10, width: 36, height: 36, borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', zIndex: 20,
   },
-  mainEmpty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40},
-  mainEmptyText: {fontSize: 15, fontWeight: '600', marginTop: 14},
-  mainEmptyHint: {fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 18},
 });

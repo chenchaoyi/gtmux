@@ -101,6 +101,16 @@ Every radar row starts with an agent avatar that tells you *which tool* it is (C
 
 ## 3. Radar interaction (the list)
 
+### Loading and genuine empty states
+
+The session list owns a current-client successful snapshot independently of stream connectivity. Before its first valid response, show the existing branded loader and **Loading sessions**; do not publish a zero tally or an empty tutorial. URL/credential changes cannot borrow a previous client's list, counts or errors. Demo explicitly declares its supplied snapshot.
+
+A successful unfiltered worker-empty list shows **Start with a session**, the existing gated New session action and the browser's stable short Dune opening-epigraph excerpt with [publisher attribution](https://sites.prh.com/dune/read-an-excerpt). It does not claim there are no underlying tmux panes. A waiting-only filter, access refusal, expired share, timeout or failed read never becomes this playful state. Error feedback stays concise and offers a 44pt retry/connection action; guests retain their owner-granted scope.
+
+Keep same-client cached data and last-update time during refresh/failure. Reject malformed successful bodies rather than inventing an empty list. One bounded read lane covers the full response for 15 seconds, coalesces an in-flight burst into one trailing refresh and retires late/cancelled answers. A manual pull ends when its own requested read settles, independent of later bursts; there is no decorative 600ms timer. Existing foreground/reconnect/idle cadence, two-401 confirmation, non-revoking403 behavior, badges and Live Activity rules stay unchanged. Both shells use the same reader/palette.
+
+The regular shell's unselected main area consumes the same read state, even with its sidebar hidden. Only a successful list can show the welcome or **Select a session**; the sidebar keeps the excerpt so the main area does not repeat it. Cached list-read errors retain their notice, last-update time and applicable action across SSE reconnection until a current read succeeds. A malformed response says it could not update sessions, rather than asserting a network outage; an active retry shows **Updating…** and disables duplicate taps.
+
 ### Collapsible sections (must be discoverable)
 
 Every status section header is a tappable collapse bar. Discoverability is a hard requirement, so a small chevron on its own is not enough:
@@ -245,6 +255,12 @@ The card was painted `bg`, which is the page colour. On a dark page the scrim ca
 The palette therefore has a third neutral step. The page is `bg`, a sheet is `surface`, and a control inside a sheet is `raised` (`#2A2A2E` dark, `#F2F2F7` light). Measured on an iPhone 17 Pro: the page behind the scrim reads luminance 6, the sheet 28, a control in it 42. Every bottom sheet follows this (long-press, snippets, history, attach). A card that sits on the PAGE keeps `surface`, which is what `raised` is a step above.
 
 The second defect: `maxHeight: '82%'` resolved against the card's own wrapper rather than the screen, because the wrapper carrying the entrance transform has no height of its own. The card came out at 82% of its own content and floated 77pt above the bottom edge, clipping its last action. A sheet's cap is in POINTS now, from `useWindowDimensions`. The rule generalises: a percentage height means what you expect only when every ancestor up to the screen has a definite height, and an animation wrapper usually does not.
+
+### Send recovery
+
+Detail and HQ use one compact neutral recovery row beside the composer: a short cause, one-line held message and 44pt actions. Avoid a large warning frame or a permanent claim that the session is waiting. Only a known native question code identifies a reply requirement from the last attempt; older generic “asking” text and unavailable input state stay neutral. HTTP 401/403 retain their distinct pairing/input-access recovery.
+
+An explicit Retry keeps the row mounted with Retrying and disabled actions until the actual result. It reuses the original send ID; captured duplicate or stale callbacks cannot send again, change target or restore another session. Edit clears the old notice and opens the held message in the composer, appending to newer text while preserving staged attachments. Authority refusals use this same append-only restoration, and editing an already restored message only focuses the editor without appending again. The row offers no force-send or automatic replay. A history-only view offers editing without a retry action. Scope changes hide and invalidate temporary recovery immediately; existing draft, native input and receipt guards remain.
 
 ### Chat send confirmation
 
