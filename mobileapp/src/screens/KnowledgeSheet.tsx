@@ -33,14 +33,14 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  Linking,
 } from 'react-native';
 import {KnowledgeAct, KnowledgeEntry, KnowledgeIndex} from '../api/client';
-import {MarkdownView, MdColors} from '../ui/MarkdownView';
+import {KnowledgeEntryReader} from './KnowledgeEntryReader';
+import {useKnowledgeEntryRead} from './useKnowledgeEntryRead';
 import {ERRORED_COLOR, Palette, StatusColor} from '../ui/theme';
 import {relTime} from './hqZones';
 import {SizeClass} from '../ui/layout';
-import {KnowledgeView, buildKnowledgeView, entriesOfTopic, landPrompt, withdrawPrompt, carryPrompt, actsFor, actButtonLabel, axesLine, matchEntries, provenanceOf, retirePrompt, splitTitleKey, resolveEntry, displayTitle} from './knowledgeModel';
+import {KnowledgeView, buildKnowledgeView, entriesOfTopic, landPrompt, withdrawPrompt, carryPrompt, matchEntries, retirePrompt, splitTitleKey, displayTitle} from './knowledgeModel';
 import {MODAL_ORIENTATIONS} from '../ui/modalOrientations';
 
 /**
@@ -68,7 +68,7 @@ type Pane =
   | {kind: 'topic'; name: string}
   | {kind: 'entry'; id: string; from: {kind: 'index'} | {kind: 'topic'; name: string}};
 type PendingKind = 'land' | 'retire' | 'withdraw' | 'carry';
-type Pending = {kind: PendingKind; id: string; revision?: string} | null;
+type Pending = {kind: PendingKind; id: string; revision?: string; scope?: object} | null;
 
 /** How many entries an expanded topic shows before "All N". A glance, not the list. */
 const TOPIC_PEEK = 5;
@@ -82,7 +82,9 @@ export interface KnowledgeSheetProps {
   pal: Palette;
   zh: boolean;
   onClose: () => void;
-  loadEntry: (id: string) => Promise<KnowledgeEntry | null>;
+  loadEntry: (id: string, signal?: AbortSignal) => Promise<KnowledgeEntry | null>;
+  /** The actual API client identity; changing servers retires the reader and pending form. */
+  readScope?: object;
   /** Open straight onto this entry (hq-acts-readable: an act's row leads here). `at` changes per request. */
   openAt?: {id: string; at: number} | null;
   act: (a: KnowledgeAct) => Promise<{ok: true} | {ok: false; error: string}>;
@@ -90,18 +92,15 @@ export interface KnowledgeSheetProps {
   layout?: SizeClass;
 }
 
-const mdColors = (pal: Palette): MdColors => ({
-  text: pal.fg, dim: pal.fg3, code: pal.fg, codeBg: pal.surface, border: pal.divider, link: pal.fg2,
-});
-
-export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadEntry, act, layout = 'compact', openAt, indexLoading = false, indexError = false}: KnowledgeSheetProps) {
+export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadEntry, act, layout = 'compact', openAt, indexLoading = false, indexError = false, readScope}: KnowledgeSheetProps) {
   // The regular shell (D11): the list stays on the left and the open entry reads on the
   // right, the menu-bar window's layout — no back button, no pane swap.
   const regular = layout === 'regular';
   const t = (en: string, cn: string) => (zh ? cn : en);
   const [pane, setPane] = React.useState<Pane>({kind: 'index'});
-  const [entry, setEntry] = React.useState<KnowledgeEntry | null>(null);
-  const [loading, setLoading] = React.useState(false);
+  const {value: entry, loading, error: entryError, read: readEntry, clear: clearEntry} = useKnowledgeEntryRead(loadEntry, readScope, visible);
+  const currentScope = React.useRef({scope: readScope, visible, entry: pane.kind === 'entry' ? pane.id : ''});
+  currentScope.current = {scope: readScope, visible, entry: pane.kind === 'entry' ? pane.id : ''};
   const [pending, setPending] = React.useState<Pending>(null);
   // What someone typed. Non-empty replaces the index with results — the index IS the
   // browse affordance, so showing both would be two answers to one question.
@@ -137,15 +136,12 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
 
   // Where each pane was scrolled to, so coming back puts you where you left.
   //
-  // One ScrollView renders all three panes, so switching pane keeps an offset that
-  // belongs to a list of a different length: you came back from an entry and landed
-  // somewhere arbitrary. Offsets are keyed by pane and restored on the frame after the
-  // new children are laid out — restoring before layout scrolls a list that is not there
-  // yet and silently does nothing.
+  // Index/topic offsets survive the dedicated entry reader. The regular list keeps
+  // its own offset while another entry is chosen in the adjacent reading column.
   const scroller = React.useRef<ScrollView>(null);
   const offsets = React.useRef<Record<string, number>>({});
   const paneKey = (p: Pane) => (p.kind === 'topic' ? 'topic:' + p.name : p.kind);
-  const here = paneKey(pane);
+  const here = paneKey(regular && pane.kind === 'entry' ? pane.from : pane);
   React.useEffect(() => {
     const y = offsets.current[here] ?? 0;
     const id = requestAnimationFrame(() => scroller.current?.scrollTo({y, animated: false}));
@@ -156,8 +152,9 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   // What the list column shows on the regular shell: the pane an entry was opened FROM.
   const listPane: Pane = pane.kind === 'entry' ? pane.from : pane;
   const goBack = React.useCallback(() => {
+    clearEntry();
     setPane(p => (p.kind === 'entry' ? p.from : {kind: 'index'}));
-  }, []);
+  }, [clearEntry]);
 
   // Which topics are expanded in the index. A topic is a list you want to glance into,
   // and drilling in for a look cost a screen change and lost your place in the index.
@@ -173,6 +170,8 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   // Opening the sheet always starts at the top. Resuming where a previous visit left off
   // would put a reader inside one entry with no memory of why.
   React.useEffect(() => {
+    clearEntry();
+    setPending(null);
     if (!visible) return;
     setPane({kind: 'index'});
     setQuery('');
@@ -180,18 +179,14 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
     setPending(null);
     setError(null);
     setDone(null);
-  }, [visible]);
+  }, [visible, readScope, clearEntry]);
 
   const openEntry = React.useCallback(
     async (id: string) => {
-      setPane(prev => ({kind: 'entry', id, from: prev.kind === 'topic' ? {kind: 'topic', name: prev.name} : {kind: 'index'}}));
-      setEntry(null);
-      setLoading(true);
-      const e = await loadEntry(id);
-      setEntry(e);
-      setLoading(false);
+      setPane(prev => ({kind: 'entry', id, from: prev.kind === 'entry' ? prev.from : prev.kind === 'topic' ? {kind: 'topic', name: prev.name} : {kind: 'index'}}));
+      readEntry(id);
     },
-    [loadEntry],
+    [readEntry],
   );
 
   React.useEffect(() => {
@@ -199,7 +194,8 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
   }, [openAt?.at, visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = React.useCallback(async () => {
-    if (!pending || submitting.current) return;
+    if (!pending || pending.scope !== readScope || submitting.current
+      || !currentScope.current.visible || currentScope.current.scope !== readScope || currentScope.current.entry !== pending.id) return;
     // carry needs no text: the promotion already decided; the bar only asks "now?".
     if (pending.kind !== 'carry' && draft.trim() === '') return;
     const a: KnowledgeAct =
@@ -215,6 +211,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
     let applied = false;
     try {
     const r = await act(a);
+    if (!currentScope.current.visible || currentScope.current.scope !== readScope || currentScope.current.entry !== pending.id) return;
     if (!r.ok) {
       // The server's own words. "has no pending promotion to land" tells the reader what
       // to do; a generic failure throws that away.
@@ -233,23 +230,23 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           : zh ? '已标记为不再适用' : 'Marked as no longer applicable',
     );
     // A retired entry is gone from the live set, so there is nothing left to look at.
-    if (pending.kind === 'retire') setPane({kind: 'index'});
-    else {
-      setLoading(true);
-      setEntry(await loadEntry(pending.id));
-      setLoading(false);
-    }
+    if (pending.kind === 'retire') {clearEntry(); setPane({kind: 'index'});}
+    else readEntry(pending.id, true);
     } catch {
+      if (!currentScope.current.visible || currentScope.current.scope !== readScope || currentScope.current.entry !== pending.id) return;
       if (applied) setDone(zh ? '应用记录已保存，内容暂未刷新，请重新打开条目。' : 'Application saved. Reopen the entry to refresh its content.');
       else setError(zh ? '请求未完成，请先刷新核对记录，再决定是否重试。' : 'The request did not complete. Refresh and check the record before retrying.');
     } finally {
       submitting.current = false;
-      setLoading(false);
       setBusy(false);
     }
-  }, [act, draft, loadEntry, pending, zh]);
+  }, [act, draft, pending, zh, readScope, clearEntry, readEntry]);
 
   const ageOf = (secs?: number) => (secs ? relTime(secs, nowSecs) + (zh ? '前' : ' ago') : '');
+  const activePending = pending && pending.scope === readScope && pane.kind === 'entry' && pending.id === pane.id ? pending : null;
+  const reader = <KnowledgeEntryReader entry={entry} loading={loading} error={entryError} pal={pal} zh={zh} scope={readScope}
+    actionPending={!!activePending} ageOf={ageOf} onRetry={() => {if (pane.kind === 'entry') readEntry(pane.id, true);}}
+    onAct={(kind, id, revision) => {setPending({kind, id, revision, scope: readScope}); setDraft(''); setError(null);}} />;
 
   return (
     <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -354,29 +351,15 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           )}
         </ScrollView>
             </View>
-            <ScrollView keyboardShouldPersistTaps="handled" style={styles.entryCol} contentContainerStyle={styles.body}>
-              {pane.kind === 'entry' ? (
-                <EntryPane
-              entry={entry}
-              loading={loading}
-              pal={pal}
-              zh={zh}
-              t={t}
-              ageOf={ageOf}
-              onAct={(kind, id) => {
-                setPending({kind, id, revision: entry?.revision});
-                setDraft('');
-                setError(null);
-              }}
-            />
-              ) : (
+            <View style={styles.entryCol}>
+              {pane.kind === 'entry' ? reader : (
                 <View style={styles.emptyBox}>
                   <Text style={[styles.empty, {color: pal.fg3}]}>{t('Pick an entry to read it here.', '选一条，在这里读。')}</Text>
                 </View>
               )}
-            </ScrollView>
+            </View>
           </View>
-        ) : (
+        ) : pane.kind === 'entry' ? reader : (
         <ScrollView
           ref={scroller}
           keyboardShouldPersistTaps="handled"
@@ -412,28 +395,13 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
           {pane.kind === 'topic' && (
             <EntryList entries={entriesOfTopic(view, pane.name)} pal={pal} zh={zh} ageOf={ageOf} onOpen={openEntry} />
           )}
-          {pane.kind === 'entry' && (
-            <EntryPane
-              entry={entry}
-              loading={loading}
-              pal={pal}
-              zh={zh}
-              t={t}
-              ageOf={ageOf}
-              onAct={(kind, id) => {
-                setPending({kind, id, revision: entry?.revision});
-                setDraft('');
-                setError(null);
-              }}
-            />
-          )}
         </ScrollView>
         )}
 
-        {pending ? (
+        {activePending ? (
           <ActBar
             bottom={kbHeight}
-            kind={pending.kind}
+            kind={activePending.kind}
             busy={busy}
             pal={pal}
             zh={zh}
@@ -657,92 +625,6 @@ function EntryList({
   );
 }
 
-/** One entry: its body, where it came from, and the two things you can do to it. */
-function EntryPane({
-  entry, loading, pal, zh, t, ageOf, onAct,
-}: {
-  entry: KnowledgeEntry | null;
-  loading: boolean;
-  pal: Palette;
-  zh: boolean;
-  t: (en: string, cn: string) => string;
-  ageOf: (s?: number) => string;
-  onAct: (kind: PendingKind, id: string) => void;
-}) {
-  const [detailsOpen, setDetailsOpen] = React.useState(false);
-  React.useEffect(() => setDetailsOpen(false), [entry?.id]);
-  if (loading) return <ActivityIndicator style={styles.spinner} color={pal.fg3} />;
-  if (!entry) {
-    return (
-      <View style={styles.emptyBox}>
-        <Text style={[styles.empty, {color: pal.fg3}]}>{t('This entry could not be read. Go back and try again.', '暂时无法读取这条知识，请返回列表后重试。')}</Text>
-      </View>
-    );
-  }
-  const prov = provenanceOf(entry, zh);
-  const use = knowledgeUsage(entry, zh);
-  return (
-    <View style={styles.entry}>
-      <EntryTitle
-        title={displayTitle(entry, zh)}
-        id={entry.id}
-        pal={pal}
-        style={[styles.entryTitle, {color: pal.fg}]}
-        keyStyle={styles.titleKeyBig}
-      />
-      <Text style={[styles.entryMeta, {color: pal.fg3}]}>
-        {knowledgeTopic(entry.topic, zh)} · {ageOf(entry.at)}
-      </Text>
-      {!!axesLine(entry, zh) && (
-        <Text testID="knowledge-axes" style={[styles.entryMeta, {color: pal.fg2}]}>
-          {axesLine(entry, zh)}
-        </Text>
-      )}
-
-      <View testID="knowledge-use-summary" style={{gap: 5, marginBottom: 12}}>
-        <Text style={[styles.promoText, {color: pal.fg}]}>{t('Use: ', '使用方式：')}{use.line}</Text>
-        <Text style={[styles.entryMeta, {color: pal.fg2}]}>{use.explanation}</Text>
-        {!!entry.audience_repo && <Text style={[styles.entryMeta, {color: pal.fg3}]}>{entry.audience_repo}</Text>}
-      </View>
-      {!!resolveEntry(entry, zh).body && (
-        <View style={styles.entryBody}>
-          <MarkdownView source={resolveEntry(entry, zh).body!} colors={mdColors(pal)} fontSize={13.5} selectable calmEmphasis />
-        </View>
-      )}
-
-      <TouchableOpacity testID="knowledge-record-details" accessibilityRole="button"
-        accessibilityState={{expanded: detailsOpen}} onPress={() => setDetailsOpen(o => !o)}
-        style={{minHeight: 44, justifyContent: 'center'}}>
-        <Text style={[styles.entryMeta, {color: pal.fg2}]}>{detailsOpen ? '⌃ ' : '⌄ '}{t('Record details', '记录详情')}</Text>
-      </TouchableOpacity>
-      {detailsOpen && <View style={{gap: 5, paddingBottom: 12}}>
-        <Text selectable style={[styles.entryMeta, {color: pal.fg3}]}>{entry.id}</Text>
-        {!!prov && <Text style={[styles.entryMeta, {color: pal.fg3}]}>{prov}</Text>}
-        {!!entry.promote_why && <Text style={[styles.entryMeta, {color: pal.fg3}]}>{t('Reason: ', '使用原因：')}{entry.promote_why}</Text>}
-        {!!entry.landed_ref && <Text selectable style={[styles.entryMeta, {color: pal.fg3}]}>{t('Recorded destination: ', '应用记录：')}{entry.landed_ref}</Text>}
-        {!!entry.promote_target && <Text style={[styles.entryMeta, {color: pal.fg3}]}>{t('Earlier destination: ', '原计划位置：')}{entry.promote_target}</Text>}
-      </View>}
-      <View style={[styles.actions, {borderTopColor: pal.divider}]}>
-        {/* The exit its AUDIENCE has (actsFor): gtmux carries hq / machine / repo, a person
-            opens the issue for everyone, and "It no longer holds…" names what retiring
-            means — the lesson stopped being true, which is what the bar then asks about. */}
-        {actsFor(entry).map(a => (
-          <TouchableOpacity accessibilityRole="button"
-            key={a.kind}
-            testID={`knowledge-act-${a.kind}`}
-            activeOpacity={0.6}
-            onPress={() => (a.kind === 'feedback' ? Linking.openURL(a.url) : onAct(a.kind, entry.id))}
-            style={[styles.action, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-            <Text style={[styles.actionText, {color: a.kind === 'retire' ? ERRORED_COLOR : pal.fg}]}>
-              {actButtonLabel(a, zh)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    </View>
-  );
-}
-
 /** The one line of text an action needs, asked for where the action was tapped. */
 function ActBar({
   kind, pal, zh, t, draft, error, bottom, busy, onDraft, onCancel, onSubmit,
@@ -854,7 +736,6 @@ const styles = StyleSheet.create({
   cardTitle: {fontSize: 14.5, fontWeight: '600', lineHeight: 20},
   cardAge: {fontSize: 11, fontWeight: '600'},
   titleKey: {fontFamily: 'Menlo', fontSize: 10.5, lineHeight: 15, marginBottom: 1},
-  titleKeyBig: {fontFamily: 'Menlo', fontSize: 12, lineHeight: 17, marginBottom: 2},
   cardWhy: {fontSize: 12.5, lineHeight: 18},
   cardTarget: {fontSize: 12},
 
@@ -868,22 +749,6 @@ const styles = StyleSheet.create({
   emptyBox: {padding: 24},
   empty: {fontSize: 13.5, lineHeight: 20, textAlign: 'center'},
   spinner: {marginTop: 28},
-
-  entry: {paddingHorizontal: 14, paddingTop: 14},
-  entryTitle: {fontSize: 17, fontWeight: '700', lineHeight: 23},
-  entryMeta: {fontSize: 11.5, marginTop: 5},
-  entryBody: {marginTop: 14},
-  promoBox: {marginTop: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, padding: 11, gap: 4},
-  promoLabel: {fontSize: 12, fontWeight: '700'},
-  promoText: {fontSize: 12.5, lineHeight: 18},
-  landed: {fontSize: 12.5, fontWeight: '600', marginTop: 10},
-
-  // The row WRAPS: an everyone promotion offers four acts, and four in one row folded
-  // "Withdraw the promotion…" onto three lines (measured on the simulator, 2026-09-12).
-  // Two to a row keeps every label on one or two lines; a lone last button widens.
-  actions: {flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 20, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth},
-  action: {flexGrow: 1, flexBasis: '45%', borderWidth: StyleSheet.hairlineWidth, borderRadius: 10, paddingVertical: 11, alignItems: 'center'},
-  actionText: {fontSize: 13.5, fontWeight: '600'},
 
   actBar: {paddingHorizontal: 14, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, gap: 7},
   actTitle: {flex: 1, fontSize: 14, fontWeight: '700'},

@@ -2368,10 +2368,32 @@
   },
   "mobileapp/src/screens/KnowledgeSheet.test.tsx": {
     "cases": [
-      "KBCARRIER-REVISION"
+      "KBCARRIER-REVISION",
+      "KRD-003",
+      "KRD-004"
     ],
     "selectors": [
-      "landing preserves the viewed revision even when the entry changes during confirmation"
+      "landing preserves the viewed revision even when the entry changes during confirmation",
+      "the promotion queue leads, and an overdue one is marked",
+      "a base nobody has written to says so once, with no sections",
+      "an empty topic is not listed",
+      "an entry opens to its body, and only a pending promotion offers landing",
+      "a refusal shows the server",
+      "says so, because the counts made the reader ask",
+      "expands in place instead of only being enterable",
+      "shows a glance, not the whole list, and offers the whole list",
+      "closes again",
+      "returns to the topic you were reading, not to the index",
+      "replaces the index with results, rather than showing both",
+      "says so when nothing matches, naming what was typed",
+      "gives the index back when the query is cleared",
+      "is closed by default \u2014 it is read once, then it is just height",
+      "opens on tap",
+      "describes the result instead of the ledger verb",
+      "write-it-in sends carry with no text, after one confirmation",
+      "withdrawing asks why and sends it; everyone opens the issue instead of carrying",
+      "knowledge navigation and search expose readable actions",
+      "an in-flight write cannot be submitted twice, and completion keeps the entry open"
     ]
   },
   "mobileapp/src/screens/LivePreviewScope.test.tsx": {
@@ -2617,7 +2639,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane’s different current runtime",
+      "a stitched older session never requests the pane\u2019s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -3110,6 +3132,57 @@
       "pending photo reading blocks button Return and captured callbacks until all photos stage",
       "cancel error and rejection release photo reading while preserving the existing draft",
       "a successful send removes only its snapshot and preserves a file returned during upload"
+    ]
+  },
+  "mobileapp/src/screens/KnowledgeSheet.reading.test.tsx": {
+    "cases": [
+      "KRD-002",
+      "KRD-003",
+      "KRD-005"
+    ],
+    "selectors": [
+      "reading hierarchy keeps original guidance first in ${layout} ${theme}",
+      "another entry resets disclosures and resolves its actual language before reading",
+      "feedback opens only its existing draft while secondary landing retains the viewed revision",
+      "a delayed secondary action cannot reopen a form after the source scope changes",
+      "a captured submit callback cannot mutate after the user changes source scope",
+      "late entry A cannot replace entry B and wrong identities remain unavailable",
+      "whole-read timeout has immediate retry feedback and ignores the timed-out response",
+      "failed post-action refresh keeps readable content and never repeats the action",
+      "the real client forwards cancellation and the whole JSON-body read has a deadline",
+      "a completed old action cannot replace the newly selected entry",
+      "an entry without body content is distinct from a failed record read"
+    ]
+  },
+  "mobileapp/src/screens/knowledgeReading.test.ts": {
+    "cases": [
+      "KRD-001"
+    ],
+    "selectors": [
+      "keeps every character while separating explicit history from literal guidance",
+      "history-like headings inside %s code stay with the current body",
+      "non-prose openings stay whole rather than inventing a summary: %s",
+      "reference-style links retain their single Markdown scope",
+      "comments and arbitrary headings do not hide prose as history",
+      "long guidance is preserved without generated or truncated advice",
+      "language resolution happens before display-only sectioning"
+    ]
+  },
+  "mobileapp/src/screens/knowledgeReading.semantics.test.ts": {
+    "cases": [
+      "KRDS-001",
+      "KRDS-002",
+      "KRDS-003"
+    ],
+    "selectors": [
+      "History API is current guidance rather than an explicit historical title",
+      "a current peer section after History remains visible by default",
+      "a multiline comment across the first blank stays hidden through actual Markdown parsing",
+      "an ordinary title with a historical prefix stays current: %s",
+      "a complete supported historical title can fold: %s",
+      "a higher current heading after historical subheadings keeps the whole body open",
+      "nested history and code or quote heading lookalikes stay within history",
+      "comment-containing source retains one Markdown scope: %s"
     ]
   },
   "mobileapp/src/state/AgentsContext.readState.test.tsx": {

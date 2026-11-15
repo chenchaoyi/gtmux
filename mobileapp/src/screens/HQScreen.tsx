@@ -821,7 +821,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         zh={zh}
         onClose={() => {setKnowledgeOpen(false); if (openResource?.page === 'knowledge') onResourceExit?.('overview');}}
         openAt={knowledgeOpenAt}
-        loadEntry={id => client.hqKnowledgeEntry(id)}
+        readScope={client}
+        loadEntry={(id, signal) => client.hqKnowledgeEntry(id, signal)}
         act={async a => {
           const r = await client.hqKnowledgeAct(a);
           // A mutation changes the base, so the index a reader is looking at is stale the
