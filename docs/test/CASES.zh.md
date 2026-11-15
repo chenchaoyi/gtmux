@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1269 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1270 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3788 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2315 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2320 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 141 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -260,6 +260,9 @@
 | MSD-003 | Preferred receipt returned as additive JSON while legacy clients retain status ok; no mutation when unauthorized, guest out of scope or key invalid; queue acceptance not claimed read/completed; no message body or secrets in diagnostics. |
 | MSD-004 | Full send settles at finite deadline and aborts network; late success cannot overwrite timeout; only one fetch, original send ID retained by caller for explicit retry; refusal and legacy success remain compatible. |
 | MSD-005 | Queued is labeled queued awaiting next turn, accepted means received not read/completed; finite network deadline keeps text and explicit same-ID retry; late old response/failure cannot replace a newer pending attempt; transcript confirmation retires the correct echo; no resends, no queue deletion, no draft/approval bypass. |
+| PPR-001 | No upload/send/history or clearing while read is pending; visible disabled Send and concise reading feedback. Only one picker request; all four photos remain ordered and a later explicit Send uploads each exactly once before the original caption/paths are submitted. No automatic resend. |
+| PPR-002 | Full lifecycle finally releases ref/state, pending selection blocks send and reentry; after settlement a new selection/send is possible. Caption and existing images remain; no automatic upload/send, no spurious photo editor. Existing unmount late-result guard remains. |
+| PPR-003 | Message contains only that send snapshot in order; later file remains staged for its own explicit Send. No asset deletion or silent removal of unsent IDs. Existing upload failure preservation stays unchanged. |
 | MPU-001 | System picker permits multiple selection. Multiple returned photos stage in order with no automatic editor or upload; editing replaces only the chosen attachment and cancellation preserves it. One send uploads ordered staged images before submitting their paths once. Existing single-photo editor-first behavior stays pinned by unchanged tests. |
 | MPU-002 | No draft or staged attachment is removed, uploaded or submitted. Invalid assets do not create thumbnails. An unmounted scope cannot open an editor or stage returned photos. |
 | MPU-003 | Only measured finite positive totals yield fractions. Unknown totals stay indeterminate. Body completion is processing, never successful save; only valid successful response completes. Legacy fraction callback remains byte-events-only. Settled callbacks are ignored; failure preserves failure result and existing watchdog bounds. |
@@ -271,6 +274,7 @@
 | MSD-010 | Picker/upload ordering, cancellation, retry, no auto-send, draft/server/session isolation and matter state assertions all remain. Only callback shape changes; new receipt semantics are covered separately by MSD007/008. |
 | MSD-011 | Unresolved durable retries reuse one requestID regardless of age and remain protected at the existing spool cap. Only one nested handler may claim/mutate. Matching pending proof and input lease are required before native claim; pruned/settled/replaced old requests cannot regain authority. Changed target/body, claimed/uncertain and historical accepted results retain their safeguards; completed retention is unchanged. No real queue or RPC is accessed. |
 | SID-009 | Default URLs and malformed empty result remain exactly compatible. Detail/HQ transcript call sites explicitly opt in; pane Trace opts in only when the supplied agent contains observed_conversation metadata. Preserve recent/context/cursor/conditional headers and the existing TraceReader three-argument call contract. Last-known state survives 304; verified removes restriction. External session routes retain exact identity and never receive observation fallback. Input paths unchanged; no network/session/device operations. |
+| PCP-001 | No historical fact request without a message timestamp and no false assertion that metadata was read and empty. Current process read is on demand and must match exact source SID and explicit source agent (historical profile agent when actually available, otherwise recorded turn.agent); unknown source identity cannot borrow radar agent or cause futile retry. Current model/tier never fills message facts. Correct same-source chain displays/copies; wrong or rotated source cannot display/copy and has actionable explanation. Retry visibly enters loading, requests once, times out in 15s including uncooperative body/transport, ignores late answers and can recover. UI uses 44pt accessible accent button, static spinner/status; no service, binding, auth or send writes. |
 | STOR-001 | Every carrier separates project-owned and task-temp output from gtmux configuration/runtime trees; no promoted entry required; user text and hand-edit protection preserved; second sync idempotent. |
 | STOR-002 | Both playbooks reserve gtmux-owned state and only reusable HQ knowledge tools for its home, direct project scripts/reports/builds to project/task storage, require external evidence references, and never grant automatic migration/deletion; upgrade backs up old charter, preserves LOCAL/notes and converges. |
 | PWR-001 | One production collection per producer tick, no extra REST collections within freshness; explicit next producer bypasses TTL; clone ownership preserved; failure/oversize never turns stale bytes into success; scopes never cross |

@@ -3053,6 +3053,18 @@
       "CAR-004"
     ]
   },
+  "mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx": {
+    "cases": [
+      "PCP-001"
+    ],
+    "selectors": [
+      "PCP-001 missing timestamp keeps message facts absent but reads exact source processes",
+      "PCP-001 missing timestamp never accepts a different process source",
+      "PCP-001 unknown message agent cannot borrow the current radar identity or offer a futile read",
+      "PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",
+      "PCP-001 switching message source and client retires the previous process read"
+    ]
+  },
   "mobileapp/src/ui/Composer.multiPhoto.test.tsx": {
     "cases": [
       "MPU-001",

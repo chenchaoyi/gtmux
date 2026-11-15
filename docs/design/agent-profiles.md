@@ -91,6 +91,8 @@ Collection stays bounded and asynchronous to DSH; Web ancestry does not grant pa
 ownership. Updating gtmux-owned plugin files does not reload a running harness.
 Missing earlier observations cannot be reconstructed from a later process tree.
 
+A message without a timestamp cannot locate historical facts; say that its details are unavailable rather than claiming the server returned an empty profile. If its raw agent key and source session were recorded, the separate current-process read may verify against those exact identifiers without depending on a historical profile response. It never imports current model or tier into the message. Unknown source identity offers no futile process request. Both profile and process reads include body parsing in a 15-second deadline; Retry immediately shows a spinner/loading label, retires previous work, and ignores late replies. Retry uses a bordered accent control with a 44pt minimum target.
+
 ## Existing integration boundaries
 
 The radar [`agentJSON`](../../internal/radar/agents.go) still carries identity and

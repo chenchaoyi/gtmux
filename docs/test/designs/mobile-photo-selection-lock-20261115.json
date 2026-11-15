@@ -1,0 +1,46 @@
+{
+  "id": "mobile-photo-selection-lock-20261115",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-15",
+    "decision": "Fix only confirmed PR1876 independent P2 before adding its regression",
+    "notes": "Full original60ee9 relay/report and all manifest items read and SHA verified. Original Hf066 and reviewer fixture/red log remain immutable. Use synchronous refs plus render state for the complete native photo-read lifecycle, guard captured button/Return callbacks and reentry, and clear only sent attachment IDs as defensive preservation. Preserve one-photo editor-first, batch order, cancel/error/unmount handling, five-argument uploads and existing assertions. New tests only in the listed file, no old fixture edits. Synthetic deferred picker/file/upload results are not OS picker, real phone or VoiceOver acceptance. Renewed source/cache accounting does not repair old author baseline gaps or reset Go limits."
+  },
+  "cases": [
+    {
+      "id": "PPR-001",
+      "layer": "L2",
+      "description": "A photo read in flight excludes Send, Return and captured callbacks until the full batch stages",
+      "setup": "Production Composer and original AttachSheet, existing two photos/caption; deferred second native picker result after dismissal; captured send/Return and picker callbacks",
+      "action": "Start second selection, invoke live/captured Send and Return, attempt another selection, then complete later photos and explicitly Send",
+      "expected": "No upload/send/history or clearing while read is pending; visible disabled Send and concise reading feedback. Only one picker request; all four photos remain ordered and a later explicit Send uploads each exactly once before the original caption/paths are submitted. No automatic resend.",
+      "planned_files": [
+        "mobileapp/src/ui/Composer.photoSelection.test.tsx"
+      ]
+    },
+    {
+      "id": "PPR-002",
+      "layer": "L2",
+      "description": "Cancel, native error or throw releases the selection guard without losing draft or staged attachments",
+      "setup": "Same production Composer with existing photos/caption and controlled cancelled/error/rejected selection",
+      "action": "Keep selection pending then settle each failure kind; choose again or explicitly Send",
+      "expected": "Full lifecycle finally releases ref/state, pending selection blocks send and reentry; after settlement a new selection/send is possible. Caption and existing images remain; no automatic upload/send, no spurious photo editor. Existing unmount late-result guard remains.",
+      "planned_files": [
+        "mobileapp/src/ui/Composer.photoSelection.test.tsx"
+      ]
+    },
+    {
+      "id": "PPR-003",
+      "layer": "L2",
+      "description": "Successful upload clears only attachments from its captured send snapshot",
+      "setup": "Existing staged photos and a deferred previously opened File picker, plus controlled sequential uploads",
+      "action": "Begin sending the existing photos, let a new file arrive during those uploads, then complete the original send",
+      "expected": "Message contains only that send snapshot in order; later file remains staged for its own explicit Send. No asset deletion or silent removal of unsent IDs. Existing upload failure preservation stays unchanged.",
+      "planned_files": [
+        "mobileapp/src/ui/Composer.photoSelection.test.tsx"
+      ]
+    }
+  ],
+  "seal": "8280f9ac62943249b79ae21836592decd358cf7d1c9db518659a88c614a61a1f"
+}
