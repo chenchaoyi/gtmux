@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex KB implementation owner (self-review of regression design)",
-    "date": "2026-11-12",
+    "date": "2026-11-15",
     "decision": "repair independent review F1/F2 in existing draft PR",
-    "notes": "Independent REVIEW SHA f5f158dff54c5f266d0e434c3b8c8e1e0911b530469eb5a32c17fca8de82203e requested changes at 21576f9. This is author review of new test design, not peer approval of the fix. Commit this seal before tests. Reuse the ledger lock and state atomic writer; explicit revision required for manual receipts, including old clients which must fail safely if absent. No new framework/service or actual model. Baseline full gates/CI already passed; do not rerun unchanged costly matrices for this design-only commit. Sequential affected and required core checks will bind source hashes before/after the new run."
+    "notes": "Independent REVIEW SHA f5f158dff54c5f266d0e434c3b8c8e1e0911b530469eb5a32c17fca8de82203e requested changes at 21576f9. This is author review of new test design, not peer approval of the fix. Commit this seal before tests. Reuse the ledger lock and state atomic writer; explicit revision required for manual receipts, including old clients which must fail safely if absent. No new framework/service or actual model. Baseline full gates/CI already passed; do not rerun unchanged costly matrices for this design-only commit. Sequential affected and required core checks will bind source hashes before/after the new run. Fresh author review for the selected Knowledge reading redesign, before its existing KnowledgeSheet.test.tsx changes: keep KBCARRIER-REVISION and the exact viewed-R0 payload/confirmation assertions unchanged; open the new More menu/dismiss it for secondary actions and expand Record details for source assertions. New concise No longer applicable wording is reviewed in KRD-004. No Go/Mac/ledger implementation or test changes are in this follow-up; KBCARRIER-ATOMIC and all case definitions remain unchanged. This is renewed design review for the touched App fixture, not retrospective peer approval."
   },
   "cases": [
     {
@@ -37,5 +37,5 @@
       ]
     }
   ],
-  "seal": "851849ebf78be08acc2e11a6f5eeaab6cb8ae4d95cb9ed063e4fe930a5b45747"
+  "seal": "f421e0b92451d2e524b1ccd646e13c2cc65bc2987452a6d7bf63178498a28a1b"
 }
