@@ -262,7 +262,11 @@ at a red line before adding load.
 
 Reclaim candidates exclude processes that running work depends on, including the tmux server, resident gtmux processes and the agents themselves, regardless of their size.
 
-Process cleanup suggestions appear only with memory or load warnings and identify the resource involved. Disk and battery warnings do not include them: ending a process does not directly free disk space or restore battery charge.
+In HQ warning tails, process cleanup suggestions appear only with memory or load warnings and label the sampled RSS as memory. Disk and battery warning tails do not include them. The full `gtmux resource` readout can still show disk status and reclaim candidates in separate sections.
+
+RSS measures resident memory use, not reclaimable disk space or a guaranteed amount of memory freed. Ending a process does not itself delete its disk files or restore battery charge. Any indirect disk effect depends on current state, such as swap use or whether the process holds the last open reference to an already unlinked file; no saving is promised. Measure the relevant resource before and after any authorized action. See Apple's [memory usage guide](https://support.apple.com/guide/activity-monitor/view-memory-usage-actmntr1004/mac) and [unlink documentation](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/unlink.2.html).
+
+Candidates are suggestions, not permission to stop a process. Verify its current identity, purpose and dependencies, and act within the existing authorized scope; RSS alone cannot authorize termination. For local development cleanup, follow the existing [storage scope and ownership rules](development-storage.md#3-verify-cleanup-scope-before-removing-anything).
 
 The warning is damped three ways so a value sitting on a threshold can't re-alert (the
 readout itself stays raw):

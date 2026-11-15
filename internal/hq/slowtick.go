@@ -476,17 +476,21 @@ func markerChanged(marker, dedupKey string) bool {
 // a false one. So it is marked as a guess, and its absence never withholds the alarm.
 //
 // It must also be a suggestion for the SHORTAGE AT HAND, which it was not. An orphan is a
-// PROCESS and its size is RSS, so killing one returns memory and not one byte of disk —
-// yet the tail rode every warning, including "disk getting low". Acting on it does the
+// PROCESS and its size is sampled resident memory, not a disk-reclaim estimate —
+// yet the tail rode every warning, including "disk getting low". Acting on it did the
 // wrong thing, and on 2026-09-08 that cost a day across two HQ sessions: a three-day-old
-// "kill 568MB or 902MB?" question that could never have answered a full disk, then the
+// "kill 568MB or 902MB?" question that gave no disk-reclaim evidence, then the
 // same disk line suggesting ten simulator processes while the one candidate on the list
 // held 56MB. The second HQ re-measured, read `rss_mb: 48`, and relayed it anyway —
 // because nothing in the sentence said which quantity it was.
 //
-// So the tail now goes only where killing a process helps, and it says what it would free.
-// The unit in the sentence is the part that makes the mismatch visible to a reader who is
-// about to pass it on. Reported as an issue by the machine that hit it (#1109).
+// So this HQ tail is limited to memory/load warnings and labels the sampled RSS as memory,
+// not guaranteed savings. The full resource CLI can still show disk and candidates together.
+// Ending a process does not itself delete its disk files; indirect disk effects depend on
+// swap or open references to already unlinked files. Measure actual before/after resource
+// use for any authorized action. A candidate grants no permission: verify current identity,
+// purpose and dependencies within the existing scope (docs/development-storage.md, section 3).
+// Reported as an issue by the machine that hit it (#1109).
 func orphanTail(rep resource.Report) string {
 	if len(rep.Orphans) == 0 {
 		return ""
@@ -495,8 +499,8 @@ func orphanTail(rep resource.Report) string {
 	case resource.WarnMemoryCritical, resource.WarnMemoryWarn,
 		resource.WarnLoadCritical, resource.WarnLoadHigh:
 	default:
-		// Disk and battery: an idle process frees neither. Better no guess than one
-		// that reads as an answer.
+		// Keep disk and battery warning tails free of process guesses; sampled RSS
+		// cannot establish a remedy for either condition.
 		return ""
 	}
 	o := rep.Orphans[0]
