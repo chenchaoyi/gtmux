@@ -6,12 +6,12 @@ import {LoadingMark} from './LoadingMark';
 import {ReloadIcon} from './Icons';
 
 /** Read-only reload: parent owns the request and its exact identity. */
-export function ConversationReload({onRetry, busy = false, failed = false, zh, testID = 'chat-read-retry', noteColor}:  {onRetry: () => void; busy?: boolean; failed?: boolean; zh: boolean; testID?: string; noteColor?: string}) {
+export function ConversationReload({onRetry, busy = false, failed = false, zh, testID = 'chat-read-retry', noteColor, accessibilityLabel}:  {onRetry: () => void; busy?: boolean; failed?: boolean; zh: boolean; testID?: string; noteColor?: string; accessibilityLabel?: string}) {
  const pal = useReadingPalette();
  const styles = React.useMemo(() => makeStyles(pal), [pal]);
  return <View style={styles.container}>
   <TouchableOpacity testID={testID} accessibilityRole="button" accessibilityState={{busy, disabled: busy}}
-   accessibilityLabel={zh ? '重新加载对话' : 'Reload conversation'} disabled={busy} onPress={busy ? undefined : onRetry} style={styles.button}>
+   accessibilityLabel={accessibilityLabel ?? (zh ? '重新加载对话' : 'Reload conversation')} disabled={busy} onPress={busy ? undefined : onRetry} style={styles.button}>
    {busy ? <LoadingMark size={15} color={pal.fg2} accessible={false} /> : <ReloadIcon size={16} color={readingColors(pal).link} />}
    <Text style={styles.label}>{busy ? (zh ? '正在重新加载…' : 'Reloading…') : (zh ? '重试' : 'Retry')}</Text>
   </TouchableOpacity>

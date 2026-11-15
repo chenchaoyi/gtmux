@@ -6,9 +6,9 @@ import {readingColors, useReadingPalette} from './ReadingPalette';
 
 /** Presentation only. The parent retains request identity and retry ownership. */
 export function ReadFeedback({label, zh, onRetry, busy = false, retryFailed = false, secondary, compact = false,
-  testID = 'read-feedback', retryTestID = 'chat-read-retry'}: {
+  testID = 'read-feedback', retryTestID = 'chat-read-retry', retryAccessibilityLabel}: {
   label: string; zh: boolean; onRetry?: () => void; busy?: boolean; retryFailed?: boolean; compact?: boolean;
-  secondary?: {label: string; onPress: () => void; testID?: string}; testID?: string; retryTestID?: string;
+  secondary?: {label: string; onPress: () => void; testID?: string}; testID?: string; retryTestID?: string; retryAccessibilityLabel?: string;
 }) {
   const pal = useReadingPalette();
   return <View testID={testID} style={[styles.card, compact && styles.compact, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
@@ -19,7 +19,7 @@ export function ReadFeedback({label, zh, onRetry, busy = false, retryFailed = fa
       </Text>
     </View>
     {(onRetry || secondary) && <View style={styles.actions}>
-      {onRetry && <ConversationReload onRetry={onRetry} busy={busy} zh={zh} testID={retryTestID} />}
+      {onRetry && <ConversationReload onRetry={onRetry} busy={busy} zh={zh} testID={retryTestID} accessibilityLabel={retryAccessibilityLabel} />}
       {secondary && <TouchableOpacity testID={secondary.testID} accessibilityRole="button" onPress={secondary.onPress} style={styles.secondary}>
         <Text style={[styles.secondaryText, {color: readingColors(pal).link}]}>{secondary.label}</Text>
       </TouchableOpacity>}

@@ -46,7 +46,7 @@ export function ProfileExecutionChain({target, client, lang, primary}: {target: 
     </TouchableOpacity>
     {open && <View testID="profile-chain-content">
       {read.status === 'loading' ? <View testID="profile-chain-loading" accessibilityRole="progressbar" accessibilityLabel={zh ? '正在读取进程信息' : 'Loading process details'} style={styles.loading}><LoadingMark size="small" color={BRAND} accessible={false} /><Text style={styles.note}>{zh ? '正在读取…' : 'Loading…'}</Text></View>
-        : problem ? <ReadFeedback compact testID="profile-chain-failed" retryTestID="profile-chain-retry" zh={zh} onRetry={read.retry} label={read.timedOut ? (zh ? '读取超时，请重试。' : 'The request timed out. Try again.') : (zh ? '暂时无法读取进程信息。' : 'Could not load process details.')} />
+        : problem ? <ReadFeedback compact testID="profile-chain-failed" retryTestID="profile-chain-retry" zh={zh} retryAccessibilityLabel={zh ? '重新读取进程信息' : 'Reload process details'} onRetry={read.retry} label={read.timedOut ? (zh ? '读取超时，请重试。' : 'The request timed out. Try again.') : (zh ? '暂时无法读取进程信息。' : 'Could not load process details.')} />
           : chain.length === 0 ? <Text testID="profile-chain-unrecorded" style={styles.note}>{zh ? '暂无进程信息。' : 'No process details available.'}</Text> : <>
             <Text style={styles.note}>{zh ? '最近采集' : 'Last observed'}{read.profile?.chain_observed_at ? ` · ${new Date(read.profile.chain_observed_at).toLocaleString()}` : ''}</Text>
             {groups.map((p, i) => {

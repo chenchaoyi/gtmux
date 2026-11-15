@@ -3097,7 +3097,8 @@
       "PCP-001 missing timestamp never accepts a different process source",
       "PCP-001 unknown message agent cannot borrow the current radar identity or offer a futile read",
       "PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",
-      "PCP-001 switching message source and client retires the previous process read"
+      "PCP-001 switching message source and client retires the previous process read",
+      "PCP-001 %s process retry exposes the process action name"
     ]
   },
   "mobileapp/src/ui/Composer.multiPhoto.test.tsx": {

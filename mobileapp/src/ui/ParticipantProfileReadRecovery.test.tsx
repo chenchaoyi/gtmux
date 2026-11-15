@@ -90,3 +90,18 @@ test('PCP-001 switching message source and client retires the previous process r
   expect(next.mock.calls[0][0]).toMatchObject({session_id: 'next'});
   expect(button('profile-copy-0')).toHaveLength(1);
 });
+
+
+test.each(['en', 'zh'] as const)('PCP-001 %s process retry exposes the process action name', async lang => {
+  const read = jest.fn().mockRejectedValueOnce(new Error('network')).mockResolvedValue(profile());
+  await mount(read, target(), lang);
+  await act(async () => button('profile-chain-toggle')[0].props.onPress());
+  const retry = button('profile-chain-retry')[0];
+  expect(retry.props.accessibilityRole).toBe('button');
+  expect(retry.props.accessibilityLabel).toBe(lang === 'zh' ? '重新读取进程信息' : 'Reload process details');
+  expect(read).toHaveBeenCalledTimes(1);
+  await act(async () => retry.props.onPress());
+  expect(read).toHaveBeenCalledTimes(2);
+  expect(read.mock.calls[1][0]).toEqual({id: '%4', session_id: 'source'});
+  expect(button('profile-copy-0')).toHaveLength(1);
+});

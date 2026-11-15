@@ -6031,6 +6031,7 @@ MAP-50967dc9cb48,L2,reviewed implementation,mobileapp/src/ui/ParticipantProfileR
 MAP-733317a650cd,L2,reviewed implementation,mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx,46,reviewed-selector,PCP-001 unknown message agent cannot borrow the current radar identity or offer a futile read,False,PCP-001
 MAP-8617ba16602d,L2,reviewed implementation,mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx,55,reviewed-selector,"PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",False,PCP-001
 MAP-e9af5471b57e,L2,reviewed implementation,mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx,80,reviewed-selector,PCP-001 switching message source and client retires the previous process read,False,PCP-001
+MAP-f9c74c004f5e,L2,reviewed implementation,mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx,95,reviewed-selector,PCP-001 %s process retry exposes the process action name,False,"PCP-001,RFD-002"
 LEG-9fdb92ca8017,L2,RN / mobile harness,mobileapp/src/ui/PinnedPrompt.test.tsx,25,test,long instructions open in a separate reader; the terminal entrance stays bounded,False,legacy-not-retrospectively-reviewed
 LEG-47fc2d0d5586,L2,RN / mobile harness,mobileapp/src/ui/PinnedPrompt.test.tsx,43,test,a long press copies the full prompt and says so,False,legacy-not-retrospectively-reviewed
 LEG-4cc3e607a799,L2,RN / mobile harness,mobileapp/src/ui/PinnedPrompt.test.tsx,55,test,a new prompt starts folded again,False,legacy-not-retrospectively-reviewed

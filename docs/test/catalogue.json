@@ -54564,7 +54564,7 @@
           "design": "CRX-001"
         }
       ],
-      "sha256": "cdd2df5b8fdc04e339eca7aed532ffc53d6368250f85eef4ce93b4ee2999e690"
+      "sha256": "ecc6430cec65ffd4a154aac4e85cd2903b2f9991467df917f8d00a3066381f45"
     },
     "mobileapp/src/ui/CopyableText.fallback.test.tsx": {
       "sha256": "5142b75136ca18df4ec507f43ca05900e8f02e9532ccef49187f5713346fe064",
@@ -64370,9 +64370,18 @@
           "dynamic": false,
           "layer": "L2",
           "design": "PCP-001"
+        },
+        {
+          "id": "MAP-f9c74c004f5e",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "PCP-001 %s process retry exposes the process action name",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "PCP-001,RFD-002"
         }
       ],
-      "sha256": "2a804a2c319cbc794df581cebb33b329900f3545e77b5a46f57492ef9dbc0b08"
+      "sha256": "a5842047770be6cdb41fc34ba0f09efdfeaec414b7d82e8bfec5b981e1559638"
     },
     "mobileapp/src/api/uploadState.test.ts": {
       "layer": "L1",
