@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner; self-review, not independent approval",
     "date": "2026-11-15",
     "decision": "Implement existing App Appearance inheritance and compact stable ingress feedback",
-    "notes": "User delegates best settings placement and reports distracting long-lived Received. Reuse existing persisted system/light/dark with no second preference; derive reading colors, preserve Terminal host palette and actual Live output. Ingress is not execution. No expiry pretending delivery; recorded messages have no status, pending marks are small and accessible below the 26pt avatar within its existing 44pt footprint, queued state remains explicit until source confirmation. Reserve the same existing 44pt user-avatar footprint across pending/recorded handoff to prevent layout changes; retain exact source/attachment identity, aliases, no extra mutation/poll. Existing meaningful CRX-004 and MSD-005 guards preserved, new scenarios extend not weaken. Commit this self-reviewed design before test edits. Physical device/VoiceOver and real delivery not covered. Re-review CRR-001 actual HQ/Detail earlier-history/late-receipt scenarios only to replace obsolete persistent confirmed-receipt assertions; preserve all send counts, occurrence, authorization, refusal and mounted-bubble guards. Successful ingress marks fade out after 2.5 seconds at most, purely visual: keep the optimistic message and unconfirmed identity, never label execution or resend. Sending and queued indicators do not time out. Source confirmation removes marks immediately; late old completion cannot restore them."
+    "notes": "User delegates best settings placement and reports distracting long-lived Received. Reuse existing persisted system/light/dark with no second preference; derive reading colors, preserve Terminal host palette and actual Live output. Ingress is not execution. No expiry pretending delivery; recorded messages have no status, pending marks are small and accessible below the 26pt avatar within its existing 44pt footprint, queued state remains explicit until source confirmation. Reserve the same existing 44pt user-avatar footprint across pending/recorded handoff to prevent layout changes; retain exact source/attachment identity, aliases, no extra mutation/poll. Existing meaningful CRX-004 and MSD-005 guards preserved, new scenarios extend not weaken. Commit this self-reviewed design before test edits. Physical device/VoiceOver and real delivery not covered. Re-review CRR-001 actual HQ/Detail earlier-history/late-receipt scenarios only to replace obsolete persistent confirmed-receipt assertions; preserve all send counts, occurrence, authorization, refusal and mounted-bubble guards. Successful ingress marks fade out after 2.5 seconds at most, purely visual: keep the optimistic message and unconfirmed identity, never label execution or resend. Sending and queued indicators do not time out. Source confirmation removes marks immediately; late old completion cannot restore them. Full RN gate located an additional legacy DetailSendRefused fixture that requires visible standalone Sent text. Before editing this file, review its migration to the same compact/accessibility receipt contract; retain its real production Detail poll, later-turn retirement, image handoff, refusal/identity and no-repeat guards. The first failure is retained. No change to receipt or send authority expectations. Direct appearance audit also found Composer tests #ffffff to choose the native keyboard, but the existing Light App canvas is #F2F2F7. Cover compact and full-compose keyboardAppearance in the existing CAR-002 provider fixture before correcting this two-site classification; preserve draft/mutation behavior."
   },
   "cases": [
     {
@@ -27,7 +27,7 @@
       "description": "Existing persisted App Appearance owns Chat and follows system",
       "setup": "Mount actual AppProvider with isolated storage/native mocks; choose light/dark/system and change mocked system scheme; unmount/remount",
       "action": "Exercise actual production React Native components with isolated fixtures and deferred state changes",
-      "expected": "Only gtmux.themePref is used; overrides ignore system changes, system follows; saved choice survives; no per-chat preference or transport reset",
+      "expected": "Only gtmux.themePref is used; overrides ignore system changes, system follows; saved choice survives; no per-chat preference or transport reset Compact and expanded composer keyboards resolve the same effective light/dark preference; no draft or send is changed.",
       "planned_files": [
         "mobileapp/src/state/ChatAppearancePreference.test.tsx"
       ]
@@ -42,9 +42,10 @@
       "planned_files": [
         "mobileapp/src/ui/ChatReceiptPresentation.test.tsx",
         "mobileapp/src/ui/ChatEchoHandoff.test.tsx",
-        "mobileapp/src/screens/HistoryEchoHandoff.test.tsx"
+        "mobileapp/src/screens/HistoryEchoHandoff.test.tsx",
+        "mobileapp/src/screens/DetailSendRefused.test.tsx"
       ]
     }
   ],
-  "seal": "923ba04aa0f4d69dd53ea440e37534a6bf2a2ac8a2c839b7d2490192cc734c16"
+  "seal": "7f1fec42712bd9a4e9417f0cedf09ed1619ad4f17413a8e0666dd33b48eeeee3"
 }
