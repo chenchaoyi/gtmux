@@ -47921,13 +47921,13 @@
       "sha256": "9c626499c441712ab149719bfd9d233c342baad60124f31d6963f5758071d418"
     },
     "mobileapp/src/screens/KnowledgeSheet.test.tsx": {
-      "sha256": "eebff2fb211534e80c0dfb03a2309c353aa2e6b84820adbaf8f492c64dcffba5",
+      "sha256": "d8b4b80d479c8ace540bd7f24428c034713ded60d1111d63f425d24e4b4b48dc",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-22a168587a71",
-          "line": 58,
+          "line": 74,
           "kind": "test",
           "name": "the promotion queue leads, and an overdue one is marked",
           "dynamic": false,
@@ -47935,7 +47935,7 @@
         },
         {
           "id": "LEG-515eaf56d0e0",
-          "line": 77,
+          "line": 93,
           "kind": "test",
           "name": "a base nobody has written to says so once, with no sections",
           "dynamic": false,
@@ -47943,7 +47943,7 @@
         },
         {
           "id": "LEG-a37ada8694d8",
-          "line": 83,
+          "line": 99,
           "kind": "test",
           "name": "an empty topic is not listed",
           "dynamic": false,
@@ -47951,7 +47951,7 @@
         },
         {
           "id": "LEG-3de101752eb2",
-          "line": 91,
+          "line": 107,
           "kind": "test",
           "name": "an entry opens to its body, and only a pending promotion offers landing",
           "dynamic": false,
@@ -47967,7 +47967,7 @@
         },
         {
           "id": "LEG-b04b9d221814",
-          "line": 125,
+          "line": 142,
           "kind": "test",
           "name": "a refusal shows the server's own words and keeps the draft",
           "dynamic": false,
@@ -47975,7 +47975,7 @@
         },
         {
           "id": "LEG-4464583ab870",
-          "line": 169,
+          "line": 184,
           "kind": "it",
           "name": "says so, because the counts made the reader ask",
           "dynamic": false,
@@ -47983,7 +47983,7 @@
         },
         {
           "id": "LEG-5e0fef7f87eb",
-          "line": 178,
+          "line": 193,
           "kind": "it",
           "name": "expands in place instead of only being enterable",
           "dynamic": false,
@@ -47991,7 +47991,7 @@
         },
         {
           "id": "LEG-1a5856c44dab",
-          "line": 186,
+          "line": 201,
           "kind": "it",
           "name": "shows a glance, not the whole list, and offers the whole list",
           "dynamic": false,
@@ -47999,7 +47999,7 @@
         },
         {
           "id": "LEG-2ca6afcfc7fb",
-          "line": 195,
+          "line": 210,
           "kind": "it",
           "name": "closes again",
           "dynamic": false,
@@ -48007,7 +48007,7 @@
         },
         {
           "id": "LEG-8fd8d301753c",
-          "line": 204,
+          "line": 219,
           "kind": "it",
           "name": "returns to the topic you were reading, not to the index",
           "dynamic": false,
@@ -48015,7 +48015,7 @@
         },
         {
           "id": "LEG-9b9674853b13",
-          "line": 238,
+          "line": 253,
           "kind": "it",
           "name": "replaces the index with results, rather than showing both",
           "dynamic": false,
@@ -48023,7 +48023,7 @@
         },
         {
           "id": "LEG-9f56f0bae6e2",
-          "line": 249,
+          "line": 264,
           "kind": "it",
           "name": "says so when nothing matches, naming what was typed",
           "dynamic": false,
@@ -48031,7 +48031,7 @@
         },
         {
           "id": "LEG-7f8734e05ef0",
-          "line": 255,
+          "line": 270,
           "kind": "it",
           "name": "gives the index back when the query is cleared",
           "dynamic": false,
@@ -48039,7 +48039,7 @@
         },
         {
           "id": "LEG-5dafab2473bb",
-          "line": 271,
+          "line": 286,
           "kind": "it",
           "name": "is closed by default — it is read once, then it is just height",
           "dynamic": false,
@@ -48047,7 +48047,7 @@
         },
         {
           "id": "LEG-6fe8920934d5",
-          "line": 277,
+          "line": 292,
           "kind": "it",
           "name": "opens on tap",
           "dynamic": false,
@@ -48055,7 +48055,7 @@
         },
         {
           "id": "LEG-09e75b3686bf",
-          "line": 291,
+          "line": 306,
           "kind": "it",
           "name": "describes the result instead of the ledger verb",
           "dynamic": false,
@@ -48063,7 +48063,7 @@
         },
         {
           "id": "LEG-1f953e2ba615",
-          "line": 304,
+          "line": 320,
           "kind": "test",
           "name": "write-it-in sends carry with no text, after one confirmation",
           "dynamic": false,
@@ -48071,7 +48071,7 @@
         },
         {
           "id": "LEG-92617ba47c99",
-          "line": 324,
+          "line": 341,
           "kind": "test",
           "name": "withdrawing asks why and sends it; everyone opens the issue instead of carrying",
           "dynamic": false,
@@ -48079,7 +48079,7 @@
         },
         {
           "id": "LEG-e7c4a17d81df",
-          "line": 352,
+          "line": 367,
           "kind": "test",
           "name": "knowledge navigation and search expose readable actions",
           "dynamic": false,
@@ -48087,7 +48087,7 @@
         },
         {
           "id": "LEG-01caacff2459",
-          "line": 364,
+          "line": 379,
           "kind": "test",
           "name": "an in-flight write cannot be submitted twice, and completion keeps the entry open",
           "dynamic": false,
@@ -48095,12 +48095,21 @@
         },
         {
           "id": "MAP-c2bb7e3c4204",
-          "line": 103,
+          "line": 120,
           "kind": "reviewed-selector",
           "name": "landing preserves the viewed revision even when the entry changes during confirmation",
           "dynamic": false,
           "layer": "L2",
           "design": "KBCARRIER-REVISION"
+        },
+        {
+          "id": "MAP-cde3a006fd7b",
+          "line": 142,
+          "kind": "reviewed-selector",
+          "name": "a refusal shows the server",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KBCARRIER-REVISION,KRD-003,KRD-004"
         }
       ]
     },
@@ -64258,6 +64267,182 @@
         }
       ],
       "sha256": "bb9b4931474e5d6fd76e5de5884596cb992f33f4e6aa6ae492a0c92f7bd65848"
+    },
+    "mobileapp/src/screens/KnowledgeSheet.reading.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fe09993bb816",
+          "line": 52,
+          "kind": "reviewed-selector",
+          "name": "reading hierarchy keeps original guidance first in ${layout} ${theme}",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        },
+        {
+          "id": "MAP-d496770965aa",
+          "line": 66,
+          "kind": "reviewed-selector",
+          "name": "another entry resets disclosures and resolves its actual language before reading",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        },
+        {
+          "id": "MAP-703b51bdb072",
+          "line": 76,
+          "kind": "reviewed-selector",
+          "name": "feedback opens only its existing draft while secondary landing retains the viewed revision",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        },
+        {
+          "id": "MAP-19dd35666dd8",
+          "line": 86,
+          "kind": "reviewed-selector",
+          "name": "a delayed secondary action cannot reopen a form after the source scope changes",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        },
+        {
+          "id": "MAP-e9343ac6e784",
+          "line": 94,
+          "kind": "reviewed-selector",
+          "name": "a captured submit callback cannot mutate after the user changes source scope",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        },
+        {
+          "id": "MAP-efa74821c68f",
+          "line": 102,
+          "kind": "reviewed-selector",
+          "name": "late entry A cannot replace entry B and wrong identities remain unavailable",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        },
+        {
+          "id": "MAP-522d3c6b32c3",
+          "line": 113,
+          "kind": "reviewed-selector",
+          "name": "whole-read timeout has immediate retry feedback and ignores the timed-out response",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        },
+        {
+          "id": "MAP-c16ab95c4ac8",
+          "line": 123,
+          "kind": "reviewed-selector",
+          "name": "failed post-action refresh keeps readable content and never repeats the action",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        },
+        {
+          "id": "MAP-bac5084ef301",
+          "line": 132,
+          "kind": "reviewed-selector",
+          "name": "the real client forwards cancellation and the whole JSON-body read has a deadline",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        },
+        {
+          "id": "MAP-d8d37dabe8eb",
+          "line": 150,
+          "kind": "reviewed-selector",
+          "name": "a completed old action cannot replace the newly selected entry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        },
+        {
+          "id": "MAP-5006acbdbf06",
+          "line": 163,
+          "kind": "reviewed-selector",
+          "name": "an entry without body content is distinct from a failed record read",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "KRD-002,KRD-003,KRD-005"
+        }
+      ],
+      "sha256": "00457581228632cd2644915d54200c4ef6a4fc1b8bef6dd8915778843288742d"
+    },
+    "mobileapp/src/screens/knowledgeReading.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3271a6221274",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "keeps every character while separating explicit history from literal guidance",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KRD-001"
+        },
+        {
+          "id": "MAP-4dacb09058b0",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "history-like headings inside %s code stay with the current body",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KRD-001"
+        },
+        {
+          "id": "MAP-0ff10d273920",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "non-prose openings stay whole rather than inventing a summary: %s",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KRD-001"
+        },
+        {
+          "id": "MAP-ac8739c1fd62",
+          "line": 27,
+          "kind": "reviewed-selector",
+          "name": "reference-style links retain their single Markdown scope",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KRD-001"
+        },
+        {
+          "id": "MAP-96eb433c9fcd",
+          "line": 32,
+          "kind": "reviewed-selector",
+          "name": "comments and arbitrary headings do not hide prose as history",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KRD-001"
+        },
+        {
+          "id": "MAP-42186d31aa22",
+          "line": 38,
+          "kind": "reviewed-selector",
+          "name": "long guidance is preserved without generated or truncated advice",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KRD-001"
+        },
+        {
+          "id": "MAP-3ca7e5d5d898",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "language resolution happens before display-only sectioning",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "KRD-001"
+        }
+      ],
+      "sha256": "47c2cce46381c45129219601283bd5dc95b5e03ee73b0757c3493d76d9f6380a"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

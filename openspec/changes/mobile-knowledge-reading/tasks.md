@@ -1,6 +1,0 @@
-- [x] Resolve explicit selection2 and review/seal tests before implementation
-- [ ] Implement literal sectioning, reading hierarchy and action hierarchy
-- [ ] Bound and scope read feedback without changing mutation authority
-- [ ] Verify reviewed regressions and old assertions
-- [ ] Update bilingual design/spec and run App/source gates
-- [ ] Compare actual native rendering with selected reference

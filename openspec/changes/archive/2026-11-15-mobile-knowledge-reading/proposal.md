@@ -1,5 +1,11 @@
 # Knowledge detail reading hierarchy
 
+## Why
+
+Knowledge details give historical text, record metadata and operations the same weight, making the current advice hard to find. The user selected a clearer reading hierarchy.
+
+## What Changes
+
 Implement the selected conclusion-first direction in the existing native App: literal current guidance first, body/history/record metadata as distinct disclosure sections, one eligible primary action and secondary record operations in the existing menu. Preserve original knowledge content and action authority; add scoped bounded detail-read feedback so failure is not an empty record.
 
 ## Surfaces
