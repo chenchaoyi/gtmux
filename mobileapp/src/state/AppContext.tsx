@@ -4,6 +4,7 @@
 // active one (null = on the connection page). Kept tiny on purpose.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {ReadingPaletteContext} from '../ui/ReadingPalette';
 import React, {createContext, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {AppState, NativeModules, Platform, useColorScheme} from 'react-native';
 import {Lang, LangPref, makeT, resolveLang} from '../i18n';
@@ -414,7 +415,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
     };
   }, [serialize, ready, servers, activeUrl, pendingPane, mac, langPref, pushEnabled, pushKinds, pushSync, fontPref, returnSends, defaultDetailMode, themePref, scheme, lang]);
 
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={value}><ReadingPaletteContext.Provider value={value.pal}>{children}</ReadingPaletteContext.Provider></Ctx.Provider>;
 }
 
 export function useApp(): AppContextValue {

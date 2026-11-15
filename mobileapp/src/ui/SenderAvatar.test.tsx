@@ -1,3 +1,4 @@
+import {ReadingPaletteContext} from './ReadingPalette';
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
 import {Text} from 'react-native';
@@ -44,17 +45,13 @@ describe('SenderAvatar', () => {
     expect(texts(tree)).not.toContain('HQ');
   });
 
-  // The chat surface is always dark whatever the app's appearance, so a theme colour here
-  // goes invisible in light mode — the trap ChatView already paid for once. The mark takes
-  // no palette at all, so light and dark must render identically.
-  test('its colours are fixed light-on-dark, never the theme', async () => {
-    const light = await mount(<SenderAvatar from={{kind: 'hq', label: 'HQ'}} />);
-    const dark = await mount(<SenderAvatar from={{kind: 'hq', label: 'HQ'}} />);
-    expect(JSON.stringify(light.toJSON())).toBe(JSON.stringify(dark.toJSON()));
-    const flat = JSON.stringify(light.toJSON());
-    // Light-on-dark: a near-white mark, never the near-black the theme would hand it.
-    expect(flat).toContain('rgba(255,255,255,0.92)');
-    expect(flat).not.toContain('#1D1D1F');
+  test.each(['light', 'dark'])('CAR-001 sender marks match the %s reading surface', async scheme => {
+    const pal = paletteFor(scheme);
+    const hq = await mount(<ReadingPaletteContext.Provider value={pal}><SenderAvatar from={{kind: 'hq', label: 'HQ'}} /></ReadingPaletteContext.Provider>);
+    expect(hq.root.findByType(BrandMark).props.neutral).toBe(pal.fg);
+    const agent = await mount(<ReadingPaletteContext.Provider value={pal}><SenderAvatar from={{kind: 'agent', label: 'fixture', agent: 'Other'}} /></ReadingPaletteContext.Provider>);
+    expect(JSON.stringify(agent.toJSON())).toContain(pal.fg2);
+    expect(JSON.stringify(agent.toJSON())).toContain(pal.raised);
   });
 
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {Text, TouchableOpacity, View} from 'react-native';
+import {TouchableOpacity, View} from 'react-native';
 import {DetailView} from './DetailScreen';
 import {HQConsoleView} from './HQScreen';
 import {Composer} from '../ui/Composer';
@@ -28,7 +28,7 @@ const recent = {...record('recent', 200, 'different recent request'), history_be
 const bodies = ['repeat', 'repeat image\n/tmp/public-icon.png'];
 const recordedPrompt = (body: string) => body.includes('.png') ? body + '\n![Image #1](/tmp/public-icon.png)' : body;
 const bubbles = () => tree.root.findAllByType(View).filter(n => n.props.testID === 'chat-user-bubble');
-const statuses = (id: string) => tree.root.findAllByType(Text).filter(n => n.props.testID === id);
+const statuses = (id: string) => tree.root.findAllByType(View).filter(n => n.props.testID === id);
 const chat = () => tree.root.findByType(ChatView).props;
 function press(id: string) {const button = tree.root.findAllByType(TouchableOpacity).find(n => n.props.testID === id); expect(button).toBeDefined(); act(() => button!.props.onPress());}
 async function mount(surface: string) {await act(async () => {tree = renderer.create(surface === 'HQ' ? <HQConsoleView agent={agent} workspaceMode /> : <DetailView agent={agent} initialMode="chat" />);}); await flush();}
@@ -59,7 +59,7 @@ test.each(combinations)('CRR-001 $surface $history earlier $body cannot acknowle
   // The true recent source is index0 but index2 after the earlier-prefix merge.
   await poll([record('true-new', 201, recordedPrompt(body))]);
   expect(statuses('chat-pending-echo')).toHaveLength(0);
-  expect(statuses('chat-send-receipt')).toHaveLength(1);
+  expect(statuses('chat-send-receipt')).toHaveLength(0);
   expect(bubbles()).toHaveLength(3); expect(bubbles().at(-1)).toBe(pending);
   expect(mockClient.sendResult).toHaveBeenCalledTimes(1);
 });
@@ -69,7 +69,7 @@ test.each(['HQ', 'Detail'])('CRR-001 %s new source before a late receipt cannot 
   await mount(surface); press('detail-chat-earlier'); await flush(); await send(body);
   expect(statuses('chat-pending-echo')).toHaveLength(1); const pending = bubbles().at(-1);
   await poll([recent, record('true-new', 201, recordedPrompt(body))]);
-  expect(bubbles().at(-1)).toBe(pending); expect(statuses('chat-send-receipt')).toHaveLength(1);
+  expect(bubbles().at(-1)).toBe(pending); expect(statuses('chat-send-receipt')).toHaveLength(0);
   await act(async () => receipt.resolve({ok: true, delivery: 'accepted'})); await flush();
   expect(bubbles()).toHaveLength(3); expect(bubbles().at(-1)).toBe(pending); expect(statuses('chat-pending-echo')).toHaveLength(0);
   expect(mockClient.sendResult).toHaveBeenCalledTimes(1);

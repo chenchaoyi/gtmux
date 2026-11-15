@@ -46964,7 +46964,7 @@
       "sha256": "e92b2ddb0267b69e75322cfb0b03174f083ad756e204f2366248a01fed45439f"
     },
     "mobileapp/src/screens/DetailSendRefused.test.tsx": {
-      "sha256": "05b581c8a70e4a21f43502e2fbf6911f368f9948f1d696b1a7a0392c7cb94710",
+      "sha256": "8e8c66a61499c5f22d30114e7df3c7bc941f6f8ee150705670ee5988c53ddc3c",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -47010,7 +47010,7 @@
         },
         {
           "id": "LEG-5deaa446a43c",
-          "line": 129,
+          "line": 130,
           "kind": "test",
           "name": "a recorded Codex image replaces its temporary path echo while the agent is still working",
           "dynamic": false,
@@ -47018,7 +47018,7 @@
         },
         {
           "id": "LEG-eb3fc5fd2fe8",
-          "line": 143,
+          "line": 144,
           "kind": "test",
           "name": "old identical text does not hide a new send; late failure clears only its own echo",
           "dynamic": false,
@@ -47026,7 +47026,7 @@
         },
         {
           "id": "LEG-a05f6f747efd",
-          "line": 158,
+          "line": 159,
           "kind": "test",
           "name": "a retry preserves send identity and does not recreate an echo already confirmed by the transcript",
           "dynamic": false,
@@ -47034,7 +47034,7 @@
         },
         {
           "id": "LEG-358ed9368a35",
-          "line": 174,
+          "line": 175,
           "kind": "test",
           "name": "working-send receipt expires even when the agent never becomes idle",
           "dynamic": false,
@@ -47042,7 +47042,7 @@
         },
         {
           "id": "LEG-a55ca1449b8b",
-          "line": 183,
+          "line": 184,
           "kind": "test",
           "name": "the matching transcript retires a working receipt before the next idle transition",
           "dynamic": false,
@@ -47050,7 +47050,7 @@
         },
         {
           "id": "LEG-f975c92f4762",
-          "line": 196,
+          "line": 197,
           "kind": "test",
           "name": "a late send response cannot recreate its receipt after transcript confirmation",
           "dynamic": false,
@@ -47058,7 +47058,7 @@
         },
         {
           "id": "LEG-cf861ad50359",
-          "line": 210,
+          "line": 211,
           "kind": "test",
           "name": "a newer success gets its own expiry instead of inheriting the old timer",
           "dynamic": false,
@@ -50921,7 +50921,7 @@
       ]
     },
     "mobileapp/src/screens/pendingChatEcho.test.ts": {
-      "sha256": "041f0261b1066e77899b5bbc38d89093dc0ee167fb87e01e4c953cb828008777",
+      "sha256": "40c725d7aff0c14b0199a226b40dd5b9e2946aa1b688fde08c20cf99589ca1a3",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -50956,6 +50956,15 @@
           "name": "attachment prompt identity $same: $sent -> $recorded",
           "dynamic": true,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-c67e93a9f960",
+          "line": 33,
+          "kind": "reviewed-selector",
+          "name": "CAR-004",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAR-004"
         }
       ]
     },
@@ -56316,13 +56325,13 @@
       ]
     },
     "mobileapp/src/ui/SenderAvatar.test.tsx": {
-      "sha256": "92eae6f1d77b5815d8b72ea364731c6ec8596f3666376a5a6fbd01fb99c4a2e4",
+      "sha256": "b5ac7f3227b23ce78be0baaf27e73eb704dd10e87d159bbd51946097c6111abd",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-162daee1718c",
-          "line": 34,
+          "line": 35,
           "kind": "test",
           "name": "HQ uses the gtmux brand mark independently of the recorded harness",
           "dynamic": false,
@@ -56330,7 +56339,7 @@
         },
         {
           "id": "LEG-fb0c7a9219bd",
-          "line": 42,
+          "line": 43,
           "kind": "test",
           "name": "another session wears its agent, not the letters HQ",
           "dynamic": false,
@@ -56346,7 +56355,7 @@
         },
         {
           "id": "LEG-e3e3d57d7a75",
-          "line": 78,
+          "line": 75,
           "kind": "test",
           "name": "a turn HQ delivered names HQ, and the reader's own turn names nobody",
           "dynamic": false,
@@ -56354,7 +56363,7 @@
         },
         {
           "id": "LEG-ef180edec710",
-          "line": 89,
+          "line": 86,
           "kind": "test",
           "name": "a dispatch from another session names that session",
           "dynamic": false,
@@ -56362,7 +56371,7 @@
         },
         {
           "id": "LEG-14238fcb471c",
-          "line": 94,
+          "line": 91,
           "kind": "test",
           "name": "it speaks the reader’s language",
           "dynamic": false,
@@ -56370,11 +56379,20 @@
         },
         {
           "id": "LEG-b3bacf12f657",
-          "line": 98,
+          "line": 95,
           "kind": "test",
           "name": "an ordinary conversation is unchanged",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-190ea3e9118c",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "CAR-001",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAR-001"
         }
       ]
     },
@@ -56864,13 +56882,13 @@
       ]
     },
     "mobileapp/src/ui/TimeSeparator.test.tsx": {
-      "sha256": "c758279ffe50e50ef90c721799cef8274fae49d313be22d3f67ab3f69f221dac",
+      "sha256": "da61f75ee94786e46002a352f9a3fcf4c0381969e358f12ea095ee05bd0397f2",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-ad72ed211c5d",
-          "line": 24,
+          "line": 26,
           "kind": "test",
           "name": "shows the label it is given",
           "dynamic": false,
@@ -56878,7 +56896,7 @@
         },
         {
           "id": "LEG-f87bea8bca03",
-          "line": 32,
+          "line": 34,
           "kind": "test",
           "name": "puts a rule on BOTH sides of it, with the label between them",
           "dynamic": false,
@@ -56894,7 +56912,7 @@
         },
         {
           "id": "LEG-1437d0102ed2",
-          "line": 54,
+          "line": 52,
           "kind": "test",
           "name": "draws at least one full period and starts at the left edge",
           "dynamic": false,
@@ -56902,7 +56920,7 @@
         },
         {
           "id": "LEG-bd8a819ecc3d",
-          "line": 61,
+          "line": 59,
           "kind": "test",
           "name": "a width under one period draws nothing beyond the start",
           "dynamic": false,
@@ -56910,7 +56928,7 @@
         },
         {
           "id": "LEG-089667cd0076",
-          "line": 97,
+          "line": 95,
           "kind": "test",
           "name": "two turns minutes apart share one separator, at the start",
           "dynamic": false,
@@ -56918,7 +56936,7 @@
         },
         {
           "id": "LEG-b0f2a61e9b9e",
-          "line": 104,
+          "line": 102,
           "kind": "test",
           "name": "a night and a pause each earn one, the turn between them earns none",
           "dynamic": false,
@@ -56926,11 +56944,20 @@
         },
         {
           "id": "LEG-b404805fe1df",
-          "line": 110,
+          "line": 108,
           "kind": "test",
           "name": "a conversation with no clocks draws none",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-99248d9d621d",
+          "line": 43,
+          "kind": "reviewed-selector",
+          "name": "CAR-001",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAR-001"
         }
       ]
     },
@@ -64134,7 +64161,7 @@
           "design": "CRR-001"
         }
       ],
-      "sha256": "8c109e3dea6aebe66ab1a785bf4a98c57a7deb46998db38444149335838aee46"
+      "sha256": "21f2d0ce38cb02ec0164e33f553e06685a64777a69732e01e8a0b749fe13364b"
     },
     "mobileapp/src/ui/ToolReaderCopy.test.tsx": {
       "layer": "L2",
@@ -64167,6 +64194,70 @@
         }
       ],
       "sha256": "f9bf50fa3c30d7783aadbc5a1dc4eda0663281f28032b5eb4843ea581a5830fc"
+    },
+    "mobileapp/src/state/ChatAppearancePreference.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b48734ad467c",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "CAR-002",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAR-002"
+        }
+      ],
+      "sha256": "9e3b65f8290155d4b0df7594778329d8e4204047b63cbfe048602d5d74976f4a"
+    },
+    "mobileapp/src/ui/ChatAppearance.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ca6228d2bf6a",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "CAR-001",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAR-001"
+        }
+      ],
+      "sha256": "b955f661d14e5e7ab050404776e2c49a5a2b18c5d36b5323de599ebbe4d6992a"
+    },
+    "mobileapp/src/ui/ChatReceiptPresentation.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2641a502533a",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "CAR-003",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAR-003"
+        }
+      ],
+      "sha256": "3c94651ce112a7fa2fde557ce93d4ef8f466e32f2f7429b2228b434a1b2d465f"
+    },
+    "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-dc21674f533e",
+          "line": 56,
+          "kind": "reviewed-selector",
+          "name": "CAR-004",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CAR-004"
+        }
+      ],
+      "sha256": "bb9b4931474e5d6fd76e5de5884596cb992f33f4e6aa6ae492a0c92f7bd65848"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

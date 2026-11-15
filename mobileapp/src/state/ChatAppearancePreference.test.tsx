@@ -1,0 +1,36 @@
+import {Composer} from '../ui/Composer';
+import React from 'react';
+import renderer, {act} from 'react-test-renderer';
+import {ScrollView, StyleSheet, TextInput, TouchableOpacity} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {AppProvider, useApp} from './AppContext';
+import {ChatView} from '../ui/ChatView';
+import {paletteFor} from '../ui/theme';
+import {TestIds} from '../constants/testIds';
+let mockSystemScheme: 'light'|'dark' = 'light';
+jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({__esModule:true,default:()=>mockSystemScheme}));
+jest.mock('../debug', () => {const actual=jest.requireActual('../debug');return {...actual,Debug:{...actual.Debug,noPush:true}};});
+let app: ReturnType<typeof useApp>;
+const stored = new Map<string,string>();
+let tree: renderer.ReactTestRenderer;
+function Probe(){app=useApp();return <><ChatView pal={app.pal} lang="en" agent={{agent:'Codex',pane_id:'%fixture',status:'idle'} as never} status="idle" fontSize={13} turns={[]} lines={[]} loading={false}/><Composer demo composeRequest={1} pal={app.pal} lang="en"/></>;}
+const ui=()=> <AppProvider><Probe/></AppProvider>;
+const keyboard=()=>{const fields=tree.root.findAllByType(TextInput);expect(fields.length).toBeGreaterThan(0);for(const input of fields)expect(input.props.keyboardAppearance).toBe(app.scheme);};
+const background=()=>StyleSheet.flatten(tree.root.findAllByType(ScrollView).find(n=>n.props.testID===TestIds.detail.chat)!.props.style).backgroundColor;
+beforeEach(()=>{stored.clear();mockSystemScheme='light';(AsyncStorage.getItem as jest.Mock).mockImplementation(async key=>stored.get(key)??null);(AsyncStorage.setItem as jest.Mock).mockImplementation(async (key,value)=>{stored.set(key,value);});});
+afterEach(()=>act(()=>tree?.unmount()));
+test('CAR-002 persisted global Appearance controls Chat while system changes preserve explicit choices',async()=>{
+ await act(async()=>{tree=renderer.create(ui());});
+ expect(app.themePref).toBe('system');
+ act(()=>tree.root.findAllByType(TouchableOpacity).find(n=>n.props.testID===TestIds.composer.expand)!.props.onPress());
+ expect(tree.root.findAllByType(TextInput).length).toBeGreaterThan(1);
+ expect(background()).toBe(paletteFor('light').bg);keyboard();
+ act(()=>app.setThemePref('dark'));expect(background()).toBe(paletteFor('dark').bg);keyboard();
+ mockSystemScheme='dark';act(()=>tree.update(ui()));expect(background()).toBe(paletteFor('dark').bg);keyboard();
+ act(()=>app.setThemePref('light'));expect(background()).toBe(paletteFor('light').bg);keyboard();
+ act(()=>tree.unmount());await act(async()=>{tree=renderer.create(ui());});
+ expect(app.themePref).toBe('light');expect(background()).toBe(paletteFor('light').bg);keyboard();
+ act(()=>app.setThemePref('system'));expect(background()).toBe(paletteFor('dark').bg);keyboard();
+ mockSystemScheme='light';act(()=>tree.update(ui()));expect(background()).toBe(paletteFor('light').bg);keyboard();
+ expect([...stored.keys()]).toEqual(['gtmux.themePref']);
+});

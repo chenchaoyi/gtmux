@@ -1,4 +1,7 @@
-import {sendReceiptLabel, type SendDelivery} from './sendReceipt';
+import type {SendDelivery} from './sendReceipt';
+import {MessageReceipt} from './MessageReceipt';
+import {ReadingPaletteContext, useReadingPalette, readingColors} from './ReadingPalette';
+import type {Palette} from './theme';
 // ChatView — 对话模式 (B1 / mockup §10): a glance-friendly conversation view.
 // It shows the REAL chat history (GET /api/transcript): each turn = your prompt,
 // the agent's collapsed middle steps (tap to expand), and its final response.
@@ -29,7 +32,7 @@ import {SenderAvatar} from './SenderAvatar';
 import {TimeSeparator} from './TimeSeparator';
 import {UserAvatar} from './UserAvatar';
 import {serverNowSec} from '../api/clock';
-import {MarkdownView, MdColors} from './MarkdownView';
+import {MarkdownView} from './MarkdownView';
 import {separatorLabels} from './time';
 import {nativeFontFamily} from './term';
 import {BrandLoader} from './BrandLoader';
@@ -126,28 +129,9 @@ interface Props {
   maxWidth?: number;
 }
 
-// The chat surface is ALWAYS dark (terminal aesthetic — see styles.body), so its
-// text is light-on-dark regardless of the app's light/dark appearance. Using the
-// theme palette (pal.fg) here made the agent name + response invisible in light
-// mode (dark text on the dark bubble). These fixed colors keep it readable.
-// Android range-selection tint. iOS block Copy feedback is owned by CopyableText.
+// Android range-selection tint; iOS Copy feedback is owned by CopyableText.
 const SEL_COLOR = 'rgba(52,120,247,0.5)';
 const hitSlop = {top: 8, bottom: 8, left: 12, right: 12};
-const CHAT_FG = 'rgba(255,255,255,0.92)'; // primary text on the dark chat surface
-const CHAT_FG_DIM = 'rgba(235,235,245,0.5)'; // secondary / muted text
-
-// Markdown colors for conversation messages — all fixed light-on-dark (the chat
-// surface is always dark), so markdown stays readable in light app mode too.
-const MD_COLORS: MdColors = {
-  text: CHAT_FG,
-  dim: CHAT_FG_DIM,
-  code: '#E6F7FB',
-  codeBg: 'rgba(255,255,255,0.08)',
-  border: 'rgba(255,255,255,0.16)',
-  link: '#27C7E6',
-};
-
-const USER_MD_COLORS: MdColors = {...MD_COLORS, text: '#E6F7FB'};
 
 function dotColor(status: StatusName): string {
   return status === 'waiting'
@@ -193,6 +177,9 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
 }
 
 export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, onRetry, onOpenTerminal, retrying = false, retryFailed = false, pendingEcho, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+  const styles = useMemo(() => makeStyles(pal), [pal]);
+  const {markdown: MD_COLORS, userMarkdown: USER_MD_COLORS} = readingColors(pal);
+  const CHAT_FG = pal.fg, CHAT_FG_DIM = pal.fg2;
   // Radar timestamps and temporary status changes are observations, not a new reader.
   const conversationReadOnly = readOnly || readOnlyHistory;
   const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
@@ -200,7 +187,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const liveOpen = liveDisclosure.scope === liveScope && liveDisclosure.open;
   React.useEffect(() => {setLiveDisclosure(prev => prev.scope === liveScope ? prev : {scope: liveScope, open: false});}, [liveScope]);
   const [profileTarget, setProfileTarget] = useState<ProfileTarget | null>(null);
-  const avatar = (content: React.ReactNode, target: ProfileTarget) => <TouchableOpacity testID="participant-avatar" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '查看参与者资料' : 'View participant profile'} style={styles.avatarButton} onPress={() => setProfileTarget(target)}>{content}</TouchableOpacity>;
+  const avatar = (content: React.ReactNode, target: ProfileTarget, message = false) => <TouchableOpacity testID="participant-avatar" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '查看参与者资料' : 'View participant profile'} style={[styles.avatarButton, message && styles.messageAvatar]} onPress={() => setProfileTarget(target)}>{content}</TouchableOpacity>;
   const fontFamily = nativeFontFamily(fontPref, Platform.OS); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -450,6 +437,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const liveShown = lines.slice(Math.max(0, end - 14), end);
 
   return (
+    <ReadingPaletteContext.Provider value={pal}>
     <CopyFeedbackContext.Provider value>
     <TextSelectionContext.Provider value={trackSelection}>
     <View style={styles.root}>
@@ -505,14 +493,14 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       scrollEventThrottle={16}>
       {/* current-state row: avatar + agent + status dot */}
       <View style={styles.stateRow}>
-        {avatar(<AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent})}
+        {avatar(<AgentAvatar agent={agent} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent})}
         <View style={styles.stateText}>
           <Text style={[styles.agentName, {color: CHAT_FG}]} numberOfLines={1}>
             {agent.agent}
           </Text>
           <View style={styles.statusLine}>
             <View style={[styles.dot, {backgroundColor: dotColor(status)}]} />
-            <Text style={[styles.statusText, {color: CHAT_FG_DIM}]} numberOfLines={1}>
+            <Text style={[styles.statusText, {color: pal.fg2}]} numberOfLines={1}>
               {sub}
             </Text>
           </View>
@@ -521,7 +509,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
 
       {loading && turns.length === 0 && (
         <View style={styles.center}>
-          <BrandLoader size={36} neutral="rgba(255,255,255,0.18)" />
+          <BrandLoader size={36} neutral={pal.fg3} />
           <Text style={styles.earlierText}>{lang === 'zh' ? '正在载入最近的对话…' : 'Loading recent conversation…'}</Text>
         </View>
       )}
@@ -543,7 +531,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       )}
 
       {!loading && !failed && !associationFailed && !history.failed && turns.length === 0 && (
-        <Text style={[styles.empty, {color: CHAT_FG_DIM}]}>
+        <Text style={[styles.empty, {color: pal.fg2}]}>
           {lang === 'zh'
             ? (conversationReadOnly ? '暂无消息。' : '暂无对话，开始聊聊吧。')
             : (conversationReadOnly ? 'No messages yet.' : 'No messages yet. Start a conversation.')}
@@ -660,9 +648,11 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                           fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
                       )}
                     </View>
-                    {avatar(t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />, t.from ? {kind: 'sender', agent, sender: t.from, turn: t} : {kind: 'human', agent})}
+                    <View testID="chat-user-avatar" style={styles.userIdentity}>
+                      {avatar(t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />, t.from ? {kind: 'sender', agent, sender: t.from, turn: t} : {kind: 'human', agent}, true)}
+                      {isPending && <MessageReceipt key={pendingKey} delivery={pendingDelivery} delivered={pendingDelivered} expiresAt={pendingEcho?.receiptExpiresAt} zh={lang === 'zh'} />}
+                    </View>
                   </View>
-                  {(isPending || alias) && <Text testID={isPending ? "chat-pending-echo" : "chat-send-receipt"} style={styles.echoStatus}>{isPending ? sendReceiptLabel(pendingDelivery, pendingDelivered, lang === 'zh') : (lang === 'zh' ? '已接收' : 'Received')}</Text>}
                   {/* Whose words these are. Only ever shown when it was NOT the reader,
                       so an ordinary conversation gains no chrome (who-sent-this-turn). */}
                   {!!t.from && (
@@ -689,7 +679,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                 collapsed turn still reads as a normal conversation row (just short). */}
             {hasReply && !open && (
               <View style={styles.agentRow}>
-                {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t})}
+                {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t})}
                 <TouchableOpacity style={[styles.agentBubble, styles.collapsedBubble]} testID={TestIds.detail.collapsedReply} onPress={() => toggleTurn(turnKey, open)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '展开本轮' : 'Expand this reply'}>
                   <Text style={[styles.collapsedPreview, {fontFamily, fontSize: fontSize - 0.5}]} numberOfLines={2}>{preview}</Text>
                 </TouchableOpacity>
@@ -706,7 +696,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                       {/* every agent bubble carries the avatar — a turn can split into
                           many bubbles across tool calls; one-per-turn left the
                           follow-ups looking orphaned. */}
-                      {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t})}
+                      {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t})}
                       <View style={styles.agentBubble}>
                         <MarkdownView openFile={ref => openFile(ref, t.session_id || agent.session_id || '')} source={seg.text} colors={MD_COLORS} fontSize={fontSize} fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
                       </View>
@@ -734,7 +724,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       {/* The conversation owns this preference even while the working row is absent. */}
       {status === 'working' && <LiveProgress
         open={liveOpen} onToggle={() => setLiveDisclosure({scope: liveScope, open: !liveOpen})}
-        avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg="#1C1C1F" fg="rgba(235,235,245,0.7)" />, {kind: 'agent', agent})}
+        avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent})}
         label={liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
         inspectAvailable={!readOnly && !!agent.pane_id && agent.source !== 'native'}
         sourceLabel={readOnlyHistory ? (lang === 'zh' ? `当前 pane ${agent.pane_id} · 历史对话关联待确认` : `Current pane ${agent.pane_id} · History association unconfirmed`) : undefined}
@@ -743,7 +733,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       {/* branded loader over the list while collapse/expand-all re-renders. */}
       {busy && (
         <View style={styles.busyOverlay} pointerEvents="none">
-          <BrandLoader size={40} neutral="rgba(255,255,255,0.2)" />
+          <BrandLoader size={40} neutral={pal.fg3} />
         </View>
       )}
       {profileTarget && <ParticipantProfileModal key={`${profileTarget.kind}:${profileTarget.turn?.session_id ?? ''}:${profileTarget.turn?.time ?? ''}`} target={profileTarget} client={client} lang={lang} onClose={() => setProfileTarget(null)} />}
@@ -751,17 +741,18 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     </View>
     </TextSelectionContext.Provider>
     </CopyFeedbackContext.Provider>
+    </ReadingPaletteContext.Provider>
   );
 }
 
-const styles = StyleSheet.create({
-  root: {flex: 1, backgroundColor: '#0D0D0F'},
+const makeStyles = (pal: Palette) => StyleSheet.create({
+  root: {flex: 1, backgroundColor: pal.bg},
   avatarButton: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
   globalFold: {minWidth: 44, minHeight: 44, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center'},
-  body: {flex: 1, backgroundColor: '#0D0D0F'},
+  body: {flex: 1, backgroundColor: pal.bg},
   content: {padding: 12, gap: 10},
   terminalLink: {alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, justifyContent: 'center'},
-  terminalLinkText: {color: '#27C7E6', fontSize: 14, fontWeight: '500'},
+  terminalLinkText: {color: readingColors(pal).link, fontSize: 14, fontWeight: '500'},
   center: {paddingVertical: 24, alignItems: 'center'},
   empty: {fontSize: 12.5, textAlign: 'center', lineHeight: 19, paddingHorizontal: 16, paddingVertical: 20},
   stateRow: {flexDirection: 'row', alignItems: 'center', gap: 9},
@@ -769,20 +760,20 @@ const styles = StyleSheet.create({
   earlierRow: {alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14},
   // An act between the bubbles: small, dim, one line — the record, not the speech.
   actRow: {flexDirection: 'row', alignItems: 'baseline', gap: 7, paddingLeft: 30, paddingRight: 8, paddingVertical: 1},
-  actTime: {fontSize: 10.5, color: 'rgba(235,235,245,0.45)', fontVariant: ['tabular-nums'], width: 36},
+  actTime: {fontSize: 10.5, color: pal.fg2, fontVariant: ['tabular-nums'], width: 36},
   actDot: {width: 5, height: 5, borderRadius: 1.5, position: 'relative', top: -1},
-  actVerb: {fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.86)'},
-  actDetail: {flex: 1, fontSize: 12, color: 'rgba(235,235,245,0.45)'},
-  actOutcome: {fontSize: 11, color: 'rgba(235,235,245,0.45)'},
+  actVerb: {fontSize: 12, fontWeight: '600', color: pal.fg},
+  actDetail: {flex: 1, fontSize: 12, color: pal.fg2},
+  actOutcome: {fontSize: 11, color: pal.fg2},
   seamRow: {alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14},
-  seamText: {fontSize: 11.5, color: 'rgba(235,235,245,0.45)', textAlign: 'center', fontVariant: ['tabular-nums']},
-  earlierText: {fontSize: 12, color: 'rgba(235,235,245,0.55)', textAlign: 'center'},
+  seamText: {fontSize: 11.5, color: pal.fg2, textAlign: 'center', fontVariant: ['tabular-nums']},
+  earlierText: {fontSize: 12, color: pal.fg2, textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
   collapseBarFloating: {position: 'absolute', right: 14, height: 44, zIndex: 2, backgroundColor: 'transparent', paddingHorizontal: 0, paddingVertical: 0},
-  collapseBarText: {fontSize: 12.5, color: '#27C7E6', fontWeight: '600'},
+  collapseBarText: {fontSize: 12.5, color: readingColors(pal).link, fontWeight: '600'},
   // per-turn reply toggle shown while collapsed (chevron + preview).
   replyToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 3, maxWidth: '88%'},
-  replyToggleText: {fontSize: 12.5, color: 'rgba(235,235,245,0.55)'},
+  replyToggleText: {fontSize: 12.5, color: pal.fg2},
   stateText: {flex: 1, minWidth: 0},
   agentName: {fontSize: 13.5, fontWeight: '700'},
   statusLine: {flexDirection: 'row', alignItems: 'center', marginTop: 2},
@@ -791,25 +782,26 @@ const styles = StyleSheet.create({
 
   turn: {gap: 6},
   // centered time separator above a turn (chat-app style), deliberately quiet.
-  timeLabel: {fontSize: 10.5, color: CHAT_FG_DIM, textAlign: 'center', alignSelf: 'center', letterSpacing: 0.3, marginTop: 2},
+  timeLabel: {fontSize: 10.5, color: pal.fg2, textAlign: 'center', alignSelf: 'center', letterSpacing: 0.3, marginTop: 2},
   // user prompt — right-aligned accent bubble + the human avatar on the right.
+  userIdentity: {width: 44, height: 44},
+  messageAvatar: {justifyContent: 'flex-start'},
   userRow: {flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start', gap: 8},
   userBubble: {
     maxWidth: '82%',
-    backgroundColor: 'rgba(6,182,212,0.16)',
+    backgroundColor: readingColors(pal).userBg,
     borderRadius: 13,
     borderTopRightRadius: 3,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   userBubblePending: {opacity: 0.55},
-  echoStatus: {fontSize: 12, color: 'rgba(230,247,251,0.7)', marginTop: 5},
-  userText: {color: '#E6F7FB', fontSize: 14, lineHeight: 20},
+  userText: {color: readingColors(pal).userMarkdown.text, fontSize: 14, lineHeight: 20},
   // expand/collapse toggle for an auto-collapsed long prompt — right-aligned under
   // the bubble (marginRight = avatar 26 + gap 8, so it sits under the bubble's edge).
   userToggle: {alignSelf: 'flex-end', marginRight: 34, marginTop: 3, paddingVertical: 2},
-  userToggleText: {fontSize: 12.5, color: 'rgba(230,247,251,0.6)', fontWeight: '600'},
-  sender: {fontSize: 11.5, color: CHAT_FG_DIM, textAlign: 'right', marginTop: 3, marginRight: 34},
+  userToggleText: {fontSize: 12.5, color: pal.fg2, fontWeight: '600'},
+  sender: {fontSize: 11.5, color: pal.fg2, textAlign: 'right', marginTop: 3, marginRight: 34},
 
   // one reply segment = a text bubble + its trailing step group (small inner gap).
   segBlock: {gap: 4},
@@ -818,16 +810,16 @@ const styles = StyleSheet.create({
   agentRow: {flexDirection: 'row', gap: 8, alignItems: 'flex-start'},
   agentBubble: {
     flex: 1,
-    backgroundColor: '#1C1C1F',
+    backgroundColor: pal.surface,
     borderRadius: 13,
     borderTopLeftRadius: 3,
     paddingHorizontal: 12,
     paddingVertical: 9,
   },
   // collapsed agent bubble — a quieter, truncated version of agentBubble.
-  collapsedBubble: {backgroundColor: 'rgba(255,255,255,0.05)', paddingVertical: 8},
-  collapsedPreview: {color: 'rgba(235,235,245,0.62)'},
-  collapsedHint: {fontSize: 10.5, color: '#27C7E6', marginTop: 4, fontWeight: '600'},
+  collapsedBubble: {backgroundColor: pal.raised, paddingVertical: 8},
+  collapsedPreview: {color: pal.fg2},
+  collapsedHint: {fontSize: 10.5, color: readingColors(pal).link, marginTop: 4, fontWeight: '600'},
   busyOverlay: {
     position: 'absolute',
     top: 0,
@@ -836,7 +828,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(13,13,15,0.55)',
+    backgroundColor: pal.bg, opacity: 0.85,
   },
 
 
@@ -850,7 +842,9 @@ function hhmmOf(secs: number): string {
 
 /** ActLine is one recorded act: time · dot · verb · detail · outcome, tappable when it leads somewhere. */
 function ActLine({act, onOpen}: {act: Act; onOpen?: (link: NonNullable<Act['link']>) => void}) {
-  const dot = act.alarm ? ERRORED_COLOR : act.link?.kind === 'pane' ? StatusColor.working : 'rgba(235,235,245,0.45)';
+  const pal = useReadingPalette();
+  const styles = useMemo(() => makeStyles(pal), [pal]);
+  const dot = act.alarm ? ERRORED_COLOR : act.link?.kind === 'pane' ? StatusColor.working : pal.fg2;
   const open = act.link && onOpen ? () => onOpen(act.link!) : undefined;
   const target = act.target ? ` → ${act.target}` : '';
   return (

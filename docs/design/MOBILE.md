@@ -276,8 +276,7 @@ The mark is not the only cue. A short line under the bubble names the sender in 
 because an avatar alone asks the reader to know a mark they may be seeing for the first
 time. Neither appears on an unmarked turn, so an ordinary conversation gains no chrome.
 
-Colours here are FIXED light-on-dark, not the theme's: the chat surface is always dark
-whatever the app's appearance, which ChatView has already paid for once.
+Chat and sender marks use the same resolved App Appearance palette. Foreground and background always change together, including nested readers and participant sheets.
 
 While a turn is working, Detail asks for its conditional transcript every 2 seconds;
 idle history stays at 8 seconds. The HQ console polls the same way while it is on screen,
@@ -1840,7 +1839,7 @@ A last-known transcript restricts conversation input, independently of the exist
 
 Empty, failed and read-only states stay distinct. Use one short state and a clear action, with no log-storage tutorial. Reload conversation has a visible 44pt target, immediately shows Reloading, blocks repeated taps while pending and reports another failure while retaining readable messages. Chat and Trace share the parent read; explicit reload retires the older read and requests a fresh body. External conversations keep their read-only and access checks.
 
-Send receipts say Received or Submitted; queued work remains explicit. An ingress receipt does not establish execution. After a receipt, request the current transcript once without adding a fast poll. A newly recorded matching prompt takes over the existing optimistic bubble key and presentation, keeping attachment identity, content and scroll continuity. Old identical prompts cannot acknowledge a new send.
+Successful ingress feedback is a small check under the user avatar, inside its existing 44pt footprint, for at most 2.5 seconds from the first successful acknowledgement of that send identity. Leaving and returning uses only the original remaining lifetime, never a new 2.5-second window. It is removed immediately when the transcript confirms the message; recorded messages never retain a Received label. Sending keeps a small progress indicator; queued work keeps the concise Queued label. Their accessible labels retain the exact receipt state. Expiry only hides the successful mark, never drops a pending message, confirms execution or triggers a resend. The row and bubble keep their dimensions during this handoff. After a receipt, request the current transcript once without adding a fast poll. A newly recorded matching prompt takes over the existing optimistic bubble key and presentation, keeping attachment identity, content and scroll continuity. Old identical prompts cannot acknowledge a new send.
 
 Launch processes group only adjacent equal sanitized presentations as name ×N, retaining actual process count and order. Show a short Last observed time. Do not infer a role from the executable name, expose omitted arguments or mix a current process observation into historical message facts.
 
@@ -1851,3 +1850,7 @@ Recognized single shell input opens directly, with one Original arguments toggle
 Echo confirmation uses the same recent-message window that captured its send baseline. Loading earlier history cannot acknowledge a send. The confirmed source record's session/record identity supplies the presentation alias after history is merged.
 
 Expanded tool results keep the complete recorded copy source and its label with the displayed snapshot. A paged reader shows its page number; Copy full Result still copies the whole original section, including bytes omitted from the readable preview.
+
+### Conversation appearance (2026-11-15)
+
+Settings → Appearance controls the whole App, including Chat, HQ and shared conversation readers on phone and iPad. System follows the device; Light and Dark override it and persist using the existing preference. Open conversations update in place, retaining their messages, drafts, scroll and disclosures. There is no separate Chat preference. Compact and expanded composer keyboards use that same effective appearance. Markdown, code readers, tool details, sender/date marks, reply actions and participant sheets take colors from the same resolved palette. Actual terminal output, including an expanded Live screen, retains its host/terminal colors; its surrounding Chat controls follow App Appearance. Browser appearance remains its own existing preference.

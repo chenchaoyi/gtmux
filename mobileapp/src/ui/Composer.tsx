@@ -1,3 +1,4 @@
+import {darkCodeBackground} from './codeReading';
 // Composer — the Detail input area (MOBILE §4), Moshi-style. Types into the pane
 // via POST /api/send (a WRITE, gated by the bearer token).
 //
@@ -687,7 +688,7 @@ export const Composer = React.memo(function Composer({
         placeholderTextColor={pal.fg3}
         autoCapitalize="none"
         autoCorrect={false}
-        keyboardAppearance={pal.bg === '#ffffff' ? 'light' : 'dark'}
+        keyboardAppearance={darkCodeBackground(pal.bg) ? 'dark' : 'light'}
         inputAccessoryViewID={Platform.OS === 'ios' ? ACCESSORY_ID : undefined}
         // D7 core fix: multiline so Return inserts a newline; sending is the ↑
         // button only (unless the user opted into "Return sends"). Auto-grows
@@ -875,7 +876,7 @@ export const Composer = React.memo(function Composer({
             textAlignVertical="top"
             placeholder={lang === 'zh' ? '输入…' : 'Type a message…'}
             placeholderTextColor={pal.fg3}
-            keyboardAppearance={pal.bg === '#ffffff' ? 'light' : 'dark'}
+            keyboardAppearance={darkCodeBackground(pal.bg) ? 'dark' : 'light'}
             onKeyPress={e => {
               // hardware keyboard ⌘⏎ sends (soft keyboard has no modifiers).
               const ne: any = e.nativeEvent;

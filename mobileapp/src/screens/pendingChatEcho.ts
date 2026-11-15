@@ -1,7 +1,19 @@
+import type {SendDelivery} from '../api/sendDeadline';
 import type {TranscriptTurn} from '../api/client';
 import {promptIdentity} from './promptIdentity';
 
-export type PendingChatEcho = {id: string; text: string; observed: Map<string, number>};
+export type PendingChatEcho = {
+  id: string;
+  text: string;
+  observed: Map<string, number>;
+  // Presentation only, retained by the send owner across conversation remounts.
+  receiptExpiresAt?: number;
+};
+
+/** Called only after the owner's guarded successful ack; a repeated ID never renews it. */
+export function noteChatEchoReceipt(echo: PendingChatEcho, delivery?: SendDelivery, now = Date.now()): void {
+  if (delivery !== 'queued' && echo.receiptExpiresAt === undefined) echo.receiptExpiresAt = now + 2500;
+}
 function occurrences(text: string, turns: TranscriptTurn[]) {
   const counts = new Map<string, number>();
   for (const turn of turns) {

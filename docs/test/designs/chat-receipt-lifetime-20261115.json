@@ -1,0 +1,26 @@
+{
+  "id": "chat-receipt-lifetime-20261115",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; self-review, not independent approval",
+    "date": "2026-11-15",
+    "decision": "Correct independently verified F1 with an owner-held successful-send deadline",
+    "notes": "Full independent H report SHA c6d475d8c540ac396e88459a3044ce322aedaa5390a7239c517463d94d5f02ee read and accepted. MessageReceipt local expiry resets on actual legacy compact HQ Console navigation. Preserve successful ingress deadline on the existing parent-owned PendingChatEcho per stable send identity; first successful nonqueued ack stamps once, reused attempts keep it, queued/sending do not start or expire it, and new IDs have independent lifetimes. A missing successful deadline must not invent a fresh mount-based lifetime. Child remount uses only remaining time; transcript confirmation immediately removes the mark. Timestamp is presentation-only and never authorizes send, binding, execution, mutation, polling or resending. Existing attempt/target guards and bounded echo-attempt maps stay intact. Record actual HQ parent/tab/Composer production path under controlled clocks, not only a conditional component stand-in. Existing CAR-003 fixture expectations are preserved while supplying the now-owner-held deadline; legacy matching guards remain. No native UI/device/session input. This design is committed before changed test implementation."
+  },
+  "cases": [
+    {
+      "id": "CAR-004",
+      "layer": "L2",
+      "description": "Successful ingress lifetime survives actual HQ console unmount and stays scoped to one send on phone/tablet shared readers",
+      "setup": "Render real HQConsoleView with workspaceMode=false and real ChatView/MessageReceipt; isolated API, controlled clock and actual tabs/Composer. Also inspect HQ and Detail guarded ack owners and standalone receipt fixtures. Hold transcript confirmation pending, return both before and after original deadline; independently test new ID, repeated same-ID stamp, queued/sending, source confirmation and target reset.",
+      "action": "First run the actual navigation regression against H and retain meaningful assertion failure, then run the same assertions after minimal owner-deadline wiring. Exercise callback/clock/identity boundaries with existing deferred frontend fixtures.",
+      "expected": "Remount before deadline gets only remaining lifetime; after deadline never revives success without a new send; same-ID acknowledgement cannot renew it. New ID gets independent deadline and old timer cannot hide it. Queued/sending persist; confirmed transcript clears mark immediately. Pending message/attachment remains and original send ID, body, occurrence matching, refusal/late-result guards and send call counts stay intact. HQ/Detail both stamp in guarded successful ack branches. Documentation uses actual Light/Dark labels.",
+      "planned_files": [
+        "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx",
+        "mobileapp/src/screens/pendingChatEcho.test.ts",
+        "mobileapp/src/ui/ChatReceiptPresentation.test.tsx"
+      ]
+    }
+  ],
+  "seal": "1dc25c324aee6e9e82a96c9cf5cd3ea41a5b65453bcc4bf76cfae234d6f6c6be"
+}

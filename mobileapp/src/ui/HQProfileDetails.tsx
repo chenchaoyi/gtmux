@@ -1,3 +1,5 @@
+import {useReadingPalette} from './ReadingPalette';
+import type {Palette} from './theme';
 import React, {useEffect, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import type {GtmuxClient} from '../api/client';
@@ -7,6 +9,8 @@ import {Chevron} from './Icons';
 
 /** HQ is a role. Its current host is not evidence of who sent an old message. */
 export function HQProfileDetails({target, client, recordedAgent, zh}: {target: ProfileTarget; client?: GtmuxClient; recordedAgent?: string; zh: boolean}) {
+  const pal = useReadingPalette();
+  const styles = React.useMemo(() => makeStyles(pal), [pal]);
   const store = useAgentsOptional();
   const supervisors = store?.client === client && store?.conn === 'live'
     ? store.agents.filter(a => a.role === 'supervisor') : [];
@@ -27,7 +31,7 @@ export function HQProfileDetails({target, client, recordedAgent, zh}: {target: P
     {sender && <>
       <TouchableOpacity testID="hq-current-toggle" accessibilityRole="button" accessibilityState={{expanded: currentOpen}}
         onPress={() => setCurrentOpen(v => !v)} style={styles.disclosure}>
-        <Text style={styles.label}>{zh ? '当前 HQ' : 'Current HQ'}</Text><Chevron open={currentOpen} color="#A4A4AD" />
+        <Text style={styles.label}>{zh ? '当前 HQ' : 'Current HQ'}</Text><Chevron open={currentOpen} color={pal.fg2} />
       </TouchableOpacity>
       {currentOpen && <View testID="hq-current-details">
         <View style={styles.fact}><Text style={styles.label}>{zh ? '执行 Agent' : 'Agent'}</Text>
@@ -38,10 +42,10 @@ export function HQProfileDetails({target, client, recordedAgent, zh}: {target: P
   </View>;
 }
 
-const styles = StyleSheet.create({
-  section: {marginBottom: 8}, description: {fontSize: 13, lineHeight: 21, color: '#C7C7CE', marginBottom: 6},
+const makeStyles = (pal: Palette) => StyleSheet.create({
+  section: {marginBottom: 8}, description: {fontSize: 13, lineHeight: 21, color: pal.fg2, marginBottom: 6},
   fact: {flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginTop: 8},
   disclosure: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44, marginTop: 8},
-  label: {flexShrink: 1, maxWidth: '50%', fontSize: 12, lineHeight: 21, color: '#A4A4AD'}, value: {flex: 1, fontSize: 13, lineHeight: 21, color: '#ECECF1'},
-  note: {fontSize: 11, lineHeight: 17, color: '#A4A4AD', marginTop: 6},
+  label: {flexShrink: 1, maxWidth: '50%', fontSize: 12, lineHeight: 21, color: pal.fg2}, value: {flex: 1, fontSize: 13, lineHeight: 21, color: pal.fg},
+  note: {fontSize: 11, lineHeight: 17, color: pal.fg2, marginTop: 6},
 });

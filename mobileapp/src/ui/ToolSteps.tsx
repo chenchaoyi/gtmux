@@ -1,3 +1,5 @@
+import {useReadingPalette, readingColors} from './ReadingPalette';
+import type {Palette} from './theme';
 import React, { useState } from 'react';
 import {
   StyleSheet,
@@ -42,6 +44,8 @@ export function ToolSteps({
   lang: 'en' | 'zh';
   fontSize: number;
 }) {
+  const pal = useReadingPalette();
+  const styles = React.useMemo(() => makeStyles(pal), [pal]);
   const [selected, setSelected] = useState<number | null>(null);
   const heading = activitySummary(steps, lang);
   const count =
@@ -69,7 +73,7 @@ export function ToolSteps({
         onPress={onToggle}
         style={styles.header}
       >
-        <Chevron open={open} size={12} color="#A4A4AD" />
+        <Chevron open={open} size={12} color={pal.fg2} />
         <ChromeText
           style={[styles.heading, { fontSize: size }]}
           numberOfLines={1}
@@ -99,7 +103,7 @@ export function ToolSteps({
             );
             const rowContent = (
               <>
-                <ActivityIcon operation={operation} size={16} />
+                <ActivityIcon operation={operation} size={16} color={pal.fg2} />
                 <Text
                   style={[styles.rowText, { fontSize: size }]}
                   numberOfLines={2}
@@ -120,7 +124,7 @@ export function ToolSteps({
                   )}
                 </Text>
                 {hasDetails && (
-                  <Chevron open={expanded} size={12} color="#898994" />
+                  <Chevron open={expanded} size={12} color={pal.fg2} />
                 )}
               </>
             );
@@ -198,6 +202,9 @@ function ToolInput({
   size: number;
   readerFontSize: number;
 }) {
+  const pal = useReadingPalette();
+  const styles = React.useMemo(() => makeStyles(pal), [pal]);
+  const {dark, link} = readingColors(pal);
   const {
     step: loaded,
     loading,
@@ -234,7 +241,7 @@ function ToolInput({
           accessibilityRole="button"
           style={{ minHeight: 44, justifyContent: 'center' }}
         >
-          <Text style={{ color: '#86BFFC' }}>
+          <Text style={{ color: link }}>
             {lang === 'zh' ? '重试读取完整输入' : 'Retry full input'}
           </Text>
         </TouchableOpacity>
@@ -276,6 +283,7 @@ function ToolInput({
       )}
       {step.call ? (
         <ToolCallDetails
+          dark={dark}
           step={step}
           lang={lang}
           fontSize={Math.max(12, readerFontSize)}
@@ -284,6 +292,7 @@ function ToolInput({
       ) : (
         !!input && (
           <CodeBlock
+            dark={dark}
             source={input}
             hint={hint}
             lang={lang}
@@ -307,8 +316,8 @@ function ToolInput({
   );
 }
 
-const styles = StyleSheet.create({
-  // Chat has its own dark reading canvas in either device appearance.
+const makeStyles = (pal: Palette) => StyleSheet.create({
+  // Chat and its tool readers share the resolved App Appearance.
   group: { marginLeft: 52 },
   header: {
     minHeight: 44,
@@ -317,12 +326,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  heading: { color: '#A4A4AD', flexShrink: 1 },
+  heading: { color: pal.fg2, flexShrink: 1 },
   list: {
     paddingLeft: 6,
     marginBottom: 4,
     borderLeftWidth: StyleSheet.hairlineWidth,
-    borderLeftColor: '#343439',
+    borderLeftColor: pal.divider,
   },
   row: { paddingLeft: 8 },
   rowButton: {
@@ -339,13 +348,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     minHeight: 32,
   },
-  rowText: { color: '#A4A4AD', flex: 1, minWidth: 0 },
-  preview: { color: '#A4A4AD' },
+  rowText: { color: pal.fg2, flex: 1, minWidth: 0 },
+  preview: { color: pal.fg2 },
   codePreview: { fontFamily: 'Menlo' },
   inspector: {
     marginBottom: 8,
     overflow: 'hidden',
-    backgroundColor: '#161618',
+    backgroundColor: pal.surface,
     borderRadius: 6,
     paddingHorizontal: 10,
   },
@@ -355,7 +364,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  provenance: { color: '#A4A4AD', flexShrink: 1, minWidth: 0 },
+  provenance: { color: pal.fg2, flexShrink: 1, minWidth: 0 },
   inspectorControls: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -365,7 +374,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   tool: {
-    color: '#A4A4AD',
+    color: pal.fg2,
     fontFamily: 'Menlo',
     flex: 1,
     minWidth: 60,
@@ -379,6 +388,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 10,
   },
-  workdir: { color: '#A4A4AD', fontFamily: 'Menlo', paddingBottom: 6 },
+  workdir: { color: pal.fg2, fontFamily: 'Menlo', paddingBottom: 6 },
   codeHeight: { maxHeight: 220 },
 });

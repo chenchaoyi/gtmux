@@ -1,6 +1,8 @@
+import {ReadingPaletteContext} from './ReadingPalette';
+import {paletteFor} from './theme';
 import React from 'react';
 import renderer, {act} from 'react-test-renderer';
-import {Text} from 'react-native';
+import {Text, StyleSheet} from 'react-native';
 import {TimeSeparator, wavePath} from './TimeSeparator';
 
 // The label is drawn as a separator, not as a line of text: centred, with a rule either
@@ -38,15 +40,11 @@ describe('TimeSeparator', () => {
     expect(row.children[2].type).toBe('View');
   });
 
-  // The colours are fixed light-on-dark: the chat surface is always dark whatever the
-  // app's appearance, a trap ChatView has paid for before.
-  test('takes no palette', () => {
-    const code = require('fs')
-      .readFileSync('src/ui/TimeSeparator.tsx', 'utf8')
-      .split('\n')
-      .filter((l: string) => !l.trim().startsWith('//'))
-      .join('\n');
-    expect(code).not.toMatch(/pal\./);
+  test.each(['light', 'dark'])('CAR-001 date label follows the %s reading surface', async scheme => {
+    const pal = paletteFor(scheme);
+    const tree = await mount(<ReadingPaletteContext.Provider value={pal}><TimeSeparator label="Today 09:05" /></ReadingPaletteContext.Provider>);
+    const label = tree.root.findAllByType(Text).find(n => n.props.children === 'Today 09:05')!;
+    expect(StyleSheet.flatten(label.props.style).color).toBe(pal.fg2);
   });
 });
 

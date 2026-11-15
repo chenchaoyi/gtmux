@@ -2615,7 +2615,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane\u2019s different current runtime",
+      "a stitched older session never requests the pane’s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -2967,7 +2967,7 @@
   },
   "mobileapp/src/screens/HistoryEchoHandoff.test.tsx": {
     "cases": [
-      "CRR-001"
+      "CAR-003"
     ],
     "selectors": [
       "CRR-001"
@@ -2987,6 +2987,70 @@
     ],
     "selectors": [
       "TestDKC001DoctorPendingCountMatchesCaptureProjection"
+    ]
+  },
+  "mobileapp/src/ui/ChatAppearance.test.tsx": {
+    "cases": [
+      "CAR-001"
+    ],
+    "selectors": [
+      "CAR-001"
+    ]
+  },
+  "mobileapp/src/state/ChatAppearancePreference.test.tsx": {
+    "cases": [
+      "CAR-002"
+    ],
+    "selectors": [
+      "CAR-002"
+    ]
+  },
+  "mobileapp/src/ui/ChatReceiptPresentation.test.tsx": {
+    "cases": [
+      "CAR-003"
+    ],
+    "selectors": [
+      "CAR-003"
+    ]
+  },
+  "mobileapp/src/ui/SenderAvatar.test.tsx": {
+    "cases": [
+      "CAR-001"
+    ],
+    "selectors": [
+      "CAR-001"
+    ]
+  },
+  "mobileapp/src/ui/TimeSeparator.test.tsx": {
+    "cases": [
+      "CAR-001"
+    ],
+    "selectors": [
+      "CAR-001"
+    ]
+  },
+  "mobileapp/src/screens/DetailSendRefused.test.tsx": {
+    "cases": [
+      "CAR-003"
+    ],
+    "selectors": [
+      "retires the sent echo after a poll containing its prompt and later turns; it stays gone"
+    ]
+  },
+  "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
+    "cases": [
+      "CAR-004"
+    ],
+    "selectors": [
+      "CAR-004"
+    ]
+  },
+  "mobileapp/src/screens/pendingChatEcho.test.ts": {
+    "cases": [
+      "CAR-004"
+    ],
+    "selectors": [
+      "CAR-004"
     ]
   }
 }
