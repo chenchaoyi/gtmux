@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-15",
     "decision": "Proceed with narrow send refusal classification and scoped recovery repair",
-    "notes": "Review completed before any product/test edits on base1ff. Preserve all existing dispatch/input/draft/identity and authority guards, same-send-id no-replay, receipt/echo generations, key controller and scope fences. Native frontend-unavailable already has explicit association handling: only unknown input-state refusal falls generic asking. Add optional validated wire codes without changing HTTP status or legacy error string compatibility; only explicit known native evidence may explain a question. Legacy asking text is insufficient evidence. Compact recovery remains visible while an explicit retry is pending, synchronous duplicate/captured-callback guards apply, no auto retry. Edit restores the held text without overwriting newer composer text or attachments and clears the old notice; scope change/unmount hides and invalidates it. Existing legacy asking classification/action assertions are intentionally re-reviewed: neutral fallback plus Retry replaces indefinite no-action waiting. Existing authority/no-override/gone/same-ID and late receipt assertions remain meaningful, do not remove them to obtain green. New fixtures in separate files for API/helpers/real screens/Composer; only the two existing copy/component files are adjusted for their newly reviewed presentation contract. Five surfaces: shared RN phone/iPad recovery; CLI/server error wording consumes core classification only; menu-bar and browser keep their existing UI and can ignore optional response code. No new permissions, target recovery, release/install or full native UX claims. Go resource contract42e2829 applies; only one bounded server semantic negative and one final makecheck, reuse same caches and no downloads."
+    "notes": "Review completed before any product/test edits on base1ff. Preserve all existing dispatch/input/draft/identity and authority guards, same-send-id no-replay, receipt/echo generations, key controller and scope fences. Native frontend-unavailable already has explicit association handling: only unknown input-state refusal falls generic asking. Add optional validated wire codes without changing HTTP status or legacy error string compatibility; only explicit known native evidence may explain a question. Legacy asking text is insufficient evidence. Compact recovery remains visible while an explicit retry is pending, synchronous duplicate/captured-callback guards apply, no auto retry. Edit restores the held text without overwriting newer composer text or attachments and clears the old notice; scope change/unmount hides and invalidates it. Existing legacy asking classification/action assertions are intentionally re-reviewed: neutral fallback plus Retry replaces indefinite no-action waiting. Existing authority/no-override/gone/same-ID and late receipt assertions remain meaningful, do not remove them to obtain green. New fixtures in separate files for API/helpers/real screens/Composer; only the two existing copy/component files are adjusted for their newly reviewed presentation contract. Five surfaces: shared RN phone/iPad recovery; CLI/server error wording consumes core classification only; menu-bar and browser keep their existing UI and can ignore optional response code. No new permissions, target recovery, release/install or full native UX claims. Go resource contract42e2829 applies; only one bounded server semantic negative and one final makecheck, reuse same caches and no downloads. Fresh self-review before auth-draft follow-up tests: exact6610 consumers still restore401/403 through replacing prefill, which can overwrite text entered while the response is pending. Move authority restoration to the same append-only scoped channel, mark already-restored records so Edit only focuses/clears without another append. Preserve Pair/noRetry and all original IDs/echo/scope guards. Update existing Detail auth assertions to the safe restore channel, retaining their meaning and original CAR003 selectors; new real-screen deferred401/403 tests demonstrate the lost-newer-draft bug and attachment retention before code repair. This is a necessary regression fix inside existing send recovery, not a new permission or outbox."
   },
   "cases": [
     {
@@ -86,7 +86,20 @@
       "planned_files": [
         "mobileapp/src/ui/Composer.restore.test.tsx"
       ]
+    },
+    {
+      "id": "SFR-008",
+      "layer": "L2",
+      "description": "Authority refusal cannot overwrite a newer draft or append held text twice",
+      "setup": "Real DetailView/HQConsoleView and Composer with deferred synthetic401/403, fake photo batch and local draft, no real send/pairing/device. Existing Detail authority/refill tests stay active.",
+      "action": "Send held text, type newer text and stage photos while response is pending, then refuse401 or403. Verify recovery and press Edit twice. Exercise existing no-retry/pairing and non-authority cases through the new restoration channel.",
+      "expected": "Held text is appended exactly once to newer text, photos and current input remain; Edit clears notice and focuses without duplicating the restored payload. 401 offers only available pairing,403 no retry/pairing, original same-ID/late echo/scope and no-auto-send behavior remain. The final new deferred fixture must fail semantically against6610 consumers before repair.",
+      "planned_files": [
+        "mobileapp/src/screens/SendRecovery.authDraft.test.tsx",
+        "mobileapp/src/screens/DetailSendRefused.test.tsx",
+        "mobileapp/src/screens/SendRecovery.test.tsx"
+      ]
     }
   ],
-  "seal": "efbf0f048ce4272b518dd762695bff458bd4a3141a3dbf7f245270821bf039e2"
+  "seal": "0b24ee9381e09fb0361fed512fe7467bf999eb96484e043cd5d21237ada6fda2"
 }
