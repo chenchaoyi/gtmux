@@ -3153,5 +3153,26 @@
     "selectors": [
       "%s shows localized expired access only to stale guests"
     ]
+  },
+  "mobileapp/src/screens/SplitShell.readState.test.tsx": {
+    "cases": [
+      "RDRC-001"
+    ],
+    "selectors": [
+      "regular main respects loading and timeout in ${lang} ${theme}",
+      "hidden sidebar does not turn an unfinished main read into an empty fleet",
+      "unselected access and expired guest states retain shared guidance and no owner creation",
+      "only a successful empty main welcomes creation while a populated roster keeps automatic selection"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx": {
+    "cases": [
+      "RDRC-002"
+    ],
+    "selectors": [
+      "a cached read failure remains visible when SSE reconnects before the next result: %s",
+      "changing the client drops cached failure and rejects a late old reread",
+      "cached access failure stays visible across reconnect with the existing %s authority"
+    ]
   }
 }

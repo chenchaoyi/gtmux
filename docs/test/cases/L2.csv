@@ -1009,6 +1009,9 @@ LEG-50852e38e078,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.
 LEG-5d721affd782,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,115,it,draws the band for a single window too — one predictable tree,False,legacy-not-retrospectively-reviewed
 LEG-9bf974a93a06,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,121,it,still draws nothing when there are no windows at all,False,legacy-not-retrospectively-reviewed
 LEG-e3fa56652cd5,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,130,it,"is a runnable command, sigil included",False,legacy-not-retrospectively-reviewed
+MAP-f568d67044af,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,59,reviewed-selector,a cached read failure remains visible when SSE reconnects before the next result: %s,False,RDRC-002
+MAP-6e4f9ec5d357,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,80,reviewed-selector,changing the client drops cached failure and rejects a late old reread,False,RDRC-002
+MAP-fe0ae75b4bd3,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,91,reviewed-selector,cached access failure stays visible across reconnect with the existing %s authority,False,RDRC-002
 MAP-b28728f9d63d,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,47,reviewed-selector,stream connection before the first result displays loading rather than zero or empty,False,RDR-003
 MAP-3cb5a05e3dd6,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,54,reviewed-selector,confirmed empty is stable in ${variant} ${theme} ${lang},False,RDR-003
 MAP-7ac4e613f331,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,69,reviewed-selector,failed and unavailable access reads never display a cheerful empty quote or owner creation for guests,False,RDR-003
@@ -1060,6 +1063,10 @@ LEG-982cd11bec20,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test
 LEG-6a69d2b9722f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,424,test,"a credential the server rejects says so, not that it is a share link",False,legacy-not-retrospectively-reviewed
 LEG-dab2495366f0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,436,test,a Mac that refuses this phone reads Access rejected on the list,False,legacy-not-retrospectively-reviewed
 LEG-cd35d5d9def5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,448,test,"a server-mode change on the server is read at once, not on the next poll",False,legacy-not-retrospectively-reviewed
+MAP-8524f471c8a2,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,47,reviewed-selector,regular main respects loading and timeout in ${lang} ${theme},False,RDRC-001
+MAP-7c742f998d7d,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,62,reviewed-selector,hidden sidebar does not turn an unfinished main read into an empty fleet,False,RDRC-001
+MAP-6f2c71730f2c,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,70,reviewed-selector,unselected access and expired guest states retain shared guidance and no owner creation,False,RDRC-001
+MAP-e1527f7afcbf,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,77,reviewed-selector,only a successful empty main welcomes creation while a populated roster keeps automatic selection,False,RDRC-001
 LEG-2aba97e994c5,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,106,it,"is called by its name, not by its registry key",False,legacy-not-retrospectively-reviewed
 LEG-f259cfaf2c4d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,114,it,asks for an icon at all — the fallback used to carry no hint,False,legacy-not-retrospectively-reviewed
 LEG-450351da14b3,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,133,it,states ctx ONCE — two roundings of it used to sit side by side,False,legacy-not-retrospectively-reviewed

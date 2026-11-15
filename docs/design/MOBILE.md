@@ -109,6 +109,8 @@ A successful unfiltered worker-empty list shows **Start with a session**, the ex
 
 Keep same-client cached data and last-update time during refresh/failure. Reject malformed successful bodies rather than inventing an empty list. One bounded read lane covers the full response for 15 seconds, coalesces an in-flight burst into one trailing refresh and retires late/cancelled answers. A manual pull ends when its own requested read settles, independent of later bursts; there is no decorative 600ms timer. Existing foreground/reconnect/idle cadence, two-401 confirmation, non-revoking403 behavior, badges and Live Activity rules stay unchanged. Both shells use the same reader/palette.
 
+The regular shell's unselected main area consumes the same read state, even with its sidebar hidden. Only a successful list can show the welcome or **Select a session**; the sidebar keeps the excerpt so the main area does not repeat it. Cached list-read errors retain their notice, last-update time and applicable action across SSE reconnection until a current read succeeds. A malformed response says it could not update sessions, rather than asserting a network outage; an active retry shows **Updating…** and disables duplicate taps.
+
 ### Collapsible sections (must be discoverable)
 
 Every status section header is a tappable collapse bar. Discoverability is a hard requirement, so a small chevron on its own is not enough:

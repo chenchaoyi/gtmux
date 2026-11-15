@@ -313,26 +313,16 @@ export function RadarPanel({
   // The screen owns its safe area; the sidebar sits inside the shell's.
   const Root: React.ComponentType<any> = sidebar ? View : SafeAreaView;
   const rootProps = sidebar ? {} : {edges: ['top']};
+  const cachedIssue = listRead.hasValue && (!!listRead.error || conn === 'offline' || conn === 'unauthorized');
+  const cachedAccess = listRead.error === 'access' || conn === 'unauthorized';
   return (
     <Root style={[styles.safe, {backgroundColor: pal.bg}]} {...rootProps} testID={TestIds.radar.screen}>
       {banner && <Banner alert={banner} t={t} onClose={dismissBanner} />}
-      {conn === 'offline' && listRead.hasValue && (
-        <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} onRetry={refresh} pal={pal} />
-      )}
-      {conn === 'unauthorized' && listRead.hasValue && (
-        <TouchableOpacity
-          style={[styles.authBanner, {backgroundColor: pal.surface, borderColor: pal.divider}]}
-          onPress={() => navigation?.navigate('Servers')}
-          accessibilityRole="button"
-          accessibilityLabel={lang === 'zh' ? '查看连接设置' : 'Review connection settings'}>
-          <View style={[styles.connDot, {backgroundColor: StatusColor.waiting}]} />
-          <Text style={[styles.authBannerText, {color: pal.fg}]}>
-            {lang === 'zh'
-              ? '暂时无法访问，请检查连接设置。'
-              : 'Access is unavailable. Check connection settings.'}
-          </Text>
-        </TouchableOpacity>
-      )}
+      {cachedIssue && <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} pal={pal}
+        kind={listRead.error ?? (cachedAccess ? 'access' : 'offline')} isGuest={isGuest}
+        retrying={!cachedAccess && listRead.refreshing}
+        actionLabel={cachedAccess ? (lang === 'zh' ? '连接设置' : 'Connections') : undefined}
+        onRetry={cachedAccess ? (!isGuest && navigation ? () => navigation.navigate('Servers') : undefined) : refresh} />}
       {isGuest && (
         <View
           testID="radar-guest-banner"
@@ -512,9 +502,6 @@ const styles = StyleSheet.create({
     borderRadius: 6.5, borderWidth: 1, opacity: 0.75,
   },
   connText: {fontSize: 11},
-  // Always-dark banner → FIXED light text (never pal.fg, which is near-black in light mode).
-  authBanner: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 2, gap: 4},
-  authBannerText: {flex: 1, fontSize: 12, color: '#F3D9DE', fontWeight: '600'},
   guestBanner: {paddingHorizontal: 16, paddingVertical: 7, borderBottomWidth: 1},
   guestBannerText: {fontSize: 12, fontWeight: '600'},
   banner: {paddingHorizontal: 14, paddingVertical: 10},

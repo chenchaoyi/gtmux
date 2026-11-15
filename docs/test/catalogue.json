@@ -64593,6 +64593,83 @@
         }
       ],
       "sha256": "67b6266f2b6d010bed20972e12f621e72a9ce00648e803b572224ff60ed686bc"
+    },
+    "mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f568d67044af",
+          "line": 59,
+          "kind": "reviewed-selector",
+          "name": "a cached read failure remains visible when SSE reconnects before the next result: %s",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDRC-002"
+        },
+        {
+          "id": "MAP-6e4f9ec5d357",
+          "line": 80,
+          "kind": "reviewed-selector",
+          "name": "changing the client drops cached failure and rejects a late old reread",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDRC-002"
+        },
+        {
+          "id": "MAP-fe0ae75b4bd3",
+          "line": 91,
+          "kind": "reviewed-selector",
+          "name": "cached access failure stays visible across reconnect with the existing %s authority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDRC-002"
+        }
+      ],
+      "sha256": "5e1b645b4e7d65fc9d5b85865291d3ddca59fef2a9da600c2a3532d01d2796b7"
+    },
+    "mobileapp/src/screens/SplitShell.readState.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8524f471c8a2",
+          "line": 47,
+          "kind": "reviewed-selector",
+          "name": "regular main respects loading and timeout in ${lang} ${theme}",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDRC-001"
+        },
+        {
+          "id": "MAP-7c742f998d7d",
+          "line": 62,
+          "kind": "reviewed-selector",
+          "name": "hidden sidebar does not turn an unfinished main read into an empty fleet",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDRC-001"
+        },
+        {
+          "id": "MAP-6f2c71730f2c",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "unselected access and expired guest states retain shared guidance and no owner creation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDRC-001"
+        },
+        {
+          "id": "MAP-e1527f7afcbf",
+          "line": 77,
+          "kind": "reviewed-selector",
+          "name": "only a successful empty main welcomes creation while a populated roster keeps automatic selection",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RDRC-001"
+        }
+      ],
+      "sha256": "9d8fb62526f935dd0886634bdcbf7723002edb6b3d08e1de2eea03ebeb3f9fa2"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

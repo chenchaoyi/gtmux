@@ -175,7 +175,7 @@ SHALL retire old results immediately. Same-client refresh/failure SHALL retain i
 last successful list and timestamp. Malformed successful bodies SHALL fail, never
 become an empty list. Demo SHALL explicitly declare its supplied snapshot.
 
-The whole read SHALL have a15-second deadline and reject late/cancelled answers.
+The whole read SHALL have a 15-second deadline and reject late/cancelled answers.
 Only one read SHALL run per scope; a burst during it SHALL retain one trailing
 refresh. A pull indicator SHALL follow the owned request's settlement rather than
 an arbitrary timer or later unrelated bursts. Existing polling/reconnect cadence,
@@ -195,6 +195,22 @@ access/refusal confirmation and activity/notification rules SHALL remain.
 - **THEN** a trailing read obtains the newer snapshot without overlapping requests
 - **AND** a timeout releases the read lane for explicit retry without allowing its
   late answer to replace a newer response
+
+#### Scenario: The regular main area has no selection
+
+- **WHEN** the current list has not succeeded or has a read/access failure
+- **THEN** the unselected regular main area uses the shared read presentation even
+  with its sidebar hidden, without claiming there are no agents
+- **AND** a successful populated roster offers selection and preserves automatic selection
+
+#### Scenario: A cached read fails before the stream reconnects
+
+- **WHEN** SSE opens while a failed cached-list refresh has not succeeded
+- **THEN** the cached rows, readable failure notice and last-update time remain
+- **AND** a pending retry shows progress and prevents duplicate taps
+- **AND** malformed content is not described as proof of a network outage
+- **AND** only current-client read success clears the notice; owner/guest actions
+  preserve existing authority
 
 ### Requirement: An unreachable Mac leaves its last state on screen, muted
 

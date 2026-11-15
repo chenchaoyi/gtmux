@@ -10,9 +10,10 @@ import type {Palette} from '../ui/theme';
 const SOURCE = 'https://sites.prh.com/dune/read-an-excerpt';
 
 /** Empty is a successful data state, never an interpretation of an open stream. */
-export function RadarReadState({read, conn, isGuest, staleShare, filtered, lang, pal, demo, onRetry, onConnections, onShowAll}: {
+export function RadarReadState({read, conn, isGuest, staleShare, filtered, lang, pal, demo, hasSessions = false, showQuote = true, onRetry, onConnections, onShowAll}: {
   read: AgentListReadState; conn: ConnState; isGuest: boolean; staleShare: boolean; filtered: boolean;
   lang: Lang; pal: Palette; demo: boolean; onRetry: () => void;
+  hasSessions?: boolean; showQuote?: boolean;
   onConnections?: () => void; onShowAll: () => void;
 }) {
   const t = (en: string, zh: string) => lang === 'zh' ? zh : en;
@@ -40,16 +41,20 @@ export function RadarReadState({read, conn, isGuest, staleShare, filtered, lang,
     <Text style={[styles.title, {color: pal.fg}]}>{t('No sessions need input', '暂无需要输入的会话')}</Text>
     {button(t('Show all sessions', '显示全部会话'), onShowAll)}
   </View>;
+  if (hasSessions) return <View testID="radar-select-session" style={styles.state}>
+    <BrandMark size={42} neutral={pal.fg3} />
+    <Text style={[styles.title, {color: pal.fg}]}>{t('Select a session', '选择一个会话')}</Text>
+  </View>;
   return <View testID="radar-confirmed-empty" style={styles.state}>
     <BrandMark size={42} neutral={pal.fg3} />
     <Text style={[styles.title, {color: pal.fg}]}>{isGuest ? t('No shared agents to view yet.', '还没有可查看的共享 agent。') : t('Start with a session', '从一个会话开始')}</Text>
     {!demo && <NewSessionAction labelled />}
-    <View testID="radar-empty-quote" style={[styles.quote, {borderTopColor: pal.divider}]}>
+    {showQuote && <View testID="radar-empty-quote" style={[styles.quote, {borderTopColor: pal.divider}]}>
       <Text style={[styles.quotation, {color: pal.fg2}]}>{t('“A beginning is the time for taking the most delicate care…”', '“初始之际，尤须审慎……”')}</Text>
       <TouchableOpacity accessibilityRole="link" accessibilityLabel={t('Read the Dune excerpt', '阅读《沙丘》摘录')} onPress={() => {void Linking.openURL(SOURCE);}} style={styles.source}>
         <Text style={[styles.attribution, {color: pal.fg3}]}>{t('Frank Herbert · Dune · opening epigraph (excerpt)', '弗兰克·赫伯特 ·《沙丘》开篇题记（节译）')}</Text>
       </TouchableOpacity>
-    </View>
+    </View>}
   </View>;
 }
 const styles = StyleSheet.create({
