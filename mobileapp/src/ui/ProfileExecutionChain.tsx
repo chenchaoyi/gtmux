@@ -1,3 +1,5 @@
+import {useReadingPalette} from './ReadingPalette';
+import type {Palette} from './theme';
 import React, {useState} from 'react';
 import {executionGroups} from './executionChain';
 import {AccessibilityInfo, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
@@ -9,6 +11,8 @@ import type {ProfileTarget} from './participantProfile';
 import {currentChainRequest, ProfileRead, useParticipantProfile} from './useParticipantProfile';
 
 export function ProfileExecutionChain({target, client, lang, primary}: {target: ProfileTarget; client?: GtmuxClient; lang: Lang; primary: ProfileRead}) {
+  const pal = useReadingPalette();
+  const styles = React.useMemo(() => makeStyles(pal), [pal]);
   const zh = lang === 'zh';
   const [open, setOpen] = useState(false);
   const [requested, setRequested] = useState(false);
@@ -32,7 +36,7 @@ export function ProfileExecutionChain({target, client, lang, primary}: {target: 
         <Text style={styles.heading}>{zh ? '启动进程' : 'Launch processes'}</Text>
         <Text style={styles.note} numberOfLines={2}>{chain.length ? groups.map(p => p.name + (p.count > 1 ? ` ×${p.count}` : '')).join(' → ') : (zh ? '查看启动进程' : 'View launch processes')}</Text>
       </View>
-      <Chevron open={open} size={14} color="#A4A4AD" />
+      <Chevron open={open} size={14} color={pal.fg2} />
     </TouchableOpacity>
     {open && <View testID="profile-chain-content">
       {read.status === 'loading' ? <Text testID="profile-chain-loading" accessibilityRole="progressbar" style={styles.note}>{zh ? '正在加载…' : 'Loading…'}</Text>
@@ -46,7 +50,7 @@ export function ProfileExecutionChain({target, client, lang, primary}: {target: 
                 <View style={styles.commandRow}>
                   <ScrollView horizontal showsHorizontalScrollIndicator style={styles.flex}><Text selectable numberOfLines={1} style={styles.command}>{command}</Text></ScrollView>
                   <TouchableOpacity testID={`profile-copy-${i}`} accessibilityRole="button" accessibilityLabel={zh ? '复制进程信息' : 'Copy process details'} style={styles.copy}
-                    onPress={() => {Clipboard.setString(command); AccessibilityInfo.announceForAccessibility(zh ? '已复制' : 'Copied');}}><CopyIcon size={16} color="#A4A4AD" /></TouchableOpacity>
+                    onPress={() => {Clipboard.setString(command); AccessibilityInfo.announceForAccessibility(zh ? '已复制' : 'Copied');}}><CopyIcon size={16} color={pal.fg2} /></TouchableOpacity>
                 </View>
               </View>;
             })}
@@ -56,13 +60,13 @@ export function ProfileExecutionChain({target, client, lang, primary}: {target: 
   </View>;
 }
 
-const styles = StyleSheet.create({
-  section: {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#414147', marginTop: 16, paddingTop: 10},
+const makeStyles = (pal: Palette) => StyleSheet.create({
+  section: {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider, marginTop: 16, paddingTop: 10},
   disclosure: {minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12},
-  heading: {fontSize: 13, color: '#B8B8C2', fontWeight: '500'}, flex: {flex: 1, minWidth: 0},
-  note: {fontSize: 12, lineHeight: 18, color: '#A4A4AD', marginTop: 4},
-  process: {marginTop: 10, borderLeftWidth: 1, borderLeftColor: '#656571', paddingLeft: 10},
-  processName: {fontSize: 12, color: '#C7C7D1'}, commandRow: {flexDirection: 'row', alignItems: 'center'},
-  command: {fontFamily: 'Menlo', fontSize: 11, lineHeight: 22, color: '#B8B8C2'},
+  heading: {fontSize: 13, color: pal.fg2, fontWeight: '500'}, flex: {flex: 1, minWidth: 0},
+  note: {fontSize: 12, lineHeight: 18, color: pal.fg2, marginTop: 4},
+  process: {marginTop: 10, borderLeftWidth: 1, borderLeftColor: pal.divider, paddingLeft: 10},
+  processName: {fontSize: 12, color: pal.fg2}, commandRow: {flexDirection: 'row', alignItems: 'center'},
+  command: {fontFamily: 'Menlo', fontSize: 11, lineHeight: 22, color: pal.fg2},
   copy: {width: 44, height: 44, justifyContent: 'center', alignItems: 'center'}, retry: {alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingHorizontal: 8},
 });

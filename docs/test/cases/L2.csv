@@ -842,13 +842,13 @@ LEG-90313f24599a,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.
 LEG-3f37c79e8bc1,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,93,test,any other refusal keeps its retry and does not refill the box,False,legacy-not-retrospectively-reviewed
 LEG-42b0b31fdb8e,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,101,test,"a pane not shared for typing (403): no pairing, no retry, the text back in the box",False,legacy-not-retrospectively-reviewed
 LEG-8ef122c7c5b9,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,113,test,retires the sent echo after a poll containing its prompt and later turns; it stays gone,False,legacy-not-retrospectively-reviewed
-LEG-5deaa446a43c,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,129,test,a recorded Codex image replaces its temporary path echo while the agent is still working,False,legacy-not-retrospectively-reviewed
-LEG-eb3fc5fd2fe8,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,143,test,old identical text does not hide a new send; late failure clears only its own echo,False,legacy-not-retrospectively-reviewed
-LEG-a05f6f747efd,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,158,test,a retry preserves send identity and does not recreate an echo already confirmed by the transcript,False,legacy-not-retrospectively-reviewed
-LEG-358ed9368a35,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,174,test,working-send receipt expires even when the agent never becomes idle,False,legacy-not-retrospectively-reviewed
-LEG-a55ca1449b8b,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,183,test,the matching transcript retires a working receipt before the next idle transition,False,legacy-not-retrospectively-reviewed
-LEG-f975c92f4762,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,196,test,a late send response cannot recreate its receipt after transcript confirmation,False,legacy-not-retrospectively-reviewed
-LEG-cf861ad50359,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,210,test,a newer success gets its own expiry instead of inheriting the old timer,False,legacy-not-retrospectively-reviewed
+LEG-5deaa446a43c,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,130,test,a recorded Codex image replaces its temporary path echo while the agent is still working,False,legacy-not-retrospectively-reviewed
+LEG-eb3fc5fd2fe8,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,144,test,old identical text does not hide a new send; late failure clears only its own echo,False,legacy-not-retrospectively-reviewed
+LEG-a05f6f747efd,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,159,test,a retry preserves send identity and does not recreate an echo already confirmed by the transcript,False,legacy-not-retrospectively-reviewed
+LEG-358ed9368a35,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,175,test,working-send receipt expires even when the agent never becomes idle,False,legacy-not-retrospectively-reviewed
+LEG-a55ca1449b8b,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,184,test,the matching transcript retires a working receipt before the next idle transition,False,legacy-not-retrospectively-reviewed
+LEG-f975c92f4762,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,197,test,a late send response cannot recreate its receipt after transcript confirmation,False,legacy-not-retrospectively-reviewed
+LEG-cf861ad50359,L2,RN / mobile harness,mobileapp/src/screens/DetailSendRefused.test.tsx,211,test,a newer success gets its own expiry instead of inheriting the old timer,False,legacy-not-retrospectively-reviewed
 MAP-1dd1e525111d,L2,reviewed implementation,mobileapp/src/screens/DetailSendSnapshot.test.tsx,26,reviewed-selector,MSD-009 late text receipt cannot replace newer %s control-key screen,False,MSD-009
 LEG-3311f5104ff9,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,82,test,opening and closing Trace shares Chat’s in-flight read without aborting or starting a second subscription,False,legacy-not-retrospectively-reviewed
 LEG-383eef0af50a,L2,RN / mobile harness,mobileapp/src/screens/DetailTrace.test.tsx,109,test,the same pane and session in a different home cannot show or accept the old reply,False,legacy-not-retrospectively-reviewed
@@ -1352,6 +1352,7 @@ LEG-26fdef392a94,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.te
 LEG-5eeb3f5fa726,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,40,test,a late response from the previous Mac cannot populate the new Mac,False,legacy-not-retrospectively-reviewed
 LEG-41532acf05f3,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,48,test,choices appear before probes; a late probe cannot undo a move,False,legacy-not-retrospectively-reviewed
 LEG-27e3a51521d5,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,57,test,guest/offline callers make no requests,False,legacy-not-retrospectively-reviewed
+MAP-b48734ad467c,L2,reviewed implementation,mobileapp/src/state/ChatAppearancePreference.test.tsx,22,reviewed-selector,CAR-002,False,CAR-002
 MAP-114ecc94ce0f,L2,reviewed implementation,mobileapp/src/state/desktopReload.test.tsx,6,reviewed-selector,"CRX-002 external reload retains content, enforces parent deadline and retires old scope",False,CRX-002
 LEG-3f9ca980a593,L2,RN / mobile harness,mobileapp/src/trace/TraceModal.test.tsx,113,test,session name leads the heading; each expanded call opens its own fully wrapped input,False,legacy-not-retrospectively-reviewed
 LEG-d0e57172ba4f,L2,RN / mobile harness,mobileapp/src/trace/TraceModal.test.tsx,193,test,bulk disclosures survive streaming and programmatic scroll without reopening calls or turns,False,legacy-not-retrospectively-reviewed
@@ -1417,7 +1418,9 @@ LEG-e6e7b244f26a,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,43
 LEG-a2ee828f06f8,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,56,it,still slides when you dismiss it by the backdrop — there the motion IS the answer,False,legacy-not-retrospectively-reviewed
 LEG-9ebc3d2fb720,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,63,it,runs the chosen action only after the sheet has actually gone,False,legacy-not-retrospectively-reviewed
 LEG-8b9b6cbb1dad,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,76,it,slides again the next time it opens,False,legacy-not-retrospectively-reviewed
+MAP-ca6228d2bf6a,L2,reviewed implementation,mobileapp/src/ui/ChatAppearance.test.tsx,15,reviewed-selector,CAR-001,False,CAR-001
 MAP-bc8cc6baa2e3,L2,reviewed implementation,mobileapp/src/ui/ChatEchoHandoff.test.tsx,9,reviewed-selector,CRX-004 %s confirmed echo keeps the same mounted bubble,False,CRX-004
+MAP-2641a502533a,L2,reviewed implementation,mobileapp/src/ui/ChatReceiptPresentation.test.tsx,20,reviewed-selector,CAR-003,False,CAR-003
 LEG-10b2f4580849,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,45,test,"a new turn does not drag a reader out of history, nor tell the host it did",False,legacy-not-retrospectively-reviewed
 LEG-067d2f8bfcb3,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,71,test,a new turn DOES follow for a reader sitting at the tail,False,legacy-not-retrospectively-reviewed
 LEG-dc47da40588f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.follow.test.tsx,89,test,the host revealing its chrome does not count as leaving the tail,False,legacy-not-retrospectively-reviewed
@@ -1708,13 +1711,14 @@ LEG-7f7081eb354d,L2,RN / mobile harness,mobileapp/src/ui/SendFailedBar.test.tsx,
 LEG-b29ed450e58a,L2,RN / mobile harness,mobileapp/src/ui/SendFailedBar.test.tsx,61,test,an unrecognised refusal still keeps the text and the retry,False,legacy-not-retrospectively-reviewed
 LEG-a423043e4572,L2,RN / mobile harness,mobileapp/src/ui/SendFailedBar.test.tsx,71,test,"a Mac that refused this phone sends the reader to pair again, with no retry",False,legacy-not-retrospectively-reviewed
 LEG-78173b015589,L2,RN / mobile harness,mobileapp/src/ui/SendFailedBar.test.tsx,86,test,"a pane not shared for typing (403) is said as that, with no pairing and no retry",False,legacy-not-retrospectively-reviewed
-LEG-162daee1718c,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,34,test,HQ uses the gtmux brand mark independently of the recorded harness,False,legacy-not-retrospectively-reviewed
-LEG-fb0c7a9219bd,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,42,test,"another session wears its agent, not the letters HQ",False,legacy-not-retrospectively-reviewed
+LEG-162daee1718c,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,35,test,HQ uses the gtmux brand mark independently of the recorded harness,False,legacy-not-retrospectively-reviewed
+LEG-fb0c7a9219bd,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,43,test,"another session wears its agent, not the letters HQ",False,legacy-not-retrospectively-reviewed
 LEG-962d4e6a08bb,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,50,test,"its colours are fixed light-on-dark, never the theme",False,legacy-not-retrospectively-reviewed
-LEG-e3e3d57d7a75,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,78,test,"a turn HQ delivered names HQ, and the reader's own turn names nobody",False,legacy-not-retrospectively-reviewed
-LEG-ef180edec710,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,89,test,a dispatch from another session names that session,False,legacy-not-retrospectively-reviewed
-LEG-14238fcb471c,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,94,test,it speaks the reader’s language,False,legacy-not-retrospectively-reviewed
-LEG-b3bacf12f657,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,98,test,an ordinary conversation is unchanged,False,legacy-not-retrospectively-reviewed
+LEG-e3e3d57d7a75,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,75,test,"a turn HQ delivered names HQ, and the reader's own turn names nobody",False,legacy-not-retrospectively-reviewed
+LEG-ef180edec710,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,86,test,a dispatch from another session names that session,False,legacy-not-retrospectively-reviewed
+LEG-14238fcb471c,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,91,test,it speaks the reader’s language,False,legacy-not-retrospectively-reviewed
+LEG-b3bacf12f657,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,95,test,an ordinary conversation is unchanged,False,legacy-not-retrospectively-reviewed
+MAP-190ea3e9118c,L2,RN / mobile harness,mobileapp/src/ui/SenderAvatar.test.tsx,48,reviewed-selector,CAR-001,False,CAR-001
 LEG-208a4d6f403f,L2,RN / mobile harness,mobileapp/src/ui/ServerConnectionMark.test.tsx,6,test.each(),connection mark stays concentric with its keep-running ring (filled=%s),True,legacy-not-retrospectively-reviewed
 LEG-ee582ae44e6f,L2,RN / mobile harness,mobileapp/src/ui/SessionDisplayMenu.test.tsx,22,test,a small toolbar icon opens shared menu rows with an explicit current choice,False,legacy-not-retrospectively-reviewed
 LEG-0c7cccc4cca6,L2,RN / mobile harness,mobileapp/src/ui/SessionDisplayMenu.test.tsx,39,test,"selected state and labels follow the layout and language, not menu-local state",False,legacy-not-retrospectively-reviewed
@@ -1765,13 +1769,14 @@ LEG-f54cabe2a331,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,27,test
 LEG-4c46e311242b,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,51,test,reduced motion never starts a breathing animation; changing the setting stops a live loop,False,legacy-not-retrospectively-reviewed
 LEG-3e028566a8ca,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,74,test,a live Reduce Motion change wins over a stale initial preference query,False,legacy-not-retrospectively-reviewed
 LEG-e8ec3ad20de3,L2,RN / mobile harness,mobileapp/src/ui/TerminalKeyPanel.test.tsx,10,test,"compact keycaps send canonical keys, clear one-shot modifiers and keep function keys reachable",False,legacy-not-retrospectively-reviewed
-LEG-ad72ed211c5d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,24,test,shows the label it is given,False,legacy-not-retrospectively-reviewed
-LEG-f87bea8bca03,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,32,test,"puts a rule on BOTH sides of it, with the label between them",False,legacy-not-retrospectively-reviewed
-LEG-1437d0102ed2,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,54,test,draws at least one full period and starts at the left edge,False,legacy-not-retrospectively-reviewed
-LEG-bd8a819ecc3d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,61,test,a width under one period draws nothing beyond the start,False,legacy-not-retrospectively-reviewed
-LEG-089667cd0076,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,97,test,"two turns minutes apart share one separator, at the start",False,legacy-not-retrospectively-reviewed
-LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,104,test,"a night and a pause each earn one, the turn between them earns none",False,legacy-not-retrospectively-reviewed
-LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,110,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
+LEG-ad72ed211c5d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,26,test,shows the label it is given,False,legacy-not-retrospectively-reviewed
+LEG-f87bea8bca03,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,34,test,"puts a rule on BOTH sides of it, with the label between them",False,legacy-not-retrospectively-reviewed
+LEG-1437d0102ed2,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,52,test,draws at least one full period and starts at the left edge,False,legacy-not-retrospectively-reviewed
+LEG-bd8a819ecc3d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,59,test,a width under one period draws nothing beyond the start,False,legacy-not-retrospectively-reviewed
+LEG-089667cd0076,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,95,test,"two turns minutes apart share one separator, at the start",False,legacy-not-retrospectively-reviewed
+LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,102,test,"a night and a pause each earn one, the turn between them earns none",False,legacy-not-retrospectively-reviewed
+LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,108,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
+MAP-99248d9d621d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,43,reviewed-selector,CAR-001,False,CAR-001
 MAP-b9aeb044c6cb,L2,reviewed implementation,mobileapp/src/ui/ToolReaderCopy.test.tsx,34,reviewed-selector,CRR-002,False,CRR-002
 MAP-8a5ed6f91907,L2,reviewed implementation,mobileapp/src/ui/ToolReading.test.tsx,10,reviewed-selector,"TSV-001 command preview is direct, single-command outline absent, original input and result copy remain exact",False,TSV-001
 MAP-14697d90a8f6,L2,reviewed implementation,mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx,10,reviewed-selector,ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace,False,ASA-010

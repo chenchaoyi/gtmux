@@ -5,8 +5,8 @@
 // the agent only (DESIGN §6, assets/agent-icons/SOURCES.md). Color is never identity.
 //
 // Colors are passed in explicitly so it's safe on ANY surface — including the
-// always-dark chat surface, where the theme palette would be near-black/invisible
-// (see the dark-surface trap). Shared by the radar row and the chat view.
+// Chat reading surface. Match foreground and background from the same palette.
+// Shared by the radar row and the chat view.
 
 import React, {useEffect, useRef, useState} from 'react';
 import {Image, Platform, StyleSheet, Text, View} from 'react-native';

@@ -1,3 +1,4 @@
+import {useReadingPalette} from './ReadingPalette';
 // TimeSeparator — the mark where the conversation stopped and started again.
 //
 // The chat used to put a bare line of grey text above any turn whose formatted time
@@ -10,15 +11,10 @@
 //
 // The wave is an SVG path rather than a repeated glyph: a wave character's coverage and
 // advance vary by font, and this line has to look the same beside Latin and CJK text.
-// Colours are FIXED light-on-dark — the chat surface is always dark whatever the app's
-// appearance ([[mobile-light-mode-dark-surface-trap]]).
-
 import React from 'react';
 import {LayoutChangeEvent, StyleSheet, Text, View} from 'react-native';
 import Svg, {Path} from 'react-native-svg';
 
-const RULE = 'rgba(235,235,245,0.28)';
-const LABEL = 'rgba(235,235,245,0.5)';
 
 // WAVE_LEN is one full period and WAVE_H the peak-to-peak height. Small and shallow: this
 // is a rule with a texture, not an ornament.
@@ -37,15 +33,17 @@ export function wavePath(width: number, len: number = WAVE_LEN, h: number = WAVE
 }
 
 function Wave({width}: {width: number}) {
+  const pal = useReadingPalette();
   if (width < WAVE_LEN) return <View style={{width}} />;
   return (
     <Svg width={width} height={WAVE_H} viewBox={`0 0 ${width} ${WAVE_H}`}>
-      <Path d={wavePath(width)} stroke={RULE} strokeWidth={1} fill="none" />
+      <Path d={wavePath(width)} stroke={pal.fg3} strokeWidth={1} fill="none" />
     </Svg>
   );
 }
 
 export function TimeSeparator({label, testID}: {label: string; testID?: string}) {
+  const pal = useReadingPalette();
   // The rules are measured, not stretched: an SVG scaled to fill would flatten or squash
   // the wave depending on the width it landed on.
   const [side, setSide] = React.useState(0);
@@ -58,7 +56,7 @@ export function TimeSeparator({label, testID}: {label: string; testID?: string})
       <View style={styles.side} onLayout={onLayout}>
         <Wave width={side} />
       </View>
-      <Text style={styles.label} allowFontScaling={false} numberOfLines={1}>
+      <Text style={[styles.label, {color: pal.fg2}]} allowFontScaling={false} numberOfLines={1}>
         {label}
       </Text>
       <View style={styles.side}>
@@ -71,5 +69,5 @@ export function TimeSeparator({label, testID}: {label: string; testID?: string})
 const styles = StyleSheet.create({
   row: {flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14},
   side: {flex: 1, justifyContent: 'center'},
-  label: {fontSize: 11.5, color: LABEL, marginHorizontal: 10, letterSpacing: 0.3, fontVariant: ['tabular-nums']},
+  label: {fontSize: 11.5, marginHorizontal: 10, letterSpacing: 0.3, fontVariant: ['tabular-nums']},
 });

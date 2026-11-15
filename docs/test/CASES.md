@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1262 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1265 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3785 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2301 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2306 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 141 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -62,7 +62,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | AEC-002 | One underlying send only. New recorded prompt is visible and no committed frame includes its optimistic duplicate; pending/awaiting status disappears at that same commit and late receipt cannot restore it. A historical identical occurrence still leaves a new send pending. Shared behavior applies independently to HQ and Detail; existing retry/ordering guards remain. Tests never contact a live server. |
 | AOP-004 | Restore button belongs to tile header and precedes its other children, never floats over the title or terminal. Header grid reserves its column; narrow layout shows a named return icon and leaves title/actions usable. Only one restore control exists. Restoring removes it and restores prior tile dimensions; other tiles and existing terminal-fit/Escape behavior are unchanged. No real user session or service is driven. |
 | CAR-001 | Text, bubble, markdown, activity/code/reader chrome and avatars use matching palette; transcript/bubble/expansion identity survives; actual terminal Live output remains on its dark terminal canvas |
-| CAR-002 | Only gtmux.themePref is used; overrides ignore system changes, system follows; saved choice survives; no per-chat preference or transport reset |
+| CAR-002 | Only gtmux.themePref is used; overrides ignore system changes, system follows; saved choice survives; no per-chat preference or transport reset Compact and expanded composer keyboards resolve the same effective light/dark preference; no draft or send is changed. |
 | CAR-003 | Sending/accepted/submitted use small accessible marks in the existing avatar footprint, no standalone Received line; pending and confirmed user row, avatar footprint and bubble remain mounted with same geometry; recorded aliases have no receipt; queued text stays explicit; old prompt cannot acknowledge new send; no fabricated execution or transport retry Successful mark hides after 2.5 seconds without removing the optimistic bubble or changing queue/send state; later source preserves mounted row. |
 | CAS-001 | Recover only one fresh, exact-home, exact-location frontend after full client/root/backend birth and TTY verification. Ignore the corrupt JSON prefix. Read recovery does not write files or grant input through LoadLive. Missing, stale, foreign, changed, ambiguous, oversized directory and malformed/trailing receipt evidence fail closed. |
 | CAS-002 | The current bridge can atomically republish its matching primary record only with its own exact persisted fresh snapshot, unique verified frontend and repeated verification under the binding lease. Valid conflicting primary records, unknown/missing proof and changed/newer frontend refuse without writes. Existing recovery checkpoints are preserved on normal refresh. Caller epoch guard remains unchanged; no real-session restoration or inputs. |

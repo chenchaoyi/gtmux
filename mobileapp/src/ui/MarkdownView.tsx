@@ -1,7 +1,5 @@
 // Markdown — renders the markdown.ts block/inline tree as React Native views.
-// Colors are passed in (the chat surface is ALWAYS dark, so callers pass fixed
-// light-on-dark colors — see the dark-surface trap). Reusable: pass a light
-// palette to render on a light surface.
+// Callers pass colors for the actual reading surface, including App Appearance.
 
 import React from 'react';
 import {

@@ -1,3 +1,5 @@
+import {useReadingPalette} from './ReadingPalette';
+import type {Palette} from './theme';
 import {useModalEscape} from '../keys/useModalEscape';
 import presentation from './participantPresentation.json';
 import React, {useEffect, useState} from 'react';
@@ -16,6 +18,8 @@ import {ProfileExecutionChain} from './ProfileExecutionChain';
 import {HQProfileDetails} from './HQProfileDetails';
 
 export function ParticipantProfileModal({target, client, lang, onClose}: {target: ProfileTarget; client?: GtmuxClient; lang: Lang; onClose: () => void}) {
+  const pal = useReadingPalette();
+  const styles = React.useMemo(() => makeStyles(pal), [pal]);
   useModalEscape(true, onClose);
   const zh = lang === 'zh';
   const {height, fontScale} = useWindowDimensions();
@@ -39,7 +43,7 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
         </TouchableOpacity>
         <ScrollView testID="profile-content" style={styles.scroller} contentContainerStyle={styles.content} showsVerticalScrollIndicator>
           <View style={human ? styles.identity : styles.agentIdentity}>
-            {human ? <UserAvatar size={56} /> : hq ? <HQAvatar size={40} /> : target.sender ? <SenderAvatar from={target.sender} size={40} /> : <AgentAvatar agent={target.agent} size={40} radius={10} bg="#242428" fg="#ECECF1" />}
+            {human ? <UserAvatar size={56} /> : hq ? <HQAvatar size={40} /> : target.sender ? <SenderAvatar from={target.sender} size={40} /> : <AgentAvatar agent={target.agent} size={40} radius={10} bg={pal.raised} fg={pal.fg} />}
             <View style={!human && styles.flex}>
             <Text accessibilityRole="header" style={human ? styles.title : styles.agentTitle}>{name}</Text>
             {human ? <Text style={styles.subtitle}>{presentation.human.subtitle[zh ? 1 : 0]}</Text>
@@ -61,7 +65,7 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
             {(read.status === 'failed' || profile?.unavailable) && <TouchableOpacity testID="profile-retry" accessibilityRole="button" onPress={read.retry} style={styles.retry}><Text style={styles.sectionTitle}>{zh ? '重试' : 'Retry'}</Text></TouchableOpacity>}
             {read.status !== 'loading' && target.kind === 'agent' && <ProfileExecutionChain target={target} client={client} lang={lang} primary={read} />}
             {facts.length > 0 && <View style={styles.section}>
-              <TouchableOpacity testID="profile-sources-toggle" accessibilityRole="button" accessibilityState={{expanded: sourcesOpen}} onPress={() => setSourcesOpen(v => !v)} style={styles.disclosure}><Text style={[styles.sectionTitle, styles.flex]}>{zh ? '来源与记录时间' : 'Sources and observation times'}</Text><Chevron open={sourcesOpen} color="#C7C7CE" /></TouchableOpacity>
+              <TouchableOpacity testID="profile-sources-toggle" accessibilityRole="button" accessibilityState={{expanded: sourcesOpen}} onPress={() => setSourcesOpen(v => !v)} style={styles.disclosure}><Text style={[styles.sectionTitle, styles.flex]}>{zh ? '来源与记录时间' : 'Sources and observation times'}</Text><Chevron open={sourcesOpen} color={pal.fg2} /></TouchableOpacity>
               {sourcesOpen && facts.map(f => <View key={f.key} style={styles.sourceRow}>
                 <Text style={styles.sourceLabel}>{factLabel(f.key, zh)}</Text>
                 <View style={styles.flex}><Text style={styles.sourceText}>{factSourceLabel(f.source, zh)}</Text>{!!f.observed_at && <Text style={styles.sourceText}>{new Date(f.observed_at).toLocaleString()}</Text>}</View>
@@ -74,22 +78,22 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
   </Modal>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (pal: Palette) => StyleSheet.create({
   backdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,0.64)', alignItems: 'center', justifyContent: 'center', padding: 20},
-  panel: {width: '100%', maxWidth: 430, paddingTop: 52, backgroundColor: '#1C1C1F', borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: '#45454D', overflow: 'hidden'},
+  panel: {width: '100%', maxWidth: 430, paddingTop: 52, backgroundColor: pal.surface, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, borderColor: pal.divider, overflow: 'hidden'},
   scroller: {flexGrow: 0, flexShrink: 1},
   close: {position: 'absolute', right: 8, top: 8, zIndex: 1, minWidth: 54, minHeight: 44, alignItems: 'center', justifyContent: 'center'},
-  closeText: {color: '#C7C7CE', fontSize: 13}, content: {padding: 24, paddingTop: 0}, identity: {alignItems: 'center', gap: 10, marginBottom: 22},
-  agentIdentity: {flexDirection: 'row', gap: 12, alignItems: 'center', marginBottom: 16}, agentTitle: {fontSize: 20, fontWeight: '600', color: '#F2F2F7'},
-  title: {fontSize: 24, fontWeight: '700', color: '#F2F2F7', textAlign: 'center'}, subtitle: {fontSize: 12, lineHeight: 18, color: '#B8B8C2'},
-  grid: {flexDirection: 'row', flexWrap: 'wrap'}, fact: {width: '50%', paddingRight: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#414147'},
+  closeText: {color: pal.fg2, fontSize: 13}, content: {padding: 24, paddingTop: 0}, identity: {alignItems: 'center', gap: 10, marginBottom: 22},
+  agentIdentity: {flexDirection: 'row', gap: 12, alignItems: 'center', marginBottom: 16}, agentTitle: {fontSize: 20, fontWeight: '600', color: pal.fg},
+  title: {fontSize: 24, fontWeight: '700', color: pal.fg, textAlign: 'center'}, subtitle: {fontSize: 12, lineHeight: 18, color: pal.fg2},
+  grid: {flexDirection: 'row', flexWrap: 'wrap'}, fact: {width: '50%', paddingRight: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: pal.divider},
   factLarge: {width: '100%', paddingRight: 0},
-  label: {color: '#B8B8C2', fontSize: 12, marginBottom: 6}, value: {color: '#F2F2F7', fontSize: 16, lineHeight: 23}, loading: {minHeight: 220},
-  skeleton: {gap: 26, paddingTop: 30}, placeholder: {height: 18, width: '80%', backgroundColor: '#2C2C31', borderRadius: 3},
-  section: {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#414147', marginTop: 18, paddingTop: 6}, disclosure: {minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12},
-  sectionTitle: {fontSize: 13, fontWeight: '500', color: '#B8B8C2'}, flex: {flex: 1, minWidth: 0},
+  label: {color: pal.fg2, fontSize: 12, marginBottom: 6}, value: {color: pal.fg, fontSize: 16, lineHeight: 23}, loading: {minHeight: 220},
+  skeleton: {gap: 26, paddingTop: 30}, placeholder: {height: 18, width: '80%', backgroundColor: pal.raised, borderRadius: 3},
+  section: {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider, marginTop: 18, paddingTop: 6}, disclosure: {minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12},
+  sectionTitle: {fontSize: 13, fontWeight: '500', color: pal.fg2}, flex: {flex: 1, minWidth: 0},
   retry: {minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingHorizontal: 8},
-  sourceRow: {flexDirection: 'row', gap: 12, paddingVertical: 8}, sourceLabel: {fontSize: 12, lineHeight: 18, color: '#B8B8C2', flex: 1}, sourceText: {fontSize: 11, lineHeight: 17, color: '#A4A4AD'},
-  notice: {fontSize: 12, lineHeight: 19, color: '#B8B8C2', marginTop: 10},
-  quote: {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#414147', paddingTop: 24, paddingBottom: 8}, quoteText: {color: '#C7C7D1', fontSize: 16, lineHeight: 26}, attribution: {color: '#B8B8C2', fontSize: 13, marginTop: 18, textAlign: 'center'},
+  sourceRow: {flexDirection: 'row', gap: 12, paddingVertical: 8}, sourceLabel: {fontSize: 12, lineHeight: 18, color: pal.fg2, flex: 1}, sourceText: {fontSize: 11, lineHeight: 17, color: pal.fg2},
+  notice: {fontSize: 12, lineHeight: 19, color: pal.fg2, marginTop: 10},
+  quote: {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider, paddingTop: 24, paddingBottom: 8}, quoteText: {color: pal.fg2, fontSize: 16, lineHeight: 26}, attribution: {color: pal.fg2, fontSize: 13, marginTop: 18, textAlign: 'center'},
 });

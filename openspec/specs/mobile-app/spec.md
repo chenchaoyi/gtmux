@@ -2863,3 +2863,19 @@ HQ and ordinary session Chat SHALL compare dual image representations using comp
 - **WHEN** a new transcript occurrence contains that same text and path plus a generated image link for the same attachment
 - **THEN** the UI shows the recorded message once with no pending confirmation row, including the first committed render and a late delivery receipt
 - **AND** different paths, order, repeated-file count, prose, or only an old occurrence do not acknowledge this send
+
+### Requirement: Conversations inherit App Appearance
+Phone and iPad Chat, HQ and shared reading controls SHALL use the existing persisted App Appearance preference (System, Light, Dark). System SHALL follow device changes; explicit choices SHALL override them. Updating the preference SHALL recolor the mounted conversation and nested readers without replacing messages or resetting conversation state. Terminal output SHALL retain its host/terminal palette. No separate Chat preference SHALL be required.
+
+#### Scenario: Appearance changes in an open conversation
+- **WHEN** the user selects Light or Dark in App Settings, or changes device appearance while System is selected
+- **THEN** Chat, markdown/code, activity details and participant controls use matching foreground/background colors while the mounted conversation and disclosures remain intact
+- **AND** Terminal and expanded Live terminal output retain their terminal palette
+
+### Requirement: Quiet ingress feedback without message movement
+Successful send acknowledgements SHALL appear only as a compact accessible check in the existing user-avatar footprint for at most 2.5 seconds. Transcript confirmation SHALL remove the mark immediately. Sending and queued states SHALL remain distinguishable and SHALL NOT be timed out into success. Recorded messages SHALL NOT retain an ingress status line. Hiding a mark SHALL NOT remove the optimistic message, mutate delivery state or trigger resending.
+
+#### Scenario: Transcript confirms a locally sent message
+- **WHEN** the new matching source record replaces the optimistic presentation
+- **THEN** the same user row and bubble remain mounted with unchanged dimensions and no persistent Received label
+- **AND** an older identical prompt or late receipt cannot acknowledge another send or restore its status line

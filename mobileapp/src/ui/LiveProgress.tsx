@@ -1,3 +1,5 @@
+import {useReadingPalette, readingColors} from './ReadingPalette';
+import type {Palette} from './theme';
 import React from 'react';
 import {ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {AnsiLine} from './ansi';
@@ -20,9 +22,11 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
   inspectAvailable?: boolean;
   sourceLabel?: string;
 }) {
+  const pal = useReadingPalette();
+  const styles = React.useMemo(() => makeStyles(pal), [pal]);
   const action = lang === 'zh' ? (open ? '收起实时画面' : '展开实时画面') : (open ? 'Hide live view' : 'Show live view');
   const marker = <>
-    <BrandLoader size={14} neutral="rgba(255,255,255,0.30)" />
+    <BrandLoader size={14} neutral={pal.fg3} />
     <ChromeText style={styles.label} numberOfLines={1}>{label}</ChromeText>
   </>;
   return <View testID={TestIds.detail.chatThinking} style={[styles.root, open && inspectAvailable && styles.expanded]}>
@@ -35,7 +39,7 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
         {marker}
         <View style={styles.action}>
           <ChromeText style={styles.actionText}>{action}</ChromeText>
-          <Chevron open={open} size={12} color="#27C7E6" />
+          <Chevron open={open} size={12} color={readingColors(pal).link} />
         </View>
       </TouchableOpacity> : <View style={styles.disclosure}>{marker}</View>}
     </View>
@@ -56,19 +60,19 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
   </View>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (pal: Palette) => StyleSheet.create({
   root: {marginTop: 6},
   expanded: {backgroundColor: 'rgba(6,182,212,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(6,182,212,0.25)', borderRadius: 10, padding: 10},
   row: {flexDirection: 'row', alignItems: 'center'},
-  disclosure: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 44, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#1C1C1F'},
+  disclosure: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 44, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: pal.surface},
   openDisclosure: {backgroundColor: 'transparent', paddingHorizontal: 0},
-  label: {flex: 1, fontSize: 12, color: 'rgba(235,235,245,0.65)', fontVariant: ['tabular-nums']},
+  label: {flex: 1, fontSize: 12, color: pal.fg2, fontVariant: ['tabular-nums']},
   action: {flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1},
-  actionText: {fontSize: 12, color: '#27C7E6', flexShrink: 1},
+  actionText: {fontSize: 12, color: readingColors(pal).link, flexShrink: 1},
   preview: {marginTop: 5, overflow: 'hidden'},
-  source: {color: 'rgba(235,235,245,0.65)', fontSize: 12, lineHeight: 18, marginBottom: 4},
-  viewport: {maxHeight: 220},
+  source: {color: pal.fg2, fontSize: 12, lineHeight: 18, marginBottom: 4},
+  viewport: {maxHeight: 220, backgroundColor: '#17171A'},
   screen: {paddingVertical: 4},
   mono: {color: '#D6D6DA'},
-  empty: {padding: 12, color: 'rgba(235,235,245,0.6)', fontSize: 12},
+  empty: {padding: 12, backgroundColor: '#17171A', color: 'rgba(235,235,245,0.6)', fontSize: 12},
 });
