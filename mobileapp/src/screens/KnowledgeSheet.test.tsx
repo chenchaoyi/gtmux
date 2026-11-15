@@ -1,5 +1,6 @@
 import React from 'react';
-import {Linking} from 'react-native';
+import {Linking, Modal} from 'react-native';
+import {AnchoredMenu} from '../ui/AnchoredMenu';
 import {Text} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import {KnowledgeSheet} from './KnowledgeSheet';
@@ -9,6 +10,21 @@ import {PROMOTION_STALE_SECS} from './knowledgeModel';
 
 const NOW = 1_756_800_000;
 const mounted: renderer.ReactTestRenderer[] = [];
+// Secondary actions now live in the shared native menu. Keep the old operation
+// assertions, but enter through the visible control and wait for native dismissal.
+async function showEntryMenu(tree: renderer.ReactTestRenderer) {
+  await act(async () => {tree.root.findByProps({testID: 'knowledge-entry-more'}).props.onPress();});
+  const menu = tree.root.findByType(AnchoredMenu);
+  act(() => menu.findAll(n => n.props.testID === 'knowledge-act' && n.props.onLayout)[0].props.onLayout({nativeEvent: {layout: {height: 220}}}));
+  await act(async () => {await new Promise<void>(resolve => setTimeout(resolve, 160));});
+  return menu;
+}
+async function chooseSecondary(tree: renderer.ReactTestRenderer, kind: string) {
+  const menu = await showEntryMenu(tree);
+  await act(async () => {tree.root.findByProps({testID: `knowledge-act-${kind}`}).props.onPress();});
+  await act(async () => {menu.findByType(Modal).props.onDismiss();});
+}
+
 afterEach(() => {
   for (const tree of mounted.splice(0)) act(() => tree.unmount());
 });
@@ -96,6 +112,7 @@ test('an entry opens to its body, and only a pending promotion offers landing', 
   expect(strings(t.root as unknown as Node).join(' ')).toContain('the whole lesson');
   // Nothing was promoted, so there is nothing to land — offering it would invite a
   // refusal the reader could not have predicted.
+  await showEntryMenu(t);
   expect(t.root.findAllByProps({testID: 'knowledge-act-land'})).toHaveLength(0);
   expect(t.root.findAllByProps({testID: 'knowledge-act-retire'}).length).toBeGreaterThan(0);
 });
@@ -130,9 +147,7 @@ test("a refusal shows the server's own words and keeps the draft", async () => {
   await act(async () => {
     t.root.findByProps({testID: 'knowledge-entry-pitfalls/x'}).props.onPress();
   });
-  await act(async () => {
-    t.root.findByProps({testID: 'knowledge-act-retire'}).props.onPress();
-  });
+  await chooseSecondary(t, 'retire');
   await act(async () => {
     t.root.findByProps({testID: 'knowledge-act-input'}).props.onChangeText('wrong now');
   });
@@ -294,8 +309,9 @@ describe('the actions name what they mean', () => {
     await act(async () => {
       t.root.findByProps({testID: 'knowledge-entry-pitfalls/x'}).props.onPress();
     });
+    await showEntryMenu(t);
     const said = strings(t.root as unknown as Node).join(' ');
-    expect(said).toContain('Mark as no longer applicable');
+    expect(said).toContain('No longer applicable');
     expect(said).not.toContain('Retire it');
   });
 });
@@ -307,7 +323,8 @@ test('write-it-in sends carry with no text, after one confirmation', async () =>
   await act(async () => {
     t.root.findByProps({testID: 'knowledge-entry-pitfalls/x'}).props.onPress();
   });
-  // The entry shows who must know it.
+  // The entry keeps its audience in the folded record details.
+  await act(async () => {t.root.findByProps({testID: 'knowledge-record-details'}).props.onPress();});
   expect(strings(t.root as unknown as Node).join(' ')).toContain('Agents on this computer');
   await act(async () => {
     t.root.findByProps({testID: 'knowledge-act-carry'}).props.onPress();
@@ -337,9 +354,7 @@ test('withdrawing asks why and sends it; everyone opens the issue instead of car
   });
   expect(open).toHaveBeenCalledWith('https://gh/new?x');
   open.mockRestore();
-  await act(async () => {
-    t.root.findByProps({testID: 'knowledge-act-withdraw'}).props.onPress();
-  });
+  await chooseSecondary(t, 'withdraw');
   await act(async () => {
     t.root.findByProps({testID: 'knowledge-act-input'}).props.onChangeText('only true here');
   });

@@ -1,0 +1,6 @@
+- [x] Resolve explicit selection2 and review/seal tests before implementation
+- [x] Implement literal sectioning, reading hierarchy and action hierarchy
+- [x] Bound and scope read feedback without changing mutation authority
+- [x] Verify reviewed regressions and old assertions
+- [x] Update bilingual design/spec and run App/source gates
+- [x] Compare selected reference with observed phone native fixture rendering (Chinese light / English dark); full current-source native build, iPad and accessibility acceptance remain unverified

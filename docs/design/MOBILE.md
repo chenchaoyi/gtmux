@@ -1270,15 +1270,11 @@ adjacent to the board: working memory and long-term memory side by side). On a r
    Spot-checking what was just written is the cheapest way to catch it, and it is "reading", exactly what a phone is good at.
 3. Where everything is: topics with counts, empty topics omitted (the six built-in topics exist on every machine; listing them is five empty rows weighing on
    the one with 137).
-- Actions get their exits per reader (hq-knowledge-engine): the entry page gains a three-axis line (kind · source×count · for whom); an entry waiting to be taken gets buttons by reader:
-  HQ / this machine / repo are "write it in" (gtmux moves it for you, no text, just "now?"), everyone is "feedback to gtmux ↗" (opens a pre-filled issue,
-  then "mark as landed" via the link), and one with no reader chosen can only be landed by hand or "withdraw the promotion" (with a reason). `退休这一条` (retire this entry, with a reason) as before.
-  Promotion itself is not offered: it asks "for whom", and that question stays on the Mac and the CLI. The judgement is `actsFor` in `knowledgeModel.ts`, testable.
-  **Writing entries is deliberately not offered**: typing bodies on a phone is precisely how a knowledge base fills with entries nobody wants to read.
-- Actions ask before doing: tapping an action only opens the input bar, and sending needs a second confirmation; a failure shows the server's words verbatim
-  ("has no pending promotion to land" tells the reader what to do; a generic error throws that sentence away).
-- An entry without a promotion gets no land button; offering one invites a refusal the reader cannot foresee.
-- The judgement lives in `knowledgeModel.ts` (testable); the view `KnowledgeSheet.tsx` only draws.
+- The shared phone/iPad reader leads with a wrapping title, age and actual use state. A literal first prose paragraph becomes **Key guidance**; current **Details** start open, **History** and **Record details** start folded. These are ordered, unchanged source slices, not generated summaries. Only explicit history headings outside code/comments split history; reference-style Markdown stays in one scope so links keep their meaning. No entry text is rewritten or discarded.
+- Kind, provenance, audience, language fallback and recorded destinations remain in **Record details**. A reading-width cap and the app's light/dark palette apply in both layouts.
+- Existing audience eligibility (`actsFor`) chooses at most one sticky primary action: **Prepare feedback**, **Write instructions**, or **Record result**. Other eligible actions use the shared **More** menu; **No longer applicable** is last. Opening feedback only opens the prefilled draft URL; it does not create or publish an issue. The person records a real result separately.
+- Mutation forms keep the existing second confirmation, viewed revision and verbatim refusal/draft behavior. Menu dismissal cannot trigger an action for another entry or source. Promotion and freeform entry writing remain on the Mac/CLI.
+- Entry reads show explicit loading, a 15-second whole-read deadline and an actionable retry. Changed source/entry, cancelled and late reads cannot replace the current entry. Refreshing keeps the last readable revision; a failed refresh never implies an empty record or repeats a mutation.
 
 **A copy of HQ's records (Settings → HQ records; "memory" until 2026-09-14)**: HQ's records are the only irreproducible thing in gtmux's hands:
 a situation board edited for months, a curated knowledge base, a seeded-once-never-overwritten `LOCAL.md`. The Mac now keeps local snapshots,
