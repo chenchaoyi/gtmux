@@ -4524,6 +4524,8 @@ LEG-1d5aaf587264,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,
 LEG-12bafcea2811,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,157,unittest,test_existing_result_is_not_overwritten,False,legacy-not-retrospectively-reviewed
 LEG-8c37bfd93da8,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,164,unittest,test_android_uses_its_separate_catalog_and_configuration_default,False,legacy-not-retrospectively-reviewed
 LEG-6bd89e8c3e9a,G,RN / mobile harness,mobileapp/scripts/test_publisher_test.py,172,unittest,test_android_refuses_unverified_or_non_apk_publication_before_execution,False,legacy-not-retrospectively-reviewed
+MAP-a5b3bb5a1d5d,L2,reviewed implementation,mobileapp/src/api/agentsRead.test.ts,10,reviewed-selector,a real empty agents response is successful data and ordinary rows still map,False,RDR-004
+MAP-5e41be7d3f1b,L2,reviewed implementation,mobileapp/src/api/agentsRead.test.ts,15,reviewed-selector,a malformed successful agents body stays a read failure: %p,False,RDR-004
 LEG-917bba954652,L1,RN / mobile harness,mobileapp/src/api/backgroundTasks.test.ts,13,it,"counts waiting as running, not as finished",False,legacy-not-retrospectively-reviewed
 LEG-c7d9f4d079ae,L1,RN / mobile harness,mobileapp/src/api/backgroundTasks.test.ts,20,it,tallies the three buckets,False,legacy-not-retrospectively-reviewed
 LEG-c5e62f5e8b3f,L1,RN / mobile harness,mobileapp/src/api/backgroundTasks.test.ts,27,it,is not rendered when nothing is running,False,legacy-not-retrospectively-reviewed
@@ -4623,6 +4625,7 @@ LEG-8ccb7662710b,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,891,tes
 LEG-304c34b359cb,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,901,test,"HQ workspace distinguishes old servers, unread responses and revoked credentials",False,legacy-not-retrospectively-reviewed
 LEG-962740acbb95,L1,RN / mobile harness,mobileapp/src/api/client.test.ts,910,test,trace history requires a page response and distinguishes pane from external session,False,legacy-not-retrospectively-reviewed
 MAP-0d65b1b0bf00,L2,RN / mobile harness,mobileapp/src/api/client.test.ts,651,reviewed-selector,"usage accepts a real empty report but keeps refusals, bad bodies and network failures",False,UR-002
+MAP-2b86bce5e2ac,L2,RN / mobile harness,mobileapp/src/api/client.test.ts,131,reviewed-selector,rejects a body that is not an array,False,"UR-002,RDR-004"
 LEG-080a6b0ff26f,L1,RN / mobile harness,mobileapp/src/api/clientTag.test.ts,4,test.each(),native iOS client tag keeps the %s idiom independently of the display name,True,legacy-not-retrospectively-reviewed
 LEG-075585592b6c,L1,RN / mobile harness,mobileapp/src/api/clock.test.ts,13,test,"with no response seen yet, the server clock IS the local clock",False,legacy-not-retrospectively-reviewed
 LEG-4cb2832ee3d5,L1,RN / mobile harness,mobileapp/src/api/clock.test.ts,18,test,a phone running fast no longer inflates the duration,False,legacy-not-retrospectively-reviewed
@@ -5147,6 +5150,14 @@ LEG-50852e38e078,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.
 LEG-5d721affd782,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,115,it,draws the band for a single window too — one predictable tree,False,legacy-not-retrospectively-reviewed
 LEG-9bf974a93a06,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,121,it,still draws nothing when there are no windows at all,False,legacy-not-retrospectively-reviewed
 LEG-e3fa56652cd5,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,130,it,"is a runnable command, sigil included",False,legacy-not-retrospectively-reviewed
+MAP-f568d67044af,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,59,reviewed-selector,a cached read failure remains visible when SSE reconnects before the next result: %s,False,RDRC-002
+MAP-6e4f9ec5d357,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,80,reviewed-selector,changing the client drops cached failure and rejects a late old reread,False,RDRC-002
+MAP-fe0ae75b4bd3,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,91,reviewed-selector,cached access failure stays visible across reconnect with the existing %s authority,False,RDRC-002
+MAP-b28728f9d63d,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,47,reviewed-selector,stream connection before the first result displays loading rather than zero or empty,False,RDR-003
+MAP-3cb5a05e3dd6,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,54,reviewed-selector,confirmed empty is stable in ${variant} ${theme} ${lang},False,RDR-003
+MAP-7ac4e613f331,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,69,reviewed-selector,failed and unavailable access reads never display a cheerful empty quote or owner creation for guests,False,RDR-003
+MAP-34a3f4f7a896,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,80,reviewed-selector,a pull indicator follows the actual request beyond 600ms and stale completions cannot clear a new pull,False,RDR-003
+MAP-26dece6fc9b0,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,92,reviewed-selector,cached worker rows remain during a failed refresh and a filter is not an empty fleet,False,RDR-003
 LEG-b897cb3494b1,L2,RN / mobile harness,mobileapp/src/screens/RadarPanel.shareStale.test.tsx,21,test.each(),%s shows localized expired access only to stale guests,True,legacy-not-retrospectively-reviewed
 MAP-7d46d9427e0a,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsEntry.test.tsx,17,reviewed-selector,owner server More offers restore and targets that server; guest does not,False,RSR-009
 MAP-da95b2a6169e,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx,35,reviewed-selector,RSR011 transient native read rejection cannot replace a saved pre-admission ID,False,RSR-011
@@ -5198,6 +5209,10 @@ LEG-982cd11bec20,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test
 LEG-6a69d2b9722f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,424,test,"a credential the server rejects says so, not that it is a share link",False,legacy-not-retrospectively-reviewed
 LEG-dab2495366f0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,436,test,a Mac that refuses this phone reads Access rejected on the list,False,legacy-not-retrospectively-reviewed
 LEG-cd35d5d9def5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,448,test,"a server-mode change on the server is read at once, not on the next poll",False,legacy-not-retrospectively-reviewed
+MAP-8524f471c8a2,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,47,reviewed-selector,regular main respects loading and timeout in ${lang} ${theme},False,RDRC-001
+MAP-7c742f998d7d,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,62,reviewed-selector,hidden sidebar does not turn an unfinished main read into an empty fleet,False,RDRC-001
+MAP-6f2c71730f2c,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,70,reviewed-selector,unselected access and expired guest states retain shared guidance and no owner creation,False,RDRC-001
+MAP-e1527f7afcbf,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,77,reviewed-selector,only a successful empty main welcomes creation while a populated roster keeps automatic selection,False,RDRC-001
 LEG-2aba97e994c5,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,106,it,"is called by its name, not by its registry key",False,legacy-not-retrospectively-reviewed
 LEG-f259cfaf2c4d,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,114,it,asks for an icon at all — the fallback used to carry no hint,False,legacy-not-retrospectively-reviewed
 LEG-450351da14b3,L2,RN / mobile harness,mobileapp/src/screens/UsageSheet.test.tsx,133,it,states ctx ONCE — two roundings of it used to sit side by side,False,legacy-not-retrospectively-reviewed
@@ -5522,6 +5537,11 @@ LEG-27e3a51521d5,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.te
 LEG-1d362d67d68f,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.liveActivity.test.tsx,50,test,on: the card is kept in step and its token reaches the Mac,False,legacy-not-retrospectively-reviewed
 LEG-d8fc4d4ae3c0,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.liveActivity.test.tsx,58,test,"turned off: the Mac forgets the token, the card ends, and nothing restarts it",False,legacy-not-retrospectively-reviewed
 LEG-b3168453fd95,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.liveActivity.test.tsx,77,test,"off from the start: no card, and an unreachable Mac still loses the card here",False,legacy-not-retrospectively-reviewed
+MAP-e3f062c180f1,L2,reviewed implementation,mobileapp/src/state/AgentsContext.readState.test.tsx,39,reviewed-selector,a connected stream cannot establish an empty snapshot before its scoped read,False,"RDR-001,RDR-002"
+MAP-73646d97d363,L2,reviewed implementation,mobileapp/src/state/AgentsContext.readState.test.tsx,48,reviewed-selector,bursty refreshes retain one trailing read and an owned refresh settles without waiting for future bursts,False,"RDR-001,RDR-002"
+MAP-a47a81546af4,L2,reviewed implementation,mobileapp/src/state/AgentsContext.readState.test.tsx,60,reviewed-selector,changed credentials never borrow a previous snapshot or admit a late retired response,False,"RDR-001,RDR-002"
+MAP-362630d8b2a2,L2,reviewed implementation,mobileapp/src/state/AgentsContext.readState.test.tsx,73,reviewed-selector,a failed cached refresh preserves its last readable snapshot and timestamp,False,"RDR-001,RDR-002"
+MAP-208952908111,L2,reviewed implementation,mobileapp/src/state/AgentsContext.readState.test.tsx,82,reviewed-selector,whole JSON-body timeout retires the real client read and an explicit retry can succeed,False,"RDR-001,RDR-002"
 LEG-56a654ddecbc,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.repair.test.tsx,24,test,re-pair closes the old stream and late old-credential failures cannot reject the new connection,False,legacy-not-retrospectively-reviewed
 LEG-7724e4158730,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.repair.test.tsx,39,test,a late old-credential success cannot clear the fresh connection failure,False,legacy-not-retrospectively-reviewed
 LEG-54bbd8636786,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.repair.test.tsx,52,test,replacing an owner token with a guest link uses the guest hint even when scope refresh fails,False,legacy-not-retrospectively-reviewed

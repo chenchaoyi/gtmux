@@ -11,6 +11,7 @@ import {LiveActivity, apnsEnv} from '../native/liveActivity';
 import {setBadge} from '../push';
 import {buildActivityItems, isWorkerRow} from './activityItems';
 import {findLiveAddress} from '../pairing/follow';
+import {createReadTask, ReadDeadlineError} from './readTask';
 
 export type ConnState = 'connecting' | 'live' | 'offline' | 'unauthorized';
 
@@ -32,6 +33,15 @@ export const IDLE_TICK_MS = 15_000;
 // that cannot be taken back is done about it (a guest's revoked link is forgotten).
 export const REFUSAL_CONFIRM_MS = 3_000;
 
+export interface AgentListReadState {
+  hasValue: boolean;
+  refreshing: boolean;
+  error: 'failed' | 'timeout' | 'access' | null;
+}
+
+type FleetSnapshot = AgentListReadState & {client: GtmuxClient; agents: Agent[]; lastUpdated: number | null};
+const emptySnapshot = (client: GtmuxClient): FleetSnapshot => ({client, agents: [], lastUpdated: null, hasValue: false, refreshing: false, error: null});
+
 interface AgentsContextValue {
   client: GtmuxClient;
   agents: Agent[];
@@ -39,7 +49,8 @@ interface AgentsContextValue {
   lastUpdated: number | null; // epoch ms of the last successful fetch (offline banner)
   banner: Alert | null;
   dismissBanner: () => void;
-  refresh: () => void;
+  refresh: () => Promise<void>;
+  read: AgentListReadState;
   // Scope (web-shared-view-scope): a GUEST connection is restricted to the host's
   // view/input allowlists. `isGuest` gates owner-only surfaces; `inputPanes` is the
   // set of pane ids this guest may TYPE into (empty for a pane it can only view).
@@ -103,8 +114,15 @@ export function AgentsProvider({
     mounted.current = true;
     return () => { mounted.current = false; };
   }, []);
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [conn, setConn] = useState<ConnState>('connecting');
+  const [snapshot, setSnapshot] = useState(() => emptySnapshot(client));
+  const ownSnapshot = snapshot.client === client ? snapshot : emptySnapshot(client);
+  const {agents, lastUpdated} = ownSnapshot;
+  const [connection, setConnection] = useState({client, value: 'connecting' as ConnState});
+  const conn = connection.client === client ? connection.value : 'connecting';
+  const setConn = React.useCallback((value: ConnState) => {
+    if (mounted.current && clientRef.current === client) setConnection(previous =>
+      mounted.current && clientRef.current === client ? {client, value} : previous);
+  }, [client]);
   // Seed from the pairing hint so the UI never flashes owner-only surfaces before
   // GET /api/share resolves; then confirm authoritatively (all:true ⇒ owner).
   const [access, setAccess] = useState({client, isGuest: scope === 'guest', shareStale: false, inputPanes: [] as string[]});
@@ -112,7 +130,6 @@ export function AgentsProvider({
   // credential's owner controls or pane grants while its scope read is pending.
   const {isGuest, shareStale, inputPanes} = access.client === client ? access
     : {isGuest: scope === 'guest', shareStale: false, inputPanes: [] as string[]};
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [banner, setBanner] = useState<Alert | null>(null);
   const [serverModeRev, setServerModeRev] = useState(0);
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -135,90 +152,127 @@ export function AgentsProvider({
   const revokeReported = useRef(false);
   const refreshRef = useRef<() => void>(() => {});
 
-  const refresh = useMemo(
-    () => () => {
-      client
-        .agents()
-        .then(a => {
-          if (!mounted.current || clientRef.current !== client) return;
-          lastOk.current = Date.now();
+  // One bounded read lane per client. Keep one trailing request when a stream
+  // event arrives during a fetch; dropping it could leave a newer fleet unseen.
+  const readLane = useMemo(() => {
+    let retired = false;
+    let running = false;
+    let trailing = false;
+    let cycle = 0;
+    let completions: {until: number; resolve: () => void}[] = [];
+    const current = () => !retired && mounted.current && clientRef.current === client;
+    const updateRead = (patch: Partial<FleetSnapshot>) => setSnapshot(previous => {
+      if (!current()) return previous;
+      if (previous.client === client && Object.entries(patch).every(([key, value]) => Object.is(previous[key as keyof FleetSnapshot], value))) return previous;
+      return {...(previous.client === client ? previous : emptySnapshot(client)), ...patch};
+    });
+    const settleWaiters = (until = Infinity) => {
+      const done = completions.filter(w => w.until <= until);
+      completions = completions.filter(w => w.until > until);
+      done.forEach(w => w.resolve());
+    };
+    let task: ReturnType<typeof createReadTask<Agent[]>>;
+    const makeTask = () => createReadTask<Agent[]>(signal => client.agents(signal), a => {
+      if (!current()) return;
+      lastOk.current = Date.now();
+      refusals.current = 0;
+      updateRead({agents: a, lastUpdated: Date.now(), hasValue: true, error: null});
+      setConn('live');
+      // keep the iOS Live Activity (lock screen / Dynamic Island) in step,
+      // leading with the session that needs you (bold) + its prompt (detail),
+      // and LISTING the top in-flight sessions (concrete names + relative time).
+      // Count only the WORKERS — the supervisor has its own card and is not one of
+      // them (isWorkerRow; matches the Go push side and the radar list).
+      const workerRows = a.filter(isWorkerRow);
+      const waiters = workerRows.filter(x => x.status === 'waiting');
+      // App-icon badge = live count of sessions waiting on you (reconciled every
+      // refresh; the server's silent push covers backgrounded/killed).
+      setBadge(waiters.length);
+      const top = waiters[0];
+      const {items, more} = buildActivityItems(a);
+      if (liveActivityRef.current) LiveActivity.sync(
+        waiters.length,
+        workerRows.filter(x => x.status === 'working').length,
+        workerRows.filter(x => x.status === 'idle').length,
+        top ? top.task || primary(top) : '',
+        top ? top.session || top.loc : '',
+        items,
+        more,
+        name,
+      );
+    }, {
+      timeoutMs: 15_000,
+      onError: e => {
+        if (!current()) return;
+        updateRead({error: isAuthError(e) ? 'access' : e instanceof ReadDeadlineError ? 'timeout' : 'failed'});
+        if (!isAuthError(e)) {
+          // Nothing answered: never evidence of a revoke, and it breaks a run of refusals.
           refusals.current = 0;
-          setAgents(a);
-          setConn('live');
-          setLastUpdated(Date.now());
-          // keep the iOS Live Activity (lock screen / Dynamic Island) in step,
-          // leading with the session that needs you (bold) + its prompt (detail),
-          // and LISTING the top in-flight sessions (concrete names + relative time).
-          // Count only the WORKERS — the supervisor has its own card and is not one of
-          // them (isWorkerRow; matches the Go push side and the radar list).
-          const workerRows = a.filter(isWorkerRow);
-          const waiters = workerRows.filter(x => x.status === 'waiting');
-          // App-icon badge = live count of sessions waiting on you (reconciled every
-          // refresh; the server's silent push covers backgrounded/killed).
-          setBadge(waiters.length);
-          const top = waiters[0];
-          const {items, more} = buildActivityItems(a);
-          if (liveActivityRef.current) LiveActivity.sync(
-            waiters.length,
-            workerRows.filter(x => x.status === 'working').length,
-            workerRows.filter(x => x.status === 'idle').length,
-            top ? top.task || primary(top) : '',
-            top ? top.session || top.loc : '',
-            items,
-            more,
-            name,
-          );
-        })
-        // An AUTH rejection (401/403 — token revoked from the Mac's devices page, or
-        // wrong) is NOT "offline": the network is fine, this server refused us. Surface
-        // it distinctly so the user re-pairs instead of chasing a network ghost.
-        .catch(e => {
-          if (!mounted.current || clientRef.current !== client) return;
-          if (!isAuthError(e)) {
-            // Nothing answered: never evidence of a revoke, and it breaks a run of refusals.
-            refusals.current = 0;
-            setConn('offline');
-            return;
+          setConn('offline');
+          return;
+        }
+        setConn('unauthorized');
+        // Only a 401 is the Mac refusing this phone's token (internal/server auth: a
+        // revoked or unknown token is 401 on every route). A 403 is a valid token turned
+        // away from one thing (a pane not shared); GET /api/agents filters for a guest
+        // rather than answering 403, so a 403 here is never a revoke and starts no count.
+        if (!(e instanceof ApiError && e.status === 401)) {
+          refusals.current = 0;
+          return;
+        }
+        refusals.current++;
+        if (refusals.current === 1) {
+          // One refusal is a verdict to SHOW; acting on it waits for a second read.
+          if (!confirmTimer.current) {
+            confirmTimer.current = setTimeout(() => {
+              confirmTimer.current = null;
+              refreshRef.current();
+            }, REFUSAL_CONFIRM_MS);
           }
-          setConn('unauthorized');
-          // Only a 401 is the Mac refusing this phone's token (internal/server auth: a
-          // revoked or unknown token is 401 on every route). A 403 is a valid token turned
-          // away from one thing (a pane not shared); GET /api/agents filters for a guest
-          // rather than answering 403, so a 403 here is never a revoke and starts no count.
-          if (!(e instanceof ApiError && e.status === 401)) {
-            refusals.current = 0;
-            return;
-          }
-          refusals.current++;
-          if (refusals.current === 1) {
-            // One refusal is a verdict to SHOW; acting on it waits for a second read.
-            if (!confirmTimer.current) {
-              confirmTimer.current = setTimeout(() => {
-                confirmTimer.current = null;
-                refreshRef.current();
-              }, REFUSAL_CONFIRM_MS);
-            }
-            return;
-          }
-          if (scope === 'guest' && !revokeReported.current) {
-            revokeReported.current = true;
-            onRevokedRef.current?.();
-          }
-        });
-    },
-    [client, name, scope],
-  );
+          return;
+        }
+        if (scope === 'guest' && !revokeReported.current) {
+          revokeReported.current = true;
+          onRevokedRef.current?.();
+        }
+      },
+      onSettled: () => {
+        if (retired) return;
+        settleWaiters(cycle);
+        if (trailing && current()) {trailing = false; cycle++; task.run(); return;}
+        running = false;
+        trailing = false;
+        if (current()) updateRead({refreshing: false});
+        settleWaiters();
+      },
+    });
+    task = makeTask();
+    return {
+      activate: () => {if (retired) {retired = false; task = makeTask();}},
+      refresh: () => {
+        if (!current()) return Promise.resolve();
+        updateRead({refreshing: true});
+        const until = running ? cycle + 1 : ++cycle;
+        const settled = new Promise<void>(resolve => {completions.push({until, resolve});});
+        if (running) trailing = true;
+        else {running = true; task.run();}
+        return settled;
+      },
+      dispose: () => {retired = true; trailing = false; running = false; task.dispose(); settleWaiters();},
+    };
+  }, [client, name, scope, setConn]);
+  const refresh = readLane.refresh;
+  useEffect(() => {readLane.activate(); return () => readLane.dispose();}, [readLane]);
   refreshRef.current = refresh;
   useEffect(() => {
-    setAgents([]);
+    setSnapshot(emptySnapshot(client));
     setConn('connecting');
-    setLastUpdated(null);
     setBanner(null);
     refusals.current = 0;
     revokeReported.current = false;
     if (confirmTimer.current) clearTimeout(confirmTimer.current);
     confirmTimer.current = null;
-  }, [client]);
+  }, [client, setConn]);
   useEffect(
     () => () => {
       if (confirmTimer.current) clearTimeout(confirmTimer.current);
@@ -357,7 +411,7 @@ export function AgentsProvider({
       unsub?.();
       if (bannerTimer.current) clearTimeout(bannerTimer.current);
     };
-  }, [base, token, client, refresh]);
+  }, [base, token, client, refresh, setConn]);
 
   // Refetch the moment the app returns to the foreground. iOS suspends the SSE
   // stream while backgrounded, and on reconnect the server only re-pushes on the
@@ -482,6 +536,7 @@ export function AgentsProvider({
     agents,
     conn,
     lastUpdated,
+    read: {hasValue: ownSnapshot.hasValue, refreshing: ownSnapshot.refreshing, error: ownSnapshot.error},
     banner,
     dismissBanner: () => setBanner(null),
     refresh,
@@ -530,7 +585,8 @@ export function DemoAgentsProvider({
       lastUpdated: Date.now(),
       banner: null,
       dismissBanner: () => {},
-      refresh: () => {},
+      refresh: async () => {},
+      read: {hasValue: true, refreshing: false, error: null},
       isGuest: false,
       shareStale: false,
       inputPanes: agents.map(a => a.pane_id).filter(Boolean) as string[],

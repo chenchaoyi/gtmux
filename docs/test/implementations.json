@@ -2192,10 +2192,12 @@
   },
   "mobileapp/src/api/client.test.ts": {
     "cases": [
-      "UR-002"
+      "UR-002",
+      "RDR-004"
     ],
     "selectors": [
-      "usage accepts a real empty report but keeps refusals, bad bodies and network failures"
+      "usage accepts a real empty report but keeps refusals, bad bodies and network failures",
+      "rejects a body that is not an array"
     ]
   },
   "mobileapp/src/api/conversation.test.ts": {
@@ -2385,7 +2387,7 @@
       "replaces the index with results, rather than showing both",
       "says so when nothing matches, naming what was typed",
       "gives the index back when the query is cleared",
-      "is closed by default \u2014 it is read once, then it is just height",
+      "is closed by default — it is read once, then it is just height",
       "opens on tap",
       "describes the result instead of the ledger verb",
       "write-it-in sends carry with no text, after one confirmation",
@@ -2637,7 +2639,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane\u2019s different current runtime",
+      "a stitched older session never requests the pane’s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -3266,6 +3268,69 @@
     ],
     "selectors": [
       "SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once"
+    ]
+  },
+  "mobileapp/src/state/AgentsContext.readState.test.tsx": {
+    "cases": [
+      "RDR-001",
+      "RDR-002"
+    ],
+    "selectors": [
+      "a connected stream cannot establish an empty snapshot before its scoped read",
+      "bursty refreshes retain one trailing read and an owned refresh settles without waiting for future bursts",
+      "changed credentials never borrow a previous snapshot or admit a late retired response",
+      "a failed cached refresh preserves its last readable snapshot and timestamp",
+      "whole JSON-body timeout retires the real client read and an explicit retry can succeed"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.readState.test.tsx": {
+    "cases": [
+      "RDR-003"
+    ],
+    "selectors": [
+      "stream connection before the first result displays loading rather than zero or empty",
+      "confirmed empty is stable in ${variant} ${theme} ${lang}",
+      "failed and unavailable access reads never display a cheerful empty quote or owner creation for guests",
+      "a pull indicator follows the actual request beyond 600ms and stale completions cannot clear a new pull",
+      "cached worker rows remain during a failed refresh and a filter is not an empty fleet"
+    ]
+  },
+  "mobileapp/src/api/agentsRead.test.ts": {
+    "cases": [
+      "RDR-004"
+    ],
+    "selectors": [
+      "a real empty agents response is successful data and ordinary rows still map",
+      "a malformed successful agents body stays a read failure: %p"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.shareStale.test.tsx": {
+    "cases": [
+      "RDR-003"
+    ],
+    "selectors": [
+      "%s shows localized expired access only to stale guests"
+    ]
+  },
+  "mobileapp/src/screens/SplitShell.readState.test.tsx": {
+    "cases": [
+      "RDRC-001"
+    ],
+    "selectors": [
+      "regular main respects loading and timeout in ${lang} ${theme}",
+      "hidden sidebar does not turn an unfinished main read into an empty fleet",
+      "unselected access and expired guest states retain shared guidance and no owner creation",
+      "only a successful empty main welcomes creation while a populated roster keeps automatic selection"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx": {
+    "cases": [
+      "RDRC-002"
+    ],
+    "selectors": [
+      "a cached read failure remains visible when SSE reconnects before the next result: %s",
+      "changing the client drops cached failure and rejects a late old reread",
+      "cached access failure stays visible across reconnect with the existing %s authority"
     ]
   }
 }

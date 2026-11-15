@@ -12,7 +12,7 @@ import {canReadConversation} from '../api/types';
 // Initial fetch + SSE-driven refetch (via AgentsContext), pull-to-refresh, and an in-app
 // alert banner. Status language mirrors the menu-bar app.
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {NavigationContext} from '@react-navigation/native';
@@ -24,7 +24,8 @@ import {Agent} from '../api/types';
 import {useApp} from '../state/AppContext';
 import {Debug} from '../debug';
 import {ChromeText} from '../ui/ChromeText';
-import {BrandMark} from '../ui/BrandMark';
+import {RadarReadState} from './RadarReadState';
+import {isWorkerRow} from '../state/activityItems';
 import {PanesIcon} from '../ui/Icons';
 import {DISC_CLEARANCE, HQDisc} from '../ui/HQDisc';
 import {HQCard} from '../ui/HQCard';
@@ -77,8 +78,11 @@ export function RadarPanel({
   // cannot linger after a refresh replaces the list.
   const [followAgent, setFollowAgent] = useState<Agent | null>(null);
   const [sheetAgent, setSheetAgent] = useState<Agent | null>(null);
-  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, shareStale, client, serverModeRev = 0} = useAgents();
+  const {agents, conn, lastUpdated, banner, dismissBanner, refresh, isGuest, shareStale, client, serverModeRev = 0, read} = useAgents();
   const {t, pal, lang, mac} = useApp();
+  const listRead = read ?? {hasValue: false, refreshing: conn === 'connecting', error: conn === 'unauthorized' ? 'access' as const : conn === 'offline' ? 'failed' as const : null};
+  const pullOwner = useRef<object | null>(null);
+  useEffect(() => {pullOwner.current = null; setRefreshing(false); return () => {pullOwner.current = null;};}, [client]);
   const staleShare = isGuest && shareStale;
   const shareStaleText = lang === 'zh' ? '分享授权已失效，请联系所有者重新授权。' : 'Share access has expired. Ask the owner to grant access again.';
   const [desktopFocus, setDesktopFocus] = useState(true);
@@ -152,14 +156,14 @@ export function RadarPanel({
   // The list the sections are built from — narrowed to waiting when the filter is on.
   const shown = waitingOnly ? agents.filter(a => a.status === 'waiting') : agents;
 
-  const onRefresh = () => {
+  const onRefresh = async () => {
     // Probe (debug builds only): did the pull actually reach the list? A collapsed
     // radar is shorter than the screen, and a list sized to its content leaves the
     // blank half unreachable — see ui/SectionList.test.tsx.
     if (Debug.logNet) Debug.record({event: 'radar-refresh'});
+    const owner = {}; pullOwner.current = owner;
     setRefreshing(true);
-    refresh();
-    setTimeout(() => setRefreshing(false), 600);
+    try {await refresh();} finally {if (pullOwner.current === owner) setRefreshing(false);}
   };
 
   // The supervisor (中控) is the meta-layer, so on the phone it renders as a FLOATING
@@ -276,13 +280,13 @@ export function RadarPanel({
           )}
         </View>
       </View>
-      <RadarSummary
+      {listRead.hasValue && <RadarSummary
         c={c}
         lang={lang}
         pal={pal}
         waitingOnly={waitingOnly}
         onToggleWaitingOnly={() => setWaitingOnly(v => !v)}
-      />
+      />}
       {/* Demo: the sample-data banner, always shown in the shipped demo (App Review requires
           it), hidden in SHOT_MODE for clean store captures. */}
       {demoChrome && !Debug.shotMode && (
@@ -301,40 +305,24 @@ export function RadarPanel({
     </View>
   );
 
-  const Empty = (
-    <View style={styles.empty}>
-      <BrandMark size={52} neutral={pal.fg3} />
-      <Text style={[styles.emptyText, {color: pal.fg2}]}>{staleShare ? (lang === 'zh' ? '分享授权已失效' : 'Share access has expired') : t('noAgents')}</Text>
-      <Text style={[styles.emptyHint, {color: pal.fg3}]}>
-        {staleShare ? shareStaleText : isGuest ? (lang === 'zh' ? '还没有可查看的共享 agent。' : 'No shared agents to view yet.') : (lang === 'zh' ? '新建会话后，可在终端启动你的 agent。' : 'Create a session, then start your agent in its terminal.')}
-      </Text>
-      {!demoChrome && <NewSessionAction labelled />}
-    </View>
-  );
+  const Empty = <RadarReadState read={listRead} conn={conn} isGuest={isGuest} staleShare={staleShare}
+    filtered={waitingOnly && agents.some(isWorkerRow)} lang={lang} pal={pal} demo={!!demoChrome}
+    onRetry={() => {void onRefresh();}} onConnections={navigation ? () => navigation.navigate('Servers') : undefined}
+    onShowAll={() => setWaitingOnly(false)} />;
 
   // The screen owns its safe area; the sidebar sits inside the shell's.
   const Root: React.ComponentType<any> = sidebar ? View : SafeAreaView;
   const rootProps = sidebar ? {} : {edges: ['top']};
+  const cachedIssue = listRead.hasValue && (!!listRead.error || conn === 'offline' || conn === 'unauthorized');
+  const cachedAccess = listRead.error === 'access' || conn === 'unauthorized';
   return (
     <Root style={[styles.safe, {backgroundColor: pal.bg}]} {...rootProps} testID={TestIds.radar.screen}>
       {banner && <Banner alert={banner} t={t} onClose={dismissBanner} />}
-      {conn === 'offline' && (
-        <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} onRetry={refresh} pal={pal} />
-      )}
-      {conn === 'unauthorized' && (
-        <TouchableOpacity
-          style={[styles.authBanner, {backgroundColor: '#3a1720', borderColor: StatusColor.waiting}]}
-          onPress={() => navigation?.navigate('Servers')}
-          accessibilityRole="button"
-          accessibilityLabel={lang === 'zh' ? '访问被拒，重新配对' : 'Access rejected, re-pair'}>
-          <View style={[styles.connDot, {backgroundColor: StatusColor.waiting}]} />
-          <Text style={styles.authBannerText}>
-            {lang === 'zh'
-              ? '访问被拒。这台服务器不再接受这台手机，点这里重新配对。'
-              : 'Access rejected. This server no longer accepts this phone. Tap to pair again.'}
-          </Text>
-        </TouchableOpacity>
-      )}
+      {cachedIssue && <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} pal={pal}
+        kind={listRead.error ?? (cachedAccess ? 'access' : 'offline')} isGuest={isGuest}
+        retrying={!cachedAccess && listRead.refreshing}
+        actionLabel={cachedAccess ? (lang === 'zh' ? '连接设置' : 'Connections') : undefined}
+        onRetry={cachedAccess ? (!isGuest && navigation ? () => navigation.navigate('Servers') : undefined) : refresh} />}
       {isGuest && (
         <View
           testID="radar-guest-banner"
@@ -342,8 +330,8 @@ export function RadarPanel({
           style={[styles.guestBanner, {backgroundColor: pal.surface, borderBottomColor: pal.divider}]}>
           <Text style={[styles.guestBannerText, {color: pal.fg2}]} numberOfLines={1}>
             {lang === 'zh'
-              ? `以访客身份连到 ${mac?.name || '服务器'} · ${agents.length} 个会话`
-              : `Guest on ${mac?.name || 'server'} · ${agents.length} session${agents.length === 1 ? '' : 's'}`}
+              ? `以访客身份连到 ${mac?.name || '服务器'}${listRead.hasValue ? ` · ${agents.length} 个会话` : ''}`
+              : `Guest on ${mac?.name || 'server'}${listRead.hasValue ? ` · ${agents.length} session${agents.length === 1 ? '' : 's'}` : ''}`}
           </Text>
           {staleShare && <Text style={[styles.guestBannerText, {color: pal.fg2}]}>{shareStaleText}</Text>}
         </View>
@@ -361,7 +349,7 @@ export function RadarPanel({
         selectedId={sidebar ? selectedId : cursor ?? undefined}
         ListHeaderComponent={Header}
         ListEmptyComponent={Empty}
-        stale={conn === 'offline' || conn === 'unauthorized'}
+        stale={conn === 'offline' || conn === 'unauthorized' || !!listRead.error}
         floatClearance={showDisc ? DISC_CLEARANCE : 0}
       />
       {followAgent && <SessionFollowSheet key={`${mac?.url}:${followAgent.session_id}`} agent={followAgent} client={client} lang={lang} pal={pal} onClose={() => setFollowAgent(null)} onSaved={() => { refresh(); }} />}
@@ -514,14 +502,8 @@ const styles = StyleSheet.create({
     borderRadius: 6.5, borderWidth: 1, opacity: 0.75,
   },
   connText: {fontSize: 11},
-  // Always-dark banner → FIXED light text (never pal.fg, which is near-black in light mode).
-  authBanner: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderTopWidth: 2, gap: 4},
-  authBannerText: {flex: 1, fontSize: 12, color: '#F3D9DE', fontWeight: '600'},
   guestBanner: {paddingHorizontal: 16, paddingVertical: 7, borderBottomWidth: 1},
   guestBannerText: {fontSize: 12, fontWeight: '600'},
-  empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 70, paddingHorizontal: 40},
-  emptyText: {fontSize: 15, fontWeight: '600', marginTop: 16},
-  emptyHint: {fontSize: 13, marginTop: 6, textAlign: 'center', lineHeight: 18},
   banner: {paddingHorizontal: 14, paddingVertical: 10},
   bannerText: {color: '#fff', fontSize: 13, fontWeight: '600'},
   closeDemo: {fontSize: 20, fontWeight: '400'},

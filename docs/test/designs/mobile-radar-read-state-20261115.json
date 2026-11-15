@@ -1,0 +1,59 @@
+{
+  "id": "mobile-radar-read-state-20261115",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-15",
+    "decision": "Separate authoritative session reads from transport connectivity and genuine empty state",
+    "notes": "User explicitly requests loading until information is read, then an existing browser Dune excerpt only for a successful empty. Existing provider onOpen is transport-only, no hasValue; current Radar shows zero+empty regardless and fake600ms refresh; client maps malformed2xx to[]. Keep current-client tag/data/lastUpdated/loading/error, deadline across body, at most one coalesced trailing refresh so SSE changes are not lost, and actual refresh settlement. Preserve same-client cached content and all existing 401 twice/403 never revoke/share hints/repair/LiveActivity/badge/owner gates and existing polls, with no new polling timer. Shared phone/iPad native components and palette; no fabricated server facts. Demo explicitly has an authoritative snapshot. Existing Radar share-stale fixture must declare that loaded state, retaining every auth/creation assertion. In client.test only the obsolete malformed-list=>empty assertion is changed to rejection; real empty arrays and all usage/auth assertions remain. Renew UR-002 seal before modifying its mapped file. Other original provider tests run unchanged first; any fixture adaptation requires exact reviewed scope and no weakened revocation/ordering assertions. Component/fake transport results are not native/real-device/accessibility acceptance."
+  },
+  "cases": [
+    {
+      "id": "RDR-001",
+      "layer": "L2",
+      "description": "Only a successful current-client agents response establishes a Radar snapshot",
+      "setup": "Production AgentsProvider with deferred real/synthetic HTTP, SSE open, different client credentials and optional demo snapshot",
+      "action": "Open stream before GET completes, resolve empty/populated results, then switch client and deliver an old response",
+      "expected": "Loading does not become zero/empty on stream open. Valid empty sets hasValue, new client cannot borrow old rows/counts/error or late old reads; same-client refresh/error retains prior rows/lastUpdated. Demo declares its already supplied snapshot.",
+      "planned_files": [
+        "mobileapp/src/state/AgentsContext.readState.test.tsx"
+      ]
+    },
+    {
+      "id": "RDR-002",
+      "layer": "L2",
+      "description": "Fleet refresh serializes reads, preserves a trailing update and settles within the whole-read deadline",
+      "setup": "Production provider with deferred read/body, bursts of SSE/manual refresh, noncooperative late promise and fake clock",
+      "action": "Trigger more changes while a read is pending, settle it, then timeout or cancel/switch the next read and retry",
+      "expected": "Only one HTTP read is active per scope; at most one trailing refresh is kept per in-flight burst, rather than losing the event. Refreshing stays true until the owned lane really settles; full response deadline15s retires late results, releases lane and allows explicit retry. No new timerpoll. Existing two401/403, share and activity behavior stays.",
+      "planned_files": [
+        "mobileapp/src/state/AgentsContext.readState.test.tsx"
+      ]
+    },
+    {
+      "id": "RDR-003",
+      "layer": "L2",
+      "description": "Shared Radar presents loading, failed access and genuine empty states with useful hierarchy",
+      "setup": "Production RadarPanel screen/sidebar with explicit authoritative read state, owner/guest/expired access, HQ-only or worker data, en/zh and both palettes",
+      "action": "Transition initial read, valid empty, error/retry, cached data and filtered views; refresh a valid empty again",
+      "expected": "Initial loading has BrandLoader/copy and no zero summary/tutorial/quote. Failure/access remains actionable without a playful quote; cached rows remain. Only successful unfiltered worker-empty shows stable existing browser short Dune excerpt/attribution, with existing gated New session for owner; guests never gain creation. Expired share messaging remains both banner and state. Pull refresh uses actual provider settlement, no decorative600ms timer.",
+      "planned_files": [
+        "mobileapp/src/screens/RadarPanel.readState.test.tsx",
+        "mobileapp/src/screens/RadarPanel.shareStale.test.tsx"
+      ]
+    },
+    {
+      "id": "RDR-004",
+      "layer": "L2",
+      "description": "The agents API preserves real empty data and refuses malformed bodies",
+      "setup": "Real GtmuxClient with valid[], valid agent list, malformed successful body and auth/network failures; original client fixture",
+      "action": "Read agents and attempt retry after malformed/failure responses",
+      "expected": "[] remains successful empty; non-array2xx throws instead of becoming an empty fleet. Valid mapping, credentials, non-ok/auth failures and original usage-read contract assertions remain unchanged.",
+      "planned_files": [
+        "mobileapp/src/api/agentsRead.test.ts",
+        "mobileapp/src/api/client.test.ts"
+      ]
+    }
+  ],
+  "seal": "b57198dc0d46f399d39ded4734eec5fa950f1967a8bc19bbe1a82a3a9d6eb01a"
+}

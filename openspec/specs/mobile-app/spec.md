@@ -167,6 +167,51 @@ connection state. `/api/agents` is the only data source.
 - **THEN** it immediately refetches `/api/agents` so the list is current, independent
   of the (suspended) SSE stream
 
+### Requirement: Radar distinguishes authoritative reads from connection and empty state
+
+Phone and iPad SHALL show initial loading until the current client supplies a valid
+agents array, without zero counts or empty-state guidance. A changed URL/credential
+SHALL retire old results immediately. Same-client refresh/failure SHALL retain its
+last successful list and timestamp. Malformed successful bodies SHALL fail, never
+become an empty list. Demo SHALL explicitly declare its supplied snapshot.
+
+The whole read SHALL have a 15-second deadline and reject late/cancelled answers.
+Only one read SHALL run per scope; a burst during it SHALL retain one trailing
+refresh. A pull indicator SHALL follow the owned request's settlement rather than
+an arbitrary timer or later unrelated bursts. Existing polling/reconnect cadence,
+access/refusal confirmation and activity/notification rules SHALL remain.
+
+#### Scenario: A stream opens before its first list
+
+- **WHEN** the stream connects while the first agents response is pending
+- **THEN** Radar shows Loading sessions without zero counts or a cheerful empty state
+- **AND** only a successful unfiltered worker-empty array can show the fixed short
+  browser Dune excerpt/attribution and existing permission-gated session action
+- **AND** filtered, failed, denied or expired access states SHALL stay distinct
+
+#### Scenario: Changes arrive while a list is being read
+
+- **WHEN** SSE triggers arrive during a pending list read
+- **THEN** a trailing read obtains the newer snapshot without overlapping requests
+- **AND** a timeout releases the read lane for explicit retry without allowing its
+  late answer to replace a newer response
+
+#### Scenario: The regular main area has no selection
+
+- **WHEN** the current list has not succeeded or has a read/access failure
+- **THEN** the unselected regular main area uses the shared read presentation even
+  with its sidebar hidden, without claiming there are no agents
+- **AND** a successful populated roster offers selection and preserves automatic selection
+
+#### Scenario: A cached read fails before the stream reconnects
+
+- **WHEN** SSE opens while a failed cached-list refresh has not succeeded
+- **THEN** the cached rows, readable failure notice and last-update time remain
+- **AND** a pending retry shows progress and prevents duplicate taps
+- **AND** malformed content is not described as proof of a network outage
+- **AND** only current-client read success clears the notice; owner/guest actions
+  preserve existing authority
+
 ### Requirement: An unreachable Mac leaves its last state on screen, muted
 
 When the Mac cannot be reached the app SHALL keep what it last knew rather than clearing
