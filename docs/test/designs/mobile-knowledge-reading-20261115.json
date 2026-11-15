@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review, not independent approval)",
     "date": "2026-11-15",
     "decision": "Implement the user-selected second Knowledge detail concept in the existing shared native App",
-    "notes": "Exact option2 selected by user; use the existing design tokens, native sheet/chrome, shared anchored menu and icon set. No new raster asset, dependency, route or KB rewrite. Lead content is literal entry prose, never generated summary; explicit history headings may fold but every original character remains readable. Existing action eligibility, CAS revision, destination and mutation semantics stay unchanged. Fresh review explicitly includes KnowledgeSheet.test.tsx: update only the now-required menu-open/dismiss interaction steps for secondary actions while preserving all existing payload/revision/refusal/ordering assertions and their prior KBCARRIER-REVISION mapping. New read feedback must fence entry/scope, include a whole-read deadline, and never imply an empty/successful read on error. Component and synthetic transport checks cannot certify native typography/visual or VoiceOver; visual handoff remains blocked until same-state native capture and comparison."
+    "notes": "Exact option2 selected by user; use the existing design tokens, native sheet/chrome, shared anchored menu and icon set. No new raster asset, dependency, route or KB rewrite. Lead content is literal entry prose, never generated summary; explicit history headings may fold but every original character remains readable. Existing action eligibility, CAS revision, destination and mutation semantics stay unchanged. Fresh review explicitly includes KnowledgeSheet.test.tsx: update only the now-required menu-open/dismiss interaction steps for secondary actions while preserving all existing payload/revision/refusal/ordering assertions and their prior KBCARRIER-REVISION mapping. New read feedback must fence entry/scope, include a whole-read deadline, and never imply an empty/successful read on error. Component and synthetic transport checks cannot certify native typography/visual or VoiceOver; visual handoff remains blocked until same-state native capture and comparison. Incremental review before the first edit of the existing KnowledgeSheet test file: source/audience checks now explicitly expand Record details; secondary operations explicitly open and dismiss the menu. The retired long label assertion is replaced with the concise No longer applicable result wording requested by the user, while retaining the negative Retire it check. All existing payload, revision, refusal, draft and confirmation assertions remain unchanged. New reading tests and their existing expectations are unaffected by this review update."
   },
   "cases": [
     {
@@ -47,8 +47,8 @@
       "layer": "L2",
       "description": "Existing Knowledge behaviors remain through the redesigned secondary-action path",
       "setup": "Unchanged synthetic index/search/navigation/promotion fixtures from existing KnowledgeSheet tests",
-      "action": "Add explicit More/menu-dismiss steps only where the action moved; execute all existing assertions",
-      "expected": "Keep every prior source/revision/payload/duplicate-submit/refusal/draft/eligibility expectation. A recorded application remains visible once in a compact status line. No old assertion is removed or weakened merely to pass the redesign.",
+      "action": "Open the newly folded record details and secondary menu/dismissal where needed; replace only the long retired action-label assertion with the reviewed concise result wording; execute all existing operation assertions.",
+      "expected": "Preserve every source/audience/revision/payload/duplicate-submit/refusal/draft/eligibility expectation at its explicit disclosure state. The visible action says No longer applicable and still never Retire it; a recorded application remains visible once in the compact status line. Do not remove or weaken operation assertions.",
       "planned_files": [
         "mobileapp/src/screens/KnowledgeSheet.test.tsx"
       ]
@@ -65,5 +65,5 @@
       ]
     }
   ],
-  "seal": "9c8ed9338d61b1043189e55024096110525af0d23dd7a1823e089fa5175c2436"
+  "seal": "197ec76a53d020a6b6de5c7a74b1ce2a4de103cef33a6dfa1f6eabcda02726e1"
 }
