@@ -1342,8 +1342,10 @@ Phone and iPad SHALL share a bounded-width reader using the app's current palett
 The title and actual use state SHALL lead. A literal first prose paragraph MAY be
 shown as Key guidance; current Details SHALL start open, explicit History and Record
 details SHALL start folded. Ordered source slices SHALL preserve the complete text,
-and reference-style Markdown SHALL retain its shared link scope. No summary SHALL
-be invented. Provenance, audience and language fallback SHALL remain accessible.
+and reference-style Markdown and HTML comments SHALL retain their shared parsing
+scope. Only complete supported historical titles MAY fold; a following peer or
+higher heading SHALL keep the entire body open. Current sections SHALL NOT be
+classified as history by a title prefix. No summary SHALL be invented. Provenance, audience and language fallback SHALL remain accessible.
 
 At most one eligible primary action SHALL stay outside the reading scroll; other
 existing actions SHALL use the shared More menu. Viewed-revision confirmation and

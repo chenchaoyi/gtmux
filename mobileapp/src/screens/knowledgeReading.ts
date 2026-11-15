@@ -2,25 +2,32 @@ export interface KnowledgeReadingSections {lead: string; body: string; history: 
 
 /** Ordered, exact source slices for presentation, never a generated summary. */
 export function knowledgeReading(source = ''): KnowledgeReadingSections {
-  // Reference definitions can connect distant blocks. Keep one Markdown scope when
-  // splitting would change their meaning or make a formerly working link unreadable.
-  if (/^ {0,3}\[[^\]\r\n]+\]:/m.test(source)) return {lead: '', body: source, history: ''};
+  // References and comments can span presentation boundaries. Preserve the original
+  // Markdown scope instead of exposing a comment fragment or breaking a link.
+  if (/^ {0,3}\[[^\]\r\n]+\]:/m.test(source) || source.includes('<!--')) return {lead: '', body: source, history: ''};
   let historyAt = source.length;
+  let historyLevel = 0;
   let offset = 0;
   let fence: {char: string; length: number} | null = null;
-  let comment = false;
   for (const line of source.match(/[^\n]*\n|[^\n]+$/g) ?? []) {
-    if (comment) {if (line.includes('-->')) comment = false;}
-    else if (!fence && line.includes('<!--')) {comment = !line.slice(line.indexOf('<!--') + 4).includes('-->');}
-    else if (fence) {
+    if (fence) {
       const close = /^ {0,3}(`{3,}|~{3,})\s*$/.exec(line);
       if (close && close[1][0] === fence.char && close[1].length >= fence.length) fence = null;
     } else {
       const open = /^ {0,3}(`{3,}|~{3,})/.exec(line);
       if (open) fence = {char: open[1][0], length: open[1].length};
-      else if (/^ {0,3}#{1,6}\s+(?:历史记录|历史|History(?:\s+(?:records?|notes?))?)(?=\s|[(:：（]|$)/i.test(line)) {
-        historyAt = offset;
-        break;
+      else {
+        const heading = /^ {0,3}(#{1,6})[ \t]+([^\r\n]+)/.exec(line);
+        if (heading && historyLevel && heading[1].length <= historyLevel) {
+          // Three ordered slices cannot fold a middle section while leaving later
+          // peer/current sections open. Keep the whole body readable in that case.
+          return {lead: '', body: source, history: ''};
+        }
+        const title = heading?.[2].replace(/[ \t]+#+[ \t]*$/, '').trim();
+        if (!historyLevel && heading && title && /^(?:历史记录|历史|History(?:[ \t]+(?:records?|notes?))?)(?:[ \t]*(?:\([^)]*\)|（[^）]*）|[:：].*))?$/i.test(title)) {
+          historyAt = offset;
+          historyLevel = heading[1].length;
+        }
       }
     }
     offset += line.length;

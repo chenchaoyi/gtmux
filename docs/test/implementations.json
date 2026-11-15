@@ -3120,5 +3120,22 @@
       "long guidance is preserved without generated or truncated advice",
       "language resolution happens before display-only sectioning"
     ]
+  },
+  "mobileapp/src/screens/knowledgeReading.semantics.test.ts": {
+    "cases": [
+      "KRDS-001",
+      "KRDS-002",
+      "KRDS-003"
+    ],
+    "selectors": [
+      "History API is current guidance rather than an explicit historical title",
+      "a current peer section after History remains visible by default",
+      "a multiline comment across the first blank stays hidden through actual Markdown parsing",
+      "an ordinary title with a historical prefix stays current: %s",
+      "a complete supported historical title can fold: %s",
+      "a higher current heading after historical subheadings keeps the whole body open",
+      "nested history and code or quote heading lookalikes stay within history",
+      "comment-containing source retains one Markdown scope: %s"
+    ]
   }
 }
