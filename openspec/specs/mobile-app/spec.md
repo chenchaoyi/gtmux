@@ -1336,10 +1336,41 @@ publish the issue itself. The person may then record its actual URL through `lan
 - **WHEN** a guest token reads `/api/hq/knowledge`
 - **THEN** it is refused, as every `/api/hq/*` surface is
 
+### Requirement: Knowledge details prioritize reading over record management
+
+Phone and iPad SHALL share a bounded-width reader using the app's current palette.
+The title and actual use state SHALL lead. A literal first prose paragraph MAY be
+shown as Key guidance; current Details SHALL start open, explicit History and Record
+details SHALL start folded. Ordered source slices SHALL preserve the complete text,
+and reference-style Markdown and HTML comments SHALL retain their shared parsing
+scope. Only complete supported historical titles MAY fold; a following peer or
+higher heading SHALL keep the entire body open. Current sections SHALL NOT be
+classified as history by a title prefix. No summary SHALL be invented. Provenance, audience and language fallback SHALL remain accessible.
+
+At most one eligible primary action SHALL stay outside the reading scroll; other
+existing actions SHALL use the shared More menu. Viewed-revision confirmation and
+mutation authority SHALL remain unchanged. Opening a prefilled feedback URL SHALL
+NOT be described as a created issue.
+
+#### Scenario: Read or refresh an entry
+
+- **WHEN** a scoped entry read is pending
+- **THEN** the reader shows loading and bounds the whole response to 15 seconds
+- **AND** a failed read offers retry rather than an empty entry
+- **AND** a refresh retains the last readable content, while cancelled, late,
+  wrong-ID or changed-source responses cannot replace the current entry
+
+#### Scenario: Inspect history and act
+
+- **WHEN** the reader expands History or Record details
+- **THEN** the original content and record facts remain available
+- **AND** a delayed menu or action callback cannot change another entry/source
+- **AND** a failed refresh never repeats an already completed mutation
+
 ### Requirement: Phone knowledge actions and diagnostics use actionable language
 
-The phone SHALL use the same Chinese name for `retire` as the Mac and describe
-the reason and recorded destination of knowledge actions plainly. Pairing and
+The phone SHALL label `retire` as "No longer applicable" (「不再适用」), require
+a reason, and describe recorded destinations plainly. Pairing and
 diagnostic messages SHALL tell the user what happened and the next useful step
 without exposing internal token exchange details where they are not needed.
 
