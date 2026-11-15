@@ -2967,7 +2967,6 @@
   },
   "mobileapp/src/screens/HistoryEchoHandoff.test.tsx": {
     "cases": [
-      "CRR-001",
       "CAR-003"
     ],
     "selectors": [
