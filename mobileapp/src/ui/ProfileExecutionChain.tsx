@@ -1,8 +1,8 @@
 import {useReadingPalette} from './ReadingPalette';
-import type {Palette} from './theme';
+import {BRAND, type Palette} from './theme';
 import React, {useState} from 'react';
 import {executionGroups} from './executionChain';
-import {AccessibilityInfo, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {AccessibilityInfo, ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import Clipboard from '@react-native-clipboard/clipboard';
 import type {GtmuxClient} from '../api/client';
 import type {Lang} from '../i18n';
@@ -17,13 +17,16 @@ export function ProfileExecutionChain({target, client, lang, primary}: {target: 
   const [open, setOpen] = useState(false);
   const [requested, setRequested] = useState(false);
   const request = currentChainRequest(target);
-  const current = useParticipantProfile(client, request, requested);
   const historical = !!target.turn;
+  // A timestamp-less message cannot read historical facts. Its explicitly
+  // recorded agent can still verify a separate same-session process read.
+  const sourceAgent = primary.profile?.agent || target.turn?.agent;
+  const canRead = !!client && (!historical || !!request && !!sourceAgent);
+  const current = useParticipantProfile(client, request, requested && canRead);
   const read = historical ? current : primary;
-  const matches = !historical || read.profile?.historical === false && read.profile.session_id === target.turn?.session_id && read.profile.agent === primary.profile?.agent;
+  const matches = !historical || read.profile?.historical === false && read.profile.session_id === target.turn?.session_id && read.profile.agent === sourceAgent;
   const chain = matches ? read.profile?.execution_chain ?? [] : [];
   const groups = executionGroups(chain);
-  const canRead = !!client && (!historical || !!request);
   if (!canRead) return <View style={styles.section}>
     <Text style={styles.heading}>{zh ? '启动进程' : 'Launch processes'}</Text>
     <Text style={styles.note}>{zh ? '暂无进程信息。' : 'No process details available.'}</Text>
@@ -39,8 +42,8 @@ export function ProfileExecutionChain({target, client, lang, primary}: {target: 
       <Chevron open={open} size={14} color={pal.fg2} />
     </TouchableOpacity>
     {open && <View testID="profile-chain-content">
-      {read.status === 'loading' ? <Text testID="profile-chain-loading" accessibilityRole="progressbar" style={styles.note}>{zh ? '正在加载…' : 'Loading…'}</Text>
-        : read.status === 'failed' || read.status === 'ready' && (!matches || read.profile?.unavailable && chain.length === 0) ? <Text testID="profile-chain-failed" style={styles.note}>{zh ? '未能加载进程信息。' : 'Process details could not be verified.'}</Text>
+      {read.status === 'loading' ? <View testID="profile-chain-loading" accessibilityRole="progressbar" accessibilityLabel={zh ? '正在读取进程信息' : 'Loading process details'} style={styles.loading}><ActivityIndicator size="small" color={BRAND} /><Text style={styles.note}>{zh ? '正在读取…' : 'Loading…'}</Text></View>
+        : read.status === 'failed' || read.status === 'ready' && (!matches || read.profile?.unavailable && chain.length === 0) ? <Text testID="profile-chain-failed" style={styles.note}>{read.timedOut ? (zh ? '读取超时，请重试。' : 'The request timed out. Try again.') : (zh ? '未能加载进程信息。' : 'Process details could not be verified.')}</Text>
           : chain.length === 0 ? <Text testID="profile-chain-unrecorded" style={styles.note}>{zh ? '暂无进程信息。' : 'No process details available.'}</Text> : <>
             <Text style={styles.note}>{zh ? '最近采集' : 'Last observed'}{read.profile?.chain_observed_at ? ` · ${new Date(read.profile.chain_observed_at).toLocaleString()}` : ''}</Text>
             {groups.map((p, i) => {
@@ -55,7 +58,7 @@ export function ProfileExecutionChain({target, client, lang, primary}: {target: 
               </View>;
             })}
           </>}
-      {read.status !== 'loading' && chain.length === 0 && <TouchableOpacity testID="profile-chain-retry" accessibilityRole="button" onPress={read.retry} style={styles.retry}><Text style={styles.heading}>{zh ? '重试' : 'Retry'}</Text></TouchableOpacity>}
+      {read.status !== 'loading' && chain.length === 0 && <TouchableOpacity testID="profile-chain-retry" accessibilityRole="button" onPress={read.retry} style={styles.retry}><Text style={styles.retryText}>{zh ? '重新读取' : 'Try again'}</Text></TouchableOpacity>}
     </View>}
   </View>;
 }
@@ -68,5 +71,7 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   process: {marginTop: 10, borderLeftWidth: 1, borderLeftColor: pal.divider, paddingLeft: 10},
   processName: {fontSize: 12, color: pal.fg2}, commandRow: {flexDirection: 'row', alignItems: 'center'},
   command: {fontFamily: 'Menlo', fontSize: 11, lineHeight: 22, color: pal.fg2},
-  copy: {width: 44, height: 44, justifyContent: 'center', alignItems: 'center'}, retry: {alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingHorizontal: 8},
+  loading: {flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44},
+  retryText: {fontSize: 13, fontWeight: '600', color: pal.fg},
+  copy: {width: 44, height: 44, justifyContent: 'center', alignItems: 'center'}, retry: {alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, marginTop: 8, borderWidth: StyleSheet.hairlineWidth, borderColor: BRAND, borderRadius: 8},
 });

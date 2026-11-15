@@ -1,9 +1,9 @@
 import {useReadingPalette} from './ReadingPalette';
-import type {Palette} from './theme';
+import {BRAND, type Palette} from './theme';
 import {useModalEscape} from '../keys/useModalEscape';
 import presentation from './participantPresentation.json';
 import React, {useEffect, useState} from 'react';
-import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import {ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
 import type {GtmuxClient} from '../api/client';
 import type {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
@@ -24,7 +24,9 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
   const zh = lang === 'zh';
   const {height, fontScale} = useWindowDimensions();
   const [sourcesOpen, setSourcesOpen] = useState(false);
-  const read = useParticipantProfile(client, participantRequest(target));
+  const request = participantRequest(target);
+  const read = useParticipantProfile(client, request);
+  const messageDetailsUnavailable = target.kind === 'agent' && !!target.turn && !request;
   const {profile} = read;
   useEffect(() => {
     setSourcesOpen(false);
@@ -56,13 +58,13 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
           </View> : <>
             {hq && <HQProfileDetails target={target} client={client} recordedAgent={hqAgent} zh={zh} />}
             {read.status === 'loading' ? <View testID="profile-loading" accessibilityRole="progressbar" accessibilityLabel={zh ? '正在读取已记录资料' : 'Loading recorded profile'} style={styles.loading}>
-              <Text style={styles.notice}>{zh ? '正在读取已记录资料…' : 'Loading recorded profile…'}</Text>
+              <ActivityIndicator size="small" color={BRAND} /><Text style={styles.notice}>{zh ? '正在读取已记录资料…' : 'Loading recorded profile…'}</Text>
               <View accessible={false} style={styles.skeleton}>{[0, 1, 2, 3].map(i => <View key={i} style={styles.placeholder} />)}</View>
             </View> : <View style={styles.grid}>
               {facts.map(f => <View style={[styles.fact, fontScale > 1.3 && styles.factLarge]} key={f.key}><Text style={styles.label}>{factLabel(f.key, zh)}</Text><Text selectable style={styles.value}>{factValue(f)}</Text></View>)}
             </View>}
-            {read.status !== 'loading' && facts.length === 0 && !(hq && target.kind === 'sender') && <Text testID="profile-unrecorded" style={styles.notice}>{read.status === 'failed' || profile?.unavailable ? (zh ? '暂时无法读取资料。已记录的身份仍保留。' : 'Profile unavailable. Recorded identity is retained.') : (zh ? '这位参与者的版本、模型等细节未记录。' : 'Version, model and other details were not recorded for this participant.')}</Text>}
-            {(read.status === 'failed' || profile?.unavailable) && <TouchableOpacity testID="profile-retry" accessibilityRole="button" onPress={read.retry} style={styles.retry}><Text style={styles.sectionTitle}>{zh ? '重试' : 'Retry'}</Text></TouchableOpacity>}
+            {read.status !== 'loading' && facts.length === 0 && !(hq && target.kind === 'sender') && <Text testID="profile-unrecorded" style={styles.notice}>{messageDetailsUnavailable ? (zh ? '暂无这条回复的详细资料。' : 'Details are unavailable for this reply.') : read.timedOut ? (zh ? '读取超时，请重试。' : 'The request timed out. Try again.') : read.status === 'failed' || profile?.unavailable ? (zh ? '暂时无法读取资料。已记录的身份仍保留。' : 'Profile unavailable. Recorded identity is retained.') : (zh ? '这位参与者的版本、模型等细节未记录。' : 'Version, model and other details were not recorded for this participant.')}</Text>}
+            {(read.status === 'failed' || profile?.unavailable) && <TouchableOpacity testID="profile-retry" accessibilityRole="button" onPress={read.retry} style={styles.retry}><Text style={styles.retryText}>{zh ? '重新读取' : 'Try again'}</Text></TouchableOpacity>}
             {read.status !== 'loading' && target.kind === 'agent' && <ProfileExecutionChain target={target} client={client} lang={lang} primary={read} />}
             {facts.length > 0 && <View style={styles.section}>
               <TouchableOpacity testID="profile-sources-toggle" accessibilityRole="button" accessibilityState={{expanded: sourcesOpen}} onPress={() => setSourcesOpen(v => !v)} style={styles.disclosure}><Text style={[styles.sectionTitle, styles.flex]}>{zh ? '来源与记录时间' : 'Sources and observation times'}</Text><Chevron open={sourcesOpen} color={pal.fg2} /></TouchableOpacity>
@@ -92,7 +94,8 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   skeleton: {gap: 26, paddingTop: 30}, placeholder: {height: 18, width: '80%', backgroundColor: pal.raised, borderRadius: 3},
   section: {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider, marginTop: 18, paddingTop: 6}, disclosure: {minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12},
   sectionTitle: {fontSize: 13, fontWeight: '500', color: pal.fg2}, flex: {flex: 1, minWidth: 0},
-  retry: {minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingHorizontal: 8},
+  retryText: {fontSize: 13, fontWeight: '600', color: pal.fg},
+  retry: {minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', paddingHorizontal: 12, marginTop: 8, borderWidth: StyleSheet.hairlineWidth, borderColor: BRAND, borderRadius: 8},
   sourceRow: {flexDirection: 'row', gap: 12, paddingVertical: 8}, sourceLabel: {fontSize: 12, lineHeight: 18, color: pal.fg2, flex: 1}, sourceText: {fontSize: 11, lineHeight: 17, color: pal.fg2},
   notice: {fontSize: 12, lineHeight: 19, color: pal.fg2, marginTop: 10},
   quote: {borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: pal.divider, paddingTop: 24, paddingBottom: 8}, quoteText: {color: pal.fg2, fontSize: 16, lineHeight: 26}, attribution: {color: pal.fg2, fontSize: 13, marginTop: 18, textAlign: 'center'},

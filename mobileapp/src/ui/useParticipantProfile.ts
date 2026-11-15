@@ -1,10 +1,11 @@
 import {useEffect, useState} from 'react';
 import type {GtmuxClient} from '../api/client';
 import type {ParticipantProfile, ProfileTarget} from './participantProfile';
+import {createReadTask, ReadDeadlineError} from '../state/readTask';
 
 type Request = Parameters<GtmuxClient['participantProfile']>[0];
 type Status = 'loading' | 'ready' | 'failed' | 'unrecorded';
-export interface ProfileRead {status: Status; profile?: ParticipantProfile; retry: () => void}
+export interface ProfileRead {status: Status; profile?: ParticipantProfile; timedOut?: boolean; retry: () => void}
 
 export function participantRequest(target: ProfileTarget): Request | undefined {
   if (target.kind !== 'agent' || target.turn && (!target.turn.session_id || !target.turn.time)) return;
@@ -26,22 +27,22 @@ export function currentChainRequest(target: ProfileTarget): Request | undefined 
 export function useParticipantProfile(client: GtmuxClient | undefined, request: Request | undefined, enabled = true): ProfileRead {
   const key = request ? JSON.stringify(request) : undefined;
   const [attempt, setAttempt] = useState(0);
-  const [result, setResult] = useState<{key: string; client: GtmuxClient; attempt: number; status: Status; profile?: ParticipantProfile}>();
+  const [result, setResult] = useState<{key: string; client: GtmuxClient; attempt: number; status: Status; profile?: ParticipantProfile; timedOut?: boolean}>();
   useEffect(() => {
     if (!enabled || !client || !key) return;
-    const abort = new AbortController();
     const identity = {key, client, attempt};
     setResult({...identity, status: 'loading'});
-    client.participantProfile(JSON.parse(key) as Request, abort.signal).then(profile => {
-      if (!abort.signal.aborted) setResult({...identity, status: 'ready', profile});
-    }).catch(() => {
-      if (!abort.signal.aborted) setResult({...identity, status: 'failed'});
-    });
-    return () => abort.abort();
+    const task = createReadTask(
+      signal => client.participantProfile(JSON.parse(key) as Request, signal),
+      profile => setResult({...identity, status: 'ready', profile}),
+      {onError: error => setResult({...identity, status: 'failed', timedOut: error instanceof ReadDeadlineError})},
+    );
+    task.run();
+    return () => task.dispose();
   }, [client, key, enabled, attempt]);
   // Derive the pending state before effects run, including when the target changes.
   // A previous target's facts and the "unrecorded" notice must never flash here.
   const matches = result?.key === key && result?.client === client && result?.attempt === attempt;
   const status = !enabled || !client || !key ? 'unrecorded' : matches ? result!.status : 'loading';
-  return {status, profile: status === 'ready' ? result?.profile : undefined, retry: () => setAttempt(v => v + 1)};
+  return {status, profile: status === 'ready' ? result?.profile : undefined, timedOut: matches && status === 'failed' && result?.timedOut, retry: () => setAttempt(v => v + 1)};
 }
