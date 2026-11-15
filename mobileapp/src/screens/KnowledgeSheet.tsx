@@ -24,7 +24,6 @@
 import React from 'react';
 import {knowledgeTopic, knowledgeUsage} from './knowledgePresentation';
 import {
-  ActivityIndicator,
   Keyboard,
   Modal,
   ScrollView,
@@ -34,6 +33,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {LoadingMark} from '../ui/LoadingMark';
 import {KnowledgeAct, KnowledgeEntry, KnowledgeIndex} from '../api/client';
 import {KnowledgeEntryReader} from './KnowledgeEntryReader';
 import {useKnowledgeEntryRead} from './useKnowledgeEntryRead';
@@ -309,7 +309,7 @@ export function KnowledgeSheet({visible, index, nowSecs, pal, zh, onClose, loadE
         ) : null}
 
         {indexLoading || indexError ? <View testID="knowledge-load-state" style={styles.loadState}>
-          {indexLoading && <ActivityIndicator color={pal.fg2} />}
+          {indexLoading && <LoadingMark color={pal.fg2} />}
           <Text accessibilityRole={indexError ? 'alert' : undefined} style={{color: pal.fg2}}>{indexLoading ? t('Loading knowledge base…', '正在加载知识库…') : t('Could not load knowledge base. Retrying…', '无法加载知识库，正在重试…')}</Text>
         </View> : regular ? (
           <View style={styles.columns}>

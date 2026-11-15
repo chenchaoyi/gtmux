@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, StyleSheet, View} from 'react-native';
+import {StyleSheet, View} from 'react-native';
+import {LoadingMark} from './LoadingMark';
 import {ChromeText} from './ChromeText';
 import {CheckIcon} from './Icons';
 import {sendReceiptLabel, type SendDelivery} from './sendReceipt';
@@ -21,7 +22,7 @@ export function MessageReceipt({delivery, delivered, expiresAt, zh}: {delivery?:
   if (receipt && (expiresAt === undefined || !Number.isFinite(expiresAt) || Date.now() >= expiresAt || expired === expiresAt)) return null;
   return <View testID="chat-pending-echo" pointerEvents="none" accessible
     accessibilityLabel={sendReceiptLabel(delivery, delivered, zh)} accessibilityLiveRegion="polite" style={styles.slot}>
-    {!delivered ? <ActivityIndicator size={10} color={pal.fg2} />
+    {!delivered ? <LoadingMark size={10} color={pal.fg2} accessible={false} />
       : delivery === 'queued' ? <ChromeText numberOfLines={1} style={[styles.queued, {color: pal.fg2}]}>{zh ? '排队中' : 'Queued'}</ChromeText>
       : <CheckIcon size={11} color={pal.fg2} />}
   </View>;

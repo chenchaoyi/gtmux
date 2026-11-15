@@ -10,7 +10,8 @@
 // from where they are standing.
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Alert, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {LoadingMark} from '../ui/LoadingMark';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
@@ -143,7 +144,7 @@ export function RouteScreen({navigation}: any) {
                 {r.current ? (
                   <Text style={[s.mark, {color: pal.fg2}]}>{zh ? '✓ 正在使用' : '✓ In use'}</Text>
                 ) : moving === r.id ? (
-                  <ActivityIndicator size="small" />
+                  <LoadingMark size="small" />
                 ) : null}
               </TouchableOpacity>
             ))}

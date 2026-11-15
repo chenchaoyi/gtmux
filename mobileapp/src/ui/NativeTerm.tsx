@@ -678,7 +678,7 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
         <View testID={TestIds.detail.terminalReflow} style={[StyleSheet.absoluteFill, styles.reflow, {backgroundColor: bg}]}
           accessible accessibilityRole="progressbar" accessibilityState={{busy: true}}
           accessibilityLabel={lang === 'zh' ? '正在调整终端布局' : 'Updating terminal layout'}>
-          <LoadingMark size={28} color={fg} />
+          <LoadingMark size={28} color={fg} accessible={false} />
           <Text style={[styles.reflowLabel, {color: fg}]}>{lang === 'zh' ? '正在调整布局…' : 'Updating layout…'}</Text>
         </View>
       )}

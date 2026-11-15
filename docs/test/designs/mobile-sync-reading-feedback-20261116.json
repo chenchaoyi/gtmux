@@ -1,0 +1,87 @@
+{
+  "id": "mobile-sync-reading-feedback-20261116",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner self-review before code/tests; independent final review still required",
+    "date": "2026-11-16",
+    "decision": "Complete already-requested push-sync retry noise and user-facing reading hierarchy as part of the authorized App release",
+    "notes": "Source audit confirms unchanged subscription intent is rescheduled on foreground and unrelated server-array persistence; repeated old-route register/unregister failures are not proof of APNs delivery failure. Coalesce same in-flight/successful intent, use bounded retry backoff and foreground-only retry, preserve explicit preference updates and ordered unregister barriers, and prefer a verified still-reported route. Never remove reported addresses, clear diagnostics, change credentials or send a production test notification. Reuse existing per-Mac generation queue and privacy/guest/background guards. Legacy tool reader uses explicit operation only in two paths although activityOperation already supplies a conservative title fallback; unify that display interpretation without inferring success or executing recorded commands. Audit App loading/empty/read-failure/profile/receipt/tool copy: lead with what can be read and one primary retry, concise secondary action, hide technical provenance behind existing disclosure. Shared neutral read feedback must retain minimum44pt actions, current Appearance and busy state; loading uses the new shared three-pane engine. Retain all prior semantic assertions and raw copy/numeric/identity guards. Baseline Af source is bound to prior2552-pass complete App run (only CLAUDE docs changed), not a new clean-head test run. Existing Go stop, caches, failures and real-device/native accessibility boundaries remain. Before any test/product edit, additionally declare the existing CRX-001 visible label update from long Reload conversation to short Retry: preserve its callback, message retention, minimum44pt, busy/disabled and failed-retry assertions. RFD-002 also checks loading descendants are decorative when the containing feedback already supplies the progress label. Before read-feedback implementation, also declare existing ConversationCopy/ChatView association fixture copy updates: replace internal association wording with the concise user-facing read failure, retaining every cache, no-fallback, no-side-effect and empty/loading distinction assertion. The new component changes presentation only, never read authority. Before editing ServersScreen or its tests, expose pending notification retry in the existing owner Mac More menu, never for guests, and reflect genuine in-flight sync on the existing second line. Supersede the old no-in-flight-text rule while retaining fixed62pt/two-line rows and all reachability/access semantics. Keep the old row-height assertion and add actual busy text, menu scope and exact target/force assertions; do not add a third row or replace the bell switch. Full App run after presentation found17 old copy-substring failures in4 existing recovery fixtures; all raw failures stay. Before editing those tests, declare literal replacements for load failure, process read failure, profile failure/loading and confirmed-no-extra-details. Keep every negative unknown-vs-empty predicate, auth-retirement/304/reader fence, late-response check, exact call/identity assertion, no-copy guard and retry count. This is a deliberate user copy change, not removal of failed assertions. Independent93 R1/P2 at exact340ba658 reviewed before the follow-up test/code edit: process Retry inherits the conversation-only accessible name through ReadFeedback. Add an optional scope-specific accessible label while retaining ConversationReload default conversation semantics. Extend existing PCP-001 bilingual failed-process retry assertions and CRX-001/RFD-002 bilingual conversation label assertions; keep original callback,44pt,busy,timeout,wrong-source and no-copy checks. Case expectations and mappings remain within their prior reviewed scope; no historical case replacement or checker change. No local Go/Jest/npm/native/cache run; validate on the new exact normal cloud CI. Preserve REQUEST_CHANGES, old CI and unresolved continuous source-pool accounting."
+  },
+  "cases": [
+    {
+      "id": "PFR-001",
+      "layer": "L2",
+      "description": "Unchanged notification intent coalesces across foreground and unrelated Mac-list edits",
+      "setup": "Real AppProvider with isolated Keychain, push token and synthetic deferred PushTarget; existing current queue unchanged",
+      "action": "Re-render after rename/reorder, unchanged reported addresses and repeated active events during and after one successful sync; run selected fixture on old provider",
+      "expected": "No duplicate same-intent network writes or busy flicker; pending work remains authoritative through unrelated edits; successful current result remains synced until bounded refresh is due. Old provider fails call/state assertions semantically.",
+      "planned_files": [
+        "mobileapp/src/state/AppContext.pushSync.test.tsx"
+      ]
+    },
+    {
+      "id": "PFR-002",
+      "layer": "L2",
+      "description": "Failed notification sync backs off while explicit retry remains responsive",
+      "setup": "Real AppProvider, controlled clock/AppState and synthetic failed transport; no production network",
+      "action": "Fail repeated sync, advance eligible delays, send frequent focus/reachability signals, background and resume, explicitly retry one Mac",
+      "expected": "Automatic failures use bounded30s-to5min delays and one foreground retry timer; duplicate triggers coalesce. User retry may bypass cooldown only for requested Mac. State becomes visibly syncing then pending/synced; background/unmount has no retry loop.",
+      "planned_files": [
+        "mobileapp/src/state/AppContext.pushSync.test.tsx",
+        "mobileapp/src/screens/ServersScreen.test.tsx"
+      ]
+    },
+    {
+      "id": "PFR-003",
+      "layer": "L2",
+      "description": "New preferences and credentials supersede old sync without losing unregister order",
+      "setup": "Real provider plus unchanged PushSyncQueue background/settling regression controls; two synthetic owner Macs and a guest",
+      "action": "Change enabled/kinds/token/owner credential or reported route while old registration is in flight, remove/unmount and resolve stale callbacks",
+      "expected": "Fresh intent is eligible immediately and stays behind the actual old transport barrier; newest disable wins. Late old results do not overwrite current state. Other Mac proceeds, guests/unknown token never register, and no stale timer survives removal/unmount.",
+      "planned_files": [
+        "mobileapp/src/state/AppContext.pushSync.test.tsx"
+      ]
+    },
+    {
+      "id": "PFR-004",
+      "layer": "L2",
+      "description": "Notification retry prefers only a previously verified reported route",
+      "setup": "Real syncServerPush with synthetic factories and a previously successful alternative; original deadline/guest/background tests unchanged",
+      "action": "Repeat with preferred alternate, remove it from reported addresses, pass an unknown address, exercise failed/background paths; run selected fixture against exact old sync function",
+      "expected": "Known successful route is attempted first without dead-primary churn; an unreported or malformed preference is ignored. Same pairing owner auth is retained; only foreground success records preference. Raw diagnostics/history are not deleted or mislabeled as APNs delivery results.",
+      "planned_files": [
+        "mobileapp/src/push/sync.routes.test.ts"
+      ]
+    },
+    {
+      "id": "RFD-001",
+      "layer": "L2",
+      "description": "Legacy command records use concise command-first reading without changing original evidence",
+      "setup": "Real ToolCallDetails/CodeText and shared callSections; absent operation, explicit contradictory tool operation, multiline/precision and ANSI cases",
+      "action": "Render exact legacy exec argv with multiple output blocks, copy full input/result and switch raw; compare old implementation using the same new fixture",
+      "expected": "Missing operation may use existing conservative activityOperation fallback: one direct command, no single-command outline/tab clutter, cleaned terminal presentation. Explicit operation wins, original copy/raw and opaque numeric text remain exact; unknown tool data is not inferred as shell.",
+      "planned_files": [
+        "mobileapp/src/ui/ToolReading.legacy.test.tsx"
+      ]
+    },
+    {
+      "id": "RFD-002",
+      "layer": "L2",
+      "description": "Read failures present a compact primary retry with stable busy and secondary navigation",
+      "setup": "Real shared read feedback and ConversationReload in both reading palettes; isolated read callbacks and accessibility settings",
+      "action": "Render empty/cached read failure, start and repeat retry, render failed retry, use optional secondary action and larger content",
+      "expected": "One concise explanation, one clear44pt retry, optional secondary action of lower prominence. Retry is busy/disabled while the parent owns request, original callbacks remain scope-owned and no automatic write/association occurs. Shared loader is decorative inside the labeled action; copy avoids internal association/session-log language.",
+      "planned_files": [
+        "mobileapp/src/ui/ReadFeedback.test.tsx",
+        "mobileapp/src/ui/ConversationReload.test.tsx",
+        "mobileapp/src/ui/ConversationCopy.test.tsx",
+        "mobileapp/src/ui/ChatView.association.test.tsx",
+        "mobileapp/__tests__/chatRecentHistory.test.tsx",
+        "mobileapp/__tests__/chatPagingRecovery.test.tsx",
+        "mobileapp/src/ui/ParticipantProfileModal.test.tsx",
+        "mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx"
+      ]
+    }
+  ],
+  "seal": "4af82c99d0b06a29544891d66a74852ebab6d2f2587095dab5af13fb70e25f6e"
+}

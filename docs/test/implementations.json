@@ -1900,7 +1900,8 @@
     "cases": [
       "CPG-005",
       "CPG-006",
-      "CPG-007"
+      "CPG-007",
+      "RFD-002"
     ],
     "selectors": [
       "CPG005 %s explicit Retry recovers quiet history after authorized 304",
@@ -1910,7 +1911,8 @@
   },
   "mobileapp/__tests__/chatRecentHistory.test.tsx": {
     "cases": [
-      "LCL-003"
+      "LCL-003",
+      "RFD-002"
     ],
     "selectors": [
       "LCL-003 %s requests recent data and exposes a working error/retry action",
@@ -2459,10 +2461,13 @@
   },
   "mobileapp/src/screens/ServersScreen.test.tsx": {
     "cases": [
-      "RSR-009"
+      "RSR-009",
+      "PFR-002"
     ],
     "selectors": [
-      "More is a menu: Disconnect only on the open Mac, Remove last"
+      "More is a menu: Disconnect only on the open Mac, Remove last",
+      "PFR-002 genuine notification syncing stays in the existing two-line row",
+      "PFR-002 a pending owner retries its own notification settings from More, with no guest action"
     ]
   },
   "mobileapp/src/screens/UsageSheet.test.tsx": {
@@ -2633,7 +2638,8 @@
   },
   "mobileapp/src/ui/ParticipantProfileModal.test.tsx": {
     "cases": [
-      "CRX-005"
+      "CRX-005",
+      "RFD-002"
     ],
     "selectors": [
       "message facts stay historical while a same-session launch chain loads on demand",
@@ -3083,14 +3089,16 @@
   },
   "mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx": {
     "cases": [
-      "PCP-001"
+      "PCP-001",
+      "RFD-002"
     ],
     "selectors": [
       "PCP-001 missing timestamp keeps message facts absent but reads exact source processes",
       "PCP-001 missing timestamp never accepts a different process source",
       "PCP-001 unknown message agent cannot borrow the current radar identity or offer a futile read",
       "PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",
-      "PCP-001 switching message source and client retires the previous process read"
+      "PCP-001 switching message source and client retires the previous process read",
+      "PCP-001 %s process retry exposes the process action name"
     ]
   },
   "mobileapp/src/ui/Composer.multiPhoto.test.tsx": {
@@ -3331,6 +3339,80 @@
       "a cached read failure remains visible when SSE reconnects before the next result: %s",
       "changing the client drops cached failure and rejects a late old reread",
       "cached access failure stays visible across reconnect with the existing %s authority"
+    ]
+  },
+  "mobileapp/src/ui/LoadingMark.motion.test.tsx": {
+    "cases": [
+      "BLP-001",
+      "BLP-002",
+      "BLP-003"
+    ],
+    "selectors": [
+      "BLP-001 cyan focus visits all three fixed panes and wraps continuously (%s)",
+      "BLP-002 unresolved and live Reduce Motion settings govern foreground-only motion",
+      "BLP-002 a failed or late initial preference cannot start a hidden or unmounted indicator",
+      "BLP-003 shared wrappers retain size, style, labels and the existing receipt footprint"
+    ]
+  },
+  "mobileapp/src/ui/LoadingUsage.test.ts": {
+    "cases": [
+      "BLP-004"
+    ],
+    "selectors": [
+      "BLP-004 App-owned loading views share the brand engine instead of native ActivityIndicator"
+    ]
+  },
+  "mobileapp/src/ui/Splash.test.tsx": {
+    "cases": [
+      "BLP-002",
+      "BLP-005"
+    ],
+    "selectors": [
+      "startup copy remains readable and reserves a larger loading footer (%s)",
+      "reduced motion never starts the pane cycle; changing the setting stops a live loop",
+      "a live Reduce Motion change wins over a stale initial preference query"
+    ]
+  },
+  "mobileapp/src/state/AppContext.pushSync.test.tsx": {
+    "cases": [
+      "PFR-001",
+      "PFR-002",
+      "PFR-003"
+    ],
+    "selectors": [
+      "PFR-001 unrelated Mac edits and repeated foreground signals do not replay a successful subscription",
+      "PFR-001 an unrelated edit cannot invalidate the only in-flight result",
+      "PFR-002 failed automatic sync backs off, pauses in background and resumes without a burst",
+      "PFR-002 explicit retry bypasses cooldown for the requested Mac and reports busy",
+      "PFR-003 a newer disable remains ordered after the old transport, and stale completion cannot resync it",
+      "PFR-003 a changed owner credential is immediate during cooldown and another Mac remains independent",
+      "PFR-003 unmount invalidates pending callbacks and every retry timer"
+    ]
+  },
+  "mobileapp/src/push/sync.routes.test.ts": {
+    "cases": [
+      "PFR-004"
+    ],
+    "selectors": [
+      "PFR-004 a verified reported alternate is preferred without retrying a dead primary",
+      "PFR-004 an unknown route is never attempted and background work cannot record route success"
+    ]
+  },
+  "mobileapp/src/ui/ToolReading.legacy.test.tsx": {
+    "cases": [
+      "RFD-001"
+    ],
+    "selectors": [
+      "RFD-001 legacy exec %s reads as one command and clean output while copy remains exact",
+      "RFD-001 an explicit generic tool operation keeps its original data instead of guessing a shell command"
+    ]
+  },
+  "mobileapp/src/ui/ReadFeedback.test.tsx": {
+    "cases": [
+      "RFD-002"
+    ],
+    "selectors": [
+      "RFD-002 %s read feedback keeps one explicit retry, busy protection and secondary navigation"
     ]
   }
 }

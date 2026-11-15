@@ -4,7 +4,6 @@
 
 import React, {useEffect, useRef, useState} from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -15,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {LoadingMark} from '../ui/LoadingMark';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {GtmuxClient} from '../api/client';
 import {useApp} from '../state/AppContext';
@@ -260,7 +260,7 @@ export function PairingScreen({onCancel, onDemo, onPaired}: {onCancel?: () => vo
             onPress={connect}
             disabled={busy}>
             {busy ? (
-              <ActivityIndicator color="#fff" />
+              <LoadingMark color="#fff" highlightColor="#fff" accessible={false} />
             ) : (
               <Text style={styles.connectText}>{t(pendingSave.current ? 'pairSaveRetry' : 'connect')}</Text>
             )}

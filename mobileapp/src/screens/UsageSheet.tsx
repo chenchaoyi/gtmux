@@ -8,7 +8,8 @@
 // Amber remains the core's verdict; this view does not infer billing or freshness.
 
 import React, {useState} from 'react';
-import {ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {LoadingMark} from '../ui/LoadingMark';
 import {UsageReport} from '../api/client';
 import {Agent} from '../api/types';
 import {AgentAvatar} from '../ui/AgentAvatar';
@@ -176,7 +177,7 @@ export function UsageSheet({
         </View>
 
         {!usage && loading && !problem ? <View testID="usage-load-state" style={styles.loadState}>
-          <ActivityIndicator color={pal.fg2} />
+          <LoadingMark color={pal.fg2} />
           <Text style={[styles.loadTitle, {color: pal.fg}]}>{t('Reading usage', '正在读取用量')}</Text>
           <Text style={[styles.loadBody, {color: pal.fg2, textAlign: 'center'}]}>{t('Collecting usage from this Mac can take a while when many sessions are open.', '打开的会话较多时，从 Mac 收集用量可能需要一些时间。')}</Text>
         </View> : !usage && problem ? <View style={styles.loadState}>{notice(false)}</View> : <ScrollView contentContainerStyle={styles.pad}>

@@ -15,7 +15,7 @@ test('CAS005 association banner preserves messages and retries without claiming 
     try {
       const visible = () => tree.root.findAllByType(Text).map(n => String(n.props.children)).join(' ');
       expect(visible()).toContain('kept reply');
-      expect(visible()).toContain(lang === 'zh' ? '会话关联' : 'Conversation association');
+      expect(visible()).toContain(lang === 'zh' ? '暂时无法更新对话' : 'Could not update conversation');
       act(() => tree.root.findAll(n => n.props.testID === 'chat-read-retry' && typeof n.props.onPress === 'function')[0].props.onPress());
       expect(retry).toHaveBeenCalledTimes(1);
       act(() => tree.update(<ChatView {...props} turns={[]} failed associationFailed />));

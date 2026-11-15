@@ -135,7 +135,7 @@ export function callSections(
   };
   const argv =
     step.input_kind === 'arguments' &&
-    ['command', 'read', 'list', 'search'].includes(step.operation || '');
+    ['command', 'read', 'list', 'search'].includes(activityOperation(step));
   if (
     step.input &&
     step.input_kind !== 'parameters' &&

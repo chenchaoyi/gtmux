@@ -4880,6 +4880,8 @@ LEG-83c398034235,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,11,te
 LEG-3410a0b99aa3,L1,RN / mobile harness,mobileapp/src/push/android.test.ts,15,test,"FCM token refresh, one-use cold tap and live tap share lifecycle without executing digits",False,legacy-not-retrospectively-reviewed
 LEG-c0039196e4f2,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,29,test,"the launch notification is acted on once, not on every server switch",False,legacy-not-retrospectively-reviewed
 LEG-a79023052203,L1,RN / mobile harness,mobileapp/src/push/launchNotification.test.ts,39,test,a launch with no notification taps nothing,False,legacy-not-retrospectively-reviewed
+MAP-f109448b40b4,L2,reviewed implementation,mobileapp/src/push/sync.routes.test.ts,5,reviewed-selector,PFR-004 a verified reported alternate is preferred without retrying a dead primary,False,PFR-004
+MAP-18ea154f509f,L2,reviewed implementation,mobileapp/src/push/sync.routes.test.ts,11,reviewed-selector,PFR-004 an unknown route is never attempted and background work cannot record route success,False,PFR-004
 LEG-fbb65bc19bd8,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,9,it,"registers a selected Mac and unregisters a muted Mac, including silent badge pushes",False,legacy-not-retrospectively-reviewed
 LEG-c01ee8fb12d3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,20,it,tries a reported alternate route and leaves a failed sync pending,False,legacy-not-retrospectively-reviewed
 LEG-7719b4cb3445,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,31,it,never registers a guest or an unknown token,False,legacy-not-retrospectively-reviewed
@@ -5190,25 +5192,27 @@ LEG-5a967033a46f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test
 LEG-7db151deb47d,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,93,test,"a pending setting is said on the status line, with no retry control",False,legacy-not-retrospectively-reviewed
 LEG-eb83628bcdb4,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,100,test,a Mac with a pending setting gets it again the moment it answers,False,legacy-not-retrospectively-reviewed
 LEG-4ebd43c7f5b0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,111,test,"nothing moves: every row is the same height, and a sync in flight shows nothing",False,legacy-not-retrospectively-reviewed
-LEG-f71e96b2b8a8,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,122,test,global pause preserves the per-Mac preference and is said once,False,legacy-not-retrospectively-reviewed
-LEG-b50053425ec3,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,128,test,offline selected Mac is not connected; the server-mode marker does not follow a switch,False,legacy-not-retrospectively-reviewed
-LEG-5c5b6c7c9fe7,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,141,test,a Mac that refused this phone says so: the radar sends the reader here to pair again,False,legacy-not-retrospectively-reviewed
-LEG-789b23be5777,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,148,test,"rename is in More, prefilled, and says the server keeps its own name",False,legacy-not-retrospectively-reviewed
-LEG-ea5568a0fd6c,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,162,test,removal is in More and requires confirmation,False,legacy-not-retrospectively-reviewed
-LEG-b5261126d060,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,174,test,a removal that fails says the server is still in the list,False,legacy-not-retrospectively-reviewed
-LEG-e756c057ddc5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,189,test,"a store capture shows every seeded Mac answering, and asks none of them",False,legacy-not-retrospectively-reviewed
-LEG-95d0545d1cbb,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,207,test,"More is a menu: Disconnect only on the open Mac, Remove last",False,legacy-not-retrospectively-reviewed
-LEG-0c7d0ba64cd6,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,249,test,"VoiceOver can move a row without dragging, and hears where it went",False,legacy-not-retrospectively-reviewed
-LEG-d6631ede062f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,264,test,"hold, drag, let go: the row moves to where it was dropped, and the page scrolls again",False,legacy-not-retrospectively-reviewed
-LEG-afa03e607da1,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,284,test,"a drag the system takes away, or a hold let go in place, moves nothing",False,legacy-not-retrospectively-reviewed
-LEG-e42e3696242a,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,311,test,"a move that does not save goes back, and says so",False,legacy-not-retrospectively-reviewed
-LEG-2b0444ad50e7,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,329,test,a section of one has nothing to drag; the hint shows only when there is,False,legacy-not-retrospectively-reviewed
-LEG-4174cda91023,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,344,test,"an owned Mac shows what it is, and Details opens what it reported",False,legacy-not-retrospectively-reviewed
+LEG-f71e96b2b8a8,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,136,test,global pause preserves the per-Mac preference and is said once,False,legacy-not-retrospectively-reviewed
+LEG-b50053425ec3,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,142,test,offline selected Mac is not connected; the server-mode marker does not follow a switch,False,legacy-not-retrospectively-reviewed
+LEG-5c5b6c7c9fe7,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,155,test,a Mac that refused this phone says so: the radar sends the reader here to pair again,False,legacy-not-retrospectively-reviewed
+LEG-789b23be5777,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,162,test,"rename is in More, prefilled, and says the server keeps its own name",False,legacy-not-retrospectively-reviewed
+LEG-ea5568a0fd6c,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,176,test,removal is in More and requires confirmation,False,legacy-not-retrospectively-reviewed
+LEG-b5261126d060,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,188,test,a removal that fails says the server is still in the list,False,legacy-not-retrospectively-reviewed
+LEG-e756c057ddc5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,203,test,"a store capture shows every seeded Mac answering, and asks none of them",False,legacy-not-retrospectively-reviewed
+LEG-95d0545d1cbb,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,221,test,"More is a menu: Disconnect only on the open Mac, Remove last",False,legacy-not-retrospectively-reviewed
+LEG-0c7d0ba64cd6,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,263,test,"VoiceOver can move a row without dragging, and hears where it went",False,legacy-not-retrospectively-reviewed
+LEG-d6631ede062f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,278,test,"hold, drag, let go: the row moves to where it was dropped, and the page scrolls again",False,legacy-not-retrospectively-reviewed
+LEG-afa03e607da1,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,298,test,"a drag the system takes away, or a hold let go in place, moves nothing",False,legacy-not-retrospectively-reviewed
+LEG-e42e3696242a,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,325,test,"a move that does not save goes back, and says so",False,legacy-not-retrospectively-reviewed
+LEG-2b0444ad50e7,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,343,test,a section of one has nothing to drag; the hint shows only when there is,False,legacy-not-retrospectively-reviewed
+LEG-4174cda91023,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,358,test,"an owned Mac shows what it is, and Details opens what it reported",False,legacy-not-retrospectively-reviewed
 LEG-ad9ff3d45771,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,402,test,the same address re-paired as a share link never shows the owner's answer,False,legacy-not-retrospectively-reviewed
-LEG-982cd11bec20,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,412,test,an answer is asked again once it is five minutes old,False,legacy-not-retrospectively-reviewed
-LEG-6a69d2b9722f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,424,test,"a credential the server rejects says so, not that it is a share link",False,legacy-not-retrospectively-reviewed
-LEG-dab2495366f0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,436,test,a Mac that refuses this phone reads Access rejected on the list,False,legacy-not-retrospectively-reviewed
-LEG-cd35d5d9def5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,448,test,"a server-mode change on the server is read at once, not on the next poll",False,legacy-not-retrospectively-reviewed
+LEG-982cd11bec20,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,426,test,an answer is asked again once it is five minutes old,False,legacy-not-retrospectively-reviewed
+LEG-6a69d2b9722f,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,438,test,"a credential the server rejects says so, not that it is a share link",False,legacy-not-retrospectively-reviewed
+LEG-dab2495366f0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,450,test,a Mac that refuses this phone reads Access rejected on the list,False,legacy-not-retrospectively-reviewed
+LEG-cd35d5d9def5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,462,test,"a server-mode change on the server is read at once, not on the next poll",False,legacy-not-retrospectively-reviewed
+MAP-f0b391956193,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,111,reviewed-selector,PFR-002 genuine notification syncing stays in the existing two-line row,False,"RSR-009,PFR-002"
+MAP-0be071c6814e,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,123,reviewed-selector,"PFR-002 a pending owner retries its own notification settings from More, with no guest action",False,"RSR-009,PFR-002"
 MAP-8524f471c8a2,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,47,reviewed-selector,regular main respects loading and timeout in ${lang} ${theme},False,RDRC-001
 MAP-7c742f998d7d,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,62,reviewed-selector,hidden sidebar does not turn an unfinished main read into an empty fleet,False,RDRC-001
 MAP-6f2c71730f2c,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,70,reviewed-selector,unselected access and expired guest states retain shared guidance and no owner creation,False,RDRC-001
@@ -5568,6 +5572,13 @@ LEG-39aae8aefe46,L1,RN / mobile harness,mobileapp/src/state/AppContext.order.tes
 LEG-6488fe66d752,L1,RN / mobile harness,mobileapp/src/state/AppContext.order.test.tsx,177,it,a canceled queued pairing never selects its target or overwrites credentials,False,legacy-not-retrospectively-reviewed
 LEG-3a802ccea047,L1,RN / mobile harness,mobileapp/src/state/AppContext.order.test.tsx,196,it,native false is a failed save and a later successful retry does not poison the queue,False,legacy-not-retrospectively-reviewed
 LEG-aa09918f2f6f,L1,RN / mobile harness,mobileapp/src/state/AppContext.order.test.tsx,206,it,following a move collapses an existing destination entry without losing source preferences,False,legacy-not-retrospectively-reviewed
+MAP-8cddc2b03dae,L2,reviewed implementation,mobileapp/src/state/AppContext.pushSync.test.tsx,58,reviewed-selector,PFR-001 unrelated Mac edits and repeated foreground signals do not replay a successful subscription,False,"PFR-001,PFR-002,PFR-003"
+MAP-b9180d018ff6,L2,reviewed implementation,mobileapp/src/state/AppContext.pushSync.test.tsx,68,reviewed-selector,PFR-001 an unrelated edit cannot invalidate the only in-flight result,False,"PFR-001,PFR-002,PFR-003"
+MAP-a7f7a58d105e,L2,reviewed implementation,mobileapp/src/state/AppContext.pushSync.test.tsx,77,reviewed-selector,"PFR-002 failed automatic sync backs off, pauses in background and resumes without a burst",False,"PFR-001,PFR-002,PFR-003"
+MAP-284ac5f2f4c9,L2,reviewed implementation,mobileapp/src/state/AppContext.pushSync.test.tsx,90,reviewed-selector,PFR-002 explicit retry bypasses cooldown for the requested Mac and reports busy,False,"PFR-001,PFR-002,PFR-003"
+MAP-640cabd832f8,L2,reviewed implementation,mobileapp/src/state/AppContext.pushSync.test.tsx,104,reviewed-selector,"PFR-003 a newer disable remains ordered after the old transport, and stale completion cannot resync it",False,"PFR-001,PFR-002,PFR-003"
+MAP-ebe54a58f556,L2,reviewed implementation,mobileapp/src/state/AppContext.pushSync.test.tsx,115,reviewed-selector,PFR-003 a changed owner credential is immediate during cooldown and another Mac remains independent,False,"PFR-001,PFR-002,PFR-003"
+MAP-aa2b69d99bd9,L2,reviewed implementation,mobileapp/src/state/AppContext.pushSync.test.tsx,124,reviewed-selector,PFR-003 unmount invalidates pending callbacks and every retry timer,False,"PFR-001,PFR-002,PFR-003"
 MAP-b48734ad467c,L2,reviewed implementation,mobileapp/src/state/ChatAppearancePreference.test.tsx,22,reviewed-selector,CAR-002,False,CAR-002
 LEG-dd58172a93dd,L1,RN / mobile harness,mobileapp/src/state/WorkspaceContext.test.tsx,35,test,routeFor spells the phone routes once,False,legacy-not-retrospectively-reviewed
 LEG-c5b917b9c9fe,L1,RN / mobile harness,mobileapp/src/state/WorkspaceContext.test.tsx,42,test,the iPad starts in a worker pane and never opens HQ as generic detail,False,legacy-not-retrospectively-reviewed
@@ -5916,6 +5927,11 @@ LEG-bcc2d0a178eb,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,1
 LEG-e1120af9573d,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,25,it,"draws the brand cyan on the GLYPH, never as a fill",False,legacy-not-retrospectively-reviewed
 LEG-c63cab8036f8,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,41,it,"shares its accent with the other floating control, and with the palette",False,legacy-not-retrospectively-reviewed
 LEG-da0fe5a3e36e,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,47,it,renders nothing when you are already at the bottom,False,legacy-not-retrospectively-reviewed
+MAP-2a9c1d7d589d,L2,reviewed implementation,mobileapp/src/ui/LoadingMark.motion.test.tsx,33,reviewed-selector,BLP-001 cyan focus visits all three fixed panes and wraps continuously (%s),False,"BLP-001,BLP-002,BLP-003"
+MAP-745c98cb52b9,L2,reviewed implementation,mobileapp/src/ui/LoadingMark.motion.test.tsx,51,reviewed-selector,BLP-002 unresolved and live Reduce Motion settings govern foreground-only motion,False,"BLP-001,BLP-002,BLP-003"
+MAP-7267566ac671,L2,reviewed implementation,mobileapp/src/ui/LoadingMark.motion.test.tsx,66,reviewed-selector,BLP-002 a failed or late initial preference cannot start a hidden or unmounted indicator,False,"BLP-001,BLP-002,BLP-003"
+MAP-15a0e1198f1e,L2,reviewed implementation,mobileapp/src/ui/LoadingMark.motion.test.tsx,75,reviewed-selector,"BLP-003 shared wrappers retain size, style, labels and the existing receipt footprint",False,"BLP-001,BLP-002,BLP-003"
+MAP-d17546f317ae,L1,reviewed implementation,mobileapp/src/ui/LoadingUsage.test.ts,8,reviewed-selector,BLP-004 App-owned loading views share the brand engine instead of native ActivityIndicator,False,BLP-004
 LEG-078c56ec1332,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,44,it,"closes every row by default, showing none of the long cells",False,legacy-not-retrospectively-reviewed
 LEG-bfbc5f1230bf,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,52,it,"still says which row is which, so you can find one without opening any",False,legacy-not-retrospectively-reviewed
 LEG-32d7f4e27a3b,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,62,it,opens one row without opening the others,False,legacy-not-retrospectively-reviewed
@@ -6015,6 +6031,7 @@ MAP-50967dc9cb48,L2,reviewed implementation,mobileapp/src/ui/ParticipantProfileR
 MAP-733317a650cd,L2,reviewed implementation,mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx,46,reviewed-selector,PCP-001 unknown message agent cannot borrow the current radar identity or offer a futile read,False,PCP-001
 MAP-8617ba16602d,L2,reviewed implementation,mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx,55,reviewed-selector,"PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",False,PCP-001
 MAP-e9af5471b57e,L2,reviewed implementation,mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx,80,reviewed-selector,PCP-001 switching message source and client retires the previous process read,False,PCP-001
+MAP-f9c74c004f5e,L2,reviewed implementation,mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx,95,reviewed-selector,PCP-001 %s process retry exposes the process action name,False,"PCP-001,RFD-002"
 LEG-9fdb92ca8017,L2,RN / mobile harness,mobileapp/src/ui/PinnedPrompt.test.tsx,25,test,long instructions open in a separate reader; the terminal entrance stays bounded,False,legacy-not-retrospectively-reviewed
 LEG-47fc2d0d5586,L2,RN / mobile harness,mobileapp/src/ui/PinnedPrompt.test.tsx,43,test,a long press copies the full prompt and says so,False,legacy-not-retrospectively-reviewed
 LEG-4cc3e607a799,L2,RN / mobile harness,mobileapp/src/ui/PinnedPrompt.test.tsx,55,test,a new prompt starts folded again,False,legacy-not-retrospectively-reviewed
@@ -6036,6 +6053,7 @@ LEG-bf509bbe9643,L2,RN / mobile harness,mobileapp/src/ui/RangeText.test.tsx,117,
 LEG-4b610e4ac3a0,L2,RN / mobile harness,mobileapp/src/ui/RangeText.test.tsx,129,test,a short message growing during refresh does not reuse its one-character width,False,legacy-not-retrospectively-reviewed
 LEG-4a2adf031d00,L2,RN / mobile harness,mobileapp/src/ui/RangeText.test.tsx,149,test,Markdown emphasis serializes a real styled link into the native range renderer,False,legacy-not-retrospectively-reviewed
 LEG-2591238029b6,L2,RN / mobile harness,mobileapp/src/ui/RangeTextYoga.test.tsx,23,test.each(),a user bubble has usable TextKit width before its first size event at %s points,True,legacy-not-retrospectively-reviewed
+MAP-3a4cebbd28d5,L2,reviewed implementation,mobileapp/src/ui/ReadFeedback.test.tsx,9,reviewed-selector,"RFD-002 %s read feedback keeps one explicit retry, busy protection and secondary navigation",False,RFD-002
 LEG-0ce477b0c429,L2,RN / mobile harness,mobileapp/src/ui/ReorderableList.test.ts,8,it,"trades places at half a row, in either direction",False,legacy-not-retrospectively-reviewed
 LEG-0060e2306a26,L2,RN / mobile harness,mobileapp/src/ui/ReorderableList.test.ts,17,it,reads a taller row by its own centre,False,legacy-not-retrospectively-reviewed
 LEG-f5d787f6bb38,L2,RN / mobile harness,mobileapp/src/ui/ReorderableList.test.ts,23,it,"steps the rows between aside, by the lifted row's height",False,legacy-not-retrospectively-reviewed
@@ -6122,6 +6140,7 @@ LEG-e93283990a46,L2,RN / mobile harness,mobileapp/src/ui/SnippetsPicker.test.tsx
 LEG-f54cabe2a331,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,27,test.each(),startup copy remains readable and reserves a larger loading footer (%s),True,legacy-not-retrospectively-reviewed
 LEG-4c46e311242b,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,51,test,reduced motion never starts a breathing animation; changing the setting stops a live loop,False,legacy-not-retrospectively-reviewed
 LEG-3e028566a8ca,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,74,test,a live Reduce Motion change wins over a stale initial preference query,False,legacy-not-retrospectively-reviewed
+MAP-3d1235f0d306,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,51,reviewed-selector,reduced motion never starts the pane cycle; changing the setting stops a live loop,False,"BLP-002,BLP-005"
 LEG-e8ec3ad20de3,L2,RN / mobile harness,mobileapp/src/ui/TerminalKeyPanel.test.tsx,10,test,"compact keycaps send canonical keys, clear one-shot modifiers and keep function keys reachable",False,legacy-not-retrospectively-reviewed
 LEG-ad72ed211c5d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,26,test,shows the label it is given,False,legacy-not-retrospectively-reviewed
 LEG-f87bea8bca03,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,34,test,"puts a rule on BOTH sides of it, with the label between them",False,legacy-not-retrospectively-reviewed
@@ -6133,6 +6152,8 @@ LEG-b0f2a61e9b9e,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,
 LEG-b404805fe1df,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,108,test,a conversation with no clocks draws none,False,legacy-not-retrospectively-reviewed
 MAP-99248d9d621d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,43,reviewed-selector,CAR-001,False,CAR-001
 MAP-b9aeb044c6cb,L2,reviewed implementation,mobileapp/src/ui/ToolReaderCopy.test.tsx,34,reviewed-selector,CRR-002,False,CRR-002
+MAP-591bbd3e1b36,L2,reviewed implementation,mobileapp/src/ui/ToolReading.legacy.test.tsx,10,reviewed-selector,RFD-001 legacy exec %s reads as one command and clean output while copy remains exact,False,RFD-001
+MAP-265ce8211526,L2,reviewed implementation,mobileapp/src/ui/ToolReading.legacy.test.tsx,30,reviewed-selector,RFD-001 an explicit generic tool operation keeps its original data instead of guessing a shell command,False,RFD-001
 MAP-8a5ed6f91907,L2,reviewed implementation,mobileapp/src/ui/ToolReading.test.tsx,10,reviewed-selector,"TSV-001 command preview is direct, single-command outline absent, original input and result copy remain exact",False,TSV-001
 MAP-b07036b224d7,L3,reviewed implementation,mobileapp/src/ui/ToolSteps.action-facts.test.tsx,7,reviewed-selector,ASA004 actual App rows identify skill web intent and file targets with unchanged inspector input,False,ASA-004
 MAP-14697d90a8f6,L2,reviewed implementation,mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx,10,reviewed-selector,ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace,False,ASA-010

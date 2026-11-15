@@ -1,5 +1,5 @@
-// Generated from shared App trace analysis and presentation; SHA256 832430e0c49fdd50d7087d0633b9117e1479469e1a7b9582f49531b88fb247c9
-// Body SHA256 84e987933a8ee90b38ec696d1abdd0e0b6245df81d474a33523bebe61a6662da
+// Generated from shared App trace analysis and presentation; SHA256 d90c8208ce62b70aca2751bc146d3ab68debfc6034d25941b2c2efc647fc31dd
+// Body SHA256 363d2e1465fa3a1624ae777bc687a4f4ebf4b43791aef1c256e795c1d0365cd9
 (function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -878,7 +878,7 @@ function callSections(step, lang) {
         });
     };
     const argv = step.input_kind === 'arguments' &&
-        ['command', 'read', 'list', 'search'].includes(step.operation || '');
+        ['command', 'read', 'list', 'search'].includes((0, activity_1.activityOperation)(step));
     if (step.input &&
         step.input_kind !== 'parameters' &&
         (step.input_kind !== 'arguments' || argv)) {

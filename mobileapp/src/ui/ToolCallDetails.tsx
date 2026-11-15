@@ -5,6 +5,7 @@ import type { TranscriptStep } from '../api/client';
 import { CodeBlock } from './CodeBlock';
 import { ChromeText } from './ChromeText';
 import { CopyIcon } from './Icons';
+import {activityOperation} from './activity';
 import {
   callPage,
   callRaw,
@@ -60,9 +61,7 @@ export function ToolCallDetails({
           dark={dark}
           fontSize={fontSize}
           disabled={disabled}
-          terminalOutput={['command', 'read', 'list', 'search'].includes(
-            operation || '',
-          )}
+          terminalOutput={['command', 'read', 'list', 'search'].includes(activityOperation(step))}
         />
       ))}
     </View>

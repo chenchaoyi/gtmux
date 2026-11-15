@@ -578,7 +578,7 @@ OpenSpec 提案必须带 `## Surfaces` 一节，逐条说明五种形态各是�
 - **层级**：waiting 响、idle 静。分区顺序 needs-you→working→idle→running。
 - **agent 身份**图标:官方图标**内置在 `assets/agent-icons/<key>.png`**(嵌入二进制,`gtmux update` 随发,三端统一从这里取,开箱即显示),仅用于**标识对应 agent**(nominative use),来源与授权逐条记在 `assets/agent-icons/SOURCES.md`;已装官方桌面 app 时仍可用系统真图标,都取不到才回退中性单字标。**gtmux 自身不绘制任何第三方商标**;这是「仓库不放第三方商标」的**明确例外**(见下方 §6 细则)。
 - **双语** en/zh（跟随 `GTMUX_LANG` / 设备语言），CJK 不换行用省略号；语言三态（跟随系统/EN/中文）即时生效。
-- **动效最小**：只允许 idle→waiting 一次脉冲；加载环不旋转；空闲零动画。
+- **动效最小**：agent 状态环遵循 DESIGN §10，空闲零动画。App 读取中的加载提示统一使用固定三方块、品牌蓝依次平滑移动；不整体闪烁或旋转 logo，遵循减弱动态效果和前后台状态。
 - **视觉克制**：无彩虹渐变、无彩色发光阴影；文案平实、禁止营销腔（尤其首次运行/权限卡）。
 - **支持原生终端**（无 tmux）：行与跳转按 `source: tmux|native` 泛化（DESIGN §7 / MOBILE §2）。
 - **连接指示**用 server 名 + 状态点（已连接绿 / 重连琥珀 / 离线红），不用 "live" 字样；离线不清屏、留缓存置灰。

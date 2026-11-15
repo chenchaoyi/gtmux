@@ -14,7 +14,6 @@ import {darkCodeBackground} from './codeReading';
 
 import React, {useEffect, useRef, useState} from 'react';
 import {
-  ActivityIndicator,
   Image,
   InputAccessoryView,
   Keyboard,
@@ -28,6 +27,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {LoadingMark} from './LoadingMark';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getDraft, loadDrafts, putDraft, saveDrafts} from '../state/drafts';
 import {ChromeText} from './ChromeText';
@@ -775,7 +775,7 @@ export const Composer = React.memo(function Composer({
         disabled={!enabled || sending || !canSend}
         style={[styles.send, {backgroundColor: canSend ? ACCENT : pal.surface, borderColor: canSend ? ACCENT : pal.divider}]}>
         {sending ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <LoadingMark size="small" color="#fff" highlightColor="#fff" accessible={false} />
         ) : (
           <Text allowFontScaling={false} style={[styles.sendText, {color: canSend ? '#fff' : pal.fg3}]}>↑</Text>
         )}

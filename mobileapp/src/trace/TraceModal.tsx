@@ -7,7 +7,6 @@ import React, {
 } from 'react';
 import {
   AccessibilityInfo,
-  ActivityIndicator,
   Alert,
   FlatList,
   findNodeHandle,
@@ -21,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {LoadingMark} from '../ui/LoadingMark';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Clipboard from '@react-native-clipboard/clipboard';
 import Svg, { Path } from 'react-native-svg';
@@ -928,7 +928,7 @@ export function TraceReader({
             }}
             ListEmptyComponent={
               loading ? (
-                <ActivityIndicator color={pal.fg2} style={styles.empty} />
+                <LoadingMark color={pal.fg2} style={styles.empty} />
               ) : failed ? null : (
                 <ChromeText style={[styles.empty, { color: pal.fg2 }]}>
                   {kind === 'context' &&

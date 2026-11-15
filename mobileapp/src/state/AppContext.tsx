@@ -18,7 +18,7 @@ import {applyUiReset} from './uiState';
 import {GtmuxClient, MacRoute} from '../api/client';
 import {getPushToken, loadPushToken} from '../push';
 import {LiveActivity, apnsEnv} from '../native/liveActivity';
-import {PushSyncQueue, mayNotify, syncServerPush} from '../push/sync';
+import {PushSyncPolicy, PushSyncQueue, PushSyncState, mayNotify, reportedPushAddresses, syncServerPush} from '../push/sync';
 import {Palette, paletteFor} from '../ui/theme';
 import {Debug} from '../debug';
 
@@ -59,7 +59,7 @@ interface AppContextValue {
   setPushKinds: (v: PushKinds) => void;
   setServerPushEnabled: (url: string, enabled: boolean) => Promise<void>;
   pushSync: Record<string, 'syncing' | 'pending' | 'synced'>;
-  retryPushSync: () => void;
+  retryPushSync: (options?: {url?: string; force?: boolean}) => void;
   setPushToken: (token: string) => void;
   fontPref: string; // terminal font: 'auto' (match terminal) | 'system' | a bundled family
   setFontPref: (v: string) => void;
@@ -122,6 +122,13 @@ export function AppProvider({children}: {children: React.ReactNode}) {
   const [pushSync, setPushSync] = useState<Record<string, 'syncing' | 'pending' | 'synced'>>({});
   const [pushRetry, setPushRetry] = useState(0);
   const pushQueues = useRef(new Map<string, PushSyncQueue>());
+  const pushPolicies = useRef(new Map<string, PushSyncPolicy>());
+  const pushRetryTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const pushRetryRequest = useRef<{url?: string; force?: boolean} | undefined>(undefined);
+  const retryPushSync = useCallback((options?: {url?: string; force?: boolean}) => {
+    pushRetryRequest.current = options;
+    setPushRetry(n => n + 1);
+  }, []);
   const [fontPref, setFontPrefState] = useState('auto');
   const [returnSends, setReturnSendsState] = useState(false);
   const [defaultDetailMode, setDefaultDetailModeState] = useState<'chat' | 'terminal'>('terminal');
@@ -211,6 +218,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
     loadPushToken().then(setPushTokenState).catch(() => {});
     const sub = AppState.addEventListener('change', state => {
       if (state === 'active') setPushRetry(n => n + 1);
+      else {clearTimeout(pushRetryTimer.current); pushRetryTimer.current = undefined;}
     });
     return () => sub.remove();
   }, []);
@@ -227,15 +235,20 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       if (!currentUrls.has(url)) {
         queue.invalidate();
         pushQueues.current.delete(url);
+        pushPolicies.current.delete(url);
       }
     }
     if (!pushToken) {
       for (const queue of pushQueues.current.values()) queue.invalidate();
+      for (const policy of pushPolicies.current.values()) policy.invalidate();
       setPushSync(Object.fromEntries(owners.map(s => [s.url, 'pending'])));
       return;
     }
-    setPushSync(Object.fromEntries(owners.map(s => [s.url, 'syncing'])));
     const kinds = kindsList(pushKinds);
+    const env = Platform.OS === 'android' ? '' : apnsEnv();
+    const requested = pushRetryRequest.current;
+    pushRetryRequest.current = undefined;
+    const next: Record<string, PushSyncState> = {};
     // Different Macs sync independently. Writes to one Mac stay in order, so
     // a slow registration cannot finish after a newer unsubscribe.
     for (const server of owners) {
@@ -244,17 +257,48 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         queue = new PushSyncQueue();
         pushQueues.current.set(server.url, queue);
       }
+      let policy = pushPolicies.current.get(server.url);
+      if (!policy) {policy = new PushSyncPolicy(); pushPolicies.current.set(server.url, policy);}
+      const enabled = mayNotify(pushEnabled, pushKinds, server);
+      // Include credentials and desired subscription, never display metadata.
+      // Address order alone cannot create a new intent or discard a good route.
+      const intent = JSON.stringify([server.url, server.token, pushToken, enabled, kinds, env, reportedPushAddresses(server).sort()]);
+      const foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
+      const force = !!requested?.force && (!requested.url || requested.url === server.url);
+      const scheduled = policy.claim(intent, force, Date.now(), foreground);
+      next[server.url] = policy.status;
+      if (!scheduled) continue;
+      const currentPolicy = policy;
       queue.schedule(async current => {
         if (!current()) return;
+        let route: string | undefined;
         const ok = await syncServerPush(
-          server, pushToken, mayNotify(pushEnabled, pushKinds, server), kinds, Platform.OS === 'android' ? '' : apnsEnv(),
+          server, pushToken, enabled, kinds, env, undefined,
+          {preferredUrl: currentPolicy.preferredUrl, onSuccess: url => {route = url;}},
         );
-        if (current()) {
+        if (current() && currentPolicy.complete(intent, ok, route)) {
           setPushSync(prev => ({...prev, [server.url]: ok ? 'synced' : 'pending'}));
         }
       });
     }
+    setPushSync(prev => Object.keys(prev).length === Object.keys(next).length && Object.keys(next).every(url => prev[url] === next[url]) ? prev : next);
   }, [ready, servers, pushEnabled, pushKinds, pushToken, pushRetry]);
+
+  useEffect(() => {
+    clearTimeout(pushRetryTimer.current); pushRetryTimer.current = undefined;
+    if (!ready || !pushToken || Debug.noPush || !['ios', 'android'].includes(Platform.OS)
+      || AppState.currentState === 'background' || AppState.currentState === 'inactive') return;
+    const deadlines = [...pushPolicies.current.values()].flatMap(policy => policy.pendingRetryAt === undefined ? [] : [policy.pendingRetryAt]);
+    if (!deadlines.length) return;
+    pushRetryTimer.current = setTimeout(() => {pushRetryTimer.current = undefined; setPushRetry(n => n + 1);}, Math.max(1, Math.min(...deadlines) - Date.now()));
+    return () => {clearTimeout(pushRetryTimer.current); pushRetryTimer.current = undefined;};
+  }, [pushSync, ready, pushToken, pushRetry]);
+
+  useEffect(() => () => {
+    clearTimeout(pushRetryTimer.current);
+    for (const queue of pushQueues.current.values()) queue.invalidate();
+    for (const policy of pushPolicies.current.values()) policy.invalidate();
+  }, []);
 
   const lang = Debug.lang === 'en' || Debug.lang === 'zh' ? Debug.lang : resolveLang(langPref);
   // The effective scheme: follow the system unless the user forced light/dark.
@@ -386,7 +430,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
         await persist(next, activeUrl);
       }),
       pushSync,
-      retryPushSync: () => setPushRetry(n => n + 1),
+      retryPushSync,
       setPushToken: setPushTokenState,
       fontPref,
       setFontPref: v => {
@@ -413,7 +457,7 @@ export function AppProvider({children}: {children: React.ReactNode}) {
       t: makeT(lang),
       pal: paletteFor(scheme),
     };
-  }, [serialize, ready, servers, activeUrl, pendingPane, mac, langPref, pushEnabled, pushKinds, pushSync, fontPref, returnSends, defaultDetailMode, themePref, scheme, lang]);
+  }, [serialize, ready, servers, activeUrl, pendingPane, mac, langPref, pushEnabled, pushKinds, pushSync, retryPushSync, fontPref, returnSends, defaultDetailMode, themePref, scheme, lang]);
 
   return <Ctx.Provider value={value}><ReadingPaletteContext.Provider value={value.pal}>{children}</ReadingPaletteContext.Provider></Ctx.Provider>;
 }

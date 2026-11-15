@@ -38,7 +38,7 @@ test.each(['Detail', 'HQ'])('LCL-003 %s requests recent data and exposes a worki
  await act(async () => {tree = renderer.create(surface === 'HQ' ? <HQConsoleView agent={hq} workspaceMode /> : <DetailView agent={agent} initialMode="chat" />);});
  expect(mockClient.transcript.mock.calls[0][4]).toBe(true);
  expect(tree.root.findByType(ChatView).props.failed).toBe(true);
- expect(text()).toContain('Conversation could not be loaded');
+ expect(text()).toContain('Could not load conversation.');
  await act(async () => {press('chat-read-retry').props.onPress();});
  expect(mockClient.transcript).toHaveBeenCalledTimes(2);
  expect(tree.root.findByType(ChatView).props.failed).toBeFalsy();
@@ -101,7 +101,7 @@ test('LCL-003 authorization loss retires the paged snapshot until a new source s
  expect(text()).toContain('question 100');
  await act(async () => {press(TestIds.detail.chatEarlier).props.onPress();});
  expect(text()).not.toContain('question 100'); expect(text()).not.toContain('question 102');
- expect(text()).toContain('Conversation could not be loaded');
+ expect(text()).toContain('Could not load conversation.');
  await act(async () => {tree.update(<ChatView {...props([turn(103)])} />);});
  expect(text()).toContain('question 103'); expect(text()).not.toContain('question 100');
 });

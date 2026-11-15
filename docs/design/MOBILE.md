@@ -445,7 +445,7 @@ Name by action. "Retire this entry…" describes a mechanism; what you are reall
 
 The HQ page reads as a chief of staff's report: the three document doors are present from the first frame, the verdict sentence carries the weight of a conclusion, the three tabs are pills, and the quiet state says what is running.
 
-The three doors are there from the first frame (2026-09-15: 「需要等一阵才分别出现…比较唐突」). Each door's first fetch used to decide whether its tile existed, so the row assembled itself one tile at a time in front of the reader. Now a door still on its first fetch is drawn in place with `ui/LoadingMark` (the pane-grid brand mark in the faint ink, breathing slowly) where the value will be; the value replaces it when it lands, and a door with nothing to show leaves no tile. The breath stops when the mark unmounts, so the zero-animation-at-rest rule holds. It is the one loading placeholder in the app; use it wherever a value is on its way.
+The three doors are there from the first frame (2026-09-15: 「需要等一阵才分别出现…比较唐突」). Each door's first fetch used to decide whether its tile existed, so the row assembled itself one tile at a time in front of the reader. Now a door still on its first fetch is drawn in place with `ui/LoadingMark` (the fixed pane-grid brand mark with a cyan focus moving smoothly through its three panes) where the value will be; the value replaces it when it lands, and a door with nothing to show leaves no tile. The cycle stops when the mark unmounts, so the zero-animation-at-rest rule holds. It is the one loading placeholder in the app; use it wherever a value is on its way.
 
 HQ's three documents are always present. Board / knowledge base / usage used to be GridRows inside a fold, and the fold `briefOpen` defaulted to `false`: open the HQ page and none of the paths to those three showed, with no other entrance on the phone. Now they are a permanent row of three small cards, each carrying its own live value (how fresh the board is, how many entries the knowledge base owes you, how much of the weekly quota). The card that owes you something uses waiting red, judged by the model's own
 `owed` row, never by sniffing for digits in a string ("352 entries" is size; treating it as debt would cry wolf in the most ordinary state).
@@ -1563,12 +1563,17 @@ feedback. It imposes no minimum display time.
 The RN composition keeps the wordmark at its brand size; explanatory and loading
 text follows system text size. Scrollable content reserves top and bottom safe areas,
 including a larger loading footer, so landscape and large-text layouts remain reachable.
-The shared `BrandLoader` stays static until Reduce Motion is known to be off, stops
-when it is enabled, and releases its observer/animation on unmount. The indeterminate
+The shared `LoadingMark` engine serves `BrandLoader`, page placeholders, inline/modal reads, buttons and pending-receipt indicators. It keeps the three pane shapes fixed and cycles a cyan focus through them with native-driven opacity transitions. Inverse buttons retain a contrasting highlight. The engine stays static until Reduce Motion is known to be off, pauses outside the foreground, and releases its observers/animation on unmount. The indeterminate
 loading announcement is one accessibility element; decorative panes are hidden.
 Pixel contrast tests cover the actual shipped mark and text checks cover both themes;
 they do not substitute for native visual or VoiceOver acceptance. The isolated
 `GTMUX_DEBUG_SHOW_SPLASH` capture flag is never part of an ordinary launch.
+
+### Read feedback and notification sync
+
+Read failures use a compact neutral explanation, a short Retry button and, when useful, a lower-emphasis secondary action. Keep existing content readable. The retry belongs to the scoped parent request, becomes visibly busy/disabled, and uses one decorative brand loader inside its labeled action. Do not lead with association, session-log or replay implementation details. Profile provenance stays in the existing disclosure. Legacy command records use the same conservative activity classification as current records: show a directly readable command and output first, with exact original input/copy still available.
+
+Notification reconciliation coalesces unchanged in-flight intent and retains successful intent for 30 minutes. Only a changed subscription/credential/reported-address set, an eligible refresh or an explicit retry creates work. Failed automatic attempts back off from 30 seconds to 5 minutes with one foreground-only timer; backgrounding pauses it. Prefer a verified successful address only while it remains reported by the same pairing. Keep latest unsubscribe ordering, guest restrictions and transport-settling barriers. A pending owner Mac offers Retry notification sync in More; that explicit target may bypass cooldown. Real sync feedback uses the existing second status line without changing row height. Registration-route failures remain distinct from evidence of actual APNs delivery.
 
 ### Quiet session grouping
 

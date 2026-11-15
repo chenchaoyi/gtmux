@@ -50,7 +50,7 @@ import {TestIds} from '../constants/testIds';
 import {CHAT_WINDOW, SessionReset, canLoadMore, earlierLabel, nextWindow, windowedTurns} from './chatWindow';
 import {edgeDistance} from './liveEdge';
 import {useChatHistory} from './useChatHistory';
-import {ConversationReload} from './ConversationReload';
+import {ReadFeedback} from './ReadFeedback';
 import {beginChatEcho, chatEchoRecord, type PendingChatEcho} from '../screens/pendingChatEcho';
 
 interface Props {
@@ -516,10 +516,10 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
 
       {readOnlyHistory && <Text testID="history-read-only" accessibilityRole="text" style={styles.earlierText}>{lang === 'zh' ? '上次关联的对话 · 只读' : 'Last-known conversation · Read only'}</Text>}
       {(failed || associationFailed || history.denied) && (
-        <View testID="chat-read-error" style={styles.seamRow}>
-          <Text style={styles.earlierText}>{associationFailed ? (lang === 'zh' ? '会话关联暂不可用。' : 'Conversation association unavailable.') : lang === 'zh' ? (turns.length ? '暂时无法更新，已保留当前内容。' : '对话暂时无法载入。') : (turns.length ? 'Could not update. Showing saved messages.' : 'Conversation could not be loaded.')}</Text>
-          {onRetry && <ConversationReload onRetry={onRetry} busy={retrying} failed={retryFailed} zh={lang === 'zh'} />}
-        </View>
+        <ReadFeedback testID="chat-read-error" zh={lang === 'zh'}
+          label={lang === 'zh' ? (turns.length ? '暂时无法更新对话。' : '暂时无法载入对话。') : (turns.length ? 'Could not update conversation.' : 'Could not load conversation.')}
+          onRetry={onRetry} busy={retrying} retryFailed={retryFailed}
+          secondary={onOpenTerminal && !readOnly ? {label: lang === 'zh' ? '查看终端' : 'View Terminal', onPress: onOpenTerminal, testID: 'chat-open-terminal'} : undefined} />
       )}
 
       {agent.role === 'supervisor'  && turns.length > 0 && turns.every(t => !t.prompt) && (
@@ -538,7 +538,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </Text>
       )}
 
-      {onOpenTerminal && !readOnly && (failed || associationFailed || !loading && turns.length === 0) && <TouchableOpacity testID="chat-open-terminal" accessibilityRole="button" onPress={onOpenTerminal} style={styles.terminalLink}>
+      {onOpenTerminal && !readOnly && !failed && !associationFailed && !history.denied && !loading && turns.length === 0 && <TouchableOpacity testID="chat-open-terminal" accessibilityRole="button" onPress={onOpenTerminal} style={styles.terminalLink}>
         <Text style={styles.terminalLinkText}>{lang === 'zh' ? '查看终端' : 'View Terminal'}</Text>
       </TouchableOpacity>}
 

@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner; self-review, not independent approval",
-    "date": "2026-11-12",
+    "date": "2026-11-16",
     "decision": "Close independent R1/P2 via explicit current-reader unconditional Retry; preserve auth denial until a successful response",
-    "notes": "Read full independent REVIEW SHA26e63699 at exactQ7e3f. Both actual Detail/HQ loaders retain turns on304; Retry currently reuses ETag. Tests must mount actual screens, ChatView/hook and use real GtmuxClient.transcript over controlled synthetic fetch. Regular conditional304 stays cheap and does not by itself lift denial. Explicit Retry retires any in-flight read and clears only its reader ETag before normal read; failure cannot resurrect retired data, old304/old reader cannot overwrite a successful current result. Do not clone arrays per render, alter server auth, add fallback transport, reduce old assertions/budgets or run live sessions. Preserve original nine selectors byte-for-byte; record exactQ-production semantic old-red and new-green, bounded fixtures only."
+    "notes": "Read full independent REVIEW SHA26e63699 at exactQ7e3f. Both actual Detail/HQ loaders retain turns on304; Retry currently reuses ETag. Tests must mount actual screens, ChatView/hook and use real GtmuxClient.transcript over controlled synthetic fetch. Regular conditional304 stays cheap and does not by itself lift denial. Explicit Retry retires any in-flight read and clears only its reader ETag before normal read; failure cannot resurrect retired data, old304/old reader cannot overwrite a successful current result. Do not clone arrays per render, alter server auth, add fallback transport, reduce old assertions/budgets or run live sessions. Preserve original nine selectors byte-for-byte; record exactQ-production semantic old-red and new-green, bounded fixtures only. Fresh implementation-owner review before replaying the App copy/loading refresh on an unpublished successor branch. Original50503e8c and its failed exact-history gate remain preserved on the old branch and in task evidence; no retrospective chronology claim or checker change. This fresh review covers CPG-005, CPG-006, CPG-007. Keep every existing auth/304/current-reader/late-answer/no-copy/identity/empty-vs-unknown assertion and44pt/busy/layout guard. Apply the previously declared RFD-002 concise initial/retry-failed, profile loading/failure/confirmed-empty copy and shared three-pane loader; RSR-009 keeps62pt/two-line rows while actual notification sync occupies the second line and owner More menu exposes one targeted retry. New RFD/PFR designs retain their earlier commits. Reapply the identical505 implementation after this design commit; original failing branch is never rewritten or pushed."
   },
   "cases": [
     {
@@ -42,5 +42,5 @@
       ]
     }
   ],
-  "seal": "16802db35f0c940f37305be0942e732d4aec9d3249c5ddd59a3880317ff42e05"
+  "seal": "c3fe5d2f5b708af8932f055e1eda2ee48acc49b7c9721bf7292d20881c2c405f"
 }

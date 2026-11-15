@@ -39,7 +39,7 @@ const render = (surface: string, selected = agent) => {
 const denyPage = async () => {
   mockClient.traceHistory.mockRejectedValueOnce(new ApiError(403, 'history'));
   await act(async () => {press(TestIds.detail.chatEarlier).props.onPress();});
-  expect(text()).toContain('Conversation could not be loaded');
+  expect(text()).toContain('Could not load conversation.');
   expect(text()).not.toContain('quiet question');
 };
 beforeEach(() => {
@@ -65,7 +65,7 @@ test.each(['Detail', 'HQ'])('CPG005 %s explicit Retry recovers quiet history aft
   // the real client parser, not a hand-cloned turns array or changed content.
   fetchMock.mockImplementation(async (_url, options) => response(options.headers['If-None-Match'] ? 304 : 200));
   await act(async () => {press('chat-read-retry').props.onPress();});
-  expect({validator: validator(2), restored: text().includes('session-a quiet question'), error: text().includes('Conversation could not be loaded')}).toEqual({validator: undefined, restored: true, error: false});
+  expect({validator: validator(2), restored: text().includes('session-a quiet question'), error: text().includes('Could not load conversation.')}).toEqual({validator: undefined, restored: true, error: false});
   expect(tree!.root.findByType(ChatView).props.turns).toEqual(original);
 });
 
@@ -81,14 +81,14 @@ test.each(['Detail', 'HQ'])('CPG006 %s failed Retry stays denied and retires a p
   fetchMock.mockRejectedValueOnce(new Error('synthetic unavailable'));
   await act(async () => {press('chat-read-retry').props.onPress();});
   expect({aborted: oldSignal.aborted, requests: fetchMock.mock.calls.length, validator: validator(2)}).toEqual({aborted: true, requests: 3, validator: undefined});
-  expect(text()).toContain('Conversation could not be loaded'); expect(text()).not.toContain('quiet question');
+  expect(text()).toContain('Still unable to load. Try again shortly.'); expect(text()).not.toContain('quiet question');
   fetchMock.mockResolvedValueOnce(response(200, 'session-a', 'recovered-v2'));
   await act(async () => {press('chat-read-retry').props.onPress();});
   expect(validator(3)).toBeUndefined(); expect(text()).toContain('session-a quiet question');
   await act(async () => {oldPoll.resolve(response(304));});
   await act(async () => {jest.advanceTimersByTime(8000);});
   expect(validator(4)).toBe('recovered-v2');
-  expect(text()).toContain('session-a quiet question'); expect(text()).not.toContain('Conversation could not be loaded');
+  expect(text()).toContain('session-a quiet question'); expect(text()).not.toContain('Could not load conversation.'); expect(text()).not.toContain('Still unable to load.');
 });
 
 test.each(['Detail', 'HQ'])('CPG007 %s reader switch ignores a late recovery response', async surface => {
