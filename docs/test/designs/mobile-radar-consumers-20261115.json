@@ -1,0 +1,35 @@
+{
+  "id": "mobile-radar-consumers-20261115",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-15",
+    "decision": "Repair only independent87 F1/F2 consumers after actual main composition",
+    "notes": "Full03387 report and five manifest entries SHA verified; original826/CI/logs preserved. F1 real SplitShell must consume shared read state including hidden sidebar and original automatic selection. F2 actual Provider-to-Panel cached failure, SSE live, pending reread and success must preserve error/timestamp/retry feedback. Malformed data is not proof of network unreachability. Preserve the lane, scope, guest/expired authorization, polling and Live Activity. Use the shared main placeholder without another list/banner/header; main may suppress a duplicate excerpt already shown in the sidebar. Shared OfflineBanner can accept a read cause and pending feedback, retaining default network behavior. Add separate regression files; do not edit or weaken old assertions. No new API, Go, dependency, native or device work."
+  },
+  "cases": [
+    {
+      "id": "RDRC-001",
+      "layer": "L2",
+      "description": "Actual regular shell main honors the current client read with a visible or hidden sidebar",
+      "setup": "Production SplitShell and shared read presentation, leaf sidebar/detail/HQ/browser mocked; explicit pending, timeout, failed, access, stale-share and successful states in both languages and palettes",
+      "action": "Render without selection before a read settles; hide sidebar; transition to a genuine empty or populated read; observe the existing automatic selection call",
+      "expected": "No empty/tutorial claim before a valid result. Shared loading/error/access/stale states remain in main even with sidebar hidden. Only successful empty shows welcome; a populated roster offers selection while original automatic selection runs. Guest creation stays unavailable; no duplicated list/banner/header or excerpt. Existing selected views remain unchanged.",
+      "planned_files": [
+        "mobileapp/src/screens/SplitShell.readState.test.tsx"
+      ]
+    },
+    {
+      "id": "RDRC-002",
+      "layer": "L2",
+      "description": "Actual Provider-to-Panel keeps cached failure feedback across SSE reconnection until read success",
+      "setup": "Production AgentsProvider/readTask/RadarPanel/OfflineBanner, controlled reads/SSE and cached worker/timestamp; malformed-like failure and complete-read timeout",
+      "action": "Succeed first read, fail refresh, reopen SSE while reread is pending, inspect rows/notice/time and retry feedback, succeed, then change client",
+      "expected": "SSE live alone cannot clear the read error, readable notice or last-update time. Cached rows remain visible/stale; malformed-like failure is not described as unreachable network. Pending retry is visible and duplicate retry disabled. Current successful read clears notice and updates time; a changed client inherits neither rows nor error. Access failure preserves owner settings or guest contact guidance without new authority.",
+      "planned_files": [
+        "mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx"
+      ]
+    }
+  ],
+  "seal": "01fe9c9f90c05933f1424acffab3e1e3946149347bd817f6ec5f91d1faad8776"
+}

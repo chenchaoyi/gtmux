@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1270 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1274 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3785 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2326 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3788 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2336 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 141 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -260,6 +260,15 @@
 | MSD-003 | Preferred receipt returned as additive JSON while legacy clients retain status ok; no mutation when unauthorized, guest out of scope or key invalid; queue acceptance not claimed read/completed; no message body or secrets in diagnostics. |
 | MSD-004 | Full send settles at finite deadline and aborts network; late success cannot overwrite timeout; only one fetch, original send ID retained by caller for explicit retry; refusal and legacy success remain compatible. |
 | MSD-005 | Queued is labeled queued awaiting next turn, accepted means received not read/completed; finite network deadline keeps text and explicit same-ID retry; late old response/failure cannot replace a newer pending attempt; transcript confirmation retires the correct echo; no resends, no queue deletion, no draft/approval bypass. |
+| PPR-001 | No upload/send/history or clearing while read is pending; visible disabled Send and concise reading feedback. Only one picker request; all four photos remain ordered and a later explicit Send uploads each exactly once before the original caption/paths are submitted. No automatic resend. |
+| PPR-002 | Full lifecycle finally releases ref/state, pending selection blocks send and reentry; after settlement a new selection/send is possible. Caption and existing images remain; no automatic upload/send, no spurious photo editor. Existing unmount late-result guard remains. |
+| PPR-003 | Message contains only that send snapshot in order; later file remains staged for its own explicit Send. No asset deletion or silent removal of unsent IDs. Existing upload failure preservation stays unchanged. |
+| MPU-001 | System picker permits multiple selection. Multiple returned photos stage in order with no automatic editor or upload; editing replaces only the chosen attachment and cancellation preserves it. One send uploads ordered staged images before submitting their paths once. Existing single-photo editor-first behavior stays pinned by unchanged tests. |
+| MPU-002 | No draft or staged attachment is removed, uploaded or submitted. Invalid assets do not create thumbnails. An unmounted scope cannot open an editor or stage returned photos. |
+| MPU-003 | Only measured finite positive totals yield fractions. Unknown totals stay indeterminate. Body completion is processing, never successful save; only valid successful response completes. Legacy fraction callback remains byte-events-only. Settled callbacks are ignored; failure preserves failure result and existing watchdog bounds. |
+| MPU-004 | A compact status row names current file/count, shows measured progress or preparation/saving copy, uses a smooth bar limited to observed bytes and obeys Reduce Motion. Waiting files do not show fake zero percentages. Sending is gated and failure leaves caption and all images. No submit occurs until every upload succeeds. |
+| RDRC-001 | No empty/tutorial claim before a valid result. Shared loading/error/access/stale states remain in main even with sidebar hidden. Only successful empty shows welcome; a populated roster offers selection while original automatic selection runs. Guest creation stays unavailable; no duplicated list/banner/header or excerpt. Existing selected views remain unchanged. |
+| RDRC-002 | SSE live alone cannot clear the read error, readable notice or last-update time. Cached rows remain visible/stale; malformed-like failure is not described as unreachable network. Pending retry is visible and duplicate retry disabled. Current successful read clears notice and updates time; a changed client inherits neither rows nor error. Access failure preserves owner settings or guest contact guidance without new authority. |
 | RDR-001 | Loading does not become zero/empty on stream open. Valid empty sets hasValue, new client cannot borrow old rows/counts/error or late old reads; same-client refresh/error retains prior rows/lastUpdated. Demo declares its already supplied snapshot. |
 | RDR-002 | Only one HTTP read is active per scope; at most one trailing refresh is kept per in-flight burst, rather than losing the event. Refreshing stays true until the owned lane really settles; full response deadline15s retires late results, releases lane and allows explicit retry. No new timerpoll. Existing two401/403, share and activity behavior stays. |
 | RDR-003 | Initial loading has BrandLoader/copy and no zero summary/tutorial/quote. Failure/access remains actionable without a playful quote; cached rows remain. Only successful unfiltered worker-empty shows stable existing browser short Dune excerpt/attribution, with existing gated New session for owner; guests never gain creation. Expired share messaging remains both banner and state. Pull refresh uses actual provider settlement, no decorative600ms timer. |

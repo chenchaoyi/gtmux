@@ -64320,6 +64320,151 @@
       ],
       "sha256": "22e4c1962b05345b62ae76dcfcb04841c56ae0941266e6bc910cfd57dac4fd28"
     },
+    "mobileapp/src/api/uploadState.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c796b56b9ecf",
+          "line": 23,
+          "kind": "reviewed-selector",
+          "name": "real byte progress stays distinct from processing and saved completion",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "MPU-003"
+        },
+        {
+          "id": "MAP-05bf7e503d9f",
+          "line": 47,
+          "kind": "reviewed-selector",
+          "name": "unknown and invalid byte totals stay indeterminate rather than fabricating a percentage",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "MPU-003"
+        },
+        {
+          "id": "MAP-95663f9b385e",
+          "line": 65,
+          "kind": "reviewed-selector",
+          "name": "a fully transferred file refused by the server never reports a successful save",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "MPU-003"
+        }
+      ],
+      "sha256": "c2de6f12dc0d0df00d44761b204f54fcff57a86157c117755567abec50ce475a"
+    },
+    "mobileapp/src/ui/AttachmentUploadStatus.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0d5551b8fb45",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "upload status names the active file and hides percent during preparation and saving",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MPU-004"
+        },
+        {
+          "id": "MAP-a80d799158ea",
+          "line": 33,
+          "kind": "reviewed-selector",
+          "name": "Reduce Motion presents measured values without starting progress animation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MPU-004"
+        },
+        {
+          "id": "MAP-0539f7a138fa",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "progress animation only targets the latest measured byte fraction",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MPU-004"
+        }
+      ],
+      "sha256": "e89a7e6b1752acd5d225e327f60f0df9b8e9a65c7ee1264fdf34fc4b64a30791"
+    },
+    "mobileapp/src/ui/Composer.multiPhoto.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-291296b7e5bc",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "batch photos stage in picker order and one edit replaces only its thumbnail",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MPU-001,MPU-002,MPU-004"
+        },
+        {
+          "id": "MAP-88c2a76e87c4",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "cancelling or failing a later selection preserves caption and staged batch",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MPU-001,MPU-002,MPU-004"
+        },
+        {
+          "id": "MAP-0e806a0076e7",
+          "line": 80,
+          "kind": "reviewed-selector",
+          "name": "a late picker result after unmount cannot stage or submit images",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MPU-001,MPU-002,MPU-004"
+        },
+        {
+          "id": "MAP-948f3ef4f0e9",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "upload phases keep the batch and caption on failure until an explicit successful retry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MPU-001,MPU-002,MPU-004"
+        }
+      ],
+      "sha256": "1a302d4ba28fab3f3a8ae3aedac28adc063fe11d3c60414534e28ece84c6b925"
+    },
+    "mobileapp/src/ui/Composer.photoSelection.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-514d6a154aac",
+          "line": 38,
+          "kind": "reviewed-selector",
+          "name": "pending photo reading blocks button Return and captured callbacks until all photos stage",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "PPR-001,PPR-002,PPR-003"
+        },
+        {
+          "id": "MAP-dac1fa753f4c",
+          "line": 64,
+          "kind": "reviewed-selector",
+          "name": "cancel error and rejection release photo reading while preserving the existing draft",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "PPR-001,PPR-002,PPR-003"
+        },
+        {
+          "id": "MAP-c0f8e3373076",
+          "line": 81,
+          "kind": "reviewed-selector",
+          "name": "a successful send removes only its snapshot and preserves a file returned during upload",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "PPR-001,PPR-002,PPR-003"
+        }
+      ],
+      "sha256": "a254eb457bc7771410315a83f41ccfb6568a903fa2e7a5b1429adb6ce057d5eb"
+    },
     "mobileapp/src/api/agentsRead.test.ts": {
       "layer": "L2",
       "stack": "reviewed implementation",
