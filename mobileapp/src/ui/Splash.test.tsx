@@ -48,7 +48,7 @@ test.each(['light', 'dark'])('startup copy remains readable and reserves a large
   jest.restoreAllMocks();
 });
 
-test('reduced motion never starts a breathing animation; changing the setting stops a live loop', async () => {
+test('reduced motion never starts the pane cycle; changing the setting stops a live loop', async () => {
   const start = jest.fn(), stop = jest.fn();
   const loop = jest.spyOn(Animated, 'loop').mockReturnValue({start, stop, reset: jest.fn()} as any);
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockResolvedValue(true);

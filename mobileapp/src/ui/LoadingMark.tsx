@@ -1,34 +1,70 @@
-// LoadingMark is the one loading placeholder in the app: the pane-grid brand mark in the
-// surface's faint ink, breathing slowly while something is on its way. A tile that
-// appears out of nowhere a second after the page is abrupt (the commander, 2026-09-15:
-// 「上部分的三个卡片…需要等一阵才分别出现…比较唐突」); a tile that is THERE, marked as
-// loading, is a page that is still settling. The breath is the only motion, and it stops
-// the moment the mark unmounts, so the idle rule (zero animation at rest) holds.
-import React, {useEffect, useRef} from 'react';
-import {Animated} from 'react-native';
-import {BrandMark} from './BrandMark';
+// A fixed brand grid with a moving cyan focus, shared by every App-owned loader.
+// Only highlight opacity moves; layout and loading/receipt state remain unchanged.
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {AccessibilityInfo, Animated, AppState, Easing, StyleSheet, View, ViewProps} from 'react-native';
+import {BRAND_CYAN, BRAND_PANES} from './BrandMark';
 
-// RN's tsconfig has no node types; Metro and jest both define `process.env`.
-declare const process: {env: Record<string, string | undefined>} | undefined;
+export interface LoadingMarkProps extends ViewProps {
+  size?: number | 'small' | 'large';
+  color?: string;
+  highlightColor?: string;
+  animating?: boolean;
+  hidesWhenStopped?: boolean;
+}
+const foreground = () => AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
 
-export function LoadingMark({size = 14, color}: {size?: number; color: string}) {
-  const opacity = useRef(new Animated.Value(0.35)).current;
+export function LoadingMark({size = 20, color = '#8E8E93', highlightColor = BRAND_CYAN,
+  style, animating = true, hidesWhenStopped = true, accessible = true,
+  accessibilityRole, accessibilityState, testID = 'loading-mark', ...props}: LoadingMarkProps) {
+  const pixels = typeof size === 'number' ? size : size === 'large' ? 36 : 20;
+  const phase = useRef(new Animated.Value(0)).current;
+  const [reduce, setReduce] = useState<boolean | null>(null);
+  const [active, setActive] = useState(foreground);
   useEffect(() => {
-    // A test seam: react-test-renderer never unmounts a looping animation cleanly, and a
-    // loop that never ends holds jest open. The breath is not what a test looks at.
-    if (typeof process !== 'undefined' && process?.env?.JEST_WORKER_ID) return undefined;
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, {toValue: 0.85, duration: 900, useNativeDriver: true}),
-        Animated.timing(opacity, {toValue: 0.35, duration: 900, useNativeDriver: true}),
-      ]),
-    );
+    let alive = true, changed = false;
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', value => {
+      changed = true;
+      if (alive) setReduce(value);
+    });
+    AccessibilityInfo.isReduceMotionEnabled().then(value => {
+      if (alive && !changed) setReduce(value);
+    }).catch(() => {});
+    return () => {alive = false; subscription?.remove?.();};
+  }, []);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => setActive(state !== 'background' && state !== 'inactive'));
+    return () => subscription?.remove?.();
+  }, []);
+  useEffect(() => {
+    phase.setValue(0);
+    if (reduce !== false || !active || !animating) return;
+    const loop = Animated.loop(Animated.timing(phase, {
+      toValue: 3, duration: 1800, easing: Easing.linear, useNativeDriver: true, isInteraction: false,
+    }));
     loop.start();
     return () => loop.stop();
-  }, [opacity]);
-  return (
-    <Animated.View style={{opacity}} accessibilityLabel="loading" testID="loading-mark">
-      <BrandMark size={size} neutral={color} />
-    </Animated.View>
-  );
+  }, [phase, reduce, active, animating]);
+  const highlights = useMemo(() => {
+    const inputRange = [0, 0.65, 1, 1.65, 2, 2.65, 3];
+    return {
+      'top-left': phase.interpolate({inputRange, outputRange: [0, 0, 0, 0, 1, 1, 0]}),
+      'top-right': phase.interpolate({inputRange, outputRange: [1, 1, 0, 0, 0, 0, 1]}),
+      bottom: phase.interpolate({inputRange, outputRange: [0, 0, 1, 1, 0, 0, 0]}),
+    };
+  }, [phase]);
+  if (!animating && hidesWhenStopped) return null;
+  return <View {...props} testID={testID} style={[styles.wrap, style]} accessible={accessible}
+    accessibilityRole={accessible ? (accessibilityRole ?? 'progressbar') : undefined}
+    accessibilityState={accessible ? {...accessibilityState, busy: animating} : undefined}>
+    <View testID="loading-grid" style={{width: pixels, height: pixels}} accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      {BRAND_PANES.map(pane => {
+        const radius = pixels * 9 / 100;
+        return <View key={pane.name} testID={'loading-pane-' + pane.name} style={{position: 'absolute', left: pixels * pane.x / 100, top: pixels * pane.y / 100, width: pixels * pane.width / 100, height: pixels * pane.height / 100, borderRadius: radius}}>
+          <View style={[StyleSheet.absoluteFill, {backgroundColor: color, opacity: 0.5, borderRadius: radius}]} />
+          <Animated.View testID={'loading-highlight-' + pane.name} style={[StyleSheet.absoluteFill, {backgroundColor: highlightColor, opacity: highlights[pane.name], borderRadius: radius}]} />
+        </View>;
+      })}
+    </View>
+  </View>;
 }
+const styles = StyleSheet.create({wrap: {alignItems: 'center', justifyContent: 'center'}});

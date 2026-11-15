@@ -7,7 +7,8 @@
 // server 403s them anyway. A guest never reaches this screen (Settings hides it).
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {AccessibilityInfo, ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, Platform} from 'react-native';
+import {AccessibilityInfo, Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, Platform} from 'react-native';
+import {LoadingMark} from '../ui/LoadingMark';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
@@ -289,7 +290,7 @@ export function ManageMacScreen({navigation}: any) {
             <Text style={[styles.back, {color: pal.fg2}]}>‹ </Text>
           </TouchableOpacity>
           <Text style={[styles.title, {color: pal.fg}]}>{zh ? '分享与配对' : 'Sharing & pairing'}</Text>
-          {busy && <ActivityIndicator style={styles.spinner} color={pal.fg3} />}
+          {busy && <LoadingMark style={styles.spinner} color={pal.fg3} />}
         </View>
         {/* Under the title, outside the scroll: a switch far down the page fails where the
             reader can still see it said. */}

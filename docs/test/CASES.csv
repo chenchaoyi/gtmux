@@ -5883,6 +5883,11 @@ LEG-bcc2d0a178eb,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,1
 LEG-e1120af9573d,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,25,it,"draws the brand cyan on the GLYPH, never as a fill",False,legacy-not-retrospectively-reviewed
 LEG-c63cab8036f8,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,41,it,"shares its accent with the other floating control, and with the palette",False,legacy-not-retrospectively-reviewed
 LEG-da0fe5a3e36e,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,47,it,renders nothing when you are already at the bottom,False,legacy-not-retrospectively-reviewed
+MAP-2a9c1d7d589d,L2,reviewed implementation,mobileapp/src/ui/LoadingMark.motion.test.tsx,33,reviewed-selector,BLP-001 cyan focus visits all three fixed panes and wraps continuously (%s),False,"BLP-001,BLP-002,BLP-003"
+MAP-745c98cb52b9,L2,reviewed implementation,mobileapp/src/ui/LoadingMark.motion.test.tsx,51,reviewed-selector,BLP-002 unresolved and live Reduce Motion settings govern foreground-only motion,False,"BLP-001,BLP-002,BLP-003"
+MAP-7267566ac671,L2,reviewed implementation,mobileapp/src/ui/LoadingMark.motion.test.tsx,66,reviewed-selector,BLP-002 a failed or late initial preference cannot start a hidden or unmounted indicator,False,"BLP-001,BLP-002,BLP-003"
+MAP-15a0e1198f1e,L2,reviewed implementation,mobileapp/src/ui/LoadingMark.motion.test.tsx,75,reviewed-selector,"BLP-003 shared wrappers retain size, style, labels and the existing receipt footprint",False,"BLP-001,BLP-002,BLP-003"
+MAP-d17546f317ae,L1,reviewed implementation,mobileapp/src/ui/LoadingUsage.test.ts,8,reviewed-selector,BLP-004 App-owned loading views share the brand engine instead of native ActivityIndicator,False,BLP-004
 LEG-078c56ec1332,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,44,it,"closes every row by default, showing none of the long cells",False,legacy-not-retrospectively-reviewed
 LEG-bfbc5f1230bf,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,52,it,"still says which row is which, so you can find one without opening any",False,legacy-not-retrospectively-reviewed
 LEG-32d7f4e27a3b,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,62,it,opens one row without opening the others,False,legacy-not-retrospectively-reviewed
@@ -6088,6 +6093,7 @@ LEG-e93283990a46,L2,RN / mobile harness,mobileapp/src/ui/SnippetsPicker.test.tsx
 LEG-f54cabe2a331,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,27,test.each(),startup copy remains readable and reserves a larger loading footer (%s),True,legacy-not-retrospectively-reviewed
 LEG-4c46e311242b,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,51,test,reduced motion never starts a breathing animation; changing the setting stops a live loop,False,legacy-not-retrospectively-reviewed
 LEG-3e028566a8ca,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,74,test,a live Reduce Motion change wins over a stale initial preference query,False,legacy-not-retrospectively-reviewed
+MAP-3d1235f0d306,L2,RN / mobile harness,mobileapp/src/ui/Splash.test.tsx,51,reviewed-selector,reduced motion never starts the pane cycle; changing the setting stops a live loop,False,"BLP-002,BLP-005"
 LEG-e8ec3ad20de3,L2,RN / mobile harness,mobileapp/src/ui/TerminalKeyPanel.test.tsx,10,test,"compact keycaps send canonical keys, clear one-shot modifiers and keep function keys reachable",False,legacy-not-retrospectively-reviewed
 LEG-ad72ed211c5d,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,26,test,shows the label it is given,False,legacy-not-retrospectively-reviewed
 LEG-f87bea8bca03,L2,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,34,test,"puts a rule on BOTH sides of it, with the label between them",False,legacy-not-retrospectively-reviewed

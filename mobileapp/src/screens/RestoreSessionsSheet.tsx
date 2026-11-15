@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {ActivityIndicator, AppState, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {AppState, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {LoadingMark} from '../ui/LoadingMark';
 import {loadPendingRestore, savePendingRestore, clearPendingRestore, type PendingRestore} from '../api/restorePending';
 import {GtmuxClient} from '../api/client';
 import {RestoreError, restoreRequestID, restoreTerminal, type RestoreJob, type RestorePlan} from '../api/restore';
@@ -137,7 +138,7 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
   return <SheetShell visible={!!mac} pal={pal} onClose={onClose}>
     <ScrollView testID="restore-sheet" contentContainerStyle={styles.body}>
       <View style={styles.header}><View style={styles.heading}><Text style={[styles.title, {color: pal.fg}]} accessibilityRole="header">{say('Restore sessions', '恢复会话')}</Text><Text style={[styles.server, {color: pal.fg2}]}>{mac?.name}</Text><Text style={[styles.address, {color: pal.fg3}]}>{mac?.url}</Text></View>{control('restore-close', say('Done', '完成'), onClose)}</View>
-      {busy && <ActivityIndicator accessibilityLabel={say('Loading restore status', '查询恢复状态')} color={BRAND} />}
+      {busy && <LoadingMark accessibilityLabel={say('Loading restore status', '查询恢复状态')} color={BRAND} />}
       {!!error && <Text testID="restore-error" style={[styles.note, {color: pal.fg}]} accessibilityLiveRegion="polite">{errorText}</Text>}
       {job ? <>
         <Text testID="restore-phase" style={[styles.subtitle, {color: pal.fg}]} accessibilityLiveRegion="polite">{phase(job.phase)}</Text>

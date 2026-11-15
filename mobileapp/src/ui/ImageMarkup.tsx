@@ -12,7 +12,6 @@
 
 import React, {useEffect, useRef, useState} from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Modal,
@@ -25,6 +24,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {LoadingMark} from './LoadingMark';
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {ChromeText} from './ChromeText';
 import Svg, {Line, Path, Polygon, Rect} from 'react-native-svg';
@@ -346,7 +346,7 @@ export function ImageMarkup({
               </View>
             </View>
           ) : (
-            uri && <ActivityIndicator color="#fff" />
+            uri && <LoadingMark color="#fff" />
           ));
   return (
     <Modal supportedOrientations={MODAL_ORIENTATIONS} visible={visible} animationType="slide" onRequestClose={cancel} onDismiss={dismissed}>
@@ -367,7 +367,7 @@ export function ImageMarkup({
           </View>
           <TouchableOpacity testID="markup-done" onPress={done} disabled={busy || !fit} hitSlop={hit}>
             {busy ? (
-              <ActivityIndicator color={ACCENT} />
+              <LoadingMark color={ACCENT} />
             ) : (
               <ChromeText style={[styles.barText, styles.done]}>{lang === 'zh' ? '完成' : 'Done'}</ChromeText>
             )}

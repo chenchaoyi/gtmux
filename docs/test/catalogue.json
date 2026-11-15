@@ -56845,7 +56845,7 @@
       ]
     },
     "mobileapp/src/ui/Splash.test.tsx": {
-      "sha256": "e0d5fc50ef33e7da8dcc9689767a9aa711c87832b038a226dfd1068af54bd643",
+      "sha256": "6743f4b3bc780a54003a469425b37d4621009af41709cb31c773ce50a80f21a3",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -56872,6 +56872,15 @@
           "name": "a live Reduce Motion change wins over a stale initial preference query",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-3d1235f0d306",
+          "line": 51,
+          "kind": "reviewed-selector",
+          "name": "reduced motion never starts the pane cycle; changing the setting stops a live loop",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "BLP-002,BLP-005"
         }
       ]
     },
@@ -64719,6 +64728,65 @@
         }
       ],
       "sha256": "3aa0a97fa7dfd1c138de635760475fbceab14b4fe2ee0c63c8d139debd411562"
+    },
+    "mobileapp/src/ui/LoadingMark.motion.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2a9c1d7d589d",
+          "line": 33,
+          "kind": "reviewed-selector",
+          "name": "BLP-001 cyan focus visits all three fixed panes and wraps continuously (%s)",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "BLP-001,BLP-002,BLP-003"
+        },
+        {
+          "id": "MAP-745c98cb52b9",
+          "line": 51,
+          "kind": "reviewed-selector",
+          "name": "BLP-002 unresolved and live Reduce Motion settings govern foreground-only motion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "BLP-001,BLP-002,BLP-003"
+        },
+        {
+          "id": "MAP-7267566ac671",
+          "line": 66,
+          "kind": "reviewed-selector",
+          "name": "BLP-002 a failed or late initial preference cannot start a hidden or unmounted indicator",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "BLP-001,BLP-002,BLP-003"
+        },
+        {
+          "id": "MAP-15a0e1198f1e",
+          "line": 75,
+          "kind": "reviewed-selector",
+          "name": "BLP-003 shared wrappers retain size, style, labels and the existing receipt footprint",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "BLP-001,BLP-002,BLP-003"
+        }
+      ],
+      "sha256": "534e5c290a8a6c4901c44528bd32aab93eec1b3d1310af653637cb2dfa7c8500"
+    },
+    "mobileapp/src/ui/LoadingUsage.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d17546f317ae",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "BLP-004 App-owned loading views share the brand engine instead of native ActivityIndicator",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "BLP-004"
+        }
+      ],
+      "sha256": "59b68ad168733e7b8d86507a4455c74ff487dd38fdda1880767685a531f66343"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

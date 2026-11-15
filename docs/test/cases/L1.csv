@@ -3759,6 +3759,7 @@ LEG-88486f8eeb41,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,15,
 LEG-39add4eb8ec5,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,53,test,search reveals matching individual calls regardless of collapsed history,False,legacy-not-retrospectively-reviewed
 LEG-4386362cb604,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,62,test,only recognized image envelopes are removed from a preview; source remains literal,False,legacy-not-retrospectively-reviewed
 LEG-4b5a90342a0d,L1,RN / mobile harness,mobileapp/src/trace/timeline.test.ts,78,test,bulk call folding includes single/two-call runs and stays independent of turns,False,legacy-not-retrospectively-reviewed
+MAP-d17546f317ae,L1,reviewed implementation,mobileapp/src/ui/LoadingUsage.test.ts,8,reviewed-selector,BLP-004 App-owned loading views share the brand engine instead of native ActivityIndicator,False,BLP-004
 MAP-b958aa95a388,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,5,reviewed-selector,ARGV-001 shell argv,False,ARGV-001
 MAP-952a93df29d6,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,20,reviewed-selector,ARGV-001 cmd fields,False,ARGV-001
 MAP-c8ee897131ac,L1,reviewed implementation,mobileapp/src/ui/commandArgv.test.ts,40,reviewed-selector,ARGV-001 ordinary argv,False,ARGV-001

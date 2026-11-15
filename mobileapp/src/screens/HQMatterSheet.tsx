@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Modal,
   ScrollView,
@@ -8,6 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import {LoadingMark} from '../ui/LoadingMark';
 import { ApiError, isAuthError } from '../api/client';
 import type { HQMatterDetail } from '../api/hqWorkspace';
 import { useAgents } from '../state/AgentsContext';
@@ -169,7 +169,7 @@ export function HQMatterSheet({
             </TouchableOpacity>
           )}
           {!detail && !failed && (
-            <ActivityIndicator color={pal.fg2} style={s.loading} />
+            <LoadingMark color={pal.fg2} style={s.loading} />
           )}
           {detail && (
             <>

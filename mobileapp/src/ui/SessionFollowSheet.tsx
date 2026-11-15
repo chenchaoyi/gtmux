@@ -1,7 +1,8 @@
 // Immediate, revision-checked conversation settings shared by phone and iPad.
 // Rows stay mounted; child capabilities depend on confirmed HQ permission.
 import React from 'react';
-import {ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions} from 'react-native';
+import {Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions} from 'react-native';
+import {LoadingMark} from './LoadingMark';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Agent, SessionFollowSettings, primary} from '../api/types';
 import {ApiError, GtmuxClient} from '../api/client';
@@ -107,7 +108,7 @@ export function SessionFollowSheet({agent, client, lang, pal, onClose, onSaved}:
           </Pressable>
         </View>
         <View testID="follow-status" style={s.status}>
-          {busy && <ActivityIndicator size="small" color={pal.fg2} />}
+          {busy && <LoadingMark size="small" color={pal.fg2} />}
           <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} accessibilityLiveRegion="polite" accessibilityRole={error ? 'alert' : undefined} numberOfLines={2} style={[s.statusText, {color: pal.fg2}]}>{status}</Text>
           {!!error && <Pressable testID="follow-reload" disabled={busy} accessibilityRole="button" onPress={load} style={s.retry}>
             <Text maxFontSizeMultiplier={CHROME_MAX_SCALE} style={{color: pal.fg}}>{tr('Reload', '重新加载')}</Text>

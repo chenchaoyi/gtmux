@@ -2942,3 +2942,20 @@ During staged attachment upload, the shared Composer SHALL show one compact stat
 - **WHEN** upload bytes finish and the server response is pending
 - **THEN** the row shows Saving instead of a successful 100% label, and no message is submitted
 - **AND** if the response fails, every staged attachment and the caption remain for an explicit retry
+
+
+### Requirement: Shared three-pane App loading feedback
+
+App-owned indeterminate loading views on phone and tablet SHALL share the gtmux pane-grid engine across page placeholders, inline/modal reads, buttons and pending-receipt indicators. The pane geometry SHALL remain fixed while a brand-cyan highlight cycles smoothly through all three panes. Whole-logo flashing and physical rotation SHALL NOT be used. Inverse button contexts MAY use a contrasting highlight. Existing sizes, outer styles, labels and reader/receipt footprints SHALL remain compatible.
+
+The cycle SHALL use native-driven opacity, remain static until Reduce Motion is known to be disabled, pause outside the foreground, and release animation/listeners on unmount. A live accessibility change SHALL win over an older preference query. Decorative panes SHALL NOT announce every frame. Determinate upload progress, send/queue/receipt lifetimes, readiness and actual request outcomes SHALL NOT be controlled by the animation. Static brand artwork, OS launch and native pull-to-refresh gestures retain their platform ownership.
+
+#### Scenario: A pending App view uses the shared pane cycle
+- **WHEN** a page, modal, button or inline status is genuinely loading
+- **THEN** its fixed logo footprint shows the same three-pane highlight cycle
+- **AND** completion removes the pending indication without adding a minimum delay or inventing progress
+
+#### Scenario: Motion is reduced or the App leaves the foreground
+- **WHEN** Reduce Motion is enabled, remains unknown, or the App is inactive/backgrounded
+- **THEN** no loading loop runs and the mark retains a static brand state
+- **AND** unmount removes observers and cancels animation

@@ -11,7 +11,6 @@ import React, {
   useState,
 } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   FlatList,
   Modal,
@@ -24,6 +23,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import {LoadingMark} from './LoadingMark';
 import { GtmuxClient } from '../api/client';
 import { Lang } from '../i18n';
 import { Palette } from './theme';
@@ -429,7 +429,7 @@ export function DiffModal({
           </View>
         )}
         {loading ? (
-          <ActivityIndicator color={pal.fg3} style={styles.center} />
+          <LoadingMark color={pal.fg3} style={styles.center} />
         ) : failed ? (
           <View style={styles.center}>
             <Text

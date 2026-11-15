@@ -1,7 +1,6 @@
 // Shared matter data, with a compact landing page and the existing HQ console.
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   RefreshControl,
   ScrollView,
   Text,
@@ -9,6 +8,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import {LoadingMark} from '../ui/LoadingMark';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Agent } from '../api/types';
 import { isAuthError } from '../api/client';
@@ -237,7 +237,7 @@ export function HQWorkspaceView(
           </TouchableOpacity>
         )}
         {!data && !failed && (
-          <ActivityIndicator
+          <LoadingMark
             accessibilityLabel={t('Loading HQ', '正在加载 HQ')}
             style={s.loading}
             color={pal.fg2}

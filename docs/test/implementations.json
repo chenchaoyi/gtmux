@@ -2385,7 +2385,7 @@
       "replaces the index with results, rather than showing both",
       "says so when nothing matches, naming what was typed",
       "gives the index back when the query is cleared",
-      "is closed by default — it is read once, then it is just height",
+      "is closed by default \u2014 it is read once, then it is just height",
       "opens on tap",
       "describes the result instead of the ledger verb",
       "write-it-in sends carry with no text, after one confirmation",
@@ -2637,7 +2637,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane’s different current runtime",
+      "a stitched older session never requests the pane\u2019s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -3181,6 +3181,38 @@
       "a higher current heading after historical subheadings keeps the whole body open",
       "nested history and code or quote heading lookalikes stay within history",
       "comment-containing source retains one Markdown scope: %s"
+    ]
+  },
+  "mobileapp/src/ui/LoadingMark.motion.test.tsx": {
+    "cases": [
+      "BLP-001",
+      "BLP-002",
+      "BLP-003"
+    ],
+    "selectors": [
+      "BLP-001 cyan focus visits all three fixed panes and wraps continuously (%s)",
+      "BLP-002 unresolved and live Reduce Motion settings govern foreground-only motion",
+      "BLP-002 a failed or late initial preference cannot start a hidden or unmounted indicator",
+      "BLP-003 shared wrappers retain size, style, labels and the existing receipt footprint"
+    ]
+  },
+  "mobileapp/src/ui/LoadingUsage.test.ts": {
+    "cases": [
+      "BLP-004"
+    ],
+    "selectors": [
+      "BLP-004 App-owned loading views share the brand engine instead of native ActivityIndicator"
+    ]
+  },
+  "mobileapp/src/ui/Splash.test.tsx": {
+    "cases": [
+      "BLP-002",
+      "BLP-005"
+    ],
+    "selectors": [
+      "startup copy remains readable and reserves a larger loading footer (%s)",
+      "reduced motion never starts the pane cycle; changing the setting stops a live loop",
+      "a live Reduce Motion change wins over a stale initial preference query"
     ]
   }
 }

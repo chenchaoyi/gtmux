@@ -3,7 +3,8 @@ import {BRAND, type Palette} from './theme';
 import {useModalEscape} from '../keys/useModalEscape';
 import presentation from './participantPresentation.json';
 import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import {Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions} from 'react-native';
+import {LoadingMark} from './LoadingMark';
 import type {GtmuxClient} from '../api/client';
 import type {Lang} from '../i18n';
 import {AgentAvatar} from './AgentAvatar';
@@ -58,7 +59,7 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
           </View> : <>
             {hq && <HQProfileDetails target={target} client={client} recordedAgent={hqAgent} zh={zh} />}
             {read.status === 'loading' ? <View testID="profile-loading" accessibilityRole="progressbar" accessibilityLabel={zh ? '正在读取已记录资料' : 'Loading recorded profile'} style={styles.loading}>
-              <ActivityIndicator size="small" color={BRAND} /><Text style={styles.notice}>{zh ? '正在读取已记录资料…' : 'Loading recorded profile…'}</Text>
+              <LoadingMark size="small" color={BRAND} /><Text style={styles.notice}>{zh ? '正在读取已记录资料…' : 'Loading recorded profile…'}</Text>
               <View accessible={false} style={styles.skeleton}>{[0, 1, 2, 3].map(i => <View key={i} style={styles.placeholder} />)}</View>
             </View> : <View style={styles.grid}>
               {facts.map(f => <View style={[styles.fact, fontScale > 1.3 && styles.factLarge]} key={f.key}><Text style={styles.label}>{factLabel(f.key, zh)}</Text><Text selectable style={styles.value}>{factValue(f)}</Text></View>)}
