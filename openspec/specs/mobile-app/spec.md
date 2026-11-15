@@ -2223,8 +2223,8 @@ unless an authenticated request has shown the refusal.
 Every row SHALL be exactly two lines high whatever its state. A pending notification
 setting SHALL be said on the status line, after the reachability ("cannot be reached ·
 notification setting syncs when it answers"), never on a line of its own. A sync in
-flight SHALL NOT be shown at all. So nothing the reader taps, and nothing the probes
-find, resizes a row or moves the list.
+flight SHALL use that same status line, without a third line. So nothing the reader taps,
+and nothing the probes find, resizes a row or moves the list.
 
 #### Scenario: Three Macs, one open
 
@@ -2237,8 +2237,8 @@ find, resizes a row or moves the list.
 #### Scenario: A setting that cannot reach its Mac
 
 - **WHEN** Office cannot be reached and its notification setting is pending
-- **THEN** Office's status line says both, on the one line, and offers no retry control
-- **AND** when a later probe finds Office answering, the setting is sent again by itself
+- **THEN** Office's status line says both on one line, and its owner More menu offers an explicit notification-sync retry
+- **AND** when a later probe finds Office answering, reconciliation resumes under its bounded retry policy
 
 #### Scenario: A Mac that answers but no longer takes this phone
 
@@ -2959,3 +2959,35 @@ The cycle SHALL use native-driven opacity, remain static until Reduce Motion is 
 - **WHEN** Reduce Motion is enabled, remains unknown, or the App is inactive/backgrounded
 - **THEN** no loading loop runs and the mark retains a static brand state
 - **AND** unmount removes observers and cancels animation
+
+### Requirement: Notification reconciliation coalesces intent and bounds retries
+
+App notification registration and unregistration SHALL coalesce unchanged in-flight intent and retain successful current intent for 30 minutes. Display-only Mac edits and repeated foreground events SHALL NOT replay it. Subscription, token, credential or reported-address changes SHALL become eligible immediately while retaining the actual per-Mac write barrier. Failed automatic attempts SHALL back off from 30 seconds to 5 minutes, use one foreground-only timer and remain pending. Backgrounding and unmount SHALL stop retry timers; stale completions SHALL NOT replace current state. A verified successful route MAY be preferred only while it remains reported by the same pairing. Guest and unknown-token restrictions SHALL remain. An explicit owner retry MAY bypass cooldown for that target and SHALL expose actual busy feedback without resizing its row. Registration-route failure SHALL NOT be described as proof of APNs delivery failure.
+
+#### Scenario: A list edit follows a successful subscription
+
+- **WHEN** the same Mac is renamed or the app returns to the foreground before refresh is due
+- **THEN** the current subscription is retained without another write or busy flicker
+
+#### Scenario: An unreachable Mac is explicitly retried
+
+- **WHEN** its owner chooses Retry notification sync in More
+- **THEN** only that target bypasses cooldown; it shows syncing on its existing status line and the action is disabled while pending transport work settles
+
+### Requirement: Reading feedback prioritizes the next useful action
+
+App read failures SHALL show a concise neutral explanation and one primary Retry action, with optional lower-emphasis navigation. The existing parent SHALL retain scope and request ownership; retry SHALL visibly show busy and disable duplicate interaction. Actions SHALL retain 44 point targets and use the resolved Appearance. Existing messages and raw evidence SHALL remain available. Technical association/session-log explanations SHALL NOT replace the user-facing read outcome.
+
+#### Scenario: A cached conversation fails to refresh
+
+- **WHEN** the current read fails and messages are already visible
+- **THEN** the messages remain readable with a compact update-failure message, Retry and an optional Terminal action
+
+### Requirement: Legacy tool records retain readable and exact evidence
+
+The shared tool reader SHALL use its existing conservative activity classification when an operation is missing. Explicit operation SHALL win. A recognized complete command SHALL be shown directly with readable terminal output, while original input, complete copies and opaque numeric text remain exact. This display interpretation SHALL NOT execute a command, infer success or reinterpret arbitrary tool data as shell input.
+
+#### Scenario: An old exec record has no operation field
+
+- **WHEN** a complete recorded argv and terminal result are available
+- **THEN** the reader shows the command and readable output first, without duplicate single-command outline/tabs, and retains exact original input and raw view

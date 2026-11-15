@@ -59,12 +59,12 @@ export function ParticipantProfileModal({target, client, lang, onClose}: {target
           </View> : <>
             {hq && <HQProfileDetails target={target} client={client} recordedAgent={hqAgent} zh={zh} />}
             {read.status === 'loading' ? <View testID="profile-loading" accessibilityRole="progressbar" accessibilityLabel={zh ? '正在读取已记录资料' : 'Loading recorded profile'} style={styles.loading}>
-              <LoadingMark size="small" color={BRAND} /><Text style={styles.notice}>{zh ? '正在读取已记录资料…' : 'Loading recorded profile…'}</Text>
+              <LoadingMark size="small" color={BRAND} accessible={false} /><Text style={styles.notice}>{zh ? '正在读取资料…' : 'Loading profile…'}</Text>
               <View accessible={false} style={styles.skeleton}>{[0, 1, 2, 3].map(i => <View key={i} style={styles.placeholder} />)}</View>
             </View> : <View style={styles.grid}>
               {facts.map(f => <View style={[styles.fact, fontScale > 1.3 && styles.factLarge]} key={f.key}><Text style={styles.label}>{factLabel(f.key, zh)}</Text><Text selectable style={styles.value}>{factValue(f)}</Text></View>)}
             </View>}
-            {read.status !== 'loading' && facts.length === 0 && !(hq && target.kind === 'sender') && <Text testID="profile-unrecorded" style={styles.notice}>{messageDetailsUnavailable ? (zh ? '暂无这条回复的详细资料。' : 'Details are unavailable for this reply.') : read.timedOut ? (zh ? '读取超时，请重试。' : 'The request timed out. Try again.') : read.status === 'failed' || profile?.unavailable ? (zh ? '暂时无法读取资料。已记录的身份仍保留。' : 'Profile unavailable. Recorded identity is retained.') : (zh ? '这位参与者的版本、模型等细节未记录。' : 'Version, model and other details were not recorded for this participant.')}</Text>}
+            {read.status !== 'loading' && facts.length === 0 && !(hq && target.kind === 'sender') && <Text testID="profile-unrecorded" style={styles.notice}>{messageDetailsUnavailable ? (zh ? '暂无这条回复的资料。' : 'No details available for this reply.') : read.timedOut ? (zh ? '读取超时，请重试。' : 'The request timed out. Try again.') : read.status === 'failed' || profile?.unavailable ? (zh ? '暂时无法读取资料。' : 'Could not load profile.') : (zh ? '暂无更多资料。' : 'No additional details available.')}</Text>}
             {(read.status === 'failed' || profile?.unavailable) && <TouchableOpacity testID="profile-retry" accessibilityRole="button" onPress={read.retry} style={styles.retry}><Text style={styles.retryText}>{zh ? '重新读取' : 'Try again'}</Text></TouchableOpacity>}
             {read.status !== 'loading' && target.kind === 'agent' && <ProfileExecutionChain target={target} client={client} lang={lang} primary={read} />}
             {facts.length > 0 && <View style={styles.section}>

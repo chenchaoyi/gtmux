@@ -25,6 +25,54 @@ export class PushSyncQueue {
   }
 }
 
+export type PushSyncState = 'syncing' | 'pending' | 'synced';
+
+// Intent and successful route stay in memory, scoped to one pairing. Unrelated
+// list edits must not replay a write or invalidate its only current result.
+export class PushSyncPolicy {
+  private intent = '';
+  private phase: PushSyncState = 'pending';
+  private failures = 0;
+  private retryAt = 0;
+  private route?: string;
+
+  get status(): PushSyncState {return this.phase;}
+  get preferredUrl(): string | undefined {return this.route;}
+  get pendingRetryAt(): number | undefined {return this.phase === 'pending' ? this.retryAt : undefined;}
+
+  claim(intent: string, force = false, now = Date.now(), foreground = true): boolean {
+    if (intent !== this.intent) {
+      this.invalidate();
+      this.intent = intent;
+    }
+    if (!foreground || this.phase === 'syncing' || !force && now < this.retryAt) return false;
+    this.phase = 'syncing';
+    return true;
+  }
+
+  complete(intent: string, ok: boolean, route?: string, now = Date.now()): boolean {
+    if (intent !== this.intent) return false;
+    this.phase = ok ? 'synced' : 'pending';
+    if (ok) {
+      this.failures = 0;
+      this.retryAt = now + 30 * 60 * 1000;
+      this.route = route;
+    } else {
+      this.failures++;
+      this.retryAt = now + Math.min(30000 * 2 ** Math.min(this.failures - 1, 4), 5 * 60 * 1000);
+    }
+    return true;
+  }
+
+  invalidate(): void {
+    this.intent = ''; this.phase = 'pending'; this.failures = 0; this.retryAt = 0; this.route = undefined;
+  }
+}
+
+export function reportedPushAddresses(server: PairedMac): string[] {
+  return [...new Set([server.url, ...(server.alts ?? [])])].filter(url => /^https?:\/\//.test(url));
+}
+
 // Whether a Mac may reach this phone's lock screen at all: alerts, silent badges and the
 // Live Activity alike. The device-wide switch, at least one alert kind and this Mac's own
 // bell must all be on. A guest link has no bell, so only the device-wide part applies.
@@ -43,11 +91,14 @@ export async function syncServerPush(
   kinds: string[],
   env: string,
   makeClient: (url: string, auth: string) => PushTarget = (url, auth) => new GtmuxClient(url, auth),
+  options: {preferredUrl?: string; onSuccess?: (url: string) => void} = {},
 ): Promise<boolean> {
   if (server.scope === 'guest' || !token) return false;
   // A Mac may have moved between Direct routes. Try only addresses it reported
   // for this pairing, with the same owner credential and a short deadline.
-  const addresses = [...new Set([server.url, ...(server.alts ?? [])])].filter(u => /^https?:\/\//.test(u));
+  const reported = reportedPushAddresses(server);
+  const addresses = options.preferredUrl && reported.includes(options.preferredUrl)
+    ? [options.preferredUrl, ...reported.filter(url => url !== options.preferredUrl)] : reported;
   const foreground = () => AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
   for (const url of addresses) {
     if (!foreground()) return false;
@@ -66,7 +117,7 @@ export async function syncServerPush(
         ? await client.registerPush(token, kinds, env, controller.signal)
         : await client.unregisterPush(token, undefined, controller.signal);
       if (paused || !foreground()) return false;
-      if (ok) return true;
+      if (ok) {options.onSuccess?.(url); return true;}
     } catch {
       if (paused || !foreground()) return false;
       // Offline or old route: try the next reported address.

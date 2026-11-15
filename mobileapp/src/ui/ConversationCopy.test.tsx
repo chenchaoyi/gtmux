@@ -19,7 +19,7 @@ test.each(['en','zh'] as const)('CRX-006 %s empty state is concise and its Termi
   expect(text()).not.toMatch(/Start a conversation|开始聊聊/);
   expect(tree.root.findAllByType(TouchableOpacity).filter(n=>n.props.testID==='chat-open-terminal')).toHaveLength(0);
   act(()=>tree.update(<ChatView {...props} failed associationFailed/>));
-  expect(text()).toContain(lang==='zh'?'会话关联暂不可用':'Conversation association');
+  expect(text()).toContain(lang==='zh'?'暂时无法载入对话':'Could not load conversation');
   expect(text()).not.toMatch(/No messages yet|暂无对话/);
  }finally{act(()=>tree.unmount());}
 });

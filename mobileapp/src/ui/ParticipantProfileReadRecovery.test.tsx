@@ -60,7 +60,7 @@ test('PCP-001 retry immediately becomes busy, bounds an uncooperative read and i
     .mockResolvedValueOnce(profile());
   await mount(read);
   await act(async () => button('profile-chain-toggle')[0].props.onPress());
-  expect(text()).toContain('could not be verified');
+  expect(text()).toContain('Could not load process details.');
   const retry = button('profile-chain-retry')[0];
   expect(retry.props.accessibilityRole).toBe('button');
   await act(async () => retry.props.onPress());

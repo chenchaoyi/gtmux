@@ -13,7 +13,7 @@ test.each(['en', 'zh'] as const)('CRX-001 %s reload is visible, busy and keeps m
  const button = () => tree.root.findAllByType(TouchableOpacity).find(n => n.props.testID==='chat-read-retry')!;
  act(() => {tree=renderer.create(<ChatView {...props}/>);});
  try {
-  expect(text()).toContain(lang==='zh'?'重新加载对话':'Reload conversation');
+  expect(text()).toContain(lang==='zh'?'重试':'Retry');
   expect(StyleSheet.flatten(button().props.style).minHeight).toBeGreaterThanOrEqual(44);
   act(() => button().props.onPress());expect(retry).toHaveBeenCalledTimes(1);
   act(() => tree.update(<ChatView {...props} retrying/>));

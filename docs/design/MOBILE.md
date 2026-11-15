@@ -1553,6 +1553,12 @@ Pixel contrast tests cover the actual shipped mark and text checks cover both th
 they do not substitute for native visual or VoiceOver acceptance. The isolated
 `GTMUX_DEBUG_SHOW_SPLASH` capture flag is never part of an ordinary launch.
 
+### Read feedback and notification sync
+
+Read failures use a compact neutral explanation, a short Retry button and, when useful, a lower-emphasis secondary action. Keep existing content readable. The retry belongs to the scoped parent request, becomes visibly busy/disabled, and uses one decorative brand loader inside its labeled action. Do not lead with association, session-log or replay implementation details. Profile provenance stays in the existing disclosure. Legacy command records use the same conservative activity classification as current records: show a directly readable command and output first, with exact original input/copy still available.
+
+Notification reconciliation coalesces unchanged in-flight intent and retains successful intent for 30 minutes. Only a changed subscription/credential/reported-address set, an eligible refresh or an explicit retry creates work. Failed automatic attempts back off from 30 seconds to 5 minutes with one foreground-only timer; backgrounding pauses it. Prefer a verified successful address only while it remains reported by the same pairing. Keep latest unsubscribe ordering, guest restrictions and transport-settling barriers. A pending owner Mac offers Retry notification sync in More; that explicit target may bypass cooldown. Real sync feedback uses the existing second status line without changing row height. Registration-route failures remain distinct from evidence of actual APNs delivery.
+
 ### Quiet session grouping
 
 Activity groups are needs-you → errored (when present) → working → idle. Neutral `running` sessions without authoritative lifecycle evidence also belong to idle, retaining their grey dot and original timestamps. They do not create a standby group or assert completion. Errors, watched panes and external conversations keep their existing separate categories.

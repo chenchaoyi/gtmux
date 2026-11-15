@@ -90,7 +90,7 @@ test('before the probe answers, a Mac reads as checking', async () => {
   await render();
   expect(row('Home Mac').props.accessibilityLabel).toBe('Home Mac, Checking…');
 });
-test('a pending setting is said on the status line, with no retry control', async () => {
+test('a pending setting is said on the status line, with no inline retry control', async () => {
   app.pushSync[macs[1].url] = 'pending'; // Home: muted, and off
   await render();
   expect(row('Home Mac').props.accessibilityLabel).toBe("Home Mac, Can't reach · it may still notify until it answers");
@@ -108,7 +108,7 @@ test('a Mac with a pending setting gets it again the moment it answers', async (
   await act(async () => { jest.advanceTimersByTime(15_000); }); // still answering: no second push
   expect(app.retryPushSync).toHaveBeenCalledTimes(1);
 });
-test('nothing moves: every row is the same height, and a sync in flight shows nothing', async () => {
+test('PFR-002 genuine notification syncing stays in the existing two-line row', async () => {
   await render();
   const heights = () => tree.root.findAllByType(View)
     .filter(n => StyleSheet.flatten(n.props.style)?.height === 62).length;
@@ -118,6 +118,20 @@ test('nothing moves: every row is the same height, and a sync in flight shows no
   await act(async () => { tree.update(<ServersScreen />); });
   expect(heights()).toBe(3);
   expect(texts()).not.toMatch(/Updating/);
+  expect(texts()).toContain('Syncing notifications');
+});
+test('PFR-002 a pending owner retries its own notification settings from More, with no guest action', async () => {
+  app.pushSync = {[macs[0].url]: 'pending', [macs[2].url]: 'pending'};
+  await render(); app.retryPushSync.mockClear();
+  openMenu('Office Mac'); expect(menuKeys()).toContain('push-retry');
+  choose('push-retry');
+  expect(app.retryPushSync).toHaveBeenCalledTimes(1);
+  expect(app.retryPushSync).toHaveBeenCalledWith({url: macs[0].url, force: true});
+  app.pushSync[macs[0].url] = 'syncing';
+  await act(async () => tree.update(<ServersScreen />));
+  openMenu('Office Mac');
+  expect(menuItems().find(n => n.props.testID === 'server-menu-push-retry')!.props.disabled).toBe(true);
+  openMenu('Guest Mac'); expect(menuKeys()).not.toContain('push-retry');
 });
 test('global pause preserves the per-Mac preference and is said once', async () => {
   app.pushEnabled = false;

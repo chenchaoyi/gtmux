@@ -1900,7 +1900,8 @@
     "cases": [
       "CPG-005",
       "CPG-006",
-      "CPG-007"
+      "CPG-007",
+      "RFD-002"
     ],
     "selectors": [
       "CPG005 %s explicit Retry recovers quiet history after authorized 304",
@@ -1910,7 +1911,8 @@
   },
   "mobileapp/__tests__/chatRecentHistory.test.tsx": {
     "cases": [
-      "LCL-003"
+      "LCL-003",
+      "RFD-002"
     ],
     "selectors": [
       "LCL-003 %s requests recent data and exposes a working error/retry action",
@@ -2385,7 +2387,7 @@
       "replaces the index with results, rather than showing both",
       "says so when nothing matches, naming what was typed",
       "gives the index back when the query is cleared",
-      "is closed by default \u2014 it is read once, then it is just height",
+      "is closed by default — it is read once, then it is just height",
       "opens on tap",
       "describes the result instead of the ledger verb",
       "write-it-in sends carry with no text, after one confirmation",
@@ -2457,10 +2459,13 @@
   },
   "mobileapp/src/screens/ServersScreen.test.tsx": {
     "cases": [
-      "RSR-009"
+      "RSR-009",
+      "PFR-002"
     ],
     "selectors": [
-      "More is a menu: Disconnect only on the open Mac, Remove last"
+      "More is a menu: Disconnect only on the open Mac, Remove last",
+      "PFR-002 genuine notification syncing stays in the existing two-line row",
+      "PFR-002 a pending owner retries its own notification settings from More, with no guest action"
     ]
   },
   "mobileapp/src/screens/UsageSheet.test.tsx": {
@@ -2631,13 +2636,14 @@
   },
   "mobileapp/src/ui/ParticipantProfileModal.test.tsx": {
     "cases": [
-      "CRX-005"
+      "CRX-005",
+      "RFD-002"
     ],
     "selectors": [
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane\u2019s different current runtime",
+      "a stitched older session never requests the pane’s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -3077,7 +3083,8 @@
   },
   "mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx": {
     "cases": [
-      "PCP-001"
+      "PCP-001",
+      "RFD-002"
     ],
     "selectors": [
       "PCP-001 missing timestamp keeps message facts absent but reads exact source processes",
@@ -3213,6 +3220,48 @@
       "startup copy remains readable and reserves a larger loading footer (%s)",
       "reduced motion never starts the pane cycle; changing the setting stops a live loop",
       "a live Reduce Motion change wins over a stale initial preference query"
+    ]
+  },
+  "mobileapp/src/state/AppContext.pushSync.test.tsx": {
+    "cases": [
+      "PFR-001",
+      "PFR-002",
+      "PFR-003"
+    ],
+    "selectors": [
+      "PFR-001 unrelated Mac edits and repeated foreground signals do not replay a successful subscription",
+      "PFR-001 an unrelated edit cannot invalidate the only in-flight result",
+      "PFR-002 failed automatic sync backs off, pauses in background and resumes without a burst",
+      "PFR-002 explicit retry bypasses cooldown for the requested Mac and reports busy",
+      "PFR-003 a newer disable remains ordered after the old transport, and stale completion cannot resync it",
+      "PFR-003 a changed owner credential is immediate during cooldown and another Mac remains independent",
+      "PFR-003 unmount invalidates pending callbacks and every retry timer"
+    ]
+  },
+  "mobileapp/src/push/sync.routes.test.ts": {
+    "cases": [
+      "PFR-004"
+    ],
+    "selectors": [
+      "PFR-004 a verified reported alternate is preferred without retrying a dead primary",
+      "PFR-004 an unknown route is never attempted and background work cannot record route success"
+    ]
+  },
+  "mobileapp/src/ui/ToolReading.legacy.test.tsx": {
+    "cases": [
+      "RFD-001"
+    ],
+    "selectors": [
+      "RFD-001 legacy exec %s reads as one command and clean output while copy remains exact",
+      "RFD-001 an explicit generic tool operation keeps its original data instead of guessing a shell command"
+    ]
+  },
+  "mobileapp/src/ui/ReadFeedback.test.tsx": {
+    "cases": [
+      "RFD-002"
+    ],
+    "selectors": [
+      "RFD-002 %s read feedback keeps one explicit retry, busy protection and secondary navigation"
     ]
   }
 }

@@ -93,7 +93,7 @@ test('a changed pane binding cannot substitute its new runtime for a tmux messag
   await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
   expect(read.mock.calls[1][0]).toEqual({id: '%4', session_id: 'old'});
   expect(text()).toContain('old-model');
-  expect(text()).toContain('could not be verified');
+  expect(text()).toContain('Could not load process details.');
   expect(text()).not.toContain('No process details available.');
   expect(buttons('profile-copy-0')).toHaveLength(0);
 });
@@ -134,13 +134,13 @@ test('initial loading never claims that facts were not recorded, and failure can
   const client = {participantProfile: read} as unknown as GtmuxClient;
   await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent}} client={client} lang="en" onClose={() => {}} />);});
   expect(tree.root.findAll(n => n.props.testID === 'profile-loading').length).toBeGreaterThan(0);
-  expect(text()).not.toContain('were not recorded');
+  expect(text()).not.toContain('No additional details available.');
   await act(async () => reject(new Error('offline')));
-  expect(text()).toContain('Profile unavailable');
+  expect(text()).toContain('Could not load profile.');
   await act(async () => buttons('profile-retry')[0].props.onPress());
   expect(read).toHaveBeenCalledTimes(2);
-  expect(text()).toContain('were not recorded');
-  expect(text()).not.toContain('Profile unavailable');
+  expect(text()).toContain('No additional details available.');
+  expect(text()).not.toContain('Could not load profile.');
 });
 
 test('a stitched older session never requests the pane’s different current runtime', async () => {
@@ -161,7 +161,7 @@ test('switching targets hides previous facts immediately and rejects late respon
   await act(async () => tree.update(<ParticipantProfileModal target={target('two')} client={client} lang="en" onClose={() => {}} />));
   await act(async () => pending[0]({agent: 'codex', name: 'Codex', session_id: 'one', historical: false, facts: [{key: 'model', value: 'wrong-model', source: 'session_log'}]}));
   expect(text()).not.toContain('wrong-model');
-  expect(text()).toContain('Loading recorded profile');
+  expect(text()).toContain('Loading profile…');
   await act(async () => pending[1]({agent: 'codex', name: 'Codex', session_id: 'two', historical: false, facts: [{key: 'model', value: 'right-model', source: 'session_log'}]}));
   expect(text()).toContain('right-model');
   expect(text()).not.toContain('wrong-model');
@@ -177,7 +177,7 @@ test.each([
   await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}, turn: {session_id: 's', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
   await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
   expect(text()).not.toContain('wrong-runtime');
-  expect(text()).toContain('could not be verified');
+  expect(text()).toContain('Could not load process details.');
   expect(buttons('profile-copy-0')).toHaveLength(0);
 });
 
@@ -212,7 +212,7 @@ test('a failed same-session chain can retry without replacing message facts', as
   const client = {participantProfile: read} as unknown as GtmuxClient;
   await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}, turn: {session_id: 's', time: '2026-10-20T00:00:00Z', prompt: 'p', response: 'r'}}} client={client} lang="en" onClose={() => {}} />);});
   await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
-  expect(text()).toContain('could not be verified');
+  expect(text()).toContain('Could not load process details.');
   expect(buttons('profile-copy-0')).toHaveLength(0);
   await act(async () => buttons('profile-chain-retry')[0].props.onPress());
   expect(read).toHaveBeenCalledTimes(3);
@@ -225,7 +225,7 @@ test('an unavailable current read does not claim the chain was never recorded', 
   const client = {participantProfile: read} as unknown as GtmuxClient;
   await act(async () => {tree = renderer.create(<ParticipantProfileModal target={{kind: 'agent', agent: {...agent, session_id: 's'}}} client={client} lang="en" onClose={() => {}} />);});
   await act(async () => buttons('profile-chain-toggle')[0].props.onPress());
-  expect(text()).toContain('could not be verified');
+  expect(text()).toContain('Could not load process details.');
   expect(text()).not.toContain('No process details available.');
   expect(buttons('profile-chain-retry')).toHaveLength(1);
 });

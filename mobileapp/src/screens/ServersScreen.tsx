@@ -128,9 +128,8 @@ export function ServersScreen({navigation}: {navigation?: any}) {
     [shot, servers, probed],
   );
   const conn = shot ? 'live' : agentsCtx?.conn;
-  // A Mac whose notification setting is pending gets it again the moment a probe finds it
-  // answering. That is what "Retry sync" asked the reader to do by hand, for a Mac they
-  // could not see was off (2026-10-05).
+  // A recovered health probe requests reconciliation. The shared policy retains
+  // its backoff; an explicit owner retry in More can bypass that cooldown.
   const lastReach = useRef<Record<string, Reach | undefined>>({});
   useEffect(() => {
     let resync = false;
@@ -185,7 +184,8 @@ const [restoreMac, setRestoreMac] = useState<PairedMac | null>(null);
       mayNotify: !pushPaused && s.pushEnabled !== false,
       rejected: what?.ok === false && what.why === 'auth',
     });
-    const state = t(st.key) + (st.pending ? ` · ${t(st.pending)}` : '');
+    const syncing = !guest && pushSync[s.url] === 'syncing';
+    const state = t(st.key) + (syncing ? (lang === 'zh' ? ' · 正在同步通知…' : ' · Syncing notifications…') : st.pending ? ` · ${t(st.pending)}` : '');
     const text = state;
     const short = state + (what?.ok ? ` · ${hostSystem(what.info)}` : '');
     return {st, text, short, tone: toneColor(st.tone, pal.fg3)};
@@ -194,9 +194,9 @@ const [restoreMac, setRestoreMac] = useState<PairedMac | null>(null);
   // One row per Mac, always two lines: the name with its bell and •••, and a status line.
   // Tapping the row connects; the bell and ••• are their own targets. The address lives
   // in ••• — it tells two Macs apart only when their names don't. Nothing is ever added
-  // under a row: a pending setting is a clause on the status line, and a sync in flight
-  // is not shown, so no tap and no probe moves the list (it jumped on every tap: each
-  // change set every server "syncing", and each row grew a line and shrank again).
+  // under a row: pending and genuinely in-flight sync use the same status line.
+  // Coalescing prevents unrelated edits from flashing busy, and no tap/probe
+  // adds a third line or moves the list.
   const serverRow = (
     s: PairedMac,
     i: number,
@@ -284,6 +284,7 @@ const [restoreMac, setRestoreMac] = useState<PairedMac | null>(null);
   const menuSections = (s: PairedMac): MenuItem[][] => [
     [
       {key: 'details', label: t('serverDetails'), icon: 'info', onPress: () => setDetails(s)},
+      ...(s.scope !== 'guest' && ['pending', 'syncing'].includes(pushSync[s.url]) ? [{key: 'push-retry', label: lang === 'zh' ? '重试通知同步' : 'Retry notification sync', icon: 'bell' as const, disabled: pushSync[s.url] === 'syncing', onPress: () => retryPushSync({url: s.url, force: true})}] : []),
 ...(s.scope !== 'guest' ? [{key: 'restore', label: lang === 'zh' ? '恢复会话' : 'Restore sessions', icon: 'history' as const, onPress: () => setRestoreMac(s)}] : []),
       {key: 'rename', label: t('renameServer'), icon: 'pencil', onPress: () => rename(s)},
     ],

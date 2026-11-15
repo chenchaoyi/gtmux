@@ -92,6 +92,8 @@ running serve with access to its push relay, a registered iOS device and Apple's
 service. Notification settings and network conditions can delay or block delivery.
 The live radar and replies still need a connection to the Mac.
 
+If notification settings cannot sync, the App retries less often while that Mac is unavailable. In the Macs list, open its **More → Retry notification sync** action to try immediately. A 502/530 registration error describes the connection to the Mac, rather than a confirmed Apple push delivery failure.
+
 Agents outside tmux are read-only: without a pane, there is nowhere to send input.
 
 ## Usage widgets
