@@ -1103,8 +1103,8 @@ export class GtmuxClient {
 
   // hqKnowledgeEntry: one entry with its body. null when it is gone (retired entries
   // leave the live set by design) or unreachable.
-  async hqKnowledgeEntry(id: string): Promise<KnowledgeEntry | null> {
-    const r = await tfetch(`${this.base}/api/hq/knowledge/entry?id=${encodeURIComponent(id)}`, {headers: this.h()});
+  async hqKnowledgeEntry(id: string, signal?: AbortSignal): Promise<KnowledgeEntry | null> {
+    const r = await tfetch(`${this.base}/api/hq/knowledge/entry?id=${encodeURIComponent(id)}`, {headers: this.h(), ...(signal ? {signal} : {})});
     if (!r.ok) return null;
     const j = await r.json().catch(() => null);
     return j && typeof j === 'object' ? (j as KnowledgeEntry) : null;

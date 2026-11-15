@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1278 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1281 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3789 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2339 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3804 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2351 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 141 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -260,6 +260,14 @@
 | MSD-003 | Preferred receipt returned as additive JSON while legacy clients retain status ok; no mutation when unauthorized, guest out of scope or key invalid; queue acceptance not claimed read/completed; no message body or secrets in diagnostics. |
 | MSD-004 | Full send settles at finite deadline and aborts network; late success cannot overwrite timeout; only one fetch, original send ID retained by caller for explicit retry; refusal and legacy success remain compatible. |
 | MSD-005 | Queued is labeled queued awaiting next turn, accepted means received not read/completed; finite network deadline keeps text and explicit same-ID retry; late old response/failure cannot replace a newer pending attempt; transcript confirmation retires the correct echo; no resends, no queue deletion, no draft/approval bypass. |
+| KRD-001 | Every source character is retained in ordered slices; no summary is invented or truncated. Only explicit history headings outside fenced code fold. Unknown shapes remain whole in the body; alternate-language resolution precedes segmentation. Code/examples never become invented guidance. |
+| KRD-002 | Title, compact real use state and literal core guidance lead; current detail opens by default, historical and record details fold by default and reveal original content on demand. No duplicated leading paragraph or missing source facts. One shared reader supports compact/regular themes, reading-width cap and wrapping labels. Entry changes reset local disclosure state. |
+| KRD-003 | Only existing actsFor eligibility is offered. One primary action when available; secondary/retire are not equal-weight page buttons. Menu operations wait for dismissal, preserve exact viewed revision and never apply across a changed entry/scope. External feedback opens only the existing draft URL, without claiming an issue was created. Existing confirmation/draft/error guards remain. |
+| KRD-004 | Preserve every source/audience/revision/payload/duplicate-submit/refusal/draft/eligibility expectation at its explicit disclosure state. The visible action says No longer applicable and still never Retire it; a recorded application remains visible once in the compact status line. Do not remove or weaken operation assertions. |
+| KRD-005 | Initial loading has explicit copy; a failure is actionable with visible retry progress, never false empty. Whole read times out at15s and late/disposed/wrong-ID results cannot fill the current reader. Last readable content remains during refresh. Pending mutations cannot cross readScope; original act payload/CAS semantics remain. No automatic mutation or retry-send is added. |
+| KRDS-001 | History API and extra ordinary title words remain current; exact supported titles with clear descriptors can fold, headings inside fences/quotes remain current; ordered source bytes remain identical |
+| KRDS-002 | Historical subheadings can stay in history; same/higher following headings cause conservative whole-body current fallback, retaining original order and all text. Non-heading code/quote lookalikes do not end history |
+| KRDS-003 | Hidden comment markers/content never become visible. Conservative whole-body fallback retains the exact source. Ordinary supported split still retains guidance and history; existing reference-definition fallback stays unchanged |
 | PPR-001 | No upload/send/history or clearing while read is pending; visible disabled Send and concise reading feedback. Only one picker request; all four photos remain ordered and a later explicit Send uploads each exactly once before the original caption/paths are submitted. No automatic resend. |
 | PPR-002 | Full lifecycle finally releases ref/state, pending selection blocks send and reentry; after settlement a new selection/send is possible. Caption and existing images remain; no automatic upload/send, no spurious photo editor. Existing unmount late-result guard remains. |
 | PPR-003 | Message contains only that send snapshot in order; later file remains staged for its own explicit Send. No asset deletion or silent removal of unsent IDs. Existing upload failure preservation stays unchanged. |
