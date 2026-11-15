@@ -1,0 +1,69 @@
+{
+  "id": "mobile-brand-loading-20261115",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review before code/tests; not independent approval",
+    "date": "2026-11-15",
+    "decision": "Implement the user-selected three-pane brand-blue cycle across App-owned loading surfaces before the already-authorized release/install",
+    "notes": "Latest direct user asks to replace whole-logo flashing with the blue focus moving continuously through the three gtmux panes, across all loading. Source inventory found separate LoadingMark and BrandLoader pulses plus16 source files importing native ActivityIndicator. Keep geometry fixed and move only highlight opacity on native thread, reuse one engine and retain both public wrappers. Preserve reduced-motion static behavior including stale preference race, add foreground/unmount cleanup, keep startup/read/receipt/input/queue semantics and actual progress data unchanged. Migrate page/modal/button/inline/receipt custom indicators; inverse foregrounds may need a contrasting highlight. Static branding, OS launch artwork/pickers and native pull-to-refresh gesture indicators remain platform-owned, while all App-owned indeterminate status views use the shared engine. Page loading remains different from the actual agent working ring. Update current paired MOBILE and DESIGN guidance and current spec to remove obsolete breathing-only rules. This design is recorded before any new product/test edits; no test/mock/design gate is weakened. Preserve prior failure/caches; all local Go tooling stays stopped. Baseline actualmain6b32 already has completed full CI; design-only gate does not claim a new App run. Final real UI/native motion and physical accessibility acceptance require explicit actual evidence, not the renderer tests."
+  },
+  "cases": [
+    {
+      "id": "BLP-001",
+      "layer": "L2",
+      "description": "App loading keeps the brand panes fixed while the cyan focus cycles through all three",
+      "setup": "Real LoadingMark in React Native renderer with a controlled Animated native-driver seam and isolated accessibility/AppState. Light/dark caller colors and numeric sizes; no installed UI or actual native animation claim.",
+      "action": "Render three pane highlight layers, advance the captured native animation phase through one cycle and its seam, compare geometry and active-pane values. Run final selected case against exact old LoadingMark before repair.",
+      "expected": "All three distinct fixed panes become highlighted in cyclic order, with smooth crossfade, constant mark footprint and no whole-logo opacity flashing or physical rotation. Repeated cycle boundary is continuous. Old whole-mark breathing fails a rendered-pane assertion semantically.",
+      "planned_files": [
+        "mobileapp/src/ui/LoadingMark.motion.test.tsx"
+      ]
+    },
+    {
+      "id": "BLP-002",
+      "layer": "L2",
+      "description": "Loading motion respects live Reduce Motion, foreground state and unmount",
+      "setup": "Real shared loading component; deferred preference query, live settings and AppState events, mocked native loop start/stop. No Go, native build, dependency install or real device.",
+      "action": "Keep preference unresolved, resolve false/true/rejection, race a live change with the old query, go inactive/background/active, hide and unmount. Retain prior startup motion regressions.",
+      "expected": "Static brand state until motion is known to be allowed. Reduced Motion, background/inactive and hidden/unmounted indicators have no running loop. Live preference wins over stale query; listeners and loops clean up, foreground may resume only when allowed. No frame-by-frame spoken announcements.",
+      "planned_files": [
+        "mobileapp/src/ui/LoadingMark.motion.test.tsx",
+        "mobileapp/src/ui/Splash.test.tsx"
+      ]
+    },
+    {
+      "id": "BLP-003",
+      "layer": "L2",
+      "description": "One loading engine serves page, inline, modal, button and receipt without layout or semantic changes",
+      "setup": "Real LoadingMark, BrandLoader and MessageReceipt with isolated theme/clock; existing caller sizes/styles/accessibility props. Shared iPhone/iPad/Android RN source.",
+      "action": "Render small/large/numeric sizes, custom outer styles, localized progress labels, stopped indicators and labeled page wrapper; inspect the real pending receipt slot and startup wrapper.",
+      "expected": "BrandLoader delegates to the same engine; existing color/label/size/style use remains compatible. Clear stable progress role/busy label with decorative panes hidden. Receipt remains in its14pt slot and never changes queue, expiry, success or send behavior. Inverse buttons retain legible contrast. Determinate upload progress and agent working-ring state keep their own meaning.",
+      "planned_files": [
+        "mobileapp/src/ui/LoadingMark.motion.test.tsx"
+      ]
+    },
+    {
+      "id": "BLP-004",
+      "layer": "L1",
+      "description": "Every App-owned indeterminate loading view uses the shared brand engine",
+      "setup": "Read tracked RN application sources through a TypeScript import AST in a Jest architecture guard; no file mutation. Test/harness files excluded; system launch and native pull gesture controls keep platform ownership.",
+      "action": "Check named and namespace ActivityIndicator imports from react-native and wrapper wiring; cover all currently inventoried screens/ui/trace and App entry.",
+      "expected": "No App-owned direct ActivityIndicator is left after migration; BrandLoader and prior LoadingMark callers share one implementation. The guard is for the architectural requirement, not a native visual pass or a claim that OS-provided launch/picker/refresh gesture animation was rewritten.",
+      "planned_files": [
+        "mobileapp/src/ui/LoadingUsage.test.ts"
+      ]
+    },
+    {
+      "id": "BLP-005",
+      "layer": "L2",
+      "description": "Startup retains readable copy, brand proportions and footer space with the new shared pane cycle",
+      "setup": "Existing real Splash tests, both effective palettes, safe area and larger feedback footer; prior startup assertions reviewed before test edits.",
+      "action": "Retain contrast, safe-area, scrolling/footer-reservation and native-artwork assertions, and migrate only the obsolete breathing test wording to the shared cycle.",
+      "expected": "Original4.5text contrast, wordmark/launch artwork proportions, larger-footer clearance and immediate readiness semantics remain; no artificial minimum launch duration. Existing Reduce Motion and stale-query assertions stay meaningful and are not relaxed to obtain green.",
+      "planned_files": [
+        "mobileapp/src/ui/Splash.test.tsx"
+      ]
+    }
+  ],
+  "seal": "a4ca2250c0eb0fcba3a99e6a38974286cc5e2ae2a17d98a5beae096a7ef48615"
+}
