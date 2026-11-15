@@ -591,6 +591,16 @@ export function uploadStalled(now: number, lastMove: number, bodySent: boolean):
 // another tap. A 413 is the server or whatever proxies for it saying so.
 export type UploadFailure = 'too-large' | 'failed';
 export type UploadResult = {path: string} | {error: UploadFailure};
+export type UploadState = {
+  phase: 'preparing' | 'uploading' | 'processing' | 'complete';
+  fraction?: number;
+  loaded?: number;
+  total?: number;
+};
+export type UploadStateCallback = (state: UploadState) => void;
+// Optional phase observation travels with the existing progress callback, preserving
+// callers that accept only byte fractions and the upload method's argument order.
+export type UploadProgressCallback = ((fraction: number) => void) & {onState?: UploadStateCallback};
 
 // uploadFailureFor maps a status onto the reason shown to the person.
 export function uploadFailureFor(status: number): UploadFailure {
@@ -1233,20 +1243,23 @@ export class GtmuxClient {
     uri: string,
     name: string,
     type: string,
-    onProgress?: (fraction: number) => void,
+    onProgress?: UploadProgressCallback,
     pane?: string,
   ): Promise<UploadResult> {
     return new Promise(resolve => {
+      const onState = onProgress?.onState;
       const form = new FormData();
       form.append('file', {uri, name, type} as any);
       const xhr = new XMLHttpRequest();
       let settled = false;
       let lastMove = Date.now();
       let bodySent = false;
+      let measured: Pick<UploadState, 'fraction' | 'loaded' | 'total'> = {};
       const finish = (v: UploadResult) => {
         if (settled) return;
         settled = true;
         clearInterval(watch);
+        if ('path' in v) onState?.({phase: 'complete', fraction: 1});
         resolve(v);
       };
       const watch = setInterval(() => {
@@ -1263,14 +1276,22 @@ export class GtmuxClient {
       for (const [k, v] of Object.entries(this.h())) xhr.setRequestHeader(k, v);
       if (xhr.upload) {
         xhr.upload.onprogress = e => {
+          if (settled || bodySent) return;
           lastMove = Date.now();
-          if (onProgress && e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total);
+          if (e.lengthComputable && Number.isFinite(e.total) && e.total > 0 && Number.isFinite(e.loaded) && e.loaded >= 0) {
+            const fraction = Math.max(measured.fraction ?? 0, Math.min(1, e.loaded / e.total));
+            measured = {fraction, loaded: Math.min(e.total, e.loaded), total: e.total};
+            onProgress?.(fraction);
+          }
+          onState?.({...measured, phase: measured.fraction === 1 ? 'processing' : 'uploading'});
         };
         // The body is out; what remains is the Mac reading and saving it, which sends
         // no progress events, so the watchdog switches to its longer window.
         xhr.upload.onload = () => {
+          if (settled) return;
           bodySent = true;
           lastMove = Date.now();
+          onState?.({...measured, phase: 'processing'});
         };
       }
       xhr.onload = () => {
@@ -1289,6 +1310,7 @@ export class GtmuxClient {
       xhr.onerror = () => finish({error: 'failed'});
       xhr.ontimeout = () => finish({error: 'failed'});
       xhr.onabort = () => finish({error: 'failed'});
+      onState?.({phase: 'uploading'});
       xhr.send(form);
     });
   }

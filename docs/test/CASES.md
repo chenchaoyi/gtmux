@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1270 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1274 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3800 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2325 | [L2.csv](cases/L2.csv) |
+| L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 2335 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 141 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -268,6 +268,13 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | KRDS-001 | History API and extra ordinary title words remain current; exact supported titles with clear descriptors can fold, headings inside fences/quotes remain current; ordered source bytes remain identical |
 | KRDS-002 | Historical subheadings can stay in history; same/higher following headings cause conservative whole-body current fallback, retaining original order and all text. Non-heading code/quote lookalikes do not end history |
 | KRDS-003 | Hidden comment markers/content never become visible. Conservative whole-body fallback retains the exact source. Ordinary supported split still retains guidance and history; existing reference-definition fallback stays unchanged |
+| PPR-001 | No upload/send/history or clearing while read is pending; visible disabled Send and concise reading feedback. Only one picker request; all four photos remain ordered and a later explicit Send uploads each exactly once before the original caption/paths are submitted. No automatic resend. |
+| PPR-002 | Full lifecycle finally releases ref/state, pending selection blocks send and reentry; after settlement a new selection/send is possible. Caption and existing images remain; no automatic upload/send, no spurious photo editor. Existing unmount late-result guard remains. |
+| PPR-003 | Message contains only that send snapshot in order; later file remains staged for its own explicit Send. No asset deletion or silent removal of unsent IDs. Existing upload failure preservation stays unchanged. |
+| MPU-001 | System picker permits multiple selection. Multiple returned photos stage in order with no automatic editor or upload; editing replaces only the chosen attachment and cancellation preserves it. One send uploads ordered staged images before submitting their paths once. Existing single-photo editor-first behavior stays pinned by unchanged tests. |
+| MPU-002 | No draft or staged attachment is removed, uploaded or submitted. Invalid assets do not create thumbnails. An unmounted scope cannot open an editor or stage returned photos. |
+| MPU-003 | Only measured finite positive totals yield fractions. Unknown totals stay indeterminate. Body completion is processing, never successful save; only valid successful response completes. Legacy fraction callback remains byte-events-only. Settled callbacks are ignored; failure preserves failure result and existing watchdog bounds. |
+| MPU-004 | A compact status row names current file/count, shows measured progress or preparation/saving copy, uses a smooth bar limited to observed bytes and obeys Reduce Motion. Waiting files do not show fake zero percentages. Sending is gated and failure leaves caption and all images. No submit occurs until every upload succeeds. |
 | MSD-006 | No pending request is reused or claimed for a changed target; bridge rechecks prepared identity before RPC mutation. An already accepted historical receipt remains a no-op; unchanged pending preserves its ID and unknown outcomes never replay. |
 | MSD-007 | HQ uses sendResult and a stable ID reused on explicit retry; exposes actual receipt, not endless Sending; old identical history cannot clear new echo. Failed reason retained, no automatic retry or real input. |
 | MSD-008 | Only corresponding current echo receives receipt; old failure cannot erase newer success. Old results/retry cannot move to a rotated HQ/client/pane; newer control-key screen remains. Confirmation retires only the matching new turn and accepted echo is not resurrected. |
