@@ -347,6 +347,9 @@ export const Composer = React.memo(function Composer({
   // failure so nothing is lost and the user can retry.
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [sending, setSending] = useState(false);
+  const sendInFlight = useRef(false);
+  const photoReadInFlight = useRef(false);
+  const [readingPhotos, setReadingPhotos] = useState(false);
   const [progress, setProgress] = useState<Record<string, UploadState>>({});
   const [sendError, setSendError] = useState<string | null>(null);
   const attachId = useRef(0);
@@ -437,27 +440,33 @@ export const Composer = React.memo(function Composer({
     // clear a local draft when Return/captured callbacks are invoked.
     if (!enabled || !onSend) return;
     if (terminalKeys.isBlocked()) return;
-    if (sending) return;
+    if (sending || sendInFlight.current || photoReadInFlight.current) return;
     const body = text.trim();
     if (!body && attachments.length === 0) return;
     const now = Date.now();
     if (dropDoubleSubmit(fromSubmit, now, lastSubmit.current)) return;
     if (fromSubmit) lastSubmit.current = now;
+    const sentAttachmentIDs = new Set(attachments.map(a => a.id));
 
     let paths: string[] = [];
     if (attachments.length > 0) {
       if (!onUpload) return;
+      sendInFlight.current = true;
       setSending(true);
       setSendError(null);
       setProgress({});
-      // uploadAll NEVER throws (a rejected upload maps to null), so setSending(false)
-      // below ALWAYS runs. `sending` disables the send button + gates sendText, so if it
-      // ever stuck true the box would wedge forever — this is the robustness fix.
-      const uploaded = await uploadAll(attachments, onUpload, (id, f) =>
-        setProgress(p => ({...p, [id]: {phase: f >= 1 ? 'processing' : 'uploading', fraction: f}})),
-        (id, state) => setProgress(p => ({...p, [id]: state})),
-      );
-      setSending(false);
+      // Keep captured callbacks out of the upload lane too; state alone updates
+      // after render. Always release both guards when the upload settles.
+      let uploaded: Awaited<ReturnType<typeof uploadAll>>;
+      try {
+        uploaded = await uploadAll(attachments, onUpload, (id, f) =>
+          setProgress(p => ({...p, [id]: {phase: f >= 1 ? 'processing' : 'uploading', fraction: f}})),
+          (id, state) => setProgress(p => ({...p, [id]: state})),
+        );
+      } finally {
+        sendInFlight.current = false;
+        setSending(false);
+      }
       if ('error' in uploaded) {
         setSendError(uploadFailureText(uploaded.error, lang === 'zh'));
         return; // keep text + attachments staged for a retry
@@ -477,7 +486,7 @@ export const Composer = React.memo(function Composer({
       });
     }
     setText('');
-    setAttachments([]);
+    setAttachments(current => current.filter(a => !sentAttachmentIDs.has(a.id)));
     setProgress({});
     setSendError(null);
     // Collapse the keyboard once the message is on its way — after a send you're
@@ -534,6 +543,9 @@ export const Composer = React.memo(function Composer({
     if (a.uri) setMarkupUri(a.uri); // markupFor stays null — onDone STAGES it
   };
   const pickPhoto = async () => {
+    if (!mounted.current || photoReadInFlight.current || sendInFlight.current || sending) return;
+    photoReadInFlight.current = true;
+    setReadingPhotos(true);
     try {
       const r = await launchImageLibrary({mediaType: 'photo', quality: 0.8, selectionLimit: 0});
       if (!mounted.current || r.didCancel) return;
@@ -551,6 +563,9 @@ export const Composer = React.memo(function Composer({
       }
     } catch {
       // cancelled or unsupported — ignore.
+    } finally {
+      photoReadInFlight.current = false;
+      if (mounted.current) setReadingPhotos(false);
     }
   };
   const takePhoto = async () => {
@@ -622,7 +637,7 @@ export const Composer = React.memo(function Composer({
   // key row rides up docked to the keyboard (inputAccessoryViewID). Staged
   // attachments show as a thumbnail strip ABOVE the input (the field wraps below),
   // with one compact upload-status row during send and a × to remove before it.
-  const canSend = !keyBlocked && (text.trim().length > 0 || attachments.length > 0);
+  const canSend = !keyBlocked && !readingPhotos && (text.trim().length > 0 || attachments.length > 0);
   const renderInputRow = () => (
     <View>
       {attachments.length > 0 && (
@@ -669,6 +684,7 @@ export const Composer = React.memo(function Composer({
           ))}
         </ScrollView>
       )}
+      {readingPhotos && <Text testID="composer-photo-reading" accessibilityLiveRegion="polite" style={{color: pal.fg2, fontSize: 12, lineHeight: 18, marginHorizontal: 12, marginBottom: 4}}>{lang === 'zh' ? '正在读取照片…' : 'Reading photos…'}</Text>}
       {sending && <AttachmentUploadStatus attachments={attachments} states={progress} pal={pal} lang={lang} />}
       {sendError && <Text style={[styles.sendError, {color: StatusColor.waiting}]}>{sendError}</Text>}
       {draftOnly && !enabled && <Text testID="composer-draft-only" style={{color: pal.fg2, fontSize: 12, lineHeight: 18, paddingHorizontal: 16, paddingBottom: 6}}>
@@ -678,8 +694,8 @@ export const Composer = React.memo(function Composer({
         <TouchableOpacity
           testID={TestIds.composer.attach}
           accessibilityLabel={lang === 'zh' ? '添加附件' : 'Add attachment'}
-          onPress={() => setAttachOpen(true)}
-          disabled={!enabled || sending || !onUpload}
+          onPress={() => {if (!photoReadInFlight.current && !sendInFlight.current) setAttachOpen(true);}}
+          disabled={!enabled || sending || readingPhotos || !onUpload}
           style={[styles.attach, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
           <Text allowFontScaling={false} style={[styles.attachText, {color: pal.fg2}]}>+</Text>
         </TouchableOpacity>

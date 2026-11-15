@@ -3097,5 +3097,17 @@
       "Reduce Motion presents measured values without starting progress animation",
       "progress animation only targets the latest measured byte fraction"
     ]
+  },
+  "mobileapp/src/ui/Composer.photoSelection.test.tsx": {
+    "cases": [
+      "PPR-001",
+      "PPR-002",
+      "PPR-003"
+    ],
+    "selectors": [
+      "pending photo reading blocks button Return and captured callbacks until all photos stage",
+      "cancel error and rejection release photo reading while preserving the existing draft",
+      "a successful send removes only its snapshot and preserves a file returned during upload"
+    ]
   }
 }

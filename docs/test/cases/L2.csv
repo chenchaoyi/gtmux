@@ -1496,6 +1496,9 @@ MAP-291296b7e5bc,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto
 MAP-88c2a76e87c4,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto.test.tsx,68,reviewed-selector,cancelling or failing a later selection preserves caption and staged batch,False,"MPU-001,MPU-002,MPU-004"
 MAP-0e806a0076e7,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto.test.tsx,80,reviewed-selector,a late picker result after unmount cannot stage or submit images,False,"MPU-001,MPU-002,MPU-004"
 MAP-948f3ef4f0e9,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto.test.tsx,95,reviewed-selector,upload phases keep the batch and caption on failure until an explicit successful retry,False,"MPU-001,MPU-002,MPU-004"
+MAP-514d6a154aac,L2,reviewed implementation,mobileapp/src/ui/Composer.photoSelection.test.tsx,38,reviewed-selector,pending photo reading blocks button Return and captured callbacks until all photos stage,False,"PPR-001,PPR-002,PPR-003"
+MAP-dac1fa753f4c,L2,reviewed implementation,mobileapp/src/ui/Composer.photoSelection.test.tsx,64,reviewed-selector,cancel error and rejection release photo reading while preserving the existing draft,False,"PPR-001,PPR-002,PPR-003"
+MAP-c0f8e3373076,L2,reviewed implementation,mobileapp/src/ui/Composer.photoSelection.test.tsx,81,reviewed-selector,a successful send removes only its snapshot and preserves a file returned during upload,False,"PPR-001,PPR-002,PPR-003"
 LEG-c2d7f3008dfe,L2,RN / mobile harness,mobileapp/src/ui/Composer.prefill.test.tsx,29,it,rests as the key row with no field,False,legacy-not-retrospectively-reviewed
 LEG-9940bd4cbec0,L2,RN / mobile harness,mobileapp/src/ui/Composer.prefill.test.tsx,34,it,opens the field and fills it when a hand-off arrives,False,legacy-not-retrospectively-reviewed
 LEG-cf0c8df37025,L2,RN / mobile harness,mobileapp/src/ui/Composer.prefill.test.tsx,44,it,opens the field when mounted with one already,False,legacy-not-retrospectively-reviewed

@@ -2895,6 +2895,13 @@ The shared phone/iPad Composer SHALL permit multiple photos in the system librar
 - **THEN** all valid photos stage in picker order without an automatic editor queue, and only the second image is replaced
 - **AND** no upload or message occurs until an authorized explicit Send
 
+#### Scenario: The library disappears before photo reading finishes
+
+- **WHEN** a native photo selection is still reading after the picker dismisses
+- **THEN** the composer shows Reading photos and blocks Send, Return, captured send callbacks and a second photo request until that read settles
+- **AND** cancellation, errors and completion release the guard without discarding the caption or existing attachments, uploading or submitting automatically
+- **AND** a successful explicit send clears only its captured attachment IDs; later returned attachments remain staged
+
 ### Requirement: Upload feedback distinguishes measured transfer from saving
 
 During staged attachment upload, the shared Composer SHALL show one compact status row with the active filename and batch position. Preparing, uploading and server processing SHALL be distinguishable. A progress bar MAY interpolate smoothly toward the measured fraction but SHALL NOT invent transfer progress or completion, and SHALL honor Reduce Motion. Unknown totals SHALL remain indeterminate. Body completion SHALL mean processing, not a successful save; only a valid successful response SHALL complete a file. Settled transports SHALL ignore late progress events. Failure SHALL preserve the caption and all staged attachments without automatic submission. Existing input, target and send guards SHALL remain.
