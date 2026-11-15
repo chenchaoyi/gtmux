@@ -1,426 +1,52 @@
 {
-  "mobileapp/e2e/android/journey.test.ts": {
+  "internal/agentclient/expected_target_test.go": {
     "cases": [
-      "CT-ANDROID-POLICY",
-      "CT-TIMING"
+      "ASC-004"
     ],
     "selectors": [
-      "full Android journey retains",
-      "setup failure blocks",
-      "first assertion and disconnect causes",
-      "an out of order selected check",
-      "timing records setup action"
+      "TestASC004ExpectedHarnessIdentityRefusesBeforePreparingInput"
     ]
   },
-  "mobileapp/src/ui/SenderAvatar.test.tsx": {
+  "internal/agentclient/pending_retry_lifetime_test.go": {
     "cases": [
-      "CAR-001"
+      "MSD-011"
     ],
     "selectors": [
-      "CAR-001"
+      "TestMSD011DurablePendingKeepsOneIdentityAcrossRetryAndPrune",
+      "TestMSD011PrunedOrReplacedNativePendingCannotRegainAuthority"
     ]
   },
-  "mobileapp/src/screens/attachmentEchoReconciliation.test.tsx": {
+  "internal/agentclient/pending_target_test.go": {
     "cases": [
-      "AEC-002"
+      "MSD-006"
     ],
     "selectors": [
-      "AEC-002 %s retires image echo in its first recorded commit and ignores late receipt",
-      "AEC-002 %s keeps an old identical occurrence pending but retires a new one",
-      "AEC-002 %s retires plain-text echo without one duplicate committed frame"
+      "TestMSD006PendingTargetIdentity"
     ]
   },
-  "internal/knowledge/local_durability_test.go": {
+  "internal/agents/codex_presentation_config_test.go": {
     "cases": [
-      "KBLOCAL-DURABILITY-RETRY"
+      "SID-001"
     ],
     "selectors": [
-      "TestLocalDurabilityRetryMustReachWriterBeforeLanding"
+      "TestSID001PresentationConfigKeepsManagedIdentity",
+      "TestSID001HelpStillRecognizesCommandsAfterDisplayConfig"
     ]
   },
-  "internal/knowledge/dreamrun_test.go": {
-    "cases": [
-      "KBDREAM-JOURNAL",
-      "KBDREAM-GUARDS",
-      "KBDREAM-BUDGET"
-    ],
-    "selectors": [
-      "TestDreamResumeRetainsCompletedItemsAndModelHistory",
-      "TestDreamConcurrentResumeAndSourceChanges",
-      "TestDreamBudgetsPrivacyAndCorruptionStopBeforeCalls",
-      "TestDreamPrivateReclassificationAndInvalidResults",
-      "TestDreamModelProposalsRemainInertAndStatusIsReadOnly",
-      "TestDreamSharedLifetimeBudgetAndUnresolvedRun",
-      "TestDreamExplicitDeferRetainsFailedAttempts",
-      "TestDreamRejectsInventedEvidenceAndJournalIdentity"
-    ]
-  },
-  "internal/codexrpc/screenshot_workflow_test.go": {
-    "cases": [
-      "SCW-005"
-    ],
-    "selectors": [
-      "TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval"
-    ]
-  },
-  "internal/codexbridge/daemon_readiness_test.go": {
-    "cases": [
-      "CFR-007"
-    ],
-    "selectors": [
-      "TestCFR007ActualAdmissionDialKeepsCancellationAndDeadlineReasons"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ObservedIdentityTests.swift": {
-    "cases": [
-      "SID-008"
-    ],
-    "selectors": [
-      "testSID008HistoryNeverPopulatesCurrentIdentity"
-    ]
-  },
-  "internal/state/privatewrite_test.go": {
-    "cases": [
-      "KBCARRIER-ATOMIC"
-    ],
-    "selectors": [
-      "TestPrivateWritePrePublicationFailurePreservesOriginal"
-    ]
-  },
-  "mobileapp/src/ui/AgentStateDuration.test.tsx": {
-    "cases": [
-      "CSR-004"
-    ],
-    "selectors": [
-      "CSR-004 real decoded rows"
-    ]
-  },
-  "tests/web/behavior-contract.test.cjs": {
-    "cases": [
-      "CP-001",
-      "CP-002",
-      "CP-003",
-      "CP-004"
-    ],
-    "selectors": [
-      "CP-001 shared rendered Trace",
-      "CP-002 CP-003 CP-004 shared HQ"
-    ]
-  },
-  "internal/resume/frontend_heartbeat_context_test.go": {
-    "cases": [
-      "CBA-006"
-    ],
-    "selectors": [
-      "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
-      "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
-      "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
-    ]
-  },
-  "internal/app/terminalkeys_pty_test.go": {
-    "cases": [
-      "APPFIX-PTY-COVERAGE"
-    ],
-    "selectors": [
-      "TestTerminalKeyRawPTY"
-    ]
-  },
-  "mobileapp/src/screens/RestoreSessionsSheet.test.tsx": {
-    "cases": [
-      "RSR-007"
-    ],
-    "selectors": [
-      "preview is not a restore; duplicate clicks start one persisted request and reopening only reads it",
-      "response loss retry reuses the exact request and never changes to another transport",
-      "host change during pending local persistence cannot post to either target",
-      "late old host preview cannot replace the new server result; guest never reads or starts",
-      "closed sheet stops polling and partial results remain visibly partial",
-      "local persistence failure prevents POST; stale preview refresh discards only an explicitly refused request"
-    ]
-  },
-  "internal/server/web/activity-action-facts.test.cjs": {
-    "cases": [
-      "ASA-004",
-      "ASA-005"
-    ],
-    "selectors": [
-      "ASA004 browser Chat and Trace preserve factual action labels and one call per record",
-      "ASA005 browser fallback ignores contradictory facts without guessing scripts or changing raw input"
-    ]
-  },
-  "mobileapp/e2e/capture/hq-header-shot.test.ts": {
-    "cases": [
-      "DG-001"
-    ],
-    "selectors": [
-      "gated("
-    ]
-  },
-  "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
-    "cases": [
-      "CAR-004"
-    ],
-    "selectors": [
-      "CAR-004"
-    ]
-  },
-  "mobileapp/e2e/fake-serve/server.ts": {
+  "internal/app/client_contract_test.go": {
     "cases": [
       "CT-HTTP"
     ],
     "selectors": [
-      "startFake"
+      "TestClientHTTPContracts"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift": {
+  "internal/app/conversation_read_test.go": {
     "cases": [
-      "SCW-003"
+      "CAS-003"
     ],
     "selectors": [
-      "testStatusLineSaysWhatHappened",
-      "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
-      "testRefusedWaitingSaysWhetherTheTextWasPasted"
-    ]
-  },
-  "mobileapp/src/ui/ParticipantProfileModal.test.tsx": {
-    "cases": [
-      "CRX-005"
-    ],
-    "selectors": [
-      "message facts stay historical while a same-session launch chain loads on demand",
-      "a tmux message can verify its chain when the radar row has no session id",
-      "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane’s different current runtime",
-      "a current profile reuses its already-read chain and distinguishes an empty record"
-    ]
-  },
-  "mobileapp/e2e/__tests__/hq-header-shot.test.ts": {
-    "cases": [
-      "DG-001"
-    ],
-    "removed": true,
-    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
-  },
-  "mobileapp/src/screens/pendingChatEcho.test.ts": {
-    "cases": [
-      "CAR-004"
-    ],
-    "selectors": [
-      "CAR-004"
-    ]
-  },
-  "internal/knowledge/dream_test.go": {
-    "cases": [
-      "KBMEM-DREAM"
-    ],
-    "selectors": [
-      "TestDreamBudgetUnknownExhaustedAndFingerprint",
-      "TestDreamPacketExcludesPrivateAndRejectsMissingIDs"
-    ]
-  },
-  "mobileapp/src/api/client.restore.test.ts": {
-    "cases": [
-      "RSR-006"
-    ],
-    "selectors": [
-      "preview and status are read only; start carries exact stable ID and revision",
-      "normal 15s timeout is uncertain and never retries a mutation",
-      "unsupported, malformed, foreign ID and typed conflicts never become success"
-    ]
-  },
-  "internal/resume/frontend_index_recovery_test.go": {
-    "cases": [
-      "DCA-004",
-      "DCA-005",
-      "DCA-006"
-    ],
-    "selectors": [
-      "TestDCA004CurrentProducerRecoversExpiredOwnMissingIndex",
-      "TestDCA005RecoveryRejectsConflictAndUnknownEvidence",
-      "TestDCA005OwnerReplacementDuringStrictVerification",
-      "TestDCA006RecoveryHonorsLeaseAndCancellation"
-    ]
-  },
-  "internal/codexterminal/readiness_test.go": {
-    "cases": [
-      "CFR-001"
-    ],
-    "removed": true,
-    "reason": "Retire obsolete three-PID scope expectation after Q independent review. Preserve all still-valid strict identity, stdin, birth, pane, ambiguity and cancellation assertions in readiness_review_test.go under prior-reviewed CFR-005; actual full-tree scope supersedes the former optimization. Original design and rejection remain in Git history; no checks waived."
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotPreviewAspectTests.swift": {
-    "cases": [
-      "ASC-012"
-    ],
-    "selectors": [
-      "testASC012OddAspectImageAndPreviewCoordinatesCoverBothAxes",
-      "testASC012CroppedSourceRegionRetainsOpaquePreviewCoverageAndTransforms"
-    ]
-  },
-  "internal/app/screenshot_deadline_test.go": {
-    "cases": [
-      "ASC-007"
-    ],
-    "selectors": [
-      "TestASC007TargetReadStopsAtCancellationBeforeMintOrSend"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift": {
-    "cases": [
-      "MC-HQ-CHOICE",
-      "MC-HQ-WINDOW",
-      "MC-HQ-READ"
-    ],
-    "selectors": [
-      "class ChoiceFixture",
-      "enum HQChoiceTestSupport"
-    ]
-  },
-  "internal/radar/codex_foreign_marker_gather_test.go": {
-    "cases": [
-      "CORE-CODEX-FOREIGN-GATHER"
-    ],
-    "selectors": [
-      "TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity"
-    ]
-  },
-  "mobileapp/e2e/android/run.cjs": {
-    "cases": [
-      "CT-ANDROID",
-      "CT-TIMING",
-      "ACP-003",
-      "DTV-006"
-    ],
-    "selectors": [
-      "async function check",
-      "async function run",
-      "await check('21-camera-permission-denial'"
-    ]
-  },
-  "internal/app/relay_sender_contract_test.go": {
-    "cases": [
-      "HRS-003"
-    ],
-    "selectors": [
-      "TestHRS003ReceiptAwareSharedTranscript",
-      "TestHRS003EarlierPagesKeepFirstAttribution"
-    ]
-  },
-  "mobileapp/src/ui/ChatView.observed.test.tsx": {
-    "cases": [
-      "SID-006"
-    ],
-    "selectors": [
-      "SID006 last-known history is explicitly read only in both languages"
-    ]
-  },
-  "internal/app/send_association_test.go": {
-    "cases": [
-      "CFL-004"
-    ],
-    "selectors": [
-      "TestCFL004CLIAssociationRefusalDoesNotInventHumanDecision",
-      "TestCFL004PhoneSendReportsActualMissingAssociationWithoutInput"
-    ]
-  },
-  "internal/app/serverstart_test.go": {
-    "cases": [
-      "APPFIX-BOOT-ISOLATION"
-    ],
-    "selectors": [
-      "TestStartBootServerViaLaunchd",
-      "TestStartBootServerDirectByDefault",
-      "TestStartBootServerFallsBackWhenLaunchdFails"
-    ]
-  },
-  "internal/knowledge/dreamallowance_test.go": {
-    "cases": [
-      "KBDREAM-ALLOWANCE"
-    ],
-    "selectors": [
-      "TestDreamAllowancePreservesProgressCostsAndIdempotency",
-      "TestDreamAllowanceRejectsInvalidActiveAndRetryBypass"
-    ]
-  },
-  "mobileapp/e2e/setup/global-setup-manual.ts": {
-    "cases": [
-      "DG-004"
-    ],
-    "selectors": [
-      "await setupManual(process.env, verifySendTarget, globalSetup)"
-    ]
-  },
-  "mobileapp/src/screens/KnowledgeSheet.reading.test.tsx": {
-    "cases": [
-      "KRD-002",
-      "KRD-003",
-      "KRD-005"
-    ],
-    "selectors": [
-      "reading hierarchy keeps original guidance first in ${layout} ${theme}",
-      "another entry resets disclosures and resolves its actual language before reading",
-      "feedback opens only its existing draft while secondary landing retains the viewed revision",
-      "a delayed secondary action cannot reopen a form after the source scope changes",
-      "a captured submit callback cannot mutate after the user changes source scope",
-      "late entry A cannot replace entry B and wrong identities remain unavailable",
-      "whole-read timeout has immediate retry feedback and ignores the timed-out response",
-      "failed post-action refresh keeps readable content and never repeats the action",
-      "the real client forwards cancellation and the whole JSON-body read has a deadline",
-      "a completed old action cannot replace the newly selected entry",
-      "an entry without body content is distinct from a failed record read"
-    ]
-  },
-  "internal/dispatchbridge/trust_gate_test.go": {
-    "cases": [
-      "WTR-004"
-    ],
-    "selectors": [
-      "TestWTR004VisibleTrustNamesBlockerBeforePostStartTransport",
-      "TestWTR004NormalTransportStillRequiredAndHistoricalTrustIgnored"
-    ]
-  },
-  "internal/hq/rulesrefresh_inline_block_test.go": {
-    "cases": [
-      "HQR-011"
-    ],
-    "selectors": [
-      "TestHQR011InlineInSyncKnowledgeRemainsEffective"
-    ]
-  },
-  "mobileapp/ios/tests/DocumentHTMLChecks.swift": {
-    "cases": [
-      "ND-001"
-    ],
-    "selectors": [
-      "@main struct DocumentHTMLChecks"
-    ]
-  },
-  "mobileapp/src/ui/activity-semantics.test.ts": {
-    "cases": [
-      "AOP-001",
-      "AOP-002"
-    ],
-    "selectors": [
-      "AOP001 semantic actions override raw transport names without rewriting tool facts",
-      "AOP002 argv preview is bounded, cross-surface and leaves ambiguous input verbatim"
-    ]
-  },
-  "internal/app/relay_inbox_test.go": {
-    "cases": [
-      "RBL-003"
-    ],
-    "selectors": [
-      "TestRBL003CodexReplyBodyNeverEntersQueuedOrLegacyInput",
-      "TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot"
-    ]
-  },
-  "mobileapp/e2e/fake-serve/backend-contract.test.ts": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "RN fake / Go contract:",
-      "RN client consumes original ordinals"
+      "TestCAS003PaneAssociationIsNotAnEmptyConversation"
     ]
   },
   "internal/app/diff_context_test.go": {
@@ -443,146 +69,42 @@
       "TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary"
     ]
   },
-  "tests/web/reading-controls.test.cjs": {
+  "internal/app/dsh_transcript_test.go": {
     "cases": [
-      "DTV-003"
+      "CAS-003"
     ],
     "selectors": [
-      "Diff preserves recorded layout, syntax and original copy at ${width}"
+      "TestDSHTerminalRevocationDoesNotServeStalePaneHistory"
     ]
   },
-  "internal/hqnudge/rotation_priority_test.go": {
+  "internal/app/frontend_location_restore_test.go": {
     "cases": [
-      "HRW-004",
-      "HRW-005",
-      "HRW-008"
+      "CFL-001"
     ],
     "selectors": [
-      "TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority",
-      "TestHRW004RotationDoesNotSubmitOrRepairUserDraft",
-      "TestHRW004ExactOwnStrandedRepairPrecedesReservation",
-      "TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity",
-      "TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource"
+      "TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory"
     ]
   },
-  "mobileapp/src/ui/ToolReading.test.tsx": {
+  "internal/app/help_readability_test.go": {
     "cases": [
-      "TSV-001"
+      "CAS-006"
     ],
     "selectors": [
-      "TSV-001 command preview is direct, single-command outline absent, original input and result copy remain exact"
+      "TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible"
     ]
   },
-  "internal/hqworkspace/register_test.go": {
+  "internal/app/hqworkspace_cursor_test.go": {
     "cases": [
-      "HQP1-002"
+      "HQP1-F1-001",
+      "HQP1-F1-002",
+      "HQP1-F1-003",
+      "HQP1-F1-004"
     ],
     "selectors": [
-      "TestRegisterRetryAfterProgressPreservesCurrentMatterAndRejectsChangedIntent"
-    ]
-  },
-  "mobileapp/__tests__/chatPagingRecovery.test.tsx": {
-    "cases": [
-      "CPG-005",
-      "CPG-006",
-      "CPG-007"
-    ],
-    "selectors": [
-      "CPG005 %s explicit Retry recovers quiet history after authorized 304",
-      "CPG006 %s failed Retry stays denied and retires a pending conditional poll",
-      "CPG007 %s reader switch ignores a late recovery response"
-    ]
-  },
-  "internal/transcript/prompt_witness_test.go": {
-    "cases": [
-      "HRS-001"
-    ],
-    "selectors": [
-      "TestHRS001FirstPromptWitnesses"
-    ]
-  },
-  "mobileapp/src/screens/DetailSendReceipt.test.tsx": {
-    "cases": [
-      "MSD-005"
-    ],
-    "selectors": [
-      "MSD-005 %s releases failed sends and preserves explicit retry identity",
-      "MSD-005 old failure cannot replace the newer accepted send",
-      "MSD-005 a control key cannot leave a prior text receipt permanently Sending"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift": {
-    "cases": [
-      "ASC-010"
-    ],
-    "selectors": [
-      "testASC010CancelledCallbacksRemainBoundedUntilActualCompletion",
-      "testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors"
-    ]
-  },
-  "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "\"task\":\"t-9\""
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift": {
-    "cases": [
-      "MC-HQ-OVERVIEW-STATE",
-      "MC-HQ-OVERVIEW-BRIEF"
-    ],
-    "selectors": [
-      "testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows",
-      "testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime"
-    ]
-  },
-  "mobileapp/src/ui/commandArgv.test.ts": {
-    "cases": [
-      "ARGV-001"
-    ],
-    "selectors": [
-      "ARGV-001 shell argv",
-      "ARGV-001 cmd fields",
-      "ARGV-001 ordinary argv"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift": {
-    "cases": [
-      "MC-HQ-OVERVIEW-MORE"
-    ],
-    "selectors": [
-      "testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending",
-      "testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle"
-    ]
-  },
-  "mobileapp/e2e/capture/knowledge-shot.test.ts": {
-    "cases": [
-      "DG-001"
-    ],
-    "selectors": [
-      "gated("
-    ]
-  },
-  "internal/server/web/maximize-layout.test.cjs": {
-    "cases": [
-      "AOP-004",
-      "AOP-006"
-    ],
-    "selectors": [
-      "AOP004 Restore layout occupies the actual header before the title",
-      "AOP004 switching and restoring keep one control and restore prior dimensions",
-      "AOP004 maximized header reserves grid space and names its narrow icon",
-      "AOP006 real identity wrapper occupies the flexible maximized column"
-    ]
-  },
-  "mobileapp/src/trace/semantic-title.test.ts": {
-    "cases": [
-      "AOP-001"
-    ],
-    "selectors": [
-      "AOP001 Trace preserves every real call while labels follow normalized actions"
+      "TestPhase1CursorEmptyScanConcurrentAppend",
+      "TestPhase1CursorProspectiveActivation",
+      "TestPhase1CursorEmptyRetentionGap",
+      "TestPhase1CursorFilteredPageBoundary"
     ]
   },
   "internal/app/hqworkspace_reconcile_test.go": {
@@ -602,76 +124,95 @@
       "TestPhase1HQCanClaimDryRunAndCommit"
     ]
   },
-  "internal/screenshot/receipts_test.go": {
+  "internal/app/hqworkspace_stored_test.go": {
     "cases": [
-      "ASC-005"
+      "MC-HQ-READ"
     ],
     "selectors": [
-      "TestASC005ReceiptsNeverReplayUncertainOrChangedRequests",
-      "TestASC005ReceiptStoreRefusesCorruptionAndCapacity"
+      "TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched"
     ]
   },
-  "mobileapp/src/api/conversation.test.ts": {
+  "internal/app/hqworkspace_test.go": {
     "cases": [
-      "CAS-005"
+      "HQP1-007"
     ],
     "selectors": [
-      "CAS005 transcript rejects association and source failures instead of returning empty history"
+      "TestSpawnMatterValidationBeforeAnyLaunch"
     ]
   },
-  "internal/codexterminal/readiness_visible_ancestry_test.go": {
+  "internal/app/observed_conversation_test.go": {
     "cases": [
-      "CFR-010"
+      "SID-005"
     ],
     "selectors": [
-      "TestCFR010VisibleOutsideAncestryMustStayHard",
-      "TestCFR010VisibleCycleStaysHardWithMissingBridge"
+      "TestSID005ObservedReaderKeepsBoundedWindowAndExactCursor"
     ]
   },
-  "internal/server/web/observed_identity.test.cjs": {
+  "internal/app/phone_delivery_receipt_test.go": {
     "cases": [
-      "SID-007"
+      "MSD-002"
     ],
     "selectors": [
-      "SID007 focused and tile history cannot dispatch input or become an external row"
+      "TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection",
+      "TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift": {
+  "internal/app/recent_transcript_test.go": {
     "cases": [
-      "ASC-010"
+      "LCL-002"
     ],
     "selectors": [
-      "testASC010RealSocketDeadlineDisconnectAndStopCloseRequestsWithoutSDKCompletion",
-      "testASC010QuarantinedSDKDoesNotBlockCapabilitiesOrOversubscribeAfterHostRestart"
+      "TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault"
     ]
   },
-  "internal/knowledge/landing_revision_test.go": {
+  "internal/app/relay_inbox_test.go": {
     "cases": [
-      "KBCARRIER-REVISION"
+      "RBL-003"
     ],
     "selectors": [
-      "TestLandingRejectsStaleReceiptAtCommit",
-      "TestLandingSerializesCarrierAndReceiptWithReview",
-      "TestLandingCarrierFailureKeepsPendingAndRetryIsSafe",
-      "TestLandingManualRevisionAndLegacyHistory",
-      "TestLandingCLIRequiresViewedRevision"
+      "TestRBL003CodexReplyBodyNeverEntersQueuedOrLegacyInput",
+      "TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot"
     ]
   },
-  "internal/radar/codex_completed_marker_test.go": {
+  "internal/app/relay_sender_contract_test.go": {
     "cases": [
-      "CET-002",
-      "CET-003"
+      "HRS-003"
     ],
     "selectors": [
-      "TestGatherCompletedOwnTurnSurvivesLateActiveMarker"
+      "TestHRS003ReceiptAwareSharedTranscript",
+      "TestHRS003EarlierPagesKeepFirstAttribution"
     ]
   },
-  "internal/codexbridge/binding_heartbeat_context_test.go": {
+  "internal/app/relay_sender_test.go": {
     "cases": [
-      "CBA-006"
+      "HRS-002"
     ],
     "selectors": [
-      "TestCBA006ProductionFactoryHeartbeatRetainsConnectionContext"
+      "TestHRS002TrustedReceiptAndFirstSourceOnly"
+    ]
+  },
+  "internal/app/restore_remote_test.go": {
+    "cases": [
+      "RSR-003",
+      "RSR-004",
+      "RSR-005"
+    ],
+    "selectors": [
+      "TestRemotePreviewOnlyMissingAndBindsProducerInputs",
+      "TestRemoteWorkerRejectsStaleAndBusyBeforeMutating",
+      "TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate",
+      "TestRemotePaneGuardRechecksExactShellWithoutTouchingOthers",
+      "TestRestoreExecutionLeaseIsProcessOwnedAndFailsClosed",
+      "TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions",
+      "TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology"
+    ]
+  },
+  "internal/app/screenshot_deadline_test.go": {
+    "cases": [
+      "ASC-007"
+    ],
+    "selectors": [
+      "TestASC007TargetReadStopsAtCancellationBeforeMintOrSend"
     ]
   },
   "internal/app/screenshot_send_input_budget_test.go": {
@@ -682,37 +223,175 @@
       "TestASC009StalledNoteHasNoClaimOrSendAfterDeadline"
     ]
   },
-  "internal/server/observed_conversation_test.go": {
+  "internal/app/screenshot_send_test.go": {
     "cases": [
-      "SID-005"
+      "ASC-004",
+      "ASC-005"
     ],
     "selectors": [
-      "TestSID005OwnerOptInHistoryAndGuestFence",
-      "TestSID005SharedRosterOmitsHistoricalIdentifiers"
+      "TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance"
     ]
   },
-  "mobileapp/src/api/observed-history.test.ts": {
+  "internal/app/screenshot_test.go": {
     "cases": [
-      "SID-006"
+      "ASC-001",
+      "ASC-006"
     ],
     "selectors": [
-      "SID006 observed history stays separate from current session authority and survives 304"
+      "TestASC001ScreenshotCLIRefusesAmbiguousOrUnsupportedInput",
+      "TestASC006UnavailableNativeCapabilityIsTruthfulAndNonMutating"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift": {
+  "internal/app/send_association_test.go": {
     "cases": [
-      "ASC-013"
+      "CFL-004"
     ],
     "selectors": [
-      "testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn"
+      "TestCFL004CLIAssociationRefusalDoesNotInventHumanDecision",
+      "TestCFL004PhoneSendReportsActualMissingAssociationWithoutInput"
     ]
   },
-  "internal/app/frontend_location_restore_test.go": {
+  "internal/app/serve_energy_snapshot_test.go": {
     "cases": [
-      "CFL-001"
+      "PWR-003"
     ],
     "selectors": [
-      "TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory"
+      "TestPWR003SSEPublishesItsActualNativeObservationForREST"
+    ]
+  },
+  "internal/app/serverstart_test.go": {
+    "cases": [
+      "APPFIX-BOOT-ISOLATION"
+    ],
+    "selectors": [
+      "TestStartBootServerViaLaunchd",
+      "TestStartBootServerDirectByDefault",
+      "TestStartBootServerFallsBackWhenLaunchdFails"
+    ]
+  },
+  "internal/app/spawn_binding_test.go": {
+    "cases": [
+      "CAS-003"
+    ],
+    "selectors": [
+      "TestSpawnBindingRestoresTranscriptEndpoint"
+    ]
+  },
+  "internal/app/spawn_paneid_test.go": {
+    "cases": [
+      "APPFIX-NAME-STABILITY"
+    ],
+    "selectors": [
+      "TestNameDispatchWindowBackfillsPaneIDs"
+    ]
+  },
+  "internal/app/terminalkeys_pty_test.go": {
+    "cases": [
+      "APPFIX-PTY-COVERAGE"
+    ],
+    "selectors": [
+      "TestTerminalKeyRawPTY"
+    ]
+  },
+  "internal/codexbridge/analytics_identity_test.go": {
+    "cases": [
+      "SID-002"
+    ],
+    "selectors": [
+      "TestSID002AnalyticsLabelDoesNotEraseRootIdentity",
+      "TestSID002AnalyticsCannotPromoteChildOrGlobalTraffic"
+    ]
+  },
+  "internal/codexbridge/binding_first_root_retry_test.go": {
+    "cases": [
+      "CFL-006"
+    ],
+    "selectors": [
+      "TestCFL006InitialRootMetadataRetryCommitsThenResumesHeartbeats"
+    ]
+  },
+  "internal/codexbridge/binding_heartbeat_context_test.go": {
+    "cases": [
+      "CBA-006"
+    ],
+    "selectors": [
+      "TestCBA006ProductionFactoryHeartbeatRetainsConnectionContext"
+    ]
+  },
+  "internal/codexbridge/binding_lifetime_test.go": {
+    "cases": [
+      "CBA-005"
+    ],
+    "selectors": [
+      "TestCBA005RunDisconnectRetiresBeforeTransportDrain",
+      "TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry",
+      "TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed"
+    ]
+  },
+  "internal/codexbridge/binding_location_test.go": {
+    "cases": [
+      "CFL-005"
+    ],
+    "selectors": [
+      "TestCFL005HeartbeatFailuresAreBoundedAndRecoveryIsVisible",
+      "TestCFL005HeartbeatDiagnosticsNeverPrintArbitraryRefreshError",
+      "TestCFL005HeartbeatWindowCapsChangingCausesAndReportsRelocation"
+    ]
+  },
+  "internal/codexbridge/binding_publication_test.go": {
+    "cases": [
+      "CBA-004"
+    ],
+    "selectors": [
+      "TestCBA004PublicationAndAttachmentFinishBeforeNewEpochActivation",
+      "TestCBA004CanceledPublicationWaitNeverStartsBind",
+      "TestCBA004HeartbeatPublicationAlsoPrecedesNewEpoch",
+      "TestCBA004CancellationInsidePublicationPermitDoesNotRetry"
+    ]
+  },
+  "internal/codexbridge/binding_recovery_test.go": {
+    "cases": [
+      "CBA-002",
+      "CBA-003"
+    ],
+    "selectors": [
+      "TestCBA002TransientRootBindingRecoversFromTheActualObserver",
+      "TestCBA003NewSelectionAndEpochRetirePendingRecovery",
+      "TestCBA003PendingNewRootNeverRefreshesOldRoot",
+      "TestCBA003RetryPacingDeadlineAndHardRefusal",
+      "TestCBA003ReceiptFailureCommitsThenOnlyHeartbeats",
+      "TestCBA003ClosedConnectionCannotPublishLater",
+      "TestCBA003InitializeInvalidatesEarlierRootAndEarlierHomeResponse",
+      "TestCBA003NewVerifiedRootReplacesOnlyItsOwnPendingSelection",
+      "TestCBA003NoAttemptAtDeadlineOrAfterEpochChange",
+      "TestCBA003UnrelatedTrafficCannotReplacePendingRoot",
+      "TestCBA002SameRootReconnectRecoversWithoutRefreshingUnverifiedProof"
+    ]
+  },
+  "internal/codexbridge/connection_epoch_test.go": {
+    "cases": [
+      "CFR-004"
+    ],
+    "selectors": [
+      "TestCFR004OnlySuccessfulNewerConnectionChangesAuthority",
+      "TestCFR004UpgradeRetainsOnlyTheRemainingAdmissionBudget"
+    ]
+  },
+  "internal/codexbridge/daemon_readiness_test.go": {
+    "cases": [
+      "CFR-007"
+    ],
+    "selectors": [
+      "TestCFR007ActualAdmissionDialKeepsCancellationAndDeadlineReasons"
+    ]
+  },
+  "internal/codexbridge/readiness_test.go": {
+    "cases": [
+      "CFR-003"
+    ],
+    "selectors": [
+      "TestCFR003AdmissionRetriesOnlyTransientEvidence",
+      "TestCFR003LaunchPublicationAndCancellation"
     ]
   },
   "internal/codexbridge/trust_alias_policy_test.go": {
@@ -725,51 +404,198 @@
       "TestWTR005CanonicalObservationsAreStableAndBounded"
     ]
   },
-  "internal/agents/codex_presentation_config_test.go": {
+  "internal/codexbridge/trust_config_test.go": {
     "cases": [
-      "SID-001"
+      "WTR-002"
     ],
     "selectors": [
-      "TestSID001PresentationConfigKeepsManagedIdentity",
-      "TestSID001HelpStillRecognizesCommandsAfterDisplayConfig"
+      "TestWTR002AliasMirrorsOnlyExistingEffectiveRootTrustAndKeepsOtherFields",
+      "TestWTR002RefusalsLeaveOriginalFrameBytesUnchanged",
+      "TestWTR002CanceledAndLateProofCannotAuthorizeOrSpawnMoreReads",
+      "TestWTR002UnknownOrReusedRequestIDsNeverAccumulateUnboundedState"
     ]
   },
-  "internal/radar/codex_stale_state_test.go": {
+  "internal/codexbridge/trust_interop_test.go": {
     "cases": [
-      "CSR-001",
-      "CSR-002"
+      "WTR-003"
     ],
     "selectors": [
-      "TestCSR001StaleActiveCannotReviveReadyFinishedPane",
-      "TestCSR002SupersededActiveDoesNotDateCurrentWork"
+      "TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames",
+      "TestWTR003NativeTUIGateway"
     ]
   },
-  "internal/hq/rotation_attention_test.go": {
+  "internal/codexbridge/upgrade_admission_test.go": {
     "cases": [
-      "HRW-011"
+      "CFR-009"
     ],
     "selectors": [
-      "TestHRW011RotationFailureUsesNonWaitingAttention"
+      "TestCFR009PostUpgradeUsesActualCancellationBeforeDeadline"
     ]
   },
-  "mobileapp/e2e/android/permission.cjs": {
+  "internal/codexbridge/worktree_trust_test.go": {
     "cases": [
-      "ACP-001"
+      "WTR-001"
     ],
     "selectors": [
-      "async function denyCameraPermission("
+      "TestWTR001OnlyReciprocallyRegisteredWorktreesHaveStableEvidence",
+      "TestWTR001MalformedCopiedSymlinkAndUnsupportedMetadataCannotBorrowTrust"
     ]
   },
-  "internal/knowledge/review_alt_replay_test.go": {
+  "internal/codexrpc/coordination_input_test.go": {
     "cases": [
-      "KBAR-001",
-      "KBAR-002",
-      "KBAR-003"
+      "RBL-001"
     ],
     "selectors": [
-      "TestHistoricalReviewAltReadFallback",
-      "TestPreparedReviewAltReplay",
-      "TestReviewedAltReplayBoundaries"
+      "TestRBL001CoordinationOnlySteersExactActiveTurn",
+      "TestRBL001CoordinationGuardPreventsMutation"
+    ]
+  },
+  "internal/codexrpc/direct_user_input_test.go": {
+    "cases": [
+      "MSD-001"
+    ],
+    "selectors": [
+      "TestMSD001ExplicitUserInputSelectsExactActiveOrLoadedIdleTurn",
+      "TestMSD001LegacyQueueRemainsExplicitAndOnlyUnknownMethodCanFallback",
+      "TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite"
+    ]
+  },
+  "internal/codexrpc/idle_wake_test.go": {
+    "cases": [
+      "HRW-001"
+    ],
+    "selectors": [
+      "TestHRW001AutomaticWakeUsesFreshIdleWithoutQueueOrSteer"
+    ]
+  },
+  "internal/codexrpc/screenshot_input_test.go": {
+    "cases": [
+      "SSI-001"
+    ],
+    "selectors": [
+      "TestSSI001ActiveScreenshotUsesExactTurnAndMetadataOnly",
+      "TestSSI001OnlyExplicitUnsupportedOrIdleUsesLegacyQueue",
+      "TestSSI001RefusalsAndUncertaintyNeverMutateOrReplay",
+      "TestSSI001LastMomentHoldStopsActiveInput"
+    ]
+  },
+  "internal/codexrpc/screenshot_workflow_test.go": {
+    "cases": [
+      "SCW-005"
+    ],
+    "selectors": [
+      "TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval"
+    ]
+  },
+  "internal/codexterminal/readiness_missing_ancestor_test.go": {
+    "cases": [
+      "CFR-008"
+    ],
+    "selectors": [
+      "TestCFR008MissingAncestorIsUnavailableAndACompleteRecheckCanSucceed",
+      "TestCFR008ObservedConflictsStayHardWhenAnotherRequiredRowIsMissing"
+    ]
+  },
+  "internal/codexterminal/readiness_review_test.go": {
+    "cases": [
+      "CFR-005"
+    ],
+    "selectors": [
+      "TestCFR005ReadinessPreservesStrictTerminalProof",
+      "TestCFR005FullTreeLaunchScopeAndParentCancellation",
+      "TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses"
+    ]
+  },
+  "internal/codexterminal/readiness_test.go": {
+    "cases": [
+      "CFR-001"
+    ],
+    "removed": true,
+    "reason": "Retire obsolete three-PID scope expectation after Q independent review. Preserve all still-valid strict identity, stdin, birth, pane, ambiguity and cancellation assertions in readiness_review_test.go under prior-reviewed CFR-005; actual full-tree scope supersedes the former optimization. Original design and rejection remain in Git history; no checks waived."
+  },
+  "internal/codexterminal/readiness_visible_ancestry_test.go": {
+    "cases": [
+      "CFR-010"
+    ],
+    "selectors": [
+      "TestCFR010VisibleOutsideAncestryMustStayHard",
+      "TestCFR010VisibleCycleStaysHardWithMissingBridge"
+    ]
+  },
+  "internal/dispatchbridge/codex_location_test.go": {
+    "cases": [
+      "CFL-004"
+    ],
+    "selectors": [
+      "TestCFL004MissingAssociationNeverPreparesClaimsOrCallsNativeInput"
+    ]
+  },
+  "internal/dispatchbridge/direct_user_input_test.go": {
+    "cases": [
+      "MSD-002"
+    ],
+    "selectors": [
+      "TestMSD002DirectUserIngressPreservesReceiptAndNeverReplays"
+    ]
+  },
+  "internal/dispatchbridge/expected_target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004ExpectedCodexIdentityRefusesBeforePreparingInput"
+    ]
+  },
+  "internal/dispatchbridge/idle_wake_test.go": {
+    "cases": [
+      "HRW-002"
+    ],
+    "selectors": [
+      "TestHRW002ActualNativeWakePolicyKeepsTargetAndAtMostOnce"
+    ]
+  },
+  "internal/dispatchbridge/pending_retry_overlap_test.go": {
+    "cases": [
+      "MSD-011"
+    ],
+    "selectors": [
+      "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit"
+    ]
+  },
+  "internal/dispatchbridge/pending_retry_target_test.go": {
+    "cases": [
+      "MSD-006"
+    ],
+    "selectors": [
+      "TestMSD006PendingRetryCannotRetarget"
+    ]
+  },
+  "internal/dispatchbridge/screenshot_input_test.go": {
+    "cases": [
+      "SSI-002"
+    ],
+    "selectors": [
+      "TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity",
+      "TestSSI002OrdinaryTextKeepsExistingQueueSemantics"
+    ]
+  },
+  "internal/dispatchbridge/trust_gate_test.go": {
+    "cases": [
+      "WTR-004"
+    ],
+    "selectors": [
+      "TestWTR004VisibleTrustNamesBlockerBeforePostStartTransport",
+      "TestWTR004NormalTransportStillRequiredAndHistoricalTrustIgnored"
+    ]
+  },
+  "internal/ghostty/session_identity_test.go": {
+    "cases": [
+      "FOCUS-001",
+      "FOCUS-002"
+    ],
+    "selectors": [
+      "TestTitleMatchesSessionPreservesLeadingSymbols",
+      "TestSessionTabPrefersLiteralIdentity"
     ]
   },
   "internal/hook/codex_completed_turn_test.go": {
@@ -783,77 +609,137 @@
       "TestCodexContinuationPreservesActiveStart"
     ]
   },
-  "internal/transcript/activity_native_facts_test.go": {
+  "internal/hook/codex_manual_compact_test.go": {
     "cases": [
-      "ASA-006",
-      "ASA-007"
+      "CET-006"
     ],
     "selectors": [
-      "TestASA006NativeSkillSchema",
-      "TestASA007NativeQueriesSchema"
+      "TestCompletedCodexTurnPreservesManualCompactReceipt"
     ]
   },
-  "internal/server/diff_privacy_test.go": {
+  "internal/hq/dreamdiagnostics_test.go": {
     "cases": [
-      "DTV-005"
+      "KBDREAM-DIAGNOSTICS"
     ],
     "selectors": [
-      "TestDTV005WorktreePathIsOwnerOnlyAndPaneGateRunsFirst"
+      "TestDreamDiagnosticsClassifiedBoundedAndPrivate"
     ]
   },
-  "mobileapp/scripts/test-boundary.test.ts": {
+  "internal/hq/dreamexec_test.go": {
     "cases": [
-      "CT-SCOPE"
+      "KBDREAM-EXECUTOR"
     ],
     "selectors": [
-      "actual Metro resolver refuses"
+      "TestDreamCLIModelSelectionAndIsolation",
+      "TestDreamCLIParsesTerminalUsageAndRejectsTools",
+      "TestDreamCLIProcessCompletionCancellationAndBoundedOutput"
     ]
   },
-  "internal/agentclient/expected_target_test.go": {
+  "internal/hq/hq_test.go": {
     "cases": [
-      "ASC-004"
+      "STOR-002"
     ],
     "selectors": [
-      "TestASC004ExpectedHarnessIdentityRefusesBeforePreparingInput"
+      "TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords"
     ]
   },
-  "internal/transcript/activity_action_test.go": {
+  "internal/hq/identity_launch_test.go": {
     "cases": [
-      "ASA-001",
-      "ASA-002",
-      "ASA-003"
+      "SID-001"
     ],
     "selectors": [
-      "TestASA001RecordedSkillIdentityAcrossFiveAdapters",
-      "TestASA001ShellTextAndBareNamesDoNotInventSkillReads",
-      "TestASA002WebIntentUsesExplicitMethodsOrCompleteActions",
-      "TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput",
-      "TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands",
-      "TestASA003ActionMetadataParticipatesInRetentionBudget"
+      "TestSID001ActualHQRecipeRetainsManagedFrontend"
     ]
   },
-  "internal/dispatchbridge/codex_location_test.go": {
+  "internal/hq/knowledge_workflow_test.go": {
     "cases": [
-      "CFL-004"
+      "KBMEM-HQ-WORKFLOW"
     ],
     "selectors": [
-      "TestCFL004MissingAssociationNeverPreparesClaimsOrCallsNativeInput"
+      "TestKnowledgeWorkflowUsesBoundedReviewWithoutManufacturedReuse"
     ]
   },
-  "internal/resume/frontend_live_diagnostic_test.go": {
+  "internal/hq/knowledgeshim_test.go": {
     "cases": [
-      "HRW-013"
+      "KBCARRIER-COMPAT"
     ],
     "selectors": [
-      "TestHRW013LiveDiagnosticsDoNotChangeExistingAuthority"
+      "TestPromotionsStatus"
     ]
   },
-  "internal/knowledge/testdata/golden/cli/show.txt.golden": {
+  "internal/hq/rotation_admission_test.go": {
     "cases": [
-      "KBL-GOLDEN"
+      "HRW-007"
     ],
     "selectors": [
-      "task t-9"
+      "TestHRW007RegistrationSharesTheInputClaimLease"
+    ]
+  },
+  "internal/hq/rotation_attention_test.go": {
+    "cases": [
+      "HRW-011"
+    ],
+    "selectors": [
+      "TestHRW011RotationFailureUsesNonWaitingAttention"
+    ]
+  },
+  "internal/hq/rotation_identity_diagnostic_test.go": {
+    "cases": [
+      "HRW-012"
+    ],
+    "selectors": [
+      "TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity"
+    ],
+    "retired_selectors": [
+      {
+        "selector": "TestHRW012UnavailableIdentityIsNotChangedAndEscalatesOnce",
+        "reason": "HRW016 supersedes obsolete 60-second terminal-failure expectation; unknown/no-input, cause normalization, original timing and exact recovery safeguards migrated after sealed design19582eee."
+      },
+      {
+        "selector": "TestHRW012DiagnosticReasonChangesDoNotExtendDeadlineOrGrantReset",
+        "reason": "HRW016 supersedes obsolete 60-second terminal-failure expectation; unknown/no-input, cause normalization, original timing and exact recovery safeguards migrated after sealed design19582eee."
+      }
+    ]
+  },
+  "internal/hq/rotation_priority_test.go": {
+    "cases": [
+      "HRW-006"
+    ],
+    "selectors": [
+      "TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert"
+    ]
+  },
+  "internal/hq/rotation_warning_recovery_test.go": {
+    "cases": [
+      "HRW-016"
+    ],
+    "selectors": [
+      "TestHRW016WarningThenRecoveryKeepsRequestAndEveryGuard",
+      "TestHRW016RepeatedUnknownNeverExtendsExpiryOrRepeatsWarning",
+      "TestHRW016FailedPublicationIsNotAReasonToReplayOrBlockRecovery",
+      "TestHRW016UnknownSourcesAndReasonChangesKeepOriginalOwnership"
+    ]
+  },
+  "internal/hq/rulesrefresh_boundary_test.go": {
+    "cases": [
+      "HQR-007",
+      "HQR-008",
+      "HQR-009",
+      "HQR-010"
+    ],
+    "selectors": [
+      "TestHQR007StandaloneTokenCannotBeConsumedAsAValue",
+      "TestHQR008BackupKeepsReplacement",
+      "TestHQR009MixedRulesAreNotSilentlyRebuilt",
+      "TestHQR010HardlinkedLockCannotChangeExternalPermissions"
+    ]
+  },
+  "internal/hq/rulesrefresh_inline_block_test.go": {
+    "cases": [
+      "HQR-011"
+    ],
+    "selectors": [
+      "TestHQR011InlineInSyncKnowledgeRemainsEffective"
     ]
   },
   "internal/hq/rulesrefresh_test.go": {
@@ -874,632 +760,12 @@
       "TestHQR006RefreshPreservesBackupNamesAndFailsSafely"
     ]
   },
-  "internal/knowledge/distribute_test.go": {
+  "internal/hqinput/rotation_test.go": {
     "cases": [
-      "KBCARRIER-COMPAT"
+      "HRW-003"
     ],
     "selectors": [
-      "TestLandCarriesByAudience"
-    ],
-    "reason": "This revision changes the manual land caller only; unchanged storage-boundary assertions retain their existing historical design record in Git."
-  },
-  "mobileapp/src/ui/CommandArgvPanel.test.tsx": {
-    "cases": [
-      "ARGV-002"
-    ],
-    "selectors": [
-      "ARGV-002 shared readers"
-    ]
-  },
-  "mobileapp/src/screens/ServersScreen.test.tsx": {
-    "cases": [
-      "RSR-009"
-    ],
-    "selectors": [
-      "More is a menu: Disconnect only on the open Mac, Remove last"
-    ]
-  },
-  "internal/agentclient/pending_target_test.go": {
-    "cases": [
-      "MSD-006"
-    ],
-    "selectors": [
-      "TestMSD006PendingTargetIdentity"
-    ]
-  },
-  "mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx": {
-    "cases": [
-      "PCP-001"
-    ],
-    "selectors": [
-      "PCP-001 missing timestamp keeps message facts absent but reads exact source processes",
-      "PCP-001 missing timestamp never accepts a different process source",
-      "PCP-001 unknown message agent cannot borrow the current radar identity or offer a futile read",
-      "PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",
-      "PCP-001 switching message source and client retires the previous process read"
-    ]
-  },
-  "internal/resume/state_publication_test.go": {
-    "cases": [
-      "CSR-003"
-    ],
-    "selectors": [
-      "TestCSR003SavePublishesAnAtomicResumeSnapshot",
-      "TestCSR003CodexSaveAndHeartbeatRespectBindingLease"
-    ]
-  },
-  "mobileapp/__tests__/chatHistoryContinuity.test.tsx": {
-    "cases": [
-      "LCL-004"
-    ],
-    "selectors": [
-      "LCL-004 rolling recent snapshots retain observed intervening records exactly once",
-      "LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor",
-      "LCL-004 an in-flight earlier page preserves snapshots observed after it started"
-    ]
-  },
-  "internal/knowledge/local_publication_test.go": {
-    "cases": [
-      "KBCARRIER-LOCAL-PUBLICATION"
-    ],
-    "selectors": [
-      "TestMemoryCarrierAtomicPublicationKeepsOldReader",
-      "TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling"
-    ]
-  },
-  "internal/app/hqworkspace_cursor_test.go": {
-    "cases": [
-      "HQP1-F1-001",
-      "HQP1-F1-002",
-      "HQP1-F1-003",
-      "HQP1-F1-004"
-    ],
-    "selectors": [
-      "TestPhase1CursorEmptyScanConcurrentAppend",
-      "TestPhase1CursorProspectiveActivation",
-      "TestPhase1CursorEmptyRetentionGap",
-      "TestPhase1CursorFilteredPageBoundary"
-    ]
-  },
-  "mobileapp/src/state/ChatAppearancePreference.test.tsx": {
-    "cases": [
-      "CAR-002"
-    ],
-    "selectors": [
-      "CAR-002"
-    ]
-  },
-  "mobileapp/src/screens/knowledgeReading.test.ts": {
-    "cases": [
-      "KRD-001"
-    ],
-    "selectors": [
-      "keeps every character while separating explicit history from literal guidance",
-      "history-like headings inside %s code stay with the current body",
-      "non-prose openings stay whole rather than inventing a summary: %s",
-      "reference-style links retain their single Markdown scope",
-      "comments and arbitrary headings do not hide prose as history",
-      "long guidance is preserved without generated or truncated advice",
-      "language resolution happens before display-only sectioning"
-    ]
-  },
-  "internal/knowledge/dreamdiagnostics_test.go": {
-    "cases": [
-      "KBDREAM-DIAGNOSTICS"
-    ],
-    "selectors": [
-      "TestDreamDiagnosticsJournalAllowlistAndLegacyEncoding"
-    ]
-  },
-  "mobileapp/e2e/android/journey.cjs": {
-    "cases": [
-      "CT-ANDROID-POLICY",
-      "CT-TIMING"
-    ],
-    "selectors": [
-      "function selection",
-      "function createJourney"
-    ]
-  },
-  "internal/screenshot/target_test.go": {
-    "cases": [
-      "ASC-004"
-    ],
-    "selectors": [
-      "TestASC004TargetReferencesBindWholeIncarnationAndExpire",
-      "TestASC004TargetQueriesDoNotMintKeys"
-    ]
-  },
-  "tests/web/tool-call-detail.test.cjs": {
-    "cases": [
-      "TCV-005"
-    ],
-    "selectors": [
-      "Typed query details in Chat and Trace ",
-      "Recorded query failure retries and large results page without losing full copy"
-    ]
-  },
-  "internal/app/observed_conversation_test.go": {
-    "cases": [
-      "SID-005"
-    ],
-    "selectors": [
-      "TestSID005ObservedReaderKeepsBoundedWindowAndExactCursor"
-    ]
-  },
-  "mobileapp/e2e/__tests__/ipad-keys-probe.test.ts": {
-    "cases": [
-      "DG-001"
-    ],
-    "removed": true,
-    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
-  },
-  "internal/codexbridge/binding_lifetime_test.go": {
-    "cases": [
-      "CBA-005"
-    ],
-    "selectors": [
-      "TestCBA005RunDisconnectRetiresBeforeTransportDrain",
-      "TestCBA005AlreadyCanceledRunAndReadyTickCannotRetry",
-      "TestCBA005StopWaitsForPublicationBeforeClosingAndRemainsClosed"
-    ]
-  },
-  "internal/hq/rotation_warning_recovery_test.go": {
-    "cases": [
-      "HRW-016"
-    ],
-    "selectors": [
-      "TestHRW016WarningThenRecoveryKeepsRequestAndEveryGuard",
-      "TestHRW016RepeatedUnknownNeverExtendsExpiryOrRepeatsWarning",
-      "TestHRW016FailedPublicationIsNotAReasonToReplayOrBlockRecovery",
-      "TestHRW016UnknownSourcesAndReasonChangesKeepOriginalOwnership"
-    ]
-  },
-  "internal/knowledge/review_alt_test.go": {
-    "cases": [
-      "KBA-001",
-      "KBA-002"
-    ],
-    "selectors": [
-      "TestReviewAltJSONTransaction",
-      "TestReviewAltInvalidBatch"
-    ],
-    "reason": "Retire the rejected KBA-003 historical recovery contract; its corrected replay matrix moves to review_alt_replay_test.go under design-first KBAR-001..003. Keep KBA-001/002 transaction assertions unchanged."
-  },
-  "mobileapp/e2e/__tests__/send-repro.test.ts": {
-    "cases": [
-      "DG-001"
-    ],
-    "removed": true,
-    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
-  },
-  "internal/resume/conversation_test.go": {
-    "cases": [
-      "CAS-001",
-      "CAS-002"
-    ],
-    "selectors": [
-      "TestCAS001IndependentConversationRecovery",
-      "TestCAS001ConversationRecoveryRejectsUnknownOrConflictingProof",
-      "TestCAS002OwnHeartbeatRepairsLostIndex",
-      "TestCAS002HeartbeatCannotReclaimReplacementOrUnknownEvidence",
-      "TestCAS001LegacyEmptyAndForeignHome"
-    ]
-  },
-  "internal/resume/codex_publication_test.go": {
-    "cases": [
-      "CBP-001",
-      "CBP-002",
-      "CBP-003",
-      "CBP-004"
-    ],
-    "selectors": [
-      "TestCBP001ActualBootstrapCannotOverwriteNewFrontend",
-      "TestCBP002ActualPublishersRespectSharedLease",
-      "TestCBP003FailurePathsReleasePublicationLocks",
-      "TestCBP003SameOwnerProcessPreservesFrontend",
-      "TestCBP004CrossProcessPublication",
-      "TestCBP004Child"
-    ]
-  },
-  "internal/resume/frontend_binding_readiness_test.go": {
-    "cases": [
-      "CBA-001"
-    ],
-    "selectors": [
-      "TestCBA001UnavailableProofIsRetryableButNeverPublishes",
-      "TestCBA001ObservedBirthHomeAndTargetChangesStayHard",
-      "TestCBA001MissingTerminalProofNeverBecomesInputAuthority"
-    ]
-  },
-  "mobileapp/__tests__/chatAutoRefresh.test.tsx": {
-    "cases": [
-      "CPG-008",
-      "CPG-009"
-    ],
-    "selectors": [
-      "CPG008 automatic cut-row refresh lets a six-second initial read finish",
-      "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read"
-    ]
-  },
-  "internal/relay/inbox_test.go": {
-    "cases": [
-      "RBL-002"
-    ],
-    "selectors": [
-      "TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts",
-      "TestRBL002FreshnessLegacyAndBoundedSourceWait",
-      "TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim",
-      "TestRBL002SourceWaitCancelsWhileLedgerIsLocked"
-    ]
-  },
-  "mobileapp/src/screens/HQReload.test.tsx": {
-    "cases": [
-      "CRX-002",
-      "CRX-004"
-    ],
-    "selectors": [
-      "CRX-002 HQ reload is pending immediately and late superseded results cannot settle it",
-      "CRX-004 a send receipt invalidates the pre-send read and refreshes once without waiting for poll interval"
-    ]
-  },
-  "tests/web/smoke.test.cjs": {
-    "cases": [
-      "AOP-005",
-      "DTV-003"
-    ],
-    "selectors": [
-      "Structured activity at ${width}px",
-      "DTV003 Diff tree and worktree context at ${width}px"
-    ]
-  },
-  "tests/web/maximized-header.test.cjs": {
-    "cases": [
-      "AOP-006"
-    ],
-    "selectors": [
-      "AOP006 real maximized header wide",
-      "AOP006 real maximized header medium",
-      "AOP006 real maximized header narrow board",
-      "AOP006 real maximized header plain terminal"
-    ]
-  },
-  "mobileapp/metro.config.js": {
-    "cases": [
-      "CT-SCOPE"
-    ],
-    "selectors": [
-      "const config ="
-    ]
-  },
-  "mobileapp/src/screens/DetailDraftSwitch.test.tsx": {
-    "cases": [
-      "CT-DRAFT"
-    ],
-    "selectors": [
-      "mounted Detail isolates drafts",
-      "late draft storage result"
-    ]
-  },
-  "internal/launchhost/agent_readiness_test.go": {
-    "cases": [
-      "CFR-006"
-    ],
-    "selectors": [
-      "TestCFR006AgentReadReturnsBeforeBlockedReaderSettles"
-    ]
-  },
-  "internal/app/restore_remote_test.go": {
-    "cases": [
-      "RSR-003",
-      "RSR-004",
-      "RSR-005"
-    ],
-    "selectors": [
-      "TestRemotePreviewOnlyMissingAndBindsProducerInputs",
-      "TestRemoteWorkerRejectsStaleAndBusyBeforeMutating",
-      "TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate",
-      "TestRemotePaneGuardRechecksExactShellWithoutTouchingOthers",
-      "TestRestoreExecutionLeaseIsProcessOwnedAndFailsClosed",
-      "TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions",
-      "TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology"
-    ]
-  },
-  "internal/hq/rotation_priority_test.go": {
-    "cases": [
-      "HRW-006"
-    ],
-    "selectors": [
-      "TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert"
-    ]
-  },
-  "mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx": {
-    "cases": [
-      "ASA-010"
-    ],
-    "selectors": [
-      "ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace"
-    ]
-  },
-  "mobileapp/ios/tests/DocumentMarkdownChecks.swift": {
-    "cases": [
-      "ND-002"
-    ],
-    "selectors": [
-      "@main struct DocumentMarkdownChecks"
-    ]
-  },
-  "mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx": {
-    "cases": [
-      "RSR-011"
-    ],
-    "selectors": [
-      "RSR011 transient native read rejection cannot replace a saved pre-admission ID",
-      "RSR011 repeated native read rejection stays reachable without preview mutation or clear",
-      "RSR011 confirmed empty local read can resume read-only preview after a native failure",
-      "RSR011 late old-pairing local read %s cannot grant a new target readiness"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift": {
-    "cases": [
-      "MC-HQ-WINDOW"
-    ],
-    "selectors": [
-      "testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor",
-      "testCurrentQuestionRemainsUsableWhileConversationReadWaits"
-    ]
-  },
-  "internal/radar/observed_identity_test.go": {
-    "cases": [
-      "SID-004"
-    ],
-    "selectors": [
-      "TestSID004HistoricalProjectionIsUniqueAndDoesNotBorrowAuthority"
-    ]
-  },
-  "internal/codexbridge/trust_interop_test.go": {
-    "cases": [
-      "WTR-003"
-    ],
-    "selectors": [
-      "TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames",
-      "TestWTR003NativeTUIGateway"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/StateDurationTests.swift": {
-    "cases": [
-      "CSR-004"
-    ],
-    "selectors": [
-      "testCSR004DecodedUncertainDurationDoesNotUseEitherClock"
-    ]
-  },
-  "mobileapp/src/ui/TimeSeparator.test.tsx": {
-    "cases": [
-      "CAR-001"
-    ],
-    "selectors": [
-      "CAR-001"
-    ]
-  },
-  "mobileapp/src/screens/DetailTrace.test.tsx": {
-    "cases": [
-      "CAS-005",
-      "CAS-007",
-      "CRX-001",
-      "CRX-002"
-    ],
-    "selectors": [
-      "CAS005 Detail propagates association failures, preserves history and clears on retry",
-      "CAS007 unchanged transcript polls reuse the ChatView element",
-      "CRX-002 manual reload publishes immediate busy feedback to Chat and Trace until the current read settles"
-    ]
-  },
-  "internal/app/client_contract_test.go": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "TestClientHTTPContracts"
-    ]
-  },
-  "mobileapp/__tests__/chatRecentHistory.test.tsx": {
-    "cases": [
-      "LCL-003"
-    ],
-    "selectors": [
-      "LCL-003 %s requests recent data and exposes a working error/retry action",
-      "LCL-003 earlier source pages survive latest polling and a failed page keeps the content",
-      "LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds",
-      "LCL-003 actual client recent query is opt-in and record identity survives prepending",
-      "LCL-003 authorization loss retires the paged snapshot until a new source snapshot arrives",
-      "LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns",
-      "LCL-003 expanded history stays visible while newer turns wait behind the live edge control",
-      "LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal"
-    ]
-  },
-  "internal/codexrpc/coordination_input_test.go": {
-    "cases": [
-      "RBL-001"
-    ],
-    "selectors": [
-      "TestRBL001CoordinationOnlySteersExactActiveTurn",
-      "TestRBL001CoordinationGuardPreventsMutation"
-    ]
-  },
-  "mobileapp/src/ui/ConversationCopy.test.tsx": {
-    "cases": [
-      "CRX-006"
-    ],
-    "selectors": [
-      "CRX-006 %s empty state is concise and its Terminal action works"
-    ]
-  },
-  "tests/web/presentation.test.cjs": {
-    "cases": [
-      "AOP-005",
-      "DTV-003"
-    ],
-    "selectors": [
-      "Compact settings expose direct appearance choices and bounded call rows at ${width}",
-      "Focused Chat is a conversation with session tools at ${width}"
-    ]
-  },
-  "mobileapp/src/ui/ExecutionChainPresentation.test.tsx": {
-    "cases": [
-      "CRX-005"
-    ],
-    "selectors": [
-      "CRX-005 %s equal adjacent process displays are grouped, not hidden"
-    ]
-  },
-  "tests/web/conversation-feedback.test.cjs": {
-    "cases": [
-      "CRX-003",
-      "CRX-006"
-    ],
-    "selectors": [
-      "CRX-003 visible conversation reload ",
-      "CRX-006 empty conversation uses an actionable short message"
-    ]
-  },
-  "tests/web/fixture.cjs": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "async function start"
-    ]
-  },
-  "mobileapp/e2e/android/diffDismissal.test.ts": {
-    "cases": [
-      "DTV-006"
-    ],
-    "selectors": [
-      "DTV006"
-    ]
-  },
-  "internal/transcript/codex_large_cache_test.go": {
-    "cases": [
-      "LCL-001"
-    ],
-    "selectors": [
-      "TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable",
-      "TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached"
-    ]
-  },
-  "internal/server/recent_transcript_test.go": {
-    "cases": [
-      "LCL-002"
-    ],
-    "selectors": [
-      "TestLCL002RecentAndHistoryReadersAreOptInAndAuthorized"
-    ]
-  },
-  "internal/app/conversation_read_test.go": {
-    "cases": [
-      "CAS-003"
-    ],
-    "selectors": [
-      "TestCAS003PaneAssociationIsNotAnEmptyConversation"
-    ]
-  },
-  "internal/knowledge/consult_test.go": {
-    "cases": [
-      "KBMEM-CONSULT"
-    ],
-    "selectors": [
-      "TestConsultScopeVersionAndEvidenceBoundaries",
-      "TestConsultWholeCardsProtectedOverflowAndNegativeQuery"
-    ]
-  },
-  "internal/radar/closed_frontend_test.go": {
-    "cases": [
-      "HXF-002"
-    ],
-    "selectors": [
-      "TestClosedBoundResumedWorkerHistoryAndPreservation"
-    ]
-  },
-  "mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts": {
-    "cases": [
-      "DG-001"
-    ],
-    "selectors": [
-      "gated("
-    ]
-  },
-  "internal/knowledge/testdata/golden/render/workflows.md.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "task t-9"
-    ]
-  },
-  "internal/dispatchbridge/screenshot_input_test.go": {
-    "cases": [
-      "SSI-002"
-    ],
-    "selectors": [
-      "TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity",
-      "TestSSI002OrdinaryTextKeepsExistingQueueSemantics"
-    ]
-  },
-  "internal/resume/observed_conversation_test.go": {
-    "cases": [
-      "SID-003"
-    ],
-    "selectors": [
-      "TestSID003LastKnownHistoryHasNoLiveAuthority",
-      "TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated"
-    ]
-  },
-  "mobileapp/src/screens/RestoreSessionsEntry.test.tsx": {
-    "cases": [
-      "RSR-009"
-    ],
-    "selectors": [
-      "owner server More offers restore and targets that server; guest does not"
-    ]
-  },
-  "internal/screenshot/input_budget_test.go": {
-    "cases": [
-      "ASC-009"
-    ],
-    "selectors": [
-      "TestASC009FIFOPathsNeverBlockBeforeRegularFileValidation",
-      "TestASC009PipeDeadlineCancellationBytesAndOriginalFlags"
-    ]
-  },
-  "internal/app/dsh_transcript_test.go": {
-    "cases": [
-      "CAS-003"
-    ],
-    "selectors": [
-      "TestDSHTerminalRevocationDoesNotServeStalePaneHistory"
-    ]
-  },
-  "mobileapp/e2e/setup/manual-tools.cjs": {
-    "cases": [
-      "DG-001",
-      "DG-002",
-      "DG-003"
-    ],
-    "selectors": [
-      "function manualMode(",
-      "function sendTarget(",
-      "async function verifySendTarget("
-    ]
-  },
-  "mobileapp/src/screens/HQSendOrdering.test.tsx": {
-    "cases": [
-      "MSD-008"
-    ],
-    "selectors": [
-      "MSD-008 old HQ %s cannot replace a newer accepted message",
-      "MSD-008 HQ old reply and old retry cannot cross a session change",
-      "MSD-008 a later %s key does not leave the current HQ text Sending"
+      "TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize"
     ]
   },
   "internal/hqnudge/native_generation_test.go": {
@@ -1509,265 +775,6 @@
     "selectors": [
       "TestHRW014GenerationChangeWithSameInodeBodyAndMtimeCannotBeDeleted",
       "TestHRW014UncertainPublicationOnlyRetiresItsExactOwnedLink"
-    ]
-  },
-  "internal/codexbridge/trust_config_test.go": {
-    "cases": [
-      "WTR-002"
-    ],
-    "selectors": [
-      "TestWTR002AliasMirrorsOnlyExistingEffectiveRootTrustAndKeepsOtherFields",
-      "TestWTR002RefusalsLeaveOriginalFrameBytesUnchanged",
-      "TestWTR002CanceledAndLateProofCannotAuthorizeOrSpawnMoreReads",
-      "TestWTR002UnknownOrReusedRequestIDsNeverAccumulateUnboundedState"
-    ]
-  },
-  "mobileapp/src/screens/DetailSendSnapshot.test.tsx": {
-    "cases": [
-      "MSD-009"
-    ],
-    "selectors": [
-      "MSD-009 late text receipt cannot replace newer %s control-key screen"
-    ]
-  },
-  "internal/hq/dreamexec_test.go": {
-    "cases": [
-      "KBDREAM-EXECUTOR"
-    ],
-    "selectors": [
-      "TestDreamCLIModelSelectionAndIsolation",
-      "TestDreamCLIParsesTerminalUsageAndRejectsTools",
-      "TestDreamCLIProcessCompletionCancellationAndBoundedOutput"
-    ]
-  },
-  "internal/hq/identity_launch_test.go": {
-    "cases": [
-      "SID-001"
-    ],
-    "selectors": [
-      "TestSID001ActualHQRecipeRetainsManagedFrontend"
-    ]
-  },
-  "internal/knowledge/testdata/golden/cli/list.json.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "\"task\":\"t-9\""
-    ]
-  },
-  "internal/radar/energy_snapshot_test.go": {
-    "cases": [
-      "PWR-001"
-    ],
-    "selectors": [
-      "TestPWR001ProducerSharesFreshSnapshotAndKeepsBoundaries",
-      "TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST"
-    ]
-  },
-  "tests/web/backend-contract.test.cjs": {
-    "cases": [
-      "CT-HTTP"
-    ],
-    "selectors": [
-      "Web fake / Go contract:"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/RotationAttentionTests.swift": {
-    "cases": [
-      "HRW-011"
-    ],
-    "selectors": [
-      "testHRW011AttentionUsesActualConsumerWithoutWaitingAndRespectsGuards"
-    ]
-  },
-  "internal/server/web/app.test.cjs": {
-    "cases": [
-      "CAS-004",
-      "CRX-007"
-    ],
-    "selectors": [
-      "CAS004 focused and tile chats disclose association failures and recover without losing messages",
-      "CAS004 stale tile association failure cannot repaint a changed target",
-      "rejected code stays editable and shows a clear error",
-      "the rejected-code message also applies to the owner pairing a browser"
-    ]
-  },
-  "mobileapp/src/state/desktopReload.test.tsx": {
-    "cases": [
-      "CRX-002"
-    ],
-    "selectors": [
-      "CRX-002 external reload retains content, enforces parent deadline and retires old scope"
-    ]
-  },
-  "mobileapp/e2e/diagnostics/send-repro.test.ts": {
-    "cases": [
-      "DG-002",
-      "DG-003"
-    ],
-    "selectors": [
-      "gated("
-    ]
-  },
-  "mobileapp/src/ui/ToolSteps.semantic.test.tsx": {
-    "cases": [
-      "AOP-001",
-      "AOP-003"
-    ],
-    "selectors": [
-      "AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets"
-    ]
-  },
-  "mobileapp/src/screens/LivePreviewScope.test.tsx": {
-    "cases": [
-      "LPV-002"
-    ],
-    "selectors": [
-      "LPV002"
-    ]
-  },
-  "internal/app/serve_energy_snapshot_test.go": {
-    "cases": [
-      "PWR-003"
-    ],
-    "selectors": [
-      "TestPWR003SSEPublishesItsActualNativeObservationForREST"
-    ]
-  },
-  "internal/transcript/activity_dsh_identity_test.go": {
-    "cases": [
-      "ASA-009"
-    ],
-    "selectors": [
-      "TestASA009DSHDoesNotBorrowOpenCodeIdentity"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift": {
-    "cases": [
-      "SCW-003"
-    ],
-    "selectors": [
-      "testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct",
-      "testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully"
-    ]
-  },
-  "mobileapp/src/ui/DiffModal.test.tsx": {
-    "cases": [
-      "DTV-002"
-    ],
-    "selectors": [
-      "file cards, hunk folding, line numbers and full source reader share the original diff",
-      "large Dynamic Type keeps chrome and six-digit line numbers within the wrapped viewport",
-      "wrapping preserves recorded layout and code rows use one compact source gutter"
-    ]
-  },
-  "mobileapp/src/ui/ChatAppearance.test.tsx": {
-    "cases": [
-      "CAR-001"
-    ],
-    "selectors": [
-      "CAR-001"
-    ]
-  },
-  "internal/app/screenshot_test.go": {
-    "cases": [
-      "ASC-001",
-      "ASC-006"
-    ],
-    "selectors": [
-      "TestASC001ScreenshotCLIRefusesAmbiguousOrUnsupportedInput",
-      "TestASC006UnavailableNativeCapabilityIsTruthfulAndNonMutating"
-    ]
-  },
-  "internal/codexterminal/readiness_review_test.go": {
-    "cases": [
-      "CFR-005"
-    ],
-    "selectors": [
-      "TestCFR005ReadinessPreservesStrictTerminalProof",
-      "TestCFR005FullTreeLaunchScopeAndParentCancellation",
-      "TestCFR005DirectLaunchRetainsFullTreeAndMissingEvidenceRefuses"
-    ]
-  },
-  "mobileapp/src/screens/HQSendReceipt.test.tsx": {
-    "cases": [
-      "MSD-007"
-    ],
-    "selectors": [
-      "MSD-007 HQ exposes %s receipt with stable message identity",
-      "MSD-007 HQ timeout retry after 21 seconds reuses original send ID",
-      "MSD-007 old identical transcript cannot retire the new HQ message"
-    ]
-  },
-  "tests/web/browser-pool.cjs": {
-    "cases": [
-      "CT-BROWSER-POLICY",
-      "CT-TIMING"
-    ],
-    "selectors": [
-      "function browserPool"
-    ]
-  },
-  "mobileapp/src/api/observed-client-contract.test.ts": {
-    "cases": [
-      "SID-009"
-    ],
-    "selectors": [
-      "SID009 ordinary reads stay compatible while UI history explicitly opts in"
-    ]
-  },
-  "mobileapp/e2e/jest.config.manual.js": {
-    "cases": [
-      "DG-001",
-      "DG-002"
-    ],
-    "selectors": [
-      "manualMode(process.env)",
-      "sendTarget(process.env)"
-    ]
-  },
-  "internal/app/doctor_knowledge_count_test.go": {
-    "cases": [
-      "DKC-001"
-    ],
-    "selectors": [
-      "TestDKC001DoctorPendingCountMatchesCaptureProjection"
-    ]
-  },
-  "mobileapp/src/ui/native-action-facts.test.ts": {
-    "cases": [
-      "ASA-008"
-    ],
-    "selectors": [
-      "ASA008 native provider skill and queries facts agree in Chat and Trace"
-    ]
-  },
-  "mobileapp/src/ui/sendReceipt.test.ts": {
-    "cases": [
-      "MSD-005",
-      "CRX-004"
-    ],
-    "selectors": [
-      "MSD-005 receipt wording distinguishes queueing and acceptance without claiming execution"
-    ]
-  },
-  "internal/resume/frontend_first_root_retry_test.go": {
-    "cases": [
-      "CFL-006"
-    ],
-    "selectors": [
-      "TestCFL006FirstRootAndExistingRootFinishTheirOwnPartialMovedPublication",
-      "TestCFL006FirstRootRetryRejectsOtherRootsGenerationsAndInvalidReceipts",
-      "TestCFL006LateFirstRootRetryCannotReplaceANewerDestinationOwner"
-    ]
-  },
-  "mobileapp/src/ui/ConversationReload.test.tsx": {
-    "cases": [
-      "CRX-001"
-    ],
-    "selectors": [
-      "CRX-001 %s reload is visible, busy and keeps messages"
     ]
   },
   "internal/hqnudge/native_pin_test.go": {
@@ -1782,260 +789,39 @@
       "TestHRW015UncertainRestartRequiresItsRetainedAnchor"
     ]
   },
-  "internal/radar/codex_foreign_marker_test.go": {
+  "internal/hqnudge/native_recovery_test.go": {
     "cases": [
-      "CORE-CODEX-FOREIGN-ACTIVE"
+      "HRW-009",
+      "HRW-010"
     ],
     "selectors": [
-      "TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame",
-      "TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend"
+      "TestHRW009NativeOutcomeCrashCannotRebatchOldInput",
+      "TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer",
+      "TestHRW009JournalFailuresAndForeignReplacementHoldWithoutMutation",
+      "TestHRW010ClaimReturnPreservesForeignConflictAndInterruptedPublication",
+      "TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate"
     ]
   },
-  "tests/web/full-input.test.cjs": {
+  "internal/hqnudge/rotation_priority_test.go": {
     "cases": [
-      "DTV-003"
+      "HRW-004",
+      "HRW-005",
+      "HRW-008"
     ],
     "selectors": [
-      "Diff file cards and independent hunks at "
+      "TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority",
+      "TestHRW004RotationDoesNotSubmitOrRepairUserDraft",
+      "TestHRW004ExactOwnStrandedRepairPrecedesReservation",
+      "TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity",
+      "TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource"
     ]
   },
-  "internal/server/web/activity-semantics.test.cjs": {
+  "internal/hqworkspace/input_test.go": {
     "cases": [
-      "AOP-001",
-      "AOP-002",
-      "AOP-003"
+      "HQP1-003"
     ],
     "selectors": [
-      "AOP001 generated browser presenter shows read/search while retaining actual calls",
-      "AOP002 browser command preview unwraps complete shell argv only for display",
-      "AOP003 compact density is pointer-scoped and focus/overflow affordances remain"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift": {
-    "cases": [
-      "ASC-008"
-    ],
-    "selectors": [
-      "testASC008FractionalRedactionOverwritesEveryIntersectedDevicePixel",
-      "testASC008DerivedArtifactPreviewKeepsSmallRedactionsOpaque"
-    ]
-  },
-  "mobileapp/src/ui/activity-action-facts.test.ts": {
-    "cases": [
-      "ASA-004",
-      "ASA-005"
-    ],
-    "selectors": [
-      "ASA004 recorded actions and targets agree across five agents and Trace without adding calls",
-      "ASA005 unknown incompatible and malformed facts use bounded neutral fallback"
-    ]
-  },
-  "internal/hook/codex_manual_compact_test.go": {
-    "cases": [
-      "CET-006"
-    ],
-    "selectors": [
-      "TestCompletedCodexTurnPreservesManualCompactReceipt"
-    ]
-  },
-  "mobileapp/src/screens/attachmentEchoIdentity.test.ts": {
-    "cases": [
-      "AEC-001"
-    ],
-    "selectors": [
-      "AEC-001 dual-representation identity preserves ordered attachment multiplicity"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift": {
-    "cases": [
-      "ASC-002",
-      "ASC-006"
-    ],
-    "selectors": [
-      "testASC002ProtocolAndDescriptorsRefuseUnexpectedAuthority",
-      "testASC006GoConsumerUsesActualSwiftSocketAndRenderer"
-    ]
-  },
-  "tests/web/live-pending.test.cjs": {
-    "cases": [
-      "LPV-003"
-    ],
-    "selectors": [
-      "LPV003"
-    ]
-  },
-  "tests/web/harness.cjs": {
-    "cases": [
-      "CT-TIMING",
-      "CT-BROWSER"
-    ],
-    "selectors": [
-      "function scenario"
-    ]
-  },
-  "internal/dispatchbridge/expected_target_test.go": {
-    "cases": [
-      "ASC-004"
-    ],
-    "selectors": [
-      "TestASC004ExpectedCodexIdentityRefusesBeforePreparingInput"
-    ]
-  },
-  "internal/transcript/tool_call_detail_test.go": {
-    "cases": [
-      "TCV-001",
-      "TCV-002"
-    ],
-    "selectors": [
-      "TestNativeCallDetailsAreLazyScopedAndRedacted",
-      "TestNativeCallMirrorPreservesOriginalInputAndResultReference",
-      "TestNativeCallMissingResultIsNotAnEmptyResult"
-    ]
-  },
-  "mobileapp/src/ui/toolOutput.test.ts": {
-    "cases": [
-      "TSV-002"
-    ],
-    "selectors": [
-      "TSV-002 terminal preview removes controls while preserving literal and raw evidence",
-      "TSV-002 local file URI presentation does not reinterpret foreign or malformed paths"
-    ]
-  },
-  "internal/server/send_receipt_test.go": {
-    "cases": [
-      "MSD-003"
-    ],
-    "selectors": [
-      "TestMSD003HTTPPreservesActualReceiptAndLegacySend",
-      "TestMSD003PreferredReceiptCannotBypassGuestScope"
-    ]
-  },
-  "internal/codexrpc/screenshot_input_test.go": {
-    "cases": [
-      "SSI-001"
-    ],
-    "selectors": [
-      "TestSSI001ActiveScreenshotUsesExactTurnAndMetadataOnly",
-      "TestSSI001OnlyExplicitUnsupportedOrIdleUsesLegacyQueue",
-      "TestSSI001RefusalsAndUncertaintyNeverMutateOrReplay",
-      "TestSSI001LastMomentHoldStopsActiveInput"
-    ]
-  },
-  "mobileapp/src/api/sendDeadline.test.ts": {
-    "cases": [
-      "MSD-004"
-    ],
-    "selectors": [
-      "MSD-004 bounds a hung %s and never retries or accepts a late answer",
-      "MSD-004 keeps exact receipts, legacy success and the server refusal"
-    ]
-  },
-  "internal/resume/codexfrontend_ready_test.go": {
-    "cases": [
-      "CFR-002"
-    ],
-    "selectors": [
-      "TestCFR002AdmissionCausesAndControlledLaunch"
-    ]
-  },
-  "tests/web/harness-isolation.test.cjs": {
-    "cases": [
-      "CT-BROWSER"
-    ],
-    "selectors": [
-      "shared browser first case",
-      "shared browser next case"
-    ]
-  },
-  "internal/resume/frontend_binding_context_test.go": {
-    "cases": [
-      "CBA-004"
-    ],
-    "selectors": [
-      "TestCBA004CancellationDuringStrictProofCannotPublish",
-      "TestCBA004CanceledPartialCommitRetiresOnlyItsOwnLiveReceipt",
-      "TestCBA004CancellationNeverRemovesAReplacedOwner"
-    ]
-  },
-  "internal/knowledge/knowledgeapi_test.go": {
-    "cases": [
-      "KBCARRIER-REVISION"
-    ],
-    "selectors": [
-      "TestKnowledgeRemoteVerbsMatchTheCLI"
-    ]
-  },
-  "internal/codexbridge/upgrade_admission_test.go": {
-    "cases": [
-      "CFR-009"
-    ],
-    "selectors": [
-      "TestCFR009PostUpgradeUsesActualCancellationBeforeDeadline"
-    ]
-  },
-  "internal/hq/rulesrefresh_boundary_test.go": {
-    "cases": [
-      "HQR-007",
-      "HQR-008",
-      "HQR-009",
-      "HQR-010"
-    ],
-    "selectors": [
-      "TestHQR007StandaloneTokenCannotBeConsumedAsAValue",
-      "TestHQR008BackupKeepsReplacement",
-      "TestHQR009MixedRulesAreNotSilentlyRebuilt",
-      "TestHQR010HardlinkedLockCannotChangeExternalPermissions"
-    ]
-  },
-  "internal/hqworkspace/workspace_test.go": {
-    "cases": [
-      "HQP1-002"
-    ],
-    "selectors": [
-      "TestClosedMatterHoldsInstructionButDoesNotBlockOtherGoals"
-    ]
-  },
-  "internal/server/web/execution-chain.test.cjs": {
-    "cases": [
-      "CRX-005"
-    ],
-    "selectors": [
-      "CRX-005 adjacent equal process presentations retain count, order and distinct arguments"
-    ]
-  },
-  "mobileapp/src/ui/ChatReceiptPresentation.test.tsx": {
-    "cases": [
-      "CAR-003"
-    ],
-    "selectors": [
-      "CAR-003"
-    ]
-  },
-  "internal/codexrpc/direct_user_input_test.go": {
-    "cases": [
-      "MSD-001"
-    ],
-    "selectors": [
-      "TestMSD001ExplicitUserInputSelectsExactActiveOrLoadedIdleTurn",
-      "TestMSD001LegacyQueueRemainsExplicitAndOnlyUnknownMethodCanFallback",
-      "TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite"
-    ]
-  },
-  "internal/codexbridge/readiness_test.go": {
-    "cases": [
-      "CFR-003"
-    ],
-    "selectors": [
-      "TestCFR003AdmissionRetriesOnlyTransientEvidence",
-      "TestCFR003LaunchPublicationAndCancellation"
-    ]
-  },
-  "internal/hq/hq_test.go": {
-    "cases": [
-      "STOR-002"
-    ],
-    "selectors": [
-      "TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords"
+      "TestHumanQuestionRemainsSeparateFromReportsAndGoal"
     ]
   },
   "internal/hqworkspace/phase1_test.go": {
@@ -2057,12 +843,332 @@
       "TestPhase1ExactAttributionAndAmbiguity"
     ]
   },
-  "mobileapp/src/screens/DetailSendRefused.test.tsx": {
+  "internal/hqworkspace/register_test.go": {
     "cases": [
-      "CAR-003"
+      "HQP1-002"
     ],
     "selectors": [
-      "retires the sent echo after a poll containing its prompt and later turns; it stays gone"
+      "TestRegisterRetryAfterProgressPreservesCurrentMatterAndRejectsChangedIntent"
+    ]
+  },
+  "internal/hqworkspace/workspace_test.go": {
+    "cases": [
+      "HQP1-002"
+    ],
+    "selectors": [
+      "TestClosedMatterHoldsInstructionButDoesNotBlockOtherGoals"
+    ]
+  },
+  "internal/knowledge/consult_test.go": {
+    "cases": [
+      "KBMEM-CONSULT"
+    ],
+    "selectors": [
+      "TestConsultScopeVersionAndEvidenceBoundaries",
+      "TestConsultWholeCardsProtectedOverflowAndNegativeQuery"
+    ]
+  },
+  "internal/knowledge/distribute_test.go": {
+    "cases": [
+      "KBCARRIER-COMPAT"
+    ],
+    "selectors": [
+      "TestLandCarriesByAudience"
+    ],
+    "reason": "This revision changes the manual land caller only; unchanged storage-boundary assertions retain their existing historical design record in Git."
+  },
+  "internal/knowledge/dream_test.go": {
+    "cases": [
+      "KBMEM-DREAM"
+    ],
+    "selectors": [
+      "TestDreamBudgetUnknownExhaustedAndFingerprint",
+      "TestDreamPacketExcludesPrivateAndRejectsMissingIDs"
+    ]
+  },
+  "internal/knowledge/dreamallowance_test.go": {
+    "cases": [
+      "KBDREAM-ALLOWANCE"
+    ],
+    "selectors": [
+      "TestDreamAllowancePreservesProgressCostsAndIdempotency",
+      "TestDreamAllowanceRejectsInvalidActiveAndRetryBypass"
+    ]
+  },
+  "internal/knowledge/dreamdiagnostics_test.go": {
+    "cases": [
+      "KBDREAM-DIAGNOSTICS"
+    ],
+    "selectors": [
+      "TestDreamDiagnosticsJournalAllowlistAndLegacyEncoding"
+    ]
+  },
+  "internal/knowledge/dreamrun_test.go": {
+    "cases": [
+      "KBDREAM-JOURNAL",
+      "KBDREAM-GUARDS",
+      "KBDREAM-BUDGET"
+    ],
+    "selectors": [
+      "TestDreamResumeRetainsCompletedItemsAndModelHistory",
+      "TestDreamConcurrentResumeAndSourceChanges",
+      "TestDreamBudgetsPrivacyAndCorruptionStopBeforeCalls",
+      "TestDreamPrivateReclassificationAndInvalidResults",
+      "TestDreamModelProposalsRemainInertAndStatusIsReadOnly",
+      "TestDreamSharedLifetimeBudgetAndUnresolvedRun",
+      "TestDreamExplicitDeferRetainsFailedAttempts",
+      "TestDreamRejectsInventedEvidenceAndJournalIdentity"
+    ]
+  },
+  "internal/knowledge/knowledgeapi_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestKnowledgeRemoteVerbsMatchTheCLI"
+    ]
+  },
+  "internal/knowledge/knowledgecmd_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestKnowledgePromotionVerbChain",
+      "TestABlankReasonIsNoReason"
+    ]
+  },
+  "internal/knowledge/landing_revision_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestLandingRejectsStaleReceiptAtCommit",
+      "TestLandingSerializesCarrierAndReceiptWithReview",
+      "TestLandingCarrierFailureKeepsPendingAndRetryIsSafe",
+      "TestLandingManualRevisionAndLegacyHistory",
+      "TestLandingCLIRequiresViewedRevision"
+    ]
+  },
+  "internal/knowledge/local_durability_test.go": {
+    "cases": [
+      "KBLOCAL-DURABILITY-RETRY"
+    ],
+    "selectors": [
+      "TestLocalDurabilityRetryMustReachWriterBeforeLanding"
+    ]
+  },
+  "internal/knowledge/local_publication_test.go": {
+    "cases": [
+      "KBCARRIER-LOCAL-PUBLICATION"
+    ],
+    "selectors": [
+      "TestMemoryCarrierAtomicPublicationKeepsOldReader",
+      "TestMemoryCarrierRefusesUnsafeTargetsWithoutSettling"
+    ]
+  },
+  "internal/knowledge/memory_carrier_test.go": {
+    "cases": [
+      "KBMEM-CARRIER"
+    ],
+    "selectors": [
+      "TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits"
+    ],
+    "reason": "Original 21576f9 test restored byte-for-byte; incremental publication regressions moved to local_publication_test.go after a fresh file-specific reviewed design."
+  },
+  "internal/knowledge/review_alt_replay_test.go": {
+    "cases": [
+      "KBAR-001",
+      "KBAR-002",
+      "KBAR-003"
+    ],
+    "selectors": [
+      "TestHistoricalReviewAltReadFallback",
+      "TestPreparedReviewAltReplay",
+      "TestReviewedAltReplayBoundaries"
+    ]
+  },
+  "internal/knowledge/review_alt_test.go": {
+    "cases": [
+      "KBA-001",
+      "KBA-002"
+    ],
+    "selectors": [
+      "TestReviewAltJSONTransaction",
+      "TestReviewAltInvalidBatch"
+    ],
+    "reason": "Retire the rejected KBA-003 historical recovery contract; its corrected replay matrix moves to review_alt_replay_test.go under design-first KBAR-001..003. Keep KBA-001/002 transaction assertions unchanged."
+  },
+  "internal/knowledge/review_test.go": {
+    "cases": [
+      "KBMEM-REVIEW"
+    ],
+    "selectors": [
+      "TestReviewAtomicConflictAndIdempotentRetry",
+      "TestReviewRejectsWholeBatchBeforeAnyAppend",
+      "TestReviewConcurrentRevisionHasOneWinner",
+      "TestReviewDryRunWritesNothingAndProtectedRetireRefused",
+      "TestReviewedRevisionReopensCarrierAndDoesNotRefreshVerification"
+    ]
+  },
+  "internal/knowledge/source_lineage_test.go": {
+    "cases": [
+      "KBL-001",
+      "KBL-002",
+      "KBL-003",
+      "KBL-004",
+      "KBA-004"
+    ],
+    "selectors": [
+      "TestSourceLineageOrdinarySupersede",
+      "TestSourceLineageReviewApply",
+      "TestSourceLineageReplay",
+      "TestSourceLineageNewCapture"
+    ]
+  },
+  "internal/knowledge/sync_serialization_test.go": {
+    "cases": [
+      "KBSYNC-SERIALIZATION"
+    ],
+    "selectors": [
+      "TestPublicSyncSerializesSnapshotAndPublication",
+      "TestPublicSyncReleasesLockOnErrorAndRefusal"
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/api/index.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/list.json.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "\"task\":\"t-9\""
+    ]
+  },
+  "internal/knowledge/testdata/golden/cli/show.txt.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
+  },
+  "internal/knowledge/testdata/golden/render/workflows.md.golden": {
+    "cases": [
+      "KBL-GOLDEN"
+    ],
+    "selectors": [
+      "task t-9"
+    ]
+  },
+  "internal/knowledge/usage_test.go": {
+    "cases": [
+      "KBMEM-USAGE"
+    ],
+    "selectors": [
+      "TestUsageDoesNotBecomeHitAndRetryIsIdempotent",
+      "TestUsageRejectsAuditAndForgedMeasurement"
+    ]
+  },
+  "internal/knowledge/vault_test.go": {
+    "cases": [
+      "KBMEM-VAULT"
+    ],
+    "selectors": [
+      "TestVaultRoundTripRenameAndDeletion",
+      "TestVaultConflictPrivacyAndRecovery",
+      "TestVaultRefusesSymlinksAndUnrelatedDirectory",
+      "TestVaultPublicationKeepsOldSnapshotsAndReadOnlyFiles"
+    ]
+  },
+  "internal/launchhost/agent_readiness_test.go": {
+    "cases": [
+      "CFR-006"
+    ],
+    "selectors": [
+      "TestCFR006AgentReadReturnsBeforeBlockedReaderSettles"
+    ]
+  },
+  "internal/native/closed_frontend_reuse_test.go": {
+    "cases": [
+      "HXF-003"
+    ],
+    "selectors": [
+      "TestClosedFrontendObservationSurvivesPositivePIDReuseOnly"
+    ]
+  },
+  "internal/native/closed_frontend_test.go": {
+    "cases": [
+      "HXF-001"
+    ],
+    "selectors": [
+      "TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess"
+    ]
+  },
+  "internal/prompt/prompt_codex_folder_access_test.go": {
+    "cases": [
+      "WTR-004"
+    ],
+    "selectors": [
+      "TestWTR004CurrentFolderAccessBlocksReadiness",
+      "TestWTR004ReportsAndSettledComposersAreNotConsent"
+    ]
+  },
+  "internal/radar/closed_frontend_test.go": {
+    "cases": [
+      "HXF-002"
+    ],
+    "selectors": [
+      "TestClosedBoundResumedWorkerHistoryAndPreservation"
+    ]
+  },
+  "internal/radar/codex_completed_marker_test.go": {
+    "cases": [
+      "CET-002",
+      "CET-003"
+    ],
+    "selectors": [
+      "TestGatherCompletedOwnTurnSurvivesLateActiveMarker"
+    ]
+  },
+  "internal/radar/codex_foreign_marker_gather_test.go": {
+    "cases": [
+      "CORE-CODEX-FOREIGN-GATHER"
+    ],
+    "selectors": [
+      "TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity"
+    ]
+  },
+  "internal/radar/codex_foreign_marker_test.go": {
+    "cases": [
+      "CORE-CODEX-FOREIGN-ACTIVE"
+    ],
+    "selectors": [
+      "TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame",
+      "TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend"
+    ]
+  },
+  "internal/radar/codex_stale_state_test.go": {
+    "cases": [
+      "CSR-001",
+      "CSR-002"
+    ],
+    "selectors": [
+      "TestCSR001StaleActiveCannotReviveReadyFinishedPane",
+      "TestCSR002SupersededActiveDoesNotDateCurrentWork"
     ]
   },
   "internal/radar/energy_gather_test.go": {
@@ -2073,29 +1179,32 @@
       "TestPWR002GatherSharesFramesOnlyInsideOnePass"
     ]
   },
-  "internal/codexbridge/worktree_trust_test.go": {
+  "internal/radar/energy_snapshot_test.go": {
     "cases": [
-      "WTR-001"
+      "PWR-001"
     ],
     "selectors": [
-      "TestWTR001OnlyReciprocallyRegisteredWorktreesHaveStableEvidence",
-      "TestWTR001MalformedCopiedSymlinkAndUnsupportedMetadataCannotBorrowTrust"
+      "TestPWR001ProducerSharesFreshSnapshotAndKeepsBoundaries",
+      "TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST"
     ]
   },
-  "internal/codexbridge/binding_first_root_retry_test.go": {
+  "internal/radar/observed_identity_test.go": {
     "cases": [
-      "CFL-006"
+      "SID-004"
     ],
     "selectors": [
-      "TestCFL006InitialRootMetadataRetryCommitsThenResumesHeartbeats"
+      "TestSID004HistoricalProjectionIsUniqueAndDoesNotBorrowAuthority"
     ]
   },
-  "internal/dispatchbridge/pending_retry_overlap_test.go": {
+  "internal/relay/inbox_test.go": {
     "cases": [
-      "MSD-011"
+      "RBL-002"
     ],
     "selectors": [
-      "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit"
+      "TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts",
+      "TestRBL002FreshnessLegacyAndBoundedSourceWait",
+      "TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim",
+      "TestRBL002SourceWaitCancelsWhileLedgerIsLocked"
     ]
   },
   "internal/restorejob/store_test.go": {
@@ -2110,20 +1219,287 @@
       "TestRestoreProgressIsBoundedAndFinalOnce"
     ]
   },
-  "mobileapp/src/ui/ChatEchoHandoff.test.tsx": {
+  "internal/resume/codex_publication_test.go": {
     "cases": [
-      "CRX-004"
+      "CBP-001",
+      "CBP-002",
+      "CBP-003",
+      "CBP-004"
     ],
     "selectors": [
-      "CRX-004 %s confirmed echo keeps the same mounted bubble"
+      "TestCBP001ActualBootstrapCannotOverwriteNewFrontend",
+      "TestCBP002ActualPublishersRespectSharedLease",
+      "TestCBP003FailurePathsReleasePublicationLocks",
+      "TestCBP003SameOwnerProcessPreservesFrontend",
+      "TestCBP004CrossProcessPublication",
+      "TestCBP004Child"
     ]
   },
-  "internal/hq/dreamdiagnostics_test.go": {
+  "internal/resume/codexfrontend_ready_test.go": {
     "cases": [
-      "KBDREAM-DIAGNOSTICS"
+      "CFR-002"
     ],
     "selectors": [
-      "TestDreamDiagnosticsClassifiedBoundedAndPrivate"
+      "TestCFR002AdmissionCausesAndControlledLaunch"
+    ]
+  },
+  "internal/resume/conversation_test.go": {
+    "cases": [
+      "CAS-001",
+      "CAS-002"
+    ],
+    "selectors": [
+      "TestCAS001IndependentConversationRecovery",
+      "TestCAS001ConversationRecoveryRejectsUnknownOrConflictingProof",
+      "TestCAS002OwnHeartbeatRepairsLostIndex",
+      "TestCAS002HeartbeatCannotReclaimReplacementOrUnknownEvidence",
+      "TestCAS001LegacyEmptyAndForeignHome"
+    ]
+  },
+  "internal/resume/frontend_binding_context_test.go": {
+    "cases": [
+      "CBA-004"
+    ],
+    "selectors": [
+      "TestCBA004CancellationDuringStrictProofCannotPublish",
+      "TestCBA004CanceledPartialCommitRetiresOnlyItsOwnLiveReceipt",
+      "TestCBA004CancellationNeverRemovesAReplacedOwner"
+    ]
+  },
+  "internal/resume/frontend_binding_readiness_test.go": {
+    "cases": [
+      "CBA-001"
+    ],
+    "selectors": [
+      "TestCBA001UnavailableProofIsRetryableButNeverPublishes",
+      "TestCBA001ObservedBirthHomeAndTargetChangesStayHard",
+      "TestCBA001MissingTerminalProofNeverBecomesInputAuthority"
+    ]
+  },
+  "internal/resume/frontend_first_root_retry_test.go": {
+    "cases": [
+      "CFL-006"
+    ],
+    "selectors": [
+      "TestCFL006FirstRootAndExistingRootFinishTheirOwnPartialMovedPublication",
+      "TestCFL006FirstRootRetryRejectsOtherRootsGenerationsAndInvalidReceipts",
+      "TestCFL006LateFirstRootRetryCannotReplaceANewerDestinationOwner"
+    ]
+  },
+  "internal/resume/frontend_heartbeat_context_test.go": {
+    "cases": [
+      "CBA-006"
+    ],
+    "selectors": [
+      "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
+      "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
+      "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
+    ]
+  },
+  "internal/resume/frontend_index_recovery_test.go": {
+    "cases": [
+      "DCA-004",
+      "DCA-005",
+      "DCA-006"
+    ],
+    "selectors": [
+      "TestDCA004CurrentProducerRecoversExpiredOwnMissingIndex",
+      "TestDCA005RecoveryRejectsConflictAndUnknownEvidence",
+      "TestDCA005OwnerReplacementDuringStrictVerification",
+      "TestDCA006RecoveryHonorsLeaseAndCancellation"
+    ]
+  },
+  "internal/resume/frontend_live_diagnostic_test.go": {
+    "cases": [
+      "HRW-013"
+    ],
+    "selectors": [
+      "TestHRW013LiveDiagnosticsDoNotChangeExistingAuthority"
+    ]
+  },
+  "internal/resume/frontend_location_test.go": {
+    "cases": [
+      "CFL-001",
+      "CFL-002",
+      "CFL-003"
+    ],
+    "selectors": [
+      "TestCFL001HeartbeatMigratesOnlyItsCurrentLocation",
+      "TestCFL001ObservedRootBindsAfterVerifiedLocationChange",
+      "TestCFL002LocationChangeCannotHideIdentityOrOwnerConflicts",
+      "TestCFL003MigrationCancellationKeepsOnlyCommittedHistory",
+      "TestCFL003PartialMigrationCanRetryOnlyTheSameLiveOwner",
+      "TestCFL003LateOldOwnerCannotReclaimMovedSameSID",
+      "TestCFL001FirstObservedRootCanFollowPostAdmissionLayoutChange",
+      "TestCFL003TwoLivePanesExchangePositionsWithoutLosingTheirOwners",
+      "TestCFL003HistoryWriteFailureRefusesMigrationBeforeLivePublication",
+      "TestCFL003ObservedNewRootRetriesItsOwnPartialMovedPublication"
+    ]
+  },
+  "internal/resume/observed_conversation_test.go": {
+    "cases": [
+      "SID-003"
+    ],
+    "selectors": [
+      "TestSID003LastKnownHistoryHasNoLiveAuthority",
+      "TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated"
+    ]
+  },
+  "internal/resume/state_publication_test.go": {
+    "cases": [
+      "CSR-003"
+    ],
+    "selectors": [
+      "TestCSR003SavePublishesAnAtomicResumeSnapshot",
+      "TestCSR003CodexSaveAndHeartbeatRespectBindingLease"
+    ]
+  },
+  "internal/screenshot/artifact_test.go": {
+    "cases": [
+      "ASC-001",
+      "ASC-003"
+    ],
+    "selectors": [
+      "TestASC001ArtifactPublicationIsAtomicAndPreservesExistingFiles",
+      "TestASC003CoordinatesAndEditableImagesStayBoundToExactBytes"
+    ]
+  },
+  "internal/screenshot/host_readiness_test.go": {
+    "cases": [
+      "ASC-007"
+    ],
+    "selectors": [
+      "TestASC007HostObservationCannotAuthorizeAfterCancellation",
+      "TestASC007HostIncarnationUsesExactUTCMetadata"
+    ]
+  },
+  "internal/screenshot/input_budget_test.go": {
+    "cases": [
+      "ASC-009"
+    ],
+    "selectors": [
+      "TestASC009FIFOPathsNeverBlockBeforeRegularFileValidation",
+      "TestASC009PipeDeadlineCancellationBytesAndOriginalFlags"
+    ]
+  },
+  "internal/screenshot/receipts_test.go": {
+    "cases": [
+      "ASC-005"
+    ],
+    "selectors": [
+      "TestASC005ReceiptsNeverReplayUncertainOrChangedRequests",
+      "TestASC005ReceiptStoreRefusesCorruptionAndCapacity"
+    ]
+  },
+  "internal/screenshot/target_test.go": {
+    "cases": [
+      "ASC-004"
+    ],
+    "selectors": [
+      "TestASC004TargetReferencesBindWholeIncarnationAndExpire",
+      "TestASC004TargetQueriesDoNotMintKeys"
+    ]
+  },
+  "internal/screenshot/transport_test.go": {
+    "cases": [
+      "ASC-002"
+    ],
+    "selectors": [
+      "TestASC002NativeTransportPinsHostAndBoundsReplies",
+      "TestASC006NativeInterop"
+    ]
+  },
+  "internal/server/conversation_read_test.go": {
+    "cases": [
+      "CAS-003"
+    ],
+    "selectors": [
+      "TestCAS003ConversationFailureContractAndGuestBoundary"
+    ]
+  },
+  "internal/server/diff_privacy_test.go": {
+    "cases": [
+      "DTV-005"
+    ],
+    "selectors": [
+      "TestDTV005WorktreePathIsOwnerOnlyAndPaneGateRunsFirst"
+    ]
+  },
+  "internal/server/hq_test.go": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "TestHQKnowledgeActClosesTheVerbList"
+    ]
+  },
+  "internal/server/observed_conversation_test.go": {
+    "cases": [
+      "SID-005"
+    ],
+    "selectors": [
+      "TestSID005OwnerOptInHistoryAndGuestFence",
+      "TestSID005SharedRosterOmitsHistoricalIdentifiers"
+    ]
+  },
+  "internal/server/recent_transcript_test.go": {
+    "cases": [
+      "LCL-002"
+    ],
+    "selectors": [
+      "TestLCL002RecentAndHistoryReadersAreOptInAndAuthorized"
+    ]
+  },
+  "internal/server/restore_test.go": {
+    "cases": [
+      "RSR-001"
+    ],
+    "selectors": [
+      "TestRestoreOwnerContractNeverStartsOnRead",
+      "TestRestoreKnownFailureCodesStayDistinct"
+    ]
+  },
+  "internal/server/send_receipt_test.go": {
+    "cases": [
+      "MSD-003"
+    ],
+    "selectors": [
+      "TestMSD003HTTPPreservesActualReceiptAndLegacySend",
+      "TestMSD003PreferredReceiptCannotBypassGuestScope"
+    ]
+  },
+  "internal/server/web/activity-action-facts.test.cjs": {
+    "cases": [
+      "ASA-004",
+      "ASA-005"
+    ],
+    "selectors": [
+      "ASA004 browser Chat and Trace preserve factual action labels and one call per record",
+      "ASA005 browser fallback ignores contradictory facts without guessing scripts or changing raw input"
+    ]
+  },
+  "internal/server/web/activity-semantics.test.cjs": {
+    "cases": [
+      "AOP-001",
+      "AOP-002",
+      "AOP-003"
+    ],
+    "selectors": [
+      "AOP001 generated browser presenter shows read/search while retaining actual calls",
+      "AOP002 browser command preview unwraps complete shell argv only for display",
+      "AOP003 compact density is pointer-scoped and focus/overflow affordances remain"
+    ]
+  },
+  "internal/server/web/app.test.cjs": {
+    "cases": [
+      "CAS-004",
+      "CRX-007"
+    ],
+    "selectors": [
+      "CAS004 focused and tile chats disclose association failures and recover without losing messages",
+      "CAS004 stale tile association failure cannot repaint a changed target",
+      "rejected code stays editable and shows a clear error",
+      "the rejected-code message also applies to the owner pairing a browser"
     ]
   },
   "internal/server/web/argv-reading.test.cjs": {
@@ -2134,14 +1510,211 @@
       "ARGV-001 browser uses"
     ]
   },
-  "internal/ghostty/session_identity_test.go": {
+  "internal/server/web/execution-chain.test.cjs": {
     "cases": [
-      "FOCUS-001",
-      "FOCUS-002"
+      "CRX-005"
     ],
     "selectors": [
-      "TestTitleMatchesSessionPreservesLeadingSymbols",
-      "TestSessionTabPrefersLiteralIdentity"
+      "CRX-005 adjacent equal process presentations retain count, order and distinct arguments"
+    ]
+  },
+  "internal/server/web/maximize-layout.test.cjs": {
+    "cases": [
+      "AOP-004",
+      "AOP-006"
+    ],
+    "selectors": [
+      "AOP004 Restore layout occupies the actual header before the title",
+      "AOP004 switching and restoring keep one control and restore prior dimensions",
+      "AOP004 maximized header reserves grid space and names its narrow icon",
+      "AOP006 real identity wrapper occupies the flexible maximized column"
+    ]
+  },
+  "internal/server/web/observed_identity.test.cjs": {
+    "cases": [
+      "SID-007"
+    ],
+    "selectors": [
+      "SID007 focused and tile history cannot dispatch input or become an external row"
+    ]
+  },
+  "internal/server/web/state-duration.test.cjs": {
+    "cases": [
+      "CSR-004"
+    ],
+    "selectors": [
+      "CSR-004 browser row"
+    ]
+  },
+  "internal/servermode/verified_os_test.go": {
+    "cases": [
+      "SMC-001"
+    ],
+    "selectors": [
+      "TestSMC001VerifiedServerModeOSPreservesUnknownVersionCaution"
+    ]
+  },
+  "internal/state/cpu_repeated_poll_test.go": {
+    "cases": [
+      "CSR-005"
+    ],
+    "selectors": [
+      "TestCSR005RepeatedPollPreservesObservedCPUWork",
+      "TestCSR005RepeatedPollRequiresValidPriorEvidence"
+    ]
+  },
+  "internal/state/privatewrite_durability_test.go": {
+    "cases": [
+      "PRIVATEWRITE-DIRECTORY-SYNC"
+    ],
+    "selectors": [
+      "TestPrivateWriteRetriesDirectorySyncAfterRename"
+    ]
+  },
+  "internal/state/privatewrite_test.go": {
+    "cases": [
+      "KBCARRIER-ATOMIC"
+    ],
+    "selectors": [
+      "TestPrivateWritePrePublicationFailurePreservesOriginal"
+    ]
+  },
+  "internal/transcript/activity_action_test.go": {
+    "cases": [
+      "ASA-001",
+      "ASA-002",
+      "ASA-003"
+    ],
+    "selectors": [
+      "TestASA001RecordedSkillIdentityAcrossFiveAdapters",
+      "TestASA001ShellTextAndBareNamesDoNotInventSkillReads",
+      "TestASA002WebIntentUsesExplicitMethodsOrCompleteActions",
+      "TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput",
+      "TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands",
+      "TestASA003ActionMetadataParticipatesInRetentionBudget"
+    ]
+  },
+  "internal/transcript/activity_dsh_identity_test.go": {
+    "cases": [
+      "ASA-009"
+    ],
+    "selectors": [
+      "TestASA009DSHDoesNotBorrowOpenCodeIdentity"
+    ]
+  },
+  "internal/transcript/activity_native_facts_test.go": {
+    "cases": [
+      "ASA-006",
+      "ASA-007"
+    ],
+    "selectors": [
+      "TestASA006NativeSkillSchema",
+      "TestASA007NativeQueriesSchema"
+    ]
+  },
+  "internal/transcript/codex_large_cache_test.go": {
+    "cases": [
+      "LCL-001"
+    ],
+    "selectors": [
+      "TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable",
+      "TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached"
+    ]
+  },
+  "internal/transcript/codex_turn_event_test.go": {
+    "cases": [
+      "CET-001"
+    ],
+    "selectors": [
+      "TestCodexTurnEventIdentityAndFreshness",
+      "TestCodexTurnEventTailBudget"
+    ]
+  },
+  "internal/transcript/prompt_witness_test.go": {
+    "cases": [
+      "HRS-001"
+    ],
+    "selectors": [
+      "TestHRS001FirstPromptWitnesses"
+    ]
+  },
+  "internal/transcript/tool_call_detail_test.go": {
+    "cases": [
+      "TCV-001",
+      "TCV-002"
+    ],
+    "selectors": [
+      "TestNativeCallDetailsAreLazyScopedAndRedacted",
+      "TestNativeCallMirrorPreservesOriginalInputAndResultReference",
+      "TestNativeCallMissingResultIsNotAnEmptyResult"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift": {
+    "cases": [
+      "MC-HQ-CHOICE",
+      "MC-HQ-WINDOW",
+      "MC-HQ-READ"
+    ],
+    "selectors": [
+      "class ChoiceFixture",
+      "enum HQChoiceTestSupport"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift": {
+    "cases": [
+      "MC-HQ-CHOICE",
+      "MC-HQ-READ"
+    ],
+    "selectors": [
+      "testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft",
+      "testSlowSourceDiscoveryCannotBlockReplyOrRollBackNewCanonicalData",
+      "testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError",
+      "testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack",
+      "testUnavailableSourceMetadataNeverClaimsTheSessionIsGone"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift": {
+    "cases": [
+      "MC-HQ-WINDOW"
+    ],
+    "selectors": [
+      "testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor",
+      "testCurrentQuestionRemainsUsableWhileConversationReadWaits"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift": {
+    "cases": [
+      "KBCARRIER-REVISION"
+    ],
+    "selectors": [
+      "testLandingCarriesTheViewedRevision"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift": {
+    "cases": [
+      "MC-HQ-OVERVIEW-STATE",
+      "MC-HQ-OVERVIEW-BRIEF"
+    ],
+    "selectors": [
+      "testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows",
+      "testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift": {
+    "cases": [
+      "MC-HQ-OVERVIEW-MORE"
+    ],
+    "selectors": [
+      "testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending",
+      "testFullyShownListHasNoRemainingControlAndUnknownRosterDoesNotSayIdle"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ObservedIdentityTests.swift": {
+    "cases": [
+      "SID-008"
+    ],
+    "selectors": [
+      "testSID008HistoryNeverPopulatesCurrentIdentity"
     ]
   },
   "macapp/Tests/GtmuxBarTests/RestoreMenuActionTests.swift": {
@@ -2152,40 +1725,579 @@
       "testRestoreDispatchPolicyKeepsActualProgressPopoverVisible"
     ]
   },
-  "mobileapp/src/screens/UsageSheet.test.tsx": {
+  "macapp/Tests/GtmuxBarTests/RotationAttentionTests.swift": {
     "cases": [
-      "UR-003"
+      "HRW-011"
     ],
     "selectors": [
-      "usage states distinguish loading, a valid empty report and an older server",
-      "a timeout keeps the previous report, offers retry, and folds technical detail",
-      "usage failure guidance follows the actual refusal or transport",
-      "the shared regular sheet keeps the error card bounded and names retry in Chinese"
+      "testHRW011AttentionUsesActualConsumerWithoutWaitingAndRespectsGuards"
     ]
   },
-  "internal/dispatchbridge/pending_retry_target_test.go": {
+  "macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift": {
     "cases": [
-      "MSD-006"
+      "SCW-003"
     ],
     "selectors": [
-      "TestMSD006PendingRetryCannotRetarget"
+      "testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct",
+      "testSSI003BothLanguagesDescribeQueuedAndActiveInputTruthfully"
     ]
   },
-  "internal/app/spawn_binding_test.go": {
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentIPCTests.swift": {
     "cases": [
-      "CAS-003"
+      "ASC-002",
+      "ASC-006"
     ],
     "selectors": [
-      "TestSpawnBindingRestoresTranscriptEndpoint"
+      "testASC002ProtocolAndDescriptorsRefuseUnexpectedAuthority",
+      "testASC006GoConsumerUsesActualSwiftSocketAndRenderer"
     ]
   },
-  "internal/knowledge/knowledgecmd_test.go": {
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentLifecycleTests.swift": {
     "cases": [
-      "KBCARRIER-REVISION"
+      "ASC-010"
     ],
     "selectors": [
-      "TestKnowledgePromotionVerbChain",
-      "TestABlankReasonIsNoReason"
+      "testASC010RealSocketDeadlineDisconnectAndStopCloseRequestsWithoutSDKCompletion",
+      "testASC010QuarantinedSDKDoesNotBlockCapabilitiesOrOversubscribeAfterHostRestart"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift": {
+    "cases": [
+      "ASC-003",
+      "ASC-006"
+    ],
+    "selectors": [
+      "testASC003RedactionUsesSharedRetinaRendererAndExactFrame",
+      "testASC006EditorRoundtripPreservesBusyDraftAndDoesNotSend"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift": {
+    "cases": [
+      "ASC-003"
+    ],
+    "selectors": [
+      "testASC003SourcesExpireAndNeverWidenChangedOwnershipOrRegion",
+      "testASC003MissingPermissionDoesNotPromptOrListOtherApps"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotAgentWorkTests.swift": {
+    "cases": [
+      "ASC-010"
+    ],
+    "selectors": [
+      "testASC010CancelledCallbacksRemainBoundedUntilActualCompletion",
+      "testASC010BackgroundWorkOwnsBoundedDuplicatesAndCannotReuseClosedDescriptors"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotPreviewAspectTests.swift": {
+    "cases": [
+      "ASC-012"
+    ],
+    "selectors": [
+      "testASC012OddAspectImageAndPreviewCoordinatesCoverBothAxes",
+      "testASC012CroppedSourceRegionRetainsOpaquePreviewCoverageAndTransforms"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotRedactionCoverageTests.swift": {
+    "cases": [
+      "ASC-008"
+    ],
+    "selectors": [
+      "testASC008FractionalRedactionOverwritesEveryIntersectedDevicePixel",
+      "testASC008DerivedArtifactPreviewKeepsSmallRedactionsOpaque"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift": {
+    "cases": [
+      "ASC-011"
+    ],
+    "selectors": [
+      "testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotTests.swift": {
+    "cases": [
+      "SCW-003"
+    ],
+    "selectors": [
+      "testStatusLineSaysWhatHappened",
+      "testRefusedWaitingWithoutEvidenceStaysUnconfirmed",
+      "testRefusedWaitingSaysWhetherTheTextWasPasted"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotWorkCompletionOrderTests.swift": {
+    "cases": [
+      "ASC-013"
+    ],
+    "selectors": [
+      "testASC013SuccessAndErrorCloseActualDuplicatesBeforeAdmissionReturn"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift": {
+    "cases": [
+      "SCW-001",
+      "SCW-002",
+      "SCW-003",
+      "SCW-004"
+    ],
+    "selectors": [
+      "testSCW001WindowsKeepDraftsFilesAndLateReceiptsIndependent",
+      "testSCW001CapacityPreservesEveryExistingDocument",
+      "testSCW002SearchUsesTitlesLocationsAndStableFuzzyMatches",
+      "testSCW002ActualSearchFieldNavigationCompositionAndEmptyResults",
+      "testSCW003RefusalCategoriesNeverInventHumanApprovalOrDelivery",
+      "testSCW004NewCaptureIsSerializedThroughHandoffAndKeepsOldDraft",
+      "testSCW004CLIEditCanOpenBesideDraftAndResolveItsOwnStore",
+      "testSCW004PermissionAndCapacityRefusalsPreserveWorkWithoutCapture"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/StateDurationTests.swift": {
+    "cases": [
+      "CSR-004"
+    ],
+    "selectors": [
+      "testCSR004DecodedUncertainDurationDoesNotUseEitherClock"
+    ]
+  },
+  "mobileapp/__tests__/chatAutoRefresh.test.tsx": {
+    "cases": [
+      "CPG-008",
+      "CPG-009"
+    ],
+    "selectors": [
+      "CPG008 automatic cut-row refresh lets a six-second initial read finish",
+      "CPG009 automatic quiet refresh keeps ETag and coalesces a slow conditional read"
+    ]
+  },
+  "mobileapp/__tests__/chatHistoryContinuity.test.tsx": {
+    "cases": [
+      "LCL-004"
+    ],
+    "selectors": [
+      "LCL-004 rolling recent snapshots retain observed intervening records exactly once",
+      "LCL-004 disconnected latest tail waits behind Jump before selecting its authoritative history cursor",
+      "LCL-004 an in-flight earlier page preserves snapshots observed after it started"
+    ]
+  },
+  "mobileapp/__tests__/chatPagingOrder.test.tsx": {
+    "cases": [
+      "CPG-001",
+      "CPG-002",
+      "CPG-003",
+      "CPG-004"
+    ],
+    "selectors": [
+      "CPG001 refusal %i retires the current snapshot, not the request-start array",
+      "CPG001 an ordinary page failure keeps intervening recent data",
+      "CPG001 an old reader refusal cannot retire a new session",
+      "CPG004 revisiting an observed array cannot reauthorize a refused snapshot",
+      "CPG002 Jump supersedes a late page in a disconnected=%s reader",
+      "CPG002 Jump invalidates the hook operation without a late prepend callback",
+      "CPG003 Jump drops an accepted page anchor before its delayed size callback"
+    ]
+  },
+  "mobileapp/__tests__/chatPagingRecovery.test.tsx": {
+    "cases": [
+      "CPG-005",
+      "CPG-006",
+      "CPG-007"
+    ],
+    "selectors": [
+      "CPG005 %s explicit Retry recovers quiet history after authorized 304",
+      "CPG006 %s failed Retry stays denied and retires a pending conditional poll",
+      "CPG007 %s reader switch ignores a late recovery response"
+    ]
+  },
+  "mobileapp/__tests__/chatRecentHistory.test.tsx": {
+    "cases": [
+      "LCL-003"
+    ],
+    "selectors": [
+      "LCL-003 %s requests recent data and exposes a working error/retry action",
+      "LCL-003 earlier source pages survive latest polling and a failed page keeps the content",
+      "LCL-003 target changes reject late history and noncooperative history reads stop showing loading after 15 seconds",
+      "LCL-003 actual client recent query is opt-in and record identity survives prepending",
+      "LCL-003 authorization loss retires the paged snapshot until a new source snapshot arrives",
+      "LCL-003 HQ predecessor stitch stays chronological and a source page mounts at most twenty more turns",
+      "LCL-003 expanded history stays visible while newer turns wait behind the live edge control",
+      "LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal"
+    ]
+  },
+  "mobileapp/e2e/__tests__/hq-header-shot.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "removed": true,
+    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
+  },
+  "mobileapp/e2e/__tests__/ipad-keys-probe.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "removed": true,
+    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
+  },
+  "mobileapp/e2e/__tests__/knowledge-shot.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "removed": true,
+    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
+  },
+  "mobileapp/e2e/__tests__/send-repro.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "removed": true,
+    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
+  },
+  "mobileapp/e2e/android/diffDismissal.test.ts": {
+    "cases": [
+      "DTV-006"
+    ],
+    "selectors": [
+      "DTV006"
+    ]
+  },
+  "mobileapp/e2e/android/journey.cjs": {
+    "cases": [
+      "CT-ANDROID-POLICY",
+      "CT-TIMING"
+    ],
+    "selectors": [
+      "function selection",
+      "function createJourney"
+    ]
+  },
+  "mobileapp/e2e/android/journey.test.ts": {
+    "cases": [
+      "CT-ANDROID-POLICY",
+      "CT-TIMING"
+    ],
+    "selectors": [
+      "full Android journey retains",
+      "setup failure blocks",
+      "first assertion and disconnect causes",
+      "an out of order selected check",
+      "timing records setup action"
+    ]
+  },
+  "mobileapp/e2e/android/permission.cjs": {
+    "cases": [
+      "ACP-001"
+    ],
+    "selectors": [
+      "async function denyCameraPermission("
+    ]
+  },
+  "mobileapp/e2e/android/permission.fixture.cjs": {
+    "cases": [
+      "ACP-001"
+    ],
+    "selectors": [
+      "function fixture("
+    ]
+  },
+  "mobileapp/e2e/android/permission.test.ts": {
+    "cases": [
+      "ACP-001"
+    ],
+    "selectors": [
+      "ACP-001 enabled camera dialog",
+      "ACP-001 one ignored interaction",
+      "ACP-001 unchanged dialog",
+      "ACP-001 another permission owner",
+      "ACP-001 original driver failure",
+      "ACP-001 late readiness",
+      "ACP-001 a slow read",
+      "ACP-001 absent dialog",
+      "ACP-001 a newly repeated camera prompt",
+      "ACP-001 closing before any Deny"
+    ]
+  },
+  "mobileapp/e2e/android/permissionJourney.test.ts": {
+    "cases": [
+      "ACP-002"
+    ],
+    "selectors": [
+      "ACP-002 registered journey survives",
+      "ACP-002 registered journey still fails",
+      "ACP-002 registered journey cannot pass",
+      "ACP-002 registered journey cannot click",
+      "ACP-002 registered journey preserves"
+    ]
+  },
+  "mobileapp/e2e/android/run.cjs": {
+    "cases": [
+      "CT-ANDROID",
+      "CT-TIMING",
+      "ACP-003",
+      "DTV-006"
+    ],
+    "selectors": [
+      "async function check",
+      "async function run",
+      "await check('21-camera-permission-denial'"
+    ]
+  },
+  "mobileapp/e2e/capture/hq-header-shot.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/capture/knowledge-shot.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/diagnostics/ipad-keys-probe.test.ts": {
+    "cases": [
+      "DG-001"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/diagnostics/send-repro.test.ts": {
+    "cases": [
+      "DG-002",
+      "DG-003"
+    ],
+    "selectors": [
+      "gated("
+    ]
+  },
+  "mobileapp/e2e/fake-serve/backend-contract.test.ts": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "RN fake / Go contract:",
+      "RN client consumes original ordinals"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/server.ts": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "startFake"
+    ]
+  },
+  "mobileapp/e2e/fake-serve/world.ts": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "export class World"
+    ]
+  },
+  "mobileapp/e2e/jest.config.manual.js": {
+    "cases": [
+      "DG-001",
+      "DG-002"
+    ],
+    "selectors": [
+      "manualMode(process.env)",
+      "sendTarget(process.env)"
+    ]
+  },
+  "mobileapp/e2e/setup/global-setup-manual.ts": {
+    "cases": [
+      "DG-004"
+    ],
+    "selectors": [
+      "await setupManual(process.env, verifySendTarget, globalSetup)"
+    ]
+  },
+  "mobileapp/e2e/setup/manual-tools.cjs": {
+    "cases": [
+      "DG-001",
+      "DG-002",
+      "DG-003"
+    ],
+    "selectors": [
+      "function manualMode(",
+      "function sendTarget(",
+      "async function verifySendTarget("
+    ]
+  },
+  "mobileapp/e2e/setup/manual-tools.test.ts": {
+    "cases": [
+      "DG-001",
+      "DG-002",
+      "DG-003"
+    ],
+    "selectors": [
+      "DG-001 ordinary discovery",
+      "DG-002 rejects missing target",
+      "DG-003 confirms one exact fixture pane"
+    ]
+  },
+  "mobileapp/ios/tests/DocumentHTMLChecks.swift": {
+    "cases": [
+      "ND-001"
+    ],
+    "selectors": [
+      "@main struct DocumentHTMLChecks"
+    ]
+  },
+  "mobileapp/ios/tests/DocumentMarkdownChecks.swift": {
+    "cases": [
+      "ND-002"
+    ],
+    "selectors": [
+      "@main struct DocumentMarkdownChecks"
+    ]
+  },
+  "mobileapp/metro.config.js": {
+    "cases": [
+      "CT-SCOPE"
+    ],
+    "selectors": [
+      "const config ="
+    ]
+  },
+  "mobileapp/scripts/check-native-documents.py": {
+    "cases": [
+      "ND-003"
+    ],
+    "selectors": [
+      "def run("
+    ]
+  },
+  "mobileapp/scripts/test-boundary.test.ts": {
+    "cases": [
+      "CT-SCOPE"
+    ],
+    "selectors": [
+      "actual Metro resolver refuses"
+    ]
+  },
+  "mobileapp/src/api/client.restore.test.ts": {
+    "cases": [
+      "RSR-006"
+    ],
+    "selectors": [
+      "preview and status are read only; start carries exact stable ID and revision",
+      "normal 15s timeout is uncertain and never retries a mutation",
+      "unsupported, malformed, foreign ID and typed conflicts never become success"
+    ]
+  },
+  "mobileapp/src/api/client.test.ts": {
+    "cases": [
+      "UR-002"
+    ],
+    "selectors": [
+      "usage accepts a real empty report but keeps refusals, bad bodies and network failures"
+    ]
+  },
+  "mobileapp/src/api/conversation.test.ts": {
+    "cases": [
+      "CAS-005"
+    ],
+    "selectors": [
+      "CAS005 transcript rejects association and source failures instead of returning empty history"
+    ]
+  },
+  "mobileapp/src/api/observed-client-contract.test.ts": {
+    "cases": [
+      "SID-009"
+    ],
+    "selectors": [
+      "SID009 ordinary reads stay compatible while UI history explicitly opts in"
+    ]
+  },
+  "mobileapp/src/api/observed-history.test.ts": {
+    "cases": [
+      "SID-006"
+    ],
+    "selectors": [
+      "SID006 observed history stays separate from current session authority and survives 304"
+    ]
+  },
+  "mobileapp/src/api/sendDeadline.test.ts": {
+    "cases": [
+      "MSD-004"
+    ],
+    "selectors": [
+      "MSD-004 bounds a hung %s and never retries or accepts a late answer",
+      "MSD-004 keeps exact receipts, legacy success and the server refusal"
+    ]
+  },
+  "mobileapp/src/screens/DetailDraftSwitch.test.tsx": {
+    "cases": [
+      "CT-DRAFT"
+    ],
+    "selectors": [
+      "mounted Detail isolates drafts",
+      "late draft storage result"
+    ]
+  },
+  "mobileapp/src/screens/DetailObserved.test.tsx": {
+    "cases": [
+      "SID-006",
+      "CKD-002",
+      "CKD-003"
+    ],
+    "selectors": [
+      "SID006 mounted Detail fences historical chat and clears restriction after verified refresh",
+      "CKD003 Detail keeps the pending draft scope when the same conversation is verified"
+    ]
+  },
+  "mobileapp/src/screens/DetailSendReceipt.test.tsx": {
+    "cases": [
+      "MSD-005"
+    ],
+    "selectors": [
+      "MSD-005 %s releases failed sends and preserves explicit retry identity",
+      "MSD-005 old failure cannot replace the newer accepted send",
+      "MSD-005 a control key cannot leave a prior text receipt permanently Sending"
+    ]
+  },
+  "mobileapp/src/screens/DetailSendSnapshot.test.tsx": {
+    "cases": [
+      "MSD-009"
+    ],
+    "selectors": [
+      "MSD-009 late text receipt cannot replace newer %s control-key screen"
+    ]
+  },
+  "mobileapp/src/screens/DetailTrace.test.tsx": {
+    "cases": [
+      "CAS-005",
+      "CAS-007",
+      "CRX-001",
+      "CRX-002"
+    ],
+    "selectors": [
+      "CAS005 Detail propagates association failures, preserves history and clears on retry",
+      "CAS007 unchanged transcript polls reuse the ChatView element",
+      "CRX-002 manual reload publishes immediate busy feedback to Chat and Trace until the current read settles"
+    ]
+  },
+  "mobileapp/src/screens/HQReload.test.tsx": {
+    "cases": [
+      "CRX-002",
+      "CRX-004"
+    ],
+    "selectors": [
+      "CRX-002 HQ reload is pending immediately and late superseded results cannot settle it",
+      "CRX-004 a send receipt invalidates the pre-send read and refreshes once without waiting for poll interval"
+    ]
+  },
+  "mobileapp/src/screens/HQScreen.association.test.tsx": {
+    "cases": [
+      "CAS-008"
+    ],
+    "selectors": [
+      "CAS008 HQ association failure keeps history and clears after retry"
     ]
   },
   "mobileapp/src/screens/HQScreen.attach.test.tsx": {
@@ -2198,112 +2310,58 @@
       "cancelling the photo picker leaves nothing to send and the menu can open again"
     ]
   },
-  "internal/native/closed_frontend_test.go": {
+  "mobileapp/src/screens/HQScreen.observed.test.tsx": {
     "cases": [
-      "HXF-001"
+      "SID-006",
+      "CKD-002",
+      "CKD-003"
     ],
     "selectors": [
-      "TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess"
+      "SID006 mounted HQ cannot send from last-known history and resets on verified response",
+      "CKD003 HQ keeps the pending draft scope when the same conversation is verified"
     ]
   },
-  "tests/web/http-contract-validator.test.cjs": {
+  "mobileapp/src/screens/HQScreen.poll.test.tsx": {
     "cases": [
-      "CT-HTTP"
+      "UR-001"
     ],
     "selectors": [
-      "wire contract rejects type, permission, ordinal, omission and security-header drift"
+      "a slow HQ usage answer is kept when the Mac takes longer than 15 seconds",
+      "a stalled usage read retires at its own deadline, then a new read recovers",
+      "shortcut distinguishes loading and failed reads from an empty resource",
+      "the Usage sheet retry action starts a new read immediately after failure"
     ]
   },
-  "internal/hq/rotation_identity_diagnostic_test.go": {
+  "mobileapp/src/screens/HQSendOrdering.test.tsx": {
     "cases": [
-      "HRW-012"
+      "MSD-008"
     ],
     "selectors": [
-      "TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity"
-    ],
-    "retired_selectors": [
-      {
-        "selector": "TestHRW012UnavailableIdentityIsNotChangedAndEscalatesOnce",
-        "reason": "HRW016 supersedes obsolete 60-second terminal-failure expectation; unknown/no-input, cause normalization, original timing and exact recovery safeguards migrated after sealed design19582eee."
-      },
-      {
-        "selector": "TestHRW012DiagnosticReasonChangesDoNotExtendDeadlineOrGrantReset",
-        "reason": "HRW016 supersedes obsolete 60-second terminal-failure expectation; unknown/no-input, cause normalization, original timing and exact recovery safeguards migrated after sealed design19582eee."
-      }
+      "MSD-008 old HQ %s cannot replace a newer accepted message",
+      "MSD-008 HQ old reply and old retry cannot cross a session change",
+      "MSD-008 a later %s key does not leave the current HQ text Sending"
     ]
   },
-  "scripts/test_design.py": {
+  "mobileapp/src/screens/HQSendReceipt.test.tsx": {
     "cases": [
-      "TD-001",
-      "TD-002",
-      "TD-003",
-      "TD-004",
-      "TD-005"
+      "MSD-007"
     ],
     "selectors": [
-      "def validate(",
-      "def history_errors(",
-      "def refresh_catalogue("
+      "MSD-007 HQ exposes %s receipt with stable message identity",
+      "MSD-007 HQ timeout retry after 21 seconds reuses original send ID",
+      "MSD-007 old identical transcript cannot retire the new HQ message"
     ]
   },
-  "tests/contracts/http-contract.cjs": {
+  "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx": {
     "cases": [
-      "CT-HTTP"
+      "CT-DRAFT",
+      "CT-HQ",
+      "MSD-010"
     ],
     "selectors": [
-      "async function observe",
-      "function verify"
-    ]
-  },
-  "internal/server/web/state-duration.test.cjs": {
-    "cases": [
-      "CSR-004"
-    ],
-    "selectors": [
-      "CSR-004 browser row"
-    ]
-  },
-  "internal/prompt/prompt_codex_folder_access_test.go": {
-    "cases": [
-      "WTR-004"
-    ],
-    "selectors": [
-      "TestWTR004CurrentFolderAccessBlocksReadiness",
-      "TestWTR004ReportsAndSettledComposersAreNotConsent"
-    ]
-  },
-  "internal/app/screenshot_send_test.go": {
-    "cases": [
-      "ASC-004",
-      "ASC-005"
-    ],
-    "selectors": [
-      "TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance"
-    ]
-  },
-  "internal/hqworkspace/input_test.go": {
-    "cases": [
-      "HQP1-003"
-    ],
-    "selectors": [
-      "TestHumanQuestionRemainsSeparateFromReportsAndGoal"
-    ]
-  },
-  "internal/screenshot/host_readiness_test.go": {
-    "cases": [
-      "ASC-007"
-    ],
-    "selectors": [
-      "TestASC007HostObservationCannotAuthorizeAfterCancellation",
-      "TestASC007HostIncarnationUsesExactUTCMetadata"
-    ]
-  },
-  "mobileapp/e2e/android/permission.fixture.cjs": {
-    "cases": [
-      "ACP-001"
-    ],
-    "selectors": [
-      "function fixture("
+      "pending HQ question opens the original matter",
+      "late HQ overview and matter responses",
+      "a prepared HQ question stays scoped"
     ]
   },
   "mobileapp/src/screens/KnowledgeSheet.test.tsx": {
@@ -2336,89 +2394,259 @@
       "an in-flight write cannot be submitted twice, and completion keeps the entry open"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift": {
+  "mobileapp/src/screens/LivePreviewScope.test.tsx": {
     "cases": [
-      "MC-HQ-CHOICE",
-      "MC-HQ-READ"
+      "LPV-002"
     ],
     "selectors": [
-      "testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft",
-      "testSlowSourceDiscoveryCannotBlockReplyOrRollBackNewCanonicalData",
-      "testSourceTimeoutDoesNotBecomeTheQuestionOrDraftError",
-      "testStoredClientUsesReadOnlyFlagAndOnlyLegacyUsageFallsBack",
-      "testUnavailableSourceMetadataNeverClaimsTheSessionIsGone"
+      "LPV002"
     ]
   },
-  "internal/app/hqworkspace_stored_test.go": {
+  "mobileapp/src/screens/RestoreSessionsEntry.test.tsx": {
     "cases": [
-      "MC-HQ-READ"
+      "RSR-009"
     ],
     "selectors": [
-      "TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched"
+      "owner server More offers restore and targets that server; guest does not"
     ]
   },
-  "internal/codexbridge/binding_recovery_test.go": {
+  "mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx": {
     "cases": [
-      "CBA-002",
-      "CBA-003"
+      "RSR-011"
     ],
     "selectors": [
-      "TestCBA002TransientRootBindingRecoversFromTheActualObserver",
-      "TestCBA003NewSelectionAndEpochRetirePendingRecovery",
-      "TestCBA003PendingNewRootNeverRefreshesOldRoot",
-      "TestCBA003RetryPacingDeadlineAndHardRefusal",
-      "TestCBA003ReceiptFailureCommitsThenOnlyHeartbeats",
-      "TestCBA003ClosedConnectionCannotPublishLater",
-      "TestCBA003InitializeInvalidatesEarlierRootAndEarlierHomeResponse",
-      "TestCBA003NewVerifiedRootReplacesOnlyItsOwnPendingSelection",
-      "TestCBA003NoAttemptAtDeadlineOrAfterEpochChange",
-      "TestCBA003UnrelatedTrafficCannotReplacePendingRoot",
-      "TestCBA002SameRootReconnectRecoversWithoutRefreshingUnverifiedProof"
+      "RSR011 transient native read rejection cannot replace a saved pre-admission ID",
+      "RSR011 repeated native read rejection stays reachable without preview mutation or clear",
+      "RSR011 confirmed empty local read can resume read-only preview after a native failure",
+      "RSR011 late old-pairing local read %s cannot grant a new target readiness"
     ]
   },
-  "scripts/ci_test.py": {
+  "mobileapp/src/screens/RestoreSessionsSheet.recovery.test.tsx": {
     "cases": [
-      "CT-SCOPE"
+      "RSR-010"
     ],
     "selectors": [
-      "test_unit_test_scope_requires_immutable_product_exclusion"
+      "RSR010 persisted progress remains readable when a new preview is unavailable",
+      "RSR010 failed status and preview keep a reachable same-ID read-only retry",
+      "RSR010 failed initial preview can be retried without starting recovery",
+      "RSR010 late stored-job status cannot replace a different paired server",
+      "RSR010 unreadable local identity cannot be cleared into a new request"
     ]
   },
-  "internal/state/cpu_repeated_poll_test.go": {
+  "mobileapp/src/screens/RestoreSessionsSheet.test.tsx": {
     "cases": [
-      "CSR-005"
+      "RSR-007"
     ],
     "selectors": [
-      "TestCSR005RepeatedPollPreservesObservedCPUWork",
-      "TestCSR005RepeatedPollRequiresValidPriorEvidence"
+      "preview is not a restore; duplicate clicks start one persisted request and reopening only reads it",
+      "response loss retry reuses the exact request and never changes to another transport",
+      "host change during pending local persistence cannot post to either target",
+      "late old host preview cannot replace the new server result; guest never reads or starts",
+      "closed sheet stops polling and partial results remain visibly partial",
+      "local persistence failure prevents POST; stale preview refresh discards only an explicitly refused request"
     ]
   },
-  "internal/knowledge/vault_test.go": {
+  "mobileapp/src/screens/ServerModeBehavior.test.tsx": {
     "cases": [
-      "KBMEM-VAULT"
+      "CT-SUB"
     ],
     "selectors": [
-      "TestVaultRoundTripRenameAndDeletion",
-      "TestVaultConflictPrivacyAndRecovery",
-      "TestVaultRefusesSymlinksAndUnrelatedDirectory",
-      "TestVaultPublicationKeepsOldSnapshotsAndReadOnlyFiles"
+      "awake and reconnect subscription events",
+      "late server mode response"
     ]
   },
-  "internal/app/help_readability_test.go": {
+  "mobileapp/src/screens/ServersScreen.test.tsx": {
     "cases": [
-      "CAS-006"
+      "RSR-009"
     ],
     "selectors": [
-      "TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible"
+      "More is a menu: Disconnect only on the open Mac, Remove last"
     ]
   },
-  "internal/app/phone_delivery_receipt_test.go": {
+  "mobileapp/src/screens/UsageSheet.test.tsx": {
     "cases": [
-      "MSD-002"
+      "UR-003"
     ],
     "selectors": [
-      "TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection",
-      "TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry"
+      "usage states distinguish loading, a valid empty report and an older server",
+      "a timeout keeps the previous report, offers retry, and folds technical detail",
+      "usage failure guidance follows the actual refusal or transport",
+      "the shared regular sheet keeps the error card bounded and names retry in Chinese"
+    ]
+  },
+  "mobileapp/src/screens/attachmentEchoIdentity.test.ts": {
+    "cases": [
+      "AEC-001"
+    ],
+    "selectors": [
+      "AEC-001 dual-representation identity preserves ordered attachment multiplicity"
+    ]
+  },
+  "mobileapp/src/screens/attachmentEchoReconciliation.test.tsx": {
+    "cases": [
+      "AEC-002"
+    ],
+    "selectors": [
+      "AEC-002 %s retires image echo in its first recorded commit and ignores late receipt",
+      "AEC-002 %s keeps an old identical occurrence pending but retires a new one",
+      "AEC-002 %s retires plain-text echo without one duplicate committed frame"
+    ]
+  },
+  "mobileapp/src/state/desktopReload.test.tsx": {
+    "cases": [
+      "CRX-002"
+    ],
+    "selectors": [
+      "CRX-002 external reload retains content, enforces parent deadline and retires old scope"
+    ]
+  },
+  "mobileapp/src/trace/TraceModal.toolCall.test.tsx": {
+    "cases": [
+      "TCV-004"
+    ],
+    "selectors": [
+      "Trace loads recorded query details and both Preview and Raw are useful",
+      "Chat reuses the same query details, failure retries and late reads retire on home change"
+    ]
+  },
+  "mobileapp/src/trace/semantic-title.test.ts": {
+    "cases": [
+      "AOP-001"
+    ],
+    "selectors": [
+      "AOP001 Trace preserves every real call while labels follow normalized actions"
+    ]
+  },
+  "mobileapp/src/ui/AgentStateDuration.test.tsx": {
+    "cases": [
+      "CSR-004"
+    ],
+    "selectors": [
+      "CSR-004 real decoded rows"
+    ]
+  },
+  "mobileapp/src/ui/ChatEchoHandoff.test.tsx": {
+    "cases": [
+      "CRX-004"
+    ],
+    "selectors": [
+      "CRX-004 %s confirmed echo keeps the same mounted bubble"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.association.test.tsx": {
+    "cases": [
+      "CAS-005"
+    ],
+    "selectors": [
+      "CAS005 association banner preserves messages and retries without claiming empty history"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.observed.test.tsx": {
+    "cases": [
+      "SID-006"
+    ],
+    "selectors": [
+      "SID006 last-known history is explicitly read only in both languages"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.pendingLive.test.tsx": {
+    "cases": [
+      "LPV-001"
+    ],
+    "selectors": [
+      "LPV001"
+    ]
+  },
+  "mobileapp/src/ui/CommandArgvPanel.test.tsx": {
+    "cases": [
+      "ARGV-002"
+    ],
+    "selectors": [
+      "ARGV-002 shared readers"
+    ]
+  },
+  "mobileapp/src/ui/Composer.readonly-draft.test.tsx": {
+    "cases": [
+      "CKD-001"
+    ],
+    "selectors": [
+      "CKD001 local-only draft opens and survives blocked submits in %s",
+      "CKD001 verified sends remain enabled and ordinary disabled input stays disabled"
+    ]
+  },
+  "mobileapp/src/ui/ConversationCopy.test.tsx": {
+    "cases": [
+      "CRX-006"
+    ],
+    "selectors": [
+      "CRX-006 %s empty state is concise and its Terminal action works"
+    ]
+  },
+  "mobileapp/src/ui/ConversationReload.test.tsx": {
+    "cases": [
+      "CRX-001"
+    ],
+    "selectors": [
+      "CRX-001 %s reload is visible, busy and keeps messages"
+    ]
+  },
+  "mobileapp/src/ui/CrossClientContract.test.tsx": {
+    "cases": [
+      "CP-001",
+      "CP-002",
+      "CP-003"
+    ],
+    "selectors": [
+      "CP-001 %s renders",
+      "CP-002 HQ request",
+      "CP-003 document actions"
+    ]
+  },
+  "mobileapp/src/ui/DiffModal.test.tsx": {
+    "cases": [
+      "DTV-002"
+    ],
+    "selectors": [
+      "file cards, hunk folding, line numbers and full source reader share the original diff",
+      "large Dynamic Type keeps chrome and six-digit line numbers within the wrapped viewport",
+      "wrapping preserves recorded layout and code rows use one compact source gutter"
+    ]
+  },
+  "mobileapp/src/ui/DiffTreeModal.test.tsx": {
+    "cases": [
+      "DTV-002"
+    ],
+    "selectors": [
+      "DTV002 native Diff starts with directory summaries and identifies its worktree",
+      "DTV002 a clean worktree keeps context without showing metadata as code"
+    ]
+  },
+  "mobileapp/src/ui/ExecutionChainPresentation.test.tsx": {
+    "cases": [
+      "CRX-005"
+    ],
+    "selectors": [
+      "CRX-005 %s equal adjacent process displays are grouped, not hidden"
+    ]
+  },
+  "mobileapp/src/ui/ParticipantProfileModal.test.tsx": {
+    "cases": [
+      "CRX-005"
+    ],
+    "selectors": [
+      "message facts stay historical while a same-session launch chain loads on demand",
+      "a tmux message can verify its chain when the radar row has no session id",
+      "a current header shows recorded ancestry without implying a historical message",
+      "a stitched older session never requests the pane’s different current runtime",
+      "a current profile reuses its already-read chain and distinguishes an empty record"
+    ]
+  },
+  "mobileapp/src/ui/ToolReading.test.tsx": {
+    "cases": [
+      "TSV-001"
+    ],
+    "selectors": [
+      "TSV-001 command preview is direct, single-command outline absent, original input and result copy remain exact"
     ]
   },
   "mobileapp/src/ui/ToolSteps.action-facts.test.tsx": {
@@ -2429,56 +2657,128 @@
       "ASA004 actual App rows identify skill web intent and file targets with unchanged inspector input"
     ]
   },
-  "tests/web/tool-reading.test.cjs": {
+  "mobileapp/src/ui/ToolSteps.dsh-identity.test.tsx": {
     "cases": [
-      "TSV-003"
+      "ASA-010"
     ],
     "selectors": [
-      "TSV-003 compact recorded command and readable result "
+      "ASA010 DSH foreign id remains neutral in actual rows and Chat/Trace"
     ]
   },
-  "internal/knowledge/sync_serialization_test.go": {
+  "mobileapp/src/ui/ToolSteps.semantic.test.tsx": {
     "cases": [
-      "KBSYNC-SERIALIZATION"
+      "AOP-001",
+      "AOP-003"
     ],
     "selectors": [
-      "TestPublicSyncSerializesSnapshotAndPublication",
-      "TestPublicSyncReleasesLockOnErrorAndRefusal"
+      "AOP001 AOP003 real Activity rows share semantic visible and spoken titles with touch targets"
     ]
   },
-  "internal/dispatchbridge/direct_user_input_test.go": {
+  "mobileapp/src/ui/activity-action-facts.test.ts": {
     "cases": [
-      "MSD-002"
+      "ASA-004",
+      "ASA-005"
     ],
     "selectors": [
-      "TestMSD002DirectUserIngressPreservesReceiptAndNeverReplays"
+      "ASA004 recorded actions and targets agree across five agents and Trace without adding calls",
+      "ASA005 unknown incompatible and malformed facts use bounded neutral fallback"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/ScreenshotAgentRenderingTests.swift": {
+  "mobileapp/src/ui/activity-semantics.test.ts": {
     "cases": [
-      "ASC-003",
-      "ASC-006"
+      "AOP-001",
+      "AOP-002"
     ],
     "selectors": [
-      "testASC003RedactionUsesSharedRetinaRendererAndExactFrame",
-      "testASC006EditorRoundtripPreservesBusyDraftAndDoesNotSend"
+      "AOP001 semantic actions override raw transport names without rewriting tool facts",
+      "AOP002 argv preview is bounded, cross-surface and leaves ambiguous input verbatim"
     ]
   },
-  "mobileapp/src/ui/ToolReaderCopy.test.tsx": {
+  "mobileapp/src/ui/commandArgv.test.ts": {
     "cases": [
-      "CRR-002"
+      "ARGV-001"
     ],
     "selectors": [
-      "CRR-002"
+      "ARGV-001 shell argv",
+      "ARGV-001 cmd fields",
+      "ARGV-001 ordinary argv"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/ScreenshotAgentSourceTests.swift": {
+  "mobileapp/src/ui/diffTree.test.ts": {
     "cases": [
-      "ASC-003"
+      "DTV-001"
     ],
     "selectors": [
-      "testASC003SourcesExpireAndNeverWidenChangedOwnershipOrRegion",
-      "testASC003MissingPermissionDoesNotPromptOrListOtherApps"
+      "DTV001 directories start closed and preserve exact code and totals on expansion",
+      "DTV001 context stays outside hunks and untracked names never count as code additions",
+      "DTV001 prototype-like and deep folder names stay inert with bounded hierarchy"
+    ]
+  },
+  "mobileapp/src/ui/native-action-facts.test.ts": {
+    "cases": [
+      "ASA-008"
+    ],
+    "selectors": [
+      "ASA008 native provider skill and queries facts agree in Chat and Trace"
+    ]
+  },
+  "mobileapp/src/ui/sendReceipt.test.ts": {
+    "cases": [
+      "MSD-005",
+      "CRX-004"
+    ],
+    "selectors": [
+      "MSD-005 receipt wording distinguishes queueing and acceptance without claiming execution"
+    ]
+  },
+  "mobileapp/src/ui/toolOutput.test.ts": {
+    "cases": [
+      "TSV-002"
+    ],
+    "selectors": [
+      "TSV-002 terminal preview removes controls while preserving literal and raw evidence",
+      "TSV-002 local file URI presentation does not reinterpret foreign or malformed paths"
+    ]
+  },
+  "mobileapp/src/ui/toolPresentation.test.ts": {
+    "cases": [
+      "TCV-003"
+    ],
+    "selectors": [
+      "query details show named parameters, structured results, provenance and complete raw",
+      "command, file changes, waits, text/errors and missing/empty results stay distinct",
+      "full reads preserve original command and distinct native result references",
+      "large rendering pages disclose bounds and preserve all characters"
+    ]
+  },
+  "scripts/ci.py": {
+    "cases": [
+      "CT-SCOPE"
+    ],
+    "selectors": [
+      "confirmed_unit_test_isolation"
+    ]
+  },
+  "scripts/ci_test.py": {
+    "cases": [
+      "CT-SCOPE"
+    ],
+    "selectors": [
+      "test_unit_test_scope_requires_immutable_product_exclusion"
+    ]
+  },
+  "scripts/test_design.py": {
+    "cases": [
+      "TD-001",
+      "TD-002",
+      "TD-003",
+      "TD-004",
+      "TD-005"
+    ],
+    "selectors": [
+      "def validate(",
+      "def history_errors(",
+      "def refresh_catalogue("
     ]
   },
   "scripts/test_design_test.py": {
@@ -2499,252 +2799,13 @@
       "test_ND_003_native_runner_uses_production_sources_and_propagates_failures"
     ]
   },
-  "mobileapp/src/screens/HQScreen.observed.test.tsx": {
+  "tests/contracts/http-contract.cjs": {
     "cases": [
-      "SID-006",
-      "CKD-002",
-      "CKD-003"
+      "CT-HTTP"
     ],
     "selectors": [
-      "SID006 mounted HQ cannot send from last-known history and resets on verified response",
-      "CKD003 HQ keeps the pending draft scope when the same conversation is verified"
-    ]
-  },
-  "internal/codexbridge/connection_epoch_test.go": {
-    "cases": [
-      "CFR-004"
-    ],
-    "selectors": [
-      "TestCFR004OnlySuccessfulNewerConnectionChangesAuthority",
-      "TestCFR004UpgradeRetainsOnlyTheRemainingAdmissionBudget"
-    ]
-  },
-  "internal/codexbridge/binding_publication_test.go": {
-    "cases": [
-      "CBA-004"
-    ],
-    "selectors": [
-      "TestCBA004PublicationAndAttachmentFinishBeforeNewEpochActivation",
-      "TestCBA004CanceledPublicationWaitNeverStartsBind",
-      "TestCBA004HeartbeatPublicationAlsoPrecedesNewEpoch",
-      "TestCBA004CancellationInsidePublicationPermitDoesNotRetry"
-    ]
-  },
-  "internal/hqinput/rotation_test.go": {
-    "cases": [
-      "HRW-003"
-    ],
-    "selectors": [
-      "TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize"
-    ]
-  },
-  "mobileapp/src/screens/ServerModeBehavior.test.tsx": {
-    "cases": [
-      "CT-SUB"
-    ],
-    "selectors": [
-      "awake and reconnect subscription events",
-      "late server mode response"
-    ]
-  },
-  "internal/codexterminal/readiness_missing_ancestor_test.go": {
-    "cases": [
-      "CFR-008"
-    ],
-    "selectors": [
-      "TestCFR008MissingAncestorIsUnavailableAndACompleteRecheckCanSucceed",
-      "TestCFR008ObservedConflictsStayHardWhenAnotherRequiredRowIsMissing"
-    ]
-  },
-  "mobileapp/src/screens/DetailObserved.test.tsx": {
-    "cases": [
-      "SID-006",
-      "CKD-002",
-      "CKD-003"
-    ],
-    "selectors": [
-      "SID006 mounted Detail fences historical chat and clears restriction after verified refresh",
-      "CKD003 Detail keeps the pending draft scope when the same conversation is verified"
-    ]
-  },
-  "internal/hq/knowledgeshim_test.go": {
-    "cases": [
-      "KBCARRIER-COMPAT"
-    ],
-    "selectors": [
-      "TestPromotionsStatus"
-    ]
-  },
-  "internal/app/hqworkspace_test.go": {
-    "cases": [
-      "HQP1-007"
-    ],
-    "selectors": [
-      "TestSpawnMatterValidationBeforeAnyLaunch"
-    ]
-  },
-  "internal/server/restore_test.go": {
-    "cases": [
-      "RSR-001"
-    ],
-    "selectors": [
-      "TestRestoreOwnerContractNeverStartsOnRead",
-      "TestRestoreKnownFailureCodesStayDistinct"
-    ]
-  },
-  "tests/web/profile.test.cjs": {
-    "cases": [
-      "CRX-005"
-    ],
-    "selectors": [
-      "Historical profile reads current ancestry only on expansion and only for the same conversation"
-    ]
-  },
-  "mobileapp/e2e/setup/manual-tools.test.ts": {
-    "cases": [
-      "DG-001",
-      "DG-002",
-      "DG-003"
-    ],
-    "selectors": [
-      "DG-001 ordinary discovery",
-      "DG-002 rejects missing target",
-      "DG-003 confirms one exact fixture pane"
-    ]
-  },
-  "internal/state/privatewrite_durability_test.go": {
-    "cases": [
-      "PRIVATEWRITE-DIRECTORY-SYNC"
-    ],
-    "selectors": [
-      "TestPrivateWriteRetriesDirectorySyncAfterRename"
-    ]
-  },
-  "mobileapp/src/ui/DiffTreeModal.test.tsx": {
-    "cases": [
-      "DTV-002"
-    ],
-    "selectors": [
-      "DTV002 native Diff starts with directory summaries and identifies its worktree",
-      "DTV002 a clean worktree keeps context without showing metadata as code"
-    ]
-  },
-  "internal/knowledge/review_test.go": {
-    "cases": [
-      "KBMEM-REVIEW"
-    ],
-    "selectors": [
-      "TestReviewAtomicConflictAndIdempotentRetry",
-      "TestReviewRejectsWholeBatchBeforeAnyAppend",
-      "TestReviewConcurrentRevisionHasOneWinner",
-      "TestReviewDryRunWritesNothingAndProtectedRetireRefused",
-      "TestReviewedRevisionReopensCarrierAndDoesNotRefreshVerification"
-    ]
-  },
-  "mobileapp/src/ui/ChatView.association.test.tsx": {
-    "cases": [
-      "CAS-005"
-    ],
-    "selectors": [
-      "CAS005 association banner preserves messages and retries without claiming empty history"
-    ]
-  },
-  "mobileapp/src/screens/HistoryEchoHandoff.test.tsx": {
-    "cases": [
-      "CAR-003"
-    ],
-    "selectors": [
-      "CRR-001"
-    ]
-  },
-  "internal/knowledge/testdata/golden/api/index.json.golden": {
-    "cases": [
-      "KBL-GOLDEN"
-    ],
-    "selectors": [
-      "\"task\":\"t-9\""
-    ]
-  },
-  "mobileapp/src/trace/TraceModal.toolCall.test.tsx": {
-    "cases": [
-      "TCV-004"
-    ],
-    "selectors": [
-      "Trace loads recorded query details and both Preview and Raw are useful",
-      "Chat reuses the same query details, failure retries and late reads retire on home change"
-    ]
-  },
-  "internal/codexrpc/idle_wake_test.go": {
-    "cases": [
-      "HRW-001"
-    ],
-    "selectors": [
-      "TestHRW001AutomaticWakeUsesFreshIdleWithoutQueueOrSteer"
-    ]
-  },
-  "internal/knowledge/memory_carrier_test.go": {
-    "cases": [
-      "KBMEM-CARRIER"
-    ],
-    "selectors": [
-      "TestMemoryCarrierUpdatesHistoricalTextAndPreservesManualEdits"
-    ],
-    "reason": "Original 21576f9 test restored byte-for-byte; incremental publication regressions moved to local_publication_test.go after a fresh file-specific reviewed design."
-  },
-  "tests/web/command-argv.test.cjs": {
-    "cases": [
-      "ARGV-003"
-    ],
-    "selectors": [
-      "ARGV-003 Trace argv scripts"
-    ]
-  },
-  "internal/hq/knowledge_workflow_test.go": {
-    "cases": [
-      "KBMEM-HQ-WORKFLOW"
-    ],
-    "selectors": [
-      "TestKnowledgeWorkflowUsesBoundedReviewWithoutManufacturedReuse"
-    ]
-  },
-  "internal/server/hq_test.go": {
-    "cases": [
-      "KBCARRIER-REVISION"
-    ],
-    "selectors": [
-      "TestHQKnowledgeActClosesTheVerbList"
-    ]
-  },
-  "mobileapp/e2e/__tests__/knowledge-shot.test.ts": {
-    "cases": [
-      "DG-001"
-    ],
-    "removed": true,
-    "reason": "Moved intact to an explicit manual-only entry; screenshot/probe capability retained."
-  },
-  "internal/app/spawn_paneid_test.go": {
-    "cases": [
-      "APPFIX-NAME-STABILITY"
-    ],
-    "selectors": [
-      "TestNameDispatchWindowBackfillsPaneIDs"
-    ]
-  },
-  "internal/knowledge/usage_test.go": {
-    "cases": [
-      "KBMEM-USAGE"
-    ],
-    "selectors": [
-      "TestUsageDoesNotBecomeHitAndRetryIsIdempotent",
-      "TestUsageRejectsAuditAndForgedMeasurement"
-    ]
-  },
-  "internal/hq/rotation_admission_test.go": {
-    "cases": [
-      "HRW-007"
-    ],
-    "selectors": [
-      "TestHRW007RegistrationSharesTheInputClaimLease"
+      "async function observe",
+      "function verify"
     ]
   },
   "tests/manual/codex-worktree-trust.py": {
@@ -2755,263 +2816,33 @@
       "def main():"
     ]
   },
-  "mobileapp/e2e/android/permissionJourney.test.ts": {
+  "tests/web/backend-contract.test.cjs": {
     "cases": [
-      "ACP-002"
+      "CT-HTTP"
     ],
     "selectors": [
-      "ACP-002 registered journey survives",
-      "ACP-002 registered journey still fails",
-      "ACP-002 registered journey cannot pass",
-      "ACP-002 registered journey cannot click",
-      "ACP-002 registered journey preserves"
+      "Web fake / Go contract:"
     ]
   },
-  "internal/screenshot/transport_test.go": {
-    "cases": [
-      "ASC-002"
-    ],
-    "selectors": [
-      "TestASC002NativeTransportPinsHostAndBoundsReplies",
-      "TestASC006NativeInterop"
-    ]
-  },
-  "internal/server/conversation_read_test.go": {
-    "cases": [
-      "CAS-003"
-    ],
-    "selectors": [
-      "TestCAS003ConversationFailureContractAndGuestBoundary"
-    ]
-  },
-  "mobileapp/src/screens/RestoreSessionsSheet.recovery.test.tsx": {
-    "cases": [
-      "RSR-010"
-    ],
-    "selectors": [
-      "RSR010 persisted progress remains readable when a new preview is unavailable",
-      "RSR010 failed status and preview keep a reachable same-ID read-only retry",
-      "RSR010 failed initial preview can be retried without starting recovery",
-      "RSR010 late stored-job status cannot replace a different paired server",
-      "RSR010 unreadable local identity cannot be cleared into a new request"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotWorkflowTests.swift": {
-    "cases": [
-      "SCW-001",
-      "SCW-002",
-      "SCW-003",
-      "SCW-004"
-    ],
-    "selectors": [
-      "testSCW001WindowsKeepDraftsFilesAndLateReceiptsIndependent",
-      "testSCW001CapacityPreservesEveryExistingDocument",
-      "testSCW002SearchUsesTitlesLocationsAndStableFuzzyMatches",
-      "testSCW002ActualSearchFieldNavigationCompositionAndEmptyResults",
-      "testSCW003RefusalCategoriesNeverInventHumanApprovalOrDelivery",
-      "testSCW004NewCaptureIsSerializedThroughHandoffAndKeepsOldDraft",
-      "testSCW004CLIEditCanOpenBesideDraftAndResolveItsOwnStore",
-      "testSCW004PermissionAndCapacityRefusalsPreserveWorkWithoutCapture"
-    ]
-  },
-  "mobileapp/src/screens/HQScreen.association.test.tsx": {
-    "cases": [
-      "CAS-008"
-    ],
-    "selectors": [
-      "CAS008 HQ association failure keeps history and clears after retry"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/ScreenshotSourceMappingTests.swift": {
-    "cases": [
-      "ASC-011"
-    ],
-    "selectors": [
-      "testASC011ChangedDisplayMappingAndScaleRefuseBeforeAndAfterCapture"
-    ]
-  },
-  "mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx": {
-    "cases": [
-      "CT-DRAFT",
-      "CT-HQ",
-      "MSD-010"
-    ],
-    "selectors": [
-      "pending HQ question opens the original matter",
-      "late HQ overview and matter responses",
-      "a prepared HQ question stays scoped"
-    ]
-  },
-  "internal/codexbridge/binding_location_test.go": {
-    "cases": [
-      "CFL-005"
-    ],
-    "selectors": [
-      "TestCFL005HeartbeatFailuresAreBoundedAndRecoveryIsVisible",
-      "TestCFL005HeartbeatDiagnosticsNeverPrintArbitraryRefreshError",
-      "TestCFL005HeartbeatWindowCapsChangingCausesAndReportsRelocation"
-    ]
-  },
-  "scripts/ci.py": {
-    "cases": [
-      "CT-SCOPE"
-    ],
-    "selectors": [
-      "confirmed_unit_test_isolation"
-    ]
-  },
-  "mobileapp/scripts/check-native-documents.py": {
-    "cases": [
-      "ND-003"
-    ],
-    "selectors": [
-      "def run("
-    ]
-  },
-  "mobileapp/src/ui/diffTree.test.ts": {
-    "cases": [
-      "DTV-001"
-    ],
-    "selectors": [
-      "DTV001 directories start closed and preserve exact code and totals on expansion",
-      "DTV001 context stays outside hunks and untracked names never count as code additions",
-      "DTV001 prototype-like and deep folder names stay inert with bounded hierarchy"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift": {
-    "cases": [
-      "KBCARRIER-REVISION"
-    ],
-    "selectors": [
-      "testLandingCarriesTheViewedRevision"
-    ]
-  },
-  "mobileapp/e2e/android/permission.test.ts": {
-    "cases": [
-      "ACP-001"
-    ],
-    "selectors": [
-      "ACP-001 enabled camera dialog",
-      "ACP-001 one ignored interaction",
-      "ACP-001 unchanged dialog",
-      "ACP-001 another permission owner",
-      "ACP-001 original driver failure",
-      "ACP-001 late readiness",
-      "ACP-001 a slow read",
-      "ACP-001 absent dialog",
-      "ACP-001 a newly repeated camera prompt",
-      "ACP-001 closing before any Deny"
-    ]
-  },
-  "internal/servermode/verified_os_test.go": {
-    "cases": [
-      "SMC-001"
-    ],
-    "selectors": [
-      "TestSMC001VerifiedServerModeOSPreservesUnknownVersionCaution"
-    ]
-  },
-  "internal/hqnudge/native_recovery_test.go": {
-    "cases": [
-      "HRW-009",
-      "HRW-010"
-    ],
-    "selectors": [
-      "TestHRW009NativeOutcomeCrashCannotRebatchOldInput",
-      "TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer",
-      "TestHRW009JournalFailuresAndForeignReplacementHoldWithoutMutation",
-      "TestHRW010ClaimReturnPreservesForeignConflictAndInterruptedPublication",
-      "TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate"
-    ]
-  },
-  "internal/transcript/codex_turn_event_test.go": {
-    "cases": [
-      "CET-001"
-    ],
-    "selectors": [
-      "TestCodexTurnEventIdentityAndFreshness",
-      "TestCodexTurnEventTailBudget"
-    ]
-  },
-  "mobileapp/src/screens/HQScreen.poll.test.tsx": {
-    "cases": [
-      "UR-001"
-    ],
-    "selectors": [
-      "a slow HQ usage answer is kept when the Mac takes longer than 15 seconds",
-      "a stalled usage read retires at its own deadline, then a new read recovers",
-      "shortcut distinguishes loading and failed reads from an empty resource",
-      "the Usage sheet retry action starts a new read immediately after failure"
-    ]
-  },
-  "internal/screenshot/artifact_test.go": {
-    "cases": [
-      "ASC-001",
-      "ASC-003"
-    ],
-    "selectors": [
-      "TestASC001ArtifactPublicationIsAtomicAndPreservesExistingFiles",
-      "TestASC003CoordinatesAndEditableImagesStayBoundToExactBytes"
-    ]
-  },
-  "mobileapp/src/ui/ChatView.pendingLive.test.tsx": {
-    "cases": [
-      "LPV-001"
-    ],
-    "selectors": [
-      "LPV001"
-    ]
-  },
-  "mobileapp/__tests__/chatPagingOrder.test.tsx": {
-    "cases": [
-      "CPG-001",
-      "CPG-002",
-      "CPG-003",
-      "CPG-004"
-    ],
-    "selectors": [
-      "CPG001 refusal %i retires the current snapshot, not the request-start array",
-      "CPG001 an ordinary page failure keeps intervening recent data",
-      "CPG001 an old reader refusal cannot retire a new session",
-      "CPG004 revisiting an observed array cannot reauthorize a refused snapshot",
-      "CPG002 Jump supersedes a late page in a disconnected=%s reader",
-      "CPG002 Jump invalidates the hook operation without a late prepend callback",
-      "CPG003 Jump drops an accepted page anchor before its delayed size callback"
-    ]
-  },
-  "internal/knowledge/source_lineage_test.go": {
-    "cases": [
-      "KBL-001",
-      "KBL-002",
-      "KBL-003",
-      "KBL-004",
-      "KBA-004"
-    ],
-    "selectors": [
-      "TestSourceLineageOrdinarySupersede",
-      "TestSourceLineageReviewApply",
-      "TestSourceLineageReplay",
-      "TestSourceLineageNewCapture"
-    ]
-  },
-  "mobileapp/src/ui/CrossClientContract.test.tsx": {
+  "tests/web/behavior-contract.test.cjs": {
     "cases": [
       "CP-001",
       "CP-002",
-      "CP-003"
+      "CP-003",
+      "CP-004"
     ],
     "selectors": [
-      "CP-001 %s renders",
-      "CP-002 HQ request",
-      "CP-003 document actions"
+      "CP-001 shared rendered Trace",
+      "CP-002 CP-003 CP-004 shared HQ"
     ]
   },
-  "internal/dispatchbridge/idle_wake_test.go": {
+  "tests/web/browser-pool.cjs": {
     "cases": [
-      "HRW-002"
+      "CT-BROWSER-POLICY",
+      "CT-TIMING"
     ],
     "selectors": [
-      "TestHRW002ActualNativeWakePolicyKeepsTargetAndAtMostOnce"
+      "function browserPool"
     ]
   },
   "tests/web/browser-pool.test.cjs": {
@@ -3024,101 +2855,270 @@
       "failed launch propagates"
     ]
   },
-  "internal/codexbridge/analytics_identity_test.go": {
+  "tests/web/command-argv.test.cjs": {
     "cases": [
-      "SID-002"
+      "ARGV-003"
     ],
     "selectors": [
-      "TestSID002AnalyticsLabelDoesNotEraseRootIdentity",
-      "TestSID002AnalyticsCannotPromoteChildOrGlobalTraffic"
+      "ARGV-003 Trace argv scripts"
     ]
   },
-  "internal/native/closed_frontend_reuse_test.go": {
+  "tests/web/conversation-feedback.test.cjs": {
     "cases": [
-      "HXF-003"
+      "CRX-003",
+      "CRX-006"
     ],
     "selectors": [
-      "TestClosedFrontendObservationSurvivesPositivePIDReuseOnly"
+      "CRX-003 visible conversation reload ",
+      "CRX-006 empty conversation uses an actionable short message"
     ]
   },
-  "mobileapp/src/ui/toolPresentation.test.ts": {
-    "cases": [
-      "TCV-003"
-    ],
-    "selectors": [
-      "query details show named parameters, structured results, provenance and complete raw",
-      "command, file changes, waits, text/errors and missing/empty results stay distinct",
-      "full reads preserve original command and distinct native result references",
-      "large rendering pages disclose bounds and preserve all characters"
-    ]
-  },
-  "internal/app/relay_sender_test.go": {
-    "cases": [
-      "HRS-002"
-    ],
-    "selectors": [
-      "TestHRS002TrustedReceiptAndFirstSourceOnly"
-    ]
-  },
-  "mobileapp/src/ui/Composer.readonly-draft.test.tsx": {
-    "cases": [
-      "CKD-001"
-    ],
-    "selectors": [
-      "CKD001 local-only draft opens and survives blocked submits in %s",
-      "CKD001 verified sends remain enabled and ordinary disabled input stays disabled"
-    ]
-  },
-  "internal/app/recent_transcript_test.go": {
-    "cases": [
-      "LCL-002"
-    ],
-    "selectors": [
-      "TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault"
-    ]
-  },
-  "internal/resume/frontend_location_test.go": {
-    "cases": [
-      "CFL-001",
-      "CFL-002",
-      "CFL-003"
-    ],
-    "selectors": [
-      "TestCFL001HeartbeatMigratesOnlyItsCurrentLocation",
-      "TestCFL001ObservedRootBindsAfterVerifiedLocationChange",
-      "TestCFL002LocationChangeCannotHideIdentityOrOwnerConflicts",
-      "TestCFL003MigrationCancellationKeepsOnlyCommittedHistory",
-      "TestCFL003PartialMigrationCanRetryOnlyTheSameLiveOwner",
-      "TestCFL003LateOldOwnerCannotReclaimMovedSameSID",
-      "TestCFL001FirstObservedRootCanFollowPostAdmissionLayoutChange",
-      "TestCFL003TwoLivePanesExchangePositionsWithoutLosingTheirOwners",
-      "TestCFL003HistoryWriteFailureRefusesMigrationBeforeLivePublication",
-      "TestCFL003ObservedNewRootRetriesItsOwnPartialMovedPublication"
-    ]
-  },
-  "mobileapp/e2e/fake-serve/world.ts": {
+  "tests/web/fixture.cjs": {
     "cases": [
       "CT-HTTP"
     ],
     "selectors": [
-      "export class World"
+      "async function start"
     ]
   },
-  "mobileapp/src/api/client.test.ts": {
+  "tests/web/full-input.test.cjs": {
     "cases": [
-      "UR-002"
+      "DTV-003"
     ],
     "selectors": [
-      "usage accepts a real empty report but keeps refusals, bad bodies and network failures"
+      "Diff file cards and independent hunks at "
     ]
   },
-  "internal/agentclient/pending_retry_lifetime_test.go": {
+  "tests/web/harness-isolation.test.cjs": {
     "cases": [
-      "MSD-011"
+      "CT-BROWSER"
     ],
     "selectors": [
-      "TestMSD011DurablePendingKeepsOneIdentityAcrossRetryAndPrune",
-      "TestMSD011PrunedOrReplacedNativePendingCannotRegainAuthority"
+      "shared browser first case",
+      "shared browser next case"
+    ]
+  },
+  "tests/web/harness.cjs": {
+    "cases": [
+      "CT-TIMING",
+      "CT-BROWSER"
+    ],
+    "selectors": [
+      "function scenario"
+    ]
+  },
+  "tests/web/http-contract-validator.test.cjs": {
+    "cases": [
+      "CT-HTTP"
+    ],
+    "selectors": [
+      "wire contract rejects type, permission, ordinal, omission and security-header drift"
+    ]
+  },
+  "tests/web/live-pending.test.cjs": {
+    "cases": [
+      "LPV-003"
+    ],
+    "selectors": [
+      "LPV003"
+    ]
+  },
+  "tests/web/maximized-header.test.cjs": {
+    "cases": [
+      "AOP-006"
+    ],
+    "selectors": [
+      "AOP006 real maximized header wide",
+      "AOP006 real maximized header medium",
+      "AOP006 real maximized header narrow board",
+      "AOP006 real maximized header plain terminal"
+    ]
+  },
+  "tests/web/presentation.test.cjs": {
+    "cases": [
+      "AOP-005",
+      "DTV-003"
+    ],
+    "selectors": [
+      "Compact settings expose direct appearance choices and bounded call rows at ${width}",
+      "Focused Chat is a conversation with session tools at ${width}"
+    ]
+  },
+  "tests/web/profile.test.cjs": {
+    "cases": [
+      "CRX-005"
+    ],
+    "selectors": [
+      "Historical profile reads current ancestry only on expansion and only for the same conversation"
+    ]
+  },
+  "tests/web/reading-controls.test.cjs": {
+    "cases": [
+      "DTV-003"
+    ],
+    "selectors": [
+      "Diff preserves recorded layout, syntax and original copy at ${width}"
+    ]
+  },
+  "tests/web/smoke.test.cjs": {
+    "cases": [
+      "AOP-005",
+      "DTV-003"
+    ],
+    "selectors": [
+      "Structured activity at ${width}px",
+      "DTV003 Diff tree and worktree context at ${width}px"
+    ]
+  },
+  "tests/web/tool-call-detail.test.cjs": {
+    "cases": [
+      "TCV-005"
+    ],
+    "selectors": [
+      "Typed query details in Chat and Trace ",
+      "Recorded query failure retries and large results page without losing full copy"
+    ]
+  },
+  "tests/web/tool-reading.test.cjs": {
+    "cases": [
+      "TSV-003"
+    ],
+    "selectors": [
+      "TSV-003 compact recorded command and readable result "
+    ]
+  },
+  "mobileapp/src/screens/HistoryEchoHandoff.test.tsx": {
+    "cases": [
+      "CAR-003"
+    ],
+    "selectors": [
+      "CRR-001"
+    ]
+  },
+  "mobileapp/src/ui/ToolReaderCopy.test.tsx": {
+    "cases": [
+      "CRR-002"
+    ],
+    "selectors": [
+      "CRR-002"
+    ]
+  },
+  "internal/app/doctor_knowledge_count_test.go": {
+    "cases": [
+      "DKC-001"
+    ],
+    "selectors": [
+      "TestDKC001DoctorPendingCountMatchesCaptureProjection"
+    ]
+  },
+  "mobileapp/src/ui/ChatAppearance.test.tsx": {
+    "cases": [
+      "CAR-001"
+    ],
+    "selectors": [
+      "CAR-001"
+    ]
+  },
+  "mobileapp/src/state/ChatAppearancePreference.test.tsx": {
+    "cases": [
+      "CAR-002"
+    ],
+    "selectors": [
+      "CAR-002"
+    ]
+  },
+  "mobileapp/src/ui/ChatReceiptPresentation.test.tsx": {
+    "cases": [
+      "CAR-003"
+    ],
+    "selectors": [
+      "CAR-003"
+    ]
+  },
+  "mobileapp/src/ui/SenderAvatar.test.tsx": {
+    "cases": [
+      "CAR-001"
+    ],
+    "selectors": [
+      "CAR-001"
+    ]
+  },
+  "mobileapp/src/ui/TimeSeparator.test.tsx": {
+    "cases": [
+      "CAR-001"
+    ],
+    "selectors": [
+      "CAR-001"
+    ]
+  },
+  "mobileapp/src/screens/DetailSendRefused.test.tsx": {
+    "cases": [
+      "CAR-003"
+    ],
+    "selectors": [
+      "retires the sent echo after a poll containing its prompt and later turns; it stays gone"
+    ]
+  },
+  "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
+    "cases": [
+      "CAR-004"
+    ],
+    "selectors": [
+      "CAR-004"
+    ]
+  },
+  "mobileapp/src/screens/pendingChatEcho.test.ts": {
+    "cases": [
+      "CAR-004"
+    ],
+    "selectors": [
+      "CAR-004"
+    ]
+  },
+  "mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx": {
+    "cases": [
+      "PCP-001"
+    ],
+    "selectors": [
+      "PCP-001 missing timestamp keeps message facts absent but reads exact source processes",
+      "PCP-001 missing timestamp never accepts a different process source",
+      "PCP-001 unknown message agent cannot borrow the current radar identity or offer a futile read",
+      "PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",
+      "PCP-001 switching message source and client retires the previous process read"
+    ]
+  },
+  "mobileapp/src/screens/KnowledgeSheet.reading.test.tsx": {
+    "cases": [
+      "KRD-002",
+      "KRD-003",
+      "KRD-005"
+    ],
+    "selectors": [
+      "reading hierarchy keeps original guidance first in ${layout} ${theme}",
+      "another entry resets disclosures and resolves its actual language before reading",
+      "feedback opens only its existing draft while secondary landing retains the viewed revision",
+      "a delayed secondary action cannot reopen a form after the source scope changes",
+      "a captured submit callback cannot mutate after the user changes source scope",
+      "late entry A cannot replace entry B and wrong identities remain unavailable",
+      "whole-read timeout has immediate retry feedback and ignores the timed-out response",
+      "failed post-action refresh keeps readable content and never repeats the action",
+      "the real client forwards cancellation and the whole JSON-body read has a deadline",
+      "a completed old action cannot replace the newly selected entry",
+      "an entry without body content is distinct from a failed record read"
+    ]
+  },
+  "mobileapp/src/screens/knowledgeReading.test.ts": {
+    "cases": [
+      "KRD-001"
+    ],
+    "selectors": [
+      "keeps every character while separating explicit history from literal guidance",
+      "history-like headings inside %s code stay with the current body",
+      "non-prose openings stay whole rather than inventing a summary: %s",
+      "reference-style links retain their single Markdown scope",
+      "comments and arbitrary headings do not hide prose as history",
+      "long guidance is preserved without generated or truncated advice",
+      "language resolution happens before display-only sectioning"
     ]
   }
 }
