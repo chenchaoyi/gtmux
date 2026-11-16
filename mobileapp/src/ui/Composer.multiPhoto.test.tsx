@@ -125,6 +125,11 @@ test('upload phases keep the batch and caption on failure until an explicit succ
   expect(status('second.png').props.failed).toBe(true);
   expect(status('first.jpg').props.failed).toBe(false);
   expect(upload).toHaveBeenCalledTimes(2);
+  await act(async () => {tree.update(<Composer pal={paletteFor('light')} lang="en" onSend={sends} onUpload={upload} enabled={false} />);});
+  expect(status('second.png').props.onRetry).toBeUndefined();
+  expect(upload).toHaveBeenCalledTimes(2);
+  expect(tree.root.findByType(TextInput).props.value).toBe('Two photos');
+  await act(async () => {tree.update(<Composer pal={paletteFor('light')} lang="en" onSend={sends} onUpload={upload} />);});
   const retry = status('second.png').findAll(n => n.props.accessibilityRole === 'button' && typeof n.props.onPress === 'function')[0];
   act(() => {retry.props.onPress(); retry.props.onPress();});
   expect(upload).toHaveBeenCalledTimes(3);

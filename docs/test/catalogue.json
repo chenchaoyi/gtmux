@@ -64537,7 +64537,7 @@
           "design": "MPU-001,MPU-002,MPU-004"
         }
       ],
-      "sha256": "e733b8a8d51e37ab5884dc1c955b83794ec4d6ba872b9f2dd214f18e55c552bd"
+      "sha256": "fe88da868adf5c6b6650ea1dc7b2becb231e9e5117ab3be52ca9e56bc2574389"
     },
     "mobileapp/src/ui/Composer.photoSelection.test.tsx": {
       "layer": "L2",

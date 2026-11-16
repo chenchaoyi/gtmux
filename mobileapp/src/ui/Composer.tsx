@@ -691,7 +691,7 @@ export const Composer = React.memo(function Composer({
                 </View>
               )}
               {(sending || failedUpload != null) && <AttachmentUploadStatus attachment={att} state={progress[att.id]}
-                failed={failedUpload === att.id} lang={lang} onRetry={canSend ? () => {void sendText();} : undefined} />}
+                failed={failedUpload === att.id} lang={lang} onRetry={enabled && onSend && onUpload && canSend ? () => {void sendText();} : undefined} />}
               {!sending && (
                   <TouchableOpacity
                     onPress={() => {if (failedUpload === att.id) setFailedUpload(null); removeAttachment(att.id);}}
