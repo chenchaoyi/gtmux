@@ -28,10 +28,8 @@ type archiveEntry struct {
 // report payloads and attachments have an explicit process scope; unknown notes
 // outside that scope remain protected. Include overrides preserve unique files.
 func automaticFile(name string, include []string) bool {
-	for _, p := range include {
-		if name == p || strings.HasPrefix(name, p+"/") {
-			return true
-		}
+	if explicitlyIncluded(name, include) {
+		return true
 	}
 	if !strings.HasPrefix(name, "notes/") {
 		return true
@@ -81,6 +79,9 @@ func selectArchive(root string, core bool, include []string) ([]archiveEntry, er
 			return nil
 		} // restore recreates parents; empty dirs carry no records
 		if core && !automaticFile(name, include) {
+			return nil
+		}
+		if core && !explicitlyIncluded(name, include) && legacyRelayObservation(p, name, fi) {
 			return nil
 		}
 		if !fi.Mode().IsRegular() {

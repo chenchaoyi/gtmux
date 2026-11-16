@@ -65383,6 +65383,211 @@
         }
       ],
       "sha256": "0f910b59146aef3a25581ff9b80bd20f960a2704fdf8255c2cc9bad6977f0ef0"
+    },
+    "internal/app/doctor_hq_storage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6eef5ace4810",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestDPC002DoctorStorageExplainsScopeWithoutRemoval",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-002"
+        }
+      ],
+      "sha256": "a287fa216788eb3cb214d4994a90a9c7834df9b9a3e57a3db015ed3d654b1707"
+    },
+    "internal/hq/process_materials_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ead7aeb8f6cb",
+          "line": 27,
+          "kind": "reviewed-selector",
+          "name": "TestDPC001AutomaticScopePreservesUnknownNotesAndIncludes",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-001,DPC-002"
+        },
+        {
+          "id": "MAP-09d9db3d9987",
+          "line": 108,
+          "kind": "reviewed-selector",
+          "name": "TestDPC002ProcessMaterialInventoryProtectsCoreAndUnknown",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-001,DPC-002"
+        }
+      ],
+      "sha256": "9dc75de1607fea71bd73fb375288e1eaa7fc6e13d9880646d36fd6cf3f1c696d"
+    },
+    "internal/relay/observation_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ecf242497d47",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestDPC001ObservationExportRequiresCompleteRelayContract",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-001"
+        }
+      ],
+      "sha256": "fd45cf7d5153ff3e3f1f537689c9917825555dd5de206311022c75e18153a7ad"
+    },
+    "internal/resume/frontend_recovery_diagnostic_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e2be0f7a7658",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestDPC003RecoveryEvidenceNeverGrantsRetryAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-003"
+        }
+      ],
+      "sha256": "409dcbb10aad7036e27dffc3e62fc507f69a4f4bd1c562a2ddc2b74aa11de13b"
+    },
+    "macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c43ef369cf61",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "testMBL001RenderedFocusMovesWithoutMovingPanes",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MBL-001"
+        },
+        {
+          "id": "MAP-8a7787a2337e",
+          "line": 57,
+          "kind": "reviewed-selector",
+          "name": "testMBL001ReducedMotionAndInactiveUseStaticTopRight",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MBL-001"
+        },
+        {
+          "id": "MAP-cc34eecde6ac",
+          "line": 71,
+          "kind": "reviewed-selector",
+          "name": "testMBL001HostedViewActuallyAdvancesFocus",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MBL-001"
+        }
+      ],
+      "sha256": "4aa2468c601cd8236606b887bea957374d0067a9e9182e42615ca7bc83a461e5"
+    },
+    "tests/web/branded-loading.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1209f616cdf8",
+          "line": 43,
+          "kind": "reviewed-selector",
+          "name": "WBL-001 moving brand focus ",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WBL-001,WBL-002,WBL-003"
+        },
+        {
+          "id": "MAP-1adfb859f2d3",
+          "line": 82,
+          "kind": "reviewed-selector",
+          "name": "WBL-002 live reduced motion preserves one loading status",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WBL-001,WBL-002,WBL-003"
+        },
+        {
+          "id": "MAP-7905115aa7af",
+          "line": 114,
+          "kind": "reviewed-selector",
+          "name": "WBL-003 retired Chat read cannot restore a loader in Terminal",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WBL-001,WBL-002,WBL-003"
+        }
+      ],
+      "sha256": "83597e5b12a87ef884314f4491e8739649f3c27a480a418b4cda68f9506cb017"
+    },
+    "internal/app/doctor_frontend_recovery_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4f8292b157e5",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "TestDPC004DoctorDoesNotPromiseAutomaticRecovery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-004"
+        }
+      ],
+      "sha256": "2010d7b3a586c76401e2ee315dd0591ad39b9e43ae46b6b39f99f146801f68ff"
+    },
+    "internal/app/doctor_recovery_limits_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d4dcb1b8d77e",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestDPC006DoctorExplainsActualCountAndByteFailures",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-006"
+        }
+      ],
+      "sha256": "fa8a7857423ca63a58d137b2265df9050a313c2821b5329d05fe88098a8d7379"
+    },
+    "internal/hq/observation_contract_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b07a4b75d0d1",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestDPC005UncertainObservationsStayInEveryCoreSelection",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-005"
+        }
+      ],
+      "sha256": "61a3c03a9f359547af801b753ada188b0fbfecbb4b0cc380423fea71f9776151"
+    },
+    "internal/relay/observation_contract_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-90f0d1fbdee7",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestDPC005ObservationRequiresRealCompleteKnownSerialization",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-005"
+        }
+      ],
+      "sha256": "c8d7fa50de35b3c93cae92d3d95ffb3a996bce036468b871712aa52eed1df5e9"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

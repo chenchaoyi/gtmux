@@ -1577,3 +1577,15 @@ A generic refused-waiting receipt SHALL NOT itself prove a pending human decisio
 - **WHEN** an explicit refusal reports codex-frontend-unavailable
 - **THEN** the editor says the input connection is not ready, not that a human request needs answering
 - **AND** the user can view the session or keep editing, with no alternate-channel resend
+
+### Requirement: Branded progress follows cross-surface focus motion
+The shared branded progress mark SHALL use the same fixed three panes, geometry
+and1.8s top-right/bottom/top-left cyan cycle as App/Web. Reduced motion or an inactive
+scene SHALL render static top-right cyan; unmount SHALL end its scheduled updates.
+HQ loading wrappers SHALL expose their label once and hide decorative panes.
+Static identity art, native system progress controls and agent-working rings SHALL
+retain their separate semantics.
+
+#### Scenario: Reduced motion or inactive scene
+- **WHEN** the branded loading view is reduced-motion or inactive
+- **THEN** it keeps the static top-right focus without a repeating timeline

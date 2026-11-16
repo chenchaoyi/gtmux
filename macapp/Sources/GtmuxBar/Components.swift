@@ -219,6 +219,14 @@ enum BrandMark {
 
     /// How round a pane's corners are, for the same square and gap.
     static func cornerRadius(side: CGFloat, gap: CGFloat) -> CGFloat { (side - gap) / 2 * 0.28 }
+
+    /// Loading uses the App's 100-unit grid, with 8-unit margins and a 4-unit gap.
+    /// Static identity marks keep their existing plate and geometry.
+    static func loadingPanes(side: CGFloat) -> [CGRect] {
+        panes(side: side * 0.84, gap: side * 0.04).map {
+            $0.rect.offsetBy(dx: side * 0.08, dy: side * 0.08)
+        }
+    }
 }
 
 /// GtmuxLogo — the gtmux mark in SwiftUI, on its own small plate.

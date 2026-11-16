@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Page loading breathes; it does not use the agent-working ring. Unmounting ends it.
+/// Page loading cycles the cyan focus; it does not use the agent-working ring.
 struct HQBrandLoading: View {
     var label: String
     var compact = false

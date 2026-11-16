@@ -101,7 +101,9 @@ jobs:
         run: |
           unformatted="$(gofmt -l .)"
           if [ -n "$unformatted" ]; then
-            echo "These files need gofmt:"; echo "$unformatted"; exit 1
+            echo "These files need gofmt:"; echo "$unformatted"
+            gofmt -d .
+            exit 1
           fi
 
       - name: go vet
@@ -385,6 +387,15 @@ jobs:
           path: tests/web/results/
           retention-days: 7
 
+      - name: Branded loading synthetic render evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: brand-loading-web-previews
+          path: tests/web/results/brand-loading-*.png
+          retention-days: 7
+          if-no-files-found: ignore
+
   ios-native:
     name: iOS app and extensions compile (unsigned)
     needs: scope
@@ -544,6 +555,7 @@ jobs:
         env:
           GTMUX_WORKSPACE_PREVIEW_DIR: ${{ runner.temp }}/hq-workspace-previews
           GTMUX_WIDGET_RENDER_DIR: ${{ runner.temp }}/mac-widget-previews
+          GTMUX_BRAND_LOADING_RESULTS: ${{ runner.temp }}/brand-loading-mac-previews
         run: |
           mkdir -p "$GTMUX_WORKSPACE_PREVIEW_DIR"
           # Release AppKit window/animation resources between test cases.
@@ -551,6 +563,15 @@ jobs:
           cd macapp && swift test --parallel --num-workers 1
 
       # These fixtures contain synthetic records only; never capture the installed app.
+      - name: Mac branded loading synthetic render evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: brand-loading-mac-previews
+          path: ${{ runner.temp }}/brand-loading-mac-previews/*.png
+          retention-days: 7
+          if-no-files-found: ignore
+
       - name: HQ synthetic UI previews
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

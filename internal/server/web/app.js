@@ -1437,15 +1437,17 @@
     });
   }
 
-  // Branded loading placeholder (the gtmux 2×2 mark + a pulse) shown over a pane/
+  // Branded loading placeholder (fixed panes with a moving cyan focus) over a pane/
   // chat/tile before its first frame arrives — so opening a session reads as
   // "loading…", not a long black screen (mirrors the phone's BrandLoader).
   function brandLoaderEl(label) {
     var w = document.createElement('div'); w.className = 'brandload';
     var m = document.createElement('div'); m.className = 'brandload-mark';
+    m.setAttribute('aria-hidden', 'true');
     m.innerHTML = '<i></i><i class="lit"></i><i class="wide"></i>';
     w.appendChild(m);
-    if (label) { var l = document.createElement('div'); l.className = 'brandload-label'; l.textContent = label; w.appendChild(l); }
+    if (label) { w.setAttribute('role', 'status'); var l = document.createElement('div'); l.className = 'brandload-label'; l.textContent = label; w.appendChild(l); }
+    else w.setAttribute('aria-hidden', 'true');
     return w;
   }
   function showPaneLoader() {

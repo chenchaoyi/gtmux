@@ -895,3 +895,15 @@ Browser Activity and Trace SHALL use the shared App presenter for recorded seman
 - **WHEN** the reader maximizes a pane and narrows the browser
 - **THEN** the named return icon, ellipsized title and window controls remain separate and usable
 - **AND** restoring returns the prior pane dimensions
+
+### Requirement: Shared branded loading motion
+All browser branded page/tile loaders SHALL use fixed App100-unit geometry and
+a1.8s cyan-focus cycle ordered top-right, bottom, top-left. Reduce Motion SHALL
+keep a static top-right highlight, including live preference changes. Decorative
+panes SHALL be hidden from accessibility; a present label SHALL form one status.
+Loading motion SHALL NOT change request cancellation, empty/error semantics or
+input authorization; completed/retired views SHALL remove their loaders.
+
+#### Scenario: Loading resolves or the view changes
+- **WHEN** a pending Chat read completes or is retired by switching to Terminal
+- **THEN** its loader and focus animations leave the visible view and a late reply cannot restore them

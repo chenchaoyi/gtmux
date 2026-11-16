@@ -1,7 +1,1 @@
-- Loading screens, buttons and inline indicators now share the three-pane gtmux animation.
-- Chat follows global Appearance settings: Light, Dark or System.
-- Choose several photos at once, edit each later, and see clearer upload progress.
-- Knowledge pages put core advice first, with history and record details available on demand.
-- Radar, conversations and HQ details now distinguish loading, empty and retry states.
-- Send receipts are quieter, and failed messages offer Retry or Restore draft.
-- Notification sync avoids duplicate requests, backs off unavailable routes, and lets you retry one Mac.
+- Chat messages, activity, timestamps and reply actions use tighter, more consistent spacing.

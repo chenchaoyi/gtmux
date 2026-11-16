@@ -95,3 +95,21 @@ Service management, host metadata, resource sampling and desktop interaction hav
 Android uses these same Phone and regular-tablet surfaces; it is not a separate business model or a copied UI. `mobileapp/ANDROID.md` records the native boundary and delivery contract. Session/HQ state, Chat, Terminal, Trace, Diff, code formatting, themes, pairing and guest scopes remain shared React Native/Go implementations. Kotlin adapts documents and system sharing, keyboard/haptics, optional FCM and a credential-free last-seen usage widget. The document reader stylesheet is generated from one source for UIKit/WebKit and Android WebView; platform parsers and transport remain native adapters.
 
 Native Android acceptance is independent: bundled QA builds and owned-emulator interactions, phone/tablet resizing, Back/IME, system permissions, TalkBack, physical devices, live FCM and store publication have separate evidence. Missing Google configuration/services must be visible without blocking ordinary paired use. Android does not inherit iOS cloud-backup or Live Activity claims.
+
+## Branded loading parity
+
+App (`LoadingMark` / `BrandLoader`), Web (`brandLoaderEl`) and menu bar
+(`BrandProgressMark`) use a fixed three-pane mark. The 100-unit grid has panes
+(8,8,40,40), (52,8,40,40), (8,52,84,40), radius9. Cyan (#06B6D4) moves
+top-right → bottom → top-left over1.8s; each phase holds for390ms, then
+crossfades for210ms. Only highlight opacity changes. Reduce Motion keeps the
+top-right pane cyan. Labels describe the read once; decorative panes are hidden
+from accessibility. Native views stop their cycle when inactive or unmounted;
+browser loaders leave the DOM when their read/view retires. System-owned progress
+controls, static identities and the agent-working ring keep their own semantics.
+
+A loading change must inventory these three implementations plus Phone/iPad's
+shared component, name the Terminal/attach counterpart or its absence, and compare
+actual rendered phases in both themes and compact/wide layouts. Source checks or
+a passing build alone do not establish visual parity; accessibility labels do not
+claim spoken screen-reader acceptance.

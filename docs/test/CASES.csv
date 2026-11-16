@@ -233,7 +233,10 @@ LEG-59e77ab9e3c1,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go
 LEG-b2647ff53c45,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,79,Test,TestStorageDoesNotFollowExternalSymlinks,False,legacy-not-retrospectively-reviewed
 LEG-16ee1faeb7f9,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,93,Test,TestStorageMissingStateIsKnownEmpty,False,legacy-not-retrospectively-reviewed
 LEG-a109448efbef,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,100,Test,TestStorageCategoriesIncludeBackupAndEvidence,False,legacy-not-retrospectively-reviewed
+MAP-4f8292b157e5,L2,reviewed implementation,internal/app/doctor_frontend_recovery_test.go,16,reviewed-selector,TestDPC004DoctorDoesNotPromiseAutomaticRecovery,False,DPC-004
+MAP-6eef5ace4810,L2,reviewed implementation,internal/app/doctor_hq_storage_test.go,14,reviewed-selector,TestDPC002DoctorStorageExplainsScopeWithoutRemoval,False,DPC-002
 MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_test.go,48,reviewed-selector,TestDKC001DoctorPendingCountMatchesCaptureProjection,False,DKC-001
+MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
 LEG-11f8f7133cba,L1,Go core / CLI / server,internal/app/doctor_test.go,16,Test,TestRenderSectionsTally,False,legacy-not-retrospectively-reviewed
 LEG-0f94dea29a8c,L1,Go core / CLI / server,internal/app/doctor_test.go,30,Test,TestAdvisoryRemaining,False,legacy-not-retrospectively-reviewed
 LEG-7a93b0f03c02,L1,Go core / CLI / server,internal/app/doctor_test.go,56,Test,TestIsUTF8Locale,False,legacy-not-retrospectively-reviewed
@@ -1737,8 +1740,11 @@ LEG-b0b8c65cb838,L1,Go core / CLI / server,internal/hq/mine_test.go,18,Test,Test
 LEG-7ec3020f9c60,L1,Go core / CLI / server,internal/hq/mine_test.go,44,Test,TestMineSensorGates,False,legacy-not-retrospectively-reviewed
 LEG-82208d1311f7,L1,Go core / CLI / server,internal/hq/mine_test.go,82,Test,TestParseSinceArg,False,legacy-not-retrospectively-reviewed
 LEG-7aa06d916ba2,L1,Go core / CLI / server,internal/hq/mine_test.go,96,Test,TestPlaybookTeachesTranscriptLeadsInBothLanguages,False,legacy-not-retrospectively-reviewed
+MAP-b07a4b75d0d1,L2,reviewed implementation,internal/hq/observation_contract_test.go,12,reviewed-selector,TestDPC005UncertainObservationsStayInEveryCoreSelection,False,DPC-005
 LEG-48e101d4acbd,L1,Go core / CLI / server,internal/hq/playbook_version_test.go,27,Test,TestChangingTheCharterBumpsTheVersion,False,legacy-not-retrospectively-reviewed
 LEG-d7fe8fa1ceab,L1,Go core / CLI / server,internal/hq/playbook_version_test.go,58,Test,TestTheFingerprintCoversBothLanguages,False,legacy-not-retrospectively-reviewed
+MAP-ead7aeb8f6cb,L2,reviewed implementation,internal/hq/process_materials_test.go,27,reviewed-selector,TestDPC001AutomaticScopePreservesUnknownNotesAndIncludes,False,"DPC-001,DPC-002"
+MAP-09d9db3d9987,L2,reviewed implementation,internal/hq/process_materials_test.go,108,reviewed-selector,TestDPC002ProcessMaterialInventoryProtectsCoreAndUnknown,False,"DPC-001,DPC-002"
 LEG-76bdb76577ec,L1,Go core / CLI / server,internal/hq/revalidate_test.go,12,Test,TestResourceWarnProbe_PassesThroughWhatItDoesNotOwn,False,legacy-not-retrospectively-reviewed
 LEG-c834fd9e88b8,L1,Go core / CLI / server,internal/hq/revalidate_test.go,29,Test,TestRevalidatorChainDefaultsToIdentity,False,legacy-not-retrospectively-reviewed
 LEG-4ccc7b392dda,L1,Go core / CLI / server,internal/hq/revalidate_test.go,39,Test,TestSplitWakeTail,False,legacy-not-retrospectively-reviewed
@@ -2570,6 +2576,8 @@ MAP-081f78baa59f,L2,reviewed implementation,internal/relay/inbox_test.go,30,revi
 MAP-6010cd28478a,L2,reviewed implementation,internal/relay/inbox_test.go,95,reviewed-selector,TestRBL002FreshnessLegacyAndBoundedSourceWait,False,RBL-002
 MAP-1e34bec3e596,L2,reviewed implementation,internal/relay/inbox_test.go,145,reviewed-selector,TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim,False,RBL-002
 MAP-9a0a983fad52,L2,reviewed implementation,internal/relay/inbox_test.go,183,reviewed-selector,TestRBL002SourceWaitCancelsWhileLedgerIsLocked,False,RBL-002
+MAP-90f0d1fbdee7,L2,reviewed implementation,internal/relay/observation_contract_test.go,9,reviewed-selector,TestDPC005ObservationRequiresRealCompleteKnownSerialization,False,DPC-005
+MAP-ecf242497d47,L2,reviewed implementation,internal/relay/observation_test.go,11,reviewed-selector,TestDPC001ObservationExportRequiresCompleteRelayContract,False,DPC-001
 LEG-60f4094c7da5,L1,Go core / CLI / server,internal/relay/relay_test.go,10,Test,TestOfflineRequestSurvivesAndRetryDoesNotDuplicate,False,legacy-not-retrospectively-reviewed
 LEG-3b7ec691b3e1,L1,Go core / CLI / server,internal/relay/relay_test.go,30,Test,TestClaimRotationAndReplyReceipt,False,legacy-not-retrospectively-reviewed
 LEG-61c0e338ed69,L1,Go core / CLI / server,internal/relay/relay_test.go,69,Test,TestReportCanCloseWithoutReply,False,legacy-not-retrospectively-reviewed
@@ -2694,6 +2702,7 @@ MAP-9a1717e72629,L2,reviewed implementation,internal/resume/frontend_location_te
 MAP-27e3343f9bf5,L2,reviewed implementation,internal/resume/frontend_location_test.go,343,reviewed-selector,TestCFL003TwoLivePanesExchangePositionsWithoutLosingTheirOwners,False,"CFL-001,CFL-002,CFL-003"
 MAP-2803d4ff4366,L2,reviewed implementation,internal/resume/frontend_location_test.go,424,reviewed-selector,TestCFL003HistoryWriteFailureRefusesMigrationBeforeLivePublication,False,"CFL-001,CFL-002,CFL-003"
 MAP-79d8babbf0d2,L2,reviewed implementation,internal/resume/frontend_location_test.go,465,reviewed-selector,TestCFL003ObservedNewRootRetriesItsOwnPartialMovedPublication,False,"CFL-001,CFL-002,CFL-003"
+MAP-e2be0f7a7658,L2,reviewed implementation,internal/resume/frontend_recovery_diagnostic_test.go,12,reviewed-selector,TestDPC003RecoveryEvidenceNeverGrantsRetryAuthority,False,DPC-003
 LEG-e73e8edb8618,L1,Go core / CLI / server,internal/resume/launcher_test.go,11,Test,TestResumeUsesTheRecordedLauncher,False,legacy-not-retrospectively-reviewed
 LEG-333f100efdb6,L1,Go core / CLI / server,internal/resume/launcher_test.go,26,Test,TestLauncherKeepsTheAgentsOwnFlags,False,legacy-not-retrospectively-reviewed
 LEG-75667cf67db3,L1,Go core / CLI / server,internal/resume/launcher_test.go,34,Test,TestNoLauncherResumesAsBefore,False,legacy-not-retrospectively-reviewed
@@ -3576,6 +3585,9 @@ LEG-bddf8eda4993,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/BrandMarkTe
 LEG-a8ac909e19ed,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/BrandMarkTests.swift,65,XCTest,testTheBottomIsOneWidePane,False,legacy-not-retrospectively-reviewed
 LEG-fdee696b8dba,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/BrandMarkTests.swift,98,XCTest,testTheShippedIconLightsTheTopRightPane,False,legacy-not-retrospectively-reviewed
 LEG-f1937c52659b,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/BrandMarkTests.swift,105,XCTest,testTheShippedIconHasClearCorners,False,legacy-not-retrospectively-reviewed
+MAP-c43ef369cf61,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,29,reviewed-selector,testMBL001RenderedFocusMovesWithoutMovingPanes,False,MBL-001
+MAP-8a7787a2337e,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,57,reviewed-selector,testMBL001ReducedMotionAndInactiveUseStaticTopRight,False,MBL-001
+MAP-cc34eecde6ac,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,71,reviewed-selector,testMBL001HostedViewActuallyAdvancesFocus,False,MBL-001
 LEG-965628825a90,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/DeliveryCardLayoutTests.swift,55,XCTest,testTheCardHoldsItsWidthAndGrowsDownward,False,legacy-not-retrospectively-reviewed
 LEG-f0592dcd2ef6,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/DeliveryCardLayoutTests.swift,72,XCTest,testTheCommandIsOnTheCard,False,legacy-not-retrospectively-reviewed
 LEG-5262405c577e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/DeliveryCardLayoutTests.swift,81,XCTest,testTheLinkIsOnTheCard,False,legacy-not-retrospectively-reviewed
@@ -6794,6 +6806,9 @@ LEG-ff43142292fd,L3,Browser,tests/web/alignment.test.cjs,82,scenario,Chat retain
 MAP-184f052913f1,L2,reviewed implementation,tests/web/backend-contract.test.cjs,34,reviewed-selector,Web fake / Go contract:,False,CT-HTTP
 CP-001-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,13,test,CP-001 shared rendered Trace,True,CP-001
 CP-002-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,30,test,CP-002 CP-003 CP-004 shared HQ,True,CP-002
+MAP-1209f616cdf8,L3,reviewed implementation,tests/web/branded-loading.test.cjs,43,reviewed-selector,WBL-001 moving brand focus ,False,"WBL-001,WBL-002,WBL-003"
+MAP-1adfb859f2d3,L3,reviewed implementation,tests/web/branded-loading.test.cjs,82,reviewed-selector,WBL-002 live reduced motion preserves one loading status,False,"WBL-001,WBL-002,WBL-003"
+MAP-7905115aa7af,L3,reviewed implementation,tests/web/branded-loading.test.cjs,114,reviewed-selector,WBL-003 retired Chat read cannot restore a loader in Terminal,False,"WBL-001,WBL-002,WBL-003"
 MAP-75f2ed302427,G,reviewed implementation,tests/web/browser-pool.cjs,2,reviewed-selector,function browserPool,False,"CT-BROWSER-POLICY,CT-TIMING"
 MAP-faa984b171bf,G,reviewed implementation,tests/web/browser-pool.test.cjs,4,reviewed-selector,concurrent borrowers share,False,"CT-BROWSER-POLICY,CT-TIMING"
 MAP-c7ca48106233,G,reviewed implementation,tests/web/browser-pool.test.cjs,30,reviewed-selector,failed launch propagates,False,"CT-BROWSER-POLICY,CT-TIMING"

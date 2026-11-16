@@ -111,3 +111,17 @@ The shared archive reader and writer SHALL accept up to 10,000 entries while ret
 #### Scenario: An entry or byte bound is exceeded
 - **WHEN** an archive exceeds the shared entry or byte limits
 - **THEN** export/import fails before publication and preserves the original destination and recovery points
+
+### Requirement: Legacy observation recognition preserves unknown records
+Automatic core selection SHALL recognize a legacy relay-like JSON export only from
+a complete nonempty bounded request-array contract with the actual Put source rule,
+all mandatory serialized keys and known typed nested structures. Unknown extensions,
+duplicate keys, nulls and partial structures SHALL remain protected. Custom relay IDs SHALL retain
+the owning relay ID rules. Existing generated-name scope, explicit include precedence
+and full-export scope SHALL remain. Unknown, empty, partial and malformed notes SHALL
+remain protected; recognition SHALL NOT delete them or raise existing recovery limits.
+
+#### Scenario: Legacy complete observation and unknown note
+- **WHEN** automatic recovery encounters both a legacy complete observation export and an ordinary or malformed structured note
+- **THEN** it omits only the recognized observation and retains the unknown note
+- **AND** an explicit include or full export still preserves the observation

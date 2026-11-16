@@ -161,9 +161,14 @@ func write(r Request) error {
 	defer d.Close()
 	return d.Sync()
 }
-func Put(r Request) (Request, bool, error) {
+func validRequestInput(r Request) bool {
 	threadSource := r.Agent == "codex" && r.HomeID != "" && r.ThreadID != "" && len(r.ThreadID) <= 256
-	if !validID(r.ID) || !((r.Kind == "report") || (r.Kind == "ask")) || strings.TrimSpace(r.Body) == "" || r.Pane == "" && !threadSource || r.Session == "" {
+	return validID(r.ID) && (r.Kind == "report" || r.Kind == "ask") &&
+		strings.TrimSpace(r.Body) != "" && (r.Pane != "" || threadSource) && r.Session != ""
+}
+
+func Put(r Request) (Request, bool, error) {
+	if !validRequestInput(r) {
 		return Request{}, false, errors.New("invalid request")
 	}
 	var out Request

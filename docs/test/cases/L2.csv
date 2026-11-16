@@ -20,7 +20,10 @@ LEG-ba12d8af1486,L2,Go core / CLI / server,internal/app/devices_push_test.go,16,
 MAP-69939dd4afa9,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,48,reviewed-selector,TestDCA001DoctorReportsFailedManagedAssociation,False,"DCA-001,DCA-002,DCA-003"
 MAP-bf49b210b7cf,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,79,reviewed-selector,TestDCA002DoctorDistinguishesMissingUnsupportedAndVerified,False,"DCA-001,DCA-002,DCA-003"
 MAP-37c101d9ff65,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,105,reviewed-selector,TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary,False,"DCA-001,DCA-002,DCA-003"
+MAP-4f8292b157e5,L2,reviewed implementation,internal/app/doctor_frontend_recovery_test.go,16,reviewed-selector,TestDPC004DoctorDoesNotPromiseAutomaticRecovery,False,DPC-004
+MAP-6eef5ace4810,L2,reviewed implementation,internal/app/doctor_hq_storage_test.go,14,reviewed-selector,TestDPC002DoctorStorageExplainsScopeWithoutRemoval,False,DPC-002
 MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_test.go,48,reviewed-selector,TestDKC001DoctorPendingCountMatchesCaptureProjection,False,DKC-001
+MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
 MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
 MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
@@ -133,6 +136,9 @@ MAP-21a1b3d6966f,L2,reviewed implementation,internal/hq/dreamexec_test.go,43,rev
 MAP-cb02aefedb71,L2,reviewed implementation,internal/hq/dreamexec_test.go,72,reviewed-selector,TestDreamCLIProcessCompletionCancellationAndBoundedOutput,False,KBDREAM-EXECUTOR
 MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,194,reviewed-selector,TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords,False,STOR-002
 MAP-426d8c4b1e7f,L2,reviewed implementation,internal/hq/identity_launch_test.go,11,reviewed-selector,TestSID001ActualHQRecipeRetainsManagedFrontend,False,SID-001
+MAP-b07a4b75d0d1,L2,reviewed implementation,internal/hq/observation_contract_test.go,12,reviewed-selector,TestDPC005UncertainObservationsStayInEveryCoreSelection,False,DPC-005
+MAP-ead7aeb8f6cb,L2,reviewed implementation,internal/hq/process_materials_test.go,27,reviewed-selector,TestDPC001AutomaticScopePreservesUnknownNotesAndIncludes,False,"DPC-001,DPC-002"
+MAP-09d9db3d9987,L2,reviewed implementation,internal/hq/process_materials_test.go,108,reviewed-selector,TestDPC002ProcessMaterialInventoryProtectsCoreAndUnknown,False,"DPC-001,DPC-002"
 MAP-fc5da55172ab,L2,reviewed implementation,internal/hq/rotation_admission_test.go,11,reviewed-selector,TestHRW007RegistrationSharesTheInputClaimLease,False,HRW-007
 MAP-5fb504a908e7,L2,reviewed implementation,internal/hq/rotation_attention_test.go,14,reviewed-selector,TestHRW011RotationFailureUsesNonWaitingAttention,False,HRW-011
 MAP-5ca00611b9a2,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,8,reviewed-selector,TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity,False,HRW-012
@@ -241,6 +247,8 @@ MAP-081f78baa59f,L2,reviewed implementation,internal/relay/inbox_test.go,30,revi
 MAP-6010cd28478a,L2,reviewed implementation,internal/relay/inbox_test.go,95,reviewed-selector,TestRBL002FreshnessLegacyAndBoundedSourceWait,False,RBL-002
 MAP-1e34bec3e596,L2,reviewed implementation,internal/relay/inbox_test.go,145,reviewed-selector,TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim,False,RBL-002
 MAP-9a0a983fad52,L2,reviewed implementation,internal/relay/inbox_test.go,183,reviewed-selector,TestRBL002SourceWaitCancelsWhileLedgerIsLocked,False,RBL-002
+MAP-90f0d1fbdee7,L2,reviewed implementation,internal/relay/observation_contract_test.go,9,reviewed-selector,TestDPC005ObservationRequiresRealCompleteKnownSerialization,False,DPC-005
+MAP-ecf242497d47,L2,reviewed implementation,internal/relay/observation_test.go,11,reviewed-selector,TestDPC001ObservationExportRequiresCompleteRelayContract,False,DPC-001
 MAP-1b9e141ee5dd,L2,reviewed implementation,internal/restorejob/store_test.go,35,reviewed-selector,TestRestoreReservationSurvivesRetryRestartAndChangedPayload,False,RSR-002
 MAP-6e102e7ac1ae,L2,reviewed implementation,internal/restorejob/store_test.go,77,reviewed-selector,TestRestoreClaimNeverRelaunchesInterruptedOrFailedWork,False,RSR-002
 MAP-c04281a7ab4b,L2,reviewed implementation,internal/restorejob/store_test.go,109,reviewed-selector,TestRestoreLaunchFailureAndExpiredRequestsRemainClosed,False,RSR-002
@@ -285,6 +293,7 @@ MAP-9a1717e72629,L2,reviewed implementation,internal/resume/frontend_location_te
 MAP-27e3343f9bf5,L2,reviewed implementation,internal/resume/frontend_location_test.go,343,reviewed-selector,TestCFL003TwoLivePanesExchangePositionsWithoutLosingTheirOwners,False,"CFL-001,CFL-002,CFL-003"
 MAP-2803d4ff4366,L2,reviewed implementation,internal/resume/frontend_location_test.go,424,reviewed-selector,TestCFL003HistoryWriteFailureRefusesMigrationBeforeLivePublication,False,"CFL-001,CFL-002,CFL-003"
 MAP-79d8babbf0d2,L2,reviewed implementation,internal/resume/frontend_location_test.go,465,reviewed-selector,TestCFL003ObservedNewRootRetriesItsOwnPartialMovedPublication,False,"CFL-001,CFL-002,CFL-003"
+MAP-e2be0f7a7658,L2,reviewed implementation,internal/resume/frontend_recovery_diagnostic_test.go,12,reviewed-selector,TestDPC003RecoveryEvidenceNeverGrantsRetryAuthority,False,DPC-003
 MAP-56aadbd19e58,L2,reviewed implementation,internal/resume/observed_conversation_test.go,35,reviewed-selector,TestSID003LastKnownHistoryHasNoLiveAuthority,False,SID-003
 MAP-64bbe883d24c,L2,reviewed implementation,internal/resume/observed_conversation_test.go,68,reviewed-selector,TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated,False,SID-003
 MAP-e0f0d6088eea,L2,reviewed implementation,internal/resume/state_publication_test.go,14,reviewed-selector,TestCSR003SavePublishesAnAtomicResumeSnapshot,False,CSR-003

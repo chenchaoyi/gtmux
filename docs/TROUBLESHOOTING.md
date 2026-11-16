@@ -2944,3 +2944,15 @@ Symptom: a child-process fixture rejects its HOME as outside the temporary tree,
 Before rerunning, preserve the failed log and record both values. Use the same normal short throwaway root for the command, for example `env TMPDIR=/private/tmp GOTMPDIR=/private/tmp make check` on macOS. The Go tool and test framework still create unique temporary directories beneath it; do not delete unrelated directories. Keep raw evidence and other explicit outputs in the task directory. Do not weaken the HOME guard or count an environment failure as a product regression or a pass. Verify the original failing child fixture and the temporary-prefix negative control before repeating the full gate.
 
 中文：Go 1.27.3 的 `t.TempDir()` 使用 `GOTMPDIR`，子进程的 `os.TempDir()` 使用 `TMPDIR`。仅设置任务构建目录会让原有的隔离断言把合法 fixture 拒绝。保留失败证据，并在命令内把两个变量对齐到同一短临时根；Go 自行创建独占子目录，不清理其他任务，也不修改安全断言。先复验失败用例和临时目录前缀反例，再跑完整门禁。
+
+### An unlinked conversation keeps saying the client will retry
+
+The bridge can retry only while its original frontend is alive and its exact
+terminal/session identity still validates. Initial publication uses at most8
+attempts within30s with1/2/4/8s backoff; the normal1s heartbeat may renew only its
+own verified association. Neither path resends task input. Missing receipts, stale
+heartbeats or an unreadable process do not prove a retry is running. Doctor
+distinguishes confirmed exit/replaced incarnation from unknown evidence; it never
+resumes or rebinds a session. A stopped frontend cannot recover by waiting. Inspect
+that terminal and resume that conversation normally when appropriate; do not restart
+other agents or choose a nearby transcript by modification time.

@@ -1,0 +1,127 @@
+{
+  "id": "doctor-storage-web-parity-20261116",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review before implementation; not independent approval",
+    "date": "2026-11-16",
+    "decision": "Implement the user's explicit historical-project cleanup and remaining doctor, backup and browser-loader fixes",
+    "notes": "Read-only inventory found about981MiB of HQ records, including546MiB of full relay exports and314MiB of project evidence. Current core selection still admits structurally recognized relay exports with legacy names and exceeds128MiB. Keep unknown notes, explicit includes, full exports,128MiB import limits and all recovery materials protected. Doctor must identify actionable project material without deleting, rebinding or claiming an inactive client retries. Existing one-second bridge heartbeat and bounded initial publication retry remain producer-owned. Web currently pulses only one square; match the accepted App100-unit pane geometry and1.8s top-right/bottom/top-left focus cycle with live reduced motion. Browser plugin is absent; existing hosted Playwright validates actual rendering without local dependency/cache work. Operator cleanup separately uses a private project archive, bounded same-volume moves, a synthetic helper fixture and complete streamed archive/SHA readback before removing source copies; no production import/session restart or automatic deletion is authorized by running doctor. Source validation before test implementation also confirmed relay IDs support3-80 ASCII letters/digits/underscore/hyphen, including custom IDs; do not assume only32hex IDs. Initial operator inventory conservatively selected too few exports and performed no mutation; retain that preliminary plan and rerun with the actual existing contract. Test the stream validator in the owning relay package as well as archive integration. Cross-platform inventory also found the Mac BrandProgressMark still breathing. Extend only that shared branded page-progress component and its HQ wrapper, keeping native system progress controls, static logos and agent-working rings distinct. Mac hosted rendering tests must sample actual pane colors/geometry in both themes and static reduced-motion/inactive states. No local Swift work. Failed process metadata alone is unknown: stopped requires an absent OS PID or a positively replaced process incarnation. The first exact-history check at7c1c3235 rejected adding a fresh test to an old file whose DCA cases retained their historical review seal. Keep that failed check and commit unchanged. Restore the original test file byte-for-byte to base; add the new guidance test in a separate file under a new reviewed case committed before that file is written, rather than rewriting history or fabricating a prior DCA review. Independent99 review f168d88eb35351e7be4fd237906d3b946c6e0088838d36154a2501d9fce54139 at6650e1a7 requested changes: the observation recognizer accepted missing Put source identity and ignored unknown fields (P1); generic package-limit text falsely asserted a size-only cause (P2). Preserve that review and all earlier candidates. Review new counterexamples before their test files: share the real pure Put input validation, derive required/known serialized keys from the owning Request/Notice tags, reject unknown/duplicate/null/partial fields recursively, accept legitimate pane and Codex-thread sources, and prove automatic core retains uncertain notes. Existing DPC001 positive fixtures are corrected to actually satisfy their original complete-request expectation; this does not claim their previous invalid fixtures were sufficient. Add real public ExportMemory failure observations for10001 tiny files and aggregate byte overflow below the per-file cap, preserving an existing destination. Historical cleanup bytes remain in verified archives; separately audit their structure and retain or restore uncertainty without overwriting current notes."
+  },
+  "cases": [
+    {
+      "id": "DPC-001",
+      "layer": "L2",
+      "description": "Automatic core recovery recognizes legacy full relay observations while preserving unknown notes and explicit includes",
+      "setup": "Synthetic HQ tree with current and legacy export filenames, real-shaped nonempty relay request arrays, ordinary structured notes, malformed/partial/empty arrays and an include override; no production records. Include both generated IDs and valid custom IDs under the existing relay ID contract.",
+      "action": "Select core and full archive scopes, round-trip an included observation and inspect retained file content.",
+      "expected": "Only recognized generated observations leave the automatic core scope; included observations and all full-export records remain. Unknown or corrupt notes remain protected and may still cause an honest limit failure. Restore limits stay128MiB/32MiB/10000; no file is moved or deleted.",
+      "planned_files": [
+        "internal/hq/process_materials_test.go",
+        "internal/relay/observation_test.go"
+      ]
+    },
+    {
+      "id": "DPC-002",
+      "layer": "L2",
+      "description": "Doctor distinguishes historical project payloads from core HQ records and explains recovery limits without destructive fixes",
+      "setup": "Isolated HQ containing declared project reports/attachments, recognized full relay exports, small ordinary notes, core knowledge/workspace and protected recovery points. Also include an unclassified legacy archive outside declared project reports; its unknown recovery value requires retention, not a removal recommendation.",
+      "action": "Read the storage diagnostic projection and render both doctor languages; repeat the read and compare the original tree.",
+      "expected": "Report bounded category counts/bytes and a clear project-archive recommendation.128MiB is described as recovery-package safety, distinct from directory size and configured snapshot budget. Unknown files are not declared disposable. Doctor and doctor fix do not migrate/delete materials or modify backup policy.",
+      "planned_files": [
+        "internal/hq/process_materials_test.go",
+        "internal/app/doctor_hq_storage_test.go"
+      ]
+    },
+    {
+      "id": "DPC-003",
+      "layer": "L2",
+      "description": "Conversation diagnostics never promise retries from a stopped or unverified producer",
+      "setup": "Synthetic resume/frontend records and injected process observations: missing frontend, stale proof with original bridge absent/replaced, stale original bridge present, current verified frontend and identity conflict. Include a failed metadata read with process existence unknown, distinct from confirmed absence.",
+      "action": "Read value-free recovery evidence and render doctor guidance in English and Chinese.",
+      "expected": "Stopped and unknown producers get accurate normal-resume or verification guidance; stale-live evidence is not presented as proof of an active retry. Healthy exact current ownership remains healthy. No session input, RPC resend, forced binding, history timestamp inference or state write occurs.",
+      "planned_files": [
+        "internal/resume/frontend_recovery_diagnostic_test.go",
+        "internal/app/doctor_conversation_health_test.go"
+      ]
+    },
+    {
+      "id": "WBL-001",
+      "layer": "L3",
+      "description": "Browser branded loaders match the accepted App pane geometry and moving cyan focus across desktop/narrow viewports and both themes",
+      "setup": "Real served Web app over the existing isolated HTTP fixture, widths390/1440, light/dark themes, held data responses; no real pairing or user data.",
+      "action": "Open the actual loading view, inspect running CSS animations, seek the three cycle phases and capture rendered states at fixed phases.",
+      "expected": "The three fixed rounded panes keep their bounds while the cyan focus moves top-right to bottom to top-left over1.8s. Whole-mark breathing and an indefinitely single lit pane fail. Label and geometry remain readable at both widths/themes, with no page or console errors.",
+      "planned_files": [
+        "tests/web/branded-loading.test.cjs"
+      ]
+    },
+    {
+      "id": "WBL-002",
+      "layer": "L3",
+      "description": "Browser loading honors live reduced motion without repeated accessibility announcements",
+      "setup": "Real pending browser view with reduced-motion emulation and the same shared branded loader.",
+      "action": "Toggle reduced motion during the read, inspect animation state and the accessibility/DOM structure, then resolve the read.",
+      "expected": "Reduced motion keeps a static top-right cyan pane with no running focus cycle. Decorative panes are hidden from accessibility; one localized loading status remains. The loader and its focus animations disappear on completion, with no artificial delay or layout jump.",
+      "planned_files": [
+        "tests/web/branded-loading.test.cjs"
+      ]
+    },
+    {
+      "id": "WBL-003",
+      "layer": "L3",
+      "description": "Shared browser loading entries preserve their original read lifecycle and input boundary",
+      "setup": "Existing synthetic pane, transcript and panes-list endpoints with deferred response bodies; narrow focus and desktop tile paths.",
+      "action": "Exercise terminal/chat or panes-list loading, switch views while a read is held, complete the current read and inspect current content.",
+      "expected": "All branded loading entries use the common three-pane cycle. Late replies cannot restore a retired loader or overwrite the selected view. Failed and successful-empty reads keep their existing meanings; no send/retry of task input is generated.",
+      "planned_files": [
+        "tests/web/branded-loading.test.cjs"
+      ]
+    },
+    {
+      "id": "MBL-001",
+      "layer": "L3",
+      "description": "Mac shared branded progress matches App/Web moving focus without changing static logos or agent state",
+      "setup": "Hosted macOS SwiftUI renderer, deterministic phases at 0/600/1200ms, both color schemes, compact/full mark; reduced motion and inactive rendering use a static phase. No local build or real-device claim.",
+      "action": "Render the actual frame used by BrandProgressMark, inspect cyan pane centroids and fixed bounds, crossfade boundaries and accessible wrapper; inspect animation ownership in the shared view.",
+      "expected": "Top-right, bottom then top-left receive cyan on a 1.8s cycle with App100-unit geometry and radius9. Only highlights move; reduced motion/inactive stays top-right, removing the view ends its TimelineView updates. HQ label is announced once, and decorative marks are hidden. Native progress controls and static brand assets are unchanged.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift"
+      ]
+    },
+    {
+      "id": "DPC-004",
+      "layer": "L2",
+      "description": "New doctor language-level regression remains separate from unchanged historical conversation tests",
+      "setup": "Reuse the existing isolated doctor fixture from an unchanged original test file; synthetic impossible bridgePID confirms absence, and missing proof remains unknown. English/Chinese projections only.",
+      "action": "Render stopped and unknown recovery guidance and compare index/proof before and after reads.",
+      "expected": "Neither language promises a running automatic retry. Confirmed exit explains waiting cannot restore; missing proof explains recovery is unconfirmed. Source evidence is unchanged and the original DCA tests remain byte-identical to base.",
+      "planned_files": [
+        "internal/app/doctor_frontend_recovery_test.go"
+      ]
+    },
+    {
+      "id": "DPC-005",
+      "layer": "L2",
+      "description": "Only complete known relay serialization with a real Put source may be omitted from automatic core",
+      "setup": "Isolated relay/HQ fixtures. Create valid pane and pane-less Codex thread requests through real Put and JSON serialization. Mutate source, required keys, nulls, duplicates and unknown fields including nested Notice; no production records.",
+      "action": "Recognize complete arrays and select default core, explicit-file/subtree include and full scopes. Compare unknown source contents after reads.",
+      "expected": "Valid pane/thread observations match. Missing pane and missing/overlong Codex thread source, absent mandatory serialized keys (including false/empty-valued fields), unknown extensions, duplicate keys, nulls and partial nested structures do not match and remain in core. Explicit includes/full preserve valid observations. No new limits, deletion, state write or binding authority is granted by recognition.",
+      "planned_files": [
+        "internal/relay/observation_contract_test.go",
+        "internal/hq/observation_contract_test.go"
+      ]
+    },
+    {
+      "id": "DPC-006",
+      "layer": "L2",
+      "description": "Doctor explains actual file-count and byte-cap failures without confusing either with total HQ size",
+      "setup": "Private synthetic HQs:10001 empty files (far below128MiB) and a few sparse files at or below32MiB whose combined tar estimate exceeds128MiB. Existing destination bytes are protected.",
+      "action": "Call the actual public full-export builder, feed each real failure to doctor language projection and inspect both English/Chinese messages and preserved files.",
+      "expected": "Both source failures are observed; messages accurately mention size-or-file-count safety limits (128MiB/10000 files), rather than asserting a size-only cause. Snapshot64MiB retention budget and directory size are not substituted. Existing destination and source files remain unchanged; no production export/import occurs.",
+      "planned_files": [
+        "internal/app/doctor_recovery_limits_test.go"
+      ]
+    }
+  ],
+  "seal": "5e7d066f19f3305260fe6669a2f1227259db243a7a4072b8850483614b6ad3e3"
+}

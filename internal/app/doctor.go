@@ -313,7 +313,7 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 		// The menu-bar app is its own concern — install state + version + on-disk path.
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks},
 		{i18n.Tr("Remote access", "远程访问"), remoteChecks},
-		{i18n.Tr("Storage", "存储"), func() []dcheck { return []dcheck{rowHQMemory(), rowDiskUsage(), rowUploads()} }},
+		{i18n.Tr("Storage", "存储"), func() []dcheck { return []dcheck{rowHQMemory(), rowHQProcessMaterials(), rowDiskUsage(), rowUploads()} }},
 		{i18n.Tr("Logs", "日志"), func() []dcheck { return logsChecks(time.Unix(now, 0)) }},
 	}
 	// Only for a machine that actually runs a supervisor — on any other install these
@@ -512,13 +512,43 @@ func rowHQMemory() dcheck {
 		note += i18n.Tr(" · automatic backups off", " · 自动备份已关闭")
 	} else if backup.LastError != "" {
 		status = stRec
-		note += i18n.Tr(" · backup failed; prior points preserved: ", " · 备份失败，原恢复点保留：") + backup.LastError
+		note += i18n.Tr(" · backup failed; prior points preserved: ", " · 备份失败，原恢复点保留：") + doctorSnapshotFailure(backup.LastError)
 	} else if backup.ManagedPoints == 0 {
 		status = stRec
 		note += i18n.Tr(" · run gtmux serve for automatic recovery, or gtmux hq --export <path> for an explicit full export", " · 运行 gtmux serve 生成自动恢复点，或用 gtmux hq --export <路径> 显式全量导出")
 	}
 	note += " · " + hq.OffMachineHint()
 	return dcheck{status, label, size + age, note}
+}
+
+func doctorSnapshotFailure(reason string) string {
+	if strings.HasPrefix(reason, "HQ records exceed restore limits") {
+		return i18n.Tr("Recovery package exceeds a safety limit (128 MiB or 10,000 files); review HQ storage and preserve unique records.", "恢复包超过安全上限（128 MiB 或 10,000 个文件）；先查看 HQ 存储分类，保留独有记录。")
+	}
+	return reason
+}
+
+func rowHQProcessMaterials() dcheck {
+	return hqProcessMaterialsRow(hq.ReadProcessMaterialState())
+}
+
+func hqProcessMaterialsRow(s hq.ProcessMaterialState) dcheck {
+	label := i18n.Tr("Project material in HQ", "HQ 内的项目过程材料")
+	if s.Files == 0 && !s.Incomplete {
+		if s.UnclassifiedArchiveBytes > 0 {
+			return dcheck{stInfo, label, i18n.Tr("archives need classification", "有归档待核实"),
+				fmt.Sprintf(i18n.Tr("%s outside declared project areas. Confirm ownership and recovery value before moving or removing; retained for now.", "%s 归档位于已声明项目范围之外；先核实归属与恢复价值，保持保留。"), humanBytes(s.UnclassifiedArchiveBytes))}
+		}
+		return dcheck{stOK, label, i18n.Tr("none identified", "未发现"), ""}
+	}
+	note := fmt.Sprintf(i18n.Tr("Raw exports %s · attachments %s · source %s. Archive under the project; keep only summaries and references here. Review before removal; knowledge, workspace and recovery points are protected.", "原始导出 %s · 附件 %s · 源码 %s。材料归项目目录，HQ 只留摘要与索引；先核实再处理，知识库、事项及恢复点保持保护。"), humanBytes(s.RelayBytes), humanBytes(s.AttachmentBytes), humanBytes(s.SourceBytes))
+	if s.Incomplete {
+		note += i18n.Tr(" Inventory incomplete; unclassified files remain protected.", " 扫描未完成，未分类文件仍保留。")
+	}
+	if s.UnclassifiedArchiveBytes > 0 {
+		note += i18n.Tr(" Other archives need separate ownership and recovery review.", " 其他归档须另行核实归属与恢复价值。")
+	}
+	return dcheck{stRec, label, fmt.Sprintf(i18n.Tr("%s · %d files", "%s · %d 个文件"), humanBytes(s.Bytes), s.Files), note}
 }
 
 // --- individual checks (read-only) ---
@@ -1811,7 +1841,7 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 	}
 	var bounds []bound
 	verified := 0
-	var unavailable, missing, unverified []string
+	var unavailable, missing, unverified, stopped []string
 	claimed := map[string]bool{} // every session id some pane already owns
 	currentClients := map[string]bool{}
 	for _, attachment := range agentclient.All() {
@@ -1843,6 +1873,9 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 			_, live, reason := resume.LoadLiveDiagnostic(p.Loc)
 			if !live {
 				unavailable = append(unavailable, p.PaneID+" ("+reason+")")
+				if resume.LoadFrontendRecoveryKind(p.Loc) == resume.FrontendRecoveryStopped {
+					stopped = append(stopped, p.PaneID)
+				}
 			} else {
 				unverified = append(unverified, p.PaneID+" (current-client-unverified)")
 			}
@@ -1868,10 +1901,15 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 	}
 	switch {
 	case len(unavailable) > 0:
+		note := doctorAssociationDetails(unavailable, missing, unverified)
+		if len(stopped) > 0 {
+			note += fmt.Sprintf(i18n.Tr(". Frontend stopped: %s; waiting cannot restore it. Normally resume this conversation in its terminal.", "。前端已退出：%s，等待不会恢复；请在对应终端正常续开这段对话。"), strings.Join(stopped, ", "))
+		}
+		if len(stopped) < len(unavailable) {
+			note += i18n.Tr(" Automatic recovery for the remaining panes cannot be confirmed. Check their terminals and resume normally if they stay unlinked.", " 其余窗格无法确认正在自动恢复；请检查对应终端，持续未关联时正常续开。")
+		}
 		return dcheck{stMiss, label, fmt.Sprintf(i18n.Tr("%d unavailable", "%d 个未关联"), len(unavailable)),
-			doctorAssociationDetails(unavailable, missing, unverified) + i18n.Tr(
-				". The current client will retry. If the problem persists after updating, normally exit and resume only this conversation.",
-				"。客户端会自动重试。更新后若仍未恢复，请在对应终端正常退出并续开这段对话。")}
+			note}
 	case len(missing)+len(unverified) > 0:
 		return dcheck{stRec, label, fmt.Sprintf(i18n.Tr("%d need verification", "%d 个待核实"), len(missing)+len(unverified)),
 			doctorAssociationDetails(missing, unverified) + i18n.Tr(
