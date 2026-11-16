@@ -61,14 +61,12 @@
     "cases": [
       "DCA-001",
       "DCA-002",
-      "DCA-003",
-      "DPC-003"
+      "DCA-003"
     ],
     "selectors": [
       "TestDCA001DoctorReportsFailedManagedAssociation",
       "TestDCA002DoctorDistinguishesMissingUnsupportedAndVerified",
-      "TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary",
-      "TestDPC003DoctorDoesNotPromiseAutomaticRecovery"
+      "TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary"
     ]
   },
   "internal/app/dsh_transcript_test.go": {
@@ -3470,6 +3468,14 @@
     "selectors": [
       "testMBL001RenderedFocusMovesWithoutMovingPanes",
       "testMBL001ReducedMotionAndInactiveUseStaticTopRight"
+    ]
+  },
+  "internal/app/doctor_frontend_recovery_test.go": {
+    "cases": [
+      "DPC-004"
+    ],
+    "selectors": [
+      "TestDPC004DoctorDoesNotPromiseAutomaticRecovery"
     ]
   }
 }

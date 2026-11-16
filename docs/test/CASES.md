@@ -2,7 +2,7 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1299 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1300 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
@@ -175,6 +175,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | WBL-002 | Reduced motion keeps a static top-right cyan pane with no running focus cycle. Decorative panes are hidden from accessibility; one localized loading status remains. The loader and its focus animations disappear on completion, with no artificial delay or layout jump. |
 | WBL-003 | All branded loading entries use the common three-pane cycle. Late replies cannot restore a retired loader or overwrite the selected view. Failed and successful-empty reads keep their existing meanings; no send/retry of task input is generated. |
 | MBL-001 | Top-right, bottom then top-left receive cyan on a 1.8s cycle with App100-unit geometry and radius9. Only highlights move; reduced motion/inactive stays top-right, removing the view ends its TimelineView updates. HQ label is announced once, and decorative marks are hidden. Native progress controls and static brand assets are unchanged. |
+| DPC-004 | Neither language promises a running automatic retry. Confirmed exit explains waiting cannot restore; missing proof explains recovery is unconfirmed. Source evidence is unchanged and the original DCA tests remain byte-identical to base. |
 | FOCUS-001 | Literal and decorated versions of the complete session match; differently quoted, truncated, unrelated, wrong-separator and empty identities do not. Existing ordinary/decorated titles and bare trailing-whitespace tolerance remain supported. |
 | FOCUS-002 | A literal match wins across all tabs before tolerant decoration fallback. With only a decorated match it is selected. The chosen record, indices and trailing title bytes remain unchanged; no match and empty session return false. Multiple literal tabs retain first-match order. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |

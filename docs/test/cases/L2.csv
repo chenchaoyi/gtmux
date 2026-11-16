@@ -17,10 +17,10 @@ LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_tes
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 MAP-f767974bfca8,L2,reviewed implementation,internal/app/conversation_read_test.go,14,reviewed-selector,TestCAS003PaneAssociationIsNotAnEmptyConversation,False,CAS-003
 LEG-ba12d8af1486,L2,Go core / CLI / server,internal/app/devices_push_test.go,16,Test,TestListPush_ShowsEveryPausedToken,False,legacy-not-retrospectively-reviewed
-MAP-69939dd4afa9,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,49,reviewed-selector,TestDCA001DoctorReportsFailedManagedAssociation,False,"DCA-001,DCA-002,DCA-003"
-MAP-bf49b210b7cf,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,80,reviewed-selector,TestDCA002DoctorDistinguishesMissingUnsupportedAndVerified,False,"DCA-001,DCA-002,DCA-003"
-MAP-37c101d9ff65,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,106,reviewed-selector,TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary,False,"DCA-001,DCA-002,DCA-003"
-MAP-d8fe4b6f6747,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,123,reviewed-selector,TestDPC003DoctorDoesNotPromiseAutomaticRecovery,False,"DCA-001,DCA-002,DCA-003,DPC-003"
+MAP-69939dd4afa9,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,48,reviewed-selector,TestDCA001DoctorReportsFailedManagedAssociation,False,"DCA-001,DCA-002,DCA-003"
+MAP-bf49b210b7cf,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,79,reviewed-selector,TestDCA002DoctorDistinguishesMissingUnsupportedAndVerified,False,"DCA-001,DCA-002,DCA-003"
+MAP-37c101d9ff65,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,105,reviewed-selector,TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary,False,"DCA-001,DCA-002,DCA-003"
+MAP-4f8292b157e5,L2,reviewed implementation,internal/app/doctor_frontend_recovery_test.go,16,reviewed-selector,TestDPC004DoctorDoesNotPromiseAutomaticRecovery,False,DPC-004
 MAP-6eef5ace4810,L2,reviewed implementation,internal/app/doctor_hq_storage_test.go,14,reviewed-selector,TestDPC002DoctorStorageExplainsScopeWithoutRemoval,False,DPC-002
 MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_test.go,48,reviewed-selector,TestDKC001DoctorPendingCountMatchesCaptureProjection,False,DKC-001
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
