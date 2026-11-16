@@ -5,7 +5,7 @@
     "reviewer": "Codex gpt-6.1-sol implementation owner (self-review; independent review pending HQ)",
     "date": "2026-11-16",
     "decision": "Ready for formal implementation and mapping",
-    "notes": "Reviewed evidence boundaries and negative oracles. Exploratory working-tree tests ran before this repository ordering gate was discovered; this record does not claim to predate those experiments. This design-only commit precedes the first committed test implementation. Independent frozen-candidate review remains required; no peer/user approval is asserted. Uses synthetic stores, clocks and delivery; no production sessions, permissions, KB or devices."
+    "notes": "Reviewed evidence boundaries and negative oracles. Exploratory working-tree tests ran before this repository ordering gate was discovered; this record does not claim to predate those experiments. This design-only commit precedes the first committed test implementation. Independent frozen-candidate review remains required; no peer/user approval is asserted. Uses synthetic stores, clocks and delivery; no production sessions, permissions, KB or devices. Formal extension: put the bounded sweep in the existing notification pass so a baseline-compatible regression can prove ordinary noted plus no new events still wakes HQ. Existing ingestion test will capture the post-sweep snapshot before read-independence assertions; source ingestion expectations remain unchanged."
   },
   "cases": [
     {
@@ -65,7 +65,9 @@
       "expected": "Unfinished goal stays due; source acknowledgement remains independent; stale reminder drops or rerenders; quiet changes presentation only; repeat reminders identify HQ coordination debt.",
       "planned_files": [
         "internal/app/hqworkspace_goal_test.go",
-        "internal/hqworkspace/followup_test.go"
+        "internal/hqworkspace/followup_test.go",
+        "internal/app/hqworkspace_reconcile_test.go",
+        "internal/app/hqworkspace_goal_regression_test.go"
       ]
     },
     {
@@ -80,5 +82,5 @@
       ]
     }
   ],
-  "seal": "a74ae5ef13dd5fd334f27fa33eacd01ca59202e09fbd2cd7c5ad2397d1d64a7a"
+  "seal": "f20c3e140ff5428b995550e6e32bad21cd89d9041f745735c6d6f4a43e464af2"
 }
