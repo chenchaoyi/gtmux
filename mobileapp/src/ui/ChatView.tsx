@@ -187,7 +187,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const liveOpen = liveDisclosure.scope === liveScope && liveDisclosure.open;
   React.useEffect(() => {setLiveDisclosure(prev => prev.scope === liveScope ? prev : {scope: liveScope, open: false});}, [liveScope]);
   const [profileTarget, setProfileTarget] = useState<ProfileTarget | null>(null);
-  const avatar = (content: React.ReactNode, target: ProfileTarget, message = false) => <TouchableOpacity testID="participant-avatar" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '查看参与者资料' : 'View participant profile'} style={[styles.avatarButton, message && styles.messageAvatar]} onPress={() => setProfileTarget(target)}>{content}</TouchableOpacity>;
+  const avatar = (content: React.ReactNode, target: ProfileTarget, placement?: 'incoming' | 'outgoing') => <TouchableOpacity testID="participant-avatar" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '查看参与者资料' : 'View participant profile'} style={[styles.avatarButton, placement === 'outgoing' && styles.messageAvatar, placement === 'incoming' && styles.incomingAvatar]} onPress={() => setProfileTarget(target)}>{content}</TouchableOpacity>;
   const fontFamily = nativeFontFamily(fontPref, Platform.OS); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
   const scrollRef = React.useRef<ScrollView>(null);
@@ -637,7 +637,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
               return (
                 <>
                   <View testID="chat-user-row" style={styles.userRow}>
-                    <View testID="chat-user-bubble" style={[styles.userBubble, isPending && !pendingDelivered && styles.userBubblePending]}>
+                    <View testID="chat-user-bubble" style={[styles.userBubble, !collapsed && styles.markdownBubble, isPending && !pendingDelivered && styles.userBubblePending]}>
                       {collapsed ? (
                         <CopyableText lang={lang} selectable selectionColor={SEL_COLOR} numberOfLines={8}
                           style={[styles.userText, {fontFamily, fontSize, lineHeight}]}>
@@ -649,7 +649,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                       )}
                     </View>
                     <View testID="chat-user-avatar" style={styles.userIdentity}>
-                      {avatar(t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />, t.from ? {kind: 'sender', agent, sender: t.from, turn: t} : {kind: 'human', agent}, true)}
+                      {avatar(t.from ? <SenderAvatar from={t.from} size={26} /> : <UserAvatar size={26} />, t.from ? {kind: 'sender', agent, sender: t.from, turn: t} : {kind: 'human', agent}, 'outgoing')}
                       {isPending && <MessageReceipt key={pendingKey} delivery={pendingDelivery} delivered={pendingDelivered} expiresAt={pendingEcho?.receiptExpiresAt} zh={lang === 'zh'} />}
                     </View>
                   </View>
@@ -679,7 +679,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                 collapsed turn still reads as a normal conversation row (just short). */}
             {hasReply && !open && (
               <View style={styles.agentRow}>
-                {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t})}
+                {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t}, 'incoming')}
                 <TouchableOpacity style={[styles.agentBubble, styles.collapsedBubble]} testID={TestIds.detail.collapsedReply} onPress={() => toggleTurn(turnKey, open)} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '展开本轮' : 'Expand this reply'}>
                   <Text style={[styles.collapsedPreview, {fontFamily, fontSize: fontSize - 0.5}]} numberOfLines={2}>{preview}</Text>
                 </TouchableOpacity>
@@ -696,8 +696,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                       {/* every agent bubble carries the avatar — a turn can split into
                           many bubbles across tool calls; one-per-turn left the
                           follow-ups looking orphaned. */}
-                      {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t})}
-                      <View style={styles.agentBubble}>
+                      {avatar(<AgentAvatar agent={agentForTurn(t, agent)} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent: agentForTurn(t, agent), turn: t}, 'incoming')}
+                      <View style={[styles.agentBubble, styles.markdownBubble]}>
                         <MarkdownView openFile={ref => openFile(ref, t.session_id || agent.session_id || '')} source={seg.text} colors={MD_COLORS} fontSize={fontSize} fontFamily={fontFamily} lang={lang} selectable selectionColor={SEL_COLOR} />
                       </View>
                     </View>
@@ -750,7 +750,7 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   avatarButton: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
   globalFold: {minWidth: 44, minHeight: 44, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center'},
   body: {flex: 1, backgroundColor: pal.bg},
-  content: {padding: 12, gap: 10},
+  content: {padding: 10, gap: 8},
   terminalLink: {alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, justifyContent: 'center'},
   terminalLinkText: {color: readingColors(pal).link, fontSize: 14, fontWeight: '500'},
   center: {paddingVertical: 24, alignItems: 'center'},
@@ -780,42 +780,45 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   dot: {width: 6, height: 6, borderRadius: 3, marginRight: 5},
   statusText: {fontSize: 12, flexShrink: 1},
 
-  turn: {gap: 6},
+  turn: {gap: 4},
   // centered time separator above a turn (chat-app style), deliberately quiet.
   timeLabel: {fontSize: 10.5, color: pal.fg2, textAlign: 'center', alignSelf: 'center', letterSpacing: 0.3, marginTop: 2},
   // user prompt — right-aligned accent bubble + the human avatar on the right.
   userIdentity: {width: 44, height: 44},
   messageAvatar: {justifyContent: 'flex-start'},
-  userRow: {flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start', gap: 8},
+  incomingAvatar: {alignItems: 'flex-end'},
+  userRow: {flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'flex-start', gap: 4},
   userBubble: {
     maxWidth: '82%',
     backgroundColor: readingColors(pal).userBg,
     borderRadius: 13,
     borderTopRightRadius: 3,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
   },
   userBubblePending: {opacity: 0.55},
   userText: {color: readingColors(pal).userMarkdown.text, fontSize: 14, lineHeight: 20},
   // expand/collapse toggle for an auto-collapsed long prompt — right-aligned under
-  // the bubble (marginRight = avatar 26 + gap 8, so it sits under the bubble's edge).
-  userToggle: {alignSelf: 'flex-end', marginRight: 34, marginTop: 3, paddingVertical: 2},
+  // the bubble (marginRight = avatar target 44 + gap 4).
+  userToggle: {alignSelf: 'flex-end', marginRight: 48, marginTop: 3, paddingVertical: 2},
   userToggleText: {fontSize: 12.5, color: pal.fg2, fontWeight: '600'},
-  sender: {fontSize: 11.5, color: pal.fg2, textAlign: 'right', marginTop: 3, marginRight: 34},
+  sender: {fontSize: 11.5, color: pal.fg2, textAlign: 'right', marginTop: 3, marginRight: 48},
 
-  // one reply segment = a text bubble + its trailing step group (small inner gap).
-  segBlock: {gap: 4},
+  // One reply segment groups its text, actions and trailing Activity target.
+  segBlock: {gap: 0},
 
   // agent reply bubble — left, avatar on every bubble.
-  agentRow: {flexDirection: 'row', gap: 8, alignItems: 'flex-start'},
+  agentRow: {flexDirection: 'row', gap: 4, alignItems: 'flex-start'},
   agentBubble: {
     flex: 1,
     backgroundColor: pal.surface,
     borderRadius: 13,
     borderTopLeftRadius: 3,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
+  // Markdown blocks already provide the bottom inset; do not add it twice.
+  markdownBubble: {paddingBottom: 0},
   // collapsed agent bubble — a quieter, truncated version of agentBubble.
   collapsedBubble: {backgroundColor: pal.raised, paddingVertical: 8},
   collapsedPreview: {color: pal.fg2},

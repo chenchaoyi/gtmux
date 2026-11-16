@@ -389,3 +389,16 @@ Chat SHALL request a recent window, retain fetched source pages across latest re
 #### Scenario: Earlier history and a later refresh
 - **WHEN** the reader loads an earlier page and a latest-window refresh arrives
 - **THEN** the earlier records SHALL remain chronological with updated matching source IDs, a late response for another conversation SHALL NOT enter the current view, and an unobserved gap SHALL stay behind an explicit Jump to the authoritative recent window
+
+### Requirement: Compact conversation spacing
+Phone and iPad Chat, including HQ, SHALL use shared compact gutters and group the
+text, Activity disclosure and reply actions of one turn without stacked blank
+padding. Markdown trailing block space SHALL NOT be counted twice in a message
+bubble; collapsed plain-text previews SHALL retain their bottom inset. Text size,
+line height, selection, receipt footprint and disclosure state SHALL remain
+unchanged. Participant, Activity and reply-action targets SHALL remain at least
+44pt without overlapping neighbouring controls.
+
+#### Scenario: Read a reply split by tool activity
+- **WHEN** commentary is followed by Activity and a final reply
+- **THEN** those parts SHALL read as one compact turn, with reply actions aligned to the text and a quieter date separator between turns

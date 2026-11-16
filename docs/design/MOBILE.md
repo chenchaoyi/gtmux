@@ -1493,13 +1493,22 @@ incidents; records remain local unless explicitly copied or shared.
 ### Reply actions, attachment captions and server details
 
 Copy/Share sit immediately below their reply, aligned with its text, using only
-outline icons centred in 44pt targets. Copy briefly becomes a checkmark and
+outline icons near the top of 44pt targets. Copy briefly becomes a checkmark and
 announces completion; localized accessibility labels remain available without
 visible text. Desktop question replies are normalized by the shared Go prompt
 reader: a single reply shows the answer, while multiple answers retain their
 question associations. Transport tags, JSON and input item IDs are omitted only
 for a complete recognized envelope; quoted examples and unknown or partial
 payloads remain readable as source text.
+
+Chat uses a compact shared rhythm on phone and iPad: 8pt between turns, 4pt
+between the parts of a turn, and no extra segment padding around the 44pt Activity
+row. Incoming avatar artwork sits beside its bubble within the full 44pt target.
+Message text, Activity and reply actions share the narrower gutter. Markdown's
+existing trailing block space supplies the bubble's bottom inset; collapsed plain
+text keeps its own inset. Date separators use less vertical padding. Font size,
+line height, paragraph selection and the stable sender/receipt footprint stay
+unchanged; compactness must not come from smaller or overlapping touch targets.
 
 Selecting or re-editing a photo reveals the caption input and focuses it after the markup modal has fully
 closed; cancelling an edit does not trigger new focus. On Android, focus waits for
