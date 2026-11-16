@@ -318,7 +318,7 @@ function ToolInput({
 
 const makeStyles = (pal: Palette) => StyleSheet.create({
   // Chat and its tool readers share the resolved App Appearance.
-  group: { marginLeft: 52 },
+  group: { marginLeft: 48 },
   header: {
     minHeight: 44,
     paddingVertical: 6,

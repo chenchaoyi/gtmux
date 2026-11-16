@@ -67,7 +67,7 @@ export function TimeSeparator({label, testID}: {label: string; testID?: string})
 }
 
 const styles = StyleSheet.create({
-  row: {flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14},
+  row: {flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 14},
   side: {flex: 1, justifyContent: 'center'},
   label: {fontSize: 11.5, marginHorizontal: 10, letterSpacing: 0.3, fontVariant: ['tabular-nums']},
 });

@@ -48,8 +48,8 @@ export function ReplyActions({text, lang, open = true, onToggle}: {text: string;
   );
 }
 const makeStyles = (pal: Palette) => StyleSheet.create({
-  row: {flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginLeft: 52, marginTop: -2, gap: 2},
-  fold: {marginLeft: 'auto', minHeight: 44, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'center'},
+  row: {flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', marginLeft: 44, gap: 2},
+  fold: {marginLeft: 'auto', minHeight: 44, paddingTop: 8, paddingHorizontal: 10, flexDirection: 'row', gap: 6, alignItems: 'flex-start'},
   foldLabel: {fontSize: 12, color: pal.fg2},
-  button: {minHeight: 44, minWidth: 44, alignItems: 'center', justifyContent: 'center'},
+  button: {minHeight: 44, minWidth: 44, paddingTop: 8, alignItems: 'center', justifyContent: 'flex-start'},
 });
