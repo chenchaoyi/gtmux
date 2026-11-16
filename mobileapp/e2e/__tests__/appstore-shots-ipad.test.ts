@@ -91,7 +91,10 @@ gated('app store demo shots (iPad)', () => {
     const entry = driver.$('~knowledge-entry-k2');
     await entry.waitForDisplayed({timeout: 10_000});
     await entry.click();
-    await driver.$('~knowledge-act-carry').waitForDisplayed({timeout: 10_000});
+    // Advice is the screenshot's subject; its primary action depends on the
+    // entry's purpose. Require the loaded reader and its actual guidance.
+    await driver.$('~knowledge-entry-more').waitForDisplayed({timeout: 10_000});
+    await driver.$('~knowledge-core-guidance').waitForExist({timeout: 10_000});
     await settle(1400);
     shot('04-knowledge');
     await driver.$('~knowledge-close').click().catch(() => {});

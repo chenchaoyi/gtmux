@@ -69,6 +69,38 @@
       "TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary"
     ]
   },
+  "internal/app/doctor_frontend_recovery_test.go": {
+    "cases": [
+      "DPC-004"
+    ],
+    "selectors": [
+      "TestDPC004DoctorDoesNotPromiseAutomaticRecovery"
+    ]
+  },
+  "internal/app/doctor_hq_storage_test.go": {
+    "cases": [
+      "DPC-002"
+    ],
+    "selectors": [
+      "TestDPC002DoctorStorageExplainsScopeWithoutRemoval"
+    ]
+  },
+  "internal/app/doctor_knowledge_count_test.go": {
+    "cases": [
+      "DKC-001"
+    ],
+    "selectors": [
+      "TestDKC001DoctorPendingCountMatchesCaptureProjection"
+    ]
+  },
+  "internal/app/doctor_recovery_limits_test.go": {
+    "cases": [
+      "DPC-006"
+    ],
+    "selectors": [
+      "TestDPC006DoctorExplainsActualCountAndByteFailures"
+    ]
+  },
   "internal/app/dsh_transcript_test.go": {
     "cases": [
       "CAS-003"
@@ -105,6 +137,33 @@
       "TestPhase1CursorProspectiveActivation",
       "TestPhase1CursorEmptyRetentionGap",
       "TestPhase1CursorFilteredPageBoundary"
+    ]
+  },
+  "internal/app/hqworkspace_goal_regression_test.go": {
+    "cases": [
+      "HGD-005"
+    ],
+    "selectors": [
+      "TestGoalNoNewEventsAfterNotedStillRequiresHQ"
+    ]
+  },
+  "internal/app/hqworkspace_goal_runtime_test.go": {
+    "cases": [
+      "HGD-009"
+    ],
+    "selectors": [
+      "TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch"
+    ]
+  },
+  "internal/app/hqworkspace_goal_test.go": {
+    "cases": [
+      "HGD-002",
+      "HGD-004",
+      "HGD-005"
+    ],
+    "selectors": [
+      "TestGoalActionAuthorityAndExactReceiptEnvelope",
+      "TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers"
     ]
   },
   "internal/app/hqworkspace_reconcile_test.go": {
@@ -156,6 +215,14 @@
     "selectors": [
       "TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection",
       "TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry"
+    ]
+  },
+  "internal/app/phone_send_failure_test.go": {
+    "cases": [
+      "SFR-001"
+    ],
+    "selectors": [
+      "TestSFR001PhoneRefusalNeedsExplicitNativeQuestion"
     ]
   },
   "internal/app/recent_transcript_test.go": {
@@ -668,6 +735,24 @@
       "TestPromotionsStatus"
     ]
   },
+  "internal/hq/observation_contract_test.go": {
+    "cases": [
+      "DPC-005"
+    ],
+    "selectors": [
+      "TestDPC005UncertainObservationsStayInEveryCoreSelection"
+    ]
+  },
+  "internal/hq/process_materials_test.go": {
+    "cases": [
+      "DPC-001",
+      "DPC-002"
+    ],
+    "selectors": [
+      "TestDPC001AutomaticScopePreservesUnknownNotesAndIncludes",
+      "TestDPC002ProcessMaterialInventoryProtectsCoreAndUnknown"
+    ]
+  },
   "internal/hq/rotation_admission_test.go": {
     "cases": [
       "HRW-007"
@@ -815,6 +900,37 @@
       "TestHRW004ExactOwnStrandedRepairPrecedesReservation",
       "TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity",
       "TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource"
+    ]
+  },
+  "internal/hqworkspace/followup_test.go": {
+    "cases": [
+      "HGD-001",
+      "HGD-002",
+      "HGD-003",
+      "HGD-004",
+      "HGD-005",
+      "HGD-006"
+    ],
+    "selectors": [
+      "TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation",
+      "TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice",
+      "TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues",
+      "TestGoalNativeBackgroundExactStepAndIdentity",
+      "TestGoalPauseRefusalExternalAndCrossChannelAnswer",
+      "TestGoalLegacyMigrationBoundedSweepAndProjection",
+      "TestGoalRestoreSuspendsDriveAndRetainsPause",
+      "TestGoalWrongStepAmbiguousIntervalAndDurableReminder",
+      "TestGoalStepLabelDoesNotResetTheSameWork",
+      "TestGoalExpiredExternalProofDoesNotPermitFirstSend"
+    ]
+  },
+  "internal/hqworkspace/goal_lease_test.go": {
+    "cases": [
+      "HGD-008"
+    ],
+    "selectors": [
+      "TestCoveredGoalScanKeepsValidUnchangedLease",
+      "TestCoveredGoalActualPremiseChangeAndExpiryFenceOldClaim"
     ]
   },
   "internal/hqworkspace/input_test.go": {
@@ -1210,6 +1326,22 @@
       "TestRBL002SourceWaitCancelsWhileLedgerIsLocked"
     ]
   },
+  "internal/relay/observation_contract_test.go": {
+    "cases": [
+      "DPC-005"
+    ],
+    "selectors": [
+      "TestDPC005ObservationRequiresRealCompleteKnownSerialization"
+    ]
+  },
+  "internal/relay/observation_test.go": {
+    "cases": [
+      "DPC-001"
+    ],
+    "selectors": [
+      "TestDPC001ObservationExportRequiresCompleteRelayContract"
+    ]
+  },
   "internal/restorejob/store_test.go": {
     "cases": [
       "RSR-002"
@@ -1339,6 +1471,14 @@
       "TestCFL003ObservedNewRootRetriesItsOwnPartialMovedPublication"
     ]
   },
+  "internal/resume/frontend_recovery_diagnostic_test.go": {
+    "cases": [
+      "DPC-003"
+    ],
+    "selectors": [
+      "TestDPC003RecoveryEvidenceNeverGrantsRetryAuthority"
+    ]
+  },
   "internal/resume/observed_conversation_test.go": {
     "cases": [
       "SID-003"
@@ -1460,6 +1600,15 @@
     "selectors": [
       "TestRestoreOwnerContractNeverStartsOnRead",
       "TestRestoreKnownFailureCodesStayDistinct"
+    ]
+  },
+  "internal/server/send_failure_code_test.go": {
+    "cases": [
+      "SFR-002"
+    ],
+    "selectors": [
+      "TestSFR002SendFailureCodeBody",
+      "TestSFR002SendCodeCannotBypassAuthority"
     ]
   },
   "internal/server/send_receipt_test.go": {
@@ -1650,6 +1799,16 @@
       "TestNativeCallDetailsAreLazyScopedAndRedacted",
       "TestNativeCallMirrorPreservesOriginalInputAndResultReference",
       "TestNativeCallMissingResultIsNotAnEmptyResult"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift": {
+    "cases": [
+      "MBL-001"
+    ],
+    "selectors": [
+      "testMBL001RenderedFocusMovesWithoutMovingPanes",
+      "testMBL001ReducedMotionAndInactiveUseStaticTopRight",
+      "testMBL001HostedViewActuallyAdvancesFocus"
     ]
   },
   "macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift": {
@@ -1928,6 +2087,25 @@
       "LCL-003 unmount cancels the deadline even when a history reader ignores AbortSignal"
     ]
   },
+  "mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts": {
+    "cases": [
+      "SCR-002"
+    ],
+    "selectors": [
+      "captures the split shell, HQ matters, the pane grid and the knowledge sheet",
+      "await driver.$('~knowledge-entry-more').waitForDisplayed({timeout: 10_000});",
+      "await driver.$('~knowledge-core-guidance').waitForExist({timeout: 10_000});"
+    ]
+  },
+  "mobileapp/e2e/__tests__/appstore-shots.test.ts": {
+    "cases": [
+      "SCR-001"
+    ],
+    "selectors": [
+      "captures the radar, the terminal, HQ, its work, usage and the Macs",
+      "await driver.$(`~${TestIds.detail.collapseAll}`).waitForDisplayed({timeout: 15_000});"
+    ]
+  },
   "mobileapp/e2e/__tests__/hq-header-shot.test.ts": {
     "cases": [
       "DG-001"
@@ -2185,6 +2363,15 @@
       "actual Metro resolver refuses"
     ]
   },
+  "mobileapp/src/api/agentsRead.test.ts": {
+    "cases": [
+      "RDR-004"
+    ],
+    "selectors": [
+      "a real empty agents response is successful data and ordinary rows still map",
+      "a malformed successful agents body stays a read failure: %p"
+    ]
+  },
   "mobileapp/src/api/client.restore.test.ts": {
     "cases": [
       "RSR-006"
@@ -2238,6 +2425,43 @@
       "MSD-004 keeps exact receipts, legacy success and the server refusal"
     ]
   },
+  "mobileapp/src/api/sendFailureCode.test.ts": {
+    "cases": [
+      "SFR-003"
+    ],
+    "selectors": [
+      "SFR-003 keeps the optional known %s refusal",
+      "SFR-003 ignores unknown code %p and retains the legacy response",
+      "SFR-003 status %i takes priority over a question code"
+    ]
+  },
+  "mobileapp/src/api/uploadState.test.ts": {
+    "cases": [
+      "MPU-003"
+    ],
+    "selectors": [
+      "real byte progress stays distinct from processing and saved completion",
+      "unknown and invalid byte totals stay indeterminate rather than fabricating a percentage",
+      "a fully transferred file refused by the server never reports a successful save"
+    ]
+  },
+  "mobileapp/src/push/sync.routes.test.ts": {
+    "cases": [
+      "PFR-004"
+    ],
+    "selectors": [
+      "PFR-004 a verified reported alternate is preferred without retrying a dead primary",
+      "PFR-004 an unknown route is never attempted and background work cannot record route success"
+    ]
+  },
+  "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
+    "cases": [
+      "CAR-004"
+    ],
+    "selectors": [
+      "CAR-004"
+    ]
+  },
   "mobileapp/src/screens/DetailDraftSwitch.test.tsx": {
     "cases": [
       "CT-DRAFT"
@@ -2266,6 +2490,18 @@
       "MSD-005 %s releases failed sends and preserves explicit retry identity",
       "MSD-005 old failure cannot replace the newer accepted send",
       "MSD-005 a control key cannot leave a prior text receipt permanently Sending"
+    ]
+  },
+  "mobileapp/src/screens/DetailSendRefused.test.tsx": {
+    "cases": [
+      "CAR-003",
+      "SFR-008"
+    ],
+    "selectors": [
+      "retires the sent echo after a poll containing its prompt and later turns; it stays gone",
+      "any other refusal keeps its retry and does not refill the box",
+      "a pane not shared for typing (403): no pairing, no retry, the text back in the box",
+      "refused: pair again, no retry, and the text is back in the box"
     ]
   },
   "mobileapp/src/screens/DetailSendSnapshot.test.tsx": {
@@ -2371,6 +2607,34 @@
       "a prepared HQ question stays scoped"
     ]
   },
+  "mobileapp/src/screens/HistoryEchoHandoff.test.tsx": {
+    "cases": [
+      "CAR-003"
+    ],
+    "selectors": [
+      "CRR-001"
+    ]
+  },
+  "mobileapp/src/screens/KnowledgeSheet.reading.test.tsx": {
+    "cases": [
+      "KRD-002",
+      "KRD-003",
+      "KRD-005"
+    ],
+    "selectors": [
+      "reading hierarchy keeps original guidance first in ${layout} ${theme}",
+      "another entry resets disclosures and resolves its actual language before reading",
+      "feedback opens only its existing draft while secondary landing retains the viewed revision",
+      "a delayed secondary action cannot reopen a form after the source scope changes",
+      "a captured submit callback cannot mutate after the user changes source scope",
+      "late entry A cannot replace entry B and wrong identities remain unavailable",
+      "whole-read timeout has immediate retry feedback and ignores the timed-out response",
+      "failed post-action refresh keeps readable content and never repeats the action",
+      "the real client forwards cancellation and the whole JSON-body read has a deadline",
+      "a completed old action cannot replace the newly selected entry",
+      "an entry without body content is distinct from a failed record read"
+    ]
+  },
   "mobileapp/src/screens/KnowledgeSheet.test.tsx": {
     "cases": [
       "KBCARRIER-REVISION",
@@ -2407,6 +2671,36 @@
     ],
     "selectors": [
       "LPV002"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx": {
+    "cases": [
+      "RDRC-002"
+    ],
+    "selectors": [
+      "a cached read failure remains visible when SSE reconnects before the next result: %s",
+      "changing the client drops cached failure and rejects a late old reread",
+      "cached access failure stays visible across reconnect with the existing %s authority"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.readState.test.tsx": {
+    "cases": [
+      "RDR-003"
+    ],
+    "selectors": [
+      "stream connection before the first result displays loading rather than zero or empty",
+      "confirmed empty is stable in ${variant} ${theme} ${lang}",
+      "failed and unavailable access reads never display a cheerful empty quote or owner creation for guests",
+      "a pull indicator follows the actual request beyond 600ms and stale completions cannot clear a new pull",
+      "cached worker rows remain during a failed refresh and a filter is not an empty fleet"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.shareStale.test.tsx": {
+    "cases": [
+      "RDR-003"
+    ],
+    "selectors": [
+      "%s shows localized expired access only to stale guests"
     ]
   },
   "mobileapp/src/screens/RestoreSessionsEntry.test.tsx": {
@@ -2453,6 +2747,25 @@
       "local persistence failure prevents POST; stale preview refresh discards only an explicitly refused request"
     ]
   },
+  "mobileapp/src/screens/SendRecovery.authDraft.test.tsx": {
+    "cases": [
+      "SFR-008"
+    ],
+    "selectors": [
+      "SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once"
+    ]
+  },
+  "mobileapp/src/screens/SendRecovery.test.tsx": {
+    "cases": [
+      "SFR-006"
+    ],
+    "selectors": [
+      "SFR-006 %s retries once with the same ID and retains visible busy feedback",
+      "SFR-006 %s failed retry updates its reason and Edit keeps a newer composer draft",
+      "SFR-006 %s old retry and late result cannot cross %s scope",
+      "SFR-006 %s status %i keeps authority refusal and restores text"
+    ]
+  },
   "mobileapp/src/screens/ServerModeBehavior.test.tsx": {
     "cases": [
       "CT-SUB"
@@ -2471,6 +2784,17 @@
       "More is a menu: Disconnect only on the open Mac, Remove last",
       "PFR-002 genuine notification syncing stays in the existing two-line row",
       "PFR-002 a pending owner retries its own notification settings from More, with no guest action"
+    ]
+  },
+  "mobileapp/src/screens/SplitShell.readState.test.tsx": {
+    "cases": [
+      "RDRC-001"
+    ],
+    "selectors": [
+      "regular main respects loading and timeout in ${lang} ${theme}",
+      "hidden sidebar does not turn an unfinished main read into an empty fleet",
+      "unselected access and expired guest states retain shared guidance and no owner creation",
+      "only a successful empty main welcomes creation while a populated roster keeps automatic selection"
     ]
   },
   "mobileapp/src/screens/UsageSheet.test.tsx": {
@@ -2500,6 +2824,82 @@
       "AEC-002 %s retires image echo in its first recorded commit and ignores late receipt",
       "AEC-002 %s keeps an old identical occurrence pending but retires a new one",
       "AEC-002 %s retires plain-text echo without one duplicate committed frame"
+    ]
+  },
+  "mobileapp/src/screens/knowledgeReading.semantics.test.ts": {
+    "cases": [
+      "KRDS-001",
+      "KRDS-002",
+      "KRDS-003"
+    ],
+    "selectors": [
+      "History API is current guidance rather than an explicit historical title",
+      "a current peer section after History remains visible by default",
+      "a multiline comment across the first blank stays hidden through actual Markdown parsing",
+      "an ordinary title with a historical prefix stays current: %s",
+      "a complete supported historical title can fold: %s",
+      "a higher current heading after historical subheadings keeps the whole body open",
+      "nested history and code or quote heading lookalikes stay within history",
+      "comment-containing source retains one Markdown scope: %s"
+    ]
+  },
+  "mobileapp/src/screens/knowledgeReading.test.ts": {
+    "cases": [
+      "KRD-001"
+    ],
+    "selectors": [
+      "keeps every character while separating explicit history from literal guidance",
+      "history-like headings inside %s code stay with the current body",
+      "non-prose openings stay whole rather than inventing a summary: %s",
+      "reference-style links retain their single Markdown scope",
+      "comments and arbitrary headings do not hide prose as history",
+      "long guidance is preserved without generated or truncated advice",
+      "language resolution happens before display-only sectioning"
+    ]
+  },
+  "mobileapp/src/screens/pendingChatEcho.test.ts": {
+    "cases": [
+      "CAR-004"
+    ],
+    "selectors": [
+      "CAR-004"
+    ]
+  },
+  "mobileapp/src/state/AgentsContext.readState.test.tsx": {
+    "cases": [
+      "RDR-001",
+      "RDR-002"
+    ],
+    "selectors": [
+      "a connected stream cannot establish an empty snapshot before its scoped read",
+      "bursty refreshes retain one trailing read and an owned refresh settles without waiting for future bursts",
+      "changed credentials never borrow a previous snapshot or admit a late retired response",
+      "a failed cached refresh preserves its last readable snapshot and timestamp",
+      "whole JSON-body timeout retires the real client read and an explicit retry can succeed"
+    ]
+  },
+  "mobileapp/src/state/AppContext.pushSync.test.tsx": {
+    "cases": [
+      "PFR-001",
+      "PFR-002",
+      "PFR-003"
+    ],
+    "selectors": [
+      "PFR-001 unrelated Mac edits and repeated foreground signals do not replay a successful subscription",
+      "PFR-001 an unrelated edit cannot invalidate the only in-flight result",
+      "PFR-002 failed automatic sync backs off, pauses in background and resumes without a burst",
+      "PFR-002 explicit retry bypasses cooldown for the requested Mac and reports busy",
+      "PFR-003 a newer disable remains ordered after the old transport, and stale completion cannot resync it",
+      "PFR-003 a changed owner credential is immediate during cooldown and another Mac remains independent",
+      "PFR-003 unmount invalidates pending callbacks and every retry timer"
+    ]
+  },
+  "mobileapp/src/state/ChatAppearancePreference.test.tsx": {
+    "cases": [
+      "CAR-002"
+    ],
+    "selectors": [
+      "CAR-002"
     ]
   },
   "mobileapp/src/state/desktopReload.test.tsx": {
@@ -2535,12 +2935,38 @@
       "CSR-004 real decoded rows"
     ]
   },
+  "mobileapp/src/ui/AttachmentUploadStatus.test.tsx": {
+    "cases": [
+      "MPU-004"
+    ],
+    "selectors": [
+      "upload status names the active file and hides percent during preparation and saving",
+      "Reduce Motion presents measured values without starting progress animation",
+      "progress animation only targets the latest measured byte fraction"
+    ]
+  },
+  "mobileapp/src/ui/ChatAppearance.test.tsx": {
+    "cases": [
+      "CAR-001"
+    ],
+    "selectors": [
+      "CAR-001"
+    ]
+  },
   "mobileapp/src/ui/ChatEchoHandoff.test.tsx": {
     "cases": [
       "CRX-004"
     ],
     "selectors": [
       "CRX-004 %s confirmed echo keeps the same mounted bubble"
+    ]
+  },
+  "mobileapp/src/ui/ChatReceiptPresentation.test.tsx": {
+    "cases": [
+      "CAR-003"
+    ],
+    "selectors": [
+      "CAR-003"
     ]
   },
   "mobileapp/src/ui/ChatView.association.test.tsx": {
@@ -2575,6 +3001,31 @@
       "ARGV-002 shared readers"
     ]
   },
+  "mobileapp/src/ui/Composer.multiPhoto.test.tsx": {
+    "cases": [
+      "MPU-001",
+      "MPU-002",
+      "MPU-004"
+    ],
+    "selectors": [
+      "batch photos stage in picker order and one edit replaces only its thumbnail",
+      "cancelling or failing a later selection preserves caption and staged batch",
+      "a late picker result after unmount cannot stage or submit images",
+      "upload phases keep the batch and caption on failure until an explicit successful retry"
+    ]
+  },
+  "mobileapp/src/ui/Composer.photoSelection.test.tsx": {
+    "cases": [
+      "PPR-001",
+      "PPR-002",
+      "PPR-003"
+    ],
+    "selectors": [
+      "pending photo reading blocks button Return and captured callbacks until all photos stage",
+      "cancel error and rejection release photo reading while preserving the existing draft",
+      "a successful send removes only its snapshot and preserves a file returned during upload"
+    ]
+  },
   "mobileapp/src/ui/Composer.readonly-draft.test.tsx": {
     "cases": [
       "CKD-001"
@@ -2582,6 +3033,15 @@
     "selectors": [
       "CKD001 local-only draft opens and survives blocked submits in %s",
       "CKD001 verified sends remain enabled and ordinary disabled input stays disabled"
+    ]
+  },
+  "mobileapp/src/ui/Composer.restore.test.tsx": {
+    "cases": [
+      "SFR-007"
+    ],
+    "selectors": [
+      "SFR-007 restore appends once without replacing a newer draft or staged photos",
+      "SFR-007 empty recovery opens the editor, outranks a delayed stored draft and avoids duplicate restored text"
     ]
   },
   "mobileapp/src/ui/ConversationCopy.test.tsx": {
@@ -2639,6 +3099,27 @@
       "CRX-005 %s equal adjacent process displays are grouped, not hidden"
     ]
   },
+  "mobileapp/src/ui/LoadingMark.motion.test.tsx": {
+    "cases": [
+      "BLP-001",
+      "BLP-002",
+      "BLP-003"
+    ],
+    "selectors": [
+      "BLP-001 cyan focus visits all three fixed panes and wraps continuously (%s)",
+      "BLP-002 unresolved and live Reduce Motion settings govern foreground-only motion",
+      "BLP-002 a failed or late initial preference cannot start a hidden or unmounted indicator",
+      "BLP-003 shared wrappers retain size, style, labels and the existing receipt footprint"
+    ]
+  },
+  "mobileapp/src/ui/LoadingUsage.test.ts": {
+    "cases": [
+      "BLP-004"
+    ],
+    "selectors": [
+      "BLP-004 App-owned loading views share the brand engine instead of native ActivityIndicator"
+    ]
+  },
   "mobileapp/src/ui/ParticipantProfileModal.test.tsx": {
     "cases": [
       "CRX-005",
@@ -2650,6 +3131,80 @@
       "a current header shows recorded ancestry without implying a historical message",
       "a stitched older session never requests the pane’s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
+    ]
+  },
+  "mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx": {
+    "cases": [
+      "PCP-001",
+      "RFD-002"
+    ],
+    "selectors": [
+      "PCP-001 missing timestamp keeps message facts absent but reads exact source processes",
+      "PCP-001 missing timestamp never accepts a different process source",
+      "PCP-001 unknown message agent cannot borrow the current radar identity or offer a futile read",
+      "PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",
+      "PCP-001 switching message source and client retires the previous process read",
+      "PCP-001 %s process retry exposes the process action name"
+    ]
+  },
+  "mobileapp/src/ui/ReadFeedback.test.tsx": {
+    "cases": [
+      "RFD-002"
+    ],
+    "selectors": [
+      "RFD-002 %s read feedback keeps one explicit retry, busy protection and secondary navigation"
+    ]
+  },
+  "mobileapp/src/ui/SendFailedBar.recovery.test.tsx": {
+    "cases": [
+      "SFR-004"
+    ],
+    "selectors": [
+      "SFR-004 %s recovery is neutral, readable and exposes busy actions"
+    ]
+  },
+  "mobileapp/src/ui/SenderAvatar.test.tsx": {
+    "cases": [
+      "CAR-001"
+    ],
+    "selectors": [
+      "CAR-001"
+    ]
+  },
+  "mobileapp/src/ui/Splash.test.tsx": {
+    "cases": [
+      "BLP-002",
+      "BLP-005"
+    ],
+    "selectors": [
+      "startup copy remains readable and reserves a larger loading footer (%s)",
+      "reduced motion never starts the pane cycle; changing the setting stops a live loop",
+      "a live Reduce Motion change wins over a stale initial preference query"
+    ]
+  },
+  "mobileapp/src/ui/TimeSeparator.test.tsx": {
+    "cases": [
+      "CAR-001"
+    ],
+    "selectors": [
+      "CAR-001"
+    ]
+  },
+  "mobileapp/src/ui/ToolReaderCopy.test.tsx": {
+    "cases": [
+      "CRR-002"
+    ],
+    "selectors": [
+      "CRR-002"
+    ]
+  },
+  "mobileapp/src/ui/ToolReading.legacy.test.tsx": {
+    "cases": [
+      "RFD-001"
+    ],
+    "selectors": [
+      "RFD-001 legacy exec %s reads as one command and clean output while copy remains exact",
+      "RFD-001 an explicit generic tool operation keeps its original data instead of guessing a shell command"
     ]
   },
   "mobileapp/src/ui/ToolReading.test.tsx": {
@@ -2733,6 +3288,15 @@
       "ASA008 native provider skill and queries facts agree in Chat and Trace"
     ]
   },
+  "mobileapp/src/ui/sendFailure.test.ts": {
+    "cases": [
+      "SFR-004"
+    ],
+    "selectors": [
+      "SFR-004 legacy refusal %s",
+      "an explicit question describes the last attempt and can be checked again after answering"
+    ]
+  },
   "mobileapp/src/ui/sendReceipt.test.ts": {
     "cases": [
       "MSD-005",
@@ -2760,6 +3324,15 @@
       "command, file changes, waits, text/errors and missing/empty results stay distinct",
       "full reads preserve original command and distinct native result references",
       "large rendering pages disclose bounds and preserve all characters"
+    ]
+  },
+  "mobileapp/src/ui/useSendRecovery.test.tsx": {
+    "cases": [
+      "SFR-005"
+    ],
+    "selectors": [
+      "SFR-005 retry is synchronous, keeps its record visible and cannot replay a settled action",
+      "SFR-005 edits once and captured actions cannot cross a changed client or ABA scope"
     ]
   },
   "scripts/ci.py": {
@@ -2819,6 +3392,15 @@
       "function verify"
     ]
   },
+  "tests/contracts/http-contract.json": {
+    "cases": [
+      "HGD-007"
+    ],
+    "selectors": [
+      "\"hq-overview\"",
+      "\"hq-detail-page\""
+    ]
+  },
   "tests/manual/codex-worktree-trust.py": {
     "cases": [
       "WTR-003"
@@ -2845,6 +3427,18 @@
     "selectors": [
       "CP-001 shared rendered Trace",
       "CP-002 CP-003 CP-004 shared HQ"
+    ]
+  },
+  "tests/web/branded-loading.test.cjs": {
+    "cases": [
+      "WBL-001",
+      "WBL-002",
+      "WBL-003"
+    ],
+    "selectors": [
+      "WBL-001 moving brand focus ",
+      "WBL-002 live reduced motion preserves one loading status",
+      "WBL-003 retired Chat read cannot restore a loader in Terminal"
     ]
   },
   "tests/web/browser-pool.cjs": {
@@ -2996,581 +3590,6 @@
     ],
     "selectors": [
       "TSV-003 compact recorded command and readable result "
-    ]
-  },
-  "mobileapp/src/screens/HistoryEchoHandoff.test.tsx": {
-    "cases": [
-      "CAR-003"
-    ],
-    "selectors": [
-      "CRR-001"
-    ]
-  },
-  "mobileapp/src/ui/ToolReaderCopy.test.tsx": {
-    "cases": [
-      "CRR-002"
-    ],
-    "selectors": [
-      "CRR-002"
-    ]
-  },
-  "internal/app/doctor_knowledge_count_test.go": {
-    "cases": [
-      "DKC-001"
-    ],
-    "selectors": [
-      "TestDKC001DoctorPendingCountMatchesCaptureProjection"
-    ]
-  },
-  "mobileapp/src/ui/ChatAppearance.test.tsx": {
-    "cases": [
-      "CAR-001"
-    ],
-    "selectors": [
-      "CAR-001"
-    ]
-  },
-  "mobileapp/src/state/ChatAppearancePreference.test.tsx": {
-    "cases": [
-      "CAR-002"
-    ],
-    "selectors": [
-      "CAR-002"
-    ]
-  },
-  "mobileapp/src/ui/ChatReceiptPresentation.test.tsx": {
-    "cases": [
-      "CAR-003"
-    ],
-    "selectors": [
-      "CAR-003"
-    ]
-  },
-  "mobileapp/src/ui/SenderAvatar.test.tsx": {
-    "cases": [
-      "CAR-001"
-    ],
-    "selectors": [
-      "CAR-001"
-    ]
-  },
-  "mobileapp/src/ui/TimeSeparator.test.tsx": {
-    "cases": [
-      "CAR-001"
-    ],
-    "selectors": [
-      "CAR-001"
-    ]
-  },
-  "mobileapp/src/screens/DetailSendRefused.test.tsx": {
-    "cases": [
-      "CAR-003",
-      "SFR-008"
-    ],
-    "selectors": [
-      "retires the sent echo after a poll containing its prompt and later turns; it stays gone",
-      "any other refusal keeps its retry and does not refill the box",
-      "a pane not shared for typing (403): no pairing, no retry, the text back in the box",
-      "refused: pair again, no retry, and the text is back in the box"
-    ]
-  },
-  "mobileapp/src/screens/ChatReceiptOwnerLifetime.test.tsx": {
-    "cases": [
-      "CAR-004"
-    ],
-    "selectors": [
-      "CAR-004"
-    ]
-  },
-  "mobileapp/src/screens/pendingChatEcho.test.ts": {
-    "cases": [
-      "CAR-004"
-    ],
-    "selectors": [
-      "CAR-004"
-    ]
-  },
-  "mobileapp/src/ui/ParticipantProfileReadRecovery.test.tsx": {
-    "cases": [
-      "PCP-001",
-      "RFD-002"
-    ],
-    "selectors": [
-      "PCP-001 missing timestamp keeps message facts absent but reads exact source processes",
-      "PCP-001 missing timestamp never accepts a different process source",
-      "PCP-001 unknown message agent cannot borrow the current radar identity or offer a futile read",
-      "PCP-001 retry immediately becomes busy, bounds an uncooperative read and ignores its late answer",
-      "PCP-001 switching message source and client retires the previous process read",
-      "PCP-001 %s process retry exposes the process action name"
-    ]
-  },
-  "mobileapp/src/ui/Composer.multiPhoto.test.tsx": {
-    "cases": [
-      "MPU-001",
-      "MPU-002",
-      "MPU-004"
-    ],
-    "selectors": [
-      "batch photos stage in picker order and one edit replaces only its thumbnail",
-      "cancelling or failing a later selection preserves caption and staged batch",
-      "a late picker result after unmount cannot stage or submit images",
-      "upload phases keep the batch and caption on failure until an explicit successful retry"
-    ]
-  },
-  "mobileapp/src/api/uploadState.test.ts": {
-    "cases": [
-      "MPU-003"
-    ],
-    "selectors": [
-      "real byte progress stays distinct from processing and saved completion",
-      "unknown and invalid byte totals stay indeterminate rather than fabricating a percentage",
-      "a fully transferred file refused by the server never reports a successful save"
-    ]
-  },
-  "mobileapp/src/ui/AttachmentUploadStatus.test.tsx": {
-    "cases": [
-      "MPU-004"
-    ],
-    "selectors": [
-      "upload status names the active file and hides percent during preparation and saving",
-      "Reduce Motion presents measured values without starting progress animation",
-      "progress animation only targets the latest measured byte fraction"
-    ]
-  },
-  "mobileapp/src/ui/Composer.photoSelection.test.tsx": {
-    "cases": [
-      "PPR-001",
-      "PPR-002",
-      "PPR-003"
-    ],
-    "selectors": [
-      "pending photo reading blocks button Return and captured callbacks until all photos stage",
-      "cancel error and rejection release photo reading while preserving the existing draft",
-      "a successful send removes only its snapshot and preserves a file returned during upload"
-    ]
-  },
-  "mobileapp/src/screens/KnowledgeSheet.reading.test.tsx": {
-    "cases": [
-      "KRD-002",
-      "KRD-003",
-      "KRD-005"
-    ],
-    "selectors": [
-      "reading hierarchy keeps original guidance first in ${layout} ${theme}",
-      "another entry resets disclosures and resolves its actual language before reading",
-      "feedback opens only its existing draft while secondary landing retains the viewed revision",
-      "a delayed secondary action cannot reopen a form after the source scope changes",
-      "a captured submit callback cannot mutate after the user changes source scope",
-      "late entry A cannot replace entry B and wrong identities remain unavailable",
-      "whole-read timeout has immediate retry feedback and ignores the timed-out response",
-      "failed post-action refresh keeps readable content and never repeats the action",
-      "the real client forwards cancellation and the whole JSON-body read has a deadline",
-      "a completed old action cannot replace the newly selected entry",
-      "an entry without body content is distinct from a failed record read"
-    ]
-  },
-  "mobileapp/src/screens/knowledgeReading.test.ts": {
-    "cases": [
-      "KRD-001"
-    ],
-    "selectors": [
-      "keeps every character while separating explicit history from literal guidance",
-      "history-like headings inside %s code stay with the current body",
-      "non-prose openings stay whole rather than inventing a summary: %s",
-      "reference-style links retain their single Markdown scope",
-      "comments and arbitrary headings do not hide prose as history",
-      "long guidance is preserved without generated or truncated advice",
-      "language resolution happens before display-only sectioning"
-    ]
-  },
-  "mobileapp/src/screens/knowledgeReading.semantics.test.ts": {
-    "cases": [
-      "KRDS-001",
-      "KRDS-002",
-      "KRDS-003"
-    ],
-    "selectors": [
-      "History API is current guidance rather than an explicit historical title",
-      "a current peer section after History remains visible by default",
-      "a multiline comment across the first blank stays hidden through actual Markdown parsing",
-      "an ordinary title with a historical prefix stays current: %s",
-      "a complete supported historical title can fold: %s",
-      "a higher current heading after historical subheadings keeps the whole body open",
-      "nested history and code or quote heading lookalikes stay within history",
-      "comment-containing source retains one Markdown scope: %s"
-    ]
-  },
-  "internal/server/send_failure_code_test.go": {
-    "cases": [
-      "SFR-002"
-    ],
-    "selectors": [
-      "TestSFR002SendFailureCodeBody",
-      "TestSFR002SendCodeCannotBypassAuthority"
-    ]
-  },
-  "mobileapp/src/api/sendFailureCode.test.ts": {
-    "cases": [
-      "SFR-003"
-    ],
-    "selectors": [
-      "SFR-003 keeps the optional known %s refusal",
-      "SFR-003 ignores unknown code %p and retains the legacy response",
-      "SFR-003 status %i takes priority over a question code"
-    ]
-  },
-  "mobileapp/src/ui/sendFailure.test.ts": {
-    "cases": [
-      "SFR-004"
-    ],
-    "selectors": [
-      "SFR-004 legacy refusal %s",
-      "an explicit question describes the last attempt and can be checked again after answering"
-    ]
-  },
-  "mobileapp/src/ui/SendFailedBar.recovery.test.tsx": {
-    "cases": [
-      "SFR-004"
-    ],
-    "selectors": [
-      "SFR-004 %s recovery is neutral, readable and exposes busy actions"
-    ]
-  },
-  "mobileapp/src/ui/useSendRecovery.test.tsx": {
-    "cases": [
-      "SFR-005"
-    ],
-    "selectors": [
-      "SFR-005 retry is synchronous, keeps its record visible and cannot replay a settled action",
-      "SFR-005 edits once and captured actions cannot cross a changed client or ABA scope"
-    ]
-  },
-  "mobileapp/src/screens/SendRecovery.test.tsx": {
-    "cases": [
-      "SFR-006"
-    ],
-    "selectors": [
-      "SFR-006 %s retries once with the same ID and retains visible busy feedback",
-      "SFR-006 %s failed retry updates its reason and Edit keeps a newer composer draft",
-      "SFR-006 %s old retry and late result cannot cross %s scope",
-      "SFR-006 %s status %i keeps authority refusal and restores text"
-    ]
-  },
-  "mobileapp/src/ui/Composer.restore.test.tsx": {
-    "cases": [
-      "SFR-007"
-    ],
-    "selectors": [
-      "SFR-007 restore appends once without replacing a newer draft or staged photos",
-      "SFR-007 empty recovery opens the editor, outranks a delayed stored draft and avoids duplicate restored text"
-    ]
-  },
-  "internal/app/phone_send_failure_test.go": {
-    "cases": [
-      "SFR-001"
-    ],
-    "selectors": [
-      "TestSFR001PhoneRefusalNeedsExplicitNativeQuestion"
-    ]
-  },
-  "mobileapp/src/screens/SendRecovery.authDraft.test.tsx": {
-    "cases": [
-      "SFR-008"
-    ],
-    "selectors": [
-      "SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once"
-    ]
-  },
-  "mobileapp/src/state/AgentsContext.readState.test.tsx": {
-    "cases": [
-      "RDR-001",
-      "RDR-002"
-    ],
-    "selectors": [
-      "a connected stream cannot establish an empty snapshot before its scoped read",
-      "bursty refreshes retain one trailing read and an owned refresh settles without waiting for future bursts",
-      "changed credentials never borrow a previous snapshot or admit a late retired response",
-      "a failed cached refresh preserves its last readable snapshot and timestamp",
-      "whole JSON-body timeout retires the real client read and an explicit retry can succeed"
-    ]
-  },
-  "mobileapp/src/screens/RadarPanel.readState.test.tsx": {
-    "cases": [
-      "RDR-003"
-    ],
-    "selectors": [
-      "stream connection before the first result displays loading rather than zero or empty",
-      "confirmed empty is stable in ${variant} ${theme} ${lang}",
-      "failed and unavailable access reads never display a cheerful empty quote or owner creation for guests",
-      "a pull indicator follows the actual request beyond 600ms and stale completions cannot clear a new pull",
-      "cached worker rows remain during a failed refresh and a filter is not an empty fleet"
-    ]
-  },
-  "mobileapp/src/api/agentsRead.test.ts": {
-    "cases": [
-      "RDR-004"
-    ],
-    "selectors": [
-      "a real empty agents response is successful data and ordinary rows still map",
-      "a malformed successful agents body stays a read failure: %p"
-    ]
-  },
-  "mobileapp/src/screens/RadarPanel.shareStale.test.tsx": {
-    "cases": [
-      "RDR-003"
-    ],
-    "selectors": [
-      "%s shows localized expired access only to stale guests"
-    ]
-  },
-  "mobileapp/src/screens/SplitShell.readState.test.tsx": {
-    "cases": [
-      "RDRC-001"
-    ],
-    "selectors": [
-      "regular main respects loading and timeout in ${lang} ${theme}",
-      "hidden sidebar does not turn an unfinished main read into an empty fleet",
-      "unselected access and expired guest states retain shared guidance and no owner creation",
-      "only a successful empty main welcomes creation while a populated roster keeps automatic selection"
-    ]
-  },
-  "mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx": {
-    "cases": [
-      "RDRC-002"
-    ],
-    "selectors": [
-      "a cached read failure remains visible when SSE reconnects before the next result: %s",
-      "changing the client drops cached failure and rejects a late old reread",
-      "cached access failure stays visible across reconnect with the existing %s authority"
-    ]
-  },
-  "mobileapp/src/ui/LoadingMark.motion.test.tsx": {
-    "cases": [
-      "BLP-001",
-      "BLP-002",
-      "BLP-003"
-    ],
-    "selectors": [
-      "BLP-001 cyan focus visits all three fixed panes and wraps continuously (%s)",
-      "BLP-002 unresolved and live Reduce Motion settings govern foreground-only motion",
-      "BLP-002 a failed or late initial preference cannot start a hidden or unmounted indicator",
-      "BLP-003 shared wrappers retain size, style, labels and the existing receipt footprint"
-    ]
-  },
-  "mobileapp/src/ui/LoadingUsage.test.ts": {
-    "cases": [
-      "BLP-004"
-    ],
-    "selectors": [
-      "BLP-004 App-owned loading views share the brand engine instead of native ActivityIndicator"
-    ]
-  },
-  "mobileapp/src/ui/Splash.test.tsx": {
-    "cases": [
-      "BLP-002",
-      "BLP-005"
-    ],
-    "selectors": [
-      "startup copy remains readable and reserves a larger loading footer (%s)",
-      "reduced motion never starts the pane cycle; changing the setting stops a live loop",
-      "a live Reduce Motion change wins over a stale initial preference query"
-    ]
-  },
-  "mobileapp/src/state/AppContext.pushSync.test.tsx": {
-    "cases": [
-      "PFR-001",
-      "PFR-002",
-      "PFR-003"
-    ],
-    "selectors": [
-      "PFR-001 unrelated Mac edits and repeated foreground signals do not replay a successful subscription",
-      "PFR-001 an unrelated edit cannot invalidate the only in-flight result",
-      "PFR-002 failed automatic sync backs off, pauses in background and resumes without a burst",
-      "PFR-002 explicit retry bypasses cooldown for the requested Mac and reports busy",
-      "PFR-003 a newer disable remains ordered after the old transport, and stale completion cannot resync it",
-      "PFR-003 a changed owner credential is immediate during cooldown and another Mac remains independent",
-      "PFR-003 unmount invalidates pending callbacks and every retry timer"
-    ]
-  },
-  "mobileapp/src/push/sync.routes.test.ts": {
-    "cases": [
-      "PFR-004"
-    ],
-    "selectors": [
-      "PFR-004 a verified reported alternate is preferred without retrying a dead primary",
-      "PFR-004 an unknown route is never attempted and background work cannot record route success"
-    ]
-  },
-  "mobileapp/src/ui/ToolReading.legacy.test.tsx": {
-    "cases": [
-      "RFD-001"
-    ],
-    "selectors": [
-      "RFD-001 legacy exec %s reads as one command and clean output while copy remains exact",
-      "RFD-001 an explicit generic tool operation keeps its original data instead of guessing a shell command"
-    ]
-  },
-  "mobileapp/src/ui/ReadFeedback.test.tsx": {
-    "cases": [
-      "RFD-002"
-    ],
-    "selectors": [
-      "RFD-002 %s read feedback keeps one explicit retry, busy protection and secondary navigation"
-    ]
-  },
-  "internal/relay/observation_test.go": {
-    "cases": [
-      "DPC-001"
-    ],
-    "selectors": [
-      "TestDPC001ObservationExportRequiresCompleteRelayContract"
-    ]
-  },
-  "internal/hq/process_materials_test.go": {
-    "cases": [
-      "DPC-001",
-      "DPC-002"
-    ],
-    "selectors": [
-      "TestDPC001AutomaticScopePreservesUnknownNotesAndIncludes",
-      "TestDPC002ProcessMaterialInventoryProtectsCoreAndUnknown"
-    ]
-  },
-  "internal/resume/frontend_recovery_diagnostic_test.go": {
-    "cases": [
-      "DPC-003"
-    ],
-    "selectors": [
-      "TestDPC003RecoveryEvidenceNeverGrantsRetryAuthority"
-    ]
-  },
-  "internal/app/doctor_hq_storage_test.go": {
-    "cases": [
-      "DPC-002"
-    ],
-    "selectors": [
-      "TestDPC002DoctorStorageExplainsScopeWithoutRemoval"
-    ]
-  },
-  "tests/web/branded-loading.test.cjs": {
-    "cases": [
-      "WBL-001",
-      "WBL-002",
-      "WBL-003"
-    ],
-    "selectors": [
-      "WBL-001 moving brand focus ",
-      "WBL-002 live reduced motion preserves one loading status",
-      "WBL-003 retired Chat read cannot restore a loader in Terminal"
-    ]
-  },
-  "macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift": {
-    "cases": [
-      "MBL-001"
-    ],
-    "selectors": [
-      "testMBL001RenderedFocusMovesWithoutMovingPanes",
-      "testMBL001ReducedMotionAndInactiveUseStaticTopRight",
-      "testMBL001HostedViewActuallyAdvancesFocus"
-    ]
-  },
-  "internal/app/doctor_frontend_recovery_test.go": {
-    "cases": [
-      "DPC-004"
-    ],
-    "selectors": [
-      "TestDPC004DoctorDoesNotPromiseAutomaticRecovery"
-    ]
-  },
-  "internal/relay/observation_contract_test.go": {
-    "cases": [
-      "DPC-005"
-    ],
-    "selectors": [
-      "TestDPC005ObservationRequiresRealCompleteKnownSerialization"
-    ]
-  },
-  "internal/hq/observation_contract_test.go": {
-    "cases": [
-      "DPC-005"
-    ],
-    "selectors": [
-      "TestDPC005UncertainObservationsStayInEveryCoreSelection"
-    ]
-  },
-  "internal/app/doctor_recovery_limits_test.go": {
-    "cases": [
-      "DPC-006"
-    ],
-    "selectors": [
-      "TestDPC006DoctorExplainsActualCountAndByteFailures"
-    ]
-  },
-  "internal/hqworkspace/followup_test.go": {
-    "cases": [
-      "HGD-001",
-      "HGD-002",
-      "HGD-003",
-      "HGD-004",
-      "HGD-005",
-      "HGD-006"
-    ],
-    "selectors": [
-      "TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation",
-      "TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice",
-      "TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues",
-      "TestGoalNativeBackgroundExactStepAndIdentity",
-      "TestGoalPauseRefusalExternalAndCrossChannelAnswer",
-      "TestGoalLegacyMigrationBoundedSweepAndProjection",
-      "TestGoalRestoreSuspendsDriveAndRetainsPause",
-      "TestGoalWrongStepAmbiguousIntervalAndDurableReminder",
-      "TestGoalStepLabelDoesNotResetTheSameWork",
-      "TestGoalExpiredExternalProofDoesNotPermitFirstSend"
-    ]
-  },
-  "internal/app/hqworkspace_goal_test.go": {
-    "cases": [
-      "HGD-002",
-      "HGD-004",
-      "HGD-005"
-    ],
-    "selectors": [
-      "TestGoalActionAuthorityAndExactReceiptEnvelope",
-      "TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers"
-    ]
-  },
-  "internal/app/hqworkspace_goal_regression_test.go": {
-    "cases": [
-      "HGD-005"
-    ],
-    "selectors": [
-      "TestGoalNoNewEventsAfterNotedStillRequiresHQ"
-    ]
-  },
-  "tests/contracts/http-contract.json": {
-    "cases": [
-      "HGD-007"
-    ],
-    "selectors": [
-      "\"hq-overview\"",
-      "\"hq-detail-page\""
-    ]
-  },
-  "internal/hqworkspace/goal_lease_test.go": {
-    "cases": [
-      "HGD-008"
-    ],
-    "selectors": [
-      "TestCoveredGoalScanKeepsValidUnchangedLease",
-      "TestCoveredGoalActualPremiseChangeAndExpiryFenceOldClaim"
-    ]
-  },
-  "internal/app/hqworkspace_goal_runtime_test.go": {
-    "cases": [
-      "HGD-009"
-    ],
-    "selectors": [
-      "TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch"
     ]
   }
 }

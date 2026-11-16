@@ -1,0 +1,35 @@
+{
+  "id": "store-capture-readiness-20261116",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review; not independent approval)",
+    "date": "2026-11-16",
+    "decision": "Replace obsolete HQ and action-specific Knowledge readiness checks with current loaded-content controls; preserve all required capture steps and failures.",
+    "notes": "Fresh design review after prototype PR1884 failed the design-history/catalogue gate. That failed candidate and CI remain preserved; this is not retrospective approval of its chronology. The replacement branch starts from exact released source c66855db584d00308755fa9a9280e0b4bcea7735 and commits this record before reimplementing the two harness edits. Source confirms HQHeader deliberately omits workspace overview in chat, collapseAll is rendered only when conversation turns exist, and Knowledge uses core guidance plus the reader menu across entry purposes. No production binary, demo fixture, signing, permissions, workflow, assertions, screenshot inventory, timeouts or capture provenance is changed. Hosted CI and actual recapture on the already-built released Simulator artifact are required. Static source review does not establish runtime layout, VoiceOver, physical-device or push acceptance."
+  },
+  "cases": [
+    {
+      "id": "SCR-001",
+      "layer": "L4",
+      "description": "Phone Store captures require the current loaded HQ conversation, not an intentionally hidden workspace summary",
+      "setup": "Exact v1.0.183 hosted Simulator app; English and Simplified Chinese synthetic demo; light and dark review groups; HQ overview already confirms its real pending matter and usage resource.",
+      "action": "Enter HQ using its visible Talk action; require the HQ back control and loaded Chat collapse-all control, then capture and continue to usage and servers.",
+      "expected": "The readiness check cannot wait for hq-verdict, which is intentionally absent in conversation. Missing conversation turns must still time out instead of photographing an empty/loading screen. All seven required phone images, waits, screenshot freshness and final written inventory remain mandatory; exceptions are not swallowed to manufacture success.",
+      "planned_files": [
+        "mobileapp/e2e/__tests__/appstore-shots.test.ts"
+      ]
+    },
+    {
+      "id": "SCR-002",
+      "layer": "L4",
+      "description": "iPad Store Knowledge capture requires its reader and actual guidance independently of entry-specific actions",
+      "setup": "Exact v1.0.183 hosted iPad Simulator app in landscape; English and Simplified Chinese demo k2 entry, light and dark review groups.",
+      "action": "Navigate through HQ Knowledge, open exact demo entry k2, require the visible reader menu and existing core-guidance content, then capture.",
+      "expected": "The reader is not considered loaded from a list, generic root, empty body or an action that applies only to one entry purpose. Missing reader/content still fails with a bounded timeout. Keep all five source shots, actual orientation handling, capture freshness and navigation; do not introduce fixture/product changes or claim unobserved accessibility acceptance.",
+      "planned_files": [
+        "mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts"
+      ]
+    }
+  ],
+  "seal": "4cd6bd1ba21ff2b706ed9be61bec2251886b42f98fbe3a45b773e13c9b5280c0"
+}
