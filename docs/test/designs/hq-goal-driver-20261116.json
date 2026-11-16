@@ -5,7 +5,7 @@
     "reviewer": "Codex gpt-6.1-sol implementation owner (self-review; independent review pending HQ)",
     "date": "2026-11-16",
     "decision": "Ready for formal implementation and mapping",
-    "notes": "Reviewed evidence boundaries and negative oracles. Exploratory working-tree tests ran before this repository ordering gate was discovered; this record does not claim to predate those experiments. This design-only commit precedes the first committed test implementation. Independent frozen-candidate review remains required; no peer/user approval is asserted. Uses synthetic stores, clocks and delivery; no production sessions, permissions, KB or devices. Formal extension: put the bounded sweep in the existing notification pass so a baseline-compatible regression can prove ordinary noted plus no new events still wakes HQ. Existing ingestion test will capture the post-sweep snapshot before read-independence assertions; source ingestion expectations remain unchanged. Fresh self-review before the action-identity fencing amendment: code inspection found that one-shot delivery also needs an immutable per-material-step action ID across responsibility reassessment, including an unknown/refused attempt. The replacement-ID boundary is a refinement of the existing stable-intent case, with original case identity and expectations retained for the repository first-edit history gate."
+    "notes": "Reviewed evidence boundaries and negative oracles. Exploratory working-tree tests ran before this repository ordering gate was discovered; this record does not claim to predate those experiments. This design-only commit precedes the first committed test implementation. Independent frozen-candidate review remains required; no peer/user approval is asserted. Uses synthetic stores, clocks and delivery; no production sessions, permissions, KB or devices. Formal extension: put the bounded sweep in the existing notification pass so a baseline-compatible regression can prove ordinary noted plus no new events still wakes HQ. Existing ingestion test will capture the post-sweep snapshot before read-independence assertions; source ingestion expectations remain unchanged. Fresh self-review before the action-identity fencing amendment: code inspection found that one-shot delivery also needs an immutable per-material-step action ID across responsibility reassessment, including an unknown/refused attempt. The replacement-ID boundary is a refinement of the existing stable-intent case, with original case identity and expectations retained for the repository first-edit history gate. Source adapter boundary reviewed before the formal assertion: only a relay report, never an ask carrying similar structured JSON, may attach a step receipt; the existing exact-receipt case retains its original expected result."
   },
   "cases": [
     {
@@ -82,5 +82,5 @@
       ]
     }
   ],
-  "seal": "ef332ba5f8cbd1319985e9d1a44dd01c26689960a163bb3d1eaa95250e312eb3"
+  "seal": "9094fb4d1a64df3dae03042ae60ed4b99326024b94f72170231d41b2bc506a24"
 }
