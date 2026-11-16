@@ -18,12 +18,14 @@ import (
 // workspaceAction is shared by the local CLI and its native consumer. Message
 // bodies travel over stdin, never shell interpolation or process arguments.
 type workspaceAction struct {
-	RequestRevision uint64 `json:"request_revision,omitempty"`
-	ObservationID   string `json:"observation_id,omitempty"`
-	Generation      uint64 `json:"generation,omitempty"`
-	Decision        string `json:"decision,omitempty"`
-	NextCheck       int64  `json:"next_check,omitempty"`
-	DryRun          bool   `json:"dry_run,omitempty"`
+	Responsibility  *hqworkspace.Responsibility `json:"responsibility,omitempty"`
+	ResumeRef       string                      `json:"resume_ref,omitempty"`
+	RequestRevision uint64                      `json:"request_revision,omitempty"`
+	ObservationID   string                      `json:"observation_id,omitempty"`
+	Generation      uint64                      `json:"generation,omitempty"`
+	Decision        string                      `json:"decision,omitempty"`
+	NextCheck       int64                       `json:"next_check,omitempty"`
+	DryRun          bool                        `json:"dry_run,omitempty"`
 
 	UserInput            *hqworkspace.UserInput  `json:"user_input,omitempty"`
 	Op                   string                  `json:"op"`
@@ -58,14 +60,21 @@ gtmux hq workspace reconcile --json
 The workspace keeps explicit goals, conversation membership and instruction receipts.
 list --stored reads only saved matters/overview, without live or historical session discovery.
 act reads ONE JSON object from stdin. Operations: create, register, send, report, request-input, clear-input, update,
-associate, unlink, move, interval, merge, split, cancel, retry, focus, claim, assess.
+associate, unlink, move, interval, merge, split, cancel, retry, focus, claim, assess, drive.
 create needs id/title/body (one new goal and first instruction); send needs id/body
 and optional matter; report needs id/kind/body and optional matter/reply_to/state.
 Reports return projection:pending-reconciliation; state is a proposal, never a transition.
-update with state requires the current matter revision; resolve current questions explicitly first.
+update with body or state requires the nonzero current matter revision; resolve current questions explicitly first.
 reconcile lists due observations and assessment receipts without consuming or executing them.
 claim needs observation_id; assess needs id/observation_id/generation/matter/revision/decision/body.
-Decision is noted|transition|deferred|conflict; transition needs state, deferred needs future next_check.
+Decision is noted|transition|deferred|conflict|responsibility; transition needs state, deferred needs future next_check.
+responsibility is an explicit current-revision HQ decision, only on a goal-followup observation.
+It saves responsibility {step_id,action,authority_ref,intent?,drive?,hold?}; it never sends.
+Intent needs {id,ref,target:{agent,home_id,session_id},at}; cite existing authority, never infer it.
+A user pause/refusal requires resume_ref before changing its hold.
+drive needs matter/id (saved intent ID)/revision, is HQ-only, and attempts that action once
+through ordinary delivery gates. queued means awaiting receipt; unknown/refused attempts
+are not retried. Inspect intent_attempts before planning another action.
 Both are HQ-only. assess accepts dry_run:true. A stale observation cannot transition a newer matter.
 send may include request_revision with reply_to; legacy exact question IDs remain supported.
 register needs id/title/body/state/origin {kind: board|task|conversation, ref: citation}.
@@ -259,8 +268,13 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 		if a.Op == "claim" {
 			result, err = s.ClaimObservation(a.ObservationID, owner, now)
 		} else {
-			result, err = s.Assess(hqworkspace.Assessment{ID: a.ID, ObservationID: a.ObservationID, Owner: owner, Generation: a.Generation, MatterID: a.Matter, Revision: a.Revision, Decision: a.Decision, State: a.State, Reason: a.Body, NextCheck: a.NextCheck}, now, a.DryRun)
+			result, err = s.Assess(hqworkspace.Assessment{ID: a.ID, ObservationID: a.ObservationID, Owner: owner, Generation: a.Generation, MatterID: a.Matter, Revision: a.Revision, Decision: a.Decision, State: a.State, Reason: a.Body, NextCheck: a.NextCheck, Responsibility: a.Responsibility, ResumeRef: a.ResumeRef}, now, a.DryRun)
 		}
+	case "drive":
+		if !workspaceIsHQCaller() || workspaceAssessmentOwner() == "" {
+			return nil, errors.New("only the verified current HQ may drive a saved intent")
+		}
+		result, err = s.DriveIntent(a.Matter, a.ID, a.Revision, now, workspaceDeliverGoal)
 	case "update":
 		err = s.Update(a.Matter, a.Title, a.State, a.Body, a.Revision, now)
 	case "associate":

@@ -30,9 +30,13 @@ MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test
 MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,142,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,203,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-d0af369139ad,L2,reviewed implementation,internal/app/hqworkspace_delayed_drive_test.go,12,reviewed-selector,TestGoalRelayAdapterFirstIngestAfterDeadlineDoesNotSend,False,HGD-010
+MAP-5f24b23ab8de,L2,reviewed implementation,internal/app/hqworkspace_goal_regression_test.go,11,reviewed-selector,TestGoalNoNewEventsAfterNotedStillRequiresHQ,False,HGD-005
+MAP-b9ea2545c70d,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,13,reviewed-selector,TestGoalActionAuthorityAndExactReceiptEnvelope,False,"HGD-002,HGD-004,HGD-005"
+MAP-b6ae467c793b,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,113,reviewed-selector,TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers,False,"HGD-002,HGD-004,HGD-005"
 MAP-9a346dda931b,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,15,reviewed-selector,TestPhase1WorkspaceIngestionRecoveryAndReadIndependence,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-MAP-4a6d3760f38d,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,104,reviewed-selector,TestPhase1WorkspaceActionAuthorizationAndCompatibility,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,148,reviewed-selector,TestPhase1HQCanClaimDryRunAndCommit,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-4a6d3760f38d,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,105,reviewed-selector,TestPhase1WorkspaceActionAuthorizationAndCompatibility,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,149,reviewed-selector,TestPhase1HQCanClaimDryRunAndCommit,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
 MAP-7a5ae9fb2039,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,10,reviewed-selector,TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection,False,MSD-002
 MAP-308489bd281c,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,20,reviewed-selector,TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry,False,MSD-002
@@ -176,6 +180,21 @@ MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_t
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,102,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"
 MAP-62d7c36b98c4,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,119,reviewed-selector,TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity,False,"HRW-004,HRW-005,HRW-008"
 MAP-f6f7a40c985c,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,149,reviewed-selector,TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource,False,"HRW-004,HRW-005,HRW-008"
+MAP-4661cc9cbfd1,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,9,reviewed-selector,TestDelayedFirstDriverReceiptNeverPermitsReplay,False,HGD-010
+MAP-701fff56a879,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,59,reviewed-selector,TestDelayedDriverHistoryRequiresExactHistoricalAttribution,False,HGD-010
+MAP-7aceebb4a273,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,128,reviewed-selector,TestDelayedDriverReceiptRetainsOriginalIntentAcrossPlanChanges,False,HGD-010
+MAP-b0e3154a9e2e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,44,reviewed-selector,TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-af89e66fde10,L2,reviewed implementation,internal/hqworkspace/followup_test.go,106,reviewed-selector,TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-38abd006fd1e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,161,reviewed-selector,TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-7db834759619,L2,reviewed implementation,internal/hqworkspace/followup_test.go,210,reviewed-selector,TestGoalNativeBackgroundExactStepAndIdentity,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-264e532cce6d,L2,reviewed implementation,internal/hqworkspace/followup_test.go,251,reviewed-selector,TestGoalPauseRefusalExternalAndCrossChannelAnswer,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-c91e0b7ebc35,L2,reviewed implementation,internal/hqworkspace/followup_test.go,303,reviewed-selector,TestGoalLegacyMigrationBoundedSweepAndProjection,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-c01cefec17d2,L2,reviewed implementation,internal/hqworkspace/followup_test.go,354,reviewed-selector,TestGoalRestoreSuspendsDriveAndRetainsPause,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-8b530175eff3,L2,reviewed implementation,internal/hqworkspace/followup_test.go,388,reviewed-selector,TestGoalWrongStepAmbiguousIntervalAndDurableReminder,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-a57b8672c536,L2,reviewed implementation,internal/hqworkspace/followup_test.go,442,reviewed-selector,TestGoalStepLabelDoesNotResetTheSameWork,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-f1b186d4ddd4,L2,reviewed implementation,internal/hqworkspace/followup_test.go,493,reviewed-selector,TestGoalExpiredExternalProofDoesNotPermitFirstSend,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-92c2b1822b08,L2,reviewed implementation,internal/hqworkspace/goal_lease_test.go,31,reviewed-selector,TestCoveredGoalScanKeepsValidUnchangedLease,False,HGD-008
+MAP-85ae92e4dd88,L2,reviewed implementation,internal/hqworkspace/goal_lease_test.go,48,reviewed-selector,TestCoveredGoalActualPremiseChangeAndExpiryFenceOldClaim,False,HGD-008
 MAP-a9132845f95d,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,45,reviewed-selector,TestPhase1ReportsPreserveCompletedAndQuestion,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-8d3525e25015,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,82,reviewed-selector,TestPhase1TransitionCASAndQuestionIdentity,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-8c722e686be5,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,151,reviewed-selector,TestPhase1RecoveryFencingAtomicAssessment,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
@@ -771,7 +790,7 @@ MAP-5c6662fed7bd,L2,reviewed implementation,mobileapp/e2e/android/permissionJour
 MAP-2ba0c888b1bb,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,85,reviewed-selector,ACP-002 registered journey preserves,False,ACP-002
 MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,46,reviewed-selector,RN fake / Go contract:,False,CT-HTTP
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
-MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
+MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,112,reviewed-selector,startFake,False,CT-HTTP
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
 MAP-a5b3bb5a1d5d,L2,reviewed implementation,mobileapp/src/api/agentsRead.test.ts,10,reviewed-selector,a real empty agents response is successful data and ordinary rows still map,False,RDR-004
 MAP-5e41be7d3f1b,L2,reviewed implementation,mobileapp/src/api/agentsRead.test.ts,15,reviewed-selector,a malformed successful agents body stays a read failure: %p,False,RDR-004
@@ -2340,8 +2359,10 @@ LEG-3adbdca9096b,L2,Go core / CLI / server,relay/relay_test.go,155,Test,TestAPNS
 LEG-72ab23403100,L2,Go core / CLI / server,relay/relay_test.go,189,Test,TestAPNSPushError,False,legacy-not-retrospectively-reviewed
 MAP-2a8e1df3263e,L2,reviewed implementation,tests/contracts/http-contract.cjs,5,reviewed-selector,async function observe,False,CT-HTTP
 MAP-c856d62bb0c7,L2,reviewed implementation,tests/contracts/http-contract.cjs,36,reviewed-selector,function verify,False,CT-HTTP
+MAP-aeaadc032b3b,L2,reviewed implementation,tests/contracts/http-contract.json,307,reviewed-selector,"""hq-overview""",False,HGD-007
+MAP-233816800d4e,L2,reviewed implementation,tests/contracts/http-contract.json,387,reviewed-selector,"""hq-detail-page""",False,HGD-007
 MAP-184f052913f1,L2,reviewed implementation,tests/web/backend-contract.test.cjs,34,reviewed-selector,Web fake / Go contract:,False,CT-HTTP
-MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,18,reviewed-selector,async function start,False,CT-HTTP
+MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,32,reviewed-selector,async function start,False,CT-HTTP
 MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
 LEG-69563fe32201,L2,Worker,tunnel-worker/src/direct.test.ts,36,test,the port formula is the client's: Go's crc32.ChecksumIEEE over the id,False,legacy-not-retrospectively-reviewed
 LEG-f3f8a76744ad,L2,Worker,tunnel-worker/src/direct.test.ts,49,test,"each device gets its own account, allowed its own port and nothing else",False,legacy-not-retrospectively-reviewed

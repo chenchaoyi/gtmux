@@ -116,7 +116,8 @@
       "HQP1-005",
       "HQP1-006",
       "HQP1-007",
-      "HQP1-008"
+      "HQP1-008",
+      "HGD-005"
     ],
     "selectors": [
       "TestPhase1WorkspaceIngestionRecoveryAndReadIndependence",
@@ -833,7 +834,9 @@
       "HQP1-005",
       "HQP1-006",
       "HQP1-007",
-      "HQP1-008"
+      "HQP1-008",
+      "HGD-001",
+      "HGD-004"
     ],
     "selectors": [
       "TestPhase1ReportsPreserveCompletedAndQuestion",
@@ -3520,6 +3523,91 @@
       "captures the split shell, HQ matters, the pane grid and the knowledge sheet",
       "await driver.$('~knowledge-entry-more').waitForDisplayed({timeout: 10_000});",
       "await driver.$('~knowledge-core-guidance').waitForExist({timeout: 10_000});"
+    ]
+  },
+  "internal/hqworkspace/followup_test.go": {
+    "cases": [
+      "HGD-001",
+      "HGD-002",
+      "HGD-003",
+      "HGD-004",
+      "HGD-005",
+      "HGD-006"
+    ],
+    "selectors": [
+      "TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation",
+      "TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice",
+      "TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues",
+      "TestGoalNativeBackgroundExactStepAndIdentity",
+      "TestGoalPauseRefusalExternalAndCrossChannelAnswer",
+      "TestGoalLegacyMigrationBoundedSweepAndProjection",
+      "TestGoalRestoreSuspendsDriveAndRetainsPause",
+      "TestGoalWrongStepAmbiguousIntervalAndDurableReminder",
+      "TestGoalStepLabelDoesNotResetTheSameWork",
+      "TestGoalExpiredExternalProofDoesNotPermitFirstSend"
+    ]
+  },
+  "internal/app/hqworkspace_goal_test.go": {
+    "cases": [
+      "HGD-002",
+      "HGD-004",
+      "HGD-005"
+    ],
+    "selectors": [
+      "TestGoalActionAuthorityAndExactReceiptEnvelope",
+      "TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers"
+    ]
+  },
+  "internal/app/hqworkspace_goal_regression_test.go": {
+    "cases": [
+      "HGD-005"
+    ],
+    "selectors": [
+      "TestGoalNoNewEventsAfterNotedStillRequiresHQ"
+    ]
+  },
+  "tests/contracts/http-contract.json": {
+    "cases": [
+      "HGD-007"
+    ],
+    "selectors": [
+      "\"hq-overview\"",
+      "\"hq-detail-page\""
+    ]
+  },
+  "internal/hqworkspace/goal_lease_test.go": {
+    "cases": [
+      "HGD-008"
+    ],
+    "selectors": [
+      "TestCoveredGoalScanKeepsValidUnchangedLease",
+      "TestCoveredGoalActualPremiseChangeAndExpiryFenceOldClaim"
+    ]
+  },
+  "internal/app/hqworkspace_goal_runtime_test.go": {
+    "cases": [
+      "HGD-009"
+    ],
+    "selectors": [
+      "TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch"
+    ]
+  },
+  "internal/hqworkspace/delayed_drive_test.go": {
+    "cases": [
+      "HGD-010"
+    ],
+    "selectors": [
+      "TestDelayedFirstDriverReceiptNeverPermitsReplay",
+      "TestDelayedDriverHistoryRequiresExactHistoricalAttribution",
+      "TestDelayedDriverReceiptRetainsOriginalIntentAcrossPlanChanges"
+    ]
+  },
+  "internal/app/hqworkspace_delayed_drive_test.go": {
+    "cases": [
+      "HGD-010"
+    ],
+    "selectors": [
+      "TestGoalRelayAdapterFirstIngestAfterDeadlineDoesNotSend"
     ]
   }
 }

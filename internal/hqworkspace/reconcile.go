@@ -9,6 +9,7 @@ import (
 // Observation is immutable input, not permission to execute or change a goal.
 // ID is namespaced by its producer; Ref points to the original durable record.
 type Observation struct {
+	DriveProof     *DriveProof  `json:"drive_proof,omitempty"`
 	ID             string       `json:"id"`
 	Kind           string       `json:"kind"`
 	MatterID       string       `json:"matter_id,omitempty"`
@@ -20,27 +21,32 @@ type Observation struct {
 }
 
 type Reconciliation struct {
-	Observation Observation `json:"observation"`
-	State       string      `json:"state"` // pending | leased | assessed | deferred | conflict
-	ReceivedAt  int64       `json:"received_at"`
-	Owner       string      `json:"owner,omitempty"`
-	Generation  uint64      `json:"generation"`
-	LeaseUntil  int64       `json:"lease_until,omitempty"`
-	NextCheck   int64       `json:"next_check,omitempty"`
-	ReceiptID   string      `json:"receipt_id,omitempty"`
+	GoalPremise   string      `json:"goal_premise,omitempty"`
+	ReminderAt    int64       `json:"reminder_at,omitempty"`
+	ReminderCount uint64      `json:"reminder_count,omitempty"`
+	Observation   Observation `json:"observation"`
+	State         string      `json:"state"` // pending | leased | assessed | deferred | conflict | superseded
+	ReceivedAt    int64       `json:"received_at"`
+	Owner         string      `json:"owner,omitempty"`
+	Generation    uint64      `json:"generation"`
+	LeaseUntil    int64       `json:"lease_until,omitempty"`
+	NextCheck     int64       `json:"next_check,omitempty"`
+	ReceiptID     string      `json:"receipt_id,omitempty"`
 }
 
 type Assessment struct {
-	ID            string `json:"id"`
-	ObservationID string `json:"observation_id"`
-	Owner         string `json:"owner"`
-	Generation    uint64 `json:"generation"`
-	MatterID      string `json:"matter_id,omitempty"`
-	Revision      uint64 `json:"revision,omitempty"`
-	Decision      string `json:"decision"` // noted | transition | deferred | conflict
-	State         string `json:"state,omitempty"`
-	Reason        string `json:"reason"`
-	NextCheck     int64  `json:"next_check,omitempty"`
+	Responsibility *Responsibility `json:"responsibility,omitempty"`
+	ResumeRef      string          `json:"resume_ref,omitempty"`
+	ID             string          `json:"id"`
+	ObservationID  string          `json:"observation_id"`
+	Owner          string          `json:"owner"`
+	Generation     uint64          `json:"generation"`
+	MatterID       string          `json:"matter_id,omitempty"`
+	Revision       uint64          `json:"revision,omitempty"`
+	Decision       string          `json:"decision"` // noted | transition | deferred | conflict | responsibility
+	State          string          `json:"state,omitempty"`
+	Reason         string          `json:"reason"`
+	NextCheck      int64           `json:"next_check,omitempty"`
 }
 
 type AssessmentReceipt struct {
@@ -81,6 +87,11 @@ func (s *Store) Ingest(source string, expected, cursor int64, observations []Obs
 				return err
 			}
 		}
+		for _, o := range observations {
+			if o.DriveProof != nil {
+				attachDrive(d, o, at)
+			}
+		}
 		if _, ok := d.ObservationCursors[source]; !ok || cursor != expected {
 			d.ObservationCursors[source] = cursor
 			changed(d, at, "observation-checkpoint", "", source, "")
@@ -92,7 +103,7 @@ func (s *Store) Ingest(source string, expected, cursor int64, observations []Obs
 func ReconciliationQueue(d Database, now int64) []Reconciliation {
 	out := []Reconciliation{}
 	for _, q := range d.Reconciliations {
-		if q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > now {
+		if q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > now {
 			continue
 		}
 		out = append(out, q)
@@ -123,7 +134,13 @@ func (s *Store) ClaimObservation(id, owner string, at int64) (Reconciliation, er
 			out = q
 			return nil
 		}
-		if q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > at {
+		if q.Observation.Kind == "goal-followup" {
+			m, ok := d.Matters[q.Observation.MatterID]
+			if !ok || q.Observation.ID != goalKey(m) || m.State == "completed" || m.State == "closed" || m.MergedInto != "" {
+				return ErrConflict
+			}
+			q.GoalPremise = goalPremise(*d, m, at)
+		} else if q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > at {
 			return ErrConflict
 		}
 		q.State = "leased"
@@ -173,8 +190,34 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 			return receipt, err
 		}
 	}
+	if a.Responsibility != nil && a.Decision != "responsibility" {
+		return receipt, errors.New("responsibility requires explicit responsibility decision")
+	}
+	if q.Observation.Kind == "goal-followup" && (q.Observation.ID != goalKey(m) || q.GoalPremise != goalPremise(*d, m, at)) {
+		return receipt, ErrConflict
+	}
+	if q.Observation.Kind == "goal-followup" && (a.Decision == "noted" || a.Decision == "conflict") && goalOwed(GoalResponsibility(*d, m, at)) {
+		return receipt, errors.New("goal still owes HQ a verified drive, real question, valid hold or explicit terminal assessment")
+	}
+	if a.ResumeRef != "" && a.Decision != "responsibility" {
+		return receipt, errors.New("resume_ref requires responsibility decision")
+	}
 	receipt = AssessmentReceipt{Assessment: a, At: at, BeforeRevision: m.Revision, AfterRevision: m.Revision}
 	switch a.Decision {
+	case "responsibility":
+		if q.Observation.Kind != "goal-followup" || a.Responsibility == nil || a.Revision == 0 {
+			return receipt, ErrConflict
+		}
+		if old := m.Responsibility; old != nil && old.Hold != nil && (old.Hold.Kind == "paused" || old.Hold.Kind == "refused") && !reflect.DeepEqual(old.Hold, a.Responsibility.Hold) {
+			if _, e := text(a.ResumeRef, 2048); e != nil {
+				return receipt, errors.New("explicit user resume citation required to change pause/refusal")
+			}
+		}
+		if e := validateResponsibility(*d, m, *a.Responsibility, at); e != nil {
+			return receipt, e
+		}
+		m.Responsibility = a.Responsibility
+		q.State = "pending"
 	case "noted":
 		q.State = "assessed"
 	case "conflict":
@@ -207,7 +250,11 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 		return receipt, errors.New("next_check requires deferred decision")
 	}
 	changed(d, at, "assessment", a.MatterID, a.ID, a.Decision)
-	if a.Decision == "transition" {
+	if a.Decision == "transition" || a.Decision == "responsibility" {
+		if a.Decision == "transition" {
+			m.AssessmentAt = at
+			m.AssessmentRevision = d.Revision
+		}
 		saveMatter(d, m, at)
 		receipt.AfterRevision = d.Revision
 	}
@@ -216,6 +263,11 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 	d.Reconciliations[a.ObservationID] = q
 	receipt.QueueState = q.State
 	d.Assessments[a.ID] = receipt
+	if q.Observation.Kind == "goal-followup" || a.Decision == "transition" {
+		syncGoal(d, d.Matters[m.ID], at)
+		receipt.QueueState = d.Reconciliations[a.ObservationID].State
+		d.Assessments[a.ID] = receipt
+	}
 	return receipt, nil
 }
 

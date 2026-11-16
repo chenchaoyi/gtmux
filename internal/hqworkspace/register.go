@@ -34,7 +34,7 @@ func (s *Store) Register(id, title, body, state string, origin Origin, at int64)
 			return ErrConflict
 		}
 		changed(d, at, "register", id, messageID, origin.Kind)
-		m := Matter{ID: id, Title: title, State: state, Assessment: body, Origin: &origin, CreatedAt: at, Participants: []Association{}}
+		m := Matter{ID: id, Title: title, State: state, Assessment: body, AssessmentAt: at, AssessmentRevision: d.Revision, Origin: &origin, CreatedAt: at, Participants: []Association{}}
 		saveMatter(d, m, at)
 		out = d.Matters[id]
 		d.Messages[messageID] = Message{ID: messageID, MatterID: id, Speaker: "hq", Kind: "report", Subject: title, Body: body, MatterState: state, At: at, Seq: d.Revision}

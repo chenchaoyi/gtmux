@@ -798,9 +798,19 @@ HQ 先读 `gtmux hq workspace reconcile --json`，再通过 `act` 的 `op:"claim
 serve 每 30 秒检查已关联工作台会话的新 Stop/错误/指令事件及新 relay 请求，待核
 责任到期时提醒 HQ。首次启用从当前时点开始，不批量导入历史结果。来源断档和归属歧义
 保留为待核事实；原始 Stop/relay 没有目标版本，不能直接转移事项。核对不投递指令、
-不代用户批准、不执行任务。存储快照在下一次写入时从 schema 1 升到 2，对外读取仍为
-schema 1，兼容现有客户端。旧二进制会拒绝 schema 2；回退时保留新快照并使用兼容版本，
+不代用户批准、不执行任务。存储快照在下一次写入时从 schema 1/2 升到 3，对外读取仍为
+schema 1，兼容现有客户端。旧二进制会拒绝 schema 3；回退时保留新快照并使用兼容版本，
 不能用旧快照覆盖。备份保留观测和处理回执。
+
+全部报告 noted、unread 为空后，未完目标仍可留下稳定 goal-followup 欠账。每轮最多
+扫描 64 个事项，游标持久化；Stop 只请求检查，quiet 和轮换不清目标责任。
+reconcile 提供 goals、intent_attempts；领取目标的 followup_id 后，用当前非零
+revision/generation 和 assess decision:responsibility、responsibility
+{step_id,action,authority_ref,intent?,drive?,hold?} 显式记录下一责任。
+旧/无版本证据仍不能 transition 当前目标，update body 也须非零当前 revision。
+op:drive 携 matter/id/当前 revision，只经既有门禁尝试已保存意图一次；queued
+是待接收，不确定/拒绝不自动重放。暂停/拒绝不自动到期，修改需 resume_ref 引用
+用户真实恢复指令。外部等待、准确原生/后台回执与备份恢复边界见[责任合同](design/hq-workspace.zh.md#持续目标与下一责任)。
 
 
 ## `gtmux digest` + `gtmux hq`：HQ，也就是中控会话

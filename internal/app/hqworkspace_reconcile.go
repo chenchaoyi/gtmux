@@ -3,7 +3,9 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
@@ -37,7 +39,7 @@ var workspaceReadEvents = events.ReadSince
 var workspaceEventSequence = events.CurrentSeq
 var workspaceRelayRecords = relay.List
 var workspaceObserveEvent = sessionpolicy.ObserveEvent
-var workspaceReconcileWake = hqnudge.Enqueue
+var workspaceReconcileWake = func(line string) { hqnudge.EnqueueKeyed("workspace-reconciliation", line) }
 
 func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 	d, err := s.Read()
@@ -111,6 +113,9 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 		// Explicit relay reports are already addressed to HQ; unresolved identity
 		// remains unassigned instead of borrowing a task's recycled pane.
 		o := hqworkspace.Observation{ID: id, Kind: "relay-" + r.Kind, MatterID: matter, MatterRevision: 0, Body: r.Body, Ref: "relay:" + r.ID, Conversation: c, OccurredAt: r.CreatedAt}
+		if r.Kind == "report" {
+			o.DriveProof = workspaceRelayDriveProof(r.Body, matter)
+		}
 		if err = s.Ingest("relay-start", start, start, []hqworkspace.Observation{o}, now); err != nil {
 			return err
 		}
@@ -137,13 +142,16 @@ func workspaceHasConversation(d hqworkspace.Database, c hqworkspace.Conversation
 var workspaceReconciliationRunner workspaceRunner
 var workspaceReconciliationNext int64
 var workspaceReconciliationWakeAt int64
+var workspaceGoalCheckStamp int64
 
 func scheduleWorkspaceReconciliation() {
 	now := time.Now().Unix()
-	if now < workspaceReconciliationNext {
+	stamp := hqworkspace.GoalCheckStamp(state.HQHome())
+	if now < workspaceReconciliationNext && stamp <= workspaceGoalCheckStamp {
 		return
 	}
 	workspaceReconciliationNext = now + 30
+	workspaceGoalCheckStamp = stamp
 	workspaceReconciliationRunner.start(func() {
 		s := workspaceStore()
 		if err := ingestWorkspaceObservations(s, now); err != nil {
@@ -164,18 +172,107 @@ func workspaceReconciliationJSON(s *hqworkspace.Store, now int64) (json.RawMessa
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(map[string]any{"revision": d.Revision, "pending": hqworkspace.ReconciliationQueue(d, now), "assessments": d.Assessments})
+	return json.Marshal(map[string]any{"revision": d.Revision, "pending": hqworkspace.ReconciliationQueue(d, now), "assessments": d.Assessments, "goals": workspaceGoalStatuses(d, now), "intent_attempts": d.IntentAttempts})
 }
 
 func notifyWorkspaceReconciliation(s *hqworkspace.Store, now, next int64) (int64, error) {
+	if err := s.ScanGoals(now, 64); err != nil {
+		return next, err
+	}
 	d, err := s.Read()
 	if err != nil {
 		return next, err
 	}
 	rows := hqworkspace.ReconciliationQueue(d, now)
 	if len(rows) > 0 && now >= next {
-		workspaceReconcileWake(hqwake.Line(hqwake.ClassTick, "workspace reconciliation", fmt.Sprintf("pending:%d", len(rows)), "pull: gtmux hq workspace reconcile --json"))
+		goals, repeated, err := s.RemindGoals(now)
+		if err != nil {
+			return next, err
+		}
+		ordinary := 0
+		for _, q := range rows {
+			if q.Observation.Kind != "goal-followup" {
+				ordinary++
+			}
+		}
+		if goals == 0 && ordinary == 0 {
+			return next, nil
+		}
+		tail := "HQ coordination remains due; pull: gtmux hq workspace reconcile --json"
+		if repeated {
+			tail = "HQ has not completed its coordination after repeated reminders; pull: gtmux hq workspace reconcile --json"
+		}
+		workspaceReconcileWake(hqwake.Line(hqwake.ClassTick, "workspace reconciliation", fmt.Sprintf("pending:%d", len(rows)), tail))
 		return now + 300, nil
 	}
 	return next, nil
+}
+
+func workspaceGoalStatuses(d hqworkspace.Database, now int64) map[string]hqworkspace.GoalStatus {
+	out := map[string]hqworkspace.GoalStatus{}
+	for _, m := range hqworkspace.Matters(d) {
+		out[m.ID] = hqworkspace.GoalResponsibility(d, m, now)
+	}
+	return out
+}
+
+// Workers may cite a native/background receipt in this opt-in wire envelope.
+// The trusted relay identity and source time remain outside the supplied body.
+func workspaceRelayDriveProof(body, matter string) *hqworkspace.DriveProof {
+	var envelope struct {
+		Schema string                 `json:"schema"`
+		Matter string                 `json:"matter"`
+		Drive  hqworkspace.DriveProof `json:"drive"`
+	}
+	decoder := json.NewDecoder(strings.NewReader(body))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(&envelope) != nil || envelope.Schema != "gtmux.goal-drive/v1" || envelope.Matter != matter || matter == "" {
+		return nil
+	}
+	var extra any
+	if decoder.Decode(&extra) != io.EOF {
+		return nil
+	}
+	switch envelope.Drive.State {
+	case "received", "progress", "background", "native":
+		return &envelope.Drive
+	}
+	return nil
+}
+
+func workspaceReconciliationProbe(line string) (bool, string) {
+	if !strings.Contains(line, "workspace reconciliation") {
+		return true, line
+	}
+	d, err := workspaceStore().Read()
+	if err != nil {
+		return true, line
+	}
+	return revalidateWorkspaceReconciliation(d, time.Now().Unix(), line)
+}
+
+func revalidateWorkspaceReconciliation(d hqworkspace.Database, now int64, line string) (bool, string) {
+	pending := 0
+	repeated := false
+	for _, q := range hqworkspace.ReconciliationQueue(d, now) {
+		if q.Observation.Kind == "goal-followup" {
+			m, ok := d.Matters[q.Observation.MatterID]
+			if ok {
+				repeated = repeated || q.ReminderCount >= 3
+				g := hqworkspace.GoalResponsibility(d, m, now)
+				if g.State != "verify" && g.State != "owes-hq" {
+					continue
+				}
+			}
+		}
+		pending++
+	}
+	if pending == 0 {
+		return false, ""
+	}
+	tail := "HQ coordination remains due; pull: gtmux hq workspace reconcile --json"
+	if repeated {
+		tail = "HQ has not completed its coordination after repeated reminders; pull: gtmux hq workspace reconcile --json"
+	}
+	return true, hqwake.Line(hqwake.ClassTick, "workspace reconciliation", fmt.Sprintf("pending:%d", pending), tail)
 }

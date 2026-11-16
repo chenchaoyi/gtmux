@@ -345,6 +345,11 @@
                   "body": "Which scope?",
                   "kind": "question",
                   "message_id": "contract-question"
+                },
+                "next_responsibility": {
+                  "followup_id": "goal-52bf742ec325915964d39e3ed566c04c3441dff790573dc241d2db1c11b7b43d",
+                  "reason": "Which scope?",
+                  "state": "waiting-user"
                 }
               }
             ],
@@ -356,6 +361,11 @@
                   "body": "Which scope?",
                   "kind": "question",
                   "message_id": "contract-question"
+                },
+                "next_responsibility": {
+                  "followup_id": "goal-52bf742ec325915964d39e3ed566c04c3441dff790573dc241d2db1c11b7b43d",
+                  "reason": "Which scope?",
+                  "state": "waiting-user"
                 }
               }
             ],
@@ -409,7 +419,14 @@
           "schema": 1,
           "transcript_earlier_available": false,
           "turns": [],
-          "warnings": []
+          "warnings": [],
+          "projection": {
+            "next_responsibility": {
+              "followup_id": "goal-52bf742ec325915964d39e3ed566c04c3441dff790573dc241d2db1c11b7b43d",
+              "reason": "Which scope?",
+              "state": "waiting-user"
+            }
+          }
         },
         "headers": {
           "cache-control": "no-store",

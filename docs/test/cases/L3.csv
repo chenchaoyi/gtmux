@@ -1,5 +1,6 @@
 id,layer,stack,file,line,kind,description,dynamic,design
 MAP-12689bc816c9,L3,reviewed implementation,internal/app/diff_context_test.go,12,reviewed-selector,TestDTV004DiffNamesActualLinkedWorktreeFromNestedCwd,False,DTV-004
+MAP-e69b385b8aa2,L3,reviewed implementation,internal/app/hqworkspace_goal_runtime_test.go,48,reviewed-selector,TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch,False,HGD-009
 MAP-ad442623e007,L3,reviewed implementation,internal/app/observed_conversation_test.go,15,reviewed-selector,TestSID005ObservedReaderKeepsBoundedWindowAndExactCursor,False,SID-005
 MAP-8b7815d10836,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,64,reviewed-selector,TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames,False,WTR-003
 MAP-f4e5b80196e1,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,165,reviewed-selector,TestWTR003NativeTUIGateway,False,WTR-003

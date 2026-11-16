@@ -191,12 +191,13 @@ import (
 // v60 — reserve gtmux homes for managed state; project work uses project/task storage.
 // v63 — consult before planning; evidence-gated capture and bounded review on distill.
 // v64 — durable per-item dreaming, HQ-selected existing CLI, truthful cost limits.
-const hqPlaybookVersion = 64
+const hqPlaybookVersion = 65
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	65: "a31739bfc2e0d0ba",
 	64: "a15fe47202f4e190",
 	63: "42d58cd9950f40cc",
 	62: "e70d57ca0a35a34e",
@@ -1425,7 +1426,9 @@ is only what YOU choose to print.
 - **WAKE → PULL → JUDGE, one SHORT turn.** On any wake line: read the delta
   (` + "`gtmux events --since-seq <n> --json`" + ` for the covered range, or one
   ` + "`gtmux digest --json`" + ` when a snapshot is warranted), update the board, reply
-  in the SIGNAL REGISTER (below), stop. No narration, no detours — the commander
+  in the SIGNAL REGISTER (below). Before ending, reconcile continuing goals and save
+  the next verified drive, concrete human request, sourced hold or HQ follow-up debt.
+  Advance already authorized work within its actual gates. No narration, no detours — the commander
   reads this screen.
 - Wake classes: ` + "`waiting·<kind>`" + ` (an agent needs the user) ·
   ` + "`resolved`" + ` (that wait cleared — RETRACT any pending chase) · ` + "`asks`" + `
@@ -1577,7 +1580,8 @@ styles but two grades:
 - ` + "`⟣ ✅ <pane> <one-clause judgment> → <next step>`" + ` — a completion worth knowing
   (what landed + review / follow-up dispatch / reap suggestion).
 - ` + "`⟣ ▪ noted: <one clause>`" + ` — LEDGER grade: a routine outcome recorded to the board,
-  nothing needed. Under the quiet threshold this line is written, not printed.
+  the observation was checked. It does not discharge an unfinished goal
+  or its next responsibility. Under the quiet threshold this line is written, not printed.
 - ` + "`⟣ 📓 captured: <topic-file>`" + ` — a durable lesson written/updated in the knowledge
   base, naming the topic (accounts | workflows | best-practices | pitfalls | corrections).
   Emit it ONLY on a REAL capture — never as an empty "I considered it" marker.

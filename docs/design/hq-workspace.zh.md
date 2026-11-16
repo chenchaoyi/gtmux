@@ -231,8 +231,7 @@ HQ 已经读取了新规则。
 `gtmux hq workspace list --overview --json` 在原快照中增加有大小上限的 `overview` 字段；
 普通列表仍不带评估正文。`hqworkspace.BuildOverview` 使用同一次读入的事项数据库，
 不扫描事件日志或 Agent 对话。每段汇报最多 768 个 Unicode 字符，保留消息 ID 和截断标记。
-这里没有新增模型调用或档案写入。当前协议没有结构化的“下一步”和“开始等待时间”，
-界面不会补造。执行会话状态只认准确的 agent/目录/会话身份及仍持续的执行关联；
+这里没有新增模型调用或档案写入。增量投影现有明确的下一责任（见下文），不会补造开始等待时间。执行会话状态只认准确的 agent/目录/会话身份及仍持续的执行关联；
 Agent 空闲不代表事项完成。
 
 最近变化只收明确状态变更、结果、决定、问题、送达未确认、登记、合并与拆分，
@@ -243,3 +242,51 @@ Agent 空闲不代表事项完成。
 ## 8. iPhone 与 iPad 总览
 
 App 在手机上纵向排列「待你处理」「正在跟进」，iPad 宽窗口并排展示。最近变化直接采用核心的事项投影，不把送达未确认或消息送达当成工作完成。事项弹层显示判断、真实参与关系和有页数边界的进展记录，包括可关联的公开回复。「询问 HQ」只预填原有全局对话，不自动发送决定或创建事项指令。输入草稿、Trace／Diff 与资料阅读沿用现有组件。旧服务列表接口返回 404／501 时保留旧页面；临时错误保留内容，认证失效清除内容。只读 HTTP 适配复用 CLI 构建器，不投递、不消费事件、不写状态。
+
+## 持续目标与下一责任
+
+候选核心协议区分“观察已核”和“未完目标已推进”。存储 schema 3 保存 responsibility、
+稳定动作尝试、提醒次数及有界扫描游标；wire schema 1 只增字段。schema 1/2 的旧 open
+只迁移成“待 HQ 核实”，不获得恢复执行许可；旧二进制拒绝新存储版本。本节描述实现合同，
+发布验收以准确冻结 head 的测试、CI 和独立复核为准。
+
+持续目标可记录稳定 step_id、action、authority_ref；引用只指向已有授权，报告散文、
+owner 名字和调度器都不产生权限。没有凭据就保留未知。既有核对循环每次最多扫描 64 个事项，
+游标持久保存，即使没有新事件也补查。Stop 只触碰已有工作台的轻量检查标记；轮换和交接
+沿用同一存储，未完成工作不阻止健康轮换。
+
+goal-followup 观察按最终归属事项、稳定步骤、动作和授权引用去重；改标题、读水位、
+复述报告和刷新时间不造新账。普通报告仍可 noted，但目标本身无有效下一责任时不能用 noted
+或 conflict 消账；延期检查也保留目标欠账。三次重复提醒明确说明 HQ 尚未完成协调，
+不伪造用户缺授权。quiet 仅限制呈现。提醒复用现有 keyed 队列，包含 hook 进程的投递路径
+都会重读当前前提；过时提醒收敛或重画，不删除旧指令、源记录和日志。
+
+HQ 领取 goals[MATTER].followup_id，再用租约 generation、准确非零当前 matter revision、
+理由和 responsibility 提交 decision:responsibility。这是目标义务上的显式新计划更新，
+不混同观察 transition。relay 观察仍是 revision 0，不能转移当前非零版本；已核评估仍用
+既有 update 的 body 加非零当前 revision。共享只读投影分别保留 assessment、latest_receipt、
+next_responsibility，摘录带源 ID、原始时间和版本，不猜补；未答问题不会被后续进展覆盖。
+
+投递前可先存 intent {id,ref,target:{agent,home_id,session_id},at}，action 是已授权指令。
+HQ 显式 op:drive 指定该意图和当前事项版本，只经既有身份、输入、草稿和原生回执门禁
+持久尝试一次，不 force、不换通道、不由 tick 自动执行。queued 仅表示可靠排队待接收；
+received 表示准确指令已接收，不代表完成。投递后崩溃保留未知，安全拒绝也需核实后处理，
+不能自动重试或换 ID 绕门禁。每次按准确身份重新解析当前接收者，不使用保存的 pane 提示。
+已有原生/后台推进可通过以下明确 relay 回执覆盖当前步骤：
+
+```json
+{"schema":"gtmux.goal-drive/v1","matter":"MATTER","drive":{"step_id":"STEP","action_id":"ACTION","ref":"EXACT-REFERENCE","state":"native","next_check":1795000000}}
+```
+
+身份和时间来自 relay 源，正文不能覆盖；状态可为 received、progress、background、native，
+只有投递适配器提供 queued。同一步、动作、引用及无歧义执行关联都必须匹配保存的意图。
+探针缺失、pane 复用、SID/home 不符和区间不明都回到 HQ 核实，不重派。next_check 限制
+凭据覆盖期限，不扩展权限。已观测的原生/后台推进持久占用原动作身份，即使凭据到期
+或撤下显示的驱动引用，也不会变成可再次投递；只换步骤标签、授权引用措辞或 pane 提示，
+不能把同一指令/工作引用/准确接收者变成新发送。
+
+真正未答的人类问题复用 request-input；任何渠道已有答复，先核来源并 clear-input 原问题
+再推进。hold 为 paused、refused 或 external，提供 source_ref 和 condition。暂停/拒绝
+不自动到期，修改需要 resume_ref 引用真实用户恢复指令；外部等待另需未来 next_check，
+到点只由 HQ 复核条件，不执行任务。备份恢复暂停旧驱动凭据，保留暂停/拒绝。
+本次不新增通用原生目标探针、模型循环、生产重放或授权推断。

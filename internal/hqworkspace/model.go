@@ -10,7 +10,7 @@ import (
 	"unicode/utf8"
 )
 
-const Schema = 2
+const Schema = 3
 
 // WireSchema preserves existing consumers; storage schema is independently fenced.
 const WireSchema = 1
@@ -21,6 +21,8 @@ var (
 )
 
 type Database struct {
+	IntentAttempts     map[string]IntentAttempt     `json:"intent_attempts"`
+	GoalScanAfter      string                       `json:"goal_scan_after,omitempty"`
 	Reconciliations    map[string]Reconciliation    `json:"reconciliations"`
 	Assessments        map[string]AssessmentReceipt `json:"assessments"`
 	ObservationCursors map[string]int64             `json:"observation_cursors"`
@@ -33,18 +35,21 @@ type Database struct {
 }
 
 type Matter struct {
-	UserInput    *UserInput    `json:"user_input,omitempty"`
-	ID           string        `json:"id"`
-	Title        string        `json:"title"`
-	State        string        `json:"state"` // open | needs-input | completed | closed
-	Assessment   string        `json:"assessment,omitempty"`
-	CreatedAt    int64         `json:"created_at"`
-	UpdatedAt    int64         `json:"updated_at"`
-	Revision     uint64        `json:"revision"`
-	Participants []Association `json:"participants"`
-	MergedInto   string        `json:"merged_into,omitempty"`
-	Parent       string        `json:"parent,omitempty"`
-	Origin       *Origin       `json:"origin,omitempty"`
+	Responsibility     *Responsibility `json:"responsibility,omitempty"`
+	AssessmentAt       int64           `json:"assessment_at,omitempty"`
+	AssessmentRevision uint64          `json:"assessment_revision,omitempty"`
+	UserInput          *UserInput      `json:"user_input,omitempty"`
+	ID                 string          `json:"id"`
+	Title              string          `json:"title"`
+	State              string          `json:"state"` // open | needs-input | completed | closed
+	Assessment         string          `json:"assessment,omitempty"`
+	CreatedAt          int64           `json:"created_at"`
+	UpdatedAt          int64           `json:"updated_at"`
+	Revision           uint64          `json:"revision"`
+	Participants       []Association   `json:"participants"`
+	MergedInto         string          `json:"merged_into,omitempty"`
+	Parent             string          `json:"parent,omitempty"`
+	Origin             *Origin         `json:"origin,omitempty"`
 }
 
 // Origin is HQ's explicit evidence for enrolling an already assigned goal.
@@ -143,5 +148,5 @@ func validState(s string) bool {
 }
 
 func Empty() Database {
-	return Database{Reconciliations: map[string]Reconciliation{}, Assessments: map[string]AssessmentReceipt{}, ObservationCursors: map[string]int64{}, Schema: Schema, Matters: map[string]Matter{}, Messages: map[string]Message{}, Changes: []Change{}}
+	return Database{IntentAttempts: map[string]IntentAttempt{}, Reconciliations: map[string]Reconciliation{}, Assessments: map[string]AssessmentReceipt{}, ObservationCursors: map[string]int64{}, Schema: Schema, Matters: map[string]Matter{}, Messages: map[string]Message{}, Changes: []Change{}}
 }

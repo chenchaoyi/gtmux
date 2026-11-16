@@ -3785,7 +3785,7 @@
         },
         {
           "id": "MAP-4a6d3760f38d",
-          "line": 104,
+          "line": 105,
           "kind": "reviewed-selector",
           "name": "TestPhase1WorkspaceActionAuthorizationAndCompatibility",
           "dynamic": false,
@@ -3794,7 +3794,7 @@
         },
         {
           "id": "MAP-c7c7feed6e2a",
-          "line": 148,
+          "line": 149,
           "kind": "reviewed-selector",
           "name": "TestPhase1HQCanClaimDryRunAndCommit",
           "dynamic": false,
@@ -3802,7 +3802,7 @@
           "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
         }
       ],
-      "sha256": "55091bb335148ed8c88de08ba3ed603b8ce8c2c960c0bf617a1d79af873bd012"
+      "sha256": "83dc27e2c1fe745a7440ca1f9d63c25f393543eae2e2e3f299aa5bdb14567d82"
     },
     "internal/app/hqworkspace_stored_test.go": {
       "layer": "L2",
@@ -19157,7 +19157,7 @@
           "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
         }
       ],
-      "sha256": "23f843d99f339eb8b4f94bcf125e319fdee1e25c058d0053ad896080eeb4caad"
+      "sha256": "7084622cd0800ceb0ca2f232413e0c0e3e936d56241e85801031aefaaefb74fa"
     },
     "internal/hqworkspace/register_test.go": {
       "sha256": "ce8147d86846743f29f6284f310b9a3ec62f47b2e2286284b534be4b34f6cdc5",
@@ -41644,7 +41644,7 @@
       "cases": [
         {
           "id": "MAP-f2ed2637baa9",
-          "line": 95,
+          "line": 112,
           "kind": "reviewed-selector",
           "name": "startFake",
           "dynamic": false,
@@ -41652,7 +41652,7 @@
           "design": "CT-HTTP"
         }
       ],
-      "sha256": "79d8be5f47afc60d6725ac9b4c72c04d329ffd08d10aa46d92c9f69ba054d5ef"
+      "sha256": "1498020976c07f0f601d2d9a4fcd3f6068ad393b869f62135a158c961462947c"
     },
     "mobileapp/e2e/fake-serve/verdict.test.ts": {
       "sha256": "466b40dc8d9f58a6ea36925cb8403906250465356cddcd05a89dae55b77f5f12",
@@ -62935,7 +62935,7 @@
       "cases": [
         {
           "id": "MAP-c9d3762e7230",
-          "line": 18,
+          "line": 32,
           "kind": "reviewed-selector",
           "name": "async function start",
           "dynamic": false,
@@ -62943,7 +62943,7 @@
           "design": "CT-HTTP"
         }
       ],
-      "sha256": "e5680209e52d0d592b794015230823527b9d35ac4d1aa9a5d6774dd62ed247af"
+      "sha256": "c8b677199f1391e4d5c977d5d3e5dcd30662f147f66c225c6e27a9ead7d51066"
     },
     "tests/web/full-input.test.cjs": {
       "sha256": "95eb1ce8fd86c4884441e694932d1fd3b1e69ebd20beebb8bf9be62ee3e13c6b",
@@ -65615,6 +65615,260 @@
         }
       ],
       "sha256": "c8d7fa50de35b3c93cae92d3d95ffb3a996bce036468b871712aa52eed1df5e9"
+    },
+    "internal/app/hqworkspace_goal_regression_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5f24b23ab8de",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestGoalNoNewEventsAfterNotedStillRequiresHQ",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-005"
+        }
+      ],
+      "sha256": "3801c90df5d9a2dbc16d68f2c5ece19895f2c228bfb088cdbaf92da81d9edc10"
+    },
+    "internal/app/hqworkspace_goal_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b9ea2545c70d",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestGoalActionAuthorityAndExactReceiptEnvelope",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-002,HGD-004,HGD-005"
+        },
+        {
+          "id": "MAP-b6ae467c793b",
+          "line": 113,
+          "kind": "reviewed-selector",
+          "name": "TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-002,HGD-004,HGD-005"
+        }
+      ],
+      "sha256": "34868670c702dd15e1b6f28271e9934e9c2e919a9c80a0bcfb4c12fba20d32e9"
+    },
+    "internal/hqworkspace/followup_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b0e3154a9e2e",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+        },
+        {
+          "id": "MAP-af89e66fde10",
+          "line": 106,
+          "kind": "reviewed-selector",
+          "name": "TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+        },
+        {
+          "id": "MAP-38abd006fd1e",
+          "line": 161,
+          "kind": "reviewed-selector",
+          "name": "TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+        },
+        {
+          "id": "MAP-7db834759619",
+          "line": 210,
+          "kind": "reviewed-selector",
+          "name": "TestGoalNativeBackgroundExactStepAndIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+        },
+        {
+          "id": "MAP-264e532cce6d",
+          "line": 251,
+          "kind": "reviewed-selector",
+          "name": "TestGoalPauseRefusalExternalAndCrossChannelAnswer",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+        },
+        {
+          "id": "MAP-c91e0b7ebc35",
+          "line": 303,
+          "kind": "reviewed-selector",
+          "name": "TestGoalLegacyMigrationBoundedSweepAndProjection",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+        },
+        {
+          "id": "MAP-c01cefec17d2",
+          "line": 354,
+          "kind": "reviewed-selector",
+          "name": "TestGoalRestoreSuspendsDriveAndRetainsPause",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+        },
+        {
+          "id": "MAP-8b530175eff3",
+          "line": 388,
+          "kind": "reviewed-selector",
+          "name": "TestGoalWrongStepAmbiguousIntervalAndDurableReminder",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+        },
+        {
+          "id": "MAP-a57b8672c536",
+          "line": 442,
+          "kind": "reviewed-selector",
+          "name": "TestGoalStepLabelDoesNotResetTheSameWork",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+        },
+        {
+          "id": "MAP-f1b186d4ddd4",
+          "line": 493,
+          "kind": "reviewed-selector",
+          "name": "TestGoalExpiredExternalProofDoesNotPermitFirstSend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+        }
+      ],
+      "sha256": "87295600797fd47c1959aaf980e4d68c16163a8a996bdb3d64921c7fc60fc5c7"
+    },
+    "tests/contracts/http-contract.json": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-aeaadc032b3b",
+          "line": 307,
+          "kind": "reviewed-selector",
+          "name": "\"hq-overview\"",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-007"
+        },
+        {
+          "id": "MAP-233816800d4e",
+          "line": 387,
+          "kind": "reviewed-selector",
+          "name": "\"hq-detail-page\"",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-007"
+        }
+      ],
+      "sha256": "2b3a9970b8ae577515c130ee2aa5f6e390e42605c1e84c76aa8c9b8efd086cdd"
+    },
+    "internal/hqworkspace/goal_lease_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-92c2b1822b08",
+          "line": 31,
+          "kind": "reviewed-selector",
+          "name": "TestCoveredGoalScanKeepsValidUnchangedLease",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-008"
+        },
+        {
+          "id": "MAP-85ae92e4dd88",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "TestCoveredGoalActualPremiseChangeAndExpiryFenceOldClaim",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-008"
+        }
+      ],
+      "sha256": "bacea54a82133c35674cf429d7d726bfe1dcbae9f2ec3ca11678c081e3e8512b"
+    },
+    "internal/app/hqworkspace_goal_runtime_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e69b385b8aa2",
+          "line": 48,
+          "kind": "reviewed-selector",
+          "name": "TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "HGD-009"
+        }
+      ],
+      "sha256": "14f16198bb7205a7f6176a053ba4fba2fe20c745180fe0681f67f8a9e0dde728"
+    },
+    "internal/app/hqworkspace_delayed_drive_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d0af369139ad",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestGoalRelayAdapterFirstIngestAfterDeadlineDoesNotSend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-010"
+        }
+      ],
+      "sha256": "30d403a406f434b623207be7297c7d6a7da9fc9d2d23d8a412d9b5b5fcf6cd00"
+    },
+    "internal/hqworkspace/delayed_drive_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4661cc9cbfd1",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestDelayedFirstDriverReceiptNeverPermitsReplay",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-010"
+        },
+        {
+          "id": "MAP-701fff56a879",
+          "line": 59,
+          "kind": "reviewed-selector",
+          "name": "TestDelayedDriverHistoryRequiresExactHistoricalAttribution",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-010"
+        },
+        {
+          "id": "MAP-7aceebb4a273",
+          "line": 128,
+          "kind": "reviewed-selector",
+          "name": "TestDelayedDriverReceiptRetainsOriginalIntentAcrossPlanChanges",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HGD-010"
+        }
+      ],
+      "sha256": "4b9ec937d0b9eab1c5c16600d03af6ce18476b227f169d55cd2d9dabb4cde4d0"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

@@ -43,6 +43,9 @@ func (s *Store) Update(id, title, state, assessment string, revision uint64, at 
 	if len(assessment) > 32768 {
 		return errors.New("assessment too long")
 	}
+	if assessment != "" && revision == 0 {
+		return ErrConflict
+	}
 	return s.transaction(func(d *Database) error {
 		m, err := getMatter(d, id, revision)
 		if err != nil {
@@ -61,6 +64,10 @@ func (s *Store) Update(id, title, state, assessment string, revision uint64, at 
 			m.Assessment = assessment
 		}
 		changed(d, at, "update", id, "", state)
+		if assessment != "" {
+			m.AssessmentAt = at
+			m.AssessmentRevision = d.Revision
+		}
 		saveMatter(d, m, at)
 		return nil
 	})
@@ -189,6 +196,21 @@ func (s *Store) Merge(from, into string, revision uint64, at int64) error {
 		target, err := getMatter(d, into, 0)
 		if err != nil {
 			return err
+		}
+		if m.Responsibility != nil && target.Responsibility != nil && m.State != "completed" && m.State != "closed" {
+			return errors.New("resolve the two continuing responsibilities before merging")
+		}
+		if m.State != "completed" && m.State != "closed" {
+			p := target.Responsibility
+			if p == nil {
+				p = m.Responsibility
+			}
+			if p != nil {
+				copy := *p
+				copy.ReviewRequired = true
+				copy.Drive = nil
+				target.Responsibility = &copy
+			}
 		}
 		for _, a := range m.Participants {
 			if a.RemovedAt != 0 {

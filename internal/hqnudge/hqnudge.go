@@ -247,6 +247,15 @@ func Enqueue(msg string) {
 	enqueue(prod, msg)
 }
 
+// EnqueueKeyed replaces one pending reminder without submitting input. It uses
+// the same durable keyed queue as turn-end and periodic wake producers.
+func EnqueueKeyed(key, msg string) {
+	if strings.TrimSpace(key) == "" || strings.TrimSpace(msg) == "" {
+		return
+	}
+	enqueueKeyed(prod, key, msg, 0)
+}
+
 // DeliverKeyedAt queues msg under a REPLACEABLE key with a due time (unix nanos):
 // a later call with the same key REPLACES the pending payload instead of adding a
 // second line, and the entry is not typed before it is due. This is the per-pane

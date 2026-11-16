@@ -299,8 +299,8 @@ existing snapshot; ordinary list output still omits assessment bodies. The leaf
 `hqworkspace.BuildOverview` reads the same already-loaded database, not event logs or
 agent transcripts. Each report excerpt is at most 768 Unicode characters with a
 truncation flag and message ID. No new model request or personal-record write occurs.
-The current schema has no structured next-step or wait-start field; the UI does not
-invent either. Live worker status requires the exact agent/home/session identity and
+The additive projection now carries explicit next responsibility (see below); it does not
+invent a wait-start time. Live worker status requires the exact agent/home/session identity and
 an ongoing execution association; idle never completes a matter.
 
 Recent changes include explicit state updates, results, decisions, reported problems,
@@ -314,3 +314,68 @@ identity; see [Clio and HQ topics](hq-topic-research.md).
 ## 8. Phone and iPad overview
 
 The App stacks Needs input and Following on phones and puts them side by side on wider iPad windows. Recent changes use the core's explicit overview; delivery uncertainty never reads as completion. Matter sheets show assessment, exact participant membership and a bounded page of saved messages, including correlated public replies. Ask HQ only prefills the existing global console; it does not submit a decision or create a scoped instruction. The existing console owns drafts, input, Trace/Diff, and resource readers. A list 404/501 keeps the legacy HQ UI; transient failures retain prior data and authorization failures clear it. `GET /api/hq/workspace` reuses the CLI list/detail builders and never drains, acknowledges or mutates.
+
+## Continuing goals and next responsibility
+
+The candidate core protocol separates checking an observation from advancing its
+unfinished goal. Storage schema 3 preserves `responsibility`, stable action attempts,
+reminder counts and a bounded scan cursor; wire schema 1 remains additive. Schema 1/2
+open records migrate to **HQ verification**, never permission to resume. Older binaries
+reject the new storage schema. This section describes the implementation contract;
+release acceptance is recorded by its frozen-head tests, CI and independent review.
+
+Each explicit continuing goal can carry a stable `step_id`, `action` and `authority_ref`.
+The citation points to existing authority; no report text, owner name or scheduler creates
+permission. A missing proof remains unknown. The existing reconciliation pass scans at
+most 64 matters per tick using a persistent cursor, including when no new events arrived.
+Stop only touches an existing workspace's check marker. Handoff/rotation keeps the same
+store; unfinished work does not prevent a healthy rotation.
+
+A `goal-followup` observation is keyed by canonical matter, stable step, action and authority.
+Renames, rereads, report paraphrases and timestamps do not create new debt. Ordinary reports
+may still be noted. A goal's own debt cannot be noted or marked conflict while no verified
+next responsibility covers it. Deferred checks retain the debt. Three repeated reminders
+explicitly identify HQ's unfinished coordination; they do not invent a missing user approval.
+Quiet limits presentation, never responsibility. The reminder uses the existing keyed queue
+and rereads the current premise before delivery, including in hook processes. A stale reminder
+is dropped or rerendered; original instructions, source records and logs remain intact.
+
+HQ claims `goals[MATTER].followup_id` and assesses with `decision:responsibility`, the lease's
+generation, current nonzero matter revision, a reason and `responsibility`. This is an explicit
+new plan update on the goal obligation, separate from an observation transition. A relay
+observation retains revision 0 and cannot transition a current nonzero revision. Updating the
+checked assessment uses the existing `update` body plus current nonzero revision. The shared
+read projection keeps `assessment`, `latest_receipt` and `next_responsibility` distinct; its
+excerpts keep source IDs, recorded times and revision rather than guessing them. Unanswered
+questions remain the question projection and cannot be covered by a later progress report.
+
+An optional intent stores `{id,ref,target:{agent,home_id,session_id},at}` before delivery;
+`action` is the authorized instruction. HQ's explicit `op:drive` names that saved intent and
+current matter revision. It makes one durable attempt through the ordinary identity, input,
+draft and native receipt gates. It never forces, switches channels or runs from a tick.
+`queued` means reliably awaiting reception; `received` means the exact instruction was
+received, not completed. A crash after submission leaves the attempt unknown. Even safe
+refusals require verification rather than automatic retries or a new ID to bypass the gate.
+Live targets are resolved afresh by exact identity, never the saved pane hint. Existing native
+or background execution can cover the step through this explicit relay receipt envelope:
+
+```json
+{"schema":"gtmux.goal-drive/v1","matter":"MATTER","drive":{"step_id":"STEP","action_id":"ACTION","ref":"EXACT-REFERENCE","state":"native","next_check":1795000000}}
+```
+
+The relay source supplies identity and time; supplied fields cannot override either. States
+are `received`, `progress`, `background` or `native`; only the dispatch adapter supplies
+`queued`. Step, action, reference and unambiguous execution membership must match the saved
+intent. Missing probes, recycled panes, mismatched SID/home and uncertain intervals mean HQ
+verification, never redispatch. A receipt's `next_check` bounds its coverage, not its authority. An observed native/background
+driver durably reserves the action identity even after its proof expires or its displayed
+drive reference is cleared. Changing only step labels, citation wording or pane hints cannot
+reset the same instruction/reference/exact-recipient work into another send.
+
+A real unanswered user request reuses `request-input`; verified answers from any channel use
+`clear-input` with the exact question and source before HQ continues. A sourced hold is
+`paused`, `refused` or `external`, with `source_ref` and `condition`. User pause/refusal has no
+automatic expiry; changing it needs `resume_ref` citing an actual user resumption. An external
+hold also needs a future `next_check`; reaching it asks HQ to verify the condition, never
+executes work. Backup restore suspends old drive evidence and preserves pauses/refusals.
+No generic native-goal probe, model loop, production replay or authority inference is added.

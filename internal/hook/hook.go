@@ -26,6 +26,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/launchhost"
 	"github.com/chenchaoyi/gtmux/internal/limits"
@@ -1259,6 +1260,10 @@ func Run(stdin io.Reader, args []string) int {
 			// safely reclaimable. Runs only with a live HQ; git checks touch rare candidates.
 			sweepReapSuggestions()
 		}
+	}
+
+	if event == "Stop" {
+		_ = hqworkspace.RequestGoalCheck(state.HQHome())
 	}
 
 	// Draft-guard drain: a turn-end (any pane's Stop, but HQ's own especially) is a

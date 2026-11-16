@@ -161,18 +161,19 @@ type workspaceMessage struct {
 }
 
 type workspaceDetailReport struct {
-	MatterTitles               map[string]string    `json:"matter_titles,omitempty"`
-	Schema                     int                  `json:"schema"`
-	Matter                     *hqworkspace.Matter  `json:"matter,omitempty"`
-	Messages                   []workspaceMessage   `json:"messages"`
-	Turns                      []workspaceTurn      `json:"turns"`
-	MessageEarlierAvailable    bool                 `json:"message_earlier_available"`
-	TranscriptEarlierAvailable bool                 `json:"transcript_earlier_available"`
-	EarlierAvailable           bool                 `json:"earlier_available"`
-	EarlierBefore              uint64               `json:"earlier_before,omitempty"`
-	Changes                    []hqworkspace.Change `json:"changes"`
-	Events                     []events.Record      `json:"events"`
-	Warnings                   []string             `json:"warnings"`
+	Projection                 *hqworkspace.MatterProjection `json:"projection,omitempty"`
+	MatterTitles               map[string]string             `json:"matter_titles,omitempty"`
+	Schema                     int                           `json:"schema"`
+	Matter                     *hqworkspace.Matter           `json:"matter,omitempty"`
+	Messages                   []workspaceMessage            `json:"messages"`
+	Turns                      []workspaceTurn               `json:"turns"`
+	MessageEarlierAvailable    bool                          `json:"message_earlier_available"`
+	TranscriptEarlierAvailable bool                          `json:"transcript_earlier_available"`
+	EarlierAvailable           bool                          `json:"earlier_available"`
+	EarlierBefore              uint64                        `json:"earlier_before,omitempty"`
+	Changes                    []hqworkspace.Change          `json:"changes"`
+	Events                     []events.Record               `json:"events"`
+	Warnings                   []string                      `json:"warnings"`
 }
 
 func workspaceDetail(s *hqworkspace.Store, scope string, before uint64, earlier int) (workspaceDetailReport, error) {
@@ -203,6 +204,8 @@ func workspaceDetail(s *hqworkspace.Store, scope string, before uint64, earlier 
 			return out, hqworkspace.ErrNotFound
 		}
 		out.Matter = &m
+		projection := hqworkspace.ProjectMatter(d, m, time.Now().Unix())
+		out.Projection = &projection
 	}
 	messages, more := hqworkspace.MessagePage(d, matter, before, 60)
 	out.MessageEarlierAvailable = more

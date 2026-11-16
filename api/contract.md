@@ -1674,6 +1674,8 @@ With no query, returns schema 1 with `schema`, `revision`, `matters` and `overvi
 
 Missing matter: 404; invalid scope/cursor: 400; unsupported method: 405; server without the adapter: 501. A client may retain its legacy HQ page on a list 404/501. Other failures are unread answers, not an empty workspace. Responses are limited to 8 MiB; failures do not expose local source paths. Identity remains agent + home + session; pane is only a display hint.
 
+The additive core projection keeps checked `assessment`, `latest_receipt` and `next_responsibility` separate on overview items and under selected detail `projection`. Responsibility includes a stable follow-up ID, current state/reason and optional receipt/check references. A real unanswered question remains `waiting-user`; receipt text cannot replace it. Older consumers may ignore these fields. These reads never create obligations or drive actions; the local reconciliation pass owns persistent goal debt.
+
 Transcript turns may additionally carry `record_id`, an opaque, session-scoped source-position identifier. Readers prefer it to prompt/time occurrence counts so repeated prompts and clockless records remain distinct through tail reads, streaming and history expansion. It is not an input target or authority to read files. Older servers may omit it; readers retain the legacy time identity and use recorded content for clockless fallback.
 
 #### Earlier transcript pages

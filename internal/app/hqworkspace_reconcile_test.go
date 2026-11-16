@@ -69,6 +69,7 @@ func TestPhase1WorkspaceIngestionRecoveryAndReadIndependence(t *testing.T) {
 	if _, e = notifyWorkspaceReconciliation(hqworkspace.New(home), 106, 0); e != nil || len(wakes) != 2 {
 		t.Fatal("restart forgot debt wake", e)
 	}
+	d, _ = s.Read() // The bounded goal sweep adds its own debt, independently of source ingestion.
 	// Reading event records or workspace projections never discharges business debt.
 	_, _ = workspaceReadEvents(13)
 	_ = workspaceStoredSnapshot(d, true, 105)
@@ -95,7 +96,7 @@ func TestPhase1WorkspaceIngestionRecoveryAndReadIndependence(t *testing.T) {
 		t.Fatal(e)
 	}
 	after, _ = s.Read()
-	if after.ObservationCursors["events"] != 13 || len(after.Reconciliations) != 4 {
+	if after.ObservationCursors["events"] != 13 || len(after.Reconciliations) != 5 {
 		t.Fatal("source gap lost", after)
 	}
 	t.Log("isolated records:", filepath.Join(home, "workspace", "records.json"))

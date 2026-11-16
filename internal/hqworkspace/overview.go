@@ -19,11 +19,14 @@ type Overview struct {
 }
 
 type OverviewItem struct {
+	MatterProjection
 	MatterID string           `json:"matter_id"`
 	Preview  *OverviewPreview `json:"preview,omitempty"`
 }
 
 type OverviewPreview struct {
+	SourceRef string `json:"source_ref,omitempty"`
+	Revision  uint64 `json:"revision,omitempty"`
 	MessageID string `json:"message_id,omitempty"`
 	Kind      string `json:"kind"`
 	Body      string `json:"body"`
@@ -57,11 +60,12 @@ func BuildOverview(d Database, now int64) Overview {
 	// needs_input stays as a compatibility projection for older clients.
 	// New clients distinguish a concrete human question from HQ's own follow-up.
 	for _, m := range Matters(d) {
-		if m.State != "needs-input" {
+		g := GoalResponsibility(d, m, now)
+		if m.State != "needs-input" && !goalOwed(g) {
 			continue
 		}
 		item := OverviewItem{MatterID: m.ID}
-		if m.UserInput != nil && m.UserInput.AnswerID == "" {
+		if m.State == "needs-input" && m.UserInput != nil && m.UserInput.AnswerID == "" {
 			if len(out.HumanInput) >= 3 {
 				continue
 			}
@@ -99,6 +103,7 @@ func BuildOverview(d Database, now int64) Overview {
 	}
 	for _, items := range [][]OverviewItem{out.NeedsInput, out.Following, out.HumanInput, out.AwaitingHQ} {
 		for i := range items {
+			items[i].MatterProjection = ProjectMatter(d, d.Matters[items[i].MatterID], now)
 			if q := d.Matters[items[i].MatterID].UserInput; q != nil && d.Matters[items[i].MatterID].State == "needs-input" {
 				items[i].Preview = &OverviewPreview{MessageID: q.ID, Kind: "question", Body: q.Prompt, At: q.At}
 			} else if msg, ok := latest[items[i].MatterID]; ok {

@@ -392,11 +392,16 @@ MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test
 MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,142,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,203,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-d0af369139ad,L2,reviewed implementation,internal/app/hqworkspace_delayed_drive_test.go,12,reviewed-selector,TestGoalRelayAdapterFirstIngestAfterDeadlineDoesNotSend,False,HGD-010
+MAP-5f24b23ab8de,L2,reviewed implementation,internal/app/hqworkspace_goal_regression_test.go,11,reviewed-selector,TestGoalNoNewEventsAfterNotedStillRequiresHQ,False,HGD-005
+MAP-e69b385b8aa2,L3,reviewed implementation,internal/app/hqworkspace_goal_runtime_test.go,48,reviewed-selector,TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch,False,HGD-009
+MAP-b9ea2545c70d,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,13,reviewed-selector,TestGoalActionAuthorityAndExactReceiptEnvelope,False,"HGD-002,HGD-004,HGD-005"
+MAP-b6ae467c793b,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,113,reviewed-selector,TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers,False,"HGD-002,HGD-004,HGD-005"
 LEG-4658791c9323,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,10,Test,TestWorkspaceOverviewIsExplicitlyRequestedAndDoesNotEnlargeSidebarMatters,False,legacy-not-retrospectively-reviewed
 LEG-dc50bad5be70,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,41,Test,TestWorkspaceHTTPReadReusesExplicitStateWithoutWriting,False,legacy-not-retrospectively-reviewed
 MAP-9a346dda931b,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,15,reviewed-selector,TestPhase1WorkspaceIngestionRecoveryAndReadIndependence,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-MAP-4a6d3760f38d,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,104,reviewed-selector,TestPhase1WorkspaceActionAuthorizationAndCompatibility,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
-MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,148,reviewed-selector,TestPhase1HQCanClaimDryRunAndCommit,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-4a6d3760f38d,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,105,reviewed-selector,TestPhase1WorkspaceActionAuthorizationAndCompatibility,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,149,reviewed-selector,TestPhase1HQCanClaimDryRunAndCommit,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
 LEG-70b4e7561792,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,15,Test,TestWorkspaceWorkingHQAcceptsInputWithoutOverwritingDrafts,False,legacy-not-retrospectively-reviewed
 LEG-e447f9a32c69,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,25,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
@@ -1998,6 +2003,21 @@ LEG-dc57f44d25e7,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,7,T
 LEG-16bf780da221,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,41,Test,TestConsumeReadRequiresContiguity,False,legacy-not-retrospectively-reviewed
 LEG-97b3ed8b57ae,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,64,Test,TestUnreadIsStandingPriority,False,legacy-not-retrospectively-reviewed
 LEG-61812fc046b5,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,71,Test,TestUnreadConfigDefaults,False,legacy-not-retrospectively-reviewed
+MAP-4661cc9cbfd1,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,9,reviewed-selector,TestDelayedFirstDriverReceiptNeverPermitsReplay,False,HGD-010
+MAP-701fff56a879,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,59,reviewed-selector,TestDelayedDriverHistoryRequiresExactHistoricalAttribution,False,HGD-010
+MAP-7aceebb4a273,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,128,reviewed-selector,TestDelayedDriverReceiptRetainsOriginalIntentAcrossPlanChanges,False,HGD-010
+MAP-b0e3154a9e2e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,44,reviewed-selector,TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-af89e66fde10,L2,reviewed implementation,internal/hqworkspace/followup_test.go,106,reviewed-selector,TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-38abd006fd1e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,161,reviewed-selector,TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-7db834759619,L2,reviewed implementation,internal/hqworkspace/followup_test.go,210,reviewed-selector,TestGoalNativeBackgroundExactStepAndIdentity,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-264e532cce6d,L2,reviewed implementation,internal/hqworkspace/followup_test.go,251,reviewed-selector,TestGoalPauseRefusalExternalAndCrossChannelAnswer,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-c91e0b7ebc35,L2,reviewed implementation,internal/hqworkspace/followup_test.go,303,reviewed-selector,TestGoalLegacyMigrationBoundedSweepAndProjection,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-c01cefec17d2,L2,reviewed implementation,internal/hqworkspace/followup_test.go,354,reviewed-selector,TestGoalRestoreSuspendsDriveAndRetainsPause,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-8b530175eff3,L2,reviewed implementation,internal/hqworkspace/followup_test.go,388,reviewed-selector,TestGoalWrongStepAmbiguousIntervalAndDurableReminder,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-a57b8672c536,L2,reviewed implementation,internal/hqworkspace/followup_test.go,442,reviewed-selector,TestGoalStepLabelDoesNotResetTheSameWork,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-f1b186d4ddd4,L2,reviewed implementation,internal/hqworkspace/followup_test.go,493,reviewed-selector,TestGoalExpiredExternalProofDoesNotPermitFirstSend,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-92c2b1822b08,L2,reviewed implementation,internal/hqworkspace/goal_lease_test.go,31,reviewed-selector,TestCoveredGoalScanKeepsValidUnchangedLease,False,HGD-008
+MAP-85ae92e4dd88,L2,reviewed implementation,internal/hqworkspace/goal_lease_test.go,48,reviewed-selector,TestCoveredGoalActualPremiseChangeAndExpiryFenceOldClaim,False,HGD-008
 LEG-248c36874d14,L1,Go core / CLI / server,internal/hqworkspace/input_test.go,5,Test,TestHumanQuestionRemainsSeparateFromReportsAndGoal,False,legacy-not-retrospectively-reviewed
 LEG-4bec66d1ff87,L1,Go core / CLI / server,internal/hqworkspace/input_test.go,48,Test,TestHumanRequestBoundsAndStaleReply,False,legacy-not-retrospectively-reviewed
 LEG-42c54b35aabd,L1,Go core / CLI / server,internal/hqworkspace/input_test.go,63,Test,TestOverviewSeparatesHumanQuestionsFromHQClarificationAndSavedReplies,False,legacy-not-retrospectively-reviewed
@@ -4376,7 +4396,7 @@ LEG-6b1813f7509a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,1
 LEG-d240b174d0df,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,156,test,the stock report is unchanged until a suite seeds the full one,False,legacy-not-retrospectively-reviewed
 LEG-01e2c0d8a07a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,160,test,"the seeded plan groups by agent, under the names the usage sheet ids carry",False,legacy-not-retrospectively-reviewed
 LEG-e34f8145a818,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,173,test,back to the stock world,False,legacy-not-retrospectively-reviewed
-MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
+MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,112,reviewed-selector,startFake,False,CT-HTTP
 LEG-a314cc5be23f,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,8,test,"the stock fixture: one worker waiting, so needs_you, naming it",False,legacy-not-retrospectively-reviewed
 LEG-65bd4c2dfa5e,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,13,test,nothing waiting is normal; the supervisor mid-turn is working; the supervisor waiting is hq_call,False,legacy-not-retrospectively-reviewed
 LEG-5d182318c546,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,25,test,the longest waiting worker comes first,False,legacy-not-retrospectively-reviewed
@@ -6800,6 +6820,8 @@ LEG-0c717f4e72ec,L1,Worker,shared/worker-json.test.mts,36,test,invalid lengths f
 LEG-e87190413922,L1,Worker,shared/worker-json.test.mts,41,test,a stricter caller budget keeps its boundary and nonblocking cancellation,False,legacy-not-retrospectively-reviewed
 MAP-2a8e1df3263e,L2,reviewed implementation,tests/contracts/http-contract.cjs,5,reviewed-selector,async function observe,False,CT-HTTP
 MAP-c856d62bb0c7,L2,reviewed implementation,tests/contracts/http-contract.cjs,36,reviewed-selector,function verify,False,CT-HTTP
+MAP-aeaadc032b3b,L2,reviewed implementation,tests/contracts/http-contract.json,307,reviewed-selector,"""hq-overview""",False,HGD-007
+MAP-233816800d4e,L2,reviewed implementation,tests/contracts/http-contract.json,387,reviewed-selector,"""hq-detail-page""",False,HGD-007
 MAP-0776a6d8933b,L3,reviewed implementation,tests/manual/codex-worktree-trust.py,96,reviewed-selector,def main():,False,WTR-003
 LEG-4d0986af07f7,L3,Browser,tests/web/alignment.test.cjs,6,scenario,"`App-aligned roster status, summaries and persistent sections at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-d5140dc35e4a,L3,Browser,tests/web/alignment.test.cjs,26,scenario,"`Settings change actual Chat and Terminal typography, immediately and after reload at ${width}`",True,legacy-not-retrospectively-reviewed
@@ -6828,7 +6850,7 @@ LEG-cb54ae23ca64,L3,Browser,tests/web/conversation-map.test.cjs,48,scenario,`Ove
 LEG-4ea9a2309839,L3,Browser,tests/web/conversation-map.test.cjs,96,scenario,"Overview bookmarks retain unsampled turns, isolate homes and handle cleared storage",False,legacy-not-retrospectively-reviewed
 LEG-821ed12da1b2,L3,Browser,tests/web/conversation-map.test.cjs,125,scenario,Legacy clockless repeated prompts keep separate call disclosures,False,legacy-not-retrospectively-reviewed
 LEG-d361c87ff22e,L3,Browser,tests/web/conversation-map.test.cjs,136,scenario,`Overview keeps page-only bookmarks through refresh (read denied ${denyRead})`,True,legacy-not-retrospectively-reviewed
-MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,18,reviewed-selector,async function start,False,CT-HTTP
+MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,32,reviewed-selector,async function start,False,CT-HTTP
 LEG-c27b6d5dee1f,L3,Browser,tests/web/full-input.test.cjs,4,scenario,'Full tool input and compact formatting at '+width,True,legacy-not-retrospectively-reviewed
 LEG-e24c4d62b6eb,L3,Browser,tests/web/full-input.test.cjs,35,scenario,'Diff file cards and independent hunks at '+width,True,legacy-not-retrospectively-reviewed
 MAP-60e68185ef5d,L4,Browser,tests/web/full-input.test.cjs,35,reviewed-selector,Diff file cards and independent hunks at ,False,DTV-003
