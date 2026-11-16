@@ -1,0 +1,84 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex gpt-6.1-sol implementation owner (self-review; independent review pending HQ)",
+    "date": "2026-11-16",
+    "decision": "Ready for formal implementation and mapping",
+    "notes": "Reviewed evidence boundaries and negative oracles. Exploratory working-tree tests ran before this repository ordering gate was discovered; this record does not claim to predate those experiments. This design-only commit precedes the first committed test implementation. Independent frozen-candidate review remains required; no peer/user approval is asserted. Uses synthetic stores, clocks and delivery; no production sessions, permissions, KB or devices."
+  },
+  "cases": [
+    {
+      "id": "HGD-001",
+      "layer": "L2",
+      "description": "Continuing goal debt survives ordinary noted, empty unread, repeated scans and restart; old HQ generations are fenced.",
+      "setup": "Isolated store, synthetic goal/ordinary report; old and successor assessors; no live sessions.",
+      "action": "Acknowledge report; bounded scan; reject noted/conflict on uncovered goal; restart, rename and reclaim after lease expiry.",
+      "expected": "One material goal debt remains, no dispatch, no duplicate debt; stale generation cannot commit.",
+      "planned_files": [
+        "internal/hqworkspace/followup_test.go",
+        "internal/hqworkspace/phase1_test.go"
+      ]
+    },
+    {
+      "id": "HGD-002",
+      "layer": "L2",
+      "description": "One-shot stable intents separate queued, received/progress and uncertain/refused outcomes.",
+      "setup": "Isolated store, exact execution association, fake delivery with queue/receipt/panic/refusal.",
+      "action": "Save plan before drive, invoke drive repeatedly through restart and completion; ingest structured step evidence; change SID/interval.",
+      "expected": "Only one send per action ID; queued is not work started; exact receipt covers the step; stale SID, ambiguous interval, native/background coverage and unavailable evidence never cause duplicate delivery.",
+      "planned_files": [
+        "internal/hqworkspace/followup_test.go",
+        "internal/app/hqworkspace_goal_test.go"
+      ]
+    },
+    {
+      "id": "HGD-003",
+      "layer": "L2",
+      "description": "User pause/refusal, external conditions and real questions retain their distinct resumption semantics.",
+      "setup": "Isolated store, explicit sourced holds, fake clock and question/answer receipts.",
+      "action": "Advance time, attempt unsourced resume, clear a verified cross-channel answer, check next responsibility.",
+      "expected": "User pause/refusal never expire; external due time requests verification; only a real unanswered question is human debt; verified answer withdraws question and leaves next-step duty.",
+      "planned_files": [
+        "internal/hqworkspace/followup_test.go"
+      ]
+    },
+    {
+      "id": "HGD-004",
+      "layer": "L2",
+      "description": "Schema migration, current assessment and latest evidence preserve authority and provenance.",
+      "setup": "Schema 1/2 synthetic snapshots, more than 128 legacy goals, old assessment150 and new receipt206.",
+      "action": "Run bounded sweeps; inspect shared projection; attempt body update with revision0 and unversioned observation transition.",
+      "expected": "Legacy goals become verify-only, no bulk dispatch; 150/206/acceptance181 remain separate; body update requires nonzero revision; relay revision0 cannot transition current state.",
+      "planned_files": [
+        "internal/hqworkspace/followup_test.go",
+        "internal/hqworkspace/phase1_test.go",
+        "internal/app/hqworkspace_goal_test.go"
+      ]
+    },
+    {
+      "id": "HGD-005",
+      "layer": "L2",
+      "description": "Periodic and turn-boundary reconciliation use one keyed reminder with current premise checks.",
+      "setup": "Synthetic source/store/time/wake adapters; Stop marker in task temp; no live queue or HQ.",
+      "action": "Consume ordinary reports, run reconciliation without new events, mark Stop, cover or pause a goal before queued reminder delivery.",
+      "expected": "Unfinished goal stays due; source acknowledgement remains independent; stale reminder drops or rerenders; quiet changes presentation only; repeat reminders identify HQ coordination debt.",
+      "planned_files": [
+        "internal/app/hqworkspace_goal_test.go",
+        "internal/hqworkspace/followup_test.go"
+      ]
+    },
+    {
+      "id": "HGD-006",
+      "layer": "L2",
+      "description": "Backup restoration suspends action evidence while preserving user pause/refusal and existing uncertainty.",
+      "setup": "Isolated backup/store with pending/queued intent attempts and structured native/background proof.",
+      "action": "Restore records, scan and invoke the same stable action; inspect debt and hold.",
+      "expected": "No replay after restore, old drive cannot prove current execution, pause/refusal remains effective until explicit sourced resumption.",
+      "planned_files": [
+        "internal/hqworkspace/followup_test.go"
+      ]
+    }
+  ],
+  "seal": "a74ae5ef13dd5fd334f27fa33eacd01ca59202e09fbd2cd7c5ad2397d1d64a7a"
+}
