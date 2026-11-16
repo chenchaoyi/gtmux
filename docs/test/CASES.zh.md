@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1312 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1315 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2427 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2432 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 148 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -285,6 +285,8 @@
 | MSD-003 | Preferred receipt returned as additive JSON while legacy clients retain status ok; no mutation when unauthorized, guest out of scope or key invalid; queue acceptance not claimed read/completed; no message body or secrets in diagnostics. |
 | MSD-004 | Full send settles at finite deadline and aborts network; late success cannot overwrite timeout; only one fetch, original send ID retained by caller for explicit retry; refusal and legacy success remain compatible. |
 | MSD-005 | Queued is labeled queued awaiting next turn, accepted means received not read/completed; finite network deadline keeps text and explicit same-ID retry; late old response/failure cannot replace a newer pending attempt; transcript confirmation retires the correct echo; no resends, no queue deletion, no draft/approval bypass. |
+| MEX-005 | First action releases busy by15seconds from click even though its queued read has not settled; its late completion cannot clear a newer action. Current valid results still update the roster and background coalescing remains intact. Client switch retires old timers/results and cannot clear new client's action; cached timestamp and authority boundaries remain unchanged. |
+| MEX-006 | Empty/whitespace success is failed at both boundaries, never complete or sent; caption and both photos remain and no automatic retry occurs. An explicit double-tapped retry uses the existing in-flight guard and sends one valid message. Nonblank paths are preserved exactly and ordinary saved success remains complete only after response. |
 | MEX-001 | Viewer contains existing OLD-NORMAL plus current green frame with trailing rows; verifiers exclude old history, retain current frame; history_size unchanged, invalid targets empty and names cannot inject commands |
 | MEX-002 | Old history and selection remain until reader returns; live-tail action flushes newest pending frame promptly; no timer silently replaces historical snapshot |
 | MEX-003 | Cached roster and successful-update timestamp retained; warning explains cached list; automatic read does not disable Retry or show user-action spinner; explicit retry busy only until its bounded completion; success removes warning, old-client results cannot leak and owner/guest access errors keep restrictions |

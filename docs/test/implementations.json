@@ -3626,5 +3626,31 @@
       "history survives released gestures and polls beyond the thaw delay until an explicit live jump",
       "clearing selection preserves the browsed snapshot and scrolling to the tail resumes live"
     ]
+  },
+  "mobileapp/src/screens/RadarPanel.retryDeadline.test.tsx": {
+    "cases": [
+      "MEX-005"
+    ],
+    "selectors": [
+      "manual retry expires from its click while a background read owns the lane and cannot clear a newer action",
+      "client switching retires the old retry deadline and late answer without ending the new action"
+    ]
+  },
+  "mobileapp/src/api/uploadPath.test.ts": {
+    "cases": [
+      "MEX-006"
+    ],
+    "selectors": [
+      "HTTP success with a blank upload path fails without a completion mark: %j",
+      "a nonblank saved upload path retains ordinary spaces exactly"
+    ]
+  },
+  "mobileapp/src/ui/Composer.uploadPath.test.tsx": {
+    "cases": [
+      "MEX-006"
+    ],
+    "selectors": [
+      "a blank later upload path retains the batch and caption until explicit retry: %j"
+    ]
   }
 }

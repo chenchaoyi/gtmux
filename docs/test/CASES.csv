@@ -4733,6 +4733,8 @@ LEG-37addcbbf49b,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,396,test
 LEG-0887da3ab80a,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,402,test,a tmux row is still the same row by its pane,False,legacy-not-retrospectively-reviewed
 LEG-f05e2dc122cb,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,410,test,native Codex scope separates equal IDs and creation does not claim current control,False,legacy-not-retrospectively-reviewed
 LEG-7b893fcb77af,L1,RN / mobile harness,mobileapp/src/api/types.test.ts,419,test,"launch host is historical display metadata, not an input permission",False,legacy-not-retrospectively-reviewed
+MAP-6db39e468cb9,L2,reviewed implementation,mobileapp/src/api/uploadPath.test.ts,25,reviewed-selector,HTTP success with a blank upload path fails without a completion mark: %j,False,MEX-006
+MAP-7ab5068decf1,L2,reviewed implementation,mobileapp/src/api/uploadPath.test.ts,37,reviewed-selector,a nonblank saved upload path retains ordinary spaces exactly,False,MEX-006
 MAP-c796b56b9ecf,L1,reviewed implementation,mobileapp/src/api/uploadState.test.ts,23,reviewed-selector,real byte progress stays distinct from processing and saved completion,False,MPU-003
 MAP-05bf7e503d9f,L1,reviewed implementation,mobileapp/src/api/uploadState.test.ts,47,reviewed-selector,unknown and invalid byte totals stay indeterminate rather than fabricating a percentage,False,MPU-003
 MAP-95663f9b385e,L1,reviewed implementation,mobileapp/src/api/uploadState.test.ts,65,reviewed-selector,a fully transferred file refused by the server never reports a successful save,False,MPU-003
@@ -5196,6 +5198,8 @@ MAP-3cb5a05e3dd6,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.rea
 MAP-7ac4e613f331,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,69,reviewed-selector,failed and unavailable access reads never display a cheerful empty quote or owner creation for guests,False,RDR-003
 MAP-34a3f4f7a896,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,80,reviewed-selector,a pull indicator follows the actual request beyond 600ms and stale completions cannot clear a new pull,False,RDR-003
 MAP-26dece6fc9b0,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,92,reviewed-selector,cached worker rows remain during a failed refresh and a filter is not an empty fleet,False,RDR-003
+MAP-486993383459,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.retryDeadline.test.tsx,62,reviewed-selector,manual retry expires from its click while a background read owns the lane and cannot clear a newer action,False,MEX-005
+MAP-046ee79923c4,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.retryDeadline.test.tsx,91,reviewed-selector,client switching retires the old retry deadline and late answer without ending the new action,False,MEX-005
 LEG-b897cb3494b1,L2,RN / mobile harness,mobileapp/src/screens/RadarPanel.shareStale.test.tsx,21,test.each(),%s shows localized expired access only to stale guests,True,legacy-not-retrospectively-reviewed
 MAP-7d46d9427e0a,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsEntry.test.tsx,17,reviewed-selector,owner server More offers restore and targets that server; guest does not,False,RSR-009
 MAP-da95b2a6169e,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.local-read.test.tsx,35,reviewed-selector,RSR011 transient native read rejection cannot replace a saved pre-admission ID,False,RSR-011
@@ -5899,6 +5903,7 @@ LEG-a3089dbffe49,L2,RN / mobile harness,mobileapp/src/ui/Composer.test.ts,102,it
 LEG-7ef8b8a8ced1,L2,RN / mobile harness,mobileapp/src/ui/Composer.test.ts,112,it,a refused permission points at where to turn it back on,False,legacy-not-retrospectively-reviewed
 LEG-b6c07b643111,L2,RN / mobile harness,mobileapp/src/ui/Composer.test.ts,117,it,tells a missing camera apart from a refused one,False,legacy-not-retrospectively-reviewed
 LEG-46d0a6b66ba5,L2,RN / mobile harness,mobileapp/src/ui/Composer.test.ts,124,it,says something in both languages,False,legacy-not-retrospectively-reviewed
+MAP-de6438f0c69d,L2,reviewed implementation,mobileapp/src/ui/Composer.uploadPath.test.tsx,26,reviewed-selector,a blank later upload path retains the batch and caption until explicit retry: %j,False,MEX-006
 LEG-696d19ef5ed0,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,35,test,"resting key row: no Space, order Tab ↑ ↓ ⏎ ⌫ Ctrl-C Esc",False,legacy-not-retrospectively-reviewed
 LEG-7455d56fda12,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,56,test,⌫ onPress sends {key: BSpace}; ⏎ sends {key: Enter},False,legacy-not-retrospectively-reviewed
 LEG-9cd955929192,L2,RN / mobile harness,mobileapp/src/ui/ComposerKeys.test.tsx,68,test,control key confirms the local tap briefly without shifting the row,False,legacy-not-retrospectively-reviewed

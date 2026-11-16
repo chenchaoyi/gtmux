@@ -100,6 +100,7 @@ export async function uploadAll(
       return {error: 'failed'};
     }
     if ('error' in r) {onFailure?.(att.id); return {error: r.error};}
+    if (typeof r.path !== 'string' || r.path.trim().length === 0) {onFailure?.(att.id); return {error: 'failed'};}
     onState?.(att.id, {phase: 'complete', fraction: 1});
     out.push(r.path);
   }
