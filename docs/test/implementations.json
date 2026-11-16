@@ -3591,5 +3591,22 @@
     "selectors": [
       "TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch"
     ]
+  },
+  "internal/hqworkspace/delayed_drive_test.go": {
+    "cases": [
+      "HGD-010"
+    ],
+    "selectors": [
+      "TestDelayedFirstDriverReceiptNeverPermitsReplay",
+      "TestDelayedDriverHistoryRequiresExactHistoricalAttribution"
+    ]
+  },
+  "internal/app/hqworkspace_delayed_drive_test.go": {
+    "cases": [
+      "HGD-010"
+    ],
+    "selectors": [
+      "TestGoalRelayAdapterFirstIngestAfterDeadlineDoesNotSend"
+    ]
   }
 }

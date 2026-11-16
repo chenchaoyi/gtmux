@@ -30,6 +30,7 @@ MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test
 MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,142,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,203,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-d0af369139ad,L2,reviewed implementation,internal/app/hqworkspace_delayed_drive_test.go,12,reviewed-selector,TestGoalRelayAdapterFirstIngestAfterDeadlineDoesNotSend,False,HGD-010
 MAP-5f24b23ab8de,L2,reviewed implementation,internal/app/hqworkspace_goal_regression_test.go,11,reviewed-selector,TestGoalNoNewEventsAfterNotedStillRequiresHQ,False,HGD-005
 MAP-b9ea2545c70d,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,13,reviewed-selector,TestGoalActionAuthorityAndExactReceiptEnvelope,False,"HGD-002,HGD-004,HGD-005"
 MAP-b6ae467c793b,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,113,reviewed-selector,TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers,False,"HGD-002,HGD-004,HGD-005"
@@ -179,6 +180,8 @@ MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_t
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,102,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"
 MAP-62d7c36b98c4,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,119,reviewed-selector,TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity,False,"HRW-004,HRW-005,HRW-008"
 MAP-f6f7a40c985c,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,149,reviewed-selector,TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource,False,"HRW-004,HRW-005,HRW-008"
+MAP-4661cc9cbfd1,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,9,reviewed-selector,TestDelayedFirstDriverReceiptNeverPermitsReplay,False,HGD-010
+MAP-701fff56a879,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,59,reviewed-selector,TestDelayedDriverHistoryRequiresExactHistoricalAttribution,False,HGD-010
 MAP-b0e3154a9e2e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,44,reviewed-selector,TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 MAP-af89e66fde10,L2,reviewed implementation,internal/hqworkspace/followup_test.go,106,reviewed-selector,TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 MAP-38abd006fd1e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,161,reviewed-selector,TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"

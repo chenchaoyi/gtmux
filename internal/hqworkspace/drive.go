@@ -131,8 +131,14 @@ func (s *Store) DriveIntent(matter, action string, revision uint64, at int64, se
 func attachDrive(d *Database, o Observation, at int64) {
 	m := d.Matters[o.MatterID]
 	p := m.Responsibility
-	if p == nil || p.Intent == nil || p.Hold != nil || o.DriveProof == nil {
+	if p == nil || p.Hold != nil || !driveEvidenceMatches(*d, m, o, at) {
 		return
+	}
+	// Reserve an accurately attributed driver even when first ingestion is late.
+	// Its deadline limits current coverage, never the historical replay fence.
+	if _, exists := d.IntentAttempts[p.Intent.ID]; !exists {
+		d.IntentAttempts[p.Intent.ID] = IntentAttempt{MatterID: m.ID, StepID: p.StepID, Intent: *p.Intent, State: "external", Evidence: o.ID, At: o.OccurredAt}
+		changed(d, at, "goal-drive-observed", m.ID, p.Intent.ID, o.ID)
 	}
 	copy := *p
 	copy.Drive = &DriveRef{ObservationID: o.ID}
@@ -149,13 +155,6 @@ func attachDrive(d *Database, o Observation, at int64) {
 		if old.OccurredAt >= o.OccurredAt {
 			return
 		}
-	}
-	// Observing an existing native/background driver reserves its action even
-	// when no physical send ever happened here. Expiry removes live coverage,
-	// never the durable fact that this work was already being driven.
-	if _, exists := d.IntentAttempts[p.Intent.ID]; !exists {
-		d.IntentAttempts[p.Intent.ID] = IntentAttempt{MatterID: m.ID, StepID: p.StepID, Intent: *p.Intent, State: "external", Evidence: o.ID, At: o.OccurredAt}
-		changed(d, at, "goal-drive-observed", m.ID, p.Intent.ID, o.ID)
 	}
 	m.Responsibility = &copy
 	changed(d, at, "goal-drive-verified", m.ID, o.ID, g.State)

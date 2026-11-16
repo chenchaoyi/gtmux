@@ -109,12 +109,11 @@ func GoalResponsibility(d Database, m Matter, now int64) (out GoalStatus) {
 	o := q.Observation
 	proof := o.DriveProof
 	i := p.Intent
-	if !ok || proof == nil || proof.StepID != p.StepID || proof.ActionID != i.ID || proof.Ref != i.Ref || !o.Conversation.Same(i.Target) || CanonicalMatter(d, o.MatterID) != m.ID || o.OccurredAt < i.At || o.OccurredAt > now {
+	if !ok || !driveEvidenceMatches(d, m, o, now) {
 		return GoalStatus{State: "verify", Reason: "drive evidence does not cover this step, action and exact conversation"}
 	}
-	id, _ := MatchObservation(d, o.Conversation, o.OccurredAt)
 	current, _ := MatchObservation(d, i.Target, now)
-	if id != m.ID || current != m.ID {
+	if current != m.ID {
 		return GoalStatus{State: "verify", Reason: "drive membership or interval is unavailable or ambiguous"}
 	}
 	if proof.NextCheck <= now {
@@ -127,6 +126,27 @@ func GoalResponsibility(d Database, m Matter, now int64) (out GoalStatus) {
 		return GoalStatus{State: "driving", Reason: "verified " + proof.State + " receipt for this step", ObservationID: o.ID, NextCheck: proof.NextCheck}
 	}
 	return GoalStatus{State: "verify", Reason: "unknown drive verdict"}
+}
+
+// Historical attribution is independent of today's probe deadline and membership.
+// A late report can prove this action happened without proving it is still active.
+func driveEvidenceMatches(d Database, m Matter, o Observation, now int64) bool {
+	p := m.Responsibility
+	proof := o.DriveProof
+	if p == nil || p.Intent == nil || proof == nil {
+		return false
+	}
+	i := p.Intent
+	if proof.StepID != p.StepID || proof.ActionID != i.ID || proof.Ref != i.Ref || !o.Conversation.Same(i.Target) || CanonicalMatter(d, o.MatterID) != m.ID || o.OccurredAt < i.At || o.OccurredAt > now || proof.NextCheck <= o.OccurredAt {
+		return false
+	}
+	switch proof.State {
+	case "queued", "received", "progress", "background", "native":
+	default:
+		return false
+	}
+	id, _ := MatchObservation(d, o.Conversation, o.OccurredAt)
+	return id == m.ID
 }
 
 func goalOwed(g GoalStatus) bool { return g.State == "verify" || g.State == "owes-hq" }

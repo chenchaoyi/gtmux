@@ -392,6 +392,7 @@ MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test
 MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,142,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,203,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-d0af369139ad,L2,reviewed implementation,internal/app/hqworkspace_delayed_drive_test.go,12,reviewed-selector,TestGoalRelayAdapterFirstIngestAfterDeadlineDoesNotSend,False,HGD-010
 MAP-5f24b23ab8de,L2,reviewed implementation,internal/app/hqworkspace_goal_regression_test.go,11,reviewed-selector,TestGoalNoNewEventsAfterNotedStillRequiresHQ,False,HGD-005
 MAP-e69b385b8aa2,L3,reviewed implementation,internal/app/hqworkspace_goal_runtime_test.go,48,reviewed-selector,TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch,False,HGD-009
 MAP-b9ea2545c70d,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,13,reviewed-selector,TestGoalActionAuthorityAndExactReceiptEnvelope,False,"HGD-002,HGD-004,HGD-005"
@@ -2002,6 +2003,8 @@ LEG-dc57f44d25e7,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,7,T
 LEG-16bf780da221,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,41,Test,TestConsumeReadRequiresContiguity,False,legacy-not-retrospectively-reviewed
 LEG-97b3ed8b57ae,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,64,Test,TestUnreadIsStandingPriority,False,legacy-not-retrospectively-reviewed
 LEG-61812fc046b5,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,71,Test,TestUnreadConfigDefaults,False,legacy-not-retrospectively-reviewed
+MAP-4661cc9cbfd1,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,9,reviewed-selector,TestDelayedFirstDriverReceiptNeverPermitsReplay,False,HGD-010
+MAP-701fff56a879,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,59,reviewed-selector,TestDelayedDriverHistoryRequiresExactHistoricalAttribution,False,HGD-010
 MAP-b0e3154a9e2e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,44,reviewed-selector,TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 MAP-af89e66fde10,L2,reviewed implementation,internal/hqworkspace/followup_test.go,106,reviewed-selector,TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 MAP-38abd006fd1e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,161,reviewed-selector,TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
