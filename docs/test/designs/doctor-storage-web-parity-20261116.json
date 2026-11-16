@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, self-review before implementation; not independent approval",
     "date": "2026-11-16",
     "decision": "Implement the user's explicit historical-project cleanup and remaining doctor, backup and browser-loader fixes",
-    "notes": "Read-only inventory found about981MiB of HQ records, including546MiB of full relay exports and314MiB of project evidence. Current core selection still admits structurally recognized relay exports with legacy names and exceeds128MiB. Keep unknown notes, explicit includes, full exports,128MiB import limits and all recovery materials protected. Doctor must identify actionable project material without deleting, rebinding or claiming an inactive client retries. Existing one-second bridge heartbeat and bounded initial publication retry remain producer-owned. Web currently pulses only one square; match the accepted App100-unit pane geometry and1.8s top-right/bottom/top-left focus cycle with live reduced motion. Browser plugin is absent; existing hosted Playwright validates actual rendering without local dependency/cache work. Operator cleanup separately uses a private project archive, bounded same-volume moves, a synthetic helper fixture and complete streamed archive/SHA readback before removing source copies; no production import/session restart or automatic deletion is authorized by running doctor. Source validation before test implementation also confirmed relay IDs support3-80 ASCII letters/digits/underscore/hyphen, including custom IDs; do not assume only32hex IDs. Initial operator inventory conservatively selected too few exports and performed no mutation; retain that preliminary plan and rerun with the actual existing contract. Test the stream validator in the owning relay package as well as archive integration."
+    "notes": "Read-only inventory found about981MiB of HQ records, including546MiB of full relay exports and314MiB of project evidence. Current core selection still admits structurally recognized relay exports with legacy names and exceeds128MiB. Keep unknown notes, explicit includes, full exports,128MiB import limits and all recovery materials protected. Doctor must identify actionable project material without deleting, rebinding or claiming an inactive client retries. Existing one-second bridge heartbeat and bounded initial publication retry remain producer-owned. Web currently pulses only one square; match the accepted App100-unit pane geometry and1.8s top-right/bottom/top-left focus cycle with live reduced motion. Browser plugin is absent; existing hosted Playwright validates actual rendering without local dependency/cache work. Operator cleanup separately uses a private project archive, bounded same-volume moves, a synthetic helper fixture and complete streamed archive/SHA readback before removing source copies; no production import/session restart or automatic deletion is authorized by running doctor. Source validation before test implementation also confirmed relay IDs support3-80 ASCII letters/digits/underscore/hyphen, including custom IDs; do not assume only32hex IDs. Initial operator inventory conservatively selected too few exports and performed no mutation; retain that preliminary plan and rerun with the actual existing contract. Test the stream validator in the owning relay package as well as archive integration. Cross-platform inventory also found the Mac BrandProgressMark still breathing. Extend only that shared branded page-progress component and its HQ wrapper, keeping native system progress controls, static logos and agent-working rings distinct. Mac hosted rendering tests must sample actual pane colors/geometry in both themes and static reduced-motion/inactive states. No local Swift work. Failed process metadata alone is unknown: stopped requires an absent OS PID or a positively replaced process incarnation."
   },
   "cases": [
     {
@@ -24,7 +24,7 @@
       "id": "DPC-002",
       "layer": "L2",
       "description": "Doctor distinguishes historical project payloads from core HQ records and explains recovery limits without destructive fixes",
-      "setup": "Isolated HQ containing declared project reports/attachments, recognized full relay exports, small ordinary notes, core knowledge/workspace and protected recovery points.",
+      "setup": "Isolated HQ containing declared project reports/attachments, recognized full relay exports, small ordinary notes, core knowledge/workspace and protected recovery points. Also include an unclassified legacy archive outside declared project reports; its unknown recovery value requires retention, not a removal recommendation.",
       "action": "Read the storage diagnostic projection and render both doctor languages; repeat the read and compare the original tree.",
       "expected": "Report bounded category counts/bytes and a clear project-archive recommendation.128MiB is described as recovery-package safety, distinct from directory size and configured snapshot budget. Unknown files are not declared disposable. Doctor and doctor fix do not migrate/delete materials or modify backup policy.",
       "planned_files": [
@@ -36,7 +36,7 @@
       "id": "DPC-003",
       "layer": "L2",
       "description": "Conversation diagnostics never promise retries from a stopped or unverified producer",
-      "setup": "Synthetic resume/frontend records and injected process observations: missing frontend, stale proof with original bridge absent/replaced, stale original bridge present, current verified frontend and identity conflict.",
+      "setup": "Synthetic resume/frontend records and injected process observations: missing frontend, stale proof with original bridge absent/replaced, stale original bridge present, current verified frontend and identity conflict. Include a failed metadata read with process existence unknown, distinct from confirmed absence.",
       "action": "Read value-free recovery evidence and render doctor guidance in English and Chinese.",
       "expected": "Stopped and unknown producers get accurate normal-resume or verification guidance; stale-live evidence is not presented as proof of an active retry. Healthy exact current ownership remains healthy. No session input, RPC resend, forced binding, history timestamp inference or state write occurs.",
       "planned_files": [
@@ -76,7 +76,18 @@
       "planned_files": [
         "tests/web/branded-loading.test.cjs"
       ]
+    },
+    {
+      "id": "MBL-001",
+      "layer": "L3",
+      "description": "Mac shared branded progress matches App/Web moving focus without changing static logos or agent state",
+      "setup": "Hosted macOS SwiftUI renderer, deterministic phases at 0/600/1200ms, both color schemes, compact/full mark; reduced motion and inactive rendering use a static phase. No local build or real-device claim.",
+      "action": "Render the actual frame used by BrandProgressMark, inspect cyan pane centroids and fixed bounds, crossfade boundaries and accessible wrapper; inspect animation ownership in the shared view.",
+      "expected": "Top-right, bottom then top-left receive cyan on a 1.8s cycle with App100-unit geometry and radius9. Only highlights move; reduced motion/inactive stays top-right, removing the view ends its TimelineView updates. HQ label is announced once, and decorative marks are hidden. Native progress controls and static brand assets are unchanged.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift"
+      ]
     }
   ],
-  "seal": "d2ecc70eec6244328ae523ea137a9e1b25da5d39c145c4c7726fdf7af023f098"
+  "seal": "7fa145cc10b2d352fea28bc08c8ab7aa785963c0a62ddf0c877fb6cd46c72ce0"
 }
