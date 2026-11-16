@@ -110,8 +110,8 @@ func TestDelayedDriverHistoryRequiresExactHistoricalAttribution(t *testing.T) {
 				if e != nil {
 					t.Fatal(e)
 				}
-				if _, e = s.Assess(Assessment{ID: "ordinary-noted", ObservationID: q.Observation.ID, Owner: q.Owner, Generation: q.Generation, MatterID: "goal-one", Revision: phaseRevision(t, s), Decision: "noted", Reason: "Source checked", Responsibility: &fake}, 104, false); e != nil {
-					t.Fatal(e)
+				if _, e = s.Assess(Assessment{ID: "ordinary-noted", ObservationID: q.Observation.ID, Owner: q.Owner, Generation: q.Generation, MatterID: "goal-one", Revision: phaseRevision(t, s), Decision: "noted", Reason: "Source checked", Responsibility: &fake}, 104, false); e == nil {
+					t.Fatal("noted accepted responsibility as an execution plan")
 				}
 			}
 			if e := s.Ingest("late", 0, 1, []Observation{o}, 111); e != nil {
