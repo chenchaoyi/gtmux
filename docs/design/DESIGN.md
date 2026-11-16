@@ -496,7 +496,7 @@ causing the next:
     ring is a bad deal on a lock screen.
 - The one other permitted motion: on the idle→waiting transition the status item / badge gets one pulse cue.
 - Idle is zero animation. Hover/selection/open may use very restrained micro-transitions; the whole stays quiet.
-- Page loading keeps its brand geometry fixed. In the App, browser and menu-bar shared branded loaders, a cyan highlight advances smoothly through the three panes, shared by page and inline loaders; it never rotates or fades the whole logo. Reduce Motion, backgrounding and unmount stop the cycle. The agent working ring retains its separate motion language. Native launch artwork and platform-owned gesture feedback retain their OS behavior.
+- Page loading keeps its brand geometry fixed. In the App, browser and menu-bar shared branded loaders, a cyan highlight advances smoothly through the three panes, shared by page and inline loaders; it never rotates or fades the whole logo. Reduce Motion keeps the top-right focus static. Native backgrounding/unmount stops the cycle; browser read/view retirement removes the loader. The agent working ring retains its separate motion language. Native launch artwork and platform-owned gesture feedback retain their OS behavior.
 
 ---
 

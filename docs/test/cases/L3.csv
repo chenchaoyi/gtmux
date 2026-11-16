@@ -24,6 +24,7 @@ MAP-97d5f314aecb,L3,reviewed implementation,internal/server/web/maximize-layout.
 MAP-07e13a073c16,L3,reviewed implementation,internal/server/web/observed_identity.test.cjs,16,reviewed-selector,SID007 focused and tile history cannot dispatch input or become an external row,False,SID-007
 MAP-c43ef369cf61,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,29,reviewed-selector,testMBL001RenderedFocusMovesWithoutMovingPanes,False,MBL-001
 MAP-8a7787a2337e,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,57,reviewed-selector,testMBL001ReducedMotionAndInactiveUseStaticTopRight,False,MBL-001
+MAP-cc34eecde6ac,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,71,reviewed-selector,testMBL001HostedViewActuallyAdvancesFocus,False,MBL-001
 MAP-d731318cd969,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift,8,reviewed-selector,testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor,False,MC-HQ-WINDOW
 MAP-a11ab8aaa94d,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift,92,reviewed-selector,testCurrentQuestionRemainsUsableWhileConversationReadWaits,False,MC-HQ-WINDOW
 MAP-80be9bb61842,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,27,reviewed-selector,testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending,False,MC-HQ-OVERVIEW-MORE

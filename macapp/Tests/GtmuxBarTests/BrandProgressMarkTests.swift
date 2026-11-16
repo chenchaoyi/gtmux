@@ -57,13 +57,57 @@ final class BrandProgressMarkTests: XCTestCase {
     @MainActor func testMBL001ReducedMotionAndInactiveUseStaticTopRight() throws {
         for reduced in [false, true] {
             for phase in [ScenePhase.active, .inactive, .background] where reduced || phase != .active {
-                let pixels = try render(BrandProgressMark(size: 36)
-                    .environment(\.accessibilityReduceMotion, reduced).environment(\.scenePhase, phase),
+                let enabled = BrandProgressMark.shouldAnimate(reduceMotion: reduced, scenePhase: phase)
+                XCTAssertFalse(enabled)
+                let pixels = try render(BrandProgressAnimation(size: 36, enabled: enabled),
                     scheme: .dark, name: "mac-static-\(reduced)-\(phase)")
                 XCTAssertTrue(cyan(pixels, x: 0.72, y: 0.28))
                 XCTAssertFalse(cyan(pixels, x: 0.28, y: 0.28))
                 XCTAssertFalse(cyan(pixels, x: 0.5, y: 0.72))
             }
         }
+    }
+
+    @MainActor func testMBL001HostedViewActuallyAdvancesFocus() async throws {
+        try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+                      "The hosted runner requests static motion; deterministic static frames remain covered")
+        let host = NSHostingView(rootView: BrandProgressMark(size: 100))
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 100, height: 100),
+                              styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        window.makeKeyAndOrderFront(nil)
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        defer { window.orderOut(nil); window.contentView = nil; window.close() }
+        var seen = Set<String>()
+        for _ in 0..<40 {
+            try await Task.sleep(nanoseconds: 50_000_000)
+            host.layoutSubtreeIfNeeded()
+            let pixels = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+            host.cacheDisplay(in: host.bounds, to: pixels)
+            var count = 0.0, sumX = 0.0
+            for y in 0..<pixels.pixelsHigh {
+                for x in 0..<pixels.pixelsWide {
+                    guard let color = pixels.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
+                          color.redComponent < 0.4, color.greenComponent > 0.5,
+                          color.blueComponent > 0.6, color.alphaComponent > 0.5 else { continue }
+                    count += 1; sumX += Double(x) / Double(pixels.pixelsWide)
+                }
+            }
+            if count > 0 {
+                let centre = sumX / count
+                for (name, expected) in [("right", 0.72), ("bottom", 0.5), ("left", 0.28)] where abs(centre - expected) < 0.015 {
+                    if seen.insert(name).inserted,
+                       let directory = ProcessInfo.processInfo.environment["GTMUX_BRAND_LOADING_RESULTS"] {
+                        let url = URL(fileURLWithPath: directory, isDirectory: true)
+                        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+                        try XCTUnwrap(pixels.representation(using: .png, properties: [:]))
+                            .write(to: url.appendingPathComponent("mac-live-" + name + ".png"))
+                    }
+                }
+            }
+            if seen.count == 3 { break }
+        }
+        XCTAssertEqual(seen, ["right", "bottom", "left"], "the real NSHostingView must run the cycle, not only render deterministic frames")
     }
 }

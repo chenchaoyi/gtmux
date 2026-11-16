@@ -3467,7 +3467,8 @@
     ],
     "selectors": [
       "testMBL001RenderedFocusMovesWithoutMovingPanes",
-      "testMBL001ReducedMotionAndInactiveUseStaticTopRight"
+      "testMBL001ReducedMotionAndInactiveUseStaticTopRight",
+      "testMBL001HostedViewActuallyAdvancesFocus"
     ]
   },
   "internal/app/doctor_frontend_recovery_test.go": {

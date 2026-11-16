@@ -65455,7 +65455,7 @@
           "design": "DPC-003"
         }
       ],
-      "sha256": "2f5e6b6022c75d4995e472696c05d7502cc20e594f3e789e576a7a27eed6128a"
+      "sha256": "409dcbb10aad7036e27dffc3e62fc507f69a4f4bd1c562a2ddc2b74aa11de13b"
     },
     "macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift": {
       "layer": "L3",
@@ -65478,9 +65478,18 @@
           "dynamic": false,
           "layer": "L3",
           "design": "MBL-001"
+        },
+        {
+          "id": "MAP-cc34eecde6ac",
+          "line": 71,
+          "kind": "reviewed-selector",
+          "name": "testMBL001HostedViewActuallyAdvancesFocus",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "MBL-001"
         }
       ],
-      "sha256": "341fc03bea9f68ea5095f75307542388b96d6476fd4cb5b9a91da10e44a95282"
+      "sha256": "2f039dca58fef82294bd7992f9506c43b893731c09c97beec3514cb4584b0fe4"
     },
     "tests/web/branded-loading.test.cjs": {
       "layer": "L3",

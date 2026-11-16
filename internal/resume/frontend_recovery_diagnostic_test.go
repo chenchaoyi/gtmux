@@ -45,6 +45,7 @@ func TestDPC003RecoveryEvidenceNeverGrantsRetryAuthority(t *testing.T) {
 			}
 			if mode != "missing-proof" {
 				if mode != "healthy" {
+					f.StartedAt = time.Now().Add(-2 * time.Minute).UnixMilli()
 					f.UpdatedAt = time.Now().Add(-time.Minute).UnixMilli()
 				}
 				if err := writeBindingJSON(frontendPath(f.Instance), f); err != nil {

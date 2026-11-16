@@ -5,11 +5,26 @@ struct BrandProgressMark: View {
     var size: CGFloat = 36
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
+
+    static func shouldAnimate(reduceMotion: Bool, scenePhase: ScenePhase) -> Bool {
+        !reduceMotion && scenePhase == .active
+    }
+
+    var body: some View {
+        BrandProgressAnimation(size: size, enabled: Self.shouldAnimate(reduceMotion: reduceMotion, scenePhase: scenePhase))
+            .accessibilityHidden(true)
+    }
+}
+
+/// View-local ownership ends TimelineView updates when disabled or unmounted.
+struct BrandProgressAnimation: View {
+    var size: CGFloat
+    var enabled: Bool
     @State private var startedAt = Date()
 
     var body: some View {
         Group {
-            if reduceMotion || scenePhase != .active {
+            if !enabled {
                 BrandProgressFrame(size: size, elapsed: 0)
             } else {
                 TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
@@ -18,8 +33,8 @@ struct BrandProgressMark: View {
             }
         }
             .onAppear { startedAt = Date() }
-            .onChange(of: scenePhase) { _, phase in
-                if phase == .active { startedAt = Date() }
+            .onChange(of: enabled) { _, active in
+                if active { startedAt = Date() }
             }
             .accessibilityHidden(true)
     }

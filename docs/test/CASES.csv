@@ -3584,6 +3584,7 @@ LEG-fdee696b8dba,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/BrandMarkTe
 LEG-f1937c52659b,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/BrandMarkTests.swift,105,XCTest,testTheShippedIconHasClearCorners,False,legacy-not-retrospectively-reviewed
 MAP-c43ef369cf61,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,29,reviewed-selector,testMBL001RenderedFocusMovesWithoutMovingPanes,False,MBL-001
 MAP-8a7787a2337e,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,57,reviewed-selector,testMBL001ReducedMotionAndInactiveUseStaticTopRight,False,MBL-001
+MAP-cc34eecde6ac,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,71,reviewed-selector,testMBL001HostedViewActuallyAdvancesFocus,False,MBL-001
 LEG-965628825a90,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/DeliveryCardLayoutTests.swift,55,XCTest,testTheCardHoldsItsWidthAndGrowsDownward,False,legacy-not-retrospectively-reviewed
 LEG-f0592dcd2ef6,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/DeliveryCardLayoutTests.swift,72,XCTest,testTheCommandIsOnTheCard,False,legacy-not-retrospectively-reviewed
 LEG-5262405c577e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/DeliveryCardLayoutTests.swift,81,XCTest,testTheLinkIsOnTheCard,False,legacy-not-retrospectively-reviewed

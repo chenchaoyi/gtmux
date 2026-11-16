@@ -14,11 +14,11 @@ three-pane1.8s focus. Preserve system progress controls and agent state semantic
 
 ## Surfaces
 
-- Terminal (incl. attach): CLI doctor reports material categories and conditional
+- terminal (incl. attach): CLI doctor reports material categories and conditional
   recovery guidance; attach is a PTY and has no branded page-loader counterpart.
-- Menubar: consumes the same doctor projection; its shared branded progress mark
+- menubar: consumes the same doctor projection; its shared branded progress mark
   adopts the focus cycle and static reduced-motion/inactive state.
-- Phone: existing shared LoadingMark is the accepted reference; no new mobile
+- phone: existing shared LoadingMark is the accepted reference; no new mobile
   source, OS splash, system progress or input-authority change.
 - iPad: same unchanged mobile component as Phone, including regular layouts.
 - Web: every branded loader entry shares the corrected factory/CSS motion and
