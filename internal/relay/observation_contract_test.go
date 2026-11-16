@@ -52,7 +52,9 @@ func TestDPC005ObservationRequiresRealCompleteKnownSerialization(t *testing.T) {
 		for _, mutate := range []func(map[string]any){
 			func(v map[string]any) { v["recovery_payload"] = map[string]any{"summary": "unique note"} },
 			func(v map[string]any) { v["blocking"] = "false" },
-			func(v map[string]any) { v["notice"] = map[string]any{"turn_id": "t", "state": "accepted", "at": 1, "unique_note": "keep"} },
+			func(v map[string]any) {
+				v["notice"] = map[string]any{"turn_id": "t", "state": "accepted", "at": 1, "unique_note": "keep"}
+			},
 			func(v map[string]any) { v["notice"] = map[string]any{"turn_id": "t"} },
 			func(v map[string]any) { v["notice"] = map[string]any{"turn_id": "t", "state": nil, "at": 1} },
 		} {
