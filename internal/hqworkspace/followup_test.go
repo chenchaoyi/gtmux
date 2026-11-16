@@ -181,6 +181,19 @@ func TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues(t *testing.T) {
 				_, _ = s.DriveIntent("goal-one", p.Intent.ID, rev, 104, send)
 			}()
 			s = New(filepath.Dir(s.dir))
+			d := phaseRead(t, s)
+			m := d.Matters["goal-one"]
+			q, e := s.ClaimObservation(goalKey(m), "hq-current", 499)
+			if e != nil {
+				t.Fatal(e)
+			}
+			replacement := p
+			intent := *p.Intent
+			intent.ID = "replacement-action"
+			replacement.Intent = &intent
+			if _, e = s.Assess(Assessment{ID: "replace-uncertain-action", ObservationID: q.Observation.ID, Owner: q.Owner, Generation: q.Generation, MatterID: m.ID, Revision: m.Revision, Decision: "responsibility", Reason: "Try a new ID", Responsibility: &replacement}, 499, false); e == nil {
+				t.Fatal("new action ID bypassed original outcome")
+			}
 			if _, e := s.DriveIntent("goal-one", p.Intent.ID, rev, 500, send); e != nil {
 				t.Fatal(e)
 			}

@@ -2004,11 +2004,11 @@ LEG-61812fc046b5,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,71,
 MAP-b0e3154a9e2e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,44,reviewed-selector,TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 MAP-af89e66fde10,L2,reviewed implementation,internal/hqworkspace/followup_test.go,106,reviewed-selector,TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 MAP-38abd006fd1e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,161,reviewed-selector,TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
-MAP-7db834759619,L2,reviewed implementation,internal/hqworkspace/followup_test.go,197,reviewed-selector,TestGoalNativeBackgroundExactStepAndIdentity,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
-MAP-264e532cce6d,L2,reviewed implementation,internal/hqworkspace/followup_test.go,236,reviewed-selector,TestGoalPauseRefusalExternalAndCrossChannelAnswer,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
-MAP-c91e0b7ebc35,L2,reviewed implementation,internal/hqworkspace/followup_test.go,288,reviewed-selector,TestGoalLegacyMigrationBoundedSweepAndProjection,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
-MAP-c01cefec17d2,L2,reviewed implementation,internal/hqworkspace/followup_test.go,339,reviewed-selector,TestGoalRestoreSuspendsDriveAndRetainsPause,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
-MAP-8b530175eff3,L2,reviewed implementation,internal/hqworkspace/followup_test.go,373,reviewed-selector,TestGoalWrongStepAmbiguousIntervalAndDurableReminder,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-7db834759619,L2,reviewed implementation,internal/hqworkspace/followup_test.go,210,reviewed-selector,TestGoalNativeBackgroundExactStepAndIdentity,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-264e532cce6d,L2,reviewed implementation,internal/hqworkspace/followup_test.go,249,reviewed-selector,TestGoalPauseRefusalExternalAndCrossChannelAnswer,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-c91e0b7ebc35,L2,reviewed implementation,internal/hqworkspace/followup_test.go,301,reviewed-selector,TestGoalLegacyMigrationBoundedSweepAndProjection,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-c01cefec17d2,L2,reviewed implementation,internal/hqworkspace/followup_test.go,352,reviewed-selector,TestGoalRestoreSuspendsDriveAndRetainsPause,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-8b530175eff3,L2,reviewed implementation,internal/hqworkspace/followup_test.go,386,reviewed-selector,TestGoalWrongStepAmbiguousIntervalAndDurableReminder,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 LEG-248c36874d14,L1,Go core / CLI / server,internal/hqworkspace/input_test.go,5,Test,TestHumanQuestionRemainsSeparateFromReportsAndGoal,False,legacy-not-retrospectively-reviewed
 LEG-4bec66d1ff87,L1,Go core / CLI / server,internal/hqworkspace/input_test.go,48,Test,TestHumanRequestBoundsAndStaleReply,False,legacy-not-retrospectively-reviewed
 LEG-42c54b35aabd,L1,Go core / CLI / server,internal/hqworkspace/input_test.go,63,Test,TestOverviewSeparatesHumanQuestionsFromHQClarificationAndSavedReplies,False,legacy-not-retrospectively-reviewed

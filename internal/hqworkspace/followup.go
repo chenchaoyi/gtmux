@@ -167,6 +167,9 @@ func validateResponsibility(d Database, m Matter, p Responsibility, now int64) e
 		}
 		// An action ID remains immutable even across step revisions and failed sends.
 		for _, r := range d.Assessments {
+			if x := r.Assessment.Responsibility; r.Assessment.MatterID == m.ID && x != nil && x.Intent != nil && x.StepID == p.StepID && x.Action == p.Action && x.AuthorityRef == p.AuthorityRef && x.Intent.ID != p.Intent.ID {
+				return errors.New("the material step already has a saved action ID; verify its original outcome instead of replacing it")
+			}
 			if x := r.Assessment.Responsibility; x != nil && x.Intent != nil && x.Intent.ID == p.Intent.ID && (!reflect.DeepEqual(x.Intent, p.Intent) || x.StepID != p.StepID || x.Action != p.Action || x.AuthorityRef != p.AuthorityRef) {
 				return ErrConflict
 			}
