@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1306 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1307 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2412 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2414 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 147 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -190,6 +190,7 @@
 | HGD-004 | Legacy goals become verify-only, no bulk dispatch; 150/206/acceptance181 remain separate; body update requires nonzero revision; relay revision0 cannot transition current state. |
 | HGD-005 | Unfinished goal stays due; source acknowledgement remains independent; stale reminder drops or rerenders; quiet changes presentation only; repeat reminders identify HQ coordination debt. |
 | HGD-006 | No replay after restore, old drive cannot prove current execution, pause/refusal remains effective until explicit sourced resumption. |
+| HGD-007 | Only additive waiting-user responsibility/provenance fields change; existing body fields, source question identity, status codes, auth, headers and cursors remain exact. |
 | HRW-014 | Generation/ctime mismatch never deletes or reauthorizes the claim, despite identical inode/body/mtime. Normal unchanged accepted cleanup passes. Exact owned uncertain publication completes one link retirement and retains original batch uncertainty; changed payload or foreign link holds without deletion. Known-refused shared queue ownership still preserves newest B. Original T tests/expectations remain unchanged; old-source target red is a real assertion, not compile/setup/allocator failure. |
 | HRW-015 | Only a verified same-inode anchor can support native cleanup; original inode remains alive across process loss and cannot naturally be reused. Missing/foreign/unknown pin holds without deletion or native call. Accepted/refused closes only own references, uncertain preserves exact original input and pin; valid conflicting batches cannot overwrite protected claims or block independent fresh events. Pin count is bounded before mutation; errors never fall back or replay. No sleep, allocator-luck or relaxed cloud assertion. |
 | HRW-009 | A is never submitted under a new batch identity; original exact payload, ID and uncertainty remain inspectable. Accepted/uncertain spool state is not downgraded to unsent. B and legitimate fresh duplicate text can progress once. Journal precedes possible mutation; failure holds without mutation. Recovery never removes a foreign replacement; malformed evidence holds conservatively. Ordinary non-native transport retains its existing contract. |

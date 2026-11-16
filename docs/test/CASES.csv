@@ -394,7 +394,7 @@ MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test
 MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,203,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-5f24b23ab8de,L2,reviewed implementation,internal/app/hqworkspace_goal_regression_test.go,11,reviewed-selector,TestGoalNoNewEventsAfterNotedStillRequiresHQ,False,HGD-005
 MAP-b9ea2545c70d,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,13,reviewed-selector,TestGoalActionAuthorityAndExactReceiptEnvelope,False,"HGD-002,HGD-004,HGD-005"
-MAP-b6ae467c793b,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,112,reviewed-selector,TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers,False,"HGD-002,HGD-004,HGD-005"
+MAP-b6ae467c793b,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,113,reviewed-selector,TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers,False,"HGD-002,HGD-004,HGD-005"
 LEG-4658791c9323,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,10,Test,TestWorkspaceOverviewIsExplicitlyRequestedAndDoesNotEnlargeSidebarMatters,False,legacy-not-retrospectively-reviewed
 LEG-dc50bad5be70,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,41,Test,TestWorkspaceHTTPReadReusesExplicitStateWithoutWriting,False,legacy-not-retrospectively-reviewed
 MAP-9a346dda931b,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,15,reviewed-selector,TestPhase1WorkspaceIngestionRecoveryAndReadIndependence,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
@@ -6808,6 +6808,8 @@ LEG-0c717f4e72ec,L1,Worker,shared/worker-json.test.mts,36,test,invalid lengths f
 LEG-e87190413922,L1,Worker,shared/worker-json.test.mts,41,test,a stricter caller budget keeps its boundary and nonblocking cancellation,False,legacy-not-retrospectively-reviewed
 MAP-2a8e1df3263e,L2,reviewed implementation,tests/contracts/http-contract.cjs,5,reviewed-selector,async function observe,False,CT-HTTP
 MAP-c856d62bb0c7,L2,reviewed implementation,tests/contracts/http-contract.cjs,36,reviewed-selector,function verify,False,CT-HTTP
+MAP-aeaadc032b3b,L2,reviewed implementation,tests/contracts/http-contract.json,307,reviewed-selector,"""hq-overview""",False,HGD-007
+MAP-233816800d4e,L2,reviewed implementation,tests/contracts/http-contract.json,387,reviewed-selector,"""hq-detail-page""",False,HGD-007
 MAP-0776a6d8933b,L3,reviewed implementation,tests/manual/codex-worktree-trust.py,96,reviewed-selector,def main():,False,WTR-003
 LEG-4d0986af07f7,L3,Browser,tests/web/alignment.test.cjs,6,scenario,"`App-aligned roster status, summaries and persistent sections at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-d5140dc35e4a,L3,Browser,tests/web/alignment.test.cjs,26,scenario,"`Settings change actual Chat and Terminal typography, immediately and after reload at ${width}`",True,legacy-not-retrospectively-reviewed

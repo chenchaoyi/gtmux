@@ -11,6 +11,7 @@ import (
 )
 
 func TestGoalActionAuthorityAndExactReceiptEnvelope(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	s := hqworkspace.New(t.TempDir())
 	m, e := s.Create("goal-one", "Fixture", 100)
 	if e != nil {
@@ -110,6 +111,7 @@ func TestGoalActionAuthorityAndExactReceiptEnvelope(t *testing.T) {
 }
 
 func TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
 	s := hqworkspace.New(t.TempDir())
 	m, e := s.Create("goal-one", "Fixture", 100)
 	if e != nil {

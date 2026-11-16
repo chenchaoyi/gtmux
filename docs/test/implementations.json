@@ -3544,5 +3544,14 @@
     "selectors": [
       "TestGoalNoNewEventsAfterNotedStillRequiresHQ"
     ]
+  },
+  "tests/contracts/http-contract.json": {
+    "cases": [
+      "HGD-007"
+    ],
+    "selectors": [
+      "\"hq-overview\"",
+      "\"hq-detail-page\""
+    ]
   }
 }
