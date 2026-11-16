@@ -9,7 +9,7 @@ The catalogue covers 1303 test/harness source files. Each CSV row lists stable I
 | L1 · Unit / pure logic | 3805 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2401 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 147 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
+| L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
 
@@ -351,6 +351,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | SID-006 | Show bilingual last-known/read-only guidance, preserve visible turns, disable relevant chat send controls while this state applies and restore normal verified behavior afterward. Keep identity-scoped late-result guards and unchanged-poll memo behavior. No automatic resend, rebind or restore. |
 | SID-007 | One server conversation projection stays one row; association-pending and last-known-history labels are consistent and never described as confirmed external ownership. Unconfirmed history is visibly read-only and cannot dispatch send. Verified recovery removes the restriction; stale responses cannot affect a new target. Normal external and existing owner/guest boundaries stay unchanged. |
 | SID-008 | A missing verified session ID stays missing. Pending relation is labeled as such, distinct from confirmed external placement, and source row keys/targets retain existing meaning. No focus, input, installation or real screenshot is performed. |
+| SCR-001 | The readiness check cannot wait for hq-verdict, which is intentionally absent in conversation. Missing conversation turns must still time out instead of photographing an empty/loading screen. All seven required phone images, waits, screenshot freshness and final written inventory remain mandatory; exceptions are not swallowed to manufacture success. |
+| SCR-002 | The reader is not considered loaded from a list, generic root, empty body or an action that applies only to one entry purpose. Missing reader/content still fails with a bounded timeout. Keep all five source shots, actual orientation handling, capture freshness and navigation; do not introduce fixture/product changes or claim unobserved accessibility acceptance. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |
