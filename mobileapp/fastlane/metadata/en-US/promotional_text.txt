@@ -1,1 +1,1 @@
-View tmux sessions and reply to agents from iPhone or iPad. Review tool calls in Trace and track matters in HQ. Requires your own Mac or Linux server.
+Follow tmux and coding agents on iPhone or iPad. Reply, review tool calls and files, and track HQ, knowledge, usage and alerts. Needs your Mac or Linux server.
