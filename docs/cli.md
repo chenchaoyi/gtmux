@@ -906,9 +906,24 @@ Activation is prospective, without importing historical results. Source gaps and
 ambiguous associations remain explicit. Raw Stop/relay records have no goal version
 and cannot directly transition a matter. No reconciliation operation delivers an
 instruction, approves a permission or executes a task. The durable snapshot upgrades
-from schema 1 to 2 on the next write; read responses retain schema 1 for existing
-clients. Old binaries refuse schema 2: do not roll back by replacing the snapshot;
+from schema 1/2 to 3 on the next write; read responses retain schema 1 for existing
+clients. Old binaries refuse schema 3: do not roll back by replacing the snapshot;
 retain it and run a compatible binary. Backups retain observations and receipts.
+
+Continuing goals also retain a stable `goal-followup` obligation when all reports are
+noted and unread is empty. Each pass scans at most 64 matters with a durable cursor;
+Stop only requests the check. Quiet and rotation never discharge the obligation.
+`reconcile` exposes `goals` and `intent_attempts`. Claim a goal's `followup_id`, then
+use `assess` with `decision:"responsibility"`, current revision/generation and
+`responsibility:{step_id,action,authority_ref,intent?,drive?,hold?}` to explicitly
+record its next responsibility. Ordinary old/unversioned evidence still cannot
+transition the current matter. `update` body also needs a nonzero current revision.
+`op:"drive"` with matter/id/current revision attempts a previously saved intent once
+through existing gates; queued is awaiting receipt, and uncertain/refused attempts
+never automatically replay. User pause/refusal never expires; changing it requires
+`resume_ref` citing the user's actual resumption. See the [full responsibility
+contract](design/hq-workspace.md#continuing-goals-and-next-responsibility) for sourced
+external holds, exact native/background receipt envelopes and restore boundaries.
 
 
 ## `gtmux digest` + `gtmux hq`: HQ, the supervisor session

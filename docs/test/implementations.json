@@ -116,7 +116,8 @@
       "HQP1-005",
       "HQP1-006",
       "HQP1-007",
-      "HQP1-008"
+      "HQP1-008",
+      "HGD-005"
     ],
     "selectors": [
       "TestPhase1WorkspaceIngestionRecoveryAndReadIndependence",
@@ -833,7 +834,9 @@
       "HQP1-005",
       "HQP1-006",
       "HQP1-007",
-      "HQP1-008"
+      "HQP1-008",
+      "HGD-001",
+      "HGD-004"
     ],
     "selectors": [
       "TestPhase1ReportsPreserveCompletedAndQuestion",
@@ -3501,6 +3504,45 @@
     ],
     "selectors": [
       "TestDPC006DoctorExplainsActualCountAndByteFailures"
+    ]
+  },
+  "internal/hqworkspace/followup_test.go": {
+    "cases": [
+      "HGD-001",
+      "HGD-002",
+      "HGD-003",
+      "HGD-004",
+      "HGD-005",
+      "HGD-006"
+    ],
+    "selectors": [
+      "TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation",
+      "TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice",
+      "TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues",
+      "TestGoalNativeBackgroundExactStepAndIdentity",
+      "TestGoalPauseRefusalExternalAndCrossChannelAnswer",
+      "TestGoalLegacyMigrationBoundedSweepAndProjection",
+      "TestGoalRestoreSuspendsDriveAndRetainsPause",
+      "TestGoalWrongStepAmbiguousIntervalAndDurableReminder"
+    ]
+  },
+  "internal/app/hqworkspace_goal_test.go": {
+    "cases": [
+      "HGD-002",
+      "HGD-004",
+      "HGD-005"
+    ],
+    "selectors": [
+      "TestGoalActionAuthorityAndExactReceiptEnvelope",
+      "TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers"
+    ]
+  },
+  "internal/app/hqworkspace_goal_regression_test.go": {
+    "cases": [
+      "HGD-005"
+    ],
+    "selectors": [
+      "TestGoalNoNewEventsAfterNotedStillRequiresHQ"
     ]
   }
 }

@@ -267,7 +267,7 @@ func (s *Store) MarkRestored(at int64) error {
 	if err != nil {
 		return err
 	}
-	if len(d.Messages) == 0 {
+	if len(d.Messages) == 0 && len(d.IntentAttempts) == 0 && len(d.Matters) == 0 {
 		return nil
 	}
 	return s.transaction(func(d *Database) error { markRestored(d, at); return nil })
@@ -275,6 +275,26 @@ func (s *Store) MarkRestored(at int64) error {
 
 func markRestored(d *Database, at int64) bool {
 	altered := false
+	for id, a := range d.IntentAttempts {
+		if a.State == "submitting" || a.State == "queued" || a.State == "landed" {
+			a.State = "uncertain"
+			a.Evidence = "restored-backup"
+			d.IntentAttempts[id] = a
+			changed(d, at, "goal-drive-restored", a.MatterID, id, a.State)
+			altered = true
+		}
+	}
+	for id, m := range d.Matters {
+		if m.Responsibility != nil && !m.Responsibility.ReviewRequired {
+			p := *m.Responsibility
+			p.ReviewRequired = true
+			p.Drive = nil
+			m.Responsibility = &p
+			changed(d, at, "goal-review-required", id, "", "restored-backup")
+			saveMatter(d, m, at)
+			altered = true
+		}
+	}
 	for id, m := range d.Messages {
 		if m.Delivery != "pending" && m.Delivery != "submitting" && m.Delivery != "accepted-queue" {
 			continue

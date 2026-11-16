@@ -262,7 +262,7 @@ func TestPhase1OldObservationDeferralAndSchemaMigration(t *testing.T) {
 	}
 	s = New(home)
 	migrated := phaseRead(t, s)
-	if migrated.Schema != 2 || len(migrated.Reconciliations) != 0 || migrated.Matters["legacy-goal"].State != "completed" {
+	if migrated.Schema != Schema || len(migrated.Reconciliations) != 0 || migrated.Matters["legacy-goal"].State != "completed" {
 		t.Fatal(migrated)
 	}
 	raw, _ := os.ReadFile(path)
@@ -273,7 +273,7 @@ func TestPhase1OldObservationDeferralAndSchemaMigration(t *testing.T) {
 		t.Fatal(e)
 	}
 	raw, _ = os.ReadFile(path)
-	if e := json.Unmarshal(raw, &d); e != nil || d.Schema != 2 || d.ObservationCursors["events"] != 55 || d.ObservationCursors["relay-start"] != 200 {
+	if e := json.Unmarshal(raw, &d); e != nil || d.Schema != Schema || d.ObservationCursors["events"] != 55 || d.ObservationCursors["relay-start"] != 200 {
 		t.Fatal("migration lost activation", e)
 	}
 }

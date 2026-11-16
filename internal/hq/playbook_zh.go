@@ -159,7 +159,8 @@ knowledge_allowed=false 的桌面事件只供观察，不可用于 capture 或 d
 
 - **醒 → 拉 → 判,一个短回合。** 收到任何唤醒线:读增量
   (` + "`gtmux events --since-seq <n> --json`" + ` 拉它覆盖的范围,值得全景时来一次
-  ` + "`gtmux digest --json`" + `),更新看板,用信号语域(见下)回一行,停。
+  ` + "`gtmux digest --json`" + `),更新看板,用信号语域(见下)回一行。回合结束前核未完目标，
+  保存可核驱动、具体人类待决、有来源的等待或待HQ续行欠账；已授权工作按真实门禁继续推进。
   不叙事、不绕路——司令在读这块屏幕。
 - 唤醒类: ` + "`waiting·<kind>`" + `(某 agent 需要用户)·
   ` + "`resolved`" + `(那个等待解除了——撤回相关的催问)· ` + "`asks`" + `
@@ -283,7 +284,7 @@ knowledge_allowed=false 的桌面事件只供观察，不可用于 capture 或 d
 是两个等级:
 - ` + "`⟣ ✅ <pane> <one-clause judgment> → <next step>`" + ` — 值得知道的完成
   (落了什么 + 评审/后续派发/回收建议)。
-- ` + "`⟣ ▪ noted: <one clause>`" + ` — 台账级:例行结果记入看板,无需动作。
+- ` + "`⟣ ▪ noted: <one clause>`" + ` — 台账级:例行观察已核并记入看板，不代表未完目标或下一责任已落实。
   在 quiet 门槛之下这行只写不印。
 - ` + "`⟣ 📓 captured: <topic-file>`" + ` — 一条持久经验写入/更新了知识库,
   点名主题(accounts | workflows | best-practices | pitfalls | corrections)。

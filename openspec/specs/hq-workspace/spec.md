@@ -321,3 +321,41 @@ The workspace SHALL persist a reconciliation queue independently of event consum
 #### Scenario: Concurrent append after an empty read
 - **WHEN** a source read returns no rows and a concurrent append raises the sequence counter before the next checkpoint is saved
 - **THEN** ingestion retains its previous cursor and any gap notice, and the next read durably queues the retained event before advancing past it
+
+### Requirement: Continuing goals retain next responsibility
+Every explicitly enrolled nonterminal goal SHALL retain either a verified current step drive, an unanswered concrete human request, a sourced hold, or durable HQ follow-up/verification debt. A step SHALL have a stable ID, intended action and citation to existing authority. Missing legacy fields SHALL require HQ verification and SHALL NOT authorize automatic resumption. Ordinary observation acknowledgement, read watermarks, quiet presentation, process restart and healthy rotation SHALL NOT discharge goal debt. The existing reconciliation pass SHALL scan a bounded number of goals with a durable cursor even without new events. Stop SHALL only request a lightweight check.
+
+#### Scenario: All observations are noted but work remains
+- **WHEN** HQ notes the latest stage report and no new unread events arrive
+- **THEN** an unfinished uncovered goal retains one stable HQ obligation across ticks and restart
+- **AND** noting or marking that goal obligation conflict without verified coverage is rejected
+
+#### Scenario: Quiet or rotation occurs
+- **WHEN** presentation is quiet or HQ performs a healthy handoff
+- **THEN** the same durable next responsibility remains recoverable without blocking rotation
+- **AND** repeated reminders identify HQ's unfinished coordination rather than asking for already granted permission
+
+### Requirement: Step intent precedes guarded delivery
+HQ SHALL persist a stable action ID, exact agent/home/session and task/message/native reference before an explicit drive action. The drive action SHALL use the existing input, identity and draft gates and SHALL attempt a saved action at most once. Queued SHALL mean reliably waiting for reception, not started or completed. Submission uncertainty, refusal and absent probes SHALL require verification, never automatic replay or another channel. Receipt coverage SHALL match the same step, action, reference and unambiguous conversation interval. Existing reliable native/background coverage SHALL prevent duplicate drive.
+
+#### Scenario: Queued becomes received
+- **WHEN** a saved intent obtains a queued verdict and later an exact progress receipt
+- **THEN** its projection distinguishes waiting for reception from verified drive
+- **AND** a repeated drive call, old reminder or restart does not submit the action again
+
+#### Scenario: Target or outcome cannot be established
+- **WHEN** the pane has a different SID, membership is ambiguous, a draft/identity gate refuses, or submission crashes before its receipt is committed
+- **THEN** the goal remains for HQ verification and the same action is not replayed
+
+### Requirement: Holds and evidence retain their distinct authority
+A user pause/refusal SHALL NOT expire automatically; changing it SHALL require an explicit user resumption citation. An external hold SHALL cite its source, recovery condition and future check; reaching that check SHALL request verification only. Verified answers from any channel SHALL resolve the exact existing question through clear-input before continuing. The checked assessment, latest receipt and next responsibility SHALL retain distinct provenance. Body assessment updates SHALL require a nonzero current matter revision; revision-zero observations SHALL NOT transition a newer matter. Backup restore SHALL suspend old drive coverage while preserving user pause/refusal.
+
+#### Scenario: New progress exceeds the old checked assessment
+- **WHEN** a receipt reports 206 while the current checked assessment says 150 and acceptance is 181
+- **THEN** the sources remain distinct until HQ explicitly updates the assessment with the current revision
+- **AND** a progress report cannot overwrite an unanswered question or manufacture current-version evidence
+
+#### Scenario: Restored execution is unknown
+- **WHEN** a backup contains a queued or received intent or native/background evidence
+- **THEN** restored evidence requires explicit review and cannot replay the saved action
+- **AND** a saved user pause/refusal remains effective

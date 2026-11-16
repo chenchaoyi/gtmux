@@ -124,6 +124,8 @@ func (s *Store) ClearInput(matter, requestID, messageID, reason string, revision
 			m.State = "open"
 		}
 		m.Assessment = reason
+		m.AssessmentAt = at
+		m.AssessmentRevision = d.Revision
 		saveMatter(d, m, at)
 		return nil
 	})
