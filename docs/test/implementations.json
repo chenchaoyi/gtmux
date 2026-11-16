@@ -61,12 +61,14 @@
     "cases": [
       "DCA-001",
       "DCA-002",
-      "DCA-003"
+      "DCA-003",
+      "DPC-003"
     ],
     "selectors": [
       "TestDCA001DoctorReportsFailedManagedAssociation",
       "TestDCA002DoctorDistinguishesMissingUnsupportedAndVerified",
-      "TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary"
+      "TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary",
+      "TestDPC003DoctorDoesNotPromiseAutomaticRecovery"
     ]
   },
   "internal/app/dsh_transcript_test.go": {
@@ -3413,6 +3415,61 @@
     ],
     "selectors": [
       "RFD-002 %s read feedback keeps one explicit retry, busy protection and secondary navigation"
+    ]
+  },
+  "internal/relay/observation_test.go": {
+    "cases": [
+      "DPC-001"
+    ],
+    "selectors": [
+      "TestDPC001ObservationExportRequiresCompleteRelayContract"
+    ]
+  },
+  "internal/hq/process_materials_test.go": {
+    "cases": [
+      "DPC-001",
+      "DPC-002"
+    ],
+    "selectors": [
+      "TestDPC001AutomaticScopePreservesUnknownNotesAndIncludes",
+      "TestDPC002ProcessMaterialInventoryProtectsCoreAndUnknown"
+    ]
+  },
+  "internal/resume/frontend_recovery_diagnostic_test.go": {
+    "cases": [
+      "DPC-003"
+    ],
+    "selectors": [
+      "TestDPC003RecoveryEvidenceNeverGrantsRetryAuthority"
+    ]
+  },
+  "internal/app/doctor_hq_storage_test.go": {
+    "cases": [
+      "DPC-002"
+    ],
+    "selectors": [
+      "TestDPC002DoctorStorageExplainsScopeWithoutRemoval"
+    ]
+  },
+  "tests/web/branded-loading.test.cjs": {
+    "cases": [
+      "WBL-001",
+      "WBL-002",
+      "WBL-003"
+    ],
+    "selectors": [
+      "WBL-001 moving brand focus ",
+      "WBL-002 live reduced motion preserves one loading status",
+      "WBL-003 retired Chat read cannot restore a loader in Terminal"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift": {
+    "cases": [
+      "MBL-001"
+    ],
+    "selectors": [
+      "testMBL001RenderedFocusMovesWithoutMovingPanes",
+      "testMBL001ReducedMotionAndInactiveUseStaticTopRight"
     ]
   }
 }

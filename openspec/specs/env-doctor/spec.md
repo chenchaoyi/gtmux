@@ -989,3 +989,20 @@ client SHALL remain informational. Read-only checks SHALL NOT install or restart
 - **WHEN** Direct is selected and cloudflared meets its security floor
 - **THEN** doctor SHALL explain that Direct does not use this executable
 - **AND** SHALL NOT suggest a cloudflared restart for Direct
+
+### Requirement: Evidence-based recovery and conservative project-material guidance
+Doctor SHALL inventory recognizable project process material under HQ notes without
+moving or deleting it. It SHALL distinguish raw observations, report/attachment
+payloads, source files and unclassified archives; unknown recovery history and core
+knowledge/workspace/instructions SHALL remain protected. The recovery-package128MiB
+safety limit SHALL NOT be described as a directory quota or snapshot retention budget.
+
+#### Scenario: Unknown historical archive
+- **WHEN** an archive outside declared project reports has unverified ownership or recovery value
+- **THEN** doctor reports classification is needed and offers no automatic removal action
+
+#### Scenario: Frontend recovery cannot be established
+- **WHEN** a managed conversation lacks current proof
+- **THEN** doctor SHALL NOT claim an automatic retry from a missing or unverified producer
+- **AND** only confirmed OS absence or a changed process incarnation supports stopped guidance; unreadable metadata remains unknown
+- **AND** diagnostics SHALL NOT resend input, restart, rebind or infer ownership from transcript recency

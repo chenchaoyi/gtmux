@@ -2,13 +2,13 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1293 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1299 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2392 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 141 | [L3.csv](cases/L3.csv) |
+| L2 · 组件/契约 | 2398 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 146 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
@@ -168,6 +168,13 @@
 | DCA-005 | All conflict/unknown/canceled controls stay refused with no resurrection/overwrite; no thread RPC, input, real process stop or real state mutation |
 | DCA-006 | No recursive lock/deadlock, no disk commit after cancellation; exact current producer only; new code performs no additional healthy heartbeat polling or diagnostic thread/history search |
 | DKC-001 | All-settled retained lines report0; mixed parsed unsettled rows report the exact remaining count, matching official capture semantics. Invalid JSON and blanks are ignored, legacy IDs remain read-time-only, and no source, ledger, receipt, lock or marker is created/modified/deleted. Missing sources are empty; real read failures are visibly unavailable rather than an invented pending count. Both English and Chinese notes remain concise. The old count must fail the genuine settled/mixed assertions; existing capture/sensor and translation/receipt contracts remain unchanged. |
+| DPC-001 | Only recognized generated observations leave the automatic core scope; included observations and all full-export records remain. Unknown or corrupt notes remain protected and may still cause an honest limit failure. Restore limits stay128MiB/32MiB/10000; no file is moved or deleted. |
+| DPC-002 | Report bounded category counts/bytes and a clear project-archive recommendation.128MiB is described as recovery-package safety, distinct from directory size and configured snapshot budget. Unknown files are not declared disposable. Doctor and doctor fix do not migrate/delete materials or modify backup policy. |
+| DPC-003 | Stopped and unknown producers get accurate normal-resume or verification guidance; stale-live evidence is not presented as proof of an active retry. Healthy exact current ownership remains healthy. No session input, RPC resend, forced binding, history timestamp inference or state write occurs. |
+| WBL-001 | The three fixed rounded panes keep their bounds while the cyan focus moves top-right to bottom to top-left over1.8s. Whole-mark breathing and an indefinitely single lit pane fail. Label and geometry remain readable at both widths/themes, with no page or console errors. |
+| WBL-002 | Reduced motion keeps a static top-right cyan pane with no running focus cycle. Decorative panes are hidden from accessibility; one localized loading status remains. The loader and its focus animations disappear on completion, with no artificial delay or layout jump. |
+| WBL-003 | All branded loading entries use the common three-pane cycle. Late replies cannot restore a retired loader or overwrite the selected view. Failed and successful-empty reads keep their existing meanings; no send/retry of task input is generated. |
+| MBL-001 | Top-right, bottom then top-left receive cyan on a 1.8s cycle with App100-unit geometry and radius9. Only highlights move; reduced motion/inactive stays top-right, removing the view ends its TimelineView updates. HQ label is announced once, and decorative marks are hidden. Native progress controls and static brand assets are unchanged. |
 | FOCUS-001 | Literal and decorated versions of the complete session match; differently quoted, truncated, unrelated, wrong-separator and empty identities do not. Existing ordinary/decorated titles and bare trailing-whitespace tolerance remain supported. |
 | FOCUS-002 | A literal match wins across all tabs before tolerant decoration fallback. With only a decorated match it is selected. The chosen record, indices and trailing title bytes remain unchanged; no match and empty session return false. Multiple literal tabs retain first-match order. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |

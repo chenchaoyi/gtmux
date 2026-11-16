@@ -56,3 +56,26 @@ The shared doctor projection reports runtime data, automatic backups (`hq-snapsh
 `hq --records --json` adds `automatic_backup`: the selected policy, managed/legacy sizes and counts, publication validation time and last failure. Legacy counts are not validated recovery counts. The Mac client consumes this projection, with a conservative fallback for older cores. Logical lengths, allocated directory bytes and concurrent volume availability are separate measurements; no GB release is claimed for this source-only mechanism change.
 
 Tests use synthetic private homes: scope/full-export distinction, actual restore, legacy retention, budget/disable, same-content cross-day deduplication, concurrent publication, invalid/corrupt/oversized input, existing-destination preservation and storage classification. They never import into the real HQ home or inspect private desktop conversations.
+
+## Historical process material and doctor
+
+Doctor inventories only recognizable project material under HQ notes, separating
+raw relay exports, declared report/attachment payloads and source files. Unknown
+archives outside declared project reports are retained and need ownership/recovery
+review. Knowledge, workspace, instructions, unknown ordinary notes and existing
+recovery points are not cleanup candidates. This row and doctor fix never move or
+delete material. A separately authorized cleanup uses project-owned storage, exact
+source checks and full archive/SHA readback before removing redundant plaintext;
+HQ keeps only a concise index. A same-volume move is not disk space recovered.
+
+Legacy relay-like JSON names are excluded from automatic core recovery only when
+a complete, nonempty, bounded relay-request array confirms they are observations.
+IDs follow the owning relay contract, including custom IDs. Malformed, empty or
+unknown notes remain protected. Existing generated-name exclusions, explicit
+include overrides and full-export scope retain their meanings. This recognition
+never deletes the source or changes the128MiB compressed/decompressed import cap,
+32MiB file cap or10,000-entry cap. The128MiB cap bounds a validated recovery
+package, not the entire HQ directory; the default64MiB is a separate total managed
+compressed snapshot budget. Raising the cap is not a substitute for classifying
+project attachments. A new point or a status timestamp does not prove a real
+restore, nor authorize retiring older unique recovery evidence.

@@ -22,6 +22,8 @@ MAP-cd44b26604d6,L3,reviewed implementation,internal/server/web/maximize-layout.
 MAP-f159c36e253b,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,38,reviewed-selector,AOP004 maximized header reserves grid space and names its narrow icon,False,AOP-004
 MAP-97d5f314aecb,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,46,reviewed-selector,AOP006 real identity wrapper occupies the flexible maximized column,False,"AOP-004,AOP-006"
 MAP-07e13a073c16,L3,reviewed implementation,internal/server/web/observed_identity.test.cjs,16,reviewed-selector,SID007 focused and tile history cannot dispatch input or become an external row,False,SID-007
+MAP-c43ef369cf61,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,29,reviewed-selector,testMBL001RenderedFocusMovesWithoutMovingPanes,False,MBL-001
+MAP-8a7787a2337e,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/BrandProgressMarkTests.swift,57,reviewed-selector,testMBL001ReducedMotionAndInactiveUseStaticTopRight,False,MBL-001
 MAP-d731318cd969,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift,8,reviewed-selector,testCompleteWindowPinsComposerAndNativeChoiceUpdatesAndFocusesEditor,False,MC-HQ-WINDOW
 MAP-a11ab8aaa94d,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceWindowTests.swift,92,reviewed-selector,testCurrentQuestionRemainsUsableWhileConversationReadWaits,False,MC-HQ-WINDOW
 MAP-80be9bb61842,L3,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewMoreWindowTests.swift,27,reviewed-selector,testBottomRemainingControlOpensAllAndSelectsHiddenGoalWithoutSending,False,MC-HQ-OVERVIEW-MORE
@@ -59,6 +61,9 @@ LEG-5eb3da408f2c,L3,Browser,tests/web/alignment.test.cjs,70,scenario,`Touch inpu
 LEG-ff43142292fd,L3,Browser,tests/web/alignment.test.cjs,82,scenario,Chat retains recorded code and wait calls in compact summaries and expanded detail,False,legacy-not-retrospectively-reviewed
 CP-001-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,13,test,CP-001 shared rendered Trace,True,CP-001
 CP-002-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,30,test,CP-002 CP-003 CP-004 shared HQ,True,CP-002
+MAP-1209f616cdf8,L3,reviewed implementation,tests/web/branded-loading.test.cjs,43,reviewed-selector,WBL-001 moving brand focus ,False,"WBL-001,WBL-002,WBL-003"
+MAP-1adfb859f2d3,L3,reviewed implementation,tests/web/branded-loading.test.cjs,82,reviewed-selector,WBL-002 live reduced motion preserves one loading status,False,"WBL-001,WBL-002,WBL-003"
+MAP-7905115aa7af,L3,reviewed implementation,tests/web/branded-loading.test.cjs,114,reviewed-selector,WBL-003 retired Chat read cannot restore a loader in Terminal,False,"WBL-001,WBL-002,WBL-003"
 LEG-9907208fe7df,L3,Browser,tests/web/client-consistency.test.cjs,13,scenario,`Client reading consistency ${width} ${colorScheme}`,True,legacy-not-retrospectively-reviewed
 LEG-32d1c6b37c52,L3,Browser,tests/web/client-consistency.test.cjs,27,scenario,`Chat earlier windows preserve reading and refresh in ${view}`,True,legacy-not-retrospectively-reviewed
 LEG-d2bf02df9c62,L3,Browser,tests/web/client-consistency.test.cjs,61,scenario,"External board tiles stay scoped, resize, restore and revoke without pane input",False,legacy-not-retrospectively-reviewed

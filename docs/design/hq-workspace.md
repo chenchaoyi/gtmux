@@ -215,7 +215,7 @@ separately; tests do not establish live accessibility acceptance.
 
 ## 8. Reading feedback
 
-An unread value shows a breathing gtmux mark with a short loading label, not an empty
+An unread value shows a three-pane cyan-focus gtmux mark with a short loading label, not an empty
 conversation or an offline supervisor. It becomes a retryable failure or valid content
 only after the read finishes. Conversation/activity first loads, resource pages and
 participant-source readers share this pattern. Refresh keeps valid content and uses a

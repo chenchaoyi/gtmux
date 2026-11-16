@@ -336,3 +336,15 @@ Full and tiled readers provide a visible Reload conversation button with busy/di
 ### Tool detail reading
 
 Match App/Trace tool sections: recognized single shell command first, original arguments on demand, one header, no single-command outline. Preserve raw input/result and complete-copy/pagination, while readable text previews remove terminal controls. Working directories display local file paths without changing source identity or access.
+
+## Branded loading
+
+All panes, focused Chat/Terminal, Trace and workbench tiles share `brandLoaderEl`.
+It follows the [cross-surface motion contract](SURFACES.md#branded-loading-parity):
+fixed geometry and a1.8s three-pane cyan focus, with a static top-right highlight
+for Reduce Motion. One status label is exposed when present; the drawing is
+decorative. Request cancellation, empty/error meanings and send permissions stay
+owned by the existing readers. Hosted Playwright captures actual390/1440px renders
+in light/dark themes and exercises phase changes, live reduced motion, completion
+and a retired read. Synthetic screenshots are not Safari or spoken screen-reader
+acceptance.
