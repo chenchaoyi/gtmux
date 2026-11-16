@@ -12,6 +12,15 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.183',
+    en: [
+      '- Chat messages, activity, timestamps and reply actions use tighter, more consistent spacing.',
+    ],
+    zh: [
+      '- 对话布局更紧凑，消息、活动记录、时间与操作之间的间距更协调。',
+    ],
+  },
+  {
     version: '1.0.182',
     en: [
       '- Loading screens, buttons and inline indicators now share the three-pane gtmux animation.',

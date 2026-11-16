@@ -65423,7 +65423,7 @@
           "design": "DPC-001,DPC-002"
         }
       ],
-      "sha256": "5eeba2e8fac2962fc9c8c81f3e36e9982f0bf98a4c58b8f0b0a747385a33c509"
+      "sha256": "9dc75de1607fea71bd73fb375288e1eaa7fc6e13d9880646d36fd6cf3f1c696d"
     },
     "internal/relay/observation_test.go": {
       "layer": "L2",
@@ -65439,7 +65439,7 @@
           "design": "DPC-001"
         }
       ],
-      "sha256": "72b6194bc7df50edd31c0b1ec49f9a894e0bdd2d4c86046cb701fe22a525282b"
+      "sha256": "fd45cf7d5153ff3e3f1f537689c9917825555dd5de206311022c75e18153a7ad"
     },
     "internal/resume/frontend_recovery_diagnostic_test.go": {
       "layer": "L2",
@@ -65540,6 +65540,54 @@
         }
       ],
       "sha256": "2010d7b3a586c76401e2ee315dd0591ad39b9e43ae46b6b39f99f146801f68ff"
+    },
+    "internal/app/doctor_recovery_limits_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d4dcb1b8d77e",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestDPC006DoctorExplainsActualCountAndByteFailures",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-006"
+        }
+      ],
+      "sha256": "fa8a7857423ca63a58d137b2265df9050a313c2821b5329d05fe88098a8d7379"
+    },
+    "internal/hq/observation_contract_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b07a4b75d0d1",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestDPC005UncertainObservationsStayInEveryCoreSelection",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-005"
+        }
+      ],
+      "sha256": "61a3c03a9f359547af801b753ada188b0fbfecbb4b0cc380423fea71f9776151"
+    },
+    "internal/relay/observation_contract_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-90f0d1fbdee7",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestDPC005ObservationRequiresRealCompleteKnownSerialization",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DPC-005"
+        }
+      ],
+      "sha256": "bc9f667810ec84525fb0f6aafe560f5e628947f319732b629e6371bb5a2bf7e9"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

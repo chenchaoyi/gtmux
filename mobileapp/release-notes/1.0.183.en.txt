@@ -1,0 +1,1 @@
+- Chat messages, activity, timestamps and reply actions use tighter, more consistent spacing.

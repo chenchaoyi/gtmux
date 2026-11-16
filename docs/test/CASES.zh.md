@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1300 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1303 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2398 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2401 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 147 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 105 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -176,6 +176,8 @@
 | WBL-003 | All branded loading entries use the common three-pane cycle. Late replies cannot restore a retired loader or overwrite the selected view. Failed and successful-empty reads keep their existing meanings; no send/retry of task input is generated. |
 | MBL-001 | Top-right, bottom then top-left receive cyan on a 1.8s cycle with App100-unit geometry and radius9. Only highlights move; reduced motion/inactive stays top-right, removing the view ends its TimelineView updates. HQ label is announced once, and decorative marks are hidden. Native progress controls and static brand assets are unchanged. |
 | DPC-004 | Neither language promises a running automatic retry. Confirmed exit explains waiting cannot restore; missing proof explains recovery is unconfirmed. Source evidence is unchanged and the original DCA tests remain byte-identical to base. |
+| DPC-005 | Valid pane/thread observations match. Missing pane and missing/overlong Codex thread source, absent mandatory serialized keys (including false/empty-valued fields), unknown extensions, duplicate keys, nulls and partial nested structures do not match and remain in core. Explicit includes/full preserve valid observations. No new limits, deletion, state write or binding authority is granted by recognition. |
+| DPC-006 | Both source failures are observed; messages accurately mention size-or-file-count safety limits (128MiB/10000 files), rather than asserting a size-only cause. Snapshot64MiB retention budget and directory size are not substituted. Existing destination and source files remain unchanged; no production export/import occurs. |
 | FOCUS-001 | Literal and decorated versions of the complete session match; differently quoted, truncated, unrelated, wrong-separator and empty identities do not. Existing ordinary/decorated titles and bare trailing-whitespace tolerance remain supported. |
 | FOCUS-002 | A literal match wins across all tabs before tolerant decoration fallback. With only a decorated match it is selected. The chosen record, indices and trailing title bytes remain unchanged; no match and empty session return false. Multiple literal tabs retain first-match order. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |

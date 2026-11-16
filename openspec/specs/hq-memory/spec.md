@@ -114,7 +114,9 @@ The shared archive reader and writer SHALL accept up to 10,000 entries while ret
 
 ### Requirement: Legacy observation recognition preserves unknown records
 Automatic core selection SHALL recognize a legacy relay-like JSON export only from
-a complete nonempty bounded request-array contract. Custom relay IDs SHALL retain
+a complete nonempty bounded request-array contract with the actual Put source rule,
+all mandatory serialized keys and known typed nested structures. Unknown extensions,
+duplicate keys, nulls and partial structures SHALL remain protected. Custom relay IDs SHALL retain
 the owning relay ID rules. Existing generated-name scope, explicit include precedence
 and full-export scope SHALL remain. Unknown, empty, partial and malformed notes SHALL
 remain protected; recognition SHALL NOT delete them or raise existing recovery limits.

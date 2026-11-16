@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-const processObservation = `[{"id":"legacy-custom_01","kind":"report","session":"synthetic","body":"synthetic only","for":"hq","state":"closed","created_at":1}]`
+const processObservation = `[{"id":"legacy-custom_01","kind":"report","pane":"%9","session":"synthetic","pane_pid":"100","body":"synthetic only","for":"hq","blocking":false,"state":"closed","created_at":1}]`
 
 func processFixture(t *testing.T, root, name, body string) {
 	t.Helper()

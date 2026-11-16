@@ -236,6 +236,7 @@ LEG-a109448efbef,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go
 MAP-4f8292b157e5,L2,reviewed implementation,internal/app/doctor_frontend_recovery_test.go,16,reviewed-selector,TestDPC004DoctorDoesNotPromiseAutomaticRecovery,False,DPC-004
 MAP-6eef5ace4810,L2,reviewed implementation,internal/app/doctor_hq_storage_test.go,14,reviewed-selector,TestDPC002DoctorStorageExplainsScopeWithoutRemoval,False,DPC-002
 MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_test.go,48,reviewed-selector,TestDKC001DoctorPendingCountMatchesCaptureProjection,False,DKC-001
+MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
 LEG-11f8f7133cba,L1,Go core / CLI / server,internal/app/doctor_test.go,16,Test,TestRenderSectionsTally,False,legacy-not-retrospectively-reviewed
 LEG-0f94dea29a8c,L1,Go core / CLI / server,internal/app/doctor_test.go,30,Test,TestAdvisoryRemaining,False,legacy-not-retrospectively-reviewed
 LEG-7a93b0f03c02,L1,Go core / CLI / server,internal/app/doctor_test.go,56,Test,TestIsUTF8Locale,False,legacy-not-retrospectively-reviewed
@@ -1739,6 +1740,7 @@ LEG-b0b8c65cb838,L1,Go core / CLI / server,internal/hq/mine_test.go,18,Test,Test
 LEG-7ec3020f9c60,L1,Go core / CLI / server,internal/hq/mine_test.go,44,Test,TestMineSensorGates,False,legacy-not-retrospectively-reviewed
 LEG-82208d1311f7,L1,Go core / CLI / server,internal/hq/mine_test.go,82,Test,TestParseSinceArg,False,legacy-not-retrospectively-reviewed
 LEG-7aa06d916ba2,L1,Go core / CLI / server,internal/hq/mine_test.go,96,Test,TestPlaybookTeachesTranscriptLeadsInBothLanguages,False,legacy-not-retrospectively-reviewed
+MAP-b07a4b75d0d1,L2,reviewed implementation,internal/hq/observation_contract_test.go,12,reviewed-selector,TestDPC005UncertainObservationsStayInEveryCoreSelection,False,DPC-005
 LEG-48e101d4acbd,L1,Go core / CLI / server,internal/hq/playbook_version_test.go,27,Test,TestChangingTheCharterBumpsTheVersion,False,legacy-not-retrospectively-reviewed
 LEG-d7fe8fa1ceab,L1,Go core / CLI / server,internal/hq/playbook_version_test.go,58,Test,TestTheFingerprintCoversBothLanguages,False,legacy-not-retrospectively-reviewed
 MAP-ead7aeb8f6cb,L2,reviewed implementation,internal/hq/process_materials_test.go,27,reviewed-selector,TestDPC001AutomaticScopePreservesUnknownNotesAndIncludes,False,"DPC-001,DPC-002"
@@ -2574,6 +2576,7 @@ MAP-081f78baa59f,L2,reviewed implementation,internal/relay/inbox_test.go,30,revi
 MAP-6010cd28478a,L2,reviewed implementation,internal/relay/inbox_test.go,95,reviewed-selector,TestRBL002FreshnessLegacyAndBoundedSourceWait,False,RBL-002
 MAP-1e34bec3e596,L2,reviewed implementation,internal/relay/inbox_test.go,145,reviewed-selector,TestRBL002InboxSortsReplyTimeAndRechecksStalenessAtClaim,False,RBL-002
 MAP-9a0a983fad52,L2,reviewed implementation,internal/relay/inbox_test.go,183,reviewed-selector,TestRBL002SourceWaitCancelsWhileLedgerIsLocked,False,RBL-002
+MAP-90f0d1fbdee7,L2,reviewed implementation,internal/relay/observation_contract_test.go,9,reviewed-selector,TestDPC005ObservationRequiresRealCompleteKnownSerialization,False,DPC-005
 MAP-ecf242497d47,L2,reviewed implementation,internal/relay/observation_test.go,11,reviewed-selector,TestDPC001ObservationExportRequiresCompleteRelayContract,False,DPC-001
 LEG-60f4094c7da5,L1,Go core / CLI / server,internal/relay/relay_test.go,10,Test,TestOfflineRequestSurvivesAndRetryDoesNotDuplicate,False,legacy-not-retrospectively-reviewed
 LEG-3b7ec691b3e1,L1,Go core / CLI / server,internal/relay/relay_test.go,30,Test,TestClaimRotationAndReplyReceipt,False,legacy-not-retrospectively-reviewed

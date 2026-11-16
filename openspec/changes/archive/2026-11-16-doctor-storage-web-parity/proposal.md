@@ -19,7 +19,8 @@ three-pane1.8s focus. Preserve system progress controls and agent state semantic
 - menubar: consumes the same doctor projection; its shared branded progress mark
   adopts the focus cycle and static reduced-motion/inactive state.
 - phone: existing shared LoadingMark is the accepted reference; no new mobile
-  source, OS splash, system progress or input-authority change.
+  loading implementation, OS splash, system progress or input-authority change.
+  Release metadata prepares1.0.183, including the already merged shared Chat spacing.
 - iPad: same unchanged mobile component as Phone, including regular layouts.
 - Web: every branded loader entry shares the corrected factory/CSS motion and
   decorative accessibility contract, with real hosted narrow/wide rendered tests.

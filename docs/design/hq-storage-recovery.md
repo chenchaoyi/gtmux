@@ -70,7 +70,11 @@ HQ keeps only a concise index. A same-volume move is not disk space recovered.
 
 Legacy relay-like JSON names are excluded from automatic core recovery only when
 a complete, nonempty, bounded relay-request array confirms they are observations.
-IDs follow the owning relay contract, including custom IDs. Malformed, empty or
+IDs follow the owning relay contract, including custom IDs. Completeness requires
+the real Put source rule (pane or Codex home/thread), every mandatory serialized
+key and known typed nested structures. Unknown extensions, duplicate keys, nulls
+and partial structures are retained; formatting and key order are irrelevant.
+Malformed, empty or
 unknown notes remain protected. Existing generated-name exclusions, explicit
 include overrides and full-export scope retain their meanings. This recognition
 never deletes the source or changes the128MiB compressed/decompressed import cap,

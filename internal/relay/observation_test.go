@@ -9,7 +9,7 @@ import (
 )
 
 func TestDPC001ObservationExportRequiresCompleteRelayContract(t *testing.T) {
-	r := Request{ID: "custom-ID_01", Kind: "report", Session: "synthetic", Body: "synthetic evidence", For: "hq", State: "pending", CreatedAt: 1}
+	r := Request{ID: "custom-ID_01", Kind: "report", Pane: "%9", Session: "synthetic", Body: "synthetic evidence", For: "hq", State: "pending", CreatedAt: 1}
 	encode := func(value any) string {
 		b, err := json.Marshal(value)
 		if err != nil {

@@ -3478,5 +3478,29 @@
     "selectors": [
       "TestDPC004DoctorDoesNotPromiseAutomaticRecovery"
     ]
+  },
+  "internal/relay/observation_contract_test.go": {
+    "cases": [
+      "DPC-005"
+    ],
+    "selectors": [
+      "TestDPC005ObservationRequiresRealCompleteKnownSerialization"
+    ]
+  },
+  "internal/hq/observation_contract_test.go": {
+    "cases": [
+      "DPC-005"
+    ],
+    "selectors": [
+      "TestDPC005UncertainObservationsStayInEveryCoreSelection"
+    ]
+  },
+  "internal/app/doctor_recovery_limits_test.go": {
+    "cases": [
+      "DPC-006"
+    ],
+    "selectors": [
+      "TestDPC006DoctorExplainsActualCountAndByteFailures"
+    ]
   }
 }

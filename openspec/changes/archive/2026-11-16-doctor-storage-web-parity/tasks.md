@@ -24,3 +24,11 @@ job produced deterministic/static frames while its OS-policy live test could
 skip under Reduce Motion. The final test drives the same production animation
 child explicitly without changing OS preferences; a green older job is not proof
 of that new live test.
+
+Independent review of the earlier frozen candidate rejected an overbroad observation
+recognizer: missing producer identity and unknown fields could be silently omitted
+from automatic core. The fix shares pure Put input validation, derives required and
+known keys from the owning Request/Notice serialized types, and tests real producer
+positives plus protected unknown/partial/duplicate/null negatives. Actual public
+export failures also cover many tiny files and aggregate bytes separately. Earlier
+source approval is not reused for this revision.
