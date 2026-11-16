@@ -1,12 +1,12 @@
 {
-  "app_sha256": "17671da1cbe2d1aa203d1c1f3cfdd9202f2cf0ddcda679f421ead8b5f4e3669a",
+  "app_sha256": "c027673a3b631d9aa5c8af6c480de834536e8e14ea40a19464d9033cfc143f2f",
   "capture_attempts": [
     {
-      "app_sha256": "17671da1cbe2d1aa203d1c1f3cfdd9202f2cf0ddcda679f421ead8b5f4e3669a",
-      "capture_harness_commit": "e1f1ce69abcfe986e6e460825304c97eb3ae5d12",
+      "app_sha256": "c027673a3b631d9aa5c8af6c480de834536e8e14ea40a19464d9033cfc143f2f",
+      "capture_harness_commit": "a1da87acdf948430e65e1043053504aea1f298e8",
       "capture_harness_files": {
-        "__tests__/appstore-shots-ipad.test.ts": "627afa7a525125cf9b5e41d7c65d4cbbfcbbbf8b4710ae59aa2a2edf267450f5",
-        "__tests__/appstore-shots.test.ts": "c9f03b2945fc6a7bfd1832ebb8cd51de866faaa5980900a2b48bec5c0c7372f6",
+        "__tests__/appstore-shots-ipad.test.ts": "8e23f2611c35995c8d3088af6344b76eca236573698bcf636e3ae2ed41ff3557",
+        "__tests__/appstore-shots.test.ts": "0cc981e8727419e489e4aefb556d86d1314de911371d4ded14133e03f36bcbd3",
         "setup/capabilities.ts": "de4150af2c466890fd509f274e72c018e6a154a7dd7f7fe037ed398d95be2eab",
         "setup/demoEntry.ts": "d6fad6f6d3834f6e4dcb89e0bddc8ddb674ad67ea2f006cc9d9ecdbe8ce316b1",
         "setup/global-setup.ts": "3aa72d1b9912cb06951f95a2ab7aafbaafc76f0695d1ee0f708dd1f462f6a49d"
@@ -19,46 +19,46 @@
         "ipad": "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB",
         "phone": "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max"
       },
-      "release_tag": "v1.0.162",
+      "release_tag": "v1.0.183",
       "review_capture": true,
-      "run_id": "41204853555",
+      "run_id": "43857407234",
       "runtime": "26.5",
       "runtime_identity": {
         "buildversion": "23F77",
         "identifier": "com.apple.CoreSimulator.SimRuntime.iOS-26-5",
         "version": "26.5"
       },
-      "source_commit": "aec5d73993f916ba2831a5a662f115a4fe02f0a9",
+      "source_commit": "c66855db584d00308755fa9a9280e0b4bcea7735",
       "submitted": false,
       "synthetic_demo_only": true,
-      "workflow_commit": "e1f1ce69abcfe986e6e460825304c97eb3ae5d12",
+      "workflow_commit": "a1da87acdf948430e65e1043053504aea1f298e8",
       "xcode": "Xcode 26.6\nBuild version 17F113"
     }
   ],
-  "capture_checkpoint_sha256": "d80c20a8b1fe12434695ec1cbfef23901a15f00bbe24cd08b04f1616d357bb43",
+  "capture_checkpoint_sha256": "2092f8dc893a8f2b2e048c1f90b2fc7db10b445563005de2887021d494f06ee1",
   "capture_harness_files": {
-    "__tests__/appstore-shots-ipad.test.ts": "627afa7a525125cf9b5e41d7c65d4cbbfcbbbf8b4710ae59aa2a2edf267450f5",
-    "__tests__/appstore-shots.test.ts": "c9f03b2945fc6a7bfd1832ebb8cd51de866faaa5980900a2b48bec5c0c7372f6",
+    "__tests__/appstore-shots-ipad.test.ts": "8e23f2611c35995c8d3088af6344b76eca236573698bcf636e3ae2ed41ff3557",
+    "__tests__/appstore-shots.test.ts": "0cc981e8727419e489e4aefb556d86d1314de911371d4ded14133e03f36bcbd3",
     "setup/capabilities.ts": "de4150af2c466890fd509f274e72c018e6a154a7dd7f7fe037ed398d95be2eab",
     "setup/demoEntry.ts": "d6fad6f6d3834f6e4dcb89e0bddc8ddb674ad67ea2f006cc9d9ecdbe8ce316b1",
     "setup/global-setup.ts": "3aa72d1b9912cb06951f95a2ab7aafbaafc76f0695d1ee0f708dd1f462f6a49d"
   },
   "capture_origins": {
     "ipad-en": {
-      "run_id": "41204853555",
-      "workflow_commit": "e1f1ce69abcfe986e6e460825304c97eb3ae5d12"
+      "run_id": "43857407234",
+      "workflow_commit": "a1da87acdf948430e65e1043053504aea1f298e8"
     },
     "ipad-zh": {
-      "run_id": "41204853555",
-      "workflow_commit": "e1f1ce69abcfe986e6e460825304c97eb3ae5d12"
+      "run_id": "43857407234",
+      "workflow_commit": "a1da87acdf948430e65e1043053504aea1f298e8"
     },
     "phone-en": {
-      "run_id": "41204853555",
-      "workflow_commit": "e1f1ce69abcfe986e6e460825304c97eb3ae5d12"
+      "run_id": "43857407234",
+      "workflow_commit": "a1da87acdf948430e65e1043053504aea1f298e8"
     },
     "phone-zh": {
-      "run_id": "41204853555",
-      "workflow_commit": "e1f1ce69abcfe986e6e460825304c97eb3ae5d12"
+      "run_id": "43857407234",
+      "workflow_commit": "a1da87acdf948430e65e1043053504aea1f298e8"
     }
   },
   "capture_tool_files": {
@@ -71,36 +71,36 @@
   },
   "images": [
     {
-      "bytes": 258500,
+      "bytes": 257877,
       "file": "creative/en-US/header-21x9.png",
-      "sha256": "fa53ac301f40c4e917843012fb2b8c61cfb67e1578fb8768672bb0e59c673055",
+      "sha256": "b5a2fec00c1ce75f9fd6be7ae592b4f5154578173092286609695d4ec927796c",
       "size": [
         3840,
         1646
       ]
     },
     {
-      "bytes": 359827,
+      "bytes": 359301,
       "file": "creative/en-US/search-3x2.png",
-      "sha256": "ed190f892ccc75c85f4976ce995c151bf8e406875441f95df9fb0561c47433c5",
+      "sha256": "50f5c3eeb4760dbf01b966a6ab66668ad89046010eceab2387ddf3f51d90f028",
       "size": [
         3840,
         2560
       ]
     },
     {
-      "bytes": 251117,
+      "bytes": 254489,
       "file": "creative/zh-Hans/header-21x9.png",
-      "sha256": "53fd2bf3c5e77c1b061d25fa04704a8c8a499b3862355843efdfc1e1e2884913",
+      "sha256": "565bb8b8a6ef3cf58bb7f564816c337a59f035c188f5433da1f0819c2d19ac4f",
       "size": [
         3840,
         1646
       ]
     },
     {
-      "bytes": 333885,
+      "bytes": 339029,
       "file": "creative/zh-Hans/search-3x2.png",
-      "sha256": "655269a3ec339c4d5c577424c7078fb4759c8fe34d2a3a4c8d7288117e446c5a",
+      "sha256": "75ce4a5c03e956c1cac67fec9791b9f2a880b17bfafbd8df6137dca7b179a7af",
       "size": [
         3840,
         2560
@@ -116,9 +116,9 @@
       ]
     },
     {
-      "bytes": 328656,
+      "bytes": 328718,
       "file": "raw/en/01-radar.png",
-      "sha256": "1152db09f34b422f5d037256e36d2e07354d0a27f735800a83c9d955d9c1d1eb",
+      "sha256": "822f0793edbb3deea9aa846d7cba97989d97ed567551e8a34cfae9713515f945",
       "size": [
         1320,
         2868
@@ -143,27 +143,27 @@
       ]
     },
     {
-      "bytes": 294797,
+      "bytes": 292869,
       "file": "raw/en/03-hq.png",
-      "sha256": "6f4869e93881a929b66585a5a9e27f084908db1999962a12e0e46e98c97994ee",
+      "sha256": "5577d2bc30273f0ae2cfca285f24907778f0f56624fbdb379361ae3753f97c1d",
       "size": [
         1320,
         2868
       ]
     },
     {
-      "bytes": 266104,
+      "bytes": 254003,
       "file": "raw/en/04-console.png",
-      "sha256": "641f63b727178e2e2e4ba7e811f418d97348863bc68aa65ded2354dc204ead16",
+      "sha256": "0b218a121ac854379c153a991c46b19467007905ff77e5ea7abaf0ba8b6089da",
       "size": [
         1320,
         2868
       ]
     },
     {
-      "bytes": 317958,
+      "bytes": 321989,
       "file": "raw/en/05-usage.png",
-      "sha256": "fb262cacaeac7a3214906e036a83c68eb201738c618dec5ea28a6e54dcba3539",
+      "sha256": "342c02384e7eb00851bf05d7ba9844816f5e2a4ae715a770e1533c42f7617525",
       "size": [
         1320,
         2868
@@ -179,90 +179,90 @@
       ]
     },
     {
-      "bytes": 193818,
+      "bytes": 192642,
       "file": "raw/ipad-en/00-demo-entry.png",
-      "sha256": "9256720c49f1c51ce7d537c33645721ab7dbeef547e7e87c53ea991152e71e16",
+      "sha256": "6237b97d660cfb50ea360103b2b4bf1c2abc98da9d3c6fb9eb7d7b82f84b8ef1",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 392563,
+      "bytes": 391824,
       "file": "raw/ipad-en/01-split.png",
-      "sha256": "f04e2f3118b96c7e86e90b360fe0690c49fd40f9451e5b8673cf973c1392c697",
+      "sha256": "e547f0d76d1c9b227d6355fa06bcfe5b27de2f0614f41f4efe27b839ba3bd9bc",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 408375,
+      "bytes": 441417,
       "file": "raw/ipad-en/02-hq.png",
-      "sha256": "41b3c042cea6213a4c0d77db06569f0478bb7f4a35576677602731d8f6820fda",
+      "sha256": "053ddb5d79b05a41fb3ed9241dc0fabe06fb2f0270a34b8ed864a240c906ee8f",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 412110,
+      "bytes": 411181,
       "file": "raw/ipad-en/03-panes.png",
-      "sha256": "9421fc2c1bba19e0fc21ea7370440ab21b9e98b1f7d5dfa3e86b4c9b6ea24d8b",
+      "sha256": "6be6c5811f046f80f8ca80262864c723c743ba5e2fae2aac7c07a7f4c0947f1e",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 591492,
+      "bytes": 577692,
       "file": "raw/ipad-en/04-knowledge.png",
-      "sha256": "51f3268bed4ff2f3c316485a728742531458d019912ff431ce7c7c8741b67cbe",
+      "sha256": "75235e9e6c50600c24b170ea430449c4e5f3d7a5c9eadcf1d8db26f98b537800",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 203626,
+      "bytes": 202467,
       "file": "raw/ipad-zh/00-demo-entry.png",
-      "sha256": "cf1febe4c9024700f3484060bafd1050b826ecc10ae924b4cba4422179ddfd0b",
+      "sha256": "55ee5df5de970b0822da4bc855bbf13cdc6db09d4ecd21e03fc00c8f681d57a8",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 397539,
+      "bytes": 396174,
       "file": "raw/ipad-zh/01-split.png",
-      "sha256": "495007fd97c7b97112c1b30a699d1fb8e50518a606e9375bc6ea2d66ffa08dfb",
+      "sha256": "f89cbc9f6aa54f34bda2f24f6e5be8a8c018e4337c6b72510d0ba2850fbd9d7d",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 419356,
+      "bytes": 462689,
       "file": "raw/ipad-zh/02-hq.png",
-      "sha256": "77727c17c6d6b58e75376113a1c2f6742d4a2b427ac14ee7d41814c7194ac48a",
+      "sha256": "2070f1dd46eb9a8ccd48ec8c297d39395879f90a3c52f0376b7be3607c5cf98b",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 419962,
+      "bytes": 418753,
       "file": "raw/ipad-zh/03-panes.png",
-      "sha256": "d70874d8afbd7088cc94429287a8a530b00341c11a6b0b3b13e75bcaf0f2e4d1",
+      "sha256": "c664bc8c757584858493255feeca6c3b1376a9ab289c504b0fe307cc748eb137",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 620556,
+      "bytes": 587289,
       "file": "raw/ipad-zh/04-knowledge.png",
-      "sha256": "38ddcd88934e8f8d18a89d2f9359f630d8444134e0636d326138f4ee5762f7ae",
+      "sha256": "ed7817097b82a5b516620cb65638c8eabc5f0271561f1b70c3fb8c5fc0b02000",
       "size": [
         2752,
         2064
@@ -278,9 +278,9 @@
       ]
     },
     {
-      "bytes": 334102,
+      "bytes": 334041,
       "file": "raw/zh/01-radar.png",
-      "sha256": "6392bdac2fd5e664c28514dcb736ae14fda0a48d269e4a9d3ee6211263cd9462",
+      "sha256": "05f6b56799fb57d3dbc16d8873b488559d87c8cd98471b2e40b6d81142382297",
       "size": [
         1320,
         2868
@@ -305,27 +305,27 @@
       ]
     },
     {
-      "bytes": 316626,
+      "bytes": 334198,
       "file": "raw/zh/03-hq.png",
-      "sha256": "3547e20796c953da31df92693b7b499bc8de5a854f726bb30c05ae409194839a",
+      "sha256": "8fd73fb624b13aec00cd77b08d35148b44862b2fb8d06b256abc568543cc336e",
       "size": [
         1320,
         2868
       ]
     },
     {
-      "bytes": 274255,
+      "bytes": 262407,
       "file": "raw/zh/04-console.png",
-      "sha256": "7b161ceb4c16b235adafd65f5f55f6dea2b157dd5f4bf64511f91878f0b0693b",
+      "sha256": "d5e29f767e992e4fe28fcb42e4c2d77e3c24d42eeb497646a1e2b78f9c6f67fb",
       "size": [
         1320,
         2868
       ]
     },
     {
-      "bytes": 315830,
+      "bytes": 314101,
       "file": "raw/zh/05-usage.png",
-      "sha256": "81b47edbd08227d720f2e99f76cddac056adb7508ba850c1a0091f8e31d9c523",
+      "sha256": "d88d1e19dd8d6164418d465fe9e2966572cf5158d3062019228fc9f3079a3bd4",
       "size": [
         1320,
         2868
@@ -341,9 +341,9 @@
       ]
     },
     {
-      "bytes": 377965,
+      "bytes": 377976,
       "file": "screenshots/en-US/01.png",
-      "sha256": "6c7f0583601a60b5e21489c7985e7240ab03675014db91748b1af9970da1830b",
+      "sha256": "97c56556078a99045d41edd51e3bcde79c754e6b38122de2af538060ee3ae4cc",
       "size": [
         1320,
         2868
@@ -359,9 +359,9 @@
       ]
     },
     {
-      "bytes": 393959,
+      "bytes": 390025,
       "file": "screenshots/en-US/03.png",
-      "sha256": "f27a19f78d59d3865b6d3727335e39106983162e5fddf476d230d2c1e5884af6",
+      "sha256": "47e5f3c0bcb9cff7dbdf8c7a8529a1350ad0570297aebf2d96028c1e4ca6b207",
       "size": [
         1320,
         2868
@@ -377,9 +377,9 @@
       ]
     },
     {
-      "bytes": 395002,
+      "bytes": 397074,
       "file": "screenshots/en-US/05.png",
-      "sha256": "119e6fe8cbad6eb63c95de6b3eefa79da914db5761fb5b57ec2c37d8d1f8f231",
+      "sha256": "385824106a14fa30e2d4d63359e58786eba25653cb301757b093488e11935dba",
       "size": [
         1320,
         2868
@@ -404,45 +404,45 @@
       ]
     },
     {
-      "bytes": 452336,
+      "bytes": 452292,
       "file": "screenshots/en-US/ipad-01.png",
-      "sha256": "5e93721a1800adfab2a66bb50f8ea0839b0b930f6b1710e37fd0add2073e0b23",
+      "sha256": "fe84cbc7a190f8243293f3068b641ad8cc73c230d04bf70a2656ff2914d400d3",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 479746,
+      "bytes": 517594,
       "file": "screenshots/en-US/ipad-02.png",
-      "sha256": "6f32f424a3abbc0e59e1eeeb96fe7c46bc9df492d37f1395f65df53705f48f6c",
+      "sha256": "6bf49dc1531e125cc651f948a8f0ea1217df489e530fb0fb483cfd94594b4c74",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 468484,
+      "bytes": 468168,
       "file": "screenshots/en-US/ipad-03.png",
-      "sha256": "6025fcb6184d0bbac65ad8ace18fc8b352c7182e575bebe29f00ce135d5ee04c",
+      "sha256": "6d9f2bb9a7541cb9ac96a4e3413befaacd8cb463b4bdd53ab0544d707e9110a4",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 675389,
+      "bytes": 652303,
       "file": "screenshots/en-US/ipad-04.png",
-      "sha256": "d20dd4ac22ffb058c7a50343d3d0d0670422e2244b7be76e18d6ee478689997f",
+      "sha256": "371d4ea0c577db0f66366f3097094dc2f16d8930ec141890e85505644d19e941",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 373816,
+      "bytes": 373811,
       "file": "screenshots/zh-Hans/01.png",
-      "sha256": "4163fd9f0dae577dde0fefc7681f716344de74ba15d6adeafed9271d2be24127",
+      "sha256": "7dd34042a531ef924183c7c9ccaeb12af83e5bba6504bc1629ce1dac928b6492",
       "size": [
         1320,
         2868
@@ -458,9 +458,9 @@
       ]
     },
     {
-      "bytes": 363334,
+      "bytes": 382695,
       "file": "screenshots/zh-Hans/03.png",
-      "sha256": "68c924273d4ea36569800263d1af84bc2960b242177b08e036dc9fccf8d5843e",
+      "sha256": "6405fb8cd3419831792ef8158587d4b18bd33248b596cd0031dc4e6475e18bfa",
       "size": [
         1320,
         2868
@@ -476,9 +476,9 @@
       ]
     },
     {
-      "bytes": 371460,
+      "bytes": 369281,
       "file": "screenshots/zh-Hans/05.png",
-      "sha256": "5eb5826804c50d75f2ac990946032eeae6a271f5adec75507a8f308fb9772698",
+      "sha256": "1f1444052ac01ad36818628b7ad65fcd2c03d50cae05caf80634235dda40d27a",
       "size": [
         1320,
         2868
@@ -503,44 +503,44 @@
       ]
     },
     {
-      "bytes": 447009,
+      "bytes": 446793,
       "file": "screenshots/zh-Hans/ipad-01.png",
-      "sha256": "a4d3d248396efb26342abbaf763bf470ac10580b1c77bc44a5009c49bcce312c",
+      "sha256": "d9d59ee179f6619d72c0d5584e5526c634d22733c4a7caae777d01837b0cc67d",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 458850,
+      "bytes": 499956,
       "file": "screenshots/zh-Hans/ipad-02.png",
-      "sha256": "73af13bd4565f0d552cba65776916c257f6cb271a315d49a56e9e782e7db02bb",
+      "sha256": "3fe9bbb5bdf834b3a6500d52ed994bcf42984a734da226387eedc11cb99c498c",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 466949,
+      "bytes": 466720,
       "file": "screenshots/zh-Hans/ipad-03.png",
-      "sha256": "faab4a723befa65f0c4505f35d499b2a41f2ab54ec116faa66eddbaba02b6077",
+      "sha256": "cc7ee11bd8195142d7efd498a25e1a42a363c830ad11821e4f9e86aed261ba46",
       "size": [
         2752,
         2064
       ]
     },
     {
-      "bytes": 627676,
+      "bytes": 597469,
       "file": "screenshots/zh-Hans/ipad-04.png",
-      "sha256": "297cf0478d61c1004e38321a043530d9323c6644928e66583e477883c8aebce2",
+      "sha256": "98ea695e42390c7ec34450d86e391906bef7368fcf84d6f26d5a1575bef3216d",
       "size": [
         2752,
         2064
       ]
     }
   ],
-  "release_tag": "v1.0.162",
-  "render_commit": "e1f1ce69abcfe986e6e460825304c97eb3ae5d12",
+  "release_tag": "v1.0.183",
+  "render_commit": "a1da87acdf948430e65e1043053504aea1f298e8",
   "render_files": {
     "creative-captions.json": "3e114166af5721e06545432e70292a5fa1b4629cb4575e06a9073ec8147cb3ed",
     "creative-layout.mjs": "688d1a806918b0f816f1e27a8629f410baabd417db694cf9de19ba6a3ac94ad4",
@@ -557,7 +557,7 @@
     "version": "26.5"
   },
   "schema": 1,
-  "source_commit": "aec5d73993f916ba2831a5a662f115a4fe02f0a9",
+  "source_commit": "c66855db584d00308755fa9a9280e0b4bcea7735",
   "submitted": false,
   "synthetic_demo_only": true,
   "visual_review_required": true,
