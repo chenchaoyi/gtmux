@@ -3598,7 +3598,8 @@
     ],
     "selectors": [
       "TestDelayedFirstDriverReceiptNeverPermitsReplay",
-      "TestDelayedDriverHistoryRequiresExactHistoricalAttribution"
+      "TestDelayedDriverHistoryRequiresExactHistoricalAttribution",
+      "TestDelayedDriverReceiptRetainsOriginalIntentAcrossPlanChanges"
     ]
   },
   "internal/app/hqworkspace_delayed_drive_test.go": {

@@ -2005,6 +2005,7 @@ LEG-97b3ed8b57ae,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,64,
 LEG-61812fc046b5,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,71,Test,TestUnreadConfigDefaults,False,legacy-not-retrospectively-reviewed
 MAP-4661cc9cbfd1,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,9,reviewed-selector,TestDelayedFirstDriverReceiptNeverPermitsReplay,False,HGD-010
 MAP-701fff56a879,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,59,reviewed-selector,TestDelayedDriverHistoryRequiresExactHistoricalAttribution,False,HGD-010
+MAP-7aceebb4a273,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,128,reviewed-selector,TestDelayedDriverReceiptRetainsOriginalIntentAcrossPlanChanges,False,HGD-010
 MAP-b0e3154a9e2e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,44,reviewed-selector,TestGoalDebtSurvivesNotedEmptyUnreadRestartAndRotation,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 MAP-af89e66fde10,L2,reviewed implementation,internal/hqworkspace/followup_test.go,106,reviewed-selector,TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 MAP-38abd006fd1e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,161,reviewed-selector,TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"

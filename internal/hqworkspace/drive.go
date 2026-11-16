@@ -130,15 +130,10 @@ func (s *Store) DriveIntent(matter, action string, revision uint64, at int64, se
 
 func attachDrive(d *Database, o Observation, at int64) {
 	m := d.Matters[o.MatterID]
+	reserveDriverHistory(d, m, o, at)
 	p := m.Responsibility
 	if p == nil || p.Hold != nil || !driveEvidenceMatches(*d, m, o, at) {
 		return
-	}
-	// Reserve an accurately attributed driver even when first ingestion is late.
-	// Its deadline limits current coverage, never the historical replay fence.
-	if _, exists := d.IntentAttempts[p.Intent.ID]; !exists {
-		d.IntentAttempts[p.Intent.ID] = IntentAttempt{MatterID: m.ID, StepID: p.StepID, Intent: *p.Intent, State: "external", Evidence: o.ID, At: o.OccurredAt}
-		changed(d, at, "goal-drive-observed", m.ID, p.Intent.ID, o.ID)
 	}
 	copy := *p
 	copy.Drive = &DriveRef{ObservationID: o.ID}
@@ -159,4 +154,29 @@ func attachDrive(d *Database, o Observation, at int64) {
 	m.Responsibility = &copy
 	changed(d, at, "goal-drive-verified", m.ID, o.ID, g.State)
 	saveMatter(d, m, at)
+}
+
+// A late receipt still belongs to its saved intent after HQ changes the current
+// step or pauses. Preserve that history without changing the current plan/hold.
+func reserveDriverHistory(d *Database, m Matter, o Observation, at int64) {
+	reserve := func(p *Responsibility) bool {
+		candidate := m
+		candidate.Responsibility = p
+		if !driveEvidenceMatches(*d, candidate, o, at) {
+			return false
+		}
+		if _, exists := d.IntentAttempts[p.Intent.ID]; !exists {
+			d.IntentAttempts[p.Intent.ID] = IntentAttempt{MatterID: m.ID, StepID: p.StepID, Intent: *p.Intent, State: "external", Evidence: o.ID, At: o.OccurredAt}
+			changed(d, at, "goal-drive-observed", m.ID, p.Intent.ID, o.ID)
+		}
+		return true
+	}
+	if reserve(m.Responsibility) {
+		return
+	}
+	for _, r := range d.Assessments {
+		if r.Assessment.Decision == "responsibility" && CanonicalMatter(*d, r.Assessment.MatterID) == m.ID && reserve(r.Assessment.Responsibility) {
+			return
+		}
+	}
 }

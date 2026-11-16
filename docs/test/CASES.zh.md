@@ -7,7 +7,7 @@
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2421 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2422 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 148 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |

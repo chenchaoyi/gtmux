@@ -57,7 +57,7 @@ func TestDelayedFirstDriverReceiptNeverPermitsReplay(t *testing.T) {
 }
 
 func TestDelayedDriverHistoryRequiresExactHistoricalAttribution(t *testing.T) {
-	for _, bad := range []string{"sid", "home", "agent", "step", "action", "ref", "matter", "future", "before-intent", "deadline", "state", "ambiguous", "outside-interval"} {
+	for _, bad := range []string{"sid", "home", "agent", "step", "action", "ref", "matter", "future", "before-intent", "deadline", "state", "ambiguous", "outside-interval", "noted-payload"} {
 		t.Run(bad, func(t *testing.T) {
 			s, p := goalFixture(t)
 			goalPlan(t, s, p, 103, "")
@@ -97,6 +97,22 @@ func TestDelayedDriverHistoryRequiresExactHistoricalAttribution(t *testing.T) {
 				if e := s.Interval("goal-one", "worker-one", 100, 103, phaseRevision(t, s), 105); e != nil {
 					t.Fatal(e)
 				}
+			case "noted-payload":
+				fake := p
+				i := *p.Intent
+				i.ID = "unsaved-action"
+				fake.Intent = &i
+				o.DriveProof.ActionID = i.ID
+				if _, e := s.Publish("ordinary-report", "goal-one", "", "progress", "Read-only source", "", 104); e != nil {
+					t.Fatal(e)
+				}
+				q, e := s.ClaimObservation("message-ordinary-report", "hq-current", 104)
+				if e != nil {
+					t.Fatal(e)
+				}
+				if _, e = s.Assess(Assessment{ID: "ordinary-noted", ObservationID: q.Observation.ID, Owner: q.Owner, Generation: q.Generation, MatterID: "goal-one", Revision: phaseRevision(t, s), Decision: "noted", Reason: "Source checked", Responsibility: &fake}, 104, false); e != nil {
+					t.Fatal(e)
+				}
 			}
 			if e := s.Ingest("late", 0, 1, []Observation{o}, 111); e != nil {
 				t.Fatal(e)
@@ -106,5 +122,47 @@ func TestDelayedDriverHistoryRequiresExactHistoricalAttribution(t *testing.T) {
 				t.Fatal("unattributable report established driver history", d.IntentAttempts)
 			}
 		})
+	}
+}
+
+func TestDelayedDriverReceiptRetainsOriginalIntentAcrossPlanChanges(t *testing.T) {
+	for _, kind := range []string{"native", "background"} {
+		for _, interim := range []string{"different-step", "paused"} {
+			t.Run(kind+"/"+interim, func(t *testing.T) {
+				s, p := goalFixture(t)
+				goalPlan(t, s, p, 103, "")
+				other := Responsibility{StepID: "step-two", Action: "Other authorized fixture", AuthorityRef: p.AuthorityRef}
+				if interim == "paused" {
+					other.Hold = &GoalHold{Kind: "paused", SourceRef: "user:pause", Condition: "Wait for user resume"}
+				} else {
+					i := *p.Intent
+					i.ID, i.Ref, i.At = "action-two", "message:other-work", 105
+					other.Intent = &i
+				}
+				goalPlan(t, s, other, 105, "")
+				o := Observation{ID: "late-old-step", Kind: "relay-report", MatterID: "goal-one", Ref: "relay:late-old-step", Conversation: p.Intent.Target, OccurredAt: 104, DriveProof: &DriveProof{StepID: p.StepID, ActionID: p.Intent.ID, Ref: p.Intent.Ref, State: kind, NextCheck: 110}}
+				if e := s.Ingest("late", 0, 1, []Observation{o}, 111); e != nil {
+					t.Fatal(e)
+				}
+				current := phaseRead(t, s).Matters["goal-one"].Responsibility
+				if current.StepID != other.StepID || current.Drive != nil {
+					t.Fatal("old report altered current plan", current)
+				}
+				resume := ""
+				if interim == "paused" {
+					resume = "user:resume"
+				}
+				goalPlan(t, s, p, 112, resume)
+				calls := 0
+				_, e := s.DriveIntent("goal-one", p.Intent.ID, phaseRevision(t, s), 113, func(Conversation, string, string, func() bool) Delivery { calls++; return Delivery{State: "landed"} })
+				if e != nil || calls != 0 {
+					t.Fatal("selecting original intent replayed work after delayed historical proof", calls, e)
+				}
+				a := phaseRead(t, s).IntentAttempts[p.Intent.ID]
+				if a.State != "external" || a.Evidence != o.ID {
+					t.Fatal("original saved intent lost history", a)
+				}
+			})
+		}
 	}
 }
