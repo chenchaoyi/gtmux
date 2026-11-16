@@ -1,0 +1,58 @@
+{
+  "id": "mobile-history-refresh-upload-20261116",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-16",
+    "decision": "Separate human terminal scrollback from machine-current evidence; expose truthful cached-list retry state and per-thumbnail measured uploads",
+    "notes": "User confirmed pane10; read-only observation found alternate_on1/history1224/current48/history_limit50000. Restore only viewer CapturePaneColor history, retaining CaptureFull/FullColor alternate boundary for delivery authority. Preserve snapshots while reader is away from live tail. Background fleet refresh must not lock manual retry as perpetual Updating; preserve cached rows/timestamp, refusal rules and identity scope. User supersedes aggregate attachment row with thumbnail progress; real byte fractions only, saving is not completion, failures retain draft/attachments and explicit retry goes through existing guarded send. No new dependency, local product build, real pane input or submitted Store183 change. Tests below are planned, not execution passes; independent product review will be requested through HQ after frozen head."
+  },
+  "cases": [
+    {
+      "id": "MEX-001",
+      "layer": "L3",
+      "description": "Terminal viewer retains real bounded pane history while alternate-screen machine evidence stays current-only",
+      "setup": "Private tmux socket and synthetic ANSI normal history followed by alternate screen, existing boundary fixture; never live pane10",
+      "action": "Read viewer and verifier captures in alternate/normal/alternate transitions and quote-delimited target names",
+      "expected": "Viewer contains existing OLD-NORMAL plus current green frame with trailing rows; verifiers exclude old history, retain current frame; history_size unchanged, invalid targets empty and names cannot inject commands",
+      "planned_files": [
+        "internal/tmux/capture_boundary_test.go"
+      ]
+    },
+    {
+      "id": "MEX-002",
+      "layer": "L2",
+      "description": "Native terminal history remains readable beyond gesture thaw timer",
+      "setup": "Production NativeTerm, fake timers, captured old lines and deferred newer shorter frame",
+      "action": "Drag away from live tail, release, deliver polls and advance beyond3.5seconds; explicitly jump to live tail",
+      "expected": "Old history and selection remain until reader returns; live-tail action flushes newest pending frame promptly; no timer silently replaces historical snapshot",
+      "planned_files": [
+        "mobileapp/src/ui/NativeTerm.history.test.tsx"
+      ]
+    },
+    {
+      "id": "MEX-003",
+      "layer": "L2",
+      "description": "Cached Radar timeout is distinct from background refresh and manual retry",
+      "setup": "Production AgentsProvider/RadarPanel with cached fleet, rejected/timed-out read, SSE reconnect and controlled subsequent responses",
+      "action": "Reconnect before list read succeeds, retry explicitly, fail/timeout retry, switch clients, then recover",
+      "expected": "Cached roster and successful-update timestamp retained; warning explains cached list; automatic read does not disable Retry or show user-action spinner; explicit retry busy only until its bounded completion; success removes warning, old-client results cannot leak and owner/guest access errors keep restrictions",
+      "planned_files": [
+        "mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx"
+      ]
+    },
+    {
+      "id": "MEX-004",
+      "layer": "L2",
+      "description": "Each thumbnail owns measured upload phase and accessible progress without standalone bar",
+      "setup": "Shared production Composer/status component, multiple images and controlled phase callbacks; reduced motion both states",
+      "action": "Queue, prepare, report37percent/62percent, process body, complete one file, fail later file and explicitly retry send",
+      "expected": "Status is inside each corresponding thumbnail; queued/preparing/saving never fake0or100; complete check only after saved path; actual fractions bound animation; reduce motion skips timing; failed image offers guarded retry sending while caption/images remain, no automatic upload or send",
+      "planned_files": [
+        "mobileapp/src/ui/AttachmentUploadStatus.test.tsx",
+        "mobileapp/src/ui/Composer.multiPhoto.test.tsx"
+      ]
+    }
+  ],
+  "seal": "c38850058d83c1c1fc24ceeec390b1c12a1fa0677c9a3096a016a18d6fe8ad05"
+}

@@ -82,7 +82,15 @@ export function RadarPanel({
   const {t, pal, lang, mac} = useApp();
   const listRead = read ?? {hasValue: false, refreshing: conn === 'connecting', error: conn === 'unauthorized' ? 'access' as const : conn === 'offline' ? 'failed' as const : null};
   const pullOwner = useRef<object | null>(null);
-  useEffect(() => {pullOwner.current = null; setRefreshing(false); return () => {pullOwner.current = null;};}, [client]);
+  const pullDeadline = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    pullOwner.current = null; setRefreshing(false);
+    return () => {
+      pullOwner.current = null;
+      if (pullDeadline.current !== null) clearTimeout(pullDeadline.current);
+      pullDeadline.current = null;
+    };
+  }, [client]);
   const staleShare = isGuest && shareStale;
   const shareStaleText = lang === 'zh' ? '分享授权已失效，请联系所有者重新授权。' : 'Share access has expired. Ask the owner to grant access again.';
   const [desktopFocus, setDesktopFocus] = useState(true);
@@ -157,13 +165,24 @@ export function RadarPanel({
   const shown = waitingOnly ? agents.filter(a => a.status === 'waiting') : agents;
 
   const onRefresh = async () => {
+    if (pullOwner.current !== null) return;
     // Probe (debug builds only): did the pull actually reach the list? A collapsed
     // radar is shorter than the screen, and a list sized to its content leaves the
     // blank half unreachable — see ui/SectionList.test.tsx.
     if (Debug.logNet) Debug.record({event: 'radar-refresh'});
     const owner = {}; pullOwner.current = owner;
     setRefreshing(true);
-    try {await refresh();} finally {if (pullOwner.current === owner) setRefreshing(false);}
+    // This action's budget starts at the tap, including time queued behind a
+    // background read. Expiry releases feedback, not the shared read lane.
+    const deadline = new Promise<void>(resolve => {pullDeadline.current = setTimeout(resolve, 15_000);});
+    try {await Promise.race([refresh(), deadline]);} finally {
+      if (pullOwner.current === owner) {
+        pullOwner.current = null;
+        if (pullDeadline.current !== null) clearTimeout(pullDeadline.current);
+        pullDeadline.current = null;
+        setRefreshing(false);
+      }
+    }
   };
 
   // The supervisor (中控) is the meta-layer, so on the phone it renders as a FLOATING
@@ -320,9 +339,9 @@ export function RadarPanel({
       {banner && <Banner alert={banner} t={t} onClose={dismissBanner} />}
       {cachedIssue && <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} pal={pal}
         kind={listRead.error ?? (cachedAccess ? 'access' : 'offline')} isGuest={isGuest}
-        retrying={!cachedAccess && listRead.refreshing}
+        retrying={!cachedAccess && refreshing}
         actionLabel={cachedAccess ? (lang === 'zh' ? '连接设置' : 'Connections') : undefined}
-        onRetry={cachedAccess ? (!isGuest && navigation ? () => navigation.navigate('Servers') : undefined) : refresh} />}
+        onRetry={cachedAccess ? (!isGuest && navigation ? () => navigation.navigate('Servers') : undefined) : onRefresh} />}
       {isGuest && (
         <View
           testID="radar-guest-banner"

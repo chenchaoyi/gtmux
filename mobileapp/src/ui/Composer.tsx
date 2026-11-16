@@ -84,6 +84,7 @@ export async function uploadAll(
   onUpload: UploadFn,
   onProgress: (id: string, fraction: number) => void,
   onState?: (id: string, state: UploadState) => void,
+  onFailure?: (id: string) => void,
 ): Promise<{paths: string[]} | {error: UploadFailure}> {
   const out: string[] = [];
   for (const att of attachments) {
@@ -95,9 +96,11 @@ export async function uploadAll(
       });
       r = await onUpload(att.uri, att.name, att.type, observer);
     } catch {
+      onFailure?.(att.id);
       return {error: 'failed'};
     }
-    if ('error' in r) return {error: r.error};
+    if ('error' in r) {onFailure?.(att.id); return {error: r.error};}
+    if (typeof r.path !== 'string' || r.path.trim().length === 0) {onFailure?.(att.id); return {error: 'failed'};}
     onState?.(att.id, {phase: 'complete', fraction: 1});
     out.push(r.path);
   }
@@ -364,6 +367,7 @@ export const Composer = React.memo(function Composer({
   const photoReadInFlight = useRef(false);
   const [readingPhotos, setReadingPhotos] = useState(false);
   const [progress, setProgress] = useState<Record<string, UploadState>>({});
+  const [failedUpload, setFailedUpload] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const attachId = useRef(0);
   const [markupUri, setMarkupUri] = useState<string | null>(null);
@@ -468,6 +472,7 @@ export const Composer = React.memo(function Composer({
       setSending(true);
       setSendError(null);
       setProgress({});
+      setFailedUpload(null);
       // Keep captured callbacks out of the upload lane too; state alone updates
       // after render. Always release both guards when the upload settles.
       let uploaded: Awaited<ReturnType<typeof uploadAll>>;
@@ -475,6 +480,7 @@ export const Composer = React.memo(function Composer({
         uploaded = await uploadAll(attachments, onUpload, (id, f) =>
           setProgress(p => ({...p, [id]: {phase: f >= 1 ? 'processing' : 'uploading', fraction: f}})),
           (id, state) => setProgress(p => ({...p, [id]: state})),
+          id => setFailedUpload(id),
         );
       } finally {
         sendInFlight.current = false;
@@ -649,7 +655,7 @@ export const Composer = React.memo(function Composer({
   // TextInput auto-focuses on mount so the keyboard rises exactly then; on iOS the
   // key row rides up docked to the keyboard (inputAccessoryViewID). Staged
   // attachments show as a thumbnail strip ABOVE the input (the field wraps below),
-  // with one compact upload-status row during send and a × to remove before it.
+  // with upload feedback on each thumbnail and a × to remove before sending.
   const canSend = !keyBlocked && !readingPhotos && (text.trim().length > 0 || attachments.length > 0);
   const renderInputRow = () => (
     <View>
@@ -660,7 +666,7 @@ export const Composer = React.memo(function Composer({
           keyboardShouldPersistTaps="always"
           contentContainerStyle={styles.thumbStrip}>
           {attachments.map(att => (
-            <View key={att.id} style={[styles.thumbWrap, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
+            <View key={att.id} testID={`attach-thumbnail-${att.id}`} style={[styles.thumbWrap, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
               {att.isImage ? (
                 // Tap to annotate. This is where the markup editor lives now that it is
                 // not in front of every photo: on the thing you would annotate.
@@ -670,6 +676,8 @@ export const Composer = React.memo(function Composer({
                   testID={`attach-annotate-${att.id}`}
                   accessibilityLabel={lang === 'zh' ? `标注 ${att.name}` : `Annotate ${att.name}`}
                   onPress={() => {
+                    setFailedUpload(null);
+                    setSendError(null);
                     setMarkupFor(att.id);
                     setMarkupUri(att.uri);
                   }}>
@@ -683,9 +691,11 @@ export const Composer = React.memo(function Composer({
                   </Text>
                 </View>
               )}
+              {(sending || failedUpload != null) && <AttachmentUploadStatus attachment={att} state={progress[att.id]}
+                failed={failedUpload === att.id} lang={lang} onRetry={enabled && onSend && onUpload && canSend ? () => {void sendText();} : undefined} />}
               {!sending && (
                   <TouchableOpacity
-                    onPress={() => removeAttachment(att.id)}
+                    onPress={() => {if (failedUpload === att.id) setFailedUpload(null); removeAttachment(att.id);}}
                     testID={`attach-remove-${att.id}`}
                     accessibilityLabel={lang === 'zh' ? `移除 ${att.name}` : `Remove ${att.name}`}
                     hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
@@ -698,7 +708,6 @@ export const Composer = React.memo(function Composer({
         </ScrollView>
       )}
       {readingPhotos && <Text testID="composer-photo-reading" accessibilityLiveRegion="polite" style={{color: pal.fg2, fontSize: 12, lineHeight: 18, marginHorizontal: 12, marginBottom: 4}}>{lang === 'zh' ? '正在读取照片…' : 'Reading photos…'}</Text>}
-      {sending && <AttachmentUploadStatus attachments={attachments} states={progress} pal={pal} lang={lang} />}
       {sendError && <Text style={[styles.sendError, {color: StatusColor.waiting}]}>{sendError}</Text>}
       {draftOnly && !enabled && <Text testID="composer-draft-only" style={{color: pal.fg2, fontSize: 12, lineHeight: 18, paddingHorizontal: 16, paddingBottom: 6}}>
         {lang === 'zh' ? '会话未关联，暂不能发送。可以先写草稿。' : 'Conversation not linked. You can draft, but cannot send yet.'}
@@ -998,7 +1007,7 @@ const styles = StyleSheet.create({
   sendText: {fontSize: 19, fontWeight: '700'},
   // Staged-attachment thumbnail strip (above the input, so the field wraps below).
   thumbStrip: {flexDirection: 'row', alignItems: 'center', paddingTop: 8, paddingRight: 8},
-  thumbWrap: {width: 60, height: 60, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, marginRight: 8, overflow: 'hidden'},
+  thumbWrap: {width: 72, height: 72, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, marginRight: 8, overflow: 'hidden'},
   thumbImg: {width: '100%', height: '100%'},
   thumbFile: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4},
   thumbName: {fontSize: 8, marginTop: 3, maxWidth: 54},

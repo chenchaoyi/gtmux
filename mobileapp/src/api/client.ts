@@ -1301,7 +1301,7 @@ export class GtmuxClient {
         try {
           if (xhr.status >= 200 && xhr.status < 300) {
             const j = JSON.parse(xhr.responseText);
-            finish(typeof j?.path === 'string' ? {path: j.path} : {error: 'failed'});
+            finish(typeof j?.path === 'string' && j.path.trim().length > 0 ? {path: j.path} : {error: 'failed'});
           } else {
             Diag.act('act.upload', 'uploads', 'failed', 'the server refused a file', {status: xhr.status});
             finish({error: uploadFailureFor(xhr.status)});

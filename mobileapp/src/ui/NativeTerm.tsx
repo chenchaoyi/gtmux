@@ -263,7 +263,8 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
   // an in-progress selection (native selection can't survive a re-render). The
   // cursor matters as much as the text here — it ticks every second on a busy pane,
   // so freezing only the text still let the selection get cleared. We stay frozen a
-  // few seconds after release so the selection lives long enough to Copy.
+  // few seconds after a selection release at the tail; away from the tail, keep
+  // the historical snapshot until the reader returns or jumps to live.
   const [shown, setShown] = useState(text);
   const [selectionActive, setSelectionActive] = useState(false);
   const reflowViewport = useRef<TermReflowViewport | null>(null);
@@ -292,7 +293,7 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
     }
   };
   const flushPending = () => {
-    if (selActive.current || reflow.active.current) return; // never clobber selection or a reflow anchor
+    if (selActive.current || reflow.active.current || !stick.current) return; // retain the reader's history until returning to live
     frozen.current = false;
     if (thawTimer.current) {
       clearTimeout(thawTimer.current);
@@ -307,12 +308,13 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
   };
   const thawSoon = () => {
     if (thawTimer.current) clearTimeout(thawTimer.current);
+    if (!stick.current) return;
     thawTimer.current = setTimeout(flushPending, 3500);
   };
   // End-of-scroll thaw: if the gesture ended AT the bottom, flush the latest
   // snapshot IMMEDIATELY and resume following live (you scrolled down to see the
   // newest output — no selection to protect there). If it ended scrolled UP, keep
-  // the snapshot frozen a few seconds (a held selection / reading history). Without
+  // the snapshot frozen until the reader returns (a held selection / reading history). Without
   // this, scrolling to the bottom while a working pane streamed left you stuck on a
   // stale frame, unable to reach the live tail.
   const thawByPosition = () => {

@@ -1,0 +1,36 @@
+{
+  "id": "mobile-experience-review-followup-20261117",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review; independent follow-up still required)",
+    "date": "2026-11-17",
+    "decision": "Close the two verified P2 counterexamples from independent PR1889 review before merge",
+    "notes": "Independent report5f7922fd/SHA357173420826622aa54ce507008d1cdaee79b51067338c170c27803db00208e7 correctly separates existing empty-path gap from regressions. Keep original MEX001-004 designs and tests unchanged; new files below add the missing counterexamples. Explicit manual refresh owns a15-second click-to-feedback deadline without cancelling shared background/trailing reads; owner tokens retire timeout/settle callbacks across new actions and client switches. Upload HTTP success and injected shared uploadAll results must reject empty/whitespace paths, retaining caption/images and explicit guarded retry. Preserve nonempty path exactly; do not assert remote file existence. Existing CI TS2551 fix is already committed and mobile CI has passed at a983; this review does not claim follow-up tests have run or provide independent approval. No dependency, local product tests/builds, real pane/device, permission, release, or Store183 mutation."
+  },
+  "cases": [
+    {
+      "id": "MEX-005",
+      "layer": "L2",
+      "description": "Manual Radar retry has an independent click deadline and scoped ownership while the shared lane is occupied",
+      "setup": "Real AgentsProvider/RadarPanel/OfflineBanner with cached failed roster, controlled background SSE read, fake timers and deferred subsequent reads",
+      "action": "Click Retry during a background read; advance14999 then15000ms; click again while trailing read is pending; settle the old action, deliver expired responses, and exercise another SSE read and client switch",
+      "expected": "First action releases busy by15seconds from click even though its queued read has not settled; its late completion cannot clear a newer action. Current valid results still update the roster and background coalescing remains intact. Client switch retires old timers/results and cannot clear new client's action; cached timestamp and authority boundaries remain unchanged.",
+      "planned_files": [
+        "mobileapp/src/screens/RadarPanel.retryDeadline.test.tsx"
+      ]
+    },
+    {
+      "id": "MEX-006",
+      "layer": "L2",
+      "description": "Upload success requires a nonblank path before any complete mark, message send or draft clearing",
+      "setup": "Real GtmuxClient upload with controlled synthetic XHR; real Composer/uploadAll with a caption, two photos and controlled uploader responses",
+      "action": "Return HTTP2xx with empty/whitespace paths and valid paths containing ordinary spaces; inject invalid later-file success into uploadAll then explicitly retry the preserved batch",
+      "expected": "Empty/whitespace success is failed at both boundaries, never complete or sent; caption and both photos remain and no automatic retry occurs. An explicit double-tapped retry uses the existing in-flight guard and sends one valid message. Nonblank paths are preserved exactly and ordinary saved success remains complete only after response.",
+      "planned_files": [
+        "mobileapp/src/api/uploadPath.test.ts",
+        "mobileapp/src/ui/Composer.uploadPath.test.tsx"
+      ]
+    }
+  ],
+  "seal": "9672636b04a4b30839eb0126b3d6b61dc51e6eb997eb7be2d47571081aa4a190"
+}

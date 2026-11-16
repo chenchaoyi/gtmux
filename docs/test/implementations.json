@@ -3106,9 +3106,7 @@
   },
   "mobileapp/src/ui/Composer.multiPhoto.test.tsx": {
     "cases": [
-      "MPU-001",
-      "MPU-002",
-      "MPU-004"
+      "MEX-004"
     ],
     "selectors": [
       "batch photos stage in picker order and one edit replaces only its thumbnail",
@@ -3129,12 +3127,13 @@
   },
   "mobileapp/src/ui/AttachmentUploadStatus.test.tsx": {
     "cases": [
-      "MPU-004"
+      "MEX-004"
     ],
     "selectors": [
-      "upload status names the active file and hides percent during preparation and saving",
+      "thumbnail status names its file and keeps queued preparation and saving indeterminate",
       "Reduce Motion presents measured values without starting progress animation",
-      "progress animation only targets the latest measured byte fraction"
+      "progress animation only targets the latest measured byte fraction",
+      "a failed thumbnail retries only on explicit action and respects send availability"
     ]
   },
   "mobileapp/src/ui/Composer.photoSelection.test.tsx": {
@@ -3336,10 +3335,11 @@
   },
   "mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx": {
     "cases": [
-      "RDRC-002"
+      "MEX-003"
     ],
     "selectors": [
       "a cached read failure remains visible when SSE reconnects before the next result: %s",
+      "manual cached-list retry ends at its deadline even when an automatic read follows",
       "changing the client drops cached failure and rejects a late old reread",
       "cached access failure stays visible across reconnect with the existing %s authority"
     ]
@@ -3608,6 +3608,49 @@
     ],
     "selectors": [
       "TestGoalRelayAdapterFirstIngestAfterDeadlineDoesNotSend"
+    ]
+  },
+  "internal/tmux/capture_boundary_test.go": {
+    "cases": [
+      "MEX-001"
+    ],
+    "selectors": [
+      "TestCaptureAlternateScreenBoundary"
+    ]
+  },
+  "mobileapp/src/ui/NativeTerm.history.test.tsx": {
+    "cases": [
+      "MEX-002"
+    ],
+    "selectors": [
+      "history survives released gestures and polls beyond the thaw delay until an explicit live jump",
+      "clearing selection preserves the browsed snapshot and scrolling to the tail resumes live"
+    ]
+  },
+  "mobileapp/src/screens/RadarPanel.retryDeadline.test.tsx": {
+    "cases": [
+      "MEX-005"
+    ],
+    "selectors": [
+      "manual retry expires from its click while a background read owns the lane and cannot clear a newer action",
+      "client switching retires the old retry deadline and late answer without ending the new action"
+    ]
+  },
+  "mobileapp/src/api/uploadPath.test.ts": {
+    "cases": [
+      "MEX-006"
+    ],
+    "selectors": [
+      "HTTP success with a blank upload path fails without a completion mark: %j",
+      "a nonblank saved upload path retains ordinary spaces exactly"
+    ]
+  },
+  "mobileapp/src/ui/Composer.uploadPath.test.tsx": {
+    "cases": [
+      "MEX-006"
+    ],
+    "selectors": [
+      "a blank later upload path retains the batch and caption until explicit retry: %j"
     ]
   }
 }

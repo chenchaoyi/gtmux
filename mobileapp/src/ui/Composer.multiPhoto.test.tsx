@@ -98,6 +98,15 @@ test('upload phases keep the batch and caption on failure until an explicit succ
   await mount({onUpload: upload}); await pick();
   act(() => tree.root.findByType(TextInput).props.onChangeText('Two photos'));
   act(() => {press('composer-send');});
+  const statuses = () => tree.root.findAllByType(AttachmentUploadStatus);
+  const status = (name: string) => statuses().find(n => n.props.attachment.name === name)!;
+  expect(statuses()).toHaveLength(2);
+  for (const item of statuses()) {
+    const thumbnail = tree.root.findAllByProps({testID: `attach-thumbnail-${item.props.attachment.id}`})[0];
+    expect(thumbnail.findByType(AttachmentUploadStatus)).toBe(item);
+  }
+  expect(status('second.png').props.state).toBeUndefined();
+  expect(tree.root.findAllByProps({testID: 'attachment-upload-status'})).toHaveLength(0);
   expect(text()).toContain('Preparing');
   expect(text()).not.toContain('0%');
   act(() => jobs[0].state?.({phase: 'uploading', fraction: 0.37, loaded: 37, total: 100}));
@@ -107,17 +116,28 @@ test('upload phases keep the batch and caption on failure until an explicit succ
   expect(text()).not.toContain('100%');
   expect(sends).not.toHaveBeenCalled();
   await act(async () => {jobs[0].finish({path: '/saved/first.jpg'});});
-  expect(tree.root.findByType(AttachmentUploadStatus).findAll(n => n.props.accessibilityRole === 'progressbar')[0].props.accessibilityLabel).toContain('2/2');
+  expect(status('first.jpg').props.state.phase).toBe('complete');
+  expect(status('second.png').props.state.phase).toBe('preparing');
   await act(async () => {jobs[1].finish({error: 'failed'});});
   expect(uris()).toEqual(photos.map(p => p.uri));
   expect(tree.root.findByType(TextInput).props.value).toBe('Two photos');
   expect(sends).not.toHaveBeenCalled();
-  expect(tree.root.findAllByType(AttachmentUploadStatus)).toHaveLength(0);
-  act(() => {press('composer-send');});
+  expect(status('second.png').props.failed).toBe(true);
+  expect(status('first.jpg').props.failed).toBe(false);
+  expect(upload).toHaveBeenCalledTimes(2);
+  await act(async () => {tree.update(<Composer pal={paletteFor('light')} lang="en" onSend={sends} onUpload={upload} enabled={false} />);});
+  expect(status('second.png').props.onRetry).toBeUndefined();
+  expect(upload).toHaveBeenCalledTimes(2);
+  expect(tree.root.findByType(TextInput).props.value).toBe('Two photos');
+  await act(async () => {tree.update(<Composer pal={paletteFor('light')} lang="en" onSend={sends} onUpload={upload} />);});
+  const retry = status('second.png').findAll(n => n.props.accessibilityRole === 'button' && typeof n.props.onPress === 'function')[0];
+  act(() => {retry.props.onPress(); retry.props.onPress();});
+  expect(upload).toHaveBeenCalledTimes(3);
   await act(async () => {jobs[2].finish({path: '/saved/first.jpg'});});
   expect(sends).not.toHaveBeenCalled();
   await act(async () => {jobs[3].finish({path: '/saved/second.png'});});
   await flush();
   expect(sends).toHaveBeenCalledTimes(1);
   expect(sends.mock.calls[0][0].text).toBe('Two photos\n/saved/first.jpg\n/saved/second.png');
+  expect(statuses()).toHaveLength(0);
 });
