@@ -2,10 +2,10 @@
   "id": "hq-state-phase1-20261108",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex continuation implementation owner (self-review; independent F1 finding supplied by review-hq-state)",
-    "date": "2026-11-08",
+    "reviewer": "Codex gpt-6.1-sol implementation owner (fresh self-review; frozen candidate independent review pending HQ)",
+    "date": "2026-11-16",
     "decision": "Proceed with the bounded F1 cursor correction and deterministic regressions; independent delta review required before push",
-    "notes": "Follow-up design review is scoped to HQP1-006: an empty event read cannot advance from a later sequence sample. Correct the existing empty-gap expectation to keep the observed cursor; other case definitions are unchanged. The original design/implementation commits remain intact. New deterministic source interleavings, activation, retention/filtering, page boundary, duplicate and Store-reopen expectations are separately recorded in hq-state-cursor-f1-20261108.json. No device, deployed service, real HQ data, source epoch reset or historical recovery claim."
+    "notes": "Follow-up design review is scoped to HQP1-006: an empty event read cannot advance from a later sequence sample. Correct the existing empty-gap expectation to keep the observed cursor; other case definitions are unchanged. The original design/implementation commits remain intact. New deterministic source interleavings, activation, retention/filtering, page boundary, duplicate and Store-reopen expectations are separately recorded in hq-state-cursor-f1-20261108.json. No device, deployed service, real HQ data, source epoch reset or historical recovery claim. Fresh review for goal-driver extension: preserve all HQP1 assertions, source-gap/read independence, lease/generation fencing and unversioned transition rejection. Only schema fixed literals follow current Schema; app read-independence snapshots are captured after the separate goal sweep. Exploratory tests predate discovery of design gate; formal test implementation commit follows this review."
   },
   "cases": [
     {
@@ -201,5 +201,5 @@
       ]
     }
   ],
-  "seal": "b00a81f2ba3ca2455bb1c8e6254238190582c3c3876ba5d5ed4b026e181d3473"
+  "seal": "410df620ed57f96a8f3f5f042660f0b84b782375e547c6f3fa11ee8b46e16a92"
 }
