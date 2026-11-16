@@ -64,7 +64,7 @@ export function AttachmentUploadStatus({attachment, state, failed = false, lang,
   </View>;
 }
 const styles = StyleSheet.create({
-  overlay: {...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.56)', alignItems: 'center', justifyContent: 'center', padding: 2},
+  overlay: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,0.56)', alignItems: 'center', justifyContent: 'center', padding: 2},
   ring: {width: 48, height: 48, alignItems: 'center', justifyContent: 'center'},
   percent: {position: 'absolute', color: '#fff', fontSize: 12, lineHeight: 16, fontWeight: '600', fontVariant: ['tabular-nums']},
   phase: {color: '#fff', fontSize: 10, lineHeight: 12, textAlign: 'center', marginTop: 3},
