@@ -1,8 +1,15 @@
-Clearer conversations and smoother everyday work
+Since the last App Store release (1.0.162):
 
-• Choose Light, Dark or System appearance, with tighter Chat spacing and quieter delivery feedback.
-• Select multiple photos at once, edit them individually and follow upload progress.
-• Read long conversations, commands and tool results with clearer previews, stable history and less clutter.
-• Knowledge pages lead with the advice, with history and details available on demand.
-• Restore sessions from your connected Mac, with progress and clearer retry controls.
-• Improved HQ status, notification sync and usage widgets, plus more reliable conversation loading and session association.
+• Chat appearance: choose Light, Dark or System, adjust session text size, and enjoy tighter spacing, clearer iPad layouts and the new three-block loading animation.
+• Conversations and Trace: inspect complete tool calls and recorded inputs, read Shell, Python and JavaScript with syntax highlighting, and see more recorded actions from Codex, OpenCode, Kimi and other supported agents.
+• Diff reading: browse changes by directory, file and hunk, with line numbers, change counts and clearer long-line formatting.
+• Long sessions: load recent conversations first and earlier history on demand while keeping your place and expanded sections. Open the live terminal while history loads; read available history and draft a reply while the current session is being confirmed.
+• Photos and markup: select multiple images at once, edit each from the composer, move and zoom while annotating, and follow more detailed upload progress.
+• HQ: read questions, reasons and progress separately, with clearer matter counts and reply identity. Choosing an answer fills a draft that you can edit before sending.
+• Knowledge: see the core advice first, then expand history and record details. Result confirmation and retries preserve the correct entry revision and source.
+• Session recovery: select sessions to restore on your connected Mac, follow recovery progress and retry when needed.
+• Usage and widgets: clearer Home Screen and Lock Screen widgets. Slow or failed reads keep the last valid data and show retry, timeout or access errors.
+• Notifications: completion alerts wait for the conversation turn to finish. Fewer duplicate sync requests, delayed retries on connection errors and a separate retry for each server.
+• Message delivery and recovery: fewer duplicate bubbles and lingering confirmation or failure messages, clearer reload progress, and retry or draft recovery after a send fails. Session associations better survive tmux pane moves, renumbering and renaming.
+
+Update your gtmux server as well to use the latest server-supported features.

@@ -1,1 +1,1 @@
-在 iPhone 和 iPad 上查看 tmux 会话、回复 Agent，用轨迹回看工具调用，在 HQ 中跟进事项。需连接自己的 Mac 或 Linux 服务器。
+把电脑上的 tmux 工作台带到 iPhone 和 iPad：查看 Agent 进展、随时回复，回看工具调用与文件，用 HQ 跟进任务、管理知识，查看用量并接收提醒。需连接自己的 Mac 或 Linux 服务器。
