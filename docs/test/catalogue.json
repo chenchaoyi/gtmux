@@ -41644,7 +41644,7 @@
       "cases": [
         {
           "id": "MAP-f2ed2637baa9",
-          "line": 95,
+          "line": 112,
           "kind": "reviewed-selector",
           "name": "startFake",
           "dynamic": false,
@@ -41652,7 +41652,7 @@
           "design": "CT-HTTP"
         }
       ],
-      "sha256": "79d8be5f47afc60d6725ac9b4c72c04d329ffd08d10aa46d92c9f69ba054d5ef"
+      "sha256": "1498020976c07f0f601d2d9a4fcd3f6068ad393b869f62135a158c961462947c"
     },
     "mobileapp/e2e/fake-serve/verdict.test.ts": {
       "sha256": "466b40dc8d9f58a6ea36925cb8403906250465356cddcd05a89dae55b77f5f12",
@@ -62935,7 +62935,7 @@
       "cases": [
         {
           "id": "MAP-c9d3762e7230",
-          "line": 18,
+          "line": 32,
           "kind": "reviewed-selector",
           "name": "async function start",
           "dynamic": false,
@@ -62943,7 +62943,7 @@
           "design": "CT-HTTP"
         }
       ],
-      "sha256": "e5680209e52d0d592b794015230823527b9d35ac4d1aa9a5d6774dd62ed247af"
+      "sha256": "c8b677199f1391e4d5c977d5d3e5dcd30662f147f66c225c6e27a9ead7d51066"
     },
     "tests/web/full-input.test.cjs": {
       "sha256": "95eb1ce8fd86c4884441e694932d1fd3b1e69ebd20beebb8bf9be62ee3e13c6b",

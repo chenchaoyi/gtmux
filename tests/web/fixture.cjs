@@ -6,6 +6,20 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const root = path.resolve(__dirname, '../../internal/server/web');
 const now = Math.floor(Date.now() / 1000);
+// This fake models legacy seed matters only, not production intent dispatch.
+function legacyResponsibility(matter) {
+  const followup_id = 'goal-' + crypto.createHash('sha256')
+    .update(JSON.stringify([matter.id, 'verify', '', ''])).digest('hex');
+  if (matter.merged_into || ['completed', 'closed'].includes(matter.state)) {
+    return {followup_id, state: 'terminal', reason: 'explicit terminal state'};
+  }
+  if (matter.state === 'needs-input' && matter.user_input && !matter.user_input.answer_id) {
+    return {followup_id, state: 'waiting-user', reason: matter.user_input.prompt};
+  }
+  return {followup_id, state: 'verify', reason: matter.state === 'needs-input' && !matter.user_input
+    ? 'HQ must clarify the legacy unstructured question'
+    : 'HQ must verify authority and next responsibility; legacy records do not authorize execution'};
+}
 const agents = [
   {pane_id: '%901', session: 'Web QA', agent: 'Codex', task: 'Investigate retries', status: 'working', since: now, source: 'tmux'},
   {pane_id: '%902', session: 'Web QA', agent: 'Claude Code', task: 'Review notes', status: 'waiting', since: now, source: 'tmux'},
@@ -57,12 +71,15 @@ async function start() {
           if(!matter){
             const snapshot=structuredClone(state.workspace);
             for(const key of ['human_input','needs_input'])for(const item of snapshot.overview[key]||[]) {
-              const question=snapshot.matters.find(row=>row.id===item.matter_id)?.user_input;
+              const source=snapshot.matters.find(row=>row.id===item.matter_id);
+              if(source)item.next_responsibility=legacyResponsibility(source);
+              const question=source?.user_input;
               if(question&&!question.answer_id)item.preview={message_id:question.id,kind:'question',body:question.prompt,at:question.at};
             }
             return json(res,200,snapshot);
           }
-          return json(res,state.matters[matter]?200:404,state.matters[matter]||{error:'matter not found'});
+          const detail=state.matters[matter];
+          return json(res,detail?200:404,detail?{...detail,projection:{next_responsibility:legacyResponsibility(detail.matter)}}:{error:'matter not found'});
         }
         if (state.documents && (p === '/api/artifacts/resolve' || p === '/api/artifacts/content')) {
           if(!state.share.all)return json(res,403,{error:'forbidden: not shared'});

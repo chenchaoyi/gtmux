@@ -786,7 +786,7 @@ MAP-5c6662fed7bd,L2,reviewed implementation,mobileapp/e2e/android/permissionJour
 MAP-2ba0c888b1bb,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,85,reviewed-selector,ACP-002 registered journey preserves,False,ACP-002
 MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,46,reviewed-selector,RN fake / Go contract:,False,CT-HTTP
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
-MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
+MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,112,reviewed-selector,startFake,False,CT-HTTP
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
 MAP-a5b3bb5a1d5d,L2,reviewed implementation,mobileapp/src/api/agentsRead.test.ts,10,reviewed-selector,a real empty agents response is successful data and ordinary rows still map,False,RDR-004
 MAP-5e41be7d3f1b,L2,reviewed implementation,mobileapp/src/api/agentsRead.test.ts,15,reviewed-selector,a malformed successful agents body stays a read failure: %p,False,RDR-004
@@ -2358,7 +2358,7 @@ MAP-c856d62bb0c7,L2,reviewed implementation,tests/contracts/http-contract.cjs,36
 MAP-aeaadc032b3b,L2,reviewed implementation,tests/contracts/http-contract.json,307,reviewed-selector,"""hq-overview""",False,HGD-007
 MAP-233816800d4e,L2,reviewed implementation,tests/contracts/http-contract.json,387,reviewed-selector,"""hq-detail-page""",False,HGD-007
 MAP-184f052913f1,L2,reviewed implementation,tests/web/backend-contract.test.cjs,34,reviewed-selector,Web fake / Go contract:,False,CT-HTTP
-MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,18,reviewed-selector,async function start,False,CT-HTTP
+MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,32,reviewed-selector,async function start,False,CT-HTTP
 MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
 LEG-69563fe32201,L2,Worker,tunnel-worker/src/direct.test.ts,36,test,the port formula is the client's: Go's crc32.ChecksumIEEE over the id,False,legacy-not-retrospectively-reviewed
 LEG-f3f8a76744ad,L2,Worker,tunnel-worker/src/direct.test.ts,49,test,"each device gets its own account, allowed its own port and nothing else",False,legacy-not-retrospectively-reviewed

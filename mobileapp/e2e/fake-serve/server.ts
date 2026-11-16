@@ -23,6 +23,23 @@ import {World} from './world';
 import {iconBytes} from './icons';
 import {createHash} from 'crypto';
 import {posix} from 'path';
+import type {HQMatter} from '../../src/api/hqWorkspace';
+
+// Synthetic worlds contain legacy matters, not dispatch/authority records.
+// Derive their projection from the seed; never import contract expectations.
+function legacyResponsibility(matter: HQMatter) {
+  const followup_id = 'goal-' + createHash('sha256')
+    .update(JSON.stringify([matter.id, 'verify', '', ''])).digest('hex');
+  if (matter.merged_into || ['completed', 'closed'].includes(matter.state)) {
+    return {followup_id, state: 'terminal', reason: 'explicit terminal state'};
+  }
+  if (matter.state === 'needs-input' && matter.user_input && !matter.user_input.answer_id) {
+    return {followup_id, state: 'waiting-user', reason: matter.user_input.prompt};
+  }
+  return {followup_id, state: 'verify', reason: matter.state === 'needs-input' && !matter.user_input
+    ? 'HQ must clarify the legacy unstructured question'
+    : 'HQ must verify authority and next responsibility; legacy records do not authorize execution'};
+}
 
 /**
  * A guest link's two allowlists, kept separate because the real serve keeps them separate:
@@ -154,13 +171,15 @@ export async function startFake(opts: {guest?: boolean; port?: number; token?: s
       if (!matter) {
         const value=JSON.parse(JSON.stringify(world.workspace)) as typeof world.workspace;
         for(const group of [value.overview.human_input,value.overview.needs_input])for(const item of group||[]) {
-          const input=value.matters.find(m=>m.id===item.matter_id)?.user_input;
+          const source=value.matters.find(m=>m.id===item.matter_id);
+          if(source)Object.assign(item,{next_responsibility:legacyResponsibility(source)});
+          const input=source?.user_input;
           if(input && !input.answer_id)item.preview={message_id:input.id,kind:'question',body:input.prompt,at:input.at};
         }
         return json(res,200,value);
       }
       const detail=world.matters.get(matter);
-      return json(res,detail?200:404,detail || {error:'matter not found'});
+      return json(res,detail?200:404,detail ? {...detail,projection:{next_responsibility:legacyResponsibility(detail.matter)}} : {error:'matter not found'});
     }
 
     if (path.startsWith('/api/artifacts/')) {

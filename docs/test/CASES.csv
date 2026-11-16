@@ -4392,7 +4392,7 @@ LEG-6b1813f7509a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,1
 LEG-d240b174d0df,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,156,test,the stock report is unchanged until a suite seeds the full one,False,legacy-not-retrospectively-reviewed
 LEG-01e2c0d8a07a,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,160,test,"the seeded plan groups by agent, under the names the usage sheet ids carry",False,legacy-not-retrospectively-reviewed
 LEG-e34f8145a818,L1,RN / mobile harness,mobileapp/e2e/fake-serve/seeds.test.ts,173,test,back to the stock world,False,legacy-not-retrospectively-reviewed
-MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,95,reviewed-selector,startFake,False,CT-HTTP
+MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,112,reviewed-selector,startFake,False,CT-HTTP
 LEG-a314cc5be23f,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,8,test,"the stock fixture: one worker waiting, so needs_you, naming it",False,legacy-not-retrospectively-reviewed
 LEG-65bd4c2dfa5e,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,13,test,nothing waiting is normal; the supervisor mid-turn is working; the supervisor waiting is hq_call,False,legacy-not-retrospectively-reviewed
 LEG-5d182318c546,L1,RN / mobile harness,mobileapp/e2e/fake-serve/verdict.test.ts,25,test,the longest waiting worker comes first,False,legacy-not-retrospectively-reviewed
@@ -6846,7 +6846,7 @@ LEG-cb54ae23ca64,L3,Browser,tests/web/conversation-map.test.cjs,48,scenario,`Ove
 LEG-4ea9a2309839,L3,Browser,tests/web/conversation-map.test.cjs,96,scenario,"Overview bookmarks retain unsampled turns, isolate homes and handle cleared storage",False,legacy-not-retrospectively-reviewed
 LEG-821ed12da1b2,L3,Browser,tests/web/conversation-map.test.cjs,125,scenario,Legacy clockless repeated prompts keep separate call disclosures,False,legacy-not-retrospectively-reviewed
 LEG-d361c87ff22e,L3,Browser,tests/web/conversation-map.test.cjs,136,scenario,`Overview keeps page-only bookmarks through refresh (read denied ${denyRead})`,True,legacy-not-retrospectively-reviewed
-MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,18,reviewed-selector,async function start,False,CT-HTTP
+MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,32,reviewed-selector,async function start,False,CT-HTTP
 LEG-c27b6d5dee1f,L3,Browser,tests/web/full-input.test.cjs,4,scenario,'Full tool input and compact formatting at '+width,True,legacy-not-retrospectively-reviewed
 LEG-e24c4d62b6eb,L3,Browser,tests/web/full-input.test.cjs,35,scenario,'Diff file cards and independent hunks at '+width,True,legacy-not-retrospectively-reviewed
 MAP-60e68185ef5d,L4,Browser,tests/web/full-input.test.cjs,35,reviewed-selector,Diff file cards and independent hunks at ,False,DTV-003
