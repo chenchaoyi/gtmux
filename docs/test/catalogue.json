@@ -65611,7 +65611,7 @@
       "cases": [
         {
           "id": "MAP-b9ea2545c70d",
-          "line": 11,
+          "line": 13,
           "kind": "reviewed-selector",
           "name": "TestGoalActionAuthorityAndExactReceiptEnvelope",
           "dynamic": false,
@@ -65620,7 +65620,7 @@
         },
         {
           "id": "MAP-b6ae467c793b",
-          "line": 82,
+          "line": 112,
           "kind": "reviewed-selector",
           "name": "TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers",
           "dynamic": false,
@@ -65628,7 +65628,7 @@
           "design": "HGD-002,HGD-004,HGD-005"
         }
       ],
-      "sha256": "a1bdb85dd667375043785dfbf9620e52cabc6c176da681083ceedd0e37461944"
+      "sha256": "36cbc6de6fcdf9aba34a5b283eb9c594ddcc5f987028720602e3bf83d4165c30"
     },
     "internal/hqworkspace/followup_test.go": {
       "layer": "L2",

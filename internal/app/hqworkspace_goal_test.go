@@ -5,7 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
+	"github.com/chenchaoyi/gtmux/internal/relay"
 )
 
 func TestGoalActionAuthorityAndExactReceiptEnvelope(t *testing.T) {
@@ -77,6 +79,34 @@ func TestGoalActionAuthorityAndExactReceiptEnvelope(t *testing.T) {
 			t.Fatal("ambiguous or unauthorized envelope accepted", bad)
 		}
 	}
+	// A question is not a delivery/progress report, even if its JSON resembles one.
+	oldRead, oldSeq, oldRelay := workspaceReadEvents, workspaceEventSequence, workspaceRelayRecords
+	t.Cleanup(func() { workspaceReadEvents, workspaceEventSequence, workspaceRelayRecords = oldRead, oldSeq, oldRelay })
+	workspaceReadEvents = func(int64) ([]events.Record, bool) { return nil, false }
+	workspaceEventSequence = func() int64 { return 0 }
+	kind := "ask"
+	workspaceRelayRecords = func() []relay.Request {
+		return []relay.Request{{ID: "proof-" + kind, Kind: kind, Agent: c.Agent, HomeID: c.HomeID, ThreadID: c.SessionID, Body: body, CreatedAt: 110}}
+	}
+	if e = s.ActivateObservations(0, 108); e != nil {
+		t.Fatal(e)
+	}
+	if e = ingestWorkspaceObservations(s, 111); e != nil {
+		t.Fatal(e)
+	}
+	d, _ = s.Read()
+	if g := hqworkspace.GoalResponsibility(d, d.Matters[m.ID], 111); g.State != "queued" {
+		t.Fatal("ask became execution proof", g)
+	}
+	kind = "report"
+	if e = ingestWorkspaceObservations(s, 112); e != nil {
+		t.Fatal(e)
+	}
+	d, _ = s.Read()
+	if g := hqworkspace.GoalResponsibility(d, d.Matters[m.ID], 112); g.State != "driving" {
+		t.Fatal("exact report proof did not attach", g)
+	}
+
 }
 
 func TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers(t *testing.T) {

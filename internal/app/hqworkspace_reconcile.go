@@ -113,7 +113,9 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 		// Explicit relay reports are already addressed to HQ; unresolved identity
 		// remains unassigned instead of borrowing a task's recycled pane.
 		o := hqworkspace.Observation{ID: id, Kind: "relay-" + r.Kind, MatterID: matter, MatterRevision: 0, Body: r.Body, Ref: "relay:" + r.ID, Conversation: c, OccurredAt: r.CreatedAt}
-		o.DriveProof = workspaceRelayDriveProof(r.Body, matter)
+		if r.Kind == "report" {
+			o.DriveProof = workspaceRelayDriveProof(r.Body, matter)
+		}
 		if err = s.Ingest("relay-start", start, start, []hqworkspace.Observation{o}, now); err != nil {
 			return err
 		}
