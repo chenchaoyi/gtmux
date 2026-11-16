@@ -5,7 +5,7 @@
     "reviewer": "Codex gpt-6.1-sol implementation owner (self-review; independent review pending HQ)",
     "date": "2026-11-16",
     "decision": "Ready for formal implementation and mapping",
-    "notes": "Reviewed evidence boundaries and negative oracles. Exploratory working-tree tests ran before this repository ordering gate was discovered; this record does not claim to predate those experiments. This design-only commit precedes the first committed test implementation. Independent frozen-candidate review remains required; no peer/user approval is asserted. Uses synthetic stores, clocks and delivery; no production sessions, permissions, KB or devices. Formal extension: put the bounded sweep in the existing notification pass so a baseline-compatible regression can prove ordinary noted plus no new events still wakes HQ. Existing ingestion test will capture the post-sweep snapshot before read-independence assertions; source ingestion expectations remain unchanged. Fresh self-review before the action-identity fencing amendment: code inspection found that one-shot delivery also needs an immutable per-material-step action ID across responsibility reassessment, including an unknown/refused attempt. The replacement-ID boundary is a refinement of the existing stable-intent case, with original case identity and expectations retained for the repository first-edit history gate. Source adapter boundary reviewed before the formal assertion: only a relay report, never an ask carrying similar structured JSON, may attach a step receipt; the existing exact-receipt case retains its original expected result."
+    "notes": "Reviewed evidence boundaries and negative oracles. Exploratory working-tree tests ran before this repository ordering gate was discovered; this record does not claim to predate those experiments. This design-only commit precedes the first committed test implementation. Independent frozen-candidate review remains required; no peer/user approval is asserted. Uses synthetic stores, clocks and delivery; no production sessions, permissions, KB or devices. Formal extension: put the bounded sweep in the existing notification pass so a baseline-compatible regression can prove ordinary noted plus no new events still wakes HQ. Existing ingestion test will capture the post-sweep snapshot before read-independence assertions; source ingestion expectations remain unchanged. Fresh self-review before the action-identity fencing amendment: code inspection found that one-shot delivery also needs an immutable per-material-step action ID across responsibility reassessment, including an unknown/refused attempt. The replacement-ID boundary is a refinement of the existing stable-intent case, with original case identity and expectations retained for the repository first-edit history gate. Source adapter boundary reviewed before the formal assertion: only a relay report, never an ask carrying similar structured JSON, may attach a step receipt; the existing exact-receipt case retains its original expected result. CI exposed one fixture missing HOME redirection; retain the real-home panic guard and set a disposable HOME before invoking CLI adapters. Separately reviewed the exact HTTP additive fields against real-handler failure output; only two successful HQ read cases change, with status/auth/cursors/question identity unchanged."
   },
   "cases": [
     {
@@ -80,7 +80,18 @@
       "planned_files": [
         "internal/hqworkspace/followup_test.go"
       ]
+    },
+    {
+      "id": "HGD-007",
+      "layer": "L2",
+      "description": "Shared HTTP golden discloses additive next responsibility without changing existing owner/guest or question contracts.",
+      "setup": "Existing synthetic http-contract.json and real-handler CI output for hq-overview and hq-detail-page; no real HOME/session.",
+      "action": "Review added next_responsibility fields on the two existing question preview rows and projection on selected detail, then compare the real handler again.",
+      "expected": "Only additive waiting-user responsibility/provenance fields change; existing body fields, source question identity, status codes, auth, headers and cursors remain exact.",
+      "planned_files": [
+        "tests/contracts/http-contract.json"
+      ]
     }
   ],
-  "seal": "9094fb4d1a64df3dae03042ae60ed4b99326024b94f72170231d41b2bc506a24"
+  "seal": "6de7ec5dae10f141ae09f64b99d7ad3f04517a1d961b088b6f3d7785ceb2414f"
 }
