@@ -3106,9 +3106,6 @@
   },
   "mobileapp/src/ui/Composer.multiPhoto.test.tsx": {
     "cases": [
-      "MPU-001",
-      "MPU-002",
-      "MPU-004",
       "MEX-004"
     ],
     "selectors": [
@@ -3130,7 +3127,6 @@
   },
   "mobileapp/src/ui/AttachmentUploadStatus.test.tsx": {
     "cases": [
-      "MPU-004",
       "MEX-004"
     ],
     "selectors": [
@@ -3339,7 +3335,6 @@
   },
   "mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx": {
     "cases": [
-      "RDRC-002",
       "MEX-003"
     ],
     "selectors": [
