@@ -523,7 +523,7 @@ func rowHQMemory() dcheck {
 
 func doctorSnapshotFailure(reason string) string {
 	if strings.HasPrefix(reason, "HQ records exceed restore limits") {
-		return i18n.Tr("Recovery package exceeds the 128 MiB safety limit; review HQ storage and preserve unique records.", "恢复包超过 128 MiB 安全上限；先查看 HQ 存储分类，保留独有记录。")
+		return i18n.Tr("Recovery package exceeds a safety limit (128 MiB or 10,000 files); review HQ storage and preserve unique records.", "恢复包超过安全上限（128 MiB 或 10,000 个文件）；先查看 HQ 存储分类，保留独有记录。")
 	}
 	return reason
 }

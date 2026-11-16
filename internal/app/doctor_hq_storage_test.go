@@ -36,7 +36,7 @@ func TestDPC002DoctorStorageExplainsScopeWithoutRemoval(t *testing.T) {
 			}
 		}
 		reason := doctorSnapshotFailure("HQ records exceed restore limits (128 MiB, 10000 entries); destination unchanged")
-		if !strings.Contains(reason, "128 MiB") || !strings.Contains(reason, i18n.Tr("safety limit", "安全上限")) || strings.Contains(reason, "10000 entries") {
+		if !strings.Contains(reason, "128 MiB") || !strings.Contains(reason, "10,000") || !strings.Contains(reason, i18n.Tr("safety limit", "安全上限")) || strings.Contains(reason, "10000 entries") {
 			t.Fatal("recovery-package limit not explained", reason)
 		}
 		if doctorSnapshotFailure("synthetic disk read failed") != "synthetic disk read failed" {

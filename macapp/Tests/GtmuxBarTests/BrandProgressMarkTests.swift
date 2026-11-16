@@ -69,9 +69,9 @@ final class BrandProgressMarkTests: XCTestCase {
     }
 
     @MainActor func testMBL001HostedViewActuallyAdvancesFocus() async throws {
-        try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
-                      "The hosted runner requests static motion; deterministic static frames remain covered")
-        let host = NSHostingView(rootView: BrandProgressMark(size: 100))
+        // The runner may request reduced motion. Exercise the actual production
+        // engine's enabled input; the wrapper's OS policy has static coverage.
+        let host = NSHostingView(rootView: BrandProgressAnimation(size: 100, enabled: true))
         let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 100, height: 100),
                               styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false

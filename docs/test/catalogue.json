@@ -65398,7 +65398,7 @@
           "design": "DPC-002"
         }
       ],
-      "sha256": "e64de5e0a477f7a3e4f70b685da8df367a8f38594e03aa064e5561bc9e40bdc5"
+      "sha256": "a287fa216788eb3cb214d4994a90a9c7834df9b9a3e57a3db015ed3d654b1707"
     },
     "internal/hq/process_materials_test.go": {
       "layer": "L2",
@@ -65489,7 +65489,7 @@
           "design": "MBL-001"
         }
       ],
-      "sha256": "2f039dca58fef82294bd7992f9506c43b893731c09c97beec3514cb4584b0fe4"
+      "sha256": "4aa2468c601cd8236606b887bea957374d0067a9e9182e42615ca7bc83a461e5"
     },
     "tests/web/branded-loading.test.cjs": {
       "layer": "L3",
