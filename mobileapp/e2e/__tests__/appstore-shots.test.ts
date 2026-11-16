@@ -94,7 +94,9 @@ gated('app store demo shots', () => {
     // 4) Enter the HQ conversation through its visible action.
     await driver.$('~hq-overview-talk').click();
     await driver.$('~hq-back').waitForDisplayed({timeout: 15_000});
-    await driver.$('~hq-verdict').waitForDisplayed({timeout: 15_000});
+    // The conversation intentionally omits the workspace's overview. Require a
+    // visible conversation control that appears only after turns have loaded.
+    await driver.$(`~${TestIds.detail.collapseAll}`).waitForDisplayed({timeout: 15_000});
     await settle(1800);
     shot('04-console');
 

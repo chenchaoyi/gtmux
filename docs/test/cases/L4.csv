@@ -1,5 +1,8 @@
 id,layer,stack,file,line,kind,description,dynamic,design
 LEG-6e4751cbc433,L4,RN / mobile harness,mobileapp/e2e/__tests__/answer-options.test.ts,26,it,"renders the agent’s own words, sends the digit, and the session stops waiting",False,legacy-not-retrospectively-reviewed
+MAP-cb9b93421ab6,L4,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts,96,reviewed-selector,await driver.$('~knowledge-entry-more').waitForDisplayed({timeout: 10_000});,False,SCR-002
+MAP-c0e36db20d68,L4,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts,97,reviewed-selector,await driver.$('~knowledge-core-guidance').waitForExist({timeout: 10_000});,False,SCR-002
+MAP-acd6da7f1bb1,L4,RN / mobile harness,mobileapp/e2e/__tests__/appstore-shots.test.ts,99,reviewed-selector,await driver.$(`~${TestIds.detail.collapseAll}`).waitForDisplayed({timeout: 15_000});,False,SCR-001
 LEG-ac7603c2bff5,L4,RN / mobile harness,mobileapp/e2e/__tests__/chat-fullscreen-collapse.test.ts,28,it,"opens chat, collapses/expands all, enters+exits full-screen",False,legacy-not-retrospectively-reviewed
 LEG-a5d63af936be,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,130,it,"A: cold start with an active Mac, switches, background, a new warm tap",False,legacy-not-retrospectively-reviewed
 LEG-f3196e5f4ce2,L4,RN / mobile harness,mobileapp/e2e/__tests__/coldstart-push.test.ts,170,it,C: a launch with no notification switches where it is pointed,False,legacy-not-retrospectively-reviewed

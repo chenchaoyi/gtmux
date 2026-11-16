@@ -3502,5 +3502,24 @@
     "selectors": [
       "TestDPC006DoctorExplainsActualCountAndByteFailures"
     ]
+  },
+  "mobileapp/e2e/__tests__/appstore-shots.test.ts": {
+    "cases": [
+      "SCR-001"
+    ],
+    "selectors": [
+      "captures the radar, the terminal, HQ, its work, usage and the Macs",
+      "await driver.$(`~${TestIds.detail.collapseAll}`).waitForDisplayed({timeout: 15_000});"
+    ]
+  },
+  "mobileapp/e2e/__tests__/appstore-shots-ipad.test.ts": {
+    "cases": [
+      "SCR-002"
+    ],
+    "selectors": [
+      "captures the split shell, HQ matters, the pane grid and the knowledge sheet",
+      "await driver.$('~knowledge-entry-more').waitForDisplayed({timeout: 10_000});",
+      "await driver.$('~knowledge-core-guidance').waitForExist({timeout: 10_000});"
+    ]
   }
 }
