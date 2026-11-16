@@ -281,7 +281,9 @@ received 表示准确指令已接收，不代表完成。投递后崩溃保留�
 身份和时间来自 relay 源，正文不能覆盖；状态可为 received、progress、background、native，
 只有投递适配器提供 queued。同一步、动作、引用及无歧义执行关联都必须匹配保存的意图。
 探针缺失、pane 复用、SID/home 不符和区间不明都回到 HQ 核实，不重派。next_check 限制
-凭据覆盖期限，不扩展权限。
+凭据覆盖期限，不扩展权限。已观测的原生/后台推进持久占用原动作身份，即使凭据到期
+或撤下显示的驱动引用，也不会变成可再次投递；只换步骤标签、授权引用措辞或 pane 提示，
+不能把同一指令/工作引用/准确接收者变成新发送。
 
 真正未答的人类问题复用 request-input；任何渠道已有答复，先核来源并 clear-input 原问题
 再推进。hold 为 paused、refused 或 external，提供 source_ref 和 condition。暂停/拒绝

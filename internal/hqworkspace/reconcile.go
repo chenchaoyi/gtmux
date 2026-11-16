@@ -21,6 +21,7 @@ type Observation struct {
 }
 
 type Reconciliation struct {
+	GoalPremise   string      `json:"goal_premise,omitempty"`
 	ReminderAt    int64       `json:"reminder_at,omitempty"`
 	ReminderCount uint64      `json:"reminder_count,omitempty"`
 	Observation   Observation `json:"observation"`
@@ -138,6 +139,7 @@ func (s *Store) ClaimObservation(id, owner string, at int64) (Reconciliation, er
 			if !ok || q.Observation.ID != goalKey(m) || m.State == "completed" || m.State == "closed" || m.MergedInto != "" {
 				return ErrConflict
 			}
+			q.GoalPremise = goalPremise(*d, m, at)
 		} else if q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > at {
 			return ErrConflict
 		}
@@ -191,7 +193,7 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 	if a.Responsibility != nil && a.Decision != "responsibility" {
 		return receipt, errors.New("responsibility requires explicit responsibility decision")
 	}
-	if q.Observation.Kind == "goal-followup" && q.Observation.ID != goalKey(m) {
+	if q.Observation.Kind == "goal-followup" && (q.Observation.ID != goalKey(m) || q.GoalPremise != goalPremise(*d, m, at)) {
 		return receipt, ErrConflict
 	}
 	if q.Observation.Kind == "goal-followup" && (a.Decision == "noted" || a.Decision == "conflict") && goalOwed(GoalResponsibility(*d, m, at)) {

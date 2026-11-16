@@ -276,7 +276,7 @@ func (s *Store) MarkRestored(at int64) error {
 func markRestored(d *Database, at int64) bool {
 	altered := false
 	for id, a := range d.IntentAttempts {
-		if a.State == "submitting" || a.State == "queued" || a.State == "landed" {
+		if a.State == "submitting" || a.State == "queued" || a.State == "landed" || a.State == "external" {
 			a.State = "uncertain"
 			a.Evidence = "restored-backup"
 			d.IntentAttempts[id] = a

@@ -150,6 +150,13 @@ func attachDrive(d *Database, o Observation, at int64) {
 			return
 		}
 	}
+	// Observing an existing native/background driver reserves its action even
+	// when no physical send ever happened here. Expiry removes live coverage,
+	// never the durable fact that this work was already being driven.
+	if _, exists := d.IntentAttempts[p.Intent.ID]; !exists {
+		d.IntentAttempts[p.Intent.ID] = IntentAttempt{MatterID: m.ID, StepID: p.StepID, Intent: *p.Intent, State: "external", Evidence: o.ID, At: o.OccurredAt}
+		changed(d, at, "goal-drive-observed", m.ID, p.Intent.ID, o.ID)
+	}
 	m.Responsibility = &copy
 	changed(d, at, "goal-drive-verified", m.ID, o.ID, g.State)
 	saveMatter(d, m, at)

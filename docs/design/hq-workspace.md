@@ -367,7 +367,10 @@ The relay source supplies identity and time; supplied fields cannot override eit
 are `received`, `progress`, `background` or `native`; only the dispatch adapter supplies
 `queued`. Step, action, reference and unambiguous execution membership must match the saved
 intent. Missing probes, recycled panes, mismatched SID/home and uncertain intervals mean HQ
-verification, never redispatch. A receipt's `next_check` bounds its coverage, not its authority.
+verification, never redispatch. A receipt's `next_check` bounds its coverage, not its authority. An observed native/background
+driver durably reserves the action identity even after its proof expires or its displayed
+drive reference is cleared. Changing only step labels, citation wording or pane hints cannot
+reset the same instruction/reference/exact-recipient work into another send.
 
 A real unanswered user request reuses `request-input`; verified answers from any channel use
 `clear-input` with the exact question and source before HQ continues. A sourced hold is

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 )
 
 // Responsibility is an explicit, reviewed next step. Citations never confer
@@ -167,6 +168,9 @@ func validateResponsibility(d Database, m Matter, p Responsibility, now int64) e
 		}
 		// An action ID remains immutable even across step revisions and failed sends.
 		for _, r := range d.Assessments {
+			if x := r.Assessment.Responsibility; CanonicalMatter(d, r.Assessment.MatterID) == m.ID && sameIntentWork(x, &p) && x.Intent.ID != p.Intent.ID {
+				return errors.New("this work already has a saved action identity; a new step label does not authorize replay")
+			}
 			if x := r.Assessment.Responsibility; r.Assessment.MatterID == m.ID && x != nil && x.Intent != nil && x.StepID == p.StepID && x.Action == p.Action && x.AuthorityRef == p.AuthorityRef && x.Intent.ID != p.Intent.ID {
 				return errors.New("the material step already has a saved action ID; verify its original outcome instead of replacing it")
 			}
@@ -266,6 +270,21 @@ func syncGoal(d *Database, m Matter, now int64) {
 		}
 		return
 	}
+	if q.State == "leased" && q.LeaseUntil > now {
+		if q.GoalPremise == goalPremise(*d, m, now) {
+			return
+		}
+		q.State = "pending"
+		if !goalOwed(g) {
+			q.State = "assessed"
+		}
+		q.LeaseUntil = 0
+		q.Generation++
+		q.GoalPremise = ""
+		d.Reconciliations[key] = q
+		changed(d, now, "goal-premise-changed", m.ID, key, g.State)
+		return
+	}
 	if !goalOwed(g) {
 		if q.State != "assessed" {
 			q.State = "assessed"
@@ -305,4 +324,24 @@ func (s *Store) RemindGoals(now int64) (count int, repeated bool, err error) {
 		return nil
 	})
 	return
+}
+
+// Step labels, citation wording and pane hints do not change the physical work.
+// The work reference plus the normalized instruction bind a recovery to
+// its original action; business changes still need an explicit new instruction.
+func sameIntentWork(a, b *Responsibility) bool {
+	return a != nil && b != nil && a.Intent != nil && b.Intent != nil && strings.TrimSpace(a.Intent.Ref) == strings.TrimSpace(b.Intent.Ref) && strings.Join(strings.Fields(a.Action), " ") == strings.Join(strings.Fields(b.Action), " ")
+}
+
+// A claim snapshots only action/hold/question/coverage facts. Routine scans and
+// observation reads do not renew or revoke it; time matters only when coverage
+// actually expires. Matter revision independently fences all explicit edits.
+func goalPremise(d Database, m Matter, now int64) string {
+	b, _ := json.Marshal(struct {
+		State          string
+		Responsibility *Responsibility
+		Question       *UserInput
+		Coverage       GoalStatus
+	}{m.State, m.Responsibility, m.UserInput, GoalResponsibility(d, m, now)})
+	return fmt.Sprintf("%x", sha256.Sum256(b))
 }

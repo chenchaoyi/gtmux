@@ -373,8 +373,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// lands within seconds of the box clearing, not on the sampling cadence.
 		OnFastTick: func() {
 			dshfeed.Schedule()
-			scheduleWorkspaceWork()
-			scheduleWorkspaceReconciliation()
+			workspaceServeFastTick()
 			hq.DrainHQNudges()
 		},
 		// The approval card's options are gated on the agent having ASKED — the hook's

@@ -219,11 +219,12 @@ func TestGoalNativeBackgroundExactStepAndIdentity(t *testing.T) {
 			if g := goalState(t, s, 106); g.State != "driving" {
 				t.Fatal(g)
 			}
-			if _, e := s.DriveIntent("goal-one", p.Intent.ID, phaseRevision(t, s), 107, func(Conversation, string, string, func() bool) Delivery {
+			receipt, e := s.DriveIntent("goal-one", p.Intent.ID, phaseRevision(t, s), 107, func(Conversation, string, string, func() bool) Delivery {
 				t.Fatal("idle native work redispatched")
 				return Delivery{}
-			}); e == nil {
-				t.Fatal("duplicate native action allowed")
+			})
+			if e != nil || receipt.State != "external" {
+				t.Fatal("external driver has no durable action reservation", receipt, e)
 			}
 			if e := s.Interval("goal-one", "worker-one", 100, 108, phaseRevision(t, s), 109); e != nil {
 				t.Fatal(e)
@@ -236,11 +237,12 @@ func TestGoalNativeBackgroundExactStepAndIdentity(t *testing.T) {
 			if g := goalState(t, s, 110); !goalOwed(g) {
 				t.Fatal("old SID still drives new interval", g)
 			}
-			if _, e := s.DriveIntent("goal-one", p.Intent.ID, phaseRevision(t, s), 111, func(Conversation, string, string, func() bool) Delivery {
+			receipt, e = s.DriveIntent("goal-one", p.Intent.ID, phaseRevision(t, s), 111, func(Conversation, string, string, func() bool) Delivery {
 				t.Fatal("sent to reused pane")
 				return Delivery{}
-			}); e == nil {
-				t.Fatal("old target not refused")
+			})
+			if e != nil || receipt.State != "external" {
+				t.Fatal("lost historical action reservation", receipt, e)
 			}
 		})
 	}
@@ -434,5 +436,94 @@ func TestGoalWrongStepAmbiguousIntervalAndDurableReminder(t *testing.T) {
 	}
 	if e := RequestGoalCheck(filepath.Dir(s.dir)); e != nil || GoalCheckStamp(filepath.Dir(s.dir)) == 0 {
 		t.Fatal("Stop marker missing", e)
+	}
+}
+
+func TestGoalStepLabelDoesNotResetTheSameWork(t *testing.T) {
+	for _, safe := range []bool{false, true} {
+		for _, variant := range []string{"step", "authority", "recipient"} {
+			t.Run(fmt.Sprint(safe)+"/"+variant, func(t *testing.T) {
+				s, p := goalFixture(t)
+				goalPlan(t, s, p, 103, "")
+				calls := 0
+				send := func(Conversation, string, string, func() bool) Delivery {
+					calls++
+					return Delivery{State: "refused-or-unknown", SafeHold: safe}
+				}
+				if _, e := s.DriveIntent("goal-one", p.Intent.ID, phaseRevision(t, s), 104, send); e != nil {
+					t.Fatal(e)
+				}
+				d := phaseRead(t, s)
+				m := d.Matters["goal-one"]
+				q, e := s.ClaimObservation(goalKey(m), "hq-current", 105)
+				if e != nil {
+					t.Fatal(e)
+				}
+				renamed := p
+				renamed.StepID = "cosmetic-step-label"
+				intent := *p.Intent
+				intent.ID = "replacement-action"
+				if variant == "authority" {
+					renamed.AuthorityRef = "user:reworded-authority"
+				}
+				if variant == "recipient" {
+					intent.Target.SessionID = "replacement-worker"
+					if e := s.Associate(m.ID, Association{ID: "replacement-assoc", Conversation: intent.Target, Role: "execution", From: 100}, phaseRevision(t, s), 105); e != nil {
+						t.Fatal(e)
+					}
+					m = phaseRead(t, s).Matters[m.ID]
+				}
+				s = New(filepath.Dir(s.dir))
+				renamed.Intent = &intent
+				_, e = s.Assess(Assessment{ID: "rename-step", ObservationID: q.Observation.ID, Owner: q.Owner, Generation: q.Generation, MatterID: m.ID, Revision: m.Revision, Decision: "responsibility", Reason: "Same work with another step label", Responsibility: &renamed}, 106, false)
+				if e == nil {
+					_, e = s.DriveIntent(m.ID, intent.ID, phaseRevision(t, s), 107, send)
+				}
+				if calls != 1 {
+					t.Fatal("changing only step/action identity submitted the same work twice", calls)
+				}
+				if e == nil {
+					t.Fatal("the same work acquired another executable identity")
+				}
+			})
+		}
+	}
+}
+
+func TestGoalExpiredExternalProofDoesNotPermitFirstSend(t *testing.T) {
+	for _, kind := range []string{"native", "background"} {
+		t.Run(kind, func(t *testing.T) {
+			s, p := goalFixture(t)
+			p.Intent.Ref = kind + ":work-one"
+			goalPlan(t, s, p, 103, "")
+			proof := Observation{ID: "external-proof", Kind: "relay-report", MatterID: "goal-one", Ref: "relay:external-proof", Conversation: p.Intent.Target, OccurredAt: 104, DriveProof: &DriveProof{StepID: p.StepID, ActionID: p.Intent.ID, Ref: p.Intent.Ref, State: kind, NextCheck: 200}}
+			if e := s.Ingest("external", 0, 1, []Observation{proof}, 105); e != nil {
+				t.Fatal(e)
+			}
+			if e := s.ScanGoals(201, 64); e != nil {
+				t.Fatal(e)
+			}
+			if !goalOwed(goalState(t, s, 201)) {
+				t.Fatal("expired probe did not require verification")
+			}
+			goalPlan(t, s, p, 202, "") // Explicitly omit Drive, retaining the same native work intent.
+			calls := 0
+			if _, e := s.DriveIntent("goal-one", p.Intent.ID, phaseRevision(t, s), 203, func(Conversation, string, string, func() bool) Delivery { calls++; return Delivery{State: "landed"} }); e != nil {
+				t.Fatal(e)
+			}
+			if calls != 0 {
+				t.Fatal("expired external proof became permission to submit the existing work", calls)
+			}
+			if !goalOwed(goalState(t, s, 204)) {
+				t.Fatal("removing proof erased the verification duty")
+			}
+			if e := s.MarkRestored(205); e != nil {
+				t.Fatal(e)
+			}
+			receipt, e := s.DriveIntent("goal-one", p.Intent.ID, phaseRevision(t, s), 206, func(Conversation, string, string, func() bool) Delivery { calls++; return Delivery{State: "landed"} })
+			if e != nil || receipt.State != "uncertain" || calls != 0 {
+				t.Fatal("restored external work lost its replay fence", receipt, calls, e)
+			}
+		})
 	}
 }

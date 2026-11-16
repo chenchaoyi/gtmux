@@ -393,6 +393,7 @@ MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test
 MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,203,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-5f24b23ab8de,L2,reviewed implementation,internal/app/hqworkspace_goal_regression_test.go,11,reviewed-selector,TestGoalNoNewEventsAfterNotedStillRequiresHQ,False,HGD-005
+MAP-e69b385b8aa2,L3,reviewed implementation,internal/app/hqworkspace_goal_runtime_test.go,48,reviewed-selector,TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch,False,HGD-009
 MAP-b9ea2545c70d,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,13,reviewed-selector,TestGoalActionAuthorityAndExactReceiptEnvelope,False,"HGD-002,HGD-004,HGD-005"
 MAP-b6ae467c793b,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,113,reviewed-selector,TestGoalReminderRechecksCurrentPremiseAndAssessmentLayers,False,"HGD-002,HGD-004,HGD-005"
 LEG-4658791c9323,L1,Go core / CLI / server,internal/app/hqworkspace_overview_test.go,10,Test,TestWorkspaceOverviewIsExplicitlyRequestedAndDoesNotEnlargeSidebarMatters,False,legacy-not-retrospectively-reviewed
@@ -2005,10 +2006,14 @@ MAP-b0e3154a9e2e,L2,reviewed implementation,internal/hqworkspace/followup_test.g
 MAP-af89e66fde10,L2,reviewed implementation,internal/hqworkspace/followup_test.go,106,reviewed-selector,TestGoalQueuedReceiptAndLateReminderNeverDispatchTwice,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 MAP-38abd006fd1e,L2,reviewed implementation,internal/hqworkspace/followup_test.go,161,reviewed-selector,TestGoalCrashDraftAndIdentityRefusalAreNotRetryQueues,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
 MAP-7db834759619,L2,reviewed implementation,internal/hqworkspace/followup_test.go,210,reviewed-selector,TestGoalNativeBackgroundExactStepAndIdentity,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
-MAP-264e532cce6d,L2,reviewed implementation,internal/hqworkspace/followup_test.go,249,reviewed-selector,TestGoalPauseRefusalExternalAndCrossChannelAnswer,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
-MAP-c91e0b7ebc35,L2,reviewed implementation,internal/hqworkspace/followup_test.go,301,reviewed-selector,TestGoalLegacyMigrationBoundedSweepAndProjection,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
-MAP-c01cefec17d2,L2,reviewed implementation,internal/hqworkspace/followup_test.go,352,reviewed-selector,TestGoalRestoreSuspendsDriveAndRetainsPause,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
-MAP-8b530175eff3,L2,reviewed implementation,internal/hqworkspace/followup_test.go,386,reviewed-selector,TestGoalWrongStepAmbiguousIntervalAndDurableReminder,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-264e532cce6d,L2,reviewed implementation,internal/hqworkspace/followup_test.go,251,reviewed-selector,TestGoalPauseRefusalExternalAndCrossChannelAnswer,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-c91e0b7ebc35,L2,reviewed implementation,internal/hqworkspace/followup_test.go,303,reviewed-selector,TestGoalLegacyMigrationBoundedSweepAndProjection,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-c01cefec17d2,L2,reviewed implementation,internal/hqworkspace/followup_test.go,354,reviewed-selector,TestGoalRestoreSuspendsDriveAndRetainsPause,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-8b530175eff3,L2,reviewed implementation,internal/hqworkspace/followup_test.go,388,reviewed-selector,TestGoalWrongStepAmbiguousIntervalAndDurableReminder,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-a57b8672c536,L2,reviewed implementation,internal/hqworkspace/followup_test.go,442,reviewed-selector,TestGoalStepLabelDoesNotResetTheSameWork,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-f1b186d4ddd4,L2,reviewed implementation,internal/hqworkspace/followup_test.go,493,reviewed-selector,TestGoalExpiredExternalProofDoesNotPermitFirstSend,False,"HGD-001,HGD-002,HGD-003,HGD-004,HGD-005,HGD-006"
+MAP-92c2b1822b08,L2,reviewed implementation,internal/hqworkspace/goal_lease_test.go,31,reviewed-selector,TestCoveredGoalScanKeepsValidUnchangedLease,False,HGD-008
+MAP-85ae92e4dd88,L2,reviewed implementation,internal/hqworkspace/goal_lease_test.go,48,reviewed-selector,TestCoveredGoalActualPremiseChangeAndExpiryFenceOldClaim,False,HGD-008
 LEG-248c36874d14,L1,Go core / CLI / server,internal/hqworkspace/input_test.go,5,Test,TestHumanQuestionRemainsSeparateFromReportsAndGoal,False,legacy-not-retrospectively-reviewed
 LEG-4bec66d1ff87,L1,Go core / CLI / server,internal/hqworkspace/input_test.go,48,Test,TestHumanRequestBoundsAndStaleReply,False,legacy-not-retrospectively-reviewed
 LEG-42c54b35aabd,L1,Go core / CLI / server,internal/hqworkspace/input_test.go,63,Test,TestOverviewSeparatesHumanQuestionsFromHQClarificationAndSavedReplies,False,legacy-not-retrospectively-reviewed

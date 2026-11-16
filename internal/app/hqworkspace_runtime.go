@@ -58,3 +58,11 @@ func scheduleWorkspaceWork() {
 		}
 	})
 }
+
+// workspaceServeFastTick is the workspace portion of serve's existing callback.
+// Keeping the real entry together permits an isolated pipeline test without
+// starting unrelated resource/limits workers or touching an actual HQ input.
+func workspaceServeFastTick() {
+	scheduleWorkspaceWork()
+	scheduleWorkspaceReconciliation()
+}

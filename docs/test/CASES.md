@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1307 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1309 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2414 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 147 | [L3.csv](cases/L3.csv) |
+| L2 · Component / contract | 2418 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 148 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 105 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 496 | [G.csv](cases/G.csv) |
@@ -191,6 +191,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HGD-005 | Unfinished goal stays due; source acknowledgement remains independent; stale reminder drops or rerenders; quiet changes presentation only; repeat reminders identify HQ coordination debt. |
 | HGD-006 | No replay after restore, old drive cannot prove current execution, pause/refusal remains effective until explicit sourced resumption. |
 | HGD-007 | Only additive waiting-user responsibility/provenance fields change; existing body fields, source question identity, status codes, auth, headers and cursors remain exact. |
+| HGD-008 | Unchanged held/queued premises preserve owner/generation/lease and permit current assessment; real premise changes, expiry and old generation reject stale assessments. |
+| HGD-009 | Stop marks a bounded scan; no-event/quiet still leaves HQ debt; actual dispatch guard queues once only for the exact empty composer, refuses draft/identity without input, and the registered premise probe drops the obsolete goal reminder after explicit completion. Background work is joined before restoring test globals. |
 | HRW-014 | Generation/ctime mismatch never deletes or reauthorizes the claim, despite identical inode/body/mtime. Normal unchanged accepted cleanup passes. Exact owned uncertain publication completes one link retirement and retains original batch uncertainty; changed payload or foreign link holds without deletion. Known-refused shared queue ownership still preserves newest B. Original T tests/expectations remain unchanged; old-source target red is a real assertion, not compile/setup/allocator failure. |
 | HRW-015 | Only a verified same-inode anchor can support native cleanup; original inode remains alive across process loss and cannot naturally be reused. Missing/foreign/unknown pin holds without deletion or native call. Accepted/refused closes only own references, uncertain preserves exact original input and pin; valid conflicting batches cannot overwrite protected claims or block independent fresh events. Pin count is bounded before mutation; errors never fall back or replay. No sleep, allocator-luck or relaxed cloud assertion. |
 | HRW-009 | A is never submitted under a new batch identity; original exact payload, ID and uncertainty remain inspectable. Accepted/uncertain spool state is not downgraded to unsent. B and legitimate fresh duplicate text can progress once. Journal precedes possible mutation; failure holds without mutation. Recovery never removes a foreign replacement; malformed evidence holds conservatively. Ordinary non-native transport retains its existing contract. |

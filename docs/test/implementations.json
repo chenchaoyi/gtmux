@@ -3523,7 +3523,9 @@
       "TestGoalPauseRefusalExternalAndCrossChannelAnswer",
       "TestGoalLegacyMigrationBoundedSweepAndProjection",
       "TestGoalRestoreSuspendsDriveAndRetainsPause",
-      "TestGoalWrongStepAmbiguousIntervalAndDurableReminder"
+      "TestGoalWrongStepAmbiguousIntervalAndDurableReminder",
+      "TestGoalStepLabelDoesNotResetTheSameWork",
+      "TestGoalExpiredExternalProofDoesNotPermitFirstSend"
     ]
   },
   "internal/app/hqworkspace_goal_test.go": {
@@ -3552,6 +3554,23 @@
     "selectors": [
       "\"hq-overview\"",
       "\"hq-detail-page\""
+    ]
+  },
+  "internal/hqworkspace/goal_lease_test.go": {
+    "cases": [
+      "HGD-008"
+    ],
+    "selectors": [
+      "TestCoveredGoalScanKeepsValidUnchangedLease",
+      "TestCoveredGoalActualPremiseChangeAndExpiryFenceOldClaim"
+    ]
+  },
+  "internal/app/hqworkspace_goal_runtime_test.go": {
+    "cases": [
+      "HGD-009"
+    ],
+    "selectors": [
+      "TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch"
     ]
   }
 }
