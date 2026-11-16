@@ -5,7 +5,7 @@
     "reviewer": "Codex gpt-6.1-sol implementation owner (self-review; independent review pending HQ)",
     "date": "2026-11-16",
     "decision": "Ready for formal implementation and mapping",
-    "notes": "Reviewed evidence boundaries and negative oracles. Exploratory working-tree tests ran before this repository ordering gate was discovered; this record does not claim to predate those experiments. This design-only commit precedes the first committed test implementation. Independent frozen-candidate review remains required; no peer/user approval is asserted. Uses synthetic stores, clocks and delivery; no production sessions, permissions, KB or devices. Formal extension: put the bounded sweep in the existing notification pass so a baseline-compatible regression can prove ordinary noted plus no new events still wakes HQ. Existing ingestion test will capture the post-sweep snapshot before read-independence assertions; source ingestion expectations remain unchanged. Fresh self-review before the action-identity fencing amendment: code inspection found that one-shot delivery also needs an immutable per-material-step action ID across responsibility reassessment, including an unknown/refused attempt."
+    "notes": "Reviewed evidence boundaries and negative oracles. Exploratory working-tree tests ran before this repository ordering gate was discovered; this record does not claim to predate those experiments. This design-only commit precedes the first committed test implementation. Independent frozen-candidate review remains required; no peer/user approval is asserted. Uses synthetic stores, clocks and delivery; no production sessions, permissions, KB or devices. Formal extension: put the bounded sweep in the existing notification pass so a baseline-compatible regression can prove ordinary noted plus no new events still wakes HQ. Existing ingestion test will capture the post-sweep snapshot before read-independence assertions; source ingestion expectations remain unchanged. Fresh self-review before the action-identity fencing amendment: code inspection found that one-shot delivery also needs an immutable per-material-step action ID across responsibility reassessment, including an unknown/refused attempt. The replacement-ID boundary is a refinement of the existing stable-intent case, with original case identity and expectations retained for the repository first-edit history gate."
   },
   "cases": [
     {
@@ -25,8 +25,8 @@
       "layer": "L2",
       "description": "One-shot stable intents separate queued, received/progress and uncertain/refused outcomes.",
       "setup": "Isolated store, exact execution association, fake delivery with queue/receipt/panic/refusal.",
-      "action": "Save plan before drive, invoke drive repeatedly through restart and completion; ingest structured step evidence; change SID/interval. Attempt to replace a submitting/refused/queued action with a different ID for the same material step.",
-      "expected": "Only one send per action ID; queued is not work started; exact receipt covers the step; stale SID, ambiguous interval, native/background coverage and unavailable evidence never cause duplicate delivery. The same material step cannot change its saved action identity to bypass uncertainty or refusal.",
+      "action": "Save plan before drive, invoke drive repeatedly through restart and completion; ingest structured step evidence; change SID/interval.",
+      "expected": "Only one send per action ID; queued is not work started; exact receipt covers the step; stale SID, ambiguous interval, native/background coverage and unavailable evidence never cause duplicate delivery.",
       "planned_files": [
         "internal/hqworkspace/followup_test.go",
         "internal/app/hqworkspace_goal_test.go"
@@ -82,5 +82,5 @@
       ]
     }
   ],
-  "seal": "46694f6957c4a4f3670299d1316b7fdc05fff48afba0d37842f283eae17d1188"
+  "seal": "ef332ba5f8cbd1319985e9d1a44dd01c26689960a163bb3d1eaa95250e312eb3"
 }
