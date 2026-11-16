@@ -2,15 +2,14 @@
 // Per the spec we never clear the screen on offline — the cached agents stay
 // (greyed by the caller); retain its update time and the applicable next action.
 //
-// Style: a RESTRAINED red-TINT bar (not a saturated full-red block) with a red
-// status dot + foreground-colour text, matching gtmux's status-language (semantic
-// red = a dot + subtle tint, like the waiting-row tint and the ConnDot), instead
-// of shouting white-on-red.
+// A cached-list read failure is an amber freshness notice. Transport/access
+// failures retain the existing red tint and their applicable next action.
 
 import React from 'react';
 import {StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {Lang} from '../i18n';
 import {StatusColor} from './theme';
+import {LoadingMark} from './LoadingMark';
 
 function ago(ts: number | null, lang: Lang): string {
   if (!ts) return lang === 'zh' ? '尚未更新' : 'not yet updated';
@@ -46,7 +45,11 @@ export function OfflineBanner({
   isGuest?: boolean;
 }) {
   const zh = lang === 'zh';
-  const reason = kind === 'failed' ? (zh ? '暂时无法更新会话' : 'Could not update sessions')
+  const cachedRead = lastUpdated != null && (kind === 'failed' || kind === 'timeout');
+  const reason = cachedRead ? (retrying
+    ? (zh ? '正在更新会话列表…' : 'Updating session list…')
+    : (zh ? '会话列表暂未更新' : 'Session list is out of date'))
+    : kind === 'failed' ? (zh ? '暂时无法更新会话' : 'Could not update sessions')
     : kind === 'timeout' ? (zh ? '会话刷新超时' : 'Session refresh timed out')
     : kind === 'access' ? (isGuest
       ? (zh ? '暂时无法访问，请联系所有者恢复访问。' : 'Access is unavailable. Ask the owner to restore access.')
@@ -55,20 +58,21 @@ export function OfflineBanner({
       ? `连不上 ${serverName || '服务器'}`
       : `Can't reach ${serverName || 'the server'}`;
   return (
-    <View style={[styles.wrap, {backgroundColor: TINT_BG, borderBottomColor: TINT_BORDER}]}>
-      <View style={styles.dot} />
+    <View style={[styles.wrap, {backgroundColor: cachedRead ? 'rgba(245,158,11,0.09)' : TINT_BG, borderBottomColor: cachedRead ? 'rgba(245,158,11,0.18)' : TINT_BORDER}]}>
+      <View style={[styles.dot, cachedRead && {backgroundColor: '#D97706'}]} />
       <View style={styles.textCol}>
         <Text style={[styles.reason, {color: pal.fg}]} numberOfLines={2}>
           {reason}
         </Text>
         <Text style={[styles.sub, {color: pal.fg3}]} numberOfLines={1}>
-          {ago(lastUpdated, lang)}
+          {cachedRead ? `${zh ? '显示缓存会话 · ' : 'Saved sessions · '}${ago(lastUpdated, lang)}` : ago(lastUpdated, lang)}
         </Text>
       </View>
       {onRetry && <TouchableOpacity testID="radar-read-retry" accessibilityRole="button"
+        accessibilityLabel={retrying ? (zh ? '正在重试更新会话' : 'Retrying session update') : actionLabel ?? (zh ? '重试更新会话' : 'Retry session update')}
         accessibilityState={{disabled: retrying, busy: retrying}} disabled={retrying}
         onPress={onRetry} style={[styles.retry, {backgroundColor: pal.surface, opacity: retrying ? 0.6 : 1}]} hitSlop={hit}>
-        <Text style={styles.retryText}>{retrying ? (zh ? '更新中…' : 'Updating…') : actionLabel ?? (zh ? '重试' : 'Retry')}</Text>
+        {retrying ? <LoadingMark size={18} accessible={false} /> : <Text style={[styles.retryText, cachedRead && {color: pal.fg}]}>{actionLabel ?? (zh ? '重试' : 'Retry')}</Text>}
       </TouchableOpacity>}
     </View>
   );

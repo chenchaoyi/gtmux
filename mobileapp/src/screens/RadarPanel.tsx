@@ -320,9 +320,9 @@ export function RadarPanel({
       {banner && <Banner alert={banner} t={t} onClose={dismissBanner} />}
       {cachedIssue && <OfflineBanner serverName={mac?.name} lastUpdated={lastUpdated} lang={lang} pal={pal}
         kind={listRead.error ?? (cachedAccess ? 'access' : 'offline')} isGuest={isGuest}
-        retrying={!cachedAccess && listRead.refreshing}
+        retrying={!cachedAccess && refreshing}
         actionLabel={cachedAccess ? (lang === 'zh' ? '连接设置' : 'Connections') : undefined}
-        onRetry={cachedAccess ? (!isGuest && navigation ? () => navigation.navigate('Servers') : undefined) : refresh} />}
+        onRetry={cachedAccess ? (!isGuest && navigation ? () => navigation.navigate('Servers') : undefined) : onRefresh} />}
       {isGuest && (
         <View
           testID="radar-guest-banner"

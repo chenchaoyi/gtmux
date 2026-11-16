@@ -77,14 +77,17 @@ for command in sys.stdin:
 		if !strings.Contains(old, "OLD-NORMAL") || !strings.Contains(old, "CURRENT-当前") {
 			t.Fatal("fixture did not reproduce the stale normal-history/current-frame join")
 		}
-		for _, text := range []string{CapturePaneColor(id), CaptureFull(id), CaptureFullColor(id)} {
+		for _, text := range []string{CaptureFull(id), CaptureFullColor(id)} {
 			if strings.Contains(text, "witness-before-alt") || !strings.Contains(text, "CURRENT-当前") {
 				t.Fatalf("capture crossed a screen boundary: %q", text)
 			}
 		}
 		text := CapturePaneColor(id)
+		if !strings.Contains(text, "OLD-NORMAL") || !strings.Contains(text, "CURRENT-当前") {
+			t.Fatalf("human viewer lost real pane history: %q", text)
+		}
 		height, _ := strconv.Atoi(Display(id, "#{pane_height}"))
-		if !strings.Contains(text, "\x1b[32m") || strings.Count(text, "\n") != height {
+		if !strings.Contains(text, "\x1b[32m") || strings.Count(text, "\n") <= height || !strings.HasSuffix(text, "\n\n") {
 			t.Fatalf("ANSI or trailing grid rows changed: %q (height %d)", text, height)
 		}
 		if Display(id, "#{history_size}") != before {

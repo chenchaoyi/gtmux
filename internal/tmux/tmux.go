@@ -110,7 +110,7 @@ func Lines(args ...string) []string {
 	return strings.Split(out, "\n")
 }
 
-// capture is the one `capture-pane` core the four named wrappers below share. `color`
+// capture is the current-state `capture-pane` core used by machine readers. `color`
 // adds `-e` (keep ANSI SGR); `scrollback` > 0 adds `-S -<n>` of scrollback margin;
 // `keepBlanks` chooses runRaw (retain the pane's trailing blank rows — needed when a
 // bottom-anchored cursor position is derived from the row count) over Run (trimmed, so
@@ -169,11 +169,15 @@ func CapturePaneChecked(pane string) (string, error) {
 
 // CapturePaneColor returns the pane's screen + scrollback WITH ANSI SGR escapes
 // (`-e`), so the mobile app can render history in color (MOBILE §4). `-S -2000`
-// includes up to 2000 lines of normal-screen scrollback (alternate screens return
-// only their current frame, never the frozen normal history). Payload/render cost
+// includes up to 2000 lines of the pane's real normal-screen scrollback, also while
+// an alternate screen is active. This is a human history viewer, NOT current-state
+// evidence: CaptureFull/FullColor keep their alternate-screen isolation. Payload/render cost
 // is bounded, and the real depth is also capped by tmux history-limit. Trailing blank rows are kept so the
 // bottom-anchored text cursor lands on the right line in the renderer. Read-only.
-func CapturePaneColor(pane string) string { return capture(pane, true, 2000, true) }
+func CapturePaneColor(pane string) string {
+	out, _ := runRaw("capture-pane", "-p", "-e", "-S", "-2000", "-t", pane)
+	return out
+}
 
 // CaptureFull returns a pane's visible screen PLUS a bounded scrollback margin as
 // PLAIN text (no ANSI escapes) — the delivery verifier reads it to locate the input

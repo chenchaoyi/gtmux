@@ -5188,8 +5188,9 @@ LEG-5d721affd782,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.
 LEG-9bf974a93a06,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,121,it,still draws nothing when there are no windows at all,False,legacy-not-retrospectively-reviewed
 LEG-e3fa56652cd5,L2,RN / mobile harness,mobileapp/src/screens/PaneBrowserScreen.test.ts,130,it,"is a runnable command, sigil included",False,legacy-not-retrospectively-reviewed
 MAP-f568d67044af,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,59,reviewed-selector,a cached read failure remains visible when SSE reconnects before the next result: %s,False,RDRC-002
-MAP-6e4f9ec5d357,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,80,reviewed-selector,changing the client drops cached failure and rejects a late old reread,False,RDRC-002
-MAP-fe0ae75b4bd3,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,91,reviewed-selector,cached access failure stays visible across reconnect with the existing %s authority,False,RDRC-002
+MAP-6e4f9ec5d357,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,102,reviewed-selector,changing the client drops cached failure and rejects a late old reread,False,RDRC-002
+MAP-fe0ae75b4bd3,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,113,reviewed-selector,cached access failure stays visible across reconnect with the existing %s authority,False,RDRC-002
+MAP-797dd9b30da0,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.cachedReadFailure.test.tsx,82,reviewed-selector,manual cached-list retry ends at its deadline even when an automatic read follows,False,"RDRC-002,MEX-003"
 MAP-b28728f9d63d,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,47,reviewed-selector,stream connection before the first result displays loading rather than zero or empty,False,RDR-003
 MAP-3cb5a05e3dd6,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,54,reviewed-selector,confirmed empty is stable in ${variant} ${theme} ${lang},False,RDR-003
 MAP-7ac4e613f331,L2,reviewed implementation,mobileapp/src/screens/RadarPanel.readState.test.tsx,69,reviewed-selector,failed and unavailable access reads never display a cheerful empty quote or owner creation for guests,False,RDR-003
@@ -5792,8 +5793,10 @@ LEG-a2ee828f06f8,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,56
 LEG-9ebc3d2fb720,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,63,it,runs the chosen action only after the sheet has actually gone,False,legacy-not-retrospectively-reviewed
 LEG-8b9b6cbb1dad,L2,RN / mobile harness,mobileapp/src/ui/AttachSheet.test.tsx,76,it,slides again the next time it opens,False,legacy-not-retrospectively-reviewed
 MAP-0d5551b8fb45,L2,reviewed implementation,mobileapp/src/ui/AttachmentUploadStatus.test.tsx,22,reviewed-selector,upload status names the active file and hides percent during preparation and saving,False,MPU-004
-MAP-a80d799158ea,L2,reviewed implementation,mobileapp/src/ui/AttachmentUploadStatus.test.tsx,33,reviewed-selector,Reduce Motion presents measured values without starting progress animation,False,MPU-004
-MAP-0539f7a138fa,L2,reviewed implementation,mobileapp/src/ui/AttachmentUploadStatus.test.tsx,42,reviewed-selector,progress animation only targets the latest measured byte fraction,False,MPU-004
+MAP-a80d799158ea,L2,reviewed implementation,mobileapp/src/ui/AttachmentUploadStatus.test.tsx,41,reviewed-selector,Reduce Motion presents measured values without starting progress animation,False,MPU-004
+MAP-0539f7a138fa,L2,reviewed implementation,mobileapp/src/ui/AttachmentUploadStatus.test.tsx,50,reviewed-selector,progress animation only targets the latest measured byte fraction,False,MPU-004
+MAP-424b86d74eaa,L2,reviewed implementation,mobileapp/src/ui/AttachmentUploadStatus.test.tsx,21,reviewed-selector,thumbnail status names its file and keeps queued preparation and saving indeterminate,False,"MPU-004,MEX-004"
+MAP-b67f20be93e4,L2,reviewed implementation,mobileapp/src/ui/AttachmentUploadStatus.test.tsx,60,reviewed-selector,a failed thumbnail retries only on explicit action and respects send availability,False,"MPU-004,MEX-004"
 MAP-ca6228d2bf6a,L2,reviewed implementation,mobileapp/src/ui/ChatAppearance.test.tsx,15,reviewed-selector,CAR-001,False,CAR-001
 MAP-bc8cc6baa2e3,L2,reviewed implementation,mobileapp/src/ui/ChatEchoHandoff.test.tsx,9,reviewed-selector,CRX-004 %s confirmed echo keeps the same mounted bubble,False,CRX-004
 MAP-2641a502533a,L2,reviewed implementation,mobileapp/src/ui/ChatReceiptPresentation.test.tsx,20,reviewed-selector,CAR-003,False,CAR-003
@@ -6001,6 +6004,8 @@ LEG-14f91bd9e586,L2,RN / mobile harness,mobileapp/src/ui/MoveKey.test.ts,25,it,h
 LEG-9ec137f5325a,L2,RN / mobile harness,mobileapp/src/ui/MoveKey.test.ts,30,it,registers once either axis clears the threshold (one axis still small),False,legacy-not-retrospectively-reviewed
 LEG-a9850cee0670,L2,RN / mobile harness,mobileapp/src/ui/NativeTerm.android.test.tsx,14,test,"Android terminal has one colored selectable paragraph, readable defaults and working links",False,legacy-not-retrospectively-reviewed
 LEG-bd863a2d262c,L2,RN / mobile harness,mobileapp/src/ui/NativeTerm.android.test.tsx,26,test,Android system selection holds the capture until its action mode ends,False,legacy-not-retrospectively-reviewed
+MAP-7301e6f19975,L2,reviewed implementation,mobileapp/src/ui/NativeTerm.history.test.tsx,23,reviewed-selector,history survives released gestures and polls beyond the thaw delay until an explicit live jump,False,MEX-002
+MAP-0d0fdd929849,L2,reviewed implementation,mobileapp/src/ui/NativeTerm.history.test.tsx,36,reviewed-selector,clearing selection preserves the browsed snapshot and scrolling to the tail resumes live,False,MEX-002
 LEG-130aa5d9d9a3,L2,RN / mobile harness,mobileapp/src/ui/NativeTerm.test.tsx,67,test,toolbar-requested layout preserves rows without adding controls over the terminal,False,legacy-not-retrospectively-reviewed
 LEG-61aa8c88dd00,L2,RN / mobile harness,mobileapp/src/ui/NativeTerm.test.tsx,89,test,original mode survives polling and retains selection text and cursor geometry,False,legacy-not-retrospectively-reviewed
 LEG-aee6c74415c7,L2,RN / mobile harness,mobileapp/src/ui/NativeTerm.test.tsx,109,test,a toolbar layout request anchors the same captured line while reading history,False,legacy-not-retrospectively-reviewed

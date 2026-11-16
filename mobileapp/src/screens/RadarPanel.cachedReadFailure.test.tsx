@@ -66,15 +66,37 @@ test.each(['failed', 'timeout'] as const)('a cached read failure remains visible
   expect(value.conn).toBe('live'); expect(value.read.refreshing).toBe(true);
   expect(notices()).toHaveLength(1);
   expect(value.lastUpdated).toBe(updated); expect(words()).toContain('updated ');
-  expect(words()).toContain(kind === 'failed' ? 'Could not update sessions' : 'Session refresh timed out');
+  expect(words()).toContain('Session list is out of date');
+  expect(words()).toContain('Saved sessions');
   expect(words()).not.toContain("Can't reach");
   expect(tree.root.findByType(SectionList).props.agents[0].pane_id).toBe('%cached');
   expect(tree.root.findByType(SectionList).props.stale).toBe(true);
   const retry = tree.root.findAllByProps({testID: 'radar-read-retry'}).find(n => typeof n.props.onPress === 'function')!;
-  expect(retry.props.disabled).toBe(true); expect(words()).toContain('Updating');
+  expect(retry.props.disabled).toBe(false); expect(words()).toContain('Retry');
+  expect(words()).not.toContain('Updating');
   jest.setSystemTime(Date.now() + 1_000); await finish(2, rows('%fresh'));
   expect(value.read.error).toBeNull(); expect(notices()).toHaveLength(0);
   expect(value.lastUpdated).not.toBe(updated); expect(tree.root.findByType(SectionList).props.agents[0].pane_id).toBe('%fresh');
+});
+
+test('manual cached-list retry ends at its deadline even when an automatic read follows', async () => {
+  await mount(); await finish(0, rows('%cached')); const updated = value.lastUpdated;
+  await refresh();
+  await act(async () => {requests[1].fail(new Error('synthetic failure'));}); await flush();
+  const retry = () => tree.root.findAllByProps({testID: 'radar-read-retry'}).find(n => typeof n.props.onPress === 'function')!;
+  act(() => {void retry().props.onPress();}); await flush();
+  expect(retry().props.disabled).toBe(true);
+  expect(retry().props.accessibilityState.busy).toBe(true);
+  expect(words()).toContain('Updating session list');
+  await act(async () => {jest.advanceTimersByTime(15_000);}); await flush();
+  expect(requests[2].signal?.aborted).toBe(true);
+  expect(retry().props.disabled).toBe(false);
+  expect(retry().props.accessibilityState.busy).toBe(false);
+  expect(words()).toContain('Session list is out of date');
+  expect(value.lastUpdated).toBe(updated);
+  expect(tree.root.findByType(SectionList).props.agents[0].pane_id).toBe('%cached');
+  await finish(2, rows('%late'));
+  expect(tree.root.findByType(SectionList).props.agents[0].pane_id).toBe('%cached');
 });
 
 test('changing the client drops cached failure and rejects a late old reread', async () => {
