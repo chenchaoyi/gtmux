@@ -5,18 +5,19 @@
     "reviewer": "Codex implementation owner, self-review before implementation; not independent approval",
     "date": "2026-11-16",
     "decision": "Implement the user's explicit historical-project cleanup and remaining doctor, backup and browser-loader fixes",
-    "notes": "Read-only inventory found about981MiB of HQ records, including546MiB of full relay exports and314MiB of project evidence. Current core selection still admits structurally recognized relay exports with legacy names and exceeds128MiB. Keep unknown notes, explicit includes, full exports,128MiB import limits and all recovery materials protected. Doctor must identify actionable project material without deleting, rebinding or claiming an inactive client retries. Existing one-second bridge heartbeat and bounded initial publication retry remain producer-owned. Web currently pulses only one square; match the accepted App100-unit pane geometry and1.8s top-right/bottom/top-left focus cycle with live reduced motion. Browser plugin is absent; existing hosted Playwright validates actual rendering without local dependency/cache work. Operator cleanup separately uses a private project archive, bounded same-volume moves, a synthetic helper fixture and complete streamed archive/SHA readback before removing source copies; no production import/session restart or automatic deletion is authorized by running doctor."
+    "notes": "Read-only inventory found about981MiB of HQ records, including546MiB of full relay exports and314MiB of project evidence. Current core selection still admits structurally recognized relay exports with legacy names and exceeds128MiB. Keep unknown notes, explicit includes, full exports,128MiB import limits and all recovery materials protected. Doctor must identify actionable project material without deleting, rebinding or claiming an inactive client retries. Existing one-second bridge heartbeat and bounded initial publication retry remain producer-owned. Web currently pulses only one square; match the accepted App100-unit pane geometry and1.8s top-right/bottom/top-left focus cycle with live reduced motion. Browser plugin is absent; existing hosted Playwright validates actual rendering without local dependency/cache work. Operator cleanup separately uses a private project archive, bounded same-volume moves, a synthetic helper fixture and complete streamed archive/SHA readback before removing source copies; no production import/session restart or automatic deletion is authorized by running doctor. Source validation before test implementation also confirmed relay IDs support3-80 ASCII letters/digits/underscore/hyphen, including custom IDs; do not assume only32hex IDs. Initial operator inventory conservatively selected too few exports and performed no mutation; retain that preliminary plan and rerun with the actual existing contract. Test the stream validator in the owning relay package as well as archive integration."
   },
   "cases": [
     {
       "id": "DPC-001",
       "layer": "L2",
       "description": "Automatic core recovery recognizes legacy full relay observations while preserving unknown notes and explicit includes",
-      "setup": "Synthetic HQ tree with current and legacy export filenames, real-shaped nonempty relay request arrays, ordinary structured notes, malformed/partial/empty arrays and an include override; no production records.",
+      "setup": "Synthetic HQ tree with current and legacy export filenames, real-shaped nonempty relay request arrays, ordinary structured notes, malformed/partial/empty arrays and an include override; no production records. Include both generated IDs and valid custom IDs under the existing relay ID contract.",
       "action": "Select core and full archive scopes, round-trip an included observation and inspect retained file content.",
       "expected": "Only recognized generated observations leave the automatic core scope; included observations and all full-export records remain. Unknown or corrupt notes remain protected and may still cause an honest limit failure. Restore limits stay128MiB/32MiB/10000; no file is moved or deleted.",
       "planned_files": [
-        "internal/hq/process_materials_test.go"
+        "internal/hq/process_materials_test.go",
+        "internal/relay/observation_test.go"
       ]
     },
     {
@@ -77,5 +78,5 @@
       ]
     }
   ],
-  "seal": "dcc5a64affc9ac9150da9709143783b5efb4483fb8e0a4758c9a726907961c7c"
+  "seal": "d2ecc70eec6244328ae523ea137a9e1b25da5d39c145c4c7726fdf7af023f098"
 }
