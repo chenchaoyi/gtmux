@@ -159,7 +159,7 @@ func validateResponsibility(d Database, m Matter, p Responsibility, now int64) e
 	}
 	old := m.Responsibility
 	if p.Intent != nil {
-		if old != nil && old.Intent != nil && old.Intent.ID != p.Intent.ID && goalOwed(GoalResponsibility(d, m, now)) == false {
+		if old != nil && old.Intent != nil && old.Intent.ID != p.Intent.ID && !goalOwed(GoalResponsibility(d, m, now)) {
 			return errors.New("existing queued or running intent must be reconciled before replacing it")
 		}
 		if attempt, ok := d.IntentAttempts[p.Intent.ID]; ok && (attempt.MatterID != m.ID || attempt.StepID != p.StepID || !reflect.DeepEqual(attempt.Intent, *p.Intent)) {
