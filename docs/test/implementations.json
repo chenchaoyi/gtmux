@@ -3652,5 +3652,19 @@
     "selectors": [
       "a blank later upload path retains the batch and caption until explicit retry: %j"
     ]
+  },
+  "mobileapp/scripts/creative-layout.test.mjs": {
+    "cases": [
+      "STORE-ART-001",
+      "STORE-ART-002",
+      "STORE-ART-003",
+      "STORE-ART-004"
+    ],
+    "selectors": [
+      "both placement layouts keep their focal regions within the official templates",
+      "device artwork uses the canvas while its HQ focal region remains protected",
+      "rejects horizontal clipping even when the old vertical safe band would pass",
+      "rejects text overflow beyond any edge and missing or empty measurements"
+    ]
   }
 }

@@ -11,7 +11,7 @@
 | L3 · 运行时集成 | 148 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
-| G · 质量门禁 | 496 | [G.csv](cases/G.csv) |
+| G · 质量门禁 | 497 | [G.csv](cases/G.csv) |
 
 数字不是通过数。存量 6,223 个位置来自 4fad6119 盘点（声明、子测试、动态模板），另加明确的新用例、原生过程入口和评审映射入口；动态实例不展开。没有具名用例的辅助文件仍保留摘要。存量层次是结构分类，混合边界在触及时需语义复核，不补造历史评审/运行结果。`reviewed-selector` 也不冒充框架发现的声明。源码/目录/映射漂移由门禁拦截，但测试名不能自动证明断言质量。
 
@@ -369,6 +369,10 @@
 | SID-008 | A missing verified session ID stays missing. Pending relation is labeled as such, distinct from confirmed external placement, and source row keys/targets retain existing meaning. No focus, input, installation or real screenshot is performed. |
 | SCR-001 | The readiness check cannot wait for hq-verdict, which is intentionally absent in conversation. Missing conversation turns must still time out instead of photographing an empty/loading screen. All seven required phone images, waits, screenshot freshness and final written inventory remain mandatory; exceptions are not swallowed to manufacture success. |
 | SCR-002 | The reader is not considered loaded from a list, generic root, empty body or an action that applies only to one entry purpose. Missing reader/content still fails with a bounded timeout. Keep all five source shots, actual orientation handling, capture freshness and navigation; do not introduce fixture/product changes or claim unobserved accessibility acceptance. |
+| STORE-ART-001 | Both layouts accept brand and top58% phone focal region. The whole device stage is not claimed safe. |
+| STORE-ART-002 | Full-phone art spans outside the safe band. Treating the whole stage or wrongly tall focal region as critical throws. |
+| STORE-ART-003 | Throws an outside-Apple-safe-area error. |
+| STORE-ART-004 | Empty measurements fail explicitly; each overflowing or invalid rectangle throws. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |

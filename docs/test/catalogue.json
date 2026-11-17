@@ -42503,7 +42503,7 @@
       "sha256": "39c3ab7a862f23dea5cbee340251ea4260c68ede5fb1ec4825c3a2c74ce21aa7"
     },
     "mobileapp/scripts/creative-layout.test.mjs": {
-      "sha256": "edadeed96fdfad8e0c5637151c544f13efc6d1caa8913ebe1055893d8e050885",
+      "sha256": "84dc23933c7c91e96996731b5635e0b0a2c9625d75fc837c07af218420695324",
       "layer": "G",
       "stack": "RN / mobile harness",
       "cases": [
@@ -42517,7 +42517,7 @@
         },
         {
           "id": "LEG-7e5ca2230859",
-          "line": 11,
+          "line": 19,
           "kind": "test",
           "name": "rejects horizontal clipping even when the old vertical safe band would pass",
           "dynamic": false,
@@ -42525,11 +42525,20 @@
         },
         {
           "id": "LEG-816929cbc666",
-          "line": 17,
+          "line": 25,
           "kind": "test",
           "name": "rejects text overflow beyond any edge and missing or empty measurements",
           "dynamic": false,
           "layer": "G"
+        },
+        {
+          "id": "MAP-aa93b7f8edee",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "device artwork uses the canvas while its HQ focal region remains protected",
+          "dynamic": false,
+          "layer": "G",
+          "design": "STORE-ART-001,STORE-ART-002,STORE-ART-003,STORE-ART-004"
         }
       ]
     },
