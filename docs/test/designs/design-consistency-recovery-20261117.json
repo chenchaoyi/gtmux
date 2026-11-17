@@ -30,7 +30,18 @@
         "mobileapp/e2e/android/run.cjs",
         "mobileapp/e2e/__tests__/settings-appearance-language.test.ts"
       ]
+    },
+    {
+      "id": "DFR-003",
+      "layer": "L4",
+      "description": "Rendered composer recovers from message-send or later-file upload failure before editing an uploaded image",
+      "setup": "Existing local synthetic HTTP fixture and isolated headless browser; stage two images through the actual file chooser and retain uploaded attachments after an intentional failure.",
+      "action": "Edit the previously uploaded image, save, retry with upload acknowledgment held, then release acknowledgment; also cancel a second edit.",
+      "expected": "Replacement thumbnail immediately loses Uploaded, shows real uploading/saving until a fresh path is acknowledged, and final send includes the edited path. Caption and unrelated attachment survive. Cancel keeps the prior receipt. Only synthetic sends occur.",
+      "planned_files": [
+        "tests/web/design-recovery.test.cjs"
+      ]
     }
   ],
-  "seal": "957a85b47b9f4b0cb58783bc6fd45ee05d45bd8f064d243f2355b888488944a0"
+  "seal": "201ea4f325ed00876d0e6f6990eccaf01ac828cefd83fa5b1a1e612fc6f95596"
 }
