@@ -1,0 +1,73 @@
+{
+  "id": "store-creative-safe-area-20261117",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-17",
+    "decision": "Proceed with this design before the replacement branch implementation commit",
+    "notes": "Reviewed official Apple full-canvas versus critical-safe-area requirements, enlarged auxiliary device art, and four test failure oracles. PR1890 H62b26796 already contained these tests without required design/catalogue; its failed history remains preserved and is not retrospectively approved. This replacement branch records this actual self-review before applying the implementation. Final independent review remains required."
+  },
+  "evidence_limits": [
+    "Pure Node geometry guards, not actual App Store or device previews.",
+    "Screenshot truthfulness and reading hierarchy require separate image review."
+  ],
+  "cases": [
+    {
+      "id": "STORE-ART-001",
+      "layer": "G",
+      "description": "Critical brand and phone HQ focal region fit both official safe rectangles",
+      "setup": "Production header3840x1646 safe1097,493,1646,661 and search3840x2560 safe836,765,2168,1030.",
+      "action": "Validate brand and exported phoneFocalRegion for both layouts.",
+      "expected": "Both layouts accept brand and top58% phone focal region. The whole device stage is not claimed safe.",
+      "planned_files": [
+        "mobileapp/scripts/creative-layout.test.mjs"
+      ],
+      "surfaces": [
+        "App Store creative rendering / CI geometry guards"
+      ]
+    },
+    {
+      "id": "STORE-ART-002",
+      "layer": "G",
+      "description": "Distinguish enlarged auxiliary art from critical safe geometry",
+      "setup": "Both production layouts, original phone aspect1320x2868 and invalid aspect1320x5000.",
+      "action": "Assert full-phone height exceeds safe-band height; validate whole-stage and wrong-aspect focal rectangles as negative cases.",
+      "expected": "Full-phone art spans outside the safe band. Treating the whole stage or wrongly tall focal region as critical throws.",
+      "planned_files": [
+        "mobileapp/scripts/creative-layout.test.mjs"
+      ],
+      "surfaces": [
+        "App Store creative rendering / CI geometry guards"
+      ]
+    },
+    {
+      "id": "STORE-ART-003",
+      "layer": "G",
+      "description": "Reject horizontal clipping despite valid vertical position",
+      "setup": "Header rectangle with a title x300,y700,width500,height150.",
+      "action": "Validate the horizontally clipped title.",
+      "expected": "Throws an outside-Apple-safe-area error.",
+      "planned_files": [
+        "mobileapp/scripts/creative-layout.test.mjs"
+      ],
+      "surfaces": [
+        "App Store creative rendering / CI geometry guards"
+      ]
+    },
+    {
+      "id": "STORE-ART-004",
+      "layer": "G",
+      "description": "Reject edge overflow and invalid measurements",
+      "setup": "Search safe rectangle, empty set, top/right/bottom overflow, NaN and zero-width rectangles.",
+      "action": "Validate each negative case independently.",
+      "expected": "Empty measurements fail explicitly; each overflowing or invalid rectangle throws.",
+      "planned_files": [
+        "mobileapp/scripts/creative-layout.test.mjs"
+      ],
+      "surfaces": [
+        "App Store creative rendering / CI geometry guards"
+      ]
+    }
+  ],
+  "seal": "c8850f53f22d41c12fe5b46222eb92e65e55964fe5b952851cb467480880410b"
+}
