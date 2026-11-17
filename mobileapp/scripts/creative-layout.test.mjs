@@ -1,10 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {CREATIVE_LAYOUTS, assertSafeGeometry} from './creative-layout.mjs';
+import {CREATIVE_LAYOUTS, assertSafeGeometry, phoneFocalRegion} from './creative-layout.mjs';
 
 test('both placement layouts keep their focal regions within the official templates', () => {
   for (const layout of Object.values(CREATIVE_LAYOUTS)) {
-    assert.doesNotThrow(() => assertSafeGeometry(layout, {brand: layout.brand, stage: layout.stage}));
+    assert.doesNotThrow(() => assertSafeGeometry(layout, {brand: layout.brand, phoneFocus: phoneFocalRegion(layout)}));
+  }
+});
+
+test('device artwork uses the canvas while its HQ focal region remains protected', () => {
+  for (const layout of Object.values(CREATIVE_LAYOUTS)) {
+    assert.ok(layout.phone * 2868 / 1320 > layout.safe.height, 'a whole phone must no longer be shrunk into the central band');
+    assert.throws(() => assertSafeGeometry(layout, {entireStage: layout.stage}), /outside Apple's/);
+    assert.throws(() => assertSafeGeometry(layout, {wrongAspect: phoneFocalRegion(layout, 1320, 5000)}), /outside Apple's/);
   }
 });
 

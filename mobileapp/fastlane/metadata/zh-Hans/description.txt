@@ -1,6 +1,4 @@
-在 iPhone 和 iPad 上查看、操作 Mac 或 Linux 服务器中的 tmux 会话。
-
-集中跟进 Claude Code、Codex、DeepSeek Harness 等编码 Agent 和普通终端窗格。离开电脑后，也能查看进度、回复问题和继续操作。
+支持 Claude Code、Codex、DeepSeek Harness 等编码 Agent，也可查看和操作普通 tmux 终端窗格。
 
 会话与回复
 • 查看 Agent 状态和等待你处理的请求。

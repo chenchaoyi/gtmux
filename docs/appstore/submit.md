@@ -78,8 +78,12 @@ sizes when the UI is the same; add smaller screenshot sets only when they need a
 
 `creative-layout.mjs` records the Art Safe Area bounds from Apple's official PSDs:
 Header `(1097,493,1646,661)`, Search `(836,765,2168,1030)` (x, y, width, height).
-`frame-creative.mjs` measures text and complete device bounds in the renderer and
-rejects content outside those rectangles. This supplements visual review and does not
+`frame-creative.mjs` protects the title, subtitle and the phone's HQ/decision focal
+region inside those rectangles. Complete device artwork and the quiet brand backdrop
+extend into Apple's Auxiliary Art Area; keeping every device edge inside the central
+safe area made the actual Store presentation too small. The original screenshots stay
+intact. Geometry records distinguish critical regions from supporting device bounds.
+Inspect the full canvas, central crop and phone-sized presentation. This supplements visual review and does not
 replace the actual Apple preview across devices, orientations and appearances.
 Apple's universal 5244×2950 PNG is valid, but a vertical crop band alone does not protect
 it from clipping. Do not reintroduce the old universal file as a silent fallback.
