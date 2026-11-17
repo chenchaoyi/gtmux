@@ -234,7 +234,7 @@ jobs:
       - name: test delivery helpers (synthetic credentials, no network)
         run: |
           python3 -m unittest discover -s mobileapp/scripts -p '*_test.py'
-          node --test mobileapp/scripts/creative-layout.test.mjs
+          node --test mobileapp/scripts/creative-layout.test.mjs mobileapp/scripts/creative-output.test.mjs
 
   android-native:
     name: Android QA build and native policies

@@ -83,6 +83,9 @@ region inside those rectangles. Complete device artwork and the quiet brand back
 extend into Apple's Auxiliary Art Area; keeping every device edge inside the central
 safe area made the actual Store presentation too small. The original screenshots stay
 intact. Geometry records distinguish critical regions from supporting device bounds.
+The renderer protects explicit source-image bounds through the entire decision card,
+including its explanation and time. It verifies the final RGB PNG dimensions and
+device pixel anchors against the geometry; no post-render crop changes the origin.
 Inspect the full canvas, central crop and phone-sized presentation. This supplements visual review and does not
 replace the actual Apple preview across devices, orientations and appearances.
 Apple's universal 5244×2950 PNG is valid, but a vertical crop band alone does not protect

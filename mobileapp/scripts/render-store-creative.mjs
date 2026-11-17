@@ -7,6 +7,7 @@ import {dirname, join, resolve} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath, pathToFileURL} from 'node:url';
 import {CREATIVE_LAYOUTS, assertSafeGeometry} from './creative-layout.mjs';
+import {PHONE_STORY_BOUNDS, phoneStoryRegion, verifyCreativeOutput} from './creative-output.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
@@ -17,6 +18,7 @@ const arg = (name, fallback) => {
 const lang = arg('lang', 'en');
 const caption = JSON.parse(readFileSync(join(HERE, 'creative-captions.json')))[lang];
 if (!caption) throw new Error(`Missing creative captions for ${lang}`);
+if (caption.phone !== '03-hq') throw new Error('Critical bounds are only verified for the existing 03-hq capture');
 const out = resolve(arg('out', 'fastlane/creative/en-US'));
 const raw = (dir, name) => {
   const path = join(dir, name + '.png');
@@ -29,6 +31,9 @@ const escape = text => text.replace(/[&<>"']/g, ch => ({'&': '&amp;', '<': '&lt;
 const box = r => `left:${r.x}px;top:${r.y}px;width:${r.width}px;height:${r.height}px`;
 
 function page(type, layout) {
+  const story = phoneStoryRegion(layout);
+  const storyStyle = box({...story, x: story.x - layout.stage.x,
+    y: story.y - layout.stage.y - layout.phoneTop});
   // Chrome's DOM dump can leave image.decode() pending after load. Measure
   // intrinsic image sizes on load; all fonts here are local system fonts.
   const text = type === 'header'
@@ -47,10 +52,10 @@ body{font-family:-apple-system,"SF Pro Display","PingFang SC",system-ui,sans-ser
 .tablet{left:${layout.tabletLeft}px;top:${layout.tabletTop}px;width:${layout.tablet}px;padding:16px;border-radius:42px}
 .tablet img{border-radius:27px}.phone{left:0;top:${layout.phoneTop}px;width:${layout.phone}px;padding:10px;border-radius:36px}
 .phone img{border-radius:26px}img{display:block;width:100%;height:auto}
-.phone-focus{position:absolute;left:10px;top:10px;pointer-events:none}
+.phone-focus{position:absolute;left:10px;top:10px;pointer-events:none}.phone-story{position:absolute;${storyStyle};pointer-events:none}
 </style><body class="${type}"><svg class="ambient" viewBox="0 0 100 100" aria-hidden="true"><rect x="8" y="8" width="40" height="40" rx="9" fill="#DEE1E7"/><rect x="52" y="8" width="40" height="40" rx="9" fill="#D1EFF3"/><rect x="8" y="52" width="84" height="40" rx="9" fill="#DEE1E7"/></svg><div class="brand">${text}</div><div class="stage">
 <div class="device tablet" data-art="tablet"><img src="${tablet}"></div>
-<div class="device phone" data-art="phone"><img src="${phone}"><div class="phone-focus" data-key="phone-focus"></div></div></div>
+<div class="device phone" data-art="phone"><img src="${phone}"><div class="phone-focus" data-key="phone-focus"></div><div class="phone-story" data-key="phone-story"></div></div></div>
 <script>window.addEventListener('load',()=>{
  if([...document.images].some(i=>!i.complete||!i.naturalWidth))throw new Error('Creative image did not load');
  const image=document.querySelector('.phone img');
@@ -70,23 +75,23 @@ try {
     const html = join(scratch, type + '.html');
     writeFileSync(html, page(type, layout));
     const common = ['--headless', '--disable-gpu', '--hide-scrollbars', '--force-device-scale-factor=1',
-      `--user-data-dir=${join(scratch, 'chrome-' + type)}`, `--window-size=${layout.width},${layout.height + 128}`,
+      `--user-data-dir=${join(scratch, 'chrome-' + type)}`, `--window-size=${layout.width},${layout.height}`,
       '--virtual-time-budget=3000', pathToFileURL(html).href];
     const dom = execFileSync(CHROME, ['--dump-dom', ...common], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 32 * 1024 * 1024});
     const match = dom.match(/<script type="application\/json" id="geometry">([^<]+)<\/script>/);
     if (!match) throw new Error('Creative geometry was not measured');
     const measured = JSON.parse(match[1]);
-    const required = ['name', 'phone-focus', ...(type === 'header' ? ['label'] : ['title', 'sub'])];
+    const required = ['name', 'phone-focus', 'phone-story', ...(type === 'header' ? ['label'] : ['title', 'sub'])];
     if (required.some(key => !measured.rectangles[key])) throw new Error('Incomplete creative geometry');
     if (measured.overflow) throw new Error('Creative text overflows its container');
     assertSafeGeometry(layout, measured.rectangles);
     const image = join(out, layout.file);
     execFileSync(CHROME, [`--screenshot=${image}`, ...common], {stdio: 'ignore'});
-    execFileSync('/usr/bin/sips', ['--cropOffset', '0', '0', '--cropToHeightWidth', String(layout.height), String(layout.width), image], {stdio: 'ignore'});
-    const head = readFileSync(image).subarray(0, 26);
-    if (head[25] !== 2) throw new Error('Store artwork must be an RGB PNG without alpha');
-    writeFileSync(join(out, type + '-geometry.json'), JSON.stringify({canvas: layout, ...measured}, null, 2) + '\n');
-    console.log(`${layout.file}: ${layout.width}×${layout.height}; all key content inside Apple's safe area`);
+    const finalOutput = verifyCreativeOutput(readFileSync(image), layout, measured.auxiliary);
+    assertSafeGeometry(layout, measured.rectangles);
+    writeFileSync(join(out, type + '-geometry.json'), JSON.stringify({canvas: layout,
+      phoneStorySourceBounds: PHONE_STORY_BOUNDS, ...measured, finalOutput}, null, 2) + '\n');
+    console.log(`${layout.file}: ${layout.width}×${layout.height}; final PNG anchors match; complete HQ story inside Apple's safe area`);
   }
 } finally {
   rmSync(scratch, {recursive: true, force: true});
