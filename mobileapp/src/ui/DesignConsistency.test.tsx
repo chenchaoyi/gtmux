@@ -95,7 +95,7 @@ test('composer actions and independent thumbnail remove targets are at least44 p
   const frame = remove.parent!; const frameStyle = StyleSheet.flatten(frame.props.style);
   const preview = frame.children.find(n => typeof n !== 'string' && StyleSheet.flatten(n.props.style)?.width === 72) as renderer.ReactTestInstance;
   const previewWidth = StyleSheet.flatten(preview.props.style).width;
-  expect(frameStyle.width - removeStyle.right - removeStyle.width).toBeGreaterThanOrEqual(previewWidth);
+  expect(frameStyle.width - 2 * (frameStyle.borderWidth ?? 0) - removeStyle.right - removeStyle.width).toBeGreaterThanOrEqual(previewWidth);
   act(() => remove.props.onPress()); expect(image()).toHaveLength(1); expect(tree.root.findByType(ImageMarkup).props.visible).toBe(false);
   act(() => image()[0].props.onPress()); expect(tree.root.findByType(ImageMarkup).props.visible).toBe(true);
 });

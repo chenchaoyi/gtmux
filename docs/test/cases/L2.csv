@@ -697,6 +697,7 @@ MAP-a2be25f26b18,L2,reviewed implementation,internal/server/web/design-consisten
 MAP-bcfc2c1a7874,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,157,reviewed-selector,HQ remains a distinct role,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
 MAP-700b6c8e3834,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,167,reviewed-selector,own compact loading retains,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
 MAP-5b5110a4affc,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,173,reviewed-selector,generated document contract offers,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-92676feada09,L2,reviewed implementation,internal/server/web/design-recovery.test.cjs,46,reviewed-selector,DFR-001,False,DFR-001
 MAP-e63e89176901,L2,reviewed implementation,internal/server/web/execution-chain.test.cjs,8,reviewed-selector,"CRX-005 adjacent equal process presentations retain count, order and distinct arguments",False,CRX-005
 MAP-ec276ea47d43,L2,reviewed implementation,internal/server/web/state-duration.test.cjs,19,reviewed-selector,CSR-004 browser row,False,CSR-004
 LEG-3f958826505e,L2,Browser,internal/server/web/terminal-keys.test.cjs,26,test,unsupported combinations are not fabricated,False,legacy-not-retrospectively-reviewed
@@ -1131,7 +1132,7 @@ LEG-dab2495366f0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test
 LEG-cd35d5d9def5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,462,test,"a server-mode change on the server is read at once, not on the next poll",False,legacy-not-retrospectively-reviewed
 MAP-f0b391956193,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,111,reviewed-selector,PFR-002 genuine notification syncing stays in the existing two-line row,False,"RSR-009,PFR-002"
 MAP-0be071c6814e,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,123,reviewed-selector,"PFR-002 a pending owner retries its own notification settings from More, with no guest action",False,"RSR-009,PFR-002"
-MAP-7d053fa3bb5b,L2,reviewed implementation,mobileapp/src/screens/SettingsAppearance.test.tsx,16,reviewed-selector,global color scheme lives in Appearance,False,DFC-006
+MAP-7d053fa3bb5b,L2,reviewed implementation,mobileapp/src/screens/SettingsAppearance.test.tsx,18,reviewed-selector,global color scheme lives in Appearance,False,DFC-006
 MAP-8524f471c8a2,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,47,reviewed-selector,regular main respects loading and timeout in ${lang} ${theme},False,RDRC-001
 MAP-7c742f998d7d,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,62,reviewed-selector,hidden sidebar does not turn an unfinished main read into an empty fleet,False,RDRC-001
 MAP-6f2c71730f2c,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,70,reviewed-selector,unselected access and expired guest states retain shared guidance and no owner creation,False,RDRC-001

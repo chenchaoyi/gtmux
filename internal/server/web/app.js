@@ -1670,7 +1670,7 @@
         if (!blob || blob.size > 30 * 1024 * 1024) { exportFailure(); return; }
         var name = attachment.name.replace(/(-marked)?\.[^.]+$/, '') + '-marked.jpg';
         if (attachment.url) { URL.revokeObjectURL(attachment.url); context.urls.delete(attachment.url); }
-        attachment.file = new File([blob], name, {type: 'image/jpeg'}); attachment.name = name; attachment.url = URL.createObjectURL(attachment.file); context.urls.add(attachment.url); delete attachment.path; attachment.progress = null; onChange(); sheet.close();
+        attachment.file = new File([blob], name, {type: 'image/jpeg'}); attachment.name = name; attachment.url = URL.createObjectURL(attachment.file); context.urls.add(attachment.url); delete attachment.path; attachment.progress = null; attachment.phase = null; onChange(); sheet.close();
       }, 'image/jpeg', .92); } catch (e) { exportFailure(); }
     };
     image.onload = function () { if (context.revoked) return; canvas.width = image.naturalWidth; canvas.height = image.naturalHeight; loaded = true; done.disabled = false; try { draw(); message.textContent = T('Original size: ', '原始尺寸：') + canvas.width + ' × ' + canvas.height + T(' · JPEG export', ' · JPEG 导出'); } catch (e) { exportFailure(); } };

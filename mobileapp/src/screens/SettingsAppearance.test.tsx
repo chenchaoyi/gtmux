@@ -3,6 +3,8 @@ import renderer, {act} from 'react-test-renderer';
 import {SettingsScreen} from './SettingsScreen';
 import {PickerSheet, SettingsGroup, SettingsRow} from '../ui/SettingsRow';
 import {paletteFor} from '../ui/theme';
+import {TestIds} from '../constants/testIds';
+import {TouchableOpacity} from 'react-native';
 
 const mockTheme = jest.fn();
 jest.mock('../state/AppContext', () => ({useApp: () => ({
@@ -20,6 +22,10 @@ test('global color scheme lives in Appearance and uses the existing shared prefe
     const group = tree.root.findAllByType(SettingsGroup).find(n => n.props.title === 'Appearance')!;
     expect(group).toBeDefined();
     const row = group.findAllByType(SettingsRow).find(n => n.props.label === 'Color scheme')!;
+    expect(row.props.testID).toBe(TestIds.settings.appearance);
+    const control = row.findByType(TouchableOpacity);
+    expect(control.props.testID).toBe(TestIds.settings.appearance);
+    expect(control.props.accessibilityLabel).toBe('Color scheme, system');
     expect(row.props.value).toBe('system'); expect(row.props.sub).toContain('throughout the app');
     expect(group.props.pal).toEqual(paletteFor('light'));
     act(() => row.props.onPress());

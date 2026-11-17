@@ -57,6 +57,7 @@ export function SettingsGroup({
 }
 
 export function SettingsRow({
+  testID,
   icon,
   label,
   sub,
@@ -73,6 +74,7 @@ export function SettingsRow({
   right,
   inset,
 }: {
+  testID?: string;
   icon?: IconName;
   label: string;
   sub?: string;
@@ -133,7 +135,7 @@ export function SettingsRow({
     </View>
   );
   return onPress ? (
-    <TouchableOpacity activeOpacity={0.6} onPress={onPress} accessibilityRole="button"
+    <TouchableOpacity testID={testID} activeOpacity={0.6} onPress={onPress} accessibilityRole="button"
       accessibilityLabel={[label, value].filter(Boolean).join(', ')} accessibilityHint={sub}>
       {inner}
     </TouchableOpacity>

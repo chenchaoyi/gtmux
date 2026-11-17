@@ -666,8 +666,8 @@ export const Composer = React.memo(function Composer({
           keyboardShouldPersistTaps="always"
           contentContainerStyle={styles.thumbStrip}>
           {attachments.map(att => (
-            <View key={att.id} testID={`attach-thumbnail-${att.id}`} style={[styles.thumbWrap, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
-              <View style={styles.thumbPreview}>
+            <View key={att.id} testID={`attach-thumbnail-${att.id}`} style={[styles.thumbWrap, {backgroundColor: pal.surface}]}>
+              <View style={[styles.thumbPreview, {borderColor: pal.divider}]}>
               {att.isImage ? (
                 // Tap to annotate. This is where the markup editor lives now that it is
                 // not in front of every photo: on the thing you would annotate.
@@ -1009,8 +1009,8 @@ const styles = StyleSheet.create({
   sendText: {fontSize: 19, fontWeight: '700'},
   // Staged-attachment thumbnail strip (above the input, so the field wraps below).
   thumbStrip: {flexDirection: 'row', alignItems: 'center', paddingTop: 8, paddingRight: 8},
-  thumbWrap: {width: 116, height: 72, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, marginRight: 8, overflow: 'hidden'},
-  thumbPreview: {width: 72, height: 72},
+  thumbWrap: {width: 116, height: 72, borderRadius: 12, marginRight: 8},
+  thumbPreview: {width: 72, height: 72, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden'},
   thumbPreviewButton: {width: '100%', height: '100%'},
   thumbImg: {width: '100%', height: '100%'},
   thumbFile: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4},

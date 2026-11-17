@@ -13,6 +13,7 @@ require.extensions['.ts'] = (module, file) => module._compile(ts.transpileModule
   compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true},
 }).outputText, file);
 const {startFake} = require('../fake-serve/server.ts');
+const {TestIds} = require('../../src/constants/testIds.ts');
 const root = path.resolve(__dirname, '../..');
 const serial = process.env.ANDROID_SERIAL || '';
 const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
@@ -244,7 +245,10 @@ async function run() {
   await check('24-appearance-light-dark-system',async()=>{
     await launch();await tap(id('radar-settings'));
     for(const theme of ['dark','light','system']) {
-      const appearance=driver.$('//*[@text="Appearance"]');await seek(appearance);await tap(appearance);await tap(id('picker-option-'+theme));await wait(500);await capture('24-'+theme);
+      const appearance=id(TestIds.settings.appearance);await seek(appearance);await tap(appearance);await tap(id(TestIds.settings.pickerOption+'-'+theme));
+      const value={dark:'Dark',light:'Light',system:'System'}[theme];
+      await driver.waitUntil(async()=>await appearance.getAttribute('content-desc')==='Color scheme, '+value,{timeout:5000,timeoutMsg:'Global color scheme did not apply: '+theme});
+      await capture('24-'+theme);
     }
   });
   await check('25-hq-chat-and-routing',async()=>{

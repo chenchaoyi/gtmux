@@ -2037,12 +2037,14 @@
       "CT-ANDROID",
       "CT-TIMING",
       "ACP-003",
-      "DTV-006"
+      "DTV-006",
+      "DFR-002"
     ],
     "selectors": [
       "async function check",
       "async function run",
-      "await check('21-camera-permission-denial'"
+      "await check('21-camera-permission-denial'",
+      "24-appearance-light-dark-system"
     ]
   },
   "mobileapp/e2e/capture/hq-header-shot.test.ts": {
@@ -3736,6 +3738,30 @@
     "selectors": [
       "testKeyStatesHaveDifferentGeometryWithoutUsingColor",
       "testAwakeModifierDoesNotEraseTheStatusDifference"
+    ]
+  },
+  "internal/server/web/design-recovery.test.cjs": {
+    "cases": [
+      "DFR-001"
+    ],
+    "selectors": [
+      "DFR-001"
+    ]
+  },
+  "tests/web/design-recovery.test.cjs": {
+    "cases": [
+      "DFR-003"
+    ],
+    "selectors": [
+      "DFR-003"
+    ]
+  },
+  "mobileapp/e2e/__tests__/settings-appearance-language.test.ts": {
+    "cases": [
+      "DFR-002"
+    ],
+    "selectors": [
+      "Dark and 中文 apply at once and survive a relaunch"
     ]
   }
 }
