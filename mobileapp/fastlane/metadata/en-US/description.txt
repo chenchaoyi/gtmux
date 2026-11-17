@@ -1,6 +1,4 @@
-View and control tmux sessions on your Mac or Linux server from iPhone and iPad.
-
-Follow Claude Code, Codex, DeepSeek Harness and other supported coding agents alongside ordinary terminal panes. Read their progress, reply to questions and continue work while away from your desk.
+Works with Claude Code, Codex, DeepSeek Harness and other supported coding agents, alongside ordinary tmux panes.
 
 Sessions and replies
 • Check agent status and requests that need your attention.

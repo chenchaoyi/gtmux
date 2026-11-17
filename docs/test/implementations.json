@@ -3652,5 +3652,33 @@
     "selectors": [
       "a blank later upload path retains the batch and caption until explicit retry: %j"
     ]
+  },
+  "mobileapp/scripts/creative-layout.test.mjs": {
+    "cases": [
+      "STORE-ART-001",
+      "STORE-ART-002",
+      "STORE-ART-003",
+      "STORE-ART-004"
+    ],
+    "selectors": [
+      "both placement layouts keep their focal regions within the official templates",
+      "device artwork uses the canvas while its HQ focal region remains protected",
+      "rejects horizontal clipping even when the old vertical safe band would pass",
+      "rejects text overflow beyond any edge and missing or empty measurements"
+    ]
+  },
+  "mobileapp/scripts/creative-output.test.mjs": {
+    "cases": [
+      "STORE-OUT-001",
+      "STORE-OUT-002",
+      "STORE-OUT-003",
+      "STORE-OUT-004"
+    ],
+    "selectors": [
+      "final RGB PNG device anchors match recorded canvas coordinates",
+      "rejects malformed, non-RGB, wrong-size and incomplete final output",
+      "protects the full HQ header and complete decision card in both layouts",
+      "detects the original final-image shift of minus64 pixels"
+    ]
   }
 }

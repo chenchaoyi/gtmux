@@ -2,7 +2,7 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1315 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1316 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ The catalogue covers 1315 test/harness source files. Each CSV row lists stable I
 | L3 · Runtime integration | 148 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
-| G · Qualification guards | 496 | [G.csv](cases/G.csv) |
+| G · Qualification guards | 501 | [G.csv](cases/G.csv) |
 
 Numbers are not passes. The legacy 6,223 positions came from the 4fad6119 inventory (declarations, subtests, dynamic templates); explicit new cases, native oracles and reviewed selectors are indexed separately. Dynamic instances are not expanded. Harnesses without named cases retain their hashes. Legacy layers are structural triage; mixed boundaries need semantic review when touched, not fictional historical review/results. A reviewed-selector is not a framework-discovered declaration. Gates catch source/index/mapping drift; names cannot prove assertion quality.
 
@@ -369,6 +369,14 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | SID-008 | A missing verified session ID stays missing. Pending relation is labeled as such, distinct from confirmed external placement, and source row keys/targets retain existing meaning. No focus, input, installation or real screenshot is performed. |
 | SCR-001 | The readiness check cannot wait for hq-verdict, which is intentionally absent in conversation. Missing conversation turns must still time out instead of photographing an empty/loading screen. All seven required phone images, waits, screenshot freshness and final written inventory remain mandatory; exceptions are not swallowed to manufacture success. |
 | SCR-002 | The reader is not considered loaded from a list, generic root, empty body or an action that applies only to one entry purpose. Missing reader/content still fails with a bounded timeout. Keep all five source shots, actual orientation handling, capture freshness and navigation; do not introduce fixture/product changes or claim unobserved accessibility acceptance. |
+| STORE-OUT-001 | Matching exact canvas dimensions and pixel anchors pass; a -64px anchor translation fails. |
+| STORE-OUT-002 | Invalid PNG format, non-RGB output, missing device anchor or dimension mismatch fail explicitly. |
+| STORE-OUT-003 | The full region including English decision explanation and timestamp fits both official safe areas. Bounds outside the source or safe region are rejected. |
+| STORE-OUT-004 | The matching version passes and the shifted version fails. Pixel probing is independent of the DOM-only geometry assertions. |
+| STORE-ART-001 | Both layouts accept brand and top58% phone focal region. The whole device stage is not claimed safe. |
+| STORE-ART-002 | Full-phone art spans outside the safe band. Treating the whole stage or wrongly tall focal region as critical throws. |
+| STORE-ART-003 | Throws an outside-Apple-safe-area error. |
+| STORE-ART-004 | Empty measurements fail explicitly; each overflowing or invalid rectangle throws. |
 | TD-001 | Reject a changed/new test without a reviewed design; accept a mapped implementation |
 | TD-002 | Reject a tampered review seal, missing assertion description, invalid layer or unsafe path |
 | TD-003 | Reject missing/changed catalogue files and missing named implementation selectors |

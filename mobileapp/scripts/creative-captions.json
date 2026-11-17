@@ -1,16 +1,16 @@
 {
-  "_note": "Placement-specific captions. Header and search artwork use Apple template safe areas; raw screens come from the published synthetic demo. No URLs, prices, claims of awards or other marketplaces.",
+  "_note": "Placement-specific captions. Critical copy and the phone's HQ/decision region use Apple template safe areas; supporting device artwork fills the Auxiliary Art Area. Raw screens come from the published synthetic demo. No URLs, prices, claims of awards or other marketplaces.",
   "en": {
     "title": "Manage tmux\nfrom your phone",
-    "sub": "See sessions. Reply to agents. Follow progress with HQ.",
+    "sub": "See progress. Reply to agents.\nKeep track with HQ.",
     "dot": "#06B6D4",
     "ipad": "03-panes",
     "phone": "03-hq",
-    "header": "tmux sessions + HQ"
+    "header": "tmux + HQ"
   },
   "zh": {
     "title": "远程管理\ntmux 会话",
-    "sub": "查看进度，回复 Agent。",
+    "sub": "看进度，回消息。\n用 HQ 跟进任务。",
     "dot": "#06B6D4",
     "ipad": "03-panes",
     "phone": "03-hq",
