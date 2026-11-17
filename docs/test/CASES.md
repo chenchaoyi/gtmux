@@ -2,14 +2,14 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1321 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1323 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3807 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2446 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2447 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 148 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
+| L4 · Application journeys | 109 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 501 | [G.csv](cases/G.csv) |
 
@@ -165,6 +165,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DFC-007 | Queued/preparing/uploading/saving/failure are shown on the thumbnail; no fake percentage or completion before success; successful files retain original identity. |
 | DFC-008 | Brand identity persists but status changes include distinct shapes; awake modifier remains distinct; actual wallpaper/menu-bar acceptance is separately recorded. |
 | DFC-009 | The message states current-conversation unavailability and offers a new-link recovery; network/permission errors remain distinct. Strict session/home binding is unchanged. |
+| DFR-001 | Saved replacement loses old path, progress and complete/failed phase before redraw and requires upload; unrelated files and caption retain identity. Cancel/no-change/export failure retain the valid original. |
+| DFR-002 | The actionable control, not the uppercase group heading, opens the existing shared theme picker. Each Android choice changes the actual control value; iOS existing persistence assertions remain. Flow errors still fail normally. |
+| DFR-003 | Replacement thumbnail immediately loses Uploaded, shows real uploading/saving until a fresh path is acknowledged, and final send includes the edited path. Caption and unrelated attachment survive. Cancel keeps the prior receipt. Only synthetic sends occur. |
 | DTV-001 | Default rows are folder/root-file summaries only; deterministic hierarchy and directory aggregate counts, stable keys. Expanded original patch lines/numbers remain unchanged. Worktree path/branch parsed from preamble only; untracked filenames never inflate added lines, partial payload is labeled truncated. Deep/unsafe-looking names do not mutate prototypes or overflow recursion. Legacy diffPresentation semantics remain unchanged for callers not using tree mode. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
 | DTV-002 | Header identifies actual supplied worktree/branch and file/add/delete totals. All folder/file/hunk content starts collapsed, can be opened by44pt controls and collapsed together. FlatList windowing, wrap/scroll gutter, original source and line numbering remain. Unknown metadata stays unnamed instead of guessing a worktree. Stale replies cannot replace new pane context. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
 | DTV-003 | Correct worktree/branch/stat totals and directory grouping, no pre-opened code. Explicit expansion reveals original colored diff lines; collapse-all hides contents. Existing smoke assertion opens the file/hunk before checking original code. No unsafe HTML for context/path names. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |

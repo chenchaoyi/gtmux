@@ -8,6 +8,7 @@ import React, {useEffect, useState} from 'react';
 import {Alert, AppState, NativeModules, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {APP_VERSION as appVersion} from '../version';
+import {TestIds} from '../constants/testIds';
 import {LangPref} from '../i18n';
 import {useApp} from '../state/AppContext';
 import {connectionHeading, routeSetting, showRouteRow, statusConnectionDetail} from './connectionGroup';
@@ -271,7 +272,7 @@ export function SettingsScreen({navigation}: any) {
         )}
 
         <SettingsGroup title={lang === 'zh' ? '外观' : 'Appearance'} pal={pal}>
-          <SettingsRow icon="palette" label={lang === 'zh' ? '配色模式' : 'Color scheme'}
+          <SettingsRow testID={TestIds.settings.appearance} icon="palette" label={lang === 'zh' ? '配色模式' : 'Color scheme'}
             sub={lang === 'zh' ? '用于应用和对话界面' : 'Used throughout the app and chat'}
             value={labelOf(themes, themePref)} pal={pal} chevron onPress={() => setPicker('theme')} />
         </SettingsGroup>
