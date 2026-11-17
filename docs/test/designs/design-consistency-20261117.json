@@ -1,0 +1,163 @@
+{
+  "id": "design-consistency-20261117",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-17",
+    "decision": "Proceed before test implementation; final independent review required",
+    "notes": "User explicitly requested every finding D01-D12 plus the attachment availability experience. Reviewed observable reading/touch/accessibility/loading/upload/HQ/state/shape outcomes, failure states, source ownership, and bounded synthetic verification. No new authentication, cross-session access relaxation, dependency installation, real-session send, native-device acceptance or Store publication is implied. D11/D12 continue through their already frozen Store candidate."
+  },
+  "cases": [
+    {
+      "id": "DFC-001",
+      "layer": "L2",
+      "description": "Normal secondary App text remains legible in light and dark palettes",
+      "setup": "Use production palette backgrounds, surfaces, raised, waiting and selected composites.",
+      "action": "Compute rendered normal-text contrast for fg2/fg3, including selected and warning backgrounds.",
+      "expected": "Normal secondary text meets4.5:1; decorative/disabled tokens are separate, with no status-palette changes.",
+      "planned_files": [
+        "mobileapp/src/ui/DesignConsistency.test.tsx",
+        "mobileapp/src/ui/theme.test.ts"
+      ],
+      "surfaces": [
+        "Phone/iPad",
+        "Web",
+        "Mac where applicable"
+      ]
+    },
+    {
+      "id": "DFC-002",
+      "layer": "L2",
+      "description": "Frequent touch actions have independent44-point targets",
+      "setup": "Render the real App composer with a removable image and normal/pending send states; use coarse-pointer Web controls.",
+      "action": "Inspect actual interactive bounds and activate add/expand/send/remove without activating neighboring image edit.",
+      "expected": "Each target is at least44pt/px, with separate remove/edit regions and correct action delivery.",
+      "planned_files": [
+        "mobileapp/src/ui/DesignConsistency.test.tsx",
+        "mobileapp/src/ui/Composer.test.ts",
+        "internal/server/web/design-consistency.test.cjs"
+      ],
+      "surfaces": [
+        "Phone/iPad",
+        "Web",
+        "Mac where applicable"
+      ]
+    },
+    {
+      "id": "DFC-003",
+      "layer": "L2",
+      "description": "Own loading indicators and built-in state labels match across Web states",
+      "setup": "Exercise actual composer sending and row/page loading, both themes and reduced-motion preference.",
+      "action": "Enter/exit sending and inspect branded three-pane loading, accessible status text and rendered state labels.",
+      "expected": "The spinner is the same three-pane concept; reduced motion remains identifiable; built-in statuses use consistent lowercase without changing agent prose.",
+      "planned_files": [
+        "internal/server/web/design-consistency.test.cjs"
+      ],
+      "surfaces": [
+        "Phone/iPad",
+        "Web",
+        "Mac where applicable"
+      ]
+    },
+    {
+      "id": "DFC-004",
+      "layer": "L2",
+      "description": "HQ remains a separate role in narrow and wide browser layouts",
+      "setup": "Synthetic supervisor plus normal waiting/working/idle and external sessions.",
+      "action": "Render both layouts and change the supervisor status.",
+      "expected": "HQ stays a separate entry and never becomes an ordinary Idle/Working/Needs-you row; normal counts/groups remain correct.",
+      "planned_files": [
+        "internal/server/web/design-consistency.test.cjs"
+      ],
+      "surfaces": [
+        "Phone/iPad",
+        "Web",
+        "Mac where applicable"
+      ]
+    },
+    {
+      "id": "DFC-005",
+      "layer": "L2",
+      "description": "Settings and session controls expose usable accessibility context",
+      "setup": "Render production settings switch/action rows and two same-named sessions with different location/status.",
+      "action": "Inspect accessible labels, values, checked/disabled state, hints and action delivery.",
+      "expected": "Controls expose the setting/session identity and current state without merging unrelated children; actual spoken VoiceOver/TalkBack remains separately unverified.",
+      "planned_files": [
+        "mobileapp/src/ui/DesignConsistency.test.tsx",
+        "mobileapp/src/ui/AgentRow.test.tsx",
+        "mobileapp/src/ui/SettingsRow.test.tsx"
+      ],
+      "surfaces": [
+        "Phone/iPad",
+        "Web",
+        "Mac where applicable"
+      ]
+    },
+    {
+      "id": "DFC-006",
+      "layer": "L2",
+      "description": "Global appearance is discoverable outside Terminal settings",
+      "setup": "Render settings with global appearance values and terminal/input settings.",
+      "action": "Locate Appearance and switch among system/light/dark.",
+      "expected": "Global Appearance has its own group and changes the existing shared theme preference; terminal-specific settings retain their scope.",
+      "planned_files": [
+        "mobileapp/src/screens/SettingsAppearance.test.tsx"
+      ],
+      "surfaces": [
+        "Phone/iPad",
+        "Web",
+        "Mac where applicable"
+      ]
+    },
+    {
+      "id": "DFC-007",
+      "layer": "L2",
+      "description": "Thumbnail upload stages reflect real transfer and server confirmation",
+      "setup": "Synthetic Web XHR with queued image, unknown total, partial transfer, loaded=total, delayed server response and failure.",
+      "action": "Exercise actual upload progress and completion handlers through each state; retain editable draft/attachment on failure.",
+      "expected": "Queued/preparing/uploading/saving/failure are shown on the thumbnail; no fake percentage or completion before success; successful files retain original identity.",
+      "planned_files": [
+        "internal/server/web/design-consistency.test.cjs"
+      ],
+      "surfaces": [
+        "Phone/iPad",
+        "Web",
+        "Mac where applicable"
+      ]
+    },
+    {
+      "id": "DFC-008",
+      "layer": "L1",
+      "description": "Mac menu-bar status remains distinguishable without color",
+      "setup": "Production status glyphs for waiting/working/idle/running/empty with awake modifier.",
+      "action": "Compare non-color status geometry and render representative light/dark grayscale glyphs.",
+      "expected": "Brand identity persists but status changes include distinct shapes; awake modifier remains distinct; actual wallpaper/menu-bar acceptance is separately recorded.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift"
+      ],
+      "surfaces": [
+        "Phone/iPad",
+        "Web",
+        "Mac where applicable"
+      ]
+    },
+    {
+      "id": "DFC-009",
+      "layer": "L2",
+      "description": "Unavailable attachment feedback does not falsely assert the file was deleted",
+      "setup": "Resolve an attachment unavailable to this conversation; separately exercise network/permission/size failures.",
+      "action": "Read the real shared/native error presentation and inspect available recovery actions.",
+      "expected": "The message states current-conversation unavailability and offers a new-link recovery; network/permission errors remain distinct. Strict session/home binding is unchanged.",
+      "planned_files": [
+        "mobileapp/src/documents/availability.test.ts",
+        "internal/server/web/design-consistency.test.cjs"
+      ],
+      "surfaces": [
+        "Phone/iPad",
+        "Web",
+        "Mac where applicable"
+      ]
+    }
+  ],
+  "seal": "ab995637fc702eff8895d89370811edc75b474bb4a7dcfd6b13b7f14c795840a"
+}
