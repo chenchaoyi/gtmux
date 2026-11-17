@@ -17,13 +17,31 @@ native-home overrides keep their own CLI reader. The configured refresh cadence
 
 ---
 
+## Current shared rules (2026-11-17)
+
+These stable IDs define the current shared contract. Topic sections below explain it;
+older mockup numbers identify historical artwork and do not override these rules.
+The English and Chinese versions describe the same requirements. Component evidence
+and platform exceptions belong in [the surface matrix](SURFACES.md#component-verification).
+
+| Rule | Current requirement |
+| --- | --- |
+| `TEXT-READ` | Normal secondary text meets 4.5:1 on its actual background. Disabled/decorative tokens are separate. Native vibrancy needs actual material acceptance; an opaque-screen calculation cannot certify wallpaper. |
+| `TOUCH-44` | Phone/tablet and coarse-pointer controls have independent targets at least 44pt/px. Enlarging hit areas must not overlap a neighboring edit/remove action. Fine-pointer desktop controls may retain the documented compact size. |
+| `MOTION-LOAD` | Product loading uses the fixed three-pane logo with a clockwise cyan focus, 1.8s cycle/210ms crossfade; Reduce Motion keeps the upper-right pane lit. Working-state rings use their separate 2s cycle only while visible. Idle branding stays static. Filled controls may use a contrasting foreground highlight with the same geometry. OS-owned launch/progress/gesture controls and the explicitly enabled awake indicator are bounded exceptions; never invent transfer percentages. |
+| `ROLE-HQ` | HQ is a role, separate from ordinary waiting/working/idle groups at every width. Its live status remains visible but does not turn it into an ordinary session. |
+| `A11Y-CONTEXT` | Settings expose label, value/state, disabled reason and action. Session rows identify session, agent, status, location/time and destination without blindly merging unrelated controls. Source semantics are not spoken-device acceptance. |
+| `UPLOAD-PHASE` | Attachment feedback belongs on its thumbnail: queued, preparing, uploading, saving, complete or failed. Percentages use measured bytes only; loaded=total is saving until a valid server acknowledgement. Failure keeps the draft and explicit retry. |
+| `STATE-LABEL` | Built-in English activity labels use lowercase consistently; preserve agent-authored prose and user names. Global color scheme belongs to Appearance, outside Terminal. |
+| `FILE-SCOPE` | Unavailable means unavailable to the current conversation, not proof of deletion. Offer new-link recovery; retain distinct permission/network failures and exact session/home checks. Verify resolve and content with the recipient's actual scope before claiming delivery. |
+
 ## 0. Design principles
 
 1. A glance tool: looked at dozens of times a day. Quiet, fast and scannable beats decorated.
 2. Hierarchy is everything: "needs you" must ring; "idle" must be quiet enough to almost not register.
 3. Never colour alone: every status = colour + shape + glyph, triple-encoded (readable colour-blind, in peripheral vision, and on a tinted menu bar).
 4. Native, restrained, trustworthy: this is a developer tool. No rainbow gradients, no glowing shadows, no marketing copy.
-5. Minimal motion: at most one cue on idle→waiting; zero animation otherwise.
+5. Restrained motion follows `MOTION-LOAD`: visible work and loading may animate; idle branding stays static.
 
 ---
 
@@ -49,32 +67,27 @@ Every agent has four statuses (matching the CLI, see `internal/radar/agents.go`)
 
 A 16pt glyph that must be readable in a second in peripheral vision, colour-blind, and on light / dark / tinted menu bars. **Waiting must be carried by shape and glyph; colour alone is never enough.**
 
-### Glyph (recommended: Shape-shift, the shape changes with status)
+### Brand grid with non-color status symbols
 
-The status item's glyph changes shape with the "most urgent status", and the colour follows:
-
-- calm (0 / all idle, optionally hidden): a grey hollow ring.
-- idle: a green ✓ (or sparkle).
-- working: a cyan loading ring + count. This one instance does not rotate (§10): it sits on screen all day, and motion there is noise; what rotates is the inline badge in the popover / phone / web.
-- waiting: a red square + double bar + count.
-
-The shape itself is the signal → readable in peripheral vision and colour-blind.
+Keep the three-pane brand silhouette. A transparent symbol in the lower pane carries
+state: pause bars for waiting, a static ring for working, a check for idle. Empty or
+running-only uses the neutral grid. Whole-mark tint remains, but grayscale still carries
+the symbol; count policy is unchanged. The enabled server-mode dot occupies the upper-right
+pane and must not obscure the status symbol. Wallpaper/notch acceptance is separate.
+This replaces the historical standalone circle/square glyph proposal.
 
 ### Three display modes (a preference, matching §8 "Status bar display")
 
-1. `dot`: dot only (colour = most urgent status).
+1. `dot`: brand/status glyph only, with no count.
 2. `dot + count` (default): dot/glyph + the count of the most urgent actionable status (`waiting`, else `working`, see
    `BadgeText`).
 3. `hide-when-idle`: when nobody is waiting on you, the status item is hidden entirely; never intrudes.
 
 ### Rendering and adaptation
 
-- Coloured glyphs are non-template images, so red/cyan/green survive when the system tints the menu bar
-  (current state: `IconFor`/`dotPNG` in `icon.go`, non-template).
-- The count digits are a template image, following the menu bar's black/white automatically.
-- Tinted wallpaper: when the red square has too little contrast on a red/orange wallpaper, add a 0.5pt white outline automatically (or flip to a white fill).
-- Ship SF Symbols + tint tokens first, falling back to @1x/@2x PNG (22×22, anti-aliased, per `dotPNG`).
-- Laptop notch: the status item sits right of the notch, so its width budget is small.
+- `StatusItemGlyph` draws a non-template native image, retaining status tint. AppDelegate's count title follows system menu-bar text appearance.
+- The current glyph is the brand grid plus a lower-pane status symbol; legacy Go PNG and standalone SF Symbol proposals do not replace it.
+- Opaque light/dark fixtures and non-RGB geometry can be checked automatically. Actual tinted wallpaper, system material and notch space require separate device evidence; neither calculations nor the existence of a screenshot certify them.
 
 ### tint / symbol tokens
 
@@ -363,12 +376,12 @@ waiting  #EF4444   working  #06B6D4   idle  #22C55E   none/running  #8E8E93
 
 # Dark popover (vibrancy)
 bg      rgba(28,28,31,0.60) + blur(28px) saturate(180%)
-fg/2/3  rgba(255,255,255,0.95) / rgba(235,235,245,0.62) / rgba(235,235,245,0.34)
+fg/2/3  rgba(255,255,255,0.95) / #B8B8C2 / #A3A3AE
 divider rgba(255,255,255,0.09)    row-selected rgba(255,255,255,0.12)
 
 # Light popover
 bg      rgba(252,252,253,0.72) + blur
-fg/2/3  #1d1d1f / rgba(60,60,67,0.62) / rgba(60,60,67,0.34)
+fg/2/3  #1d1d1f / #565661 / #62626C
 divider rgba(0,0,0,0.08)          row-selected rgba(0,0,0,0.07)
 ```
 
@@ -452,7 +465,7 @@ causing the next:
 - The working loading ring rotates slowly, one turn per 2 seconds, linear (revised 2026-08-13; it was specified static before). Reason: of the four
   statuses, only working is a process; the other three are conditions at a moment, working is
   "happening now". A static ring makes the shape do the decoding; a rotating one says it outright. One turn per 2 seconds
-  reads as "alive" rather than "urgent": urgency is red's job, and **red never moves**.
+  reads as "alive" rather than "urgent": urgency is red's job, and **waiting-state red never moves**.
   - It rotates only in an interface the user has open: the popover, the phone app, the web page. The menu-bar status
     item icon stays static: it is on screen all day, and motion there is ambient noise. (The server-mode
     breathing dot is a separate, pre-existing exception, and it likewise exists only while enabled.)
@@ -494,7 +507,7 @@ causing the next:
     surface actually has.
     **Do not fake rotation with push**: Live Activity updates are rate-limited, and burning push budget and battery to spin a
     ring is a bad deal on a lock screen.
-- The one other permitted motion: on the idle→waiting transition the status item / badge gets one pulse cue.
+- An optional attention cue (not a standing animation): on the idle→waiting transition the status item / badge gets one pulse cue.
 - Idle is zero animation. Hover/selection/open may use very restrained micro-transitions; the whole stays quiet.
 - Page loading keeps its brand geometry fixed. In the App, browser and menu-bar shared branded loaders, a cyan highlight advances smoothly through the three panes, shared by page and inline loaders; it never rotates or fades the whole logo. Reduce Motion keeps the top-right focus static. Native backgrounding/unmount stops the cycle; browser read/view retirement removes the loader. The agent working ring retains its separate motion language. Native launch artwork and platform-owned gesture feedback retain their OS behavior.
 
@@ -648,7 +661,7 @@ Dato/itsycal (lightweight native fit) · CCMenu (the mature status + list + jump
 
 ---
 
-## 12. HQ (supervisor) · §12 mockup
+## HQ supervisor (ROLE-HQ) · historical §12 mockup
 
 HQ entry/reselection reveals the newest loaded conversation; historical reading survives refresh. Activity uses a unified local-time rail with bounded, explicitly related action groups and per-record inspection. Archive controls and forms share the workspace type scale. Synthetic CI previews support review without capturing live data.
 
@@ -732,7 +745,7 @@ HQ entry/reselection reveals the newest loaded conversation; historical reading 
 - The command deck is on the phone / web (the menu-bar card only jumps to the pane). Its structure is defined by MOBILE.md §17 / WEB.md §10; don't copy the details here. Copying once caused drift: early mobile did have a "fleet situation board (`/api/digest`)" zone, which `hq-command-page` deleted (the list belongs to the radar; the HQ page answers only what the radar can't: judgement / your call / activity / conversation). The menu-bar side does not change.
 - **The command deck talks only to HQ**, and HQ drives the fleet (`send/spawn`); it advises, it never decides for you. To reach a worker's Detail, go through "open session" on a "your call" decision card (the long-press on a fleet row is gone; that fleet-row list was deleted with `hq-command-page`).
 
-## 13. Preferences: Anywhere + Sharing · §13 mockup
+## Anywhere and Sharing (PREF-SHARING) · historical §13 mockup
 
 - **One recovery action for Standard access.** Pairing offers **Restore connection**, not separate repair/recreate choices. It preserves the address when possible, replaces only a provider-confirmed missing/deleted tunnel, refreshes the QR after a changed address, and explains that the phone must scan again. Failures remain visible even when Anywhere is already installed. A successful gtmux health response verifies the address; connector metrics alone never justify saying cellular works. Network/proxy failures do not trigger replacement.
 
@@ -770,7 +783,7 @@ tagged `[en]` / `[zh]`; gtmux does not translate, and the tag says so rather tha
 one filling the pane beside it, so answering "which entry am I reading" meant matching titles across the divider. A fill AND a 3pt bar
 down the leading edge: the fill alone is a few percent of grey on a list of grey rows, which is the reading that failed.
 
-## 14. Popover action re-layout · §14 mockup
+## Popover action layout · historical §14 mockup
 
 The footer's 5 peer icons → three layers: top HQ entry · connection bar (remote/share state always present) · action group (Overview/New/Restore/Live) · bottom (Preferences + version). Pair folds into the connection entry.
 
@@ -845,7 +858,7 @@ FileVault, can never be enabled remotely.
 
 ---
 
-## 16. Icon sizes, a hard requirement (decided 2026-08-12, machine-checked)
+## Icon sizes (ICON-SIZE), a hard requirement (decided 2026-08-12, machine-checked)
 
 The rule: no SF Symbol in the menu-bar app is declared below 12pt, and no icon is smaller than the text beside it; `check-design.sh` enforces the floor.
 Why it became a machine check: the magnifier in every pane-browser search field, the rows

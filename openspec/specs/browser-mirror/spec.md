@@ -907,3 +907,26 @@ input authorization; completed/retired views SHALL remove their loaders.
 #### Scenario: Loading resolves or the view changes
 - **WHEN** a pending Chat read completes or is retired by switching to Terminal
 - **THEN** its loader and focus animations leave the visible view and a late reply cannot restore them
+
+### Requirement: Consistent role, touch and attachment feedback
+HQ SHALL remain a separate role in both narrow radar and wide workbench layouts,
+without entering ordinary status groups. Coarse-pointer mode switches and conversation
+fold controls SHALL retain44px targets. Built-in English activity labels SHALL use the
+shared lowercase status mapping without rewriting agent-authored prose.
+Composer sending SHALL use the shared three-pane loading geometry, including a static
+Reduce Motion state; filled controls MAY use a contrasting foreground highlight.
+Attachment progress SHALL appear inside its thumbnail with queued, preparing, uploading,
+saving, complete and failed stages. Percentages SHALL use actual computable byte progress;
+body completion SHALL remain saving until a valid saved-path response. Failure SHALL
+retain the attachment and draft for explicit retry. Image edit and remove SHALL have
+independent targets; multi-image selection SHALL stage the batch without serial editors.
+
+#### Scenario: All bytes were sent but the server has not acknowledged persistence
+- **WHEN** an upload reaches loaded=total or its body-complete event fires
+- **THEN** the thumbnail shows saving rather than100% or complete
+- **AND** a valid successful saved-path response completes that attachment
+- **AND** timeout, denied upload or invalid saved path keeps a failed attachment for retry
+
+#### Scenario: HQ changes status on a narrow browser
+- **WHEN** the supervisor changes between waiting, working and idle
+- **THEN** it remains in Headquarters and ordinary groups/counts exclude that role

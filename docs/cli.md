@@ -2663,6 +2663,8 @@ and copies already downloaded by devices remain. See
 HQ UI readers may use `gtmux hq workspace list --overview --stored --json` for authoritative stored matters without session discovery; `sources_included:false` denotes unavailable optional session metadata. Ordinary list retains live/historical sources. See [HQ choice response](design/HQ-CHOICE-RESPONSE.md).
 
 
+Registration is not App-open verification. Omit `--home-id` when the tmux conversation has no home_id; verify resolve/content and SHA with the recipient’s actual session/home before delivery, as described by FILE-SCOPE.
+
 ## Screenshots for agents
 
 `gtmux screenshot` provides capabilities, source selection, region capture, import, structured annotation, editing and exact conversation delivery. See the [agent screenshot workflow](guides/agent-screenshots.md). Local CLI use requires no MCP server.

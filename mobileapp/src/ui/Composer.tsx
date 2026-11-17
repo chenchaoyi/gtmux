@@ -667,12 +667,14 @@ export const Composer = React.memo(function Composer({
           contentContainerStyle={styles.thumbStrip}>
           {attachments.map(att => (
             <View key={att.id} testID={`attach-thumbnail-${att.id}`} style={[styles.thumbWrap, {borderColor: pal.divider, backgroundColor: pal.surface}]}>
+              <View style={styles.thumbPreview}>
               {att.isImage ? (
                 // Tap to annotate. This is where the markup editor lives now that it is
                 // not in front of every photo: on the thing you would annotate.
                 <TouchableOpacity
                   activeOpacity={0.8}
                   disabled={sending}
+                  style={styles.thumbPreviewButton}
                   testID={`attach-annotate-${att.id}`}
                   accessibilityLabel={lang === 'zh' ? `标注 ${att.name}` : `Annotate ${att.name}`}
                   onPress={() => {
@@ -693,14 +695,14 @@ export const Composer = React.memo(function Composer({
               )}
               {(sending || failedUpload != null) && <AttachmentUploadStatus attachment={att} state={progress[att.id]}
                 failed={failedUpload === att.id} lang={lang} onRetry={enabled && onSend && onUpload && canSend ? () => {void sendText();} : undefined} />}
+              </View>
               {!sending && (
                   <TouchableOpacity
                     onPress={() => {if (failedUpload === att.id) setFailedUpload(null); removeAttachment(att.id);}}
                     testID={`attach-remove-${att.id}`}
                     accessibilityLabel={lang === 'zh' ? `移除 ${att.name}` : `Remove ${att.name}`}
-                    hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
                     style={styles.thumbRemove}>
-                    <Text style={styles.thumbRemoveX}>×</Text>
+                    <View pointerEvents="none" style={styles.thumbRemoveMark}><Text style={styles.thumbRemoveX}>×</Text></View>
                   </TouchableOpacity>
               )}
             </View>
@@ -745,8 +747,8 @@ export const Composer = React.memo(function Composer({
         // and lagged a line behind fast input, so a grown box clipped its
         // first line and read sloppy next to the accessory buttons (user
         // report). Native sizing keeps the box exactly content+padding, so
-        // the bottom-aligned 40pt circles' centers sit on the LAST LINE's
-        // center (10 pad + half a ~20pt line = 20 = circle radius) at every
+        // the bottom-aligned 44pt circles' centers sit on the LAST LINE's
+        // center (12 pad + half a ~20pt line = 22 = circle radius) at every
         // height — the iMessage/WeChat accessory pattern — with no jump.
         multiline
         textAlignVertical="top"
@@ -778,7 +780,7 @@ export const Composer = React.memo(function Composer({
       <TouchableOpacity
         testID={TestIds.composer.send}
         accessibilityRole="button"
-        accessibilityState={{disabled: !enabled || sending || !canSend}}
+        accessibilityState={{disabled: !enabled || sending || !canSend, ...(sending ? {busy: true} : {})}}
         accessibilityLabel={lang === 'zh' ? '发送' : 'Send'}
         onPress={() => sendText(false)}
         disabled={!enabled || sending || !canSend}
@@ -786,7 +788,7 @@ export const Composer = React.memo(function Composer({
         {sending ? (
           <LoadingMark size="small" color="#fff" highlightColor="#fff" accessible={false} />
         ) : (
-          <Text allowFontScaling={false} style={[styles.sendText, {color: canSend ? '#fff' : pal.fg3}]}>↑</Text>
+          <Text allowFontScaling={false} style={[styles.sendText, {color: canSend ? '#fff' : pal.fgDisabled}]}>↑</Text>
         )}
       </TouchableOpacity>
       </View>
@@ -988,32 +990,35 @@ const styles = StyleSheet.create({
   sep: {width: StyleSheet.hairlineWidth, height: 24, marginHorizontal: 6},
   accessory: {height: 0}, // empty: only there to suppress iOS's default assistant bar
   inputRow: {flexDirection: 'row', alignItems: 'flex-end', marginTop: 8},
-  attach: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 8},
+  attach: {width: 44, height: 44, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginRight: 8},
   attachText: {fontSize: 24, fontWeight: '400', lineHeight: 26},
-  // minHeight matches the 40pt accessory circles (single line centers align);
+  // minHeight matches the 44pt accessory circles (single line centers align);
   // maxHeight ≈ 6 lines, then the field scrolls inside. No explicit height —
   // see the auto-grow note at the TextInput.
-  input: {flex: 1, minHeight: 40, maxHeight: 132, borderWidth: StyleSheet.hairlineWidth, borderRadius: 11, paddingHorizontal: 12, paddingTop: 10, paddingBottom: 10, fontSize: 15},
+  input: {flex: 1, minHeight: 44, maxHeight: 132, borderWidth: StyleSheet.hairlineWidth, borderRadius: 11, paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12, fontSize: 15},
   // Full-screen-compose button: its own style (not `attach`) so its gaps stay EVEN —
   // owns the 8pt gap to its left (the input) and lets `send`'s marginLeft own the gap
   // to its right, so + · input · ⤢ · ↑ are all 8pt apart (was 8 · 0 · 16).
-  expand: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
+  expand: {width: 44, height: 44, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
   fcWrap: {flex: 1},
   fcBar: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth},
   fcTitle: {fontSize: 13, fontWeight: '600'},
   fcAction: {fontSize: 15},
   fcInput: {flex: 1, fontSize: 16, lineHeight: 22, padding: 16, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace'},
-  send: {width: 40, height: 40, borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
+  send: {width: 44, height: 44, borderRadius: 22, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', marginLeft: 8},
   sendText: {fontSize: 19, fontWeight: '700'},
   // Staged-attachment thumbnail strip (above the input, so the field wraps below).
   thumbStrip: {flexDirection: 'row', alignItems: 'center', paddingTop: 8, paddingRight: 8},
-  thumbWrap: {width: 72, height: 72, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, marginRight: 8, overflow: 'hidden'},
+  thumbWrap: {width: 116, height: 72, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, marginRight: 8, overflow: 'hidden'},
+  thumbPreview: {width: 72, height: 72},
+  thumbPreviewButton: {width: '100%', height: '100%'},
   thumbImg: {width: '100%', height: '100%'},
   thumbFile: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4},
   thumbName: {fontSize: 8, marginTop: 3, maxWidth: 54},
   // dim overlay with the live upload %, shown per thumbnail during send.
   // the × remove chip, top-right of a thumbnail (hidden while uploading).
-  thumbRemove: {position: 'absolute', top: 2, right: 2, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center'},
+  thumbRemove: {position: 'absolute', top: 14, right: 0, width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
+  thumbRemoveMark: {width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.6)', alignItems: 'center', justifyContent: 'center'},
   thumbRemoveX: {color: '#fff', fontSize: 15, fontWeight: '700', lineHeight: 17},
   sendError: {fontSize: 12, fontWeight: '600', marginTop: 8, marginLeft: 2},
 });

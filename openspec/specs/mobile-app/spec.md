@@ -3060,3 +3060,18 @@ The shared tool reader SHALL use its existing conservative activity classificati
 
 - **WHEN** a complete recorded argv and terminal result are available
 - **THEN** the reader shows the command and readable output first, without duplicate single-command outline/tabs, and retains exact original input and raw view
+
+### Requirement: Legible and identifiable shared controls
+Normal secondary reading text SHALL meet 4.5:1 against its actual opaque App surface
+in light and dark themes, including selected and waiting backgrounds. Disabled or
+decorative tokens SHALL remain separate. Composer add, expand, send and attachment
+remove actions SHALL have independent targets at least44pt, without overlapping image
+edit. Global color scheme SHALL be discoverable in Appearance outside Terminal.
+Settings switches SHALL expose their own label, checked/disabled state and disabled
+reason. Session rows SHALL identify session, agent, status, location/time and destination.
+
+#### Scenario: Read and operate shared controls without relying on sight
+- **WHEN** the user reaches notification switches or two same-named sessions
+- **THEN** each actionable control has a distinct contextual name and current state
+- **AND** setting labels are not duplicated as unrelated accessibility children
+- **AND** actual VoiceOver/TalkBack and native large-type acceptance remain separately recorded

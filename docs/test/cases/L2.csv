@@ -690,6 +690,13 @@ LEG-4fd9f327715a,L2,Browser,internal/server/web/app.test.cjs,1276,test,Return se
 LEG-3eddecec9a49,L2,Browser,internal/server/web/app.test.cjs,1289,test,"pending prompts require a newly recorded occurrence, including identical messages without clocks",False,legacy-not-retrospectively-reviewed
 LEG-46dcc46b1b27,L2,Browser,internal/server/web/app.test.cjs,1299,test,an unchanged retry keeps its send id while a new acknowledged message gets a new id,False,legacy-not-retrospectively-reviewed
 LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1313,test,radar keyboard selection skips rows inside a collapsed section,False,legacy-not-retrospectively-reviewed
+MAP-82ccdde7a852,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,114,reviewed-selector,actual XHR byte stages stay on the thumbnail,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-cd745e41cb20,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,136,reviewed-selector,unknown-length body completion,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-1dab495821e2,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,142,reviewed-selector,upload ${failure} preserves,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-a2be25f26b18,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,150,reviewed-selector,retired scope cannot accept,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-bcfc2c1a7874,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,157,reviewed-selector,HQ remains a distinct role,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-700b6c8e3834,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,167,reviewed-selector,own compact loading retains,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-5b5110a4affc,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,173,reviewed-selector,generated document contract offers,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
 MAP-e63e89176901,L2,reviewed implementation,internal/server/web/execution-chain.test.cjs,8,reviewed-selector,"CRX-005 adjacent equal process presentations retain count, order and distinct arguments",False,CRX-005
 MAP-ec276ea47d43,L2,reviewed implementation,internal/server/web/state-duration.test.cjs,19,reviewed-selector,CSR-004 browser row,False,CSR-004
 LEG-3f958826505e,L2,Browser,internal/server/web/terminal-keys.test.cjs,26,test,unsupported combinations are not fabricated,False,legacy-not-retrospectively-reviewed
@@ -806,6 +813,8 @@ MAP-44495107cd6b,L2,reviewed implementation,mobileapp/src/api/sendFailureCode.te
 MAP-32b00c052ce4,L2,reviewed implementation,mobileapp/src/api/sendFailureCode.test.ts,20,reviewed-selector,SFR-003 status %i takes priority over a question code,False,SFR-003
 MAP-6db39e468cb9,L2,reviewed implementation,mobileapp/src/api/uploadPath.test.ts,25,reviewed-selector,HTTP success with a blank upload path fails without a completion mark: %j,False,MEX-006
 MAP-7ab5068decf1,L2,reviewed implementation,mobileapp/src/api/uploadPath.test.ts,37,reviewed-selector,a nonblank saved upload path retains ordinary spaces exactly,False,MEX-006
+MAP-5cee3909c2b1,L2,reviewed implementation,mobileapp/src/documents/availability.test.ts,3,reviewed-selector,unavailable attachment explains scope,False,DFC-009
+MAP-2a69d818015d,L2,reviewed implementation,mobileapp/src/documents/availability.test.ts,10,reviewed-selector,clearer recovery text preserves strict session,False,DFC-009
 MAP-f109448b40b4,L2,reviewed implementation,mobileapp/src/push/sync.routes.test.ts,5,reviewed-selector,PFR-004 a verified reported alternate is preferred without retrying a dead primary,False,PFR-004
 MAP-18ea154f509f,L2,reviewed implementation,mobileapp/src/push/sync.routes.test.ts,11,reviewed-selector,PFR-004 an unknown route is never attempted and background work cannot record route success,False,PFR-004
 LEG-81cfbfd439f8,L2,RN / mobile harness,mobileapp/src/screens/AccessHistoryControls.test.tsx,21,test,same-name device choices expose full IDs and preserve the other filters,False,legacy-not-retrospectively-reviewed
@@ -1122,6 +1131,7 @@ LEG-dab2495366f0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test
 LEG-cd35d5d9def5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,462,test,"a server-mode change on the server is read at once, not on the next poll",False,legacy-not-retrospectively-reviewed
 MAP-f0b391956193,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,111,reviewed-selector,PFR-002 genuine notification syncing stays in the existing two-line row,False,"RSR-009,PFR-002"
 MAP-0be071c6814e,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,123,reviewed-selector,"PFR-002 a pending owner retries its own notification settings from More, with no guest action",False,"RSR-009,PFR-002"
+MAP-7d053fa3bb5b,L2,reviewed implementation,mobileapp/src/screens/SettingsAppearance.test.tsx,16,reviewed-selector,global color scheme lives in Appearance,False,DFC-006
 MAP-8524f471c8a2,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,47,reviewed-selector,regular main respects loading and timeout in ${lang} ${theme},False,RDRC-001
 MAP-7c742f998d7d,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,62,reviewed-selector,hidden sidebar does not turn an unfinished main read into an empty fleet,False,RDRC-001
 MAP-6f2c71730f2c,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,70,reviewed-selector,unselected access and expired guest states retain shared guidance and no owner creation,False,RDRC-001
@@ -1625,6 +1635,10 @@ LEG-06c2d30c28c9,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,5
 CP-001-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,24,parameter-template,CP-001 %s renders,True,CP-001
 CP-002-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,46,test,CP-002 HQ request,False,CP-002
 CP-003-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,57,test,CP-003 document actions,False,CP-003
+MAP-9ea098f5ca75,L2,reviewed implementation,mobileapp/src/ui/DesignConsistency.test.tsx,35,reviewed-selector,secondary reading text meets contrast,False,"DFC-001,DFC-002,DFC-005"
+MAP-756a87d09ccf,L2,reviewed implementation,mobileapp/src/ui/DesignConsistency.test.tsx,46,reviewed-selector,a settings switch has its own identity,False,"DFC-001,DFC-002,DFC-005"
+MAP-4fc440f47a5b,L2,reviewed implementation,mobileapp/src/ui/DesignConsistency.test.tsx,60,reviewed-selector,same-named sessions expose distinct location,False,"DFC-001,DFC-002,DFC-005"
+MAP-fe2a0843fb5e,L2,reviewed implementation,mobileapp/src/ui/DesignConsistency.test.tsx,75,reviewed-selector,composer actions and independent thumbnail,False,"DFC-001,DFC-002,DFC-005"
 LEG-d8b24286f7cc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,28,test,large diffs mount only a window of native rows and retain the final line,False,legacy-not-retrospectively-reviewed
 LEG-6e9e4223d32d,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,46,test,"a failed read is an error with retry, not an empty repository",False,legacy-not-retrospectively-reviewed
 LEG-8bdd11a1e0bf,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,68,test,changing a pane retires an earlier read,False,legacy-not-retrospectively-reviewed

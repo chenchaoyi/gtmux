@@ -56,6 +56,8 @@ export interface Palette {
   fg: string;
   fg2: string;
   fg3: string;
+  /** Disabled/decorative glyphs only; normal secondary text uses fg2/fg3. */
+  fgDisabled: string;
   divider: string;
   divLoud: string; // the 3px section-separator line (MOBILE §3)
   rowSelected: string;
@@ -67,8 +69,9 @@ const dark: Palette = {
   surface: '#1C1C1F',
   raised: '#2A2A2E',
   fg: 'rgba(255,255,255,0.96)',
-  fg2: 'rgba(235,235,245,0.62)',
-  fg3: 'rgba(235,235,245,0.34)',
+  fg2: '#B8B8C2',
+  fg3: '#A3A3AE',
+  fgDisabled: 'rgba(235,235,245,0.34)',
   divider: 'rgba(255,255,255,0.09)',
   divLoud: 'rgba(255,255,255,0.16)',
   rowSelected: 'rgba(255,255,255,0.06)',
@@ -80,8 +83,9 @@ const light: Palette = {
   surface: '#FFFFFF',
   raised: '#F2F2F7',
   fg: '#1D1D1F',
-  fg2: 'rgba(60,60,67,0.62)',
-  fg3: 'rgba(60,60,67,0.34)',
+  fg2: '#565661',
+  fg3: '#62626C',
+  fgDisabled: 'rgba(60,60,67,0.34)',
   divider: 'rgba(0,0,0,0.08)',
   divLoud: 'rgba(0,0,0,0.16)',
   rowSelected: 'rgba(0,0,0,0.05)',

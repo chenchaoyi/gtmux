@@ -1589,3 +1589,16 @@ retain their separate semantics.
 #### Scenario: Reduced motion or inactive scene
 - **WHEN** the branded loading view is reduced-motion or inactive
 - **THEN** it keeps the static top-right focus without a repeating timeline
+
+### Requirement: Non-color status within the brand mark
+The status item SHALL retain the three-pane brand and include distinct non-color
+symbols in its lower pane: pause for waiting, a static ring for working, and a check
+for idle. Empty or running-only SHALL retain a neutral grid. The enabled awake modifier
+SHALL remain separate and SHALL NOT obscure the status symbol. Count/display policy
+SHALL remain unchanged. Actual tinted-wallpaper and constrained-menu-bar acceptance
+SHALL be recorded separately from image-rendering tests.
+
+#### Scenario: Color information is unavailable
+- **WHEN** the mark is rendered without its RGB state tint in either theme
+- **THEN** waiting, working and idle retain distinct geometry
+- **AND** enabling the awake modifier preserves those differences

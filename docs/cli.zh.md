@@ -2278,6 +2278,8 @@ gtmux artifact remove ID
 HQ 界面可使用 `gtmux hq workspace list --overview --stored --json` 读取存储中的权威事项，不发现会话；`sources_included:false` 表示没有附带可选会话元数据。普通 list 仍提供实时及历史来源。详见 [HQ 选项反馈](design/HQ-CHOICE-RESPONSE.zh.md)。
 
 
+登记成功不等于 App 可打开。tmux 没有 home_id 时省略 `--home-id`；交付前按接收端实际 session/home 验证 resolve/content 与 SHA，详见 FILE-SCOPE 交付核验。
+
 ## 给 agent 使用的截图
 
 `gtmux screenshot` 提供能力查询、来源选择、区域截取、导入、结构化标注、编辑及准确会话投递。详见[截图工作流](guides/agent-screenshots.zh.md)。本地 CLI 即可，不要求 MCP。

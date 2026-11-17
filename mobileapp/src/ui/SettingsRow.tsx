@@ -66,6 +66,7 @@ export function SettingsRow({
   toggle,
   onToggle,
   toggleDisabled,
+  disabledReason,
   chevron,
   danger,
   divider,
@@ -81,6 +82,7 @@ export function SettingsRow({
   toggle?: boolean;
   onToggle?: (v: boolean) => void;
   toggleDisabled?: boolean;
+  disabledReason?: string;
   chevron?: boolean;
   danger?: boolean;
   divider?: boolean;
@@ -90,6 +92,7 @@ export function SettingsRow({
   // parent's instead of sticking out to its left (%6, F10, 2026-10-06).
   inset?: boolean;
 }) {
+  const switchRow = toggle !== undefined && right == null;
   const labelColor = danger ? '#EF4444' : pal.fg;
   const inner = (
     <View style={[styles.row, divider && {borderBottomColor: pal.divider, borderBottomWidth: StyleSheet.hairlineWidth}]}>
@@ -100,7 +103,8 @@ export function SettingsRow({
       ) : (
         inset && <View testID="settings-row-inset" style={styles.iconWrap} />
       )}
-      <View style={styles.textWrap}>
+      <View style={styles.textWrap} accessibilityElementsHidden={switchRow}
+        importantForAccessibility={switchRow ? 'no-hide-descendants' : 'auto'}>
         <Text style={[styles.label, {color: labelColor}]} numberOfLines={2}>
           {label}
         </Text>
@@ -112,7 +116,10 @@ export function SettingsRow({
       </View>
       {right ??
         (toggle !== undefined ? (
-          <Switch value={toggle} onValueChange={onToggle} disabled={toggleDisabled} />
+          <Switch value={toggle} onValueChange={onToggle} disabled={toggleDisabled}
+            accessibilityLabel={label}
+            accessibilityHint={[sub, toggleDisabled && disabledReason].filter(Boolean).join('. ') || undefined}
+            accessibilityState={{checked: toggle, disabled: !!toggleDisabled}} />
         ) : (
           <View style={styles.rightWrap}>
             {!!value && (
@@ -126,7 +133,8 @@ export function SettingsRow({
     </View>
   );
   return onPress ? (
-    <TouchableOpacity activeOpacity={0.6} onPress={onPress}>
+    <TouchableOpacity activeOpacity={0.6} onPress={onPress} accessibilityRole="button"
+      accessibilityLabel={[label, value].filter(Boolean).join(', ')} accessibilityHint={sub}>
       {inner}
     </TouchableOpacity>
   ) : (

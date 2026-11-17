@@ -81,8 +81,8 @@ enum Theme {
                 return Palette(
                     bg: Color(hex: 0x1C1C1F, opacity: 0.60),
                     fg: Color(white: 1, opacity: 0.95),
-                    fg2: Color(red: 235/255, green: 235/255, blue: 245/255, opacity: 0.62),
-                    fg3: Color(red: 235/255, green: 235/255, blue: 245/255, opacity: 0.34),
+                    fg2: Color(red: 184/255, green: 184/255, blue: 194/255),
+                    fg3: Color(red: 163/255, green: 163/255, blue: 174/255),
                     divider: Color(white: 1, opacity: 0.09),
                     rowSelected: Color(white: 1, opacity: 0.12),
                     waitingRowTint: Color(hex: 0xEF4444, opacity: 0.08))
@@ -90,8 +90,8 @@ enum Theme {
             return Palette(
                 bg: Color(hex: 0xFCFCFD, opacity: 0.72),
                 fg: Color(hex: 0x1D1D1F),
-                fg2: Color(red: 60/255, green: 60/255, blue: 67/255, opacity: 0.62),
-                fg3: Color(red: 60/255, green: 60/255, blue: 67/255, opacity: 0.34),
+                fg2: Color(red: 86/255, green: 86/255, blue: 97/255),
+                fg3: Color(red: 98/255, green: 98/255, blue: 108/255),
                 divider: Color(black: 0, opacity: 0.08),
                 rowSelected: Color(black: 0, opacity: 0.07),
                 waitingRowTint: Color(hex: 0xEF4444, opacity: 0.08))

@@ -651,8 +651,9 @@
     // tmux agents bucket by status; native (non-tmux) agents are SENSED read-only, so
     // they get their own "Elsewhere" section at the end (mirrors the app / menu-bar).
     var by = {waiting: [], errored: [], working: [], idle: []};
-    var natives = [], desktops = [];
+    var natives = [], desktops = [], supervisors = [];
     agents.forEach(function (a) {
+      if (a.role === 'supervisor') { supervisors.push(a); return; }
       if (isNative(a)) { ((a.current_client === 'unconfirmed' || a.client === 'chatgpt_desktop') ? desktops : natives).push(a); return; }
       // An idle turn that ended on a failure is not "finished" — it was sitting under a
       // green tick among the completed ones.
@@ -665,6 +666,7 @@
       var body = rosterSection(root, key, label, list.length, false);
       list.forEach(function (a) { body.appendChild(rowEl(a)); });
     }
+    section('hq', T('Headquarters', '指挥中心'), supervisors);
     ORDER.forEach(function (st) { section(st, LABEL[st], by[st]); });
     section('native', T('Elsewhere', '不在 tmux'), natives);
     section('external', T('External conversations', '外部会话'), desktops);
@@ -1719,6 +1721,61 @@
   function composeScope(id) { var a = byId(lastAgents, id) || (curAgent && curAgent.pane_id === id ? curAgent : {}); return a.project || a.session || (a.loc || '').split(':')[0] || id || 'default'; }
   function composeDraft(data, id) { return data.drafts[id] || (data.drafts[id] = {text: '', files: [], version: 0, error: ''}); }
 
+  // Transfer bytes and server persistence are separate stages. A completed request
+  // body is still "saving" until a valid server response supplies the file path.
+  function uploadAttachment(a, context, progress, recipient) {
+    return new Promise(function (resolve, reject) {
+      var request;
+      function state(phase, fraction) { a.phase = phase; a.progress = fraction == null ? null : fraction; if (!context.revoked) progress(); }
+      function fail(message) { if (request) context.requests.delete(request); state('failed'); reject(new Error(message)); }
+      try {
+        state('preparing');
+        request = new XMLHttpRequest(); var form = new FormData(); form.append('file', a.file, a.name);
+        request.open('POST', BASE + '/api/upload?id=' + encodeURIComponent(recipient)); request.timeout = 60000;
+        if (context.credential) request.setRequestHeader('Authorization', 'Bearer ' + context.credential);
+        request.responseType = 'json'; context.requests.add(request);
+        request.upload.onprogress = function (e) {
+          if (context.revoked) return;
+          var fraction = e.lengthComputable && e.total > 0 && Number.isFinite(e.loaded / e.total) ? Math.max(0, Math.min(1, e.loaded / e.total)) : null;
+          state(fraction === 1 ? 'saving' : 'uploading', fraction);
+        };
+        request.upload.onload = function () { if (!context.revoked) state('saving', a.progress); };
+        request.onload = function () {
+          context.requests.delete(request);
+          if (context.revoked) { reject(new Error('retired')); return; }
+          if (request.status === 401) { token = null; gate('expired'); reject(new Error('retired')); return; }
+          if (request.status === 413) { fail(T('File exceeds the server size limit. Choose a smaller file.', '文件超过服务端大小限制，请选择更小的文件。')); return; }
+          if (request.status === 403) { fail(T('Upload is not allowed in this session.', '当前会话未开放上传权限。')); return; }
+          if (request.status < 200 || request.status >= 300 || !request.response || typeof request.response.path !== 'string' || !request.response.path.trim()) { fail(T('Upload failed. Send again to retry.', '上传失败，可再次发送重试。')); return; }
+          state('complete', 1); resolve(request.response.path);
+        };
+        request.onerror = request.ontimeout = function () { fail(T('Upload failed. Check the connection and send again.', '上传失败，请检查连接后重试。')); };
+        request.onabort = function () { fail(T('Upload cancelled.', '上传已取消。')); };
+        state('uploading'); request.send(form);
+      } catch (e) { fail(T('Upload failed. Send again to retry.', '上传失败，可再次发送重试。')); }
+    });
+  }
+  function attachmentFeedback(a) {
+    var phase = a.path ? 'complete' : a.phase;
+    if (phase === 'uploading' && a.progress != null) return {phase: phase, text: Math.floor(Math.min(.99, a.progress) * 100) + '%', fraction: a.progress};
+    var labels = {queued: T('Queued', '等待上传'), preparing: T('Preparing', '准备中'), uploading: T('Uploading', '上传中'), saving: T('Saving', '保存中'), complete: T('Uploaded', '已上传'), failed: T('Upload failed', '上传失败')};
+    return phase && labels[phase] ? {phase: phase, text: labels[phase]} : null;
+  }
+  function attachmentStatusEl(a) {
+    var feedback = attachmentFeedback(a); if (!feedback) return null;
+    var overlay = document.createElement('div'); overlay.className = 'cx-upload-status'; overlay.dataset.phase = feedback.phase;
+    overlay.setAttribute('role', feedback.fraction != null ? 'progressbar' : 'status');
+    overlay.setAttribute('aria-label', a.name + ': ' + feedback.text);
+    if (feedback.fraction != null) {
+      overlay.setAttribute('aria-valuemin', '0'); overlay.setAttribute('aria-valuemax', '100'); overlay.setAttribute('aria-valuenow', String(Math.floor(feedback.fraction * 100)));
+      var ring = document.createElement('span'); ring.className = 'cx-upload-ring'; ring.style.setProperty('--upload-progress', String(feedback.fraction * 360) + 'deg');
+      var number = document.createElement('span'); number.textContent = feedback.text; ring.appendChild(number); overlay.appendChild(ring);
+    } else {
+      if (['preparing', 'uploading', 'saving'].includes(feedback.phase)) { var loader = brandLoaderEl(null); loader.classList.add('brandload-compact'); overlay.appendChild(loader); }
+      var label = document.createElement('span'); label.textContent = feedback.text; overlay.appendChild(label);
+    }
+    return overlay;
+  }
   function makeComposer(getId, echo, small, onAction) {
     echo = echo || function () {};
     var generation = 0, target = null, data = null, draft = null, localVersion = -1, appliedText = '', noteSignature = '', editor = null;
@@ -1773,7 +1830,13 @@
       var busy = !!(draft && draft.busy), canSend = !!(draft && (ta.value.trim() || draft.files.length));
       row.hidden = !expanded && !editor; keyboard.setAttribute('aria-expanded', String(expanded)); keyboard.title = expanded ? T('Hide input', '收起输入框') : T('Show input', '展开输入框'); keyboard.setAttribute('aria-label', keyboard.title);
       attach.disabled = expand.disabled = busy; ta.readOnly = busy; send.disabled = busy || !canSend; snippets.disabled = history.disabled = busy; remoteKeys.forEach(function (b) { b.disabled = busy; });
-      send.innerHTML = uiIcon(busy ? 'loading' : 'send'); send.classList.toggle('sending', busy); send.classList.toggle('ready', canSend && !busy);
+      if (send.dataset.busy !== String(busy)) {
+        send.dataset.busy = String(busy); send.innerHTML = '';
+        if (busy) { var loading = brandLoaderEl(null); loading.classList.add('brandload-compact'); send.appendChild(loading); }
+        else send.innerHTML = uiIcon('send');
+      }
+      send.setAttribute('aria-busy', String(busy)); send.setAttribute('aria-label', busy ? T('Sending', '发送中') : T('Send', '发送'));
+      send.classList.toggle('sending', busy); send.classList.toggle('ready', canSend && !busy);
       ta.setAttribute('enterkeyhint', lsGet('gtmux.returnSends', '0') === '1' ? 'send' : 'enter');
       var message = draft && (draft.error || draft.info) || '', signature = message + (draft && draft.recovery ? ':recover' : '');
       if (signature !== noteSignature) {
@@ -1808,11 +1871,12 @@
       if (terminalKeyboard && terminalKeyboard.blocked()) return;
       sync(); if (!draft || draft.busy || (!ta.value.trim() && !draft.files.length)) return;
       var recipient = target, context = data, currentGeneration = generation, d = draft, body = ta.value, staged = draft.files.slice(), scope = composeScope(recipient);
-      clearTimeout(d.infoTimer); d.text = body; d.busy = true; d.error = ''; d.info = ''; update();
+      clearTimeout(d.infoTimer); d.text = body; d.busy = true; d.error = ''; d.info = '';
+      staged.forEach(function (a) { if (!a.path) { a.phase = 'queued'; a.progress = null; } }); renderAttachments(); update();
       try {
         for (var i = 0; i < staged.length; i++) {
           if (!valid(context, currentGeneration)) return;
-          if (!staged[i].path) { staged[i].path = await upload(staged[i], context, function () { if (recipient === target && context === data) renderAttachments(); }, recipient); }
+          if (!staged[i].path) { staged[i].path = await uploadAttachment(staged[i], context, function () { if (recipient === target && context === data) renderAttachments(); }, recipient); }
         }
       } catch (error) { if (valid(context, currentGeneration)) failure(recipient, context, error.message || T('Upload failed. Send again to retry.', '上传失败，可再次发送重试。')); return; }
       if (!valid(context, currentGeneration)) return;
@@ -1847,14 +1911,14 @@
       if (!draft) return;
       draft.files.forEach(function (a) {
         var item = document.createElement('div'); item.className = 'cx-attachment';
+        var frame = document.createElement('div'); frame.className = 'cx-preview-wrap'; item.appendChild(frame);
         var preview = document.createElement('button'); preview.type = 'button'; preview.className = 'cx-preview'; preview.disabled = !!draft.busy;
         if (a.image) { var img = document.createElement('img'); img.src = a.url; img.alt = a.name; img.loading = 'lazy'; preview.appendChild(img); preview.title = T('Annotate image', '标注图片'); preview.onclick = function () { annotateImage(a, data, function () { changed(draft); renderAttachments(); }); }; }
         else { preview.innerHTML = uiIcon('file'); preview.disabled = true; }
-        item.appendChild(preview);
-        var name = document.createElement('span'); name.className = 'cx-file-name'; name.textContent = a.name; name.title = a.name; item.appendChild(name);
-        var progress = document.createElement('span'); progress.className = 'cx-file-progress'; progress.textContent = draft.busy ? a.path ? T('Uploaded', '已上传') : a.progress == null ? T('Uploading…', '上传中…') : Math.round(a.progress * 100) + '%' : a.path ? T('Ready', '已就绪') : Math.ceil(a.file.size / 1024) + ' KB'; item.appendChild(progress);
+        frame.appendChild(preview); var feedback = attachmentStatusEl(a); if (feedback) frame.appendChild(feedback);
+        var name = document.createElement('span'); name.className = 'cx-file-name'; name.textContent = a.name; name.title = a.name;
         var remove = iconButton('close', T('Remove attachment: ', '移除附件：') + a.name, 'cx-remove-file'); remove.disabled = !!draft.busy;
-        remove.onclick = function () { draft.files = draft.files.filter(function (x) { return x !== a; }); release(a, data); changed(draft); renderAttachments(); update(); }; item.appendChild(remove); attachments.appendChild(item);
+        remove.onclick = function () { draft.files = draft.files.filter(function (x) { return x !== a; }); release(a, data); changed(draft); renderAttachments(); update(); }; item.appendChild(remove); item.appendChild(name); attachments.appendChild(item);
       });
     }
     function stage(files, edit) {
@@ -1866,7 +1930,7 @@
         if (a.image) { a.url = URL.createObjectURL(f); data.urls.add(a.url); if (!firstImage) firstImage = a; }
         draft.files.push(a);
       });
-      expanded = true; changed(draft); renderAttachments(); update(); if (edit && firstImage) annotateImage(firstImage, data, function () { changed(draft); renderAttachments(); });
+      expanded = true; changed(draft); renderAttachments(); update(); if (edit && files.length === 1 && firstImage) annotateImage(firstImage, data, function () { changed(draft); renderAttachments(); });
     }
     file.onchange = function () { if (!pickerContext || (valid(pickerContext.data, pickerContext.generation) && getId() === pickerContext.id)) stage(Array.from(file.files || []), file.accept === 'image/*'); file.value = ''; };
     attach.onclick = function () {
@@ -1922,23 +1986,7 @@
       sheet.foot.hidden = false; var action = document.createElement('button'); action.type = 'button'; action.className = 'dialog-secondary'; action.textContent = savedPhrases ? T('New reply', '新增常用语') : T('Clear history', '清空历史');
       action.onclick = function () { if (savedPhrases) editPhrase(null); else { var oldHistory = context.history, oldRecent = context.recent; context.history = Object.create(null); context.recent = []; saveCompose(context, true); draw(); action.textContent = T('Undo clear', '撤销清空'); action.onclick = function () { context.history = oldHistory; context.recent = oldRecent; saveCompose(context, true); sheet.close(); }; } }; sheet.foot.appendChild(action); draw();
     }
-    function upload(a, context, progress, recipient) {
-      return new Promise(function (resolve, reject) {
-        var request = new XMLHttpRequest(), form = new FormData(); form.append('file', a.file, a.name); request.open('POST', BASE + '/api/upload?id=' + encodeURIComponent(recipient)); request.timeout = 60000;
-        if (context.credential) request.setRequestHeader('Authorization', 'Bearer ' + context.credential); request.responseType = 'json'; context.requests.add(request);
-        request.upload.onprogress = function (e) { if (context.revoked) return; a.progress = e.lengthComputable ? e.loaded / e.total : null; progress(); };
-        function fail(message) { context.requests.delete(request); reject(new Error(message)); }
-        request.onload = function () {
-          context.requests.delete(request); if (context.revoked) { reject(new Error('retired')); return; }
-          if (request.status === 401) { token = null; gate('expired'); reject(new Error('retired')); return; }
-          if (request.status === 413) { fail(T('File exceeds the server size limit. Choose a smaller file.', '文件超过服务端大小限制，请选择更小的文件。')); return; }
-          if (request.status === 403) { fail(T('Upload is not allowed in this session.', '当前会话未开放上传权限。')); return; }
-          if (request.status < 200 || request.status >= 300 || !request.response || typeof request.response.path !== 'string') { fail(T('Upload failed. Send again to retry.', '上传失败，可再次发送重试。')); return; }
-          a.progress = 1; resolve(request.response.path);
-        };
-        request.onerror = request.ontimeout = function () { fail(T('Upload failed. Check the connection and send again.', '上传失败，请检查连接后重试。')); }; request.onabort = function () { fail(T('Upload cancelled.', '上传已取消。')); }; request.send(form);
-      });
-    }
+
     sync();
     function inputDeviceChanged() { compact = !!inputMedia.matches; if (!compact) expanded = true; update(); grow(); }
     if (inputMedia) { if (inputMedia.addEventListener) inputMedia.addEventListener('change', inputDeviceChanged); else inputMedia.addListener(inputDeviceChanged); }
@@ -2589,7 +2637,7 @@
       panel = document.createElement('details'); panel.className = 'chat-live'; panel.dataset.pane = id;
       var summary = document.createElement('summary'); summary.className = 'live-summary';
       var dot = document.createElement('span'); dot.className = 'live-dot'; dot.setAttribute('aria-hidden', 'true'); summary.appendChild(dot);
-      var title = document.createElement('strong'); title.textContent = T('Working', '正在处理'); summary.appendChild(title);
+      var title = document.createElement('strong'); title.textContent = LABEL.working; summary.appendChild(title);
       panel.clock = document.createElement('span'); panel.clock.className = 'live-clock'; summary.appendChild(panel.clock);
       panel.action = document.createElement('span'); panel.action.className = 'live-action'; summary.appendChild(panel.action);
       var chevron = document.createElement('span'); chevron.className = 'live-chevron'; chevron.innerHTML = uiIcon('chevron'); summary.appendChild(chevron); panel.appendChild(summary);

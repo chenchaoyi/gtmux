@@ -18,7 +18,7 @@ Web 的 `tests/web/` 验证实际渲染与窄屏控件，iOS 无签名构建验�
 | --- | --- | --- | --- | --- |
 | §0 设计原则（安静/层级/三重编码/克制/动效最小） | 全局 | G 架构不变量 | 整体观感、克制度 | 🟡 |
 | §1 状态模型（色+形+字形） | `AgentStore.Status`,`Theme.Status`,`StatusBadge`,`StatusItemGlyph` | L1/L2 `testStatusColorsMatchDesignHex`/`testStatusRankOrder`/`testEveryStatusHasColor`；G 调色板 | 徽章三重编码一致性 | ✅ 逻辑 / 🟡 视觉 |
-| §2 状态项（当前 pane 网格与非颜色编码要求有偏离） | `StatusItemGlyph` 始终画 pane 网格、整体按状态着色；`AppDelegate.renderIcon` 控制计数与 3 模式 | G 调色板 | 网格、浅/深/**着色**菜单栏、3 模式、刘海 | 🟡 实现可查；当前设备视觉仍待验收；仅靠状态色的网格未满足 §2 的非颜色编码要求 |
+| §2 状态项（品牌网格与非颜色状态符号） | `StatusItemGlyph` 保留 pane 网格，下格用暂停/环/对勾镂空并着色；`AppDelegate.renderIcon` 控制计数与 3 模式 | G 调色板 | 网格、浅/深/**着色**菜单栏、3 模式、刘海 | 🟡 实现可查；当前设备视觉仍待验收；`StatusItemGlyphTests` 已提供真实渲染的非 RGB 几何检查，仍不代表壁纸验收 |
 | §3 Popover（尺寸/分组/行/交互/footer） | `MenuView`,`Components`,`Theme.Size` | L1/L2 `sections*`/`testFuzzySearch`/`testRelativeTime` | 布局/材质/键盘/滚动对照 mockup | 🟡 |
 | §4 快速切换器（热键） | A: popover 搜索；B: `CommandPalette.swift` 独立命令面板（⌘⌥G 唤起，⌘1–9 直达）；`GlobalHotkey` | L1/L2 `testFuzzySearch`/`testPaletteWrapNavigation` | 热键唤起、搜索、⏎/⌘1–9 跳转、视觉对照 mockup §4 B | ✅ 逻辑；视觉仍需真机验收 |
 | §5 空状态 & 首次运行 | `States.swift`（Empty/FirstRun） | — | 文案平实无营销腔；权限卡 | 🟡（视图就绪；首次运行**触发时机/权限探测未接线** ⏳） |
@@ -30,17 +30,17 @@ Web 的 `tests/web/` 验证实际渲染与窄屏控件，iOS 无签名构建验�
 | §11 无障碍 & i18n | `L10n`（en/zh）；agent 行由 `onTapGesture` 触发跳转，并非整行 Button | L1/L2 解码/分组（i18n 文案随 L10n） | agent 行未显式设置 VoiceOver label/hint；部分 HQ 控件已有 label。VoiceOver 与 CJK 需实际验收 | 🟡 |
 | §12 Logo（pane 网格） | `GtmuxLogo` | — | 头部/空状态/首次运行一致 | ✅ |
 | §13 状态与边界矩阵 | 全局 | L1/L2 计数/分组覆盖一部分 | 0/1/~5/15+/超长/CJK/native/切换 | 🟡（人工矩阵为主） |
-| 数据契约（非现行 DESIGN §14） | `agentJSON`,`Agent` 解码 | L1 契约 + L1/L2 解码 | — | ✅ 已有逻辑测试；两个 §14 分别描述 Footer v3 和 Popover action re-layout |
+| 数据契约（非现行 DESIGN §14） | `agentJSON`,`Agent` 解码 | L1 契约 + L1/L2 解码 | — | ✅ 已有逻辑测试；历史两个 §14 已改为独立标题 |
 | §15 参照 | — | — | — | n/a |
 
 ### 尚待补齐的章节映射
 
-按标题区分 DESIGN 的重复编号；下列条目尚未在本表完成逐项实现、自动测试与人工验收的对应，不表示功能未实现：
+DESIGN 已移除重号，现行共用规则使用稳定 ID；下列条目尚未在本表完成逐项实现、自动测试与人工验收的对应，不表示功能未实现：
 
 - §9 下两段带日期的行为规则：A row you can't jump to has to say so first（2026-08-16）；A slow action must speak for itself, and needs a concurrency floor（2026-08-17）。
-- §12 HQ、§13 Preferences: Anywhere + Sharing。
-- 两个 §14：Footer v3、Popover action re-layout。
-- 两个 §16：Pane browser、Icon sizes。
+- ROLE-HQ、PREF-SHARING。
+- §14 Footer v3、历史 mockup 对应的 Popover action layout。
+- §16 Pane browser、ICON-SIZE 图标尺寸。
 - §17 Server mode、§18 Screenshot to an agent。
 
 ### HQ 导航与可操作性
@@ -67,3 +67,12 @@ Web 的 `tests/web/` 验证实际渲染与窄屏控件，iOS 无签名构建验�
 ### 手机底部提示与真机验收（2026-10-10）
 
 `RunningRow`、`SendFailedBar`、`DetailScreen.busyNote` 对应 MOBILE「底部状态提示」；`footerSpacing.test.tsx` 锁定外部间距、内部留白、行高和关闭/导航行为。`UsageSheet`、`KnowledgeSheet` 的关闭与搜索标签由对应组件测试覆盖。真机工具与兼容性记录见 `mobileapp/e2e/REAL-DEVICE{,.zh}.md`；本次源代码修复尚未安装，不计为真机视觉通过。
+
+## 设计一致性修复（2026-11-17）
+
+评审设计 `designs/design-consistency-20261117.json` 先于新增测试提交。现行规则使用
+TEXT-READ / TOUCH-44 / MOTION-LOAD / ROLE-HQ / A11Y-CONTEXT / UPLOAD-PHASE /
+STATE-LABEL / FILE-SCOPE；组件×平台×状态×主题矩阵见 SURFACES。
+DesignConsistency / SettingsAppearance 执行真实 App 组件；Web 测试执行真实 XHR
+阶段与角色分组；Mac 测试渲染 NSImage 并比较非 RGB 几何。这些覆盖不冒充原生布局、
+材质或设备实际朗读验收。商店素材与文案单列冻结候选及 Apple 审核状态，源码合入不等于素材已公开展示。

@@ -3116,6 +3116,8 @@ LEG-2ac03072341d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ShareStoreT
 LEG-4fc739001e62,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ShareStoreTests.swift,135,XCTest,testBothFormsComeOffTheCLI,False,legacy-not-retrospectively-reviewed
 LEG-03a076584cab,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ShareStoreTests.swift,150,XCTest,testAnOlderCLIStillGivesALink,False,legacy-not-retrospectively-reviewed
 LEG-e0dc65359e21,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ShareStoreTests.swift,156,XCTest,testNothingUsableIsNoLink,False,legacy-not-retrospectively-reviewed
+MAP-65d132bc45c7,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift,18,reviewed-selector,testKeyStatesHaveDifferentGeometryWithoutUsingColor,False,DFC-008
+MAP-a1c39b6f044d,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift,26,reviewed-selector,testAwakeModifierDoesNotEraseTheStatusDifference,False,DFC-008
 LEG-5761910660c9,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,28,XCTest,testVisibilityIsOffUntilASurfaceOpens,False,legacy-not-retrospectively-reviewed
 LEG-3dd66bcf03b4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,33,XCTest,testItTracksOpenAndClose,False,legacy-not-retrospectively-reviewed
 LEG-ff08152b6882,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,46,XCTest,testTheWindowAndItsContentSurviveAClose,False,legacy-not-retrospectively-reviewed

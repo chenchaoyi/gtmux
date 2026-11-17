@@ -22,8 +22,8 @@ struct DocumentFailurePresentation {
       return Self(title: tr("Access denied", "无权查看文件"),
         message: tr("This connection does not have permission to view this file.", "当前连接没有此文件的查看权限。"), actions: [close])
     case .unavailable:
-      return Self(title: tr("File unavailable", "文件暂不可用"),
-        message: tr("The file is missing, was removed, or cannot be viewed from this conversation.", "文件不存在、已被移除，或不在当前会话的可查看范围内。"), actions: copy.map { [$0, retry] } ?? [retry])
+      return Self(title: tr("Attachment unavailable", "附件暂不可用"),
+        message: tr("This attachment is not available to this conversation. Ask the sender for a new attachment link.", "当前对话无法读取此附件。请让发送者重新提供附件链接。"), actions: [close] + (copy.map { [$0] } ?? []))
     case .unsupported:
       return Self(title: tr("Server update required", "服务器需要更新"),
         message: tr("This server does not support file previews yet. Update gtmux on the server, then retry.", "此服务器还不支持文件预览。请更新服务器上的 gtmux 后重试。"), actions: [retry] + (copy.map { [$0] } ?? []))

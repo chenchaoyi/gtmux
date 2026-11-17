@@ -270,9 +270,14 @@ export function SettingsScreen({navigation}: any) {
           </SettingsGroup>
         )}
 
+        <SettingsGroup title={lang === 'zh' ? '外观' : 'Appearance'} pal={pal}>
+          <SettingsRow icon="palette" label={lang === 'zh' ? '配色模式' : 'Color scheme'}
+            sub={lang === 'zh' ? '用于应用和对话界面' : 'Used throughout the app and chat'}
+            value={labelOf(themes, themePref)} pal={pal} chevron onPress={() => setPicker('theme')} />
+        </SettingsGroup>
+
         {/* TERMINAL */}
         <SettingsGroup title={lang === 'zh' ? '终端' : 'Terminal'} pal={pal}>
-          <SettingsRow icon="palette" label={lang === 'zh' ? '外观' : 'Appearance'} value={labelOf(themes, themePref)} pal={pal} chevron divider onPress={() => setPicker('theme')} />
           <SettingsRow icon="layout" label={lang === 'zh' ? '默认模式' : 'Default mode'} value={labelOf(detailModes, defaultDetailMode)} pal={pal} chevron divider onPress={() => setPicker('mode')} />
           <SettingsRow icon="return" label={lang === 'zh' ? '回车发送' : 'Send on Return'} sub={lang === 'zh' ? '关闭后回车换行，使用发送按钮提交' : 'Off: Return inserts a newline; use the Send button'} pal={pal} toggle={returnSends} onToggle={setReturnSends} />
         </SettingsGroup>
@@ -292,6 +297,7 @@ export function SettingsScreen({navigation}: any) {
             pal={pal}
             toggle={pushEnabled && !pushUnavailable && pushKinds.waiting}
             toggleDisabled={!pushEnabled || pushUnavailable}
+            disabledReason={pushUnavailable ? pushExplanation : lang === 'zh' ? '先开启推送通知' : 'Enable push notifications first'}
             onToggle={v => setPushKinds({...pushKinds, waiting: v})}
             divider
           />
@@ -302,6 +308,7 @@ export function SettingsScreen({navigation}: any) {
             pal={pal}
             toggle={pushEnabled && !pushUnavailable && pushKinds.done}
             toggleDisabled={!pushEnabled || pushUnavailable}
+            disabledReason={pushUnavailable ? pushExplanation : lang === 'zh' ? '先开启推送通知' : 'Enable push notifications first'}
             onToggle={v => setPushKinds({...pushKinds, done: v})}
           />
         </SettingsGroup>

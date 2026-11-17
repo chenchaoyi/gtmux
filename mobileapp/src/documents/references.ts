@@ -57,7 +57,7 @@ export class DocumentError extends Error {
 
 export function documentErrorMessage(reason: DocumentError['reason'], zh: boolean): string {
   if (reason === 'unsupported') return zh ? '当前 App 暂不支持文件预览，可以复制路径。' : 'File preview is unavailable in this app version. You can copy the path.';
-  if (reason === 'unpublished') return zh ? '文件不存在、已被移除，或不在当前会话的可查看范围内。' : 'The file is missing, was removed, or cannot be viewed from this conversation.';
+  if (reason === 'unpublished') return zh ? '当前对话无法读取此附件。请让发送者重新提供附件链接。' : 'This attachment is not available to this conversation. Ask the sender for a new attachment link.';
   if (reason === 'forbidden') return zh ? '此连接没有文件查看权限。' : 'This connection cannot view files.';
   return zh ? '暂时无法读取文件。请检查连接后重试。' : 'Could not read the file. Check the connection and retry.';
 }

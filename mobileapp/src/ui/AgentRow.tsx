@@ -59,6 +59,17 @@ export function AgentRow({
   // line rather than sharing it — see the branch chip below.
   const message =
     (agent.error && agent.error_text) || (agent.bg && agent.bg_text) || '';
+  const spokenTime = time && time.replace(/(\d+)([smhd])/, (_, n: string, unit: string) => {
+    const units: Record<string, string> = lang === 'zh'
+      ? {s: '秒', m: '分钟', h: '小时', d: '天'}
+      : {s: 'second', m: 'minute', h: 'hour', d: 'day'};
+    return lang === 'zh' ? `${n}${units[unit]}` : `${n} ${units[unit]}${n === '1' ? '' : 's'}`;
+  });
+  const spokenStatus = agent.error ? (lang === 'zh' ? '报错' : 'errored') : statusLabel(agent.status, lang);
+  const accessibleLabel = Array.from(new Set([
+    primary(agent), agent.agent, spokenStatus, agent.session, agent.loc, agent.pane_id,
+    message, spokenTime && `${lang === 'zh' ? '状态持续' : 'status duration'} ${spokenTime}`,
+  ].filter(Boolean))).join(', ');
 
   // The long press had no feedback: the row dimmed to 0.6 and then, 350ms later, a sheet
   // appeared from off-screen (user report, 2026-09-10). Three things were missing, and all
@@ -97,7 +108,11 @@ export function AgentRow({
     <Pressable
       testID={`${TestIds.agent.row}-${agent.pane_id}`}
       accessibilityRole="button"
-      accessibilityLabel={`${primary(agent)}, ${statusLabel(agent.status, lang)}`}
+      accessibilityLabel={accessibleLabel}
+      accessibilityHint={lang === 'zh'
+        ? `打开会话详情${onLongPress ? '；长按显示会话操作' : ''}`
+        : `Open session details${onLongPress ? '; hold for session actions' : ''}`}
+      accessibilityState={{selected}}
       onPress={onPress}
       onPressIn={down}
       onPressOut={up}

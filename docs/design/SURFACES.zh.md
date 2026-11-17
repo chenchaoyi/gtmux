@@ -55,7 +55,7 @@ iPad 的分栏 2026-07 就做了一半，首次上架时延后，之后两个月
 
 | 交互 | 统一的含义与顺序 | 证据与结果 |
 |---|---|---|
-| agent 详情模式 | 对话 → 终端，Web 在两者之间增加轨迹；默认终端；普通 pane 没有对话与轨迹模式 | `web/index.html`、`web/app.js` 聚焦与 tile、`DetailScreen.tsx`；修复 Web 顺序和普通 pane 对模式偏好的覆盖 |
+| agent 详情模式 | 对话 / 终端是模式，轨迹 / Diff 是独立工具；默认终端；普通 pane 没有 agent 对话与轨迹模式 | `web/index.html`、`web/app.js` 聚焦与 tile、`DetailScreen.tsx`；修复 Web 顺序和普通 pane 对模式偏好的覆盖 |
 | 等待、工作、空闲、普通进程 | 需要你、运行中、空闲、待命，使用同一核心状态与状态色 | `MenuView.swift`、`CommandPalette.swift`、手机 i18n、Web LABEL；修复 Mac 等待分组叫法和 Web 状态读屏名称 |
 | 分组展开与折叠 | 折叠全部 / 展开全部 | Web `app.js`、手机 `PaneBrowserView` 与 `ChatView`；修复 Web 用词 |
 | 知识库与线路入口 | 知识库用书，线路用地球 | `HQResourcePage.symbol`、手机 `SIcon` 与 `HQDisc`；已一致，无需改图标 |
@@ -94,3 +94,20 @@ App（LoadingMark/BrandLoader）、Web（brandLoaderEl）与菜单栏
 以后修改loading必须核对这三份实现及手机/iPad共用组件，并说明终端/attach
 是否有对应展示；在双主题、窄屏及宽屏比较实际渲染阶段。源码检查或构建成功
 不能代替视觉核对，无障碍标签也不等于读屏语音验收。
+
+## 组件验收
+
+共用规则的唯一定义见 [DESIGN 现行规则](DESIGN.zh.md#现行共用规则2026-11-17)。
+每次变更都必须按下表记录实际结果、证据路径和未测项；列出平台名称不算完成验收。
+状态维度至少包含正常、加载、空态、失败/重试、禁用；适用时另含 queued/保存与等待/工作/空闲。
+亮暗主题都检查，动态组件另检查减少动态效果。此表是责任与入口，不代表尚未执行的检查已通过。
+
+| 组件 / 规则 | Phone / iPad | Web 精确/粗指针 | Mac | 终端 |
+| --- | --- | --- | --- | --- |
+| 辅助文字 TEXT-READ | theme/SettingsRow/AgentRow；计算与组件 + 原生大字布局 | 实际 CSS 与截图；亮/暗、选中 | Theme 与实际材质/壁纸 | 系统终端调色板；不套用 App token |
+| 输入/附件 TOUCH-44、UPLOAD-PHASE | Composer；独立编辑/移除与实际字节阶段 | composer；桌面/390px、XHR 阶段与重试 | 原生截图发送流程单列 | CLI 进度走文本/实际字节 |
+| 加载 MOTION-LOAD | LoadingMark；手机/平板共享，前后台与减少动态效果 | brandload；页面/inline/send、减少动态效果 | GtmuxLoadingMark；关闭窗口后停止；系统控件例外 | 文本状态，无动画 logo |
+| HQ / 会话 ROLE-HQ、A11Y-CONTEXT | HQ 独立；开关/同名会话语义；实际读屏另验 | 两种布局保持 HQ 分组；键盘与标签 | 下格状态符号灰度；菜单栏材质另验 | 语义状态与位置 |
+| 文件 FILE-SCOPE | 真实 scope、不可用/权限/网络；新链接恢复 | 同源生成校验/文案 | 本地文档与系统预览边界 | add 成功后仍需接收端 scope 读取验证 |
+
+每轮交付在项目报告中用相同规则 ID 登记：源码绑定、测试结果、截图、设备/实际朗读缺口。

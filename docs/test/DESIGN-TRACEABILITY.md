@@ -10,7 +10,7 @@ The new catalogue and reviewed design records are the current test-maintenance e
 | Design requirement | Implementation / test entry | Coverage and remaining acceptance |
 | --- | --- | --- |
 | Status model, color/rank and tokens (§1/9) | AgentStore, Theme, StatusBadge; status-color/rank tests and design guard | Logic covered; visual triple encoding still requires acceptance |
-| Status item (§2) | StatusItemGlyph pane grid, AppDelegate count/display modes | Color-only grid remains a known deviation from non-color encoding; light/dark/tinted and notch acceptance separate |
+| Status item (§2) | StatusItemGlyph pane grid, AppDelegate count/display modes | Grid now carries pause/ring/check cutouts; StatusItemGlyphTests compare actual alpha masks without RGB. Light/dark/tinted wallpaper and notch acceptance remain separate |
 | Popover / quick switcher (§3/4) | MenuView, CommandPalette, fuzzy/group/age/navigation tests | Logic present; real layout/material/keyboard/focus still requires Mac acceptance |
 | Empty state / first-run (§5) | States views | Views exist; first-jump permission detection/card timing remains incomplete |
 | Agent identity / logo (§6/12) | AgentIcons, avatars, Go openable icon paths, decoding/monogram tests | Loading implemented; source-specific fallback and visuals separately accepted |
@@ -26,8 +26,8 @@ The new catalogue and reviewed design records are the current test-maintenance e
 | Phone footer spacing / preview and copy | footerSpacing, UsageSheet, KnowledgeSheet and document/Trace suites | Source/component coverage is not installed-device visual acceptance |
 
 Section mapping remains incomplete for dated §9 rules (unfocusable rows and slow
-operations), HQ/Preferences-sharing additions, duplicate §14/16 headings, server
-mode §17 and screenshot-to-agent §18. Do not mark the design fully followed from
+operations), HQ/Preferences-sharing additions, server mode §17 and screenshot-to-agent §18.
+Repeated heading numbers were removed; shared current rules use stable IDs in DESIGN. Do not mark the design fully followed from
 this table. The Chinese matrix retains the original detailed paths and exceptions;
 update both languages when changing these requirements.
 
@@ -35,3 +35,14 @@ For a new requirement: link the relevant OpenSpec scenario, write/review stable 
 cases in `designs/` before implementation, then map executable selectors and actual
 results. Separate implementation completeness, automated coverage and device/visual
 acceptance; do not turn an unimplemented requirement into a green label.
+
+## Design-consistency repair (2026-11-17)
+
+Reviewed design: `designs/design-consistency-20261117.json`, committed before the new tests.
+Current rules: TEXT-READ / TOUCH-44 / MOTION-LOAD / ROLE-HQ / A11Y-CONTEXT /
+UPLOAD-PHASE / STATE-LABEL / FILE-SCOPE. The component × platform × state × theme
+matrix is in SURFACES. DesignConsistency and SettingsAppearance execute real App
+components; browser tests execute actual XHR handlers/role grouping; Mac tests render
+NSImage alpha geometry. This coverage does not certify native layout, material or
+spoken screen-reader output. Store creative/copy has its own frozen candidate and
+Apple asset-review state; source merge does not mean published placement.

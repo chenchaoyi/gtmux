@@ -66039,6 +66039,185 @@
         }
       ],
       "sha256": "4e41e32c27a44f136063921a94aaa80c9a4f7818d7a58ad258bdfc9faa42871e"
+    },
+    "internal/server/web/design-consistency.test.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-82ccdde7a852",
+          "line": 114,
+          "kind": "reviewed-selector",
+          "name": "actual XHR byte stages stay on the thumbnail",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-cd745e41cb20",
+          "line": 136,
+          "kind": "reviewed-selector",
+          "name": "unknown-length body completion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-1dab495821e2",
+          "line": 142,
+          "kind": "reviewed-selector",
+          "name": "upload ${failure} preserves",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-a2be25f26b18",
+          "line": 150,
+          "kind": "reviewed-selector",
+          "name": "retired scope cannot accept",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-bcfc2c1a7874",
+          "line": 157,
+          "kind": "reviewed-selector",
+          "name": "HQ remains a distinct role",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-700b6c8e3834",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "own compact loading retains",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-5b5110a4affc",
+          "line": 173,
+          "kind": "reviewed-selector",
+          "name": "generated document contract offers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        }
+      ],
+      "sha256": "cfdff96c07f2a4806c259518d0fefe28d57f5fa1a6d34f9a3e864406c8fa4362"
+    },
+    "macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-65d132bc45c7",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "testKeyStatesHaveDifferentGeometryWithoutUsingColor",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DFC-008"
+        },
+        {
+          "id": "MAP-a1c39b6f044d",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "testAwakeModifierDoesNotEraseTheStatusDifference",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DFC-008"
+        }
+      ],
+      "sha256": "5547484d5d4d78fd4df8e7a043e9894b929840ce85af0797d9b46aeccfc9a232"
+    },
+    "mobileapp/src/documents/availability.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5cee3909c2b1",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "unavailable attachment explains scope",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-009"
+        },
+        {
+          "id": "MAP-2a69d818015d",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "clearer recovery text preserves strict session",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-009"
+        }
+      ],
+      "sha256": "6893a75ad4ccc2f4edf4a7f196cb204a240497aeec633ce075e4a27ef2cb8775"
+    },
+    "mobileapp/src/screens/SettingsAppearance.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7d053fa3bb5b",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "global color scheme lives in Appearance",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-006"
+        }
+      ],
+      "sha256": "169773a784db5c94db7d5a61a5419688bfd4d8d0d3da83d42f84419f80df3682"
+    },
+    "mobileapp/src/ui/DesignConsistency.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9ea098f5ca75",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "secondary reading text meets contrast",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-001,DFC-002,DFC-005"
+        },
+        {
+          "id": "MAP-756a87d09ccf",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "a settings switch has its own identity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-001,DFC-002,DFC-005"
+        },
+        {
+          "id": "MAP-4fc440f47a5b",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "same-named sessions expose distinct location",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-001,DFC-002,DFC-005"
+        },
+        {
+          "id": "MAP-fe2a0843fb5e",
+          "line": 75,
+          "kind": "reviewed-selector",
+          "name": "composer actions and independent thumbnail",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-001,DFC-002,DFC-005"
+        }
+      ],
+      "sha256": "3fd57b87e1a7ad67ba8bc1367f4c4af6e06652bb5ed6fe60b5826511015637b5"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

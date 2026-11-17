@@ -1,4 +1,4 @@
-// Generated from mobileapp/src/documents/references.ts; SHA256 7c7f062d9a7d30e13e9110be57f2d678b55c361378a634bcac565eb9fd0f8ffb
+// Generated from mobileapp/src/documents/references.ts; SHA256 1d529054756bd34565353058fb7e3a9d7162de65d377d85c593d3676d34742a8
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -58,7 +58,7 @@ function documentErrorMessage(reason, zh) {
     if (reason === 'unsupported')
         return zh ? '当前 App 暂不支持文件预览，可以复制路径。' : 'File preview is unavailable in this app version. You can copy the path.';
     if (reason === 'unpublished')
-        return zh ? '文件不存在、已被移除，或不在当前会话的可查看范围内。' : 'The file is missing, was removed, or cannot be viewed from this conversation.';
+        return zh ? '当前对话无法读取此附件。请让发送者重新提供附件链接。' : 'This attachment is not available to this conversation. Ask the sender for a new attachment link.';
     if (reason === 'forbidden')
         return zh ? '此连接没有文件查看权限。' : 'This connection cannot view files.';
     return zh ? '暂时无法读取文件。请检查连接后重试。' : 'Could not read the file. Check the connection and retry.';

@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1316 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1321 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2432 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3807 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2446 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 148 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -156,6 +156,15 @@
 | CRX-006 | One short state, no log/implementation tutorial, clear action only when available; failure never becomes empty; readonly and queued meaning survives. Existing permission, draft and identity checks unchanged. Include production string audit inventory with reviewed exclusions rather than claim all product strings rewritten. |
 | CRR-001 | Exact T UI must fail target assertions: earlier records cannot consume or label the new pending bubble, failure leaves the old row unchanged, and only a true new recent occurrence hands off the same rendered bubble. The new source record is located by exact session/record identity, independently of prepended indices. Original stable sendID/target/attempt and attachment distinction tests remain unchanged; no dispatch or input outside the fixture. |
 | CRR-002 | Exact T must fail ANSI and full-result copy target assertions. New expanded copy equals the complete recorded section including escapes and last marker, regardless of readable display/pagination; copy label stays truthful and reader snapshot stays internally consistent. Inline/Raw/default reader copies and existing code formatting/pagination remain valid. No real system clipboard, model success claim, file access or execution. |
+| DFC-001 | Normal secondary text meets4.5:1; decorative/disabled tokens are separate, with no status-palette changes. |
+| DFC-002 | Each target is at least44pt/px, with separate remove/edit regions and correct action delivery. |
+| DFC-003 | The spinner is the same three-pane concept; reduced motion remains identifiable; built-in statuses use consistent lowercase without changing agent prose. |
+| DFC-004 | HQ stays a separate entry and never becomes an ordinary Idle/Working/Needs-you row; normal counts/groups remain correct. |
+| DFC-005 | Controls expose the setting/session identity and current state without merging unrelated children; actual spoken VoiceOver/TalkBack remains separately unverified. |
+| DFC-006 | Global Appearance has its own group and changes the existing shared theme preference; terminal-specific settings retain their scope. |
+| DFC-007 | Queued/preparing/uploading/saving/failure are shown on the thumbnail; no fake percentage or completion before success; successful files retain original identity. |
+| DFC-008 | Brand identity persists but status changes include distinct shapes; awake modifier remains distinct; actual wallpaper/menu-bar acceptance is separately recorded. |
+| DFC-009 | The message states current-conversation unavailability and offers a new-link recovery; network/permission errors remain distinct. Strict session/home binding is unchanged. |
 | DTV-001 | Default rows are folder/root-file summaries only; deterministic hierarchy and directory aggregate counts, stable keys. Expanded original patch lines/numbers remain unchanged. Worktree path/branch parsed from preamble only; untracked filenames never inflate added lines, partial payload is labeled truncated. Deep/unsafe-looking names do not mutate prototypes or overflow recursion. Legacy diffPresentation semantics remain unchanged for callers not using tree mode. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
 | DTV-002 | Header identifies actual supplied worktree/branch and file/add/delete totals. All folder/file/hunk content starts collapsed, can be opened by44pt controls and collapsed together. FlatList windowing, wrap/scroll gutter, original source and line numbering remain. Unknown metadata stays unnamed instead of guessing a worktree. Stale replies cannot replace new pane context. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
 | DTV-003 | Correct worktree/branch/stat totals and directory grouping, no pre-opened code. Explicit expansion reveals original colored diff lines; collapse-all hides contents. Existing smoke assertion opens the file/hunk before checking original code. No unsafe HTML for context/path names. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
