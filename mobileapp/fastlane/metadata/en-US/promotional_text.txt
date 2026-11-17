@@ -1,1 +1,1 @@
-Follow tmux and coding agents on iPhone or iPad. Reply, review tool calls and files, and track HQ, knowledge, usage and alerts. Needs your Mac or Linux server.
+Check progress, reply to agents, and review tool calls and files. Track tasks and local knowledge with HQ, plus usage widgets and notifications.

@@ -1,4 +1,6 @@
-// Placement-specific Store art, using complete real synthetic-demo captures.
+// Placement-specific Store art, using real synthetic-demo captures. Supporting
+// devices extend beyond the central crop; critical copy and the HQ focal region
+// remain inside Apple's unchanged Art Safe Area.
 import {execFileSync} from 'node:child_process';
 import {mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync, existsSync} from 'node:fs';
 import {dirname, join, resolve} from 'node:path';
@@ -35,23 +37,29 @@ function page(type, layout) {
   return `<!doctype html><html lang="${lang}"><meta charset="utf-8"><style>
 html,body{margin:0;width:${layout.width}px;height:${layout.height}px;background:#EFEFF2;overflow:hidden}
 body{font-family:-apple-system,"SF Pro Display","PingFang SC",system-ui,sans-serif;color:#1D1D1F}
-.brand,.stage{position:absolute}.brand{${box(layout.brand)}}.stage{${box(layout.stage)}}
-.name{font-size:${type === 'header' ? 148 : 64}px;font-weight:700;letter-spacing:-4px;line-height:1.1}
-.label{font-size:46px;color:#55565E;margin-top:32px;line-height:1.3}
-.title{font-size:90px;font-weight:700;letter-spacing:-2px;line-height:1.13;margin-top:28px;text-wrap:balance}
-.sub{font-size:44px;line-height:1.4;color:#55565E;margin-top:32px;text-wrap:pretty}
+.brand,.stage{position:absolute}.brand{${box(layout.brand)};z-index:1}.stage{${box(layout.stage)}}
+.ambient{position:absolute;left:-180px;top:${type === 'header' ? 100 : 550}px;width:1400px;height:1400px;opacity:.55}
+.name{font-size:${type === 'header' ? 220 : 84}px;font-weight:700;letter-spacing:-4px;line-height:1.1}
+.label{font-size:84px;color:#55565E;margin-top:32px;line-height:1.3}
+.title{font-size:126px;font-weight:700;letter-spacing:-2px;line-height:1.13;margin-top:28px;text-wrap:balance}
+.sub{font-size:52px;line-height:1.4;color:#55565E;margin-top:32px;text-wrap:pretty;white-space:pre-line}
 .device{position:absolute;background:#101114;box-shadow:0 24px 70px #0002;box-sizing:content-box}
 .tablet{left:${layout.tabletLeft}px;top:${layout.tabletTop}px;width:${layout.tablet}px;padding:16px;border-radius:42px}
-.tablet img{border-radius:27px}.phone{left:0;bottom:0;width:${layout.phone}px;padding:10px;border-radius:36px}
+.tablet img{border-radius:27px}.phone{left:0;top:${layout.phoneTop}px;width:${layout.phone}px;padding:10px;border-radius:36px}
 .phone img{border-radius:26px}img{display:block;width:100%;height:auto}
-</style><body class="${type}"><div class="brand">${text}</div><div class="stage">
-<div class="device tablet" data-key="tablet"><img src="${tablet}"></div>
-<div class="device phone" data-key="phone"><img src="${phone}"></div></div>
+.phone-focus{position:absolute;left:10px;top:10px;pointer-events:none}
+</style><body class="${type}"><svg class="ambient" viewBox="0 0 100 100" aria-hidden="true"><rect x="8" y="8" width="40" height="40" rx="9" fill="#DEE1E7"/><rect x="52" y="8" width="40" height="40" rx="9" fill="#D1EFF3"/><rect x="8" y="52" width="84" height="40" rx="9" fill="#DEE1E7"/></svg><div class="brand">${text}</div><div class="stage">
+<div class="device tablet" data-art="tablet"><img src="${tablet}"></div>
+<div class="device phone" data-art="phone"><img src="${phone}"><div class="phone-focus" data-key="phone-focus"></div></div></div>
 <script>window.addEventListener('load',()=>{
  if([...document.images].some(i=>!i.complete||!i.naturalWidth))throw new Error('Creative image did not load');
+ const image=document.querySelector('.phone img');
+ if(image.naturalWidth!==1320||image.naturalHeight!==2868)throw new Error('Unexpected phone capture dimensions');
+ const focus=document.querySelector('.phone-focus');focus.style.width=image.width+'px';focus.style.height=(image.height*${layout.phoneFocus})+'px';
  const rectangles={};let overflow=false;
  for(const el of document.querySelectorAll('[data-key]')){const r=el.getBoundingClientRect();rectangles[el.dataset.key]={x:r.x,y:r.y,width:r.width,height:r.height};overflow ||= el.scrollWidth>el.clientWidth+1;}
- const data=document.createElement('script');data.type='application/json';data.id='geometry';data.textContent=JSON.stringify({rectangles,overflow});document.body.append(data);
+ const auxiliary={};for(const el of document.querySelectorAll('[data-art]')){const r=el.getBoundingClientRect();auxiliary[el.dataset.art]={x:r.x,y:r.y,width:r.width,height:r.height};}
+ const data=document.createElement('script');data.type='application/json';data.id='geometry';data.textContent=JSON.stringify({rectangles,auxiliary,overflow});document.body.append(data);
 },{once:true});</script></body></html>`;
 }
 
@@ -68,7 +76,7 @@ try {
     const match = dom.match(/<script type="application\/json" id="geometry">([^<]+)<\/script>/);
     if (!match) throw new Error('Creative geometry was not measured');
     const measured = JSON.parse(match[1]);
-    const required = ['name', 'phone', 'tablet', ...(type === 'header' ? ['label'] : ['title', 'sub'])];
+    const required = ['name', 'phone-focus', ...(type === 'header' ? ['label'] : ['title', 'sub'])];
     if (required.some(key => !measured.rectangles[key])) throw new Error('Incomplete creative geometry');
     if (measured.overflow) throw new Error('Creative text overflows its container');
     assertSafeGeometry(layout, measured.rectangles);
