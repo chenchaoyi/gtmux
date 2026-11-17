@@ -1,0 +1,69 @@
+{
+  "id": "store-creative-output-20261117",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-17",
+    "decision": "Implement the final-output coordinate correction and tests after this review commit",
+    "notes": "Addresses independent review P2 of H62b26796: final PNG device anchors shifted -64px after screenshot/crop, and the nominal top58% marker did not enclose the complete English decision card. Preserve that failure and the earlier framing guard. Add separate source-coordinate critical bounds x40,y190,w1240,h1730 enclosing HQ header through the entire needs-input card including explanation/time in both verified1320x2868 captures. Remove post-render cropping, enforce exact final PNG dimensions and pixel-anchor agreement, then validate critical bounds. These tests do not replace image inspection, real ASC device preview or Apple review."
+  },
+  "cases": [
+    {
+      "id": "STORE-OUT-001",
+      "layer": "G",
+      "description": "Final PNG and recorded device geometry use one origin",
+      "setup": "Small generated RGB PNG with known #101114 device-top pixels and matching canvas/DOM rectangles.",
+      "action": "Decode the PNG and compare the top edge at each device midpoint with the recorded auxiliary rectangle.",
+      "expected": "Matching exact canvas dimensions and pixel anchors pass; a -64px anchor translation fails.",
+      "planned_files": [
+        "mobileapp/scripts/creative-output.test.mjs"
+      ],
+      "surfaces": [
+        "App Store renderer final RGB PNG / safe-area verification"
+      ]
+    },
+    {
+      "id": "STORE-OUT-002",
+      "layer": "G",
+      "description": "Reject incomplete or incompatible final output",
+      "setup": "Known valid synthetic RGB PNG, truncated/unsupported PNG inputs and a canvas dimension mismatch.",
+      "action": "Check final PNG validation independently with each malformed or mismatched input.",
+      "expected": "Invalid PNG format, non-RGB output, missing device anchor or dimension mismatch fail explicitly.",
+      "planned_files": [
+        "mobileapp/scripts/creative-output.test.mjs"
+      ],
+      "surfaces": [
+        "App Store renderer final RGB PNG / safe-area verification"
+      ]
+    },
+    {
+      "id": "STORE-OUT-003",
+      "layer": "G",
+      "description": "Protect the entire HQ and decision story rather than a screen percentage",
+      "setup": "Both production layouts and source bounds x40,y190,width1240,height1730 from the verified1320x2868 EN/CN HQ captures.",
+      "action": "Transform those explicit source bounds into canvas coordinates, then validate all safe-area edges.",
+      "expected": "The full region including English decision explanation and timestamp fits both official safe areas. Bounds outside the source or safe region are rejected.",
+      "planned_files": [
+        "mobileapp/scripts/creative-output.test.mjs"
+      ],
+      "surfaces": [
+        "App Store renderer final RGB PNG / safe-area verification"
+      ]
+    },
+    {
+      "id": "STORE-OUT-004",
+      "layer": "G",
+      "description": "The final-output verifier detects the original crop regression",
+      "setup": "Synthetic RGB canvas with expected device tops safely below64 and an otherwise valid matching geometry.",
+      "action": "First validate matching anchors; then shift painted edges up64 while retaining the same dimensions and recorded geometry.",
+      "expected": "The matching version passes and the shifted version fails. Pixel probing is independent of the DOM-only geometry assertions.",
+      "planned_files": [
+        "mobileapp/scripts/creative-output.test.mjs"
+      ],
+      "surfaces": [
+        "App Store renderer final RGB PNG / safe-area verification"
+      ]
+    }
+  ],
+  "seal": "dbd8c8a43638349f173b7824e7819bba4cfe4c19a9c8bc66b1cd0fa9f8990769"
+}
