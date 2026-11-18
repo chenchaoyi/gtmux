@@ -819,3 +819,30 @@ SHALL remain pending. Missing/invalid history and send failures SHALL be explici
 #### Scenario: Many windows restored into a narrow terminal
 - **WHEN** the pane receipt contains long names or IDs
 - **THEN** rows align and wrap within available columns without dropping identities or interpreting control characters
+
+### Requirement: Native restore retains selected evidence and uncertain occupation
+
+Automatic native Codex restore SHALL bind the exact saved-layout bytes and incumbent
+record used to select a target before waiting for earlier panes. It SHALL recheck
+that evidence before preparation and before sending. A changed archive or owner
+SHALL produce a skipped target rather than establish a newer validation baseline.
+A same-boot occupation for the exact Codex home and conversation SHALL also prevent
+an automatic compatibility send after a switch to a custom wrapper.
+
+#### Scenario: An uncertain native send is followed by a wrapper installation
+
+- **WHEN** the same home and conversation already have a same-boot restore attempt
+- **AND** the executable route later selects a compatibility wrapper
+- **THEN** automatic restore sends no additional command or Enter
+- **AND** a fresh conversation may still use its legitimate wrapper recipe
+
+#### Scenario: A queued target changes while an earlier pane starts
+
+- **WHEN** the selected layout bytes or incumbent for a later pane change
+- **THEN** that later pane receives no restore command
+
+#### Scenario: Startup confirmation arrives during the final polling interval
+
+- **WHEN** a pending attempt becomes ready during its last allowed pause
+- **THEN** a bounded confirmation runs before deciding timeout and starting the next pane
+- **AND** cancellation retains priority and the shared waiting budget is not extended

@@ -98,12 +98,12 @@ LEG-b7f3640ebb4b,L1,Go core / CLI / server,internal/app/agent_hooks_test.go,165,
 LEG-da6e83e19ff7,L1,Go core / CLI / server,internal/app/agent_hooks_test.go,205,Test,TestInstallCodexHooks,False,legacy-not-retrospectively-reviewed
 LEG-c90319a2b7d5,L1,Go core / CLI / server,internal/app/agent_hooks_test.go,272,Test,TestInstallPreservesForeignHooks,False,legacy-not-retrospectively-reviewed
 LEG-5d4b293617ee,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,20,Test,TestRestoreResumesThroughTheRecordedLauncher,False,legacy-not-retrospectively-reviewed
-LEG-eb2b52825e97,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,85,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
-LEG-5fd574ba1eea,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,99,Test,TestRestoreManagedCodexBridge,False,legacy-not-retrospectively-reviewed
-LEG-3f26c30e5e74,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,171,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
+LEG-eb2b52825e97,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,74,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
+LEG-5fd574ba1eea,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,102,Test,TestRestoreManagedCodexBridge,False,legacy-not-retrospectively-reviewed
+LEG-3f26c30e5e74,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,74,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
 LEG-0281fdc2b073,L1,Go core / CLI / server,internal/app/agent_resume_ownership_test.go,16,Test,TestRestoreConversationOwnership,False,legacy-not-retrospectively-reviewed
 LEG-61aeba6b5b90,L1,Go core / CLI / server,internal/app/agent_resume_ownership_test.go,30,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-54deec499e13,L1,Go core / CLI / server,internal/app/agent_resume_ownership_test.go,101,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
+LEG-54deec499e13,L1,Go core / CLI / server,internal/app/agent_resume_ownership_test.go,104,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
 LEG-eb8f0ec7fb10,L1,Go core / CLI / server,internal/app/agent_resume_test.go,12,Test,TestEffectiveResumeMode,False,legacy-not-retrospectively-reviewed
 LEG-57e4fac0523a,L1,Go core / CLI / server,internal/app/agent_resume_test.go,34,Test,TestAutoResumeConfigToggle,False,legacy-not-retrospectively-reviewed
 LEG-84d3cbb436c9,L1,Go core / CLI / server,internal/app/agent_resume_test.go,59,Test,TestIsShellCommand,False,legacy-not-retrospectively-reviewed
@@ -366,11 +366,11 @@ LEG-296be0732ffe,L1,Go core / CLI / server,internal/app/logsstats_test.go,16,Tes
 LEG-bd04741fa75b,L1,Go core / CLI / server,internal/app/logsstats_test.go,45,Test,TestLogStatsJSONKeepsItsShape,False,legacy-not-retrospectively-reviewed
 LEG-032b4f8c2678,L1,Go core / CLI / server,internal/app/menubarapp_remove_test.go,15,Test,TestRemovingTheAppSaysWhetherThereWasOne,False,legacy-not-retrospectively-reviewed
 LEG-6f8e61cf43ef,L1,Go core / CLI / server,internal/app/menubarapp_remove_test.go,50,Test,TestAFailedRemovalIsAFailure,False,legacy-not-retrospectively-reviewed
-LEG-76d8afe20385,L1,Go core / CLI / server,internal/app/newsession_test.go,15,Test,TestRemoteSessionCreationOnIsolatedTmux,False,legacy-not-retrospectively-reviewed
-LEG-dcc101e003ab,L1,Go core / CLI / server,internal/app/newsession_test.go,101,Test,TestSessionNameValidation,False,legacy-not-retrospectively-reviewed
-LEG-a7723a2f8737,L1,Go core / CLI / server,internal/app/newsession_test.go,114,Test,TestSessionReceiptLookupFailureDoesNotCreate,False,legacy-not-retrospectively-reviewed
-LEG-71a71f42c474,L1,Go core / CLI / server,internal/app/newsession_test.go,132,Test,TestSessionStartDir,False,legacy-not-retrospectively-reviewed
-LEG-6d9f5f428095,L1,Go core / CLI / server,internal/app/newsession_test.go,153,Test,TestANewSessionFromTheRootStartsAtHome,False,legacy-not-retrospectively-reviewed
+LEG-76d8afe20385,L1,Go core / CLI / server,internal/app/newsession_test.go,16,Test,TestRemoteSessionCreationOnIsolatedTmux,False,legacy-not-retrospectively-reviewed
+LEG-dcc101e003ab,L1,Go core / CLI / server,internal/app/newsession_test.go,102,Test,TestSessionNameValidation,False,legacy-not-retrospectively-reviewed
+LEG-a7723a2f8737,L1,Go core / CLI / server,internal/app/newsession_test.go,115,Test,TestSessionReceiptLookupFailureDoesNotCreate,False,legacy-not-retrospectively-reviewed
+LEG-71a71f42c474,L1,Go core / CLI / server,internal/app/newsession_test.go,133,Test,TestSessionStartDir,False,legacy-not-retrospectively-reviewed
+LEG-6d9f5f428095,L1,Go core / CLI / server,internal/app/newsession_test.go,154,Test,TestANewSessionFromTheRootStartsAtHome,False,legacy-not-retrospectively-reviewed
 LEG-d0f2364153b7,L1,Go core / CLI / server,internal/app/oneshot_test.go,18,Test,TestScrubHookEnv,False,legacy-not-retrospectively-reviewed
 LEG-70dd41271d72,L1,Go core / CLI / server,internal/app/oneshot_test.go,40,Test,TestShellQuote,False,legacy-not-retrospectively-reviewed
 LEG-a4632e6272a2,L1,Go core / CLI / server,internal/app/oneshot_test.go,52,Test,TestFinishOneshot,False,legacy-not-retrospectively-reviewed

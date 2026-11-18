@@ -123,6 +123,11 @@ func resumeAgentsContext(parent context.Context) {
 	// behave exactly as before rather than refusing every resume — a missing save
 	// must degrade to the old behavior, not to silence.
 	layout := loadSavedLayout(resurrectLastSave())
+	selections := map[string]*nativeRestoreSelection{}
+	for _, p := range panes {
+		incumbent, err := nativeRestoreReadIncumbent(p.loc)
+		selections[p.loc] = &nativeRestoreSelection{Path: layout.SavePath, Saved: layout.Saved, ReadError: layout.ReadError, Incumbent: incumbent, IncumbentError: err}
+	}
 	for loc := range layout.ByLoc {
 		occupied[loc] = true
 	}
@@ -196,28 +201,7 @@ func resumeAgentsContext(parent context.Context) {
 		if (remoteRestoreSessions != nil && (!allowed || rec.Agent != expected.Agent || rec.SessionID != expected.SessionID || (expected.HomeID != "" && rec.HomeID != expected.HomeID))) || !remotePaneStillEligible(paneID, loc) {
 			return resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: "target-changed"}, false
 		}
-		if attempt, handled, sent := tryNativeRestoreContext(ctx, paneID, loc, rec, nativeCapabilities, mode, used); handled {
-			return attempt, sent
-		}
-		cmd, ok := resume.CommandWithBridge(rec, selfPath())
-		if !ok {
-			return resumeAttempt{}, false
-		}
-		before, _ := resume.Load(loc)
-		attempt := resumeAttempt{Pane: paneID, Loc: loc, Record: rec, Before: before, IssuedAt: time.Now().Unix(), State: "send-failed"}
-		if ctx.Err() != nil {
-			attempt.State = "cancelled"
-			return attempt, false
-		}
-		if tmux.SendText(paneID, agentenv.Wrap(cmd), mode == resumeAuto) == nil {
-			attempt.State = "pending"
-			if mode == resumeType {
-				attempt.State = "prefilled"
-			}
-			used[rec.SessionID] = true
-			return attempt, true
-		}
-		return attempt, false
+		return routeRestoreCommand(ctx, paneID, loc, rec, nativeCapabilities, mode, used, selections[loc])
 	}
 
 	serial := newRestoreSerialGate(ctx, mode, len(panes))
@@ -422,4 +406,43 @@ var isShellCommand = radar.IsShellCommand
 func actResumed(pane string, rec resume.Record, match string) {
 	diag.For("restore").Act("act.resume.command", diag.Caller(), pane, diag.OK,
 		"sent a conversation resume command; startup not yet confirmed", "agent", rec.Agent, "conversation", rec.SessionID, "match", match)
+}
+
+func issueCompatibleRestore(ctx context.Context, paneID, loc string, rec resume.Record, mode resumeMode, used map[string]bool) (resumeAttempt, bool) {
+	if rec.Agent == "codex" && mode == resumeAuto {
+		occupied, err := resume.NativeRestoreOccupied(rec)
+		if occupied || err != nil {
+			state := "already-attempted"
+			if err != nil {
+				state = "reservation-unavailable"
+			}
+			return resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: state}, false
+		}
+	}
+	cmd, ok := resume.CommandWithBridge(rec, selfPath())
+	if !ok {
+		return resumeAttempt{}, false
+	}
+	before, _ := resume.Load(loc)
+	attempt := resumeAttempt{Pane: paneID, Loc: loc, Record: rec, Before: before, IssuedAt: time.Now().Unix(), State: "send-failed"}
+	if ctx.Err() != nil {
+		attempt.State = "cancelled"
+		return attempt, false
+	}
+	if tmux.SendText(paneID, agentenv.Wrap(cmd), mode == resumeAuto) == nil {
+		attempt.State = "pending"
+		if mode == resumeType {
+			attempt.State = "prefilled"
+		}
+		used[rec.SessionID] = true
+		return attempt, true
+	}
+	return attempt, false
+}
+
+func routeRestoreCommand(ctx context.Context, pane, loc string, rec resume.Record, cache map[nativeRestoreBinary]nativeRestoreCapability, mode resumeMode, used map[string]bool, selection *nativeRestoreSelection) (resumeAttempt, bool) {
+	if attempt, handled, sent := tryNativeRestoreContext(ctx, pane, loc, rec, cache, mode, used, selection); handled {
+		return attempt, sent
+	}
+	return issueCompatibleRestore(ctx, pane, loc, rec, mode, used)
 }

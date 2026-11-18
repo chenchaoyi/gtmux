@@ -149,6 +149,29 @@ func publishNativeRestoreAttempt(a NativeRestoreAttempt) error {
 	return state.WritePrivateFile(nativeRestoreAttemptPath(a.Identity), body)
 }
 
+// NativeRestoreOccupied checks durable occupation before a compatibility send.
+// Unreadable records fail closed; switching executable routes cannot replay unknown.
+func NativeRestoreOccupied(rec Record) (bool, error) {
+	home, err := filepath.EvalSymlinks(transcript.CodexHome())
+	if err != nil {
+		return false, err
+	}
+	if rec.HomeID != "" && rec.HomeID != transcript.CodexHomeIDForPath(home) {
+		return false, errors.New("foreign Codex home")
+	}
+	boot, err := nativeRestoreBootProbe()
+	if err != nil {
+		return false, err
+	}
+	lease, err := state.TryLease("restore-native-attempts")
+	if err != nil {
+		return false, err
+	}
+	defer lease.Close()
+	old, exists, err := readNativeRestoreAttempt(nativeRestoreAttemptPath(NativeRestoreIdentity{Home: home, SessionID: rec.SessionID}))
+	return exists && old.Identity.BootID == boot, err
+}
+
 // ReserveNativeRestoreAttempt must precede the first tmux write. Every state in
 // the same boot remains occupied, including a crash before the result is saved.
 func ReserveNativeRestoreAttempt(id NativeRestoreIdentity) (NativeRestoreAttempt, error) {

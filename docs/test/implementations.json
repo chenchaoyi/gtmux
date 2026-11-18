@@ -194,6 +194,7 @@
   },
   "internal/app/restore_remote_test.go": {
     "cases": [
+      "RRB-R6",
       "RSR-003",
       "RSR-004",
       "RSR-005"
@@ -3733,6 +3734,54 @@
       "TestRestoreSerialNativeIssueKeepsCommandEnterAndStoreOrder",
       "TestRestoreSerialCancelAfterReserveKeepsOccupationWithoutSend",
       "TestRestoreSerialUncertainSendWaitsWithoutClaimingReady"
+    ]
+  },
+  "internal/app/restore_review_boundary_test.go": {
+    "cases": [
+      "RRB-R1",
+      "RRB-R2",
+      "RRB-R3",
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestRRBFinalPauseConfirmsBeforeNextStart",
+      "TestRRBSelectionChangeDuringQueueRefusesSecond",
+      "TestRRBUnknownRemainsOccupiedAcrossCompatibilityRoute",
+      "TestRRBNativeEntryUsesFullPaneEvidenceAndExactTargets"
+    ]
+  },
+  "internal/app/agent_resume_launcher_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestRestoreResumesThroughTheRecordedLauncher",
+      "TestRestoreManagedCodexBridge"
+    ]
+  },
+  "internal/app/agent_resume_ownership_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestRestoreConversationOwnership"
+    ]
+  },
+  "internal/app/newsession_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestANewSessionFromTheRootStartsAtHome"
+    ]
+  },
+  "internal/app/sendhold_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestAttachHoldOnRealPanes",
+      "TestNoVerifyAttachSaysTheTextWasPasted"
     ]
   }
 }

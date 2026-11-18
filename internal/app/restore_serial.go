@@ -104,9 +104,6 @@ func (g *restoreSerialGate) run(start func() (resumeAttempt, bool)) (resumeAttem
 			a.State = "cancelled"
 			break
 		}
-		if !g.now().Before(deadline) {
-			break
-		}
 		// The attempt must retain pending for the native confirmation CAS.
 		pending := a
 		pending.State = "pending"
@@ -114,6 +111,7 @@ func (g *restoreSerialGate) run(start func() (resumeAttempt, bool)) (resumeAttem
 			a.State = "confirmed"
 			break
 		}
+		// Observe once after the last pause, including at the deadline.
 		left := deadline.Sub(g.now())
 		if left <= 0 {
 			break

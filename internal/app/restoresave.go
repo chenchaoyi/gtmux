@@ -2,6 +2,7 @@ package app
 
 import (
 	"bufio"
+	"bytes"
 	"os"
 	"path/filepath"
 	"strings"
@@ -58,9 +59,12 @@ type savedPane struct {
 // savedLayout is a parsed resurrect save: the panes in file order (the plan renders
 // them that way) plus a locator index (restore looks panes up by locator).
 type savedLayout struct {
-	Panes []savedPane
-	ByLoc map[string]savedPane
-	Ref   time.Time // the save's mtime — "when this evidence was true"
+	SavePath  string
+	Saved     []byte
+	ReadError error
+	Panes     []savedPane
+	ByLoc     map[string]savedPane
+	Ref       time.Time // the save's mtime — "when this evidence was true"
 }
 
 // paneEvidence is what a save says about one pane at save time.
@@ -182,19 +186,19 @@ func argv0(cmdline string) string {
 // gate on — callers must then behave as they did before this file existed rather
 // than deny every resume.
 func loadSavedLayout(path string) savedLayout {
-	out := savedLayout{ByLoc: map[string]savedPane{}}
+	out := savedLayout{ByLoc: map[string]savedPane{}, SavePath: path}
 	if path == "" {
 		return out
 	}
 	if fi, err := os.Stat(path); err == nil {
 		out.Ref = fi.ModTime()
 	}
-	f, err := os.Open(path)
+	body, err := readRestoreSave(path)
+	out.Saved, out.ReadError = body, err
 	if err != nil {
 		return out
 	}
-	defer f.Close()
-	sc := bufio.NewScanner(f)
+	sc := bufio.NewScanner(bytes.NewReader(body))
 	sc.Buffer(make([]byte, 1<<20), 1<<20)
 	for sc.Scan() {
 		sp, ok := parseSavedPaneLine(sc.Text())

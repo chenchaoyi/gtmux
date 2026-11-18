@@ -78,7 +78,7 @@ func (l *holdLab) pane(name, screen, prog string) string {
 		l.t.Fatal(err)
 	}
 	id := l.run("new-window", "-d", "-P", "-F", "#{pane_id}", "-t", "lab", "-n", name,
-		"sh -c 'cat \"$0\"; exec \"$1\"' "+f+" "+prog)
+		"/bin/sh", "-c", `cat "$1"; exec "$2"`, "gtmux-hold", f, prog)
 	l.waitFor(id, func(s string) bool { return strings.Contains(s, strings.SplitN(strings.TrimSpace(screen), "\n", 2)[0]) })
 	return id
 }

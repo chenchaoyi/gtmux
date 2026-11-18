@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -184,6 +185,13 @@ func TestANewSessionFromTheRootStartsAtHome(t *testing.T) {
 	s, err := createDetachedSession("from-root", "", sessionStartDir())
 	if err != nil {
 		t.Fatal(err)
+	}
+	// new-session returns before its forked child necessarily completes chdir.
+	// Require the exact directory after bounded startup, retaining the final check.
+	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
+		if tmux.Display(s.PaneID, "#{pane_current_path}") == home {
+			break
+		}
 	}
 	if got := tmux.Display(s.PaneID, "#{pane_current_path}"); got != home {
 		t.Fatalf("the new session started in %q, want home %q", got, home)

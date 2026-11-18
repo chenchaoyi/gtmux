@@ -43,6 +43,7 @@ const (
 )
 
 type nativeRestorePlan struct {
+	Selection      *nativeRestoreSelection
 	Identity       resume.NativeRestoreIdentity
 	Binary         nativeRestoreBinary
 	Pane           nativeRestorePaneState
@@ -277,6 +278,29 @@ func inspectNativeRestoreBinary(lookup string) (nativeRestoreBinary, bool, error
 	return result, true, nil
 }
 
+type nativeRestoreSelection struct {
+	Path           string
+	Saved          []byte
+	ReadError      error
+	Incumbent      resume.NativeRestoreIncumbent
+	IncumbentError error
+}
+
+func (s *nativeRestoreSelection) unchanged(loc string) bool {
+	if s == nil {
+		return true
+	}
+	if s.ReadError != nil || s.IncumbentError != nil || resurrectLastSave() != s.Path {
+		return false
+	}
+	body, err := readRestoreSave(s.Path)
+	if err != nil || !bytes.Equal(body, s.Saved) {
+		return false
+	}
+	current, err := nativeRestoreReadIncumbent(loc)
+	return err == nil && current == s.Incumbent
+}
+
 func nativeRestoreRevision(rec resume.Record, incumbent resume.NativeRestoreIncumbent) (string, error) {
 	path := resurrectLastSave()
 	saved, err := readRestoreSave(path)
@@ -376,6 +400,9 @@ func prepareNativeRestoreContext(ctx context.Context, pane, loc string, rec resu
 }
 
 func nativeRestorePlanState(p *nativeRestorePlan) string {
+	if !p.Selection.unchanged(p.Pane.Loc) {
+		return "target-changed"
+	}
 	binary, handled, err := nativeRestoreInspectBinary(p.Binary.Lookup)
 	if err != nil {
 		restoreLogf("restore.resume", "native write deferred pane=%s loc=%s executable: %v", p.Pane.Pane, p.Pane.Loc, err)
@@ -498,7 +525,14 @@ func issueNativeRestoreContext(ctx context.Context, p *nativeRestorePlan, mode r
 func tryNativeRestore(pane, loc string, rec resume.Record, cache map[nativeRestoreBinary]nativeRestoreCapability, mode resumeMode, used map[string]bool) (resumeAttempt, bool, bool) {
 	return tryNativeRestoreContext(context.Background(), pane, loc, rec, cache, mode, used)
 }
-func tryNativeRestoreContext(ctx context.Context, pane, loc string, rec resume.Record, cache map[nativeRestoreBinary]nativeRestoreCapability, mode resumeMode, used map[string]bool) (resumeAttempt, bool, bool) {
+func tryNativeRestoreContext(ctx context.Context, pane, loc string, rec resume.Record, cache map[nativeRestoreBinary]nativeRestoreCapability, mode resumeMode, used map[string]bool, selections ...*nativeRestoreSelection) (resumeAttempt, bool, bool) {
+	var selected *nativeRestoreSelection
+	if len(selections) > 0 {
+		selected = selections[0]
+	}
+	if !selected.unchanged(loc) {
+		return resumeAttempt{Pane: pane, Loc: loc, Record: rec, State: "target-changed"}, true, false
+	}
 	plan, handled, why := prepareNativeRestoreContext(ctx, pane, loc, rec, cache)
 	if !handled {
 		return resumeAttempt{}, false, false
@@ -506,6 +540,7 @@ func tryNativeRestoreContext(ctx context.Context, pane, loc string, rec resume.R
 	if plan == nil {
 		return resumeAttempt{Pane: pane, Loc: loc, Record: rec, State: why}, true, false
 	}
+	plan.Selection = selected
 	attempt, sent := issueNativeRestoreContext(ctx, plan, mode, used)
 	return attempt, true, sent
 }

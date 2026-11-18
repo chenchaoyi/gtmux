@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1319 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1320 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2460 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2464 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 148 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -355,6 +355,12 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | RSR-007 | Nothing starts on mount/refresh; explicit confirm starts once; progress reattaches by read on reopen; unknown only checks status using same ID; no cross-host late update/mutation; failure not success; no polling after close |
 | RSR-008 | Restore bypasses generic close, keeps progress without focus theft/reopen; explicit close wins; all other actions retain their behavior |
 | RSR-009 | Clear server identity and explicit restoration scope; owner entry available remotely, guest absent; sheet scrolls with content and safe-area controls |
+| RRB-R1 | One cumulative send after unknown; first legal wrapper still sends |
+| RRB-R2 | Second sends zero; unchanged sources still send |
+| RRB-R3 | A confirmed before B starts; no extra sleep; cancellation wins |
+| RRB-R6 | Host installation cannot choose route; native path asserts exact command and pane identity; diagnose unrelated failures without weakening assertions |
+| RRB-R4 | Pane and timeout visible before B; final summary remains |
+| RRB-R5 | Both timeout and first delivery uncertainty remain distinct in existing result/client states |
 | SSI-001 | Active eligible thread uses turn/steer with exact expectedTurnId; no queue/start, interrupt, full-history read or duplicate accepted input. Only explicitly unsupported read/steer methods can fall back to original queue behavior; generic errors/uncertain write never replay. Waiting flags and target/home/peer mismatch refuse before input. Byte/deadline bounds remain. |
 | SSI-002 | Only existing authorized image inputs request active submission; ordinary text stays existing queue. Exact target and image survive, accepted mode persists, retry does not resubmit, uncertain never enters queue or alternate pane; receipt mode backward compatible. |
 | SSI-003 | Queued never claims terminal receipt; active acceptance says current task, never task completion. Nonzero/unrecognized receipt cannot falsely succeed; accepted receipts keep existing fast-close semantics and failure preserves editable draft. Logs distinguish accepted queue from immediate input without content. |
