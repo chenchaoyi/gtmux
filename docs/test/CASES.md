@@ -361,6 +361,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | RRB-R6 | Host installation cannot choose route; native path asserts exact command and pane identity; diagnose unrelated failures without weakening assertions |
 | RRB-R4 | Pane and timeout visible before B; final summary remains |
 | RRB-R5 | Both timeout and first delivery uncertainty remain distinct in existing result/client states |
+| RSD-001 | The unchanged source is sent exactly once to its target. A replaced source prevents every literal and Enter for that target. |
+| RSD-002 | The first receipt retains uncertainty. The duplicate gets neither a literal nor Enter; a distinct identity still dispatches. |
+| RSD-003 | The valid local pane stays visible and the changed file invalidates its fingerprint. A local read error is distinguishable from an empty save. The remote reader retains its cap. |
+| RSD-004 | Every original hold and send assertion remains. The fake process is resident before observation. A launch or capture error reports its own failure within the existing wait. |
 | RRV-001 | Local pane A and explicit startup timeout appear before B preparation; no confirmation is fabricated; command and Enter log is exact and no real tmux is reachable |
 | RRV-002 | Both final results retain startup-timeout; first pending versus unknown remains distinguishable as issue_state after persistence, without replay or extra sender calls |
 | RRV-003 | User sees startup timeout and original unknown/send-failed distinctly; old responses without issue_state remain accepted; malformed optional values are rejected; no POST/send occurs |
