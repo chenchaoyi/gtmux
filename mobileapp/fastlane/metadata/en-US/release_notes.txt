@@ -1,1 +1,3 @@
-- Chat messages, activity, timestamps and reply actions use tighter, more consistent spacing.
+- When you scroll back in the terminal, new output keeps your place until you return to the live view.
+- The session list shows when a refresh is still running. Photo attachments show upload progress and let you retry a failed upload.
+- Restore results show when startup times out and retain an earlier send failure or uncertain result, so you can check the affected pane.
