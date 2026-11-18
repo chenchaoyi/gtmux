@@ -3832,5 +3832,13 @@
       "TestQueuedHistoricalOwnership",
       "TestQueuedCompatibilityTarget"
     ]
+  },
+  "internal/app/restore_wrapper_cancel_test.go": {
+    "cases": [
+      "RWC-001"
+    ],
+    "selectors": [
+      "TestCompatibilityCancellationDuringFinalTargetQuery"
+    ]
   }
 }

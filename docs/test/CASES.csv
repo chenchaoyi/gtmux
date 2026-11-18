@@ -651,6 +651,7 @@ LEG-fdb1c090b81d,L1,Go core / CLI / server,internal/app/restore_test.go,259,Test
 LEG-f99c2b4b46ac,L1,Go core / CLI / server,internal/app/restore_test.go,277,Test,TestRestorePATH,False,legacy-not-retrospectively-reviewed
 MAP-54bad8843802,L2,reviewed implementation,internal/app/restore_visibility_test.go,89,reviewed-selector,TestRRVLocalTimeoutVisibleBeforeNextPreparation,False,"RRV-001,RRV-002"
 MAP-cf0179917a35,L2,reviewed implementation,internal/app/restore_visibility_test.go,119,reviewed-selector,TestRRVRemoteFinalStoreRetainsFirstIssueFact,False,"RRV-001,RRV-002"
+MAP-4e1e34ccdf4a,L2,reviewed implementation,internal/app/restore_wrapper_cancel_test.go,17,reviewed-selector,TestCompatibilityCancellationDuringFinalTargetQuery,False,RWC-001
 LEG-2d678cf18688,L1,Go core / CLI / server,internal/app/restoreactive_test.go,27,Test,TestParseActiveSpotsFindsTheMarkedWindowAndPane,False,legacy-not-retrospectively-reviewed
 LEG-ad54ff71de01,L1,Go core / CLI / server,internal/app/restoreactive_test.go,51,Test,TestParseActiveSpotsIgnoresSessionsWithNoActiveWindow,False,legacy-not-retrospectively-reviewed
 LEG-14c61b0fbfa6,L1,Go core / CLI / server,internal/app/restoreactive_test.go,61,Test,TestParseActiveSpotsToleratesAMissingOrJunkSave,False,legacy-not-retrospectively-reviewed

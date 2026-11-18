@@ -487,14 +487,20 @@ func issueCompatibleRestore(ctx context.Context, paneID, loc string, rec resume.
 		attempt.State = "cancelled"
 		return attempt, false
 	}
-	if !selection.sourceUnchanged() || !restorePaneIsShell(paneID, loc) {
+	cmd = agentenv.Wrap(cmd)
+	eligible := selection.sourceUnchanged() && restorePaneIsShell(paneID, loc)
+	if ctx.Err() != nil {
+		attempt.State = "cancelled"
+		return attempt, false
+	}
+	if !eligible {
 		attempt.State = "target-changed"
 		return attempt, false
 	}
 	// A lost tmux response can leave a draft or an executed command. Claim the
 	// identity before the first write so the next pane cannot submit it again.
 	used[rec.SessionID] = true
-	if tmux.SendText(paneID, agentenv.Wrap(cmd), mode == resumeAuto) == nil {
+	if tmux.SendText(paneID, cmd, mode == resumeAuto) == nil {
 		attempt.State = "pending"
 		if mode == resumeType {
 			attempt.State = "prefilled"

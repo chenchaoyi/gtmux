@@ -83,6 +83,7 @@ MAP-de7eb092706c,L2,reviewed implementation,internal/app/restore_serial_test.go,
 MAP-fc043904c69b,L2,reviewed implementation,internal/app/restore_serial_test.go,253,reviewed-selector,TestRestoreSerialUncertainSendWaitsWithoutClaimingReady,False,"CNRV4-003,CNRV4-004,CNRV4-005"
 MAP-54bad8843802,L2,reviewed implementation,internal/app/restore_visibility_test.go,89,reviewed-selector,TestRRVLocalTimeoutVisibleBeforeNextPreparation,False,"RRV-001,RRV-002"
 MAP-cf0179917a35,L2,reviewed implementation,internal/app/restore_visibility_test.go,119,reviewed-selector,TestRRVRemoteFinalStoreRetainsFirstIssueFact,False,"RRV-001,RRV-002"
+MAP-4e1e34ccdf4a,L2,reviewed implementation,internal/app/restore_wrapper_cancel_test.go,17,reviewed-selector,TestCompatibilityCancellationDuringFinalTargetQuery,False,RWC-001
 MAP-5a676c7255b7,L2,reviewed implementation,internal/app/screenshot_deadline_test.go,13,reviewed-selector,TestASC007TargetReadStopsAtCancellationBeforeMintOrSend,False,ASC-007
 MAP-a7175f174f65,L2,reviewed implementation,internal/app/screenshot_send_input_budget_test.go,16,reviewed-selector,TestASC009StalledNoteHasNoClaimOrSendAfterDeadline,False,ASC-009
 MAP-8890e9017044,L2,reviewed implementation,internal/app/screenshot_send_test.go,16,reviewed-selector,TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance,False,"ASC-004,ASC-005"
