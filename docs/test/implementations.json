@@ -3763,7 +3763,8 @@
       "RRB-R6"
     ],
     "selectors": [
-      "TestANewSessionFromTheRootStartsAtHome"
+      "TestANewSessionFromTheRootStartsAtHome",
+      "TestRemoteSessionCreationOnIsolatedTmux"
     ]
   },
   "internal/app/sendhold_test.go": {
@@ -3820,6 +3821,16 @@
     ],
     "selectors": [
       "TestHoldReaderChild"
+    ]
+  },
+  "internal/app/restore_queued_ownership_test.go": {
+    "cases": [
+      "RQO-001",
+      "RQO-002"
+    ],
+    "selectors": [
+      "TestQueuedHistoricalOwnership",
+      "TestQueuedCompatibilityTarget"
     ]
   }
 }

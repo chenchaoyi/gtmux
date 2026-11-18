@@ -45,7 +45,7 @@ func TestRemoteSessionCreationOnIsolatedTmux(t *testing.T) {
 	if first.Session != "Project-v1-Review" || first.Loc != first.Session+":"+first.Window+"."+first.Pane {
 		t.Fatalf("bad receipt: %+v", first)
 	}
-	if got := tmux.Display(first.PaneID, "#{pane_current_path}"); got != dir {
+	if got := settledPaneDirectory(first.PaneID, dir); got != dir {
 		t.Fatalf("cwd %q, want %q", got, dir)
 	}
 	if got := tmux.Display(first.PaneID, "#{session_attached}"); got != "0" {
@@ -186,14 +186,17 @@ func TestANewSessionFromTheRootStartsAtHome(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// new-session returns before its forked child necessarily completes chdir.
-	// Require the exact directory after bounded startup, retaining the final check.
-	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
-		if tmux.Display(s.PaneID, "#{pane_current_path}") == home {
-			break
-		}
-	}
-	if got := tmux.Display(s.PaneID, "#{pane_current_path}"); got != home {
+	if got := settledPaneDirectory(s.PaneID, home); got != home {
 		t.Fatalf("the new session started in %q, want home %q", got, home)
+	}
+}
+
+// new-session can return while the child still has its parent's directory.
+func settledPaneDirectory(pane, want string) string {
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(20 * time.Millisecond) {
+		got := tmux.Display(pane, "#{pane_current_path}")
+		if got == want || !time.Now().Before(deadline) {
+			return got
+		}
 	}
 }

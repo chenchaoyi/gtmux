@@ -279,7 +279,7 @@ func inspectNativeRestoreBinary(lookup string) (nativeRestoreBinary, bool, error
 }
 
 type nativeRestoreSelection struct {
-	Source         *resume.Located
+	Fallback       *restoreFallback
 	Path           string
 	Digest         []byte
 	ReadError      error
@@ -288,11 +288,7 @@ type nativeRestoreSelection struct {
 }
 
 func (s *nativeRestoreSelection) sourceUnchanged() bool {
-	if s == nil || s.Source == nil {
-		return true
-	}
-	current, err := nativeRestoreReadIncumbent(s.Source.Loc)
-	return err == nil && current.Exists && current.Record == s.Source.Record
+	return s == nil || s.Fallback == nil || s.Fallback.stillUnique()
 }
 
 func (s *nativeRestoreSelection) unchanged(loc string) bool {
@@ -459,8 +455,11 @@ func nativeRestorePlanState(p *nativeRestorePlan) string {
 			return "target-changed"
 		}
 	}
+	if !p.Selection.sourceUnchanged() {
+		return "target-changed"
+	}
 	current, ok := nativeRestoreReadPane(p.Pane.Pane, p.Pane.Loc)
-	if !ok || current != p.Pane || !p.Selection.sourceUnchanged() {
+	if !ok || current != p.Pane {
 		return "target-changed"
 	}
 	return ""

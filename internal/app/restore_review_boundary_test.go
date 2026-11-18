@@ -96,7 +96,7 @@ func TestRRBUnknownRemainsOccupiedAcrossCompatibilityRoute(t *testing.T) {
 	plan, _, _ := cnrAppPlan(t)
 	calls := filepath.Join(t.TempDir(), "calls")
 	stub := filepath.Join(t.TempDir(), "tmux")
-	if err := os.WriteFile(stub, []byte("#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$RRB_CALLS\"\n"), 0700); err != nil {
+	if err := os.WriteFile(stub, []byte("#!/bin/sh\nif [ \"$2\" = display-message ]; then printf '%%7\\tworker:0.0\\tbash\\n'; exit 0; fi\nprintf '%s\\n' \"$*\" >> \"$RRB_CALLS\"\n"), 0700); err != nil {
 		t.Fatal(err)
 	}
 	oldBin := tmux.Bin

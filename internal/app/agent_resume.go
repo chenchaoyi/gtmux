@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"os/signal"
 	"sort"
@@ -96,28 +97,6 @@ func resumeAgentsContext(parent context.Context) {
 		restoreLogf("restore.resume", "resumeAgents: mode=off — not touching panes")
 		return
 	}
-	type shellPane struct{ id, loc, cwd string }
-	var panes []shellPane
-	occupied := map[string]bool{}
-	used := map[string]bool{} // includes conversations in already-running panes
-	for _, line := range tmux.Lines("list-panes", "-a", "-F",
-		"#{pane_id}\t#{pane_current_command}\t#{session_name}:#{window_index}.#{pane_index}\t#{pane_current_path}") {
-		f := strings.SplitN(line, "\t", 4)
-		if len(f) != 4 {
-			continue
-		}
-		occupied[f[2]] = true
-		if !isShellCommand(f[1]) {
-			if rec, ok := resume.LoadLive(f[2]); ok && rec.SessionID != "" {
-				used[rec.SessionID] = true
-			}
-			continue // a program is running here — don't type over it
-		}
-		if remoteRestoreSessions != nil && !remoteRestoreSessions[locSession(f[2])] {
-			continue
-		}
-		panes = append(panes, shellPane{id: f[0], loc: f[2], cwd: f[3]})
-	}
 
 	// The liveness gate. With no parseable save there is no evidence to gate on, so
 	// behave exactly as before rather than refusing every resume — a missing save
@@ -127,13 +106,16 @@ func resumeAgentsContext(parent context.Context) {
 		i18n.Sae("Could not read the saved layout.", "无法读取布局存档。")
 		return
 	}
+	used := map[string]bool{} // issued in this batch, including uncertain writes
+	panes, occupied, initiallyUnavailable, ok := restoreFleet(layout, used)
+	if !ok {
+		restoreLogf("restore.resume", "cannot establish live pane inventory")
+		return
+	}
 	selections := map[string]*nativeRestoreSelection{}
 	for _, p := range panes {
 		incumbent, err := nativeRestoreReadIncumbent(p.loc)
 		selections[p.loc] = &nativeRestoreSelection{Path: layout.SavePath, Digest: layout.Digest, ReadError: layout.ReadError, Incumbent: incumbent, IncumbentError: err}
-	}
-	for loc := range layout.ByLoc {
-		occupied[loc] = true
 	}
 	gated := len(layout.Panes) > 0
 	restoreLogf("restore.resume", "resumeAgents: mode=%d shellPanes=%d savedPanes=%d liveness-gate=%v",
@@ -183,7 +165,7 @@ func resumeAgentsContext(parent context.Context) {
 				break
 			}
 		}
-		if used[rec.SessionID] {
+		if initiallyUnavailable[rec.SessionID] || used[rec.SessionID] {
 			return resumeAttempt{}, false
 		}
 		// Resume from where the conversation is actually FILED, not the cwd we last saw
@@ -244,6 +226,12 @@ func resumeAgentsContext(parent context.Context) {
 	// the conversation id the SAVE recorded this very pane resuming. Both are about
 	// THIS pane; the guess in pass 2 is not, so it must not run first and claim a
 	// conversation another pane can prove is its own.
+	type exactMatch struct {
+		pane   shellPane
+		rec    resume.Record
+		source string
+	}
+	var exact []exactMatch
 	var pending []shellPane
 	for _, p := range panes {
 		if serial.stopped {
@@ -263,6 +251,17 @@ func resumeAgentsContext(parent context.Context) {
 			pending = append(pending, p)
 			continue
 		}
+		exact = append(exact, exactMatch{p, rec, src})
+	}
+	var history []resume.Located
+	if len(pending) > 0 {
+		history = resume.AllLocated()
+	}
+	for _, match := range exact {
+		if serial.stopped {
+			break
+		}
+		p, rec, src := match.pane, match.rec, match.source
 		ran := run(p.id, rec)
 		restoreLogf("restore.resume", "resume[%s] pane=%s loc=%s cwd=%s → session=%s ran=%v", src, p.id, p.loc, p.cwd, rec.SessionID, ran)
 		if ran {
@@ -277,7 +276,6 @@ func resumeAgentsContext(parent context.Context) {
 	// other locator — so on top of the liveness gate it also refuses records nobody
 	// has touched in weeks.
 	if len(pending) > 0 && !serial.stopped {
-		all := resume.AllLocated() // most-recent first, each with its original locator
 		for _, p := range pending {
 			if serial.stopped {
 				break
@@ -289,14 +287,15 @@ func resumeAgentsContext(parent context.Context) {
 			if d := layout.ByLoc[p.loc].Dir; d != "" {
 				cwd = d
 			}
-			chosen, cands := pickCwdFallback(p.loc, cwd, all, used, layout.Ref, occupied)
+			maps.Copy(initiallyUnavailable, used)
+			chosen, cands := pickCwdFallback(p.loc, cwd, history, initiallyUnavailable, layout.Ref, occupied)
 			if chosen == nil {
 				restoreLogf("restore.resume", "resume[no-match] pane=%s loc=%s cwd=%s eligible-candidates=%d (ownership protected; ambiguous candidates refused)", p.id, p.loc, cwd, cands)
 				i18n.Sae(fmt.Sprintf("Skipped %s: no unique, unclaimed conversation could be identified.", p.loc),
 					fmt.Sprintf("未恢复 %s 的 agent：无法确定唯一且未被其他窗格占用的会话。", p.loc))
 				continue
 			}
-			selections[p.loc].Source = chosen
+			selections[p.loc].Fallback = &restoreFallback{source: *chosen, target: p.loc, cwd: cwd, layout: layout, previouslyIssued: maps.Clone(used)}
 			ran := run(p.id, chosen.Record)
 			restoreLogf("restore.resume", "resume[cwd-fallback] pane=%s loc=%s cwd=%s → session=%s ran=%v",
 				p.id, p.loc, cwd, chosen.SessionID, ran)
@@ -312,6 +311,57 @@ func resumeAgentsContext(parent context.Context) {
 	reportResume(mode, n)
 	reportRemoteRestore("agents", attempts)
 	fmt.Print(renderResumeAttempts(attempts, termWidth()))
+}
+
+type shellPane struct{ id, loc, cwd string }
+
+// The same inventory determines initial eligibility and final fallback ownership.
+func restoreFleet(layout savedLayout, issued map[string]bool) (shells []shellPane, occupied, unavailable map[string]bool, ok bool) {
+	raw, err := tmux.Run("list-panes", "-a", "-F", "#{pane_id}\t#{pane_current_command}\t#{session_name}:#{window_index}.#{pane_index}\t#{pane_current_path}")
+	if err != nil || raw == "" {
+		return nil, nil, nil, false
+	}
+	occupied = make(map[string]bool, len(layout.ByLoc))
+	for loc := range layout.ByLoc {
+		occupied[loc] = true
+	}
+	unavailable = maps.Clone(issued)
+	for _, line := range strings.Split(raw, "\n") {
+		f := strings.SplitN(line, "\t", 4)
+		if len(f) != 4 || f[0] == "" || f[2] == "" {
+			return nil, nil, nil, false
+		}
+		occupied[f[2]] = true
+		if !isShellCommand(f[1]) {
+			if rec, ok := resume.LoadLive(f[2]); ok && rec.SessionID != "" {
+				unavailable[rec.SessionID] = true
+			}
+		} else if remoteRestoreSessions == nil || remoteRestoreSessions[locSession(f[2])] {
+			shells = append(shells, shellPane{f[0], f[2], f[3]})
+		}
+	}
+	return shells, occupied, unavailable, true
+}
+
+type restoreFallback struct {
+	source           resume.Located
+	target, cwd      string
+	layout           savedLayout
+	previouslyIssued map[string]bool // excludes this item's own native reservation
+}
+
+func (f *restoreFallback) stillUnique() bool {
+	history := resume.AllLocated()
+	_, occupied, unavailable, ok := restoreFleet(f.layout, f.previouslyIssued)
+	if !ok {
+		return false
+	}
+	current, _ := pickCwdFallback(f.target, f.cwd, history, unavailable, f.layout.Ref, occupied)
+	if current == nil || *current != f.source {
+		return false
+	}
+	owner, err := nativeRestoreReadIncumbent(f.source.Loc)
+	return err == nil && owner.Exists && owner.Record == f.source.Record
 }
 
 // fallbackMaxAge bounds how old a record may be to be recovered by the CWD FALLBACK
@@ -437,7 +487,7 @@ func issueCompatibleRestore(ctx context.Context, paneID, loc string, rec resume.
 		attempt.State = "cancelled"
 		return attempt, false
 	}
-	if !selection.sourceUnchanged() {
+	if !selection.sourceUnchanged() || !restorePaneIsShell(paneID, loc) {
 		attempt.State = "target-changed"
 		return attempt, false
 	}

@@ -155,12 +155,13 @@ func remoteRestoreInputs(save string, wanted map[string]bool, mode string) (stri
 	return fmt.Sprintf("%x", sha256.Sum256(all)), nil
 }
 func remotePaneStillEligible(id, loc string) bool {
-	if remoteRestoreSessions == nil {
-		return true
-	}
+	return remoteRestoreSessions == nil || (remoteRestoreSessions[locSession(loc)] && restorePaneIsShell(id, loc))
+}
+
+func restorePaneIsShell(id, loc string) bool {
 	out, e := tmux.Run("display-message", "-p", "-t", id, "#{pane_id}\t#{session_name}:#{window_index}.#{pane_index}\t#{pane_current_command}")
 	f := strings.Split(strings.TrimSpace(out), "\t")
-	return e == nil && len(f) == 3 && f[0] == id && f[1] == loc && remoteRestoreSessions[locSession(loc)] && isShellCommand(f[2])
+	return e == nil && len(f) == 3 && f[0] == id && f[1] == loc && isShellCommand(f[2])
 }
 
 // The remote inventory parses only the already size-checked snapshot.

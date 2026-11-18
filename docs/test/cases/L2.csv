@@ -60,6 +60,8 @@ MAP-d400cc0846af,L2,reviewed implementation,internal/app/relay_sender_contract_t
 MAP-d98076e1e157,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,15,reviewed-selector,TestRSDHistoricalSourceBeforeDispatch,False,"RSD-001,RSD-002,RSD-003"
 MAP-991e0cd98702,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,61,reviewed-selector,TestRSDCompatibilityUncertainEnter,False,"RSD-001,RSD-002,RSD-003"
 MAP-f1a1a1779293,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,118,reviewed-selector,TestRSDLocalArchiveBoundaries,False,"RSD-001,RSD-002,RSD-003"
+MAP-f1d3eb79ff4d,L2,reviewed implementation,internal/app/restore_queued_ownership_test.go,68,reviewed-selector,TestQueuedHistoricalOwnership,False,"RQO-001,RQO-002"
+MAP-ec2dd64339af,L2,reviewed implementation,internal/app/restore_queued_ownership_test.go,106,reviewed-selector,TestQueuedCompatibilityTarget,False,"RQO-001,RQO-002"
 MAP-fbaec0f3be47,L2,reviewed implementation,internal/app/restore_remote_test.go,26,reviewed-selector,TestRemotePreviewOnlyMissingAndBindsProducerInputs,False,"RSR-003,RSR-004,RSR-005"
 MAP-807debf9711a,L2,reviewed implementation,internal/app/restore_remote_test.go,66,reviewed-selector,TestRemoteWorkerRejectsStaleAndBusyBeforeMutating,False,"RSR-003,RSR-004,RSR-005"
 MAP-bc3fb043f111,L2,reviewed implementation,internal/app/restore_remote_test.go,116,reviewed-selector,TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate,False,"RSR-003,RSR-004,RSR-005"

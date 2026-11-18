@@ -613,6 +613,8 @@ LEG-0a004a2615f4,L1,Go core / CLI / server,internal/app/restore_plan_test.go,228
 LEG-71e30c5a3134,L1,Go core / CLI / server,internal/app/restore_plan_test.go,248,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-fa5e976d5e86,L1,Go core / CLI / server,internal/app/restore_plan_test.go,280,Test,TestPendingRestorePlanWithoutSave,False,legacy-not-retrospectively-reviewed
 LEG-e7d4d3e682b0,G,Go core / CLI / server,internal/app/restore_plan_test.go,291,Test,TestPendingRestoreCLIIsReadOnlyEvenInsideTmux,False,legacy-not-retrospectively-reviewed
+MAP-f1d3eb79ff4d,L2,reviewed implementation,internal/app/restore_queued_ownership_test.go,68,reviewed-selector,TestQueuedHistoricalOwnership,False,"RQO-001,RQO-002"
+MAP-ec2dd64339af,L2,reviewed implementation,internal/app/restore_queued_ownership_test.go,106,reviewed-selector,TestQueuedCompatibilityTarget,False,"RQO-001,RQO-002"
 MAP-fbaec0f3be47,L2,reviewed implementation,internal/app/restore_remote_test.go,26,reviewed-selector,TestRemotePreviewOnlyMissingAndBindsProducerInputs,False,"RSR-003,RSR-004,RSR-005"
 MAP-807debf9711a,L2,reviewed implementation,internal/app/restore_remote_test.go,66,reviewed-selector,TestRemoteWorkerRejectsStaleAndBusyBeforeMutating,False,"RSR-003,RSR-004,RSR-005"
 MAP-bc3fb043f111,L2,reviewed implementation,internal/app/restore_remote_test.go,116,reviewed-selector,TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate,False,"RSR-003,RSR-004,RSR-005"

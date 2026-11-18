@@ -691,6 +691,14 @@ decision already accepts.
 ### Requirement: Restore fallback preserves conversation ownership
 Before resuming any shell pane, the system SHALL reserve conversation IDs bound to live non-shell panes. A cwd/position fallback SHALL NOT select a record whose original locator still exists in the saved layout or live topology. It SHALL accept only one distinct unreserved conversation and SHALL refuse multiple candidates rather than choosing by recency. A skipped fallback SHALL be reported to the user and diagnostics; the restore plan SHALL use the same locator and ambiguity rules. Exact and saved-command matches SHALL retain priority over guesses.
 
+#### Scenario: Ownership changes while an earlier pane starts
+- **WHEN** a queued fallback is no longer uniquely attributable to its original available record at dispatch
+- **THEN** neither native nor compatibility recovery writes to the queued target
+
+#### Scenario: A queued wrapper target changes foreground
+- **WHEN** the target pane cannot be verified at the same locator with a shell in the foreground just before a compatibility dispatch
+- **THEN** the attempt reports a changed target and sends neither text nor Enter
+
 #### Scenario: Another client already owns the conversation
 - **WHEN** a restored shell shares cwd and position with a running pane's recorded conversation
 - **THEN** no resume command for that conversation is typed into the shell
