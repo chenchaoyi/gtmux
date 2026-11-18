@@ -1,0 +1,47 @@
+{
+  "id": "restore-visible-outcomes-20261118",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex delivery owner; author self-review, not independent approval",
+    "date": "2026-11-18",
+    "decision": "APPROVE R4/R5 observable boundary design before test edits",
+    "notes": "Use actual resumeAgents output path and actual runRemoteRestore/restorejob.Store persistence, plus rendered RN client and response parsing. Every native/compatibility sender must use log-only tmux.Bin; temporary HOME/CODEX_HOME/socket are explicit in fixture and runner. Preserve the prior real %7 incident, approval rejection, CI failures, expenses and stage2 timing excess. No actual Codex/device/CI is implied. Independent full candidate review and complete gates remain separate."
+  },
+  "cases": [
+    {
+      "id": "RRV-001",
+      "layer": "L2",
+      "description": "Local terminal outcome is visible before the next preparation",
+      "setup": "Two recoverable saved panes, private HOME/socket, fixed native classifier, actual SendText to log-only tmux stub; stdout is a private file",
+      "action": "Call actual resumeAgents; inspect captured stdout at B preparation after A exhausts startup wait; compare remote mode suppression",
+      "expected": "Local pane A and explicit startup timeout appear before B preparation; no confirmation is fabricated; command and Enter log is exact and no real tmux is reachable",
+      "planned_files": [
+        "internal/app/restore_visibility_test.go"
+      ]
+    },
+    {
+      "id": "RRV-002",
+      "layer": "L2",
+      "description": "Remote final store preserves the first issue fact separately from timeout",
+      "setup": "Actual restorejob.Store reserve/claim/update/get and runRemoteRestore; same isolated two-pane production resumeAgents fixture, sender returns pending versus unknown",
+      "action": "Read intermediate and completed job snapshots and a fresh store Get after the worker finishes",
+      "expected": "Both final results retain startup-timeout; first pending versus unknown remains distinguishable as issue_state after persistence, without replay or extra sender calls",
+      "planned_files": [
+        "internal/app/restore_visibility_test.go"
+      ]
+    },
+    {
+      "id": "RRV-003",
+      "layer": "L2",
+      "description": "Rendered remote client shows uncertainty and timeout in both languages",
+      "setup": "Actual RestoreSessionsSheet renderer with final persisted-shape result fixtures; injected read-only client and isolated Keychain mock",
+      "action": "Render pending/unknown/send-failed startup-timeout results in English and Chinese; parse valid optional issue_state and malformed values",
+      "expected": "User sees startup timeout and original unknown/send-failed distinctly; old responses without issue_state remain accepted; malformed optional values are rejected; no POST/send occurs",
+      "planned_files": [
+        "mobileapp/src/screens/RestoreSessionsSheet.visibility.test.tsx",
+        "mobileapp/src/api/restore.visibility.test.ts"
+      ]
+    }
+  ],
+  "seal": "92cf190021132994780d6520a8db17c4a8799bcf11eba7d31d0170d850f57595"
+}
