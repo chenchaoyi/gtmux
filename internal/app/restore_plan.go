@@ -23,8 +23,9 @@ import (
 // is READ-ONLY (no tmux, no side effects), so it's safe to compute before a restore
 // or to poll from the app.
 type restorePlan struct {
-	SavePath string               `json:"savePath"`
-	Sessions []restorePlanSession `json:"sessions"`
+	Unreadable bool                 `json:"unreadable,omitempty"`
+	SavePath   string               `json:"savePath"`
+	Sessions   []restorePlanSession `json:"sessions"`
 }
 
 type restorePlanSession struct {
@@ -62,8 +63,14 @@ func buildRestorePlanFrom(save string) restorePlan {
 	if save == "" {
 		return restorePlan{}
 	}
-	layout := loadSavedLayout(save)
-	plan := restorePlan{SavePath: save}
+	return buildRestorePlanFromLayout(loadSavedLayout(save))
+}
+
+func buildRestorePlanFromLayout(layout savedLayout) restorePlan {
+	plan := restorePlan{SavePath: layout.SavePath, Unreadable: layout.ReadError != nil}
+	if plan.Unreadable {
+		return plan
+	}
 
 	// Session rows in first-appearance order, counting distinct windows and distinct
 	// window.pane positions (a set, so a duplicated save line can't inflate a count).
@@ -143,7 +150,7 @@ func buildRestorePlanFrom(save string) restorePlan {
 	}
 	for _, sp := range pending {
 		if rec, _ := pickCwdFallback(sp.Loc, sp.Dir, records, used, layout.Ref, occupied); rec != nil {
-			add(sp, *rec)
+			add(sp, rec.Record)
 		}
 	}
 	return plan
@@ -157,6 +164,13 @@ func buildPendingRestorePlan() (restorePlan, error) {
 }
 
 func pendingRestorePlan(save string, query func(...string) (string, error)) (restorePlan, error) {
+	return pendingRestoreLayout(loadSavedLayout(save), query)
+}
+
+func pendingRestoreLayout(layout savedLayout, query func(...string) (string, error)) (restorePlan, error) {
+	if layout.ReadError != nil {
+		return restorePlan{}, layout.ReadError
+	}
 	out, err := query("list-panes", "-a", "-F", "#{session_attached}\t#{window_id}\t#{pane_id}\t#{session_name}")
 	if err != nil {
 		var ee *exec.ExitError
@@ -169,7 +183,7 @@ func pendingRestorePlan(save string, query func(...string) (string, error)) (res
 	detached := map[string]int{}
 	windows := map[string]map[string]bool{}
 	panes := map[string]map[string]bool{}
-	plan := restorePlan{SavePath: save}
+	plan := restorePlan{SavePath: layout.SavePath}
 	for _, line := range strings.Split(out, "\n") {
 		if line == "" {
 			continue
@@ -198,13 +212,17 @@ func pendingRestorePlan(save string, query func(...string) (string, error)) (res
 		plan.Sessions[i].Windows, plan.Sessions[i].Panes = len(windows[name]), len(panes[name])
 	}
 	// Avoid resolving transcripts at all when every saved session is already live.
-	if shouldRecover(savedSessionNames(save), live) {
-		for _, session := range buildRestorePlanFrom(save).Sessions {
+	for _, sp := range layout.Panes {
+		if live[sp.Session] {
+			continue
+		}
+		for _, session := range buildRestorePlanFromLayout(layout).Sessions {
 			if !live[session.Name] {
 				session.State = "missing"
 				plan.Sessions = append(plan.Sessions, session)
 			}
 		}
+		break
 	}
 	return plan, nil
 }
@@ -271,6 +289,9 @@ func printRestorePlan(p restorePlan, details bool) {
 }
 
 func renderRestorePlan(p restorePlan, width int, details bool) string {
+	if p.Unreadable {
+		return i18n.Tr("Could not read the saved layout.\n", "无法读取布局存档。\n")
+	}
 	if len(p.Sessions) == 0 {
 		return i18n.Tr("Nothing saved to restore.\n", "没有可恢复的存档。\n")
 	}

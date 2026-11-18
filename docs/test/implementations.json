@@ -194,18 +194,10 @@
   },
   "internal/app/restore_remote_test.go": {
     "cases": [
-      "RSR-003",
-      "RSR-004",
-      "RSR-005"
+      "RRB-R6"
     ],
     "selectors": [
-      "TestRemotePreviewOnlyMissingAndBindsProducerInputs",
-      "TestRemoteWorkerRejectsStaleAndBusyBeforeMutating",
-      "TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate",
-      "TestRemotePaneGuardRechecksExactShellWithoutTouchingOthers",
-      "TestRestoreExecutionLeaseIsProcessOwnedAndFailsClosed",
-      "TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions",
-      "TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology"
+      "TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions"
     ]
   },
   "internal/app/screenshot_deadline_test.go": {
@@ -3679,6 +3671,174 @@
       "rejects malformed, non-RGB, wrong-size and incomplete final output",
       "protects the full HQ header and complete decision card in both layouts",
       "detects the original final-image shift of minus64 pixels"
+    ]
+  },
+  "internal/app/codex_restore_native_test.go": {
+    "cases": [
+      "CNRV4-001",
+      "CNRV4-003"
+    ],
+    "selectors": [
+      "TestCNR101CapabilityBoundToNativeBinary",
+      "TestCNR102RestoreTargetRecheckedBeforeWrite",
+      "TestCNR103ReservePrecedesProductionSend",
+      "TestCNR104UncertainWriteNeverReplays",
+      "TestCNR105TypeModeNeverPressesEnter",
+      "TestCNR106LeaseChild",
+      "TestCNR106AttemptLeaseAcrossProcesses",
+      "TestCNR109NativePackageClassifierRefusesWrapperAndChangedMetadata",
+      "TestCNR102ExecutableFailureNeverChoosesCompatibility",
+      "TestCNR102IncumbentChangesRefuseBeforeWrite",
+      "TestCNR102ConfiguredProxyTargetsNativeCommand"
+    ]
+  },
+  "internal/resume/native_restore_test.go": {
+    "cases": [
+      "CNRV4-001",
+      "CNRV4-002",
+      "CNRV4-003"
+    ],
+    "selectors": [
+      "TestCNR001NativeRestoreCommandRoundTrip",
+      "TestCNR002StoppedFrontendMigratesSameSession",
+      "TestCNR003FrontendMigrationRejectsUnknownAndRaces",
+      "TestCNR004ReconcileRetriesStoppedSameSession",
+      "TestCNR005MigratedNativeSaveCannotReviveFrontend",
+      "TestCNR107ReservationSurvivesUntilNewBoot",
+      "TestCNR006CorruptAttemptAndLeaseRefuseBeforeAnyWrite",
+      "TestCNR007NativeConfirmationRequiresExactFreshOwner",
+      "TestCNR006IncumbentAbsenceIsNotReadFailure"
+    ]
+  },
+  "internal/app/restore_serial_test.go": {
+    "cases": [
+      "CNRV4-003",
+      "CNRV4-004",
+      "CNRV4-005"
+    ],
+    "selectors": [
+      "TestRestoreSerialWaitsForReadyBeforeNextStart",
+      "TestRestoreSerialTimeoutVisibleBeforeNextStartAndBudgetShared",
+      "TestRestoreSerialCancelStopsFurtherStarts",
+      "TestRestoreSerialTypeAndUnavailableDoNotWait",
+      "TestRestoreSerialStableLocatorThenPaneOrder",
+      "TestRestoreSerialNativeIssueKeepsCommandEnterAndStoreOrder",
+      "TestRestoreSerialCancelAfterReserveKeepsOccupationWithoutSend",
+      "TestRestoreSerialUncertainSendWaitsWithoutClaimingReady"
+    ]
+  },
+  "internal/app/restore_review_boundary_test.go": {
+    "cases": [
+      "RRB-R1",
+      "RRB-R2",
+      "RRB-R3",
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestRRBFinalPauseConfirmsBeforeNextStart",
+      "TestRRBSelectionChangeDuringQueueRefusesSecond",
+      "TestRRBUnknownRemainsOccupiedAcrossCompatibilityRoute",
+      "TestRRBNativeEntryUsesFullPaneEvidenceAndExactTargets"
+    ]
+  },
+  "internal/app/agent_resume_launcher_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestRestoreResumesThroughTheRecordedLauncher",
+      "TestRestoreManagedCodexBridge"
+    ]
+  },
+  "internal/app/agent_resume_ownership_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestRestoreConversationOwnership"
+    ]
+  },
+  "internal/app/newsession_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestANewSessionFromTheRootStartsAtHome",
+      "TestRemoteSessionCreationOnIsolatedTmux"
+    ]
+  },
+  "internal/app/sendhold_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestAttachHoldOnRealPanes",
+      "TestNoVerifyAttachSaysTheTextWasPasted"
+    ]
+  },
+  "internal/app/restore_visibility_test.go": {
+    "cases": [
+      "RRV-001",
+      "RRV-002"
+    ],
+    "selectors": [
+      "TestRRVLocalTimeoutVisibleBeforeNextPreparation",
+      "TestRRVRemoteFinalStoreRetainsFirstIssueFact"
+    ]
+  },
+  "mobileapp/src/screens/RestoreSessionsSheet.visibility.test.tsx": {
+    "cases": [
+      "RRV-003"
+    ],
+    "selectors": [
+      "RRV003 shows timeout and original uncertainty in %s"
+    ]
+  },
+  "mobileapp/src/api/restore.visibility.test.ts": {
+    "cases": [
+      "RRV-003"
+    ],
+    "selectors": [
+      "RRV003 preserves optional first issue state and accepts old receipts",
+      "RRV003 rejects malformed first issue state %p"
+    ]
+  },
+  "internal/app/restore_dispatch_boundary_test.go": {
+    "cases": [
+      "RSD-001",
+      "RSD-002",
+      "RSD-003"
+    ],
+    "selectors": [
+      "TestRSDHistoricalSourceBeforeDispatch",
+      "TestRSDCompatibilityUncertainEnter",
+      "TestRSDLocalArchiveBoundaries"
+    ]
+  },
+  "internal/app/hold_reader_test.go": {
+    "cases": [
+      "RSD-004"
+    ],
+    "selectors": [
+      "TestHoldReaderChild"
+    ]
+  },
+  "internal/app/restore_queued_ownership_test.go": {
+    "cases": [
+      "RQO-001",
+      "RQO-002"
+    ],
+    "selectors": [
+      "TestQueuedHistoricalOwnership",
+      "TestQueuedCompatibilityTarget"
+    ]
+  },
+  "internal/app/restore_wrapper_cancel_test.go": {
+    "cases": [
+      "RWC-001"
+    ],
+    "selectors": [
+      "TestCompatibilityCancellationDuringFinalTargetQuery"
     ]
   }
 }

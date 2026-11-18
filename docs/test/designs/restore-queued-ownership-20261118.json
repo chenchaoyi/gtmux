@@ -1,0 +1,46 @@
+{
+  "id": "restore-queued-ownership-20261118",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-18",
+    "decision": "Approve before test or product edits",
+    "notes": "The final selection must agree with the originally selected record, fresh live occupants and batch claims on both routes. Observe current pane ID, locator and shell immediately before a compatibility write. The directory control keeps the actual post-start assertion and existing bound."
+  },
+  "cases": [
+    {
+      "id": "RQO-001",
+      "layer": "L2",
+      "description": "A queued historical guess still has one available owner at dispatch",
+      "setup": "Two renamed panes have distinct historical owners in a private home. A log-only tmux and isolated sender handle every command.",
+      "action": "While the first item starts, add a second eligible record, restore the original live shell locator, or make the conversation live elsewhere. Compare with unchanged ownership.",
+      "expected": "The stable second target receives its literal and Enter once. Each changed case issues neither and records a changed target.",
+      "planned_files": [
+        "internal/app/restore_queued_ownership_test.go"
+      ]
+    },
+    {
+      "id": "RQO-002",
+      "layer": "L2",
+      "description": "A compatible launcher writes only into the same live shell target",
+      "setup": "Two targets share a private restore batch. The second explicitly selects a compatibility wrapper.",
+      "action": "During the first dispatch leave the second shell stable, switch it to an editor, change its locator, or make the target query fail. Inspect every sender call and terminal receipt.",
+      "expected": "The stable target receives the wrapper command and Enter. Changed or unreadable targets receive neither and report target-changed.",
+      "planned_files": [
+        "internal/app/restore_queued_ownership_test.go"
+      ]
+    },
+    {
+      "id": "RQO-003",
+      "layer": "L2",
+      "description": "Detached session directory assertions observe completed child startup",
+      "setup": "Use a private HOME and explicit private tmux socket. Keep the original directory, detached, identity and replay assertions.",
+      "action": "Observe a real child with its requested directory, with a single inherited-directory observation, and with a permanently incorrect observation. Apply the same bounded check to root-home and remote creation.",
+      "expected": "A transient observation can settle at the exact requested directory; a permanent mismatch still fails at the existing 5-second bound. No production timeout or directory logic changes.",
+      "planned_files": [
+        "internal/app/newsession_test.go"
+      ]
+    }
+  ],
+  "seal": "2226f2d486cc2de101d2666fea5f68cf4539724cd5948b90218826bb0f4512c9"
+}

@@ -67,3 +67,7 @@ Web 的 `tests/web/` 验证实际渲染与窄屏控件，iOS 无签名构建验�
 ### 手机底部提示与真机验收（2026-10-10）
 
 `RunningRow`、`SendFailedBar`、`DetailScreen.busyNote` 对应 MOBILE「底部状态提示」；`footerSpacing.test.tsx` 锁定外部间距、内部留白、行高和关闭/导航行为。`UsageSheet`、`KnowledgeSheet` 的关闭与搜索标签由对应组件测试覆盖。真机工具与兼容性记录见 `mobileapp/e2e/REAL-DEVICE{,.zh}.md`；本次源代码修复尚未安装，不计为真机视觉通过。
+
+## 原生 Codex 恢复集成（2026-11-18）
+
+CLI/core 由 `agent_resume.go`、`codex_restore_native.go`、`restore_serial.go` 和 `internal/resume/native_restore_*` 实现。已评审设计 `designs/codex-native-serial-integration-20261118.json` 将 CNRV4-001–005 映射到三份测试。固定原始候选已有10项聚焦通过和目标变异被拒证据；格式化后的Git候选另核门禁。完整入口/真实tmux发送、CNR103/104/108集成、真实Codex启动、设备及时延仍需分别验收。App/Mac/Web控制入口和既有输入权限不变。

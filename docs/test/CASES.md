@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1316 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1327 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2432 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2476 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 148 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -125,6 +125,11 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CFR-009 | Canceled upgrade records admission-cancelled; exhausted budget records admission-deadline; live completion continues. A rejected completion does not activate the epoch and no HTTP reply is fabricated after upgrade. Existing epoch and identity checks are unchanged. |
 | CFR-010 | Visible outside/cyclic ancestry is always a hard client-unverified refusal with no PID/authority and no retry. Missing required rows cannot mask that conflict. An actually incomplete peer path remains retryable process-unavailable, and complete valid later evidence may succeed. Existing TTY, foreground, ambiguity and birth checks unchanged. |
 | CBA-006 | Canceled proof causes zero not-yet-started receipt/index writes and no new live authority before close. Factory callback returns the actual cancellation cause. Partial IO only retires its own exact written live proof, retains committed history and a replacement owner. Valid uncanceled legacy/missing-index recovery and original guards remain; no recursive lease or new lock cycle. |
+| CNRV4-001 | Default target is exact physical Codex; preserve cwd/Home/quoted proxy and capability-bound --no-daemon; unknown or preparation errors refuse without compatibility send |
+| CNRV4-002 | Only exact stopped-owner migration may publish; ready requires fresh native owner and exact CAS; unknown/conflicting evidence never grants input authority |
+| CNRV4-003 | Persist occupation before send; unknown never replayed; errors observable, no false absence/fallback; cancellation retains occupation without sending; private helper roles are not ordinary runtime passes |
+| CNRV4-004 | B starts only after A ready/visible timeout; cancel stops starts; original shared1500ms observation allowance and stable locator order; uncertain delivery never claims ready or replays |
+| CNRV4-005 | Path words remain data; actual native executable/argv/cwd/Home/Enter/reserve contract stays strict; native target regression makes focused test fail |
 | CSR-001 | Only the narrow ready stale-active/newer-finished display becomes idle, keeps the existing finished time, and never mints Latest/Confirmed/CompletionID or clears/rewrites any lifecycle or binding marker. Real visible work, CPU, queues and waits win; fresh start and missing/older/future finished evidence remain conservative. Existing exact-session/home/turn guards are unchanged. Accurate baseline production must fail the false-working target assertion. |
 | CSR-002 | Current work remains working. A superseded start is replaced by bounded recognized TUI elapsed time, or since=0 with since_uncertain=true when not known, never the old multi-hour start/window activity. Original valid marker behavior and wire defaults remain compatible. No lifecycle proof/state mutation or work-start fabrication. |
 | CSR-003 | Old descriptor retains complete original JSON and new path contains complete new JSON. Busy lease returns existing ErrLeaseHeld without overwrite or heartbeat publication; released lease allows normal same-owner operation. Refresh legacy-field recovery releases before Bind reacquires. Foreign/newer/reused identities, symlink destinations, write failures and cancellation remain conservative. Exact old Save fails atomic pinned-reader/lease assertions. No unbounded waiting, real config or unique recovery deletion. |
@@ -350,6 +355,23 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | RSR-007 | Nothing starts on mount/refresh; explicit confirm starts once; progress reattaches by read on reopen; unknown only checks status using same ID; no cross-host late update/mutation; failure not success; no polling after close |
 | RSR-008 | Restore bypasses generic close, keeps progress without focus theft/reopen; explicit close wins; all other actions retain their behavior |
 | RSR-009 | Clear server identity and explicit restoration scope; owner entry available remotely, guest absent; sheet scrolls with content and safe-area controls |
+| RQO-001 | The stable second target receives its literal and Enter once. Each changed case issues neither and records a changed target. |
+| RQO-002 | The stable target receives the wrapper command and Enter. Changed or unreadable targets receive neither and report target-changed. |
+| RQO-003 | A transient observation can settle at the exact requested directory; a permanent mismatch still fails at the existing 5-second bound. No production timeout or directory logic changes. |
+| RRB-R1 | One cumulative send after unknown; first legal wrapper still sends |
+| RRB-R2 | Second sends zero; unchanged sources still send |
+| RRB-R3 | A confirmed before B starts; no extra sleep; cancellation wins |
+| RRB-R6 | Host installation cannot choose route; native path asserts exact command and pane identity; diagnose unrelated failures without weakening assertions |
+| RRB-R4 | Pane and timeout visible before B; final summary remains |
+| RRB-R5 | Both timeout and first delivery uncertainty remain distinct in existing result/client states |
+| RSD-001 | The unchanged source is sent exactly once to its target. A replaced source prevents every literal and Enter for that target. |
+| RSD-002 | The first receipt retains uncertainty. The duplicate gets neither a literal nor Enter; a distinct identity still dispatches. |
+| RSD-003 | The valid local pane stays visible and the changed file invalidates its fingerprint. A local read error is distinguishable from an empty save. The remote reader retains its cap. |
+| RSD-004 | Every original hold and send assertion remains. The fake process is resident before observation. A launch or capture error reports its own failure within the existing wait. |
+| RRV-001 | Local pane A and explicit startup timeout appear before B preparation; no confirmation is fabricated; command and Enter log is exact and no real tmux is reachable |
+| RRV-002 | Both final results retain startup-timeout; first pending versus unknown remains distinguishable as issue_state after persistence, without replay or extra sender calls |
+| RRV-003 | User sees startup timeout and original unknown/send-failed distinctly; old responses without issue_state remain accepted; malformed optional values are rejected; no POST/send occurs |
+| RWC-001 | Cancellation returns cancelled, leaves both identities unclaimed and sends neither text nor Enter to either pane. In the control, both identities are claimed and receive exactly one literal and one Enter each. |
 | SSI-001 | Active eligible thread uses turn/steer with exact expectedTurnId; no queue/start, interrupt, full-history read or duplicate accepted input. Only explicitly unsupported read/steer methods can fall back to original queue behavior; generic errors/uncertain write never replay. Waiting flags and target/home/peer mismatch refuse before input. Byte/deadline bounds remain. |
 | SSI-002 | Only existing authorized image inputs request active submission; ordinary text stays existing queue. Exact target and image survive, accepted mode persists, retry does not resubmit, uncertain never enters queue or alternate pane; receipt mode backward compatible. |
 | SSI-003 | Queued never claims terminal receipt; active acceptance says current task, never task completion. Nonzero/unrecognized receipt cannot falsely succeed; accepted receipts keep existing fast-close semantics and failure preserves editable draft. Logs distinguish accepted queue from immediate input without content. |

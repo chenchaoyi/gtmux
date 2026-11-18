@@ -15,6 +15,17 @@ MAP-410b581f2c06,L2,reviewed implementation,internal/agents/codex_presentation_c
 MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go,30,reviewed-selector,TestClientHTTPContracts,False,CT-HTTP
 LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,40,Test,TestCloudflaredMetricsTransportRefusesRedirectsAndOversizedBodies,False,legacy-not-retrospectively-reviewed
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-8a4106253ad4,L2,reviewed implementation,internal/app/codex_restore_native_test.go,36,reviewed-selector,TestCNR101CapabilityBoundToNativeBinary,False,"CNRV4-001,CNRV4-003"
+MAP-d60f0dd41b6e,L2,reviewed implementation,internal/app/codex_restore_native_test.go,140,reviewed-selector,TestCNR102RestoreTargetRecheckedBeforeWrite,False,"CNRV4-001,CNRV4-003"
+MAP-57f1588cdf35,L2,reviewed implementation,internal/app/codex_restore_native_test.go,174,reviewed-selector,TestCNR103ReservePrecedesProductionSend,False,"CNRV4-001,CNRV4-003"
+MAP-c8b2597f46db,L2,reviewed implementation,internal/app/codex_restore_native_test.go,217,reviewed-selector,TestCNR104UncertainWriteNeverReplays,False,"CNRV4-001,CNRV4-003"
+MAP-f6343284dbd6,L2,reviewed implementation,internal/app/codex_restore_native_test.go,255,reviewed-selector,TestCNR105TypeModeNeverPressesEnter,False,"CNRV4-001,CNRV4-003"
+MAP-d4a7056548ff,L2,reviewed implementation,internal/app/codex_restore_native_test.go,273,reviewed-selector,TestCNR106LeaseChild,False,"CNRV4-001,CNRV4-003"
+MAP-f1473975a6bb,L2,reviewed implementation,internal/app/codex_restore_native_test.go,278,reviewed-selector,TestCNR106AttemptLeaseAcrossProcesses,False,"CNRV4-001,CNRV4-003"
+MAP-24d3c61bba70,L2,reviewed implementation,internal/app/codex_restore_native_test.go,318,reviewed-selector,TestCNR109NativePackageClassifierRefusesWrapperAndChangedMetadata,False,"CNRV4-001,CNRV4-003"
+MAP-f2fac5bc69f5,L2,reviewed implementation,internal/app/codex_restore_native_test.go,401,reviewed-selector,TestCNR102ExecutableFailureNeverChoosesCompatibility,False,"CNRV4-001,CNRV4-003"
+MAP-c525550a2589,L2,reviewed implementation,internal/app/codex_restore_native_test.go,465,reviewed-selector,TestCNR102IncumbentChangesRefuseBeforeWrite,False,"CNRV4-001,CNRV4-003"
+MAP-3d87c76df13d,L2,reviewed implementation,internal/app/codex_restore_native_test.go,570,reviewed-selector,TestCNR102ConfiguredProxyTargetsNativeCommand,False,"CNRV4-001,CNRV4-003"
 MAP-f767974bfca8,L2,reviewed implementation,internal/app/conversation_read_test.go,14,reviewed-selector,TestCAS003PaneAssociationIsNotAnEmptyConversation,False,CAS-003
 LEG-ba12d8af1486,L2,Go core / CLI / server,internal/app/devices_push_test.go,16,Test,TestListPush_ShowsEveryPausedToken,False,legacy-not-retrospectively-reviewed
 MAP-69939dd4afa9,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,48,reviewed-selector,TestDCA001DoctorReportsFailedManagedAssociation,False,"DCA-001,DCA-002,DCA-003"
@@ -26,6 +37,7 @@ MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_
 MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
 MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
+MAP-8667d3e135cb,L2,reviewed implementation,internal/app/hold_reader_test.go,12,reviewed-selector,TestHoldReaderChild,False,RSD-004
 MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,142,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
@@ -45,13 +57,33 @@ MAP-f9c9dd791852,L2,reviewed implementation,internal/app/relay_inbox_test.go,12,
 MAP-a70b04134255,L2,reviewed implementation,internal/app/relay_inbox_test.go,63,reviewed-selector,TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot,False,RBL-003
 MAP-93c5d85ec366,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,52,reviewed-selector,TestHRS003ReceiptAwareSharedTranscript,False,HRS-003
 MAP-d400cc0846af,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,89,reviewed-selector,TestHRS003EarlierPagesKeepFirstAttribution,False,HRS-003
+MAP-d98076e1e157,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,15,reviewed-selector,TestRSDHistoricalSourceBeforeDispatch,False,"RSD-001,RSD-002,RSD-003"
+MAP-991e0cd98702,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,61,reviewed-selector,TestRSDCompatibilityUncertainEnter,False,"RSD-001,RSD-002,RSD-003"
+MAP-f1a1a1779293,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,118,reviewed-selector,TestRSDLocalArchiveBoundaries,False,"RSD-001,RSD-002,RSD-003"
+MAP-f1d3eb79ff4d,L2,reviewed implementation,internal/app/restore_queued_ownership_test.go,68,reviewed-selector,TestQueuedHistoricalOwnership,False,"RQO-001,RQO-002"
+MAP-ec2dd64339af,L2,reviewed implementation,internal/app/restore_queued_ownership_test.go,106,reviewed-selector,TestQueuedCompatibilityTarget,False,"RQO-001,RQO-002"
 MAP-fbaec0f3be47,L2,reviewed implementation,internal/app/restore_remote_test.go,26,reviewed-selector,TestRemotePreviewOnlyMissingAndBindsProducerInputs,False,"RSR-003,RSR-004,RSR-005"
 MAP-807debf9711a,L2,reviewed implementation,internal/app/restore_remote_test.go,66,reviewed-selector,TestRemoteWorkerRejectsStaleAndBusyBeforeMutating,False,"RSR-003,RSR-004,RSR-005"
 MAP-bc3fb043f111,L2,reviewed implementation,internal/app/restore_remote_test.go,116,reviewed-selector,TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate,False,"RSR-003,RSR-004,RSR-005"
 MAP-11ad15161c7e,L2,reviewed implementation,internal/app/restore_remote_test.go,141,reviewed-selector,TestRemotePaneGuardRechecksExactShellWithoutTouchingOthers,False,"RSR-003,RSR-004,RSR-005"
 MAP-e7599bd04950,L2,reviewed implementation,internal/app/restore_remote_test.go,161,reviewed-selector,TestRestoreExecutionLeaseIsProcessOwnedAndFailsClosed,False,"RSR-003,RSR-004,RSR-005"
 MAP-912002a39f12,L2,reviewed implementation,internal/app/restore_remote_test.go,189,reviewed-selector,TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions,False,"RSR-003,RSR-004,RSR-005"
-MAP-d06f94a439ec,L2,reviewed implementation,internal/app/restore_remote_test.go,256,reviewed-selector,TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology,False,"RSR-003,RSR-004,RSR-005"
+MAP-d06f94a439ec,L2,reviewed implementation,internal/app/restore_remote_test.go,257,reviewed-selector,TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology,False,"RSR-003,RSR-004,RSR-005"
+MAP-e4407b68de5d,L2,reviewed implementation,internal/app/restore_review_boundary_test.go,19,reviewed-selector,TestRRBFinalPauseConfirmsBeforeNextStart,False,"RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+MAP-9546c6cf8013,L2,reviewed implementation,internal/app/restore_review_boundary_test.go,45,reviewed-selector,TestRRBSelectionChangeDuringQueueRefusesSecond,False,"RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+MAP-392311ef00a4,L2,reviewed implementation,internal/app/restore_review_boundary_test.go,95,reviewed-selector,TestRRBUnknownRemainsOccupiedAcrossCompatibilityRoute,False,"RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+MAP-39702e2506f0,L2,reviewed implementation,internal/app/restore_review_boundary_test.go,160,reviewed-selector,TestRRBNativeEntryUsesFullPaneEvidenceAndExactTargets,False,"RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+MAP-6e6e6841404a,L2,reviewed implementation,internal/app/restore_serial_test.go,23,reviewed-selector,TestRestoreSerialWaitsForReadyBeforeNextStart,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-88f5716457f9,L2,reviewed implementation,internal/app/restore_serial_test.go,57,reviewed-selector,TestRestoreSerialTimeoutVisibleBeforeNextStartAndBudgetShared,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-934de1f9f3b2,L2,reviewed implementation,internal/app/restore_serial_test.go,85,reviewed-selector,TestRestoreSerialCancelStopsFurtherStarts,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-5f3e047b5096,L2,reviewed implementation,internal/app/restore_serial_test.go,112,reviewed-selector,TestRestoreSerialTypeAndUnavailableDoNotWait,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-a7a51c9026b2,L2,reviewed implementation,internal/app/restore_serial_test.go,129,reviewed-selector,TestRestoreSerialStableLocatorThenPaneOrder,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-e0787fe90142,L2,reviewed implementation,internal/app/restore_serial_test.go,159,reviewed-selector,TestRestoreSerialNativeIssueKeepsCommandEnterAndStoreOrder,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-de7eb092706c,L2,reviewed implementation,internal/app/restore_serial_test.go,228,reviewed-selector,TestRestoreSerialCancelAfterReserveKeepsOccupationWithoutSend,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-fc043904c69b,L2,reviewed implementation,internal/app/restore_serial_test.go,253,reviewed-selector,TestRestoreSerialUncertainSendWaitsWithoutClaimingReady,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-54bad8843802,L2,reviewed implementation,internal/app/restore_visibility_test.go,89,reviewed-selector,TestRRVLocalTimeoutVisibleBeforeNextPreparation,False,"RRV-001,RRV-002"
+MAP-cf0179917a35,L2,reviewed implementation,internal/app/restore_visibility_test.go,119,reviewed-selector,TestRRVRemoteFinalStoreRetainsFirstIssueFact,False,"RRV-001,RRV-002"
+MAP-4e1e34ccdf4a,L2,reviewed implementation,internal/app/restore_wrapper_cancel_test.go,17,reviewed-selector,TestCompatibilityCancellationDuringFinalTargetQuery,False,RWC-001
 MAP-5a676c7255b7,L2,reviewed implementation,internal/app/screenshot_deadline_test.go,13,reviewed-selector,TestASC007TargetReadStopsAtCancellationBeforeMintOrSend,False,ASC-007
 MAP-a7175f174f65,L2,reviewed implementation,internal/app/screenshot_send_input_budget_test.go,16,reviewed-selector,TestASC009StalledNoteHasNoClaimOrSendAfterDeadline,False,ASC-009
 MAP-8890e9017044,L2,reviewed implementation,internal/app/screenshot_send_test.go,16,reviewed-selector,TestASC004And005ScreenshotDeliveryUsesExactTargetAndDurableAcceptance,False,"ASC-004,ASC-005"
@@ -313,6 +345,15 @@ MAP-27e3343f9bf5,L2,reviewed implementation,internal/resume/frontend_location_te
 MAP-2803d4ff4366,L2,reviewed implementation,internal/resume/frontend_location_test.go,424,reviewed-selector,TestCFL003HistoryWriteFailureRefusesMigrationBeforeLivePublication,False,"CFL-001,CFL-002,CFL-003"
 MAP-79d8babbf0d2,L2,reviewed implementation,internal/resume/frontend_location_test.go,465,reviewed-selector,TestCFL003ObservedNewRootRetriesItsOwnPartialMovedPublication,False,"CFL-001,CFL-002,CFL-003"
 MAP-e2be0f7a7658,L2,reviewed implementation,internal/resume/frontend_recovery_diagnostic_test.go,12,reviewed-selector,TestDPC003RecoveryEvidenceNeverGrantsRetryAuthority,False,DPC-003
+MAP-79c40622d1d5,L2,reviewed implementation,internal/resume/native_restore_test.go,20,reviewed-selector,TestCNR001NativeRestoreCommandRoundTrip,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-0b1e0aa3f9cb,L2,reviewed implementation,internal/resume/native_restore_test.go,139,reviewed-selector,TestCNR002StoppedFrontendMigratesSameSession,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-ec0ee648e4d9,L2,reviewed implementation,internal/resume/native_restore_test.go,163,reviewed-selector,TestCNR003FrontendMigrationRejectsUnknownAndRaces,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-e0f69037b0a9,L2,reviewed implementation,internal/resume/native_restore_test.go,231,reviewed-selector,TestCNR004ReconcileRetriesStoppedSameSession,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-bf14aabdda8a,L2,reviewed implementation,internal/resume/native_restore_test.go,239,reviewed-selector,TestCNR005MigratedNativeSaveCannotReviveFrontend,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-637522e22825,L2,reviewed implementation,internal/resume/native_restore_test.go,272,reviewed-selector,TestCNR107ReservationSurvivesUntilNewBoot,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-6c48808732c2,L2,reviewed implementation,internal/resume/native_restore_test.go,314,reviewed-selector,TestCNR006CorruptAttemptAndLeaseRefuseBeforeAnyWrite,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-2eb3286b5528,L2,reviewed implementation,internal/resume/native_restore_test.go,338,reviewed-selector,TestCNR007NativeConfirmationRequiresExactFreshOwner,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-205fbc7b2a25,L2,reviewed implementation,internal/resume/native_restore_test.go,412,reviewed-selector,TestCNR006IncumbentAbsenceIsNotReadFailure,False,"CNRV4-001,CNRV4-002,CNRV4-003"
 MAP-56aadbd19e58,L2,reviewed implementation,internal/resume/observed_conversation_test.go,35,reviewed-selector,TestSID003LastKnownHistoryHasNoLiveAuthority,False,SID-003
 MAP-64bbe883d24c,L2,reviewed implementation,internal/resume/observed_conversation_test.go,68,reviewed-selector,TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated,False,SID-003
 MAP-e0f0d6088eea,L2,reviewed implementation,internal/resume/state_publication_test.go,14,reviewed-selector,TestCSR003SavePublishesAnAtomicResumeSnapshot,False,CSR-003
@@ -799,6 +840,8 @@ MAP-80f11833eaaa,L2,reviewed implementation,mobileapp/src/api/client.restore.tes
 MAP-28339549d766,L2,reviewed implementation,mobileapp/src/api/client.restore.test.ts,25,reviewed-selector,"unsupported, malformed, foreign ID and typed conflicts never become success",False,RSR-006
 MAP-0d65b1b0bf00,L2,RN / mobile harness,mobileapp/src/api/client.test.ts,651,reviewed-selector,"usage accepts a real empty report but keeps refusals, bad bodies and network failures",False,UR-002
 MAP-2b86bce5e2ac,L2,RN / mobile harness,mobileapp/src/api/client.test.ts,131,reviewed-selector,rejects a body that is not an array,False,"UR-002,RDR-004"
+MAP-31b87a6ca685,L2,reviewed implementation,mobileapp/src/api/restore.visibility.test.ts,3,reviewed-selector,RRV003 preserves optional first issue state and accepts old receipts,False,RRV-003
+MAP-514985ebd5bd,L2,reviewed implementation,mobileapp/src/api/restore.visibility.test.ts,8,reviewed-selector,RRV003 rejects malformed first issue state %p,False,RRV-003
 MAP-d269546f4a32,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,10,reviewed-selector,MSD-004 bounds a hung %s and never retries or accepts a late answer,False,MSD-004
 MAP-b95d01602bb2,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,29,reviewed-selector,"MSD-004 keeps exact receipts, legacy success and the server refusal",False,MSD-004
 MAP-c2a5d2e02192,L2,reviewed implementation,mobileapp/src/api/sendFailureCode.test.ts,6,reviewed-selector,SFR-003 keeps the optional known %s refusal,False,SFR-003
@@ -1086,6 +1129,7 @@ MAP-36ceacc1ee88,L2,reviewed implementation,mobileapp/src/screens/RestoreSession
 MAP-790a14df8957,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,44,reviewed-selector,late old host preview cannot replace the new server result; guest never reads or starts,False,RSR-007
 MAP-19a9941dbee1,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,50,reviewed-selector,closed sheet stops polling and partial results remain visibly partial,False,RSR-007
 MAP-157d7028a843,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,58,reviewed-selector,local persistence failure prevents POST; stale preview refresh discards only an explicitly refused request,False,RSR-007
+MAP-f59c85149c2b,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.visibility.test.tsx,15,reviewed-selector,RRV003 shows timeout and original uncertainty in %s,False,RRV-003
 LEG-387d5b0c6c01,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,13,test.each(),scan window leaves controls reachable at %i × %i,True,legacy-not-retrospectively-reviewed
 LEG-1cb0f6c7d8ad,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,24,test,native camera callbacks emit once; cancel makes a queued frame inert,False,legacy-not-retrospectively-reviewed
 MAP-751a1129956a,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.authDraft.test.tsx,37,reviewed-selector,SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once,False,SFR-008

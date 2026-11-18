@@ -117,12 +117,12 @@ LEG-b7f3640ebb4b,L1,Go core / CLI / server,internal/app/agent_hooks_test.go,165,
 LEG-da6e83e19ff7,L1,Go core / CLI / server,internal/app/agent_hooks_test.go,205,Test,TestInstallCodexHooks,False,legacy-not-retrospectively-reviewed
 LEG-c90319a2b7d5,L1,Go core / CLI / server,internal/app/agent_hooks_test.go,272,Test,TestInstallPreservesForeignHooks,False,legacy-not-retrospectively-reviewed
 LEG-5d4b293617ee,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,20,Test,TestRestoreResumesThroughTheRecordedLauncher,False,legacy-not-retrospectively-reviewed
-LEG-eb2b52825e97,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,85,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
-LEG-5fd574ba1eea,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,99,Test,TestRestoreManagedCodexBridge,False,legacy-not-retrospectively-reviewed
-LEG-3f26c30e5e74,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,171,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
+LEG-eb2b52825e97,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,74,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
+LEG-5fd574ba1eea,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,102,Test,TestRestoreManagedCodexBridge,False,legacy-not-retrospectively-reviewed
+LEG-3f26c30e5e74,L1,Go core / CLI / server,internal/app/agent_resume_launcher_test.go,74,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
 LEG-0281fdc2b073,L1,Go core / CLI / server,internal/app/agent_resume_ownership_test.go,16,Test,TestRestoreConversationOwnership,False,legacy-not-retrospectively-reviewed
 LEG-61aeba6b5b90,L1,Go core / CLI / server,internal/app/agent_resume_ownership_test.go,30,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-54deec499e13,L1,Go core / CLI / server,internal/app/agent_resume_ownership_test.go,101,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
+LEG-54deec499e13,L1,Go core / CLI / server,internal/app/agent_resume_ownership_test.go,104,subtest,capture-pane,False,legacy-not-retrospectively-reviewed
 LEG-eb8f0ec7fb10,L1,Go core / CLI / server,internal/app/agent_resume_test.go,12,Test,TestEffectiveResumeMode,False,legacy-not-retrospectively-reviewed
 LEG-57e4fac0523a,L1,Go core / CLI / server,internal/app/agent_resume_test.go,34,Test,TestAutoResumeConfigToggle,False,legacy-not-retrospectively-reviewed
 LEG-84d3cbb436c9,L1,Go core / CLI / server,internal/app/agent_resume_test.go,59,Test,TestIsShellCommand,False,legacy-not-retrospectively-reviewed
@@ -169,6 +169,17 @@ LEG-03dd7af4e8aa,L1,Go core / CLI / server,internal/app/cloudflared_security_tes
 LEG-a442051903b1,L1,Go core / CLI / server,internal/app/cloudflared_security_test.go,140,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-092c6c913f2d,L1,Go core / CLI / server,internal/app/cloudflared_security_test.go,160,Test,TestCloudflaredRunningVersionRequiresUnambiguousBuildInfo,False,legacy-not-retrospectively-reviewed
 LEG-e0245eb89cfe,L1,Go core / CLI / server,internal/app/codex_hooks_stale_test.go,11,Test,TestCodexHooksHasAsync,False,legacy-not-retrospectively-reviewed
+MAP-8a4106253ad4,L2,reviewed implementation,internal/app/codex_restore_native_test.go,36,reviewed-selector,TestCNR101CapabilityBoundToNativeBinary,False,"CNRV4-001,CNRV4-003"
+MAP-d60f0dd41b6e,L2,reviewed implementation,internal/app/codex_restore_native_test.go,140,reviewed-selector,TestCNR102RestoreTargetRecheckedBeforeWrite,False,"CNRV4-001,CNRV4-003"
+MAP-57f1588cdf35,L2,reviewed implementation,internal/app/codex_restore_native_test.go,174,reviewed-selector,TestCNR103ReservePrecedesProductionSend,False,"CNRV4-001,CNRV4-003"
+MAP-c8b2597f46db,L2,reviewed implementation,internal/app/codex_restore_native_test.go,217,reviewed-selector,TestCNR104UncertainWriteNeverReplays,False,"CNRV4-001,CNRV4-003"
+MAP-f6343284dbd6,L2,reviewed implementation,internal/app/codex_restore_native_test.go,255,reviewed-selector,TestCNR105TypeModeNeverPressesEnter,False,"CNRV4-001,CNRV4-003"
+MAP-d4a7056548ff,L2,reviewed implementation,internal/app/codex_restore_native_test.go,273,reviewed-selector,TestCNR106LeaseChild,False,"CNRV4-001,CNRV4-003"
+MAP-f1473975a6bb,L2,reviewed implementation,internal/app/codex_restore_native_test.go,278,reviewed-selector,TestCNR106AttemptLeaseAcrossProcesses,False,"CNRV4-001,CNRV4-003"
+MAP-24d3c61bba70,L2,reviewed implementation,internal/app/codex_restore_native_test.go,318,reviewed-selector,TestCNR109NativePackageClassifierRefusesWrapperAndChangedMetadata,False,"CNRV4-001,CNRV4-003"
+MAP-f2fac5bc69f5,L2,reviewed implementation,internal/app/codex_restore_native_test.go,401,reviewed-selector,TestCNR102ExecutableFailureNeverChoosesCompatibility,False,"CNRV4-001,CNRV4-003"
+MAP-c525550a2589,L2,reviewed implementation,internal/app/codex_restore_native_test.go,465,reviewed-selector,TestCNR102IncumbentChangesRefuseBeforeWrite,False,"CNRV4-001,CNRV4-003"
+MAP-3d87c76df13d,L2,reviewed implementation,internal/app/codex_restore_native_test.go,570,reviewed-selector,TestCNR102ConfiguredProxyTargetsNativeCommand,False,"CNRV4-001,CNRV4-003"
 LEG-02d8b275a09f,G,Go core / CLI / server,internal/app/codexterminal_setup_test.go,11,Test,TestCodexTerminalShellBlockPreservesAliasesFunctionsAndArguments,False,legacy-not-retrospectively-reviewed
 LEG-6c9ca5151ecb,L1,Go core / CLI / server,internal/app/codexterminal_setup_test.go,17,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-0c5589f341c7,G,Go core / CLI / server,internal/app/codexterminal_setup_test.go,79,Test,TestCodexTerminalSetupRefusesBrokenManagedBlock,False,legacy-not-retrospectively-reviewed
@@ -366,6 +377,7 @@ LEG-ee334647c7d0,L1,Go core / CLI / server,internal/app/help_test.go,100,Test,Te
 LEG-7a2dfdd85966,L1,Go core / CLI / server,internal/app/help_test.go,115,Test,TestTheScreenSaysWhatARunWillTouch,False,legacy-not-retrospectively-reviewed
 LEG-870d959f871a,L1,Go core / CLI / server,internal/app/help_test.go,129,Test,TestTheJSONCarriesWhatAnAgentNeeds,False,legacy-not-retrospectively-reviewed
 LEG-e9dcdd1be507,L1,Go core / CLI / server,internal/app/help_test.go,177,Test,TestHQHelpEntryPointsAndJSONCatalogAgree,False,legacy-not-retrospectively-reviewed
+MAP-8667d3e135cb,L2,reviewed implementation,internal/app/hold_reader_test.go,12,reviewed-selector,TestHoldReaderChild,False,RSD-004
 LEG-458ab344984a,L1,Go core / CLI / server,internal/app/hook_presence_test.go,71,Test,TestSavedAgentHomesDoNotSelectHooksOrDoctorRepairs,False,legacy-not-retrospectively-reviewed
 LEG-c7127d072da7,L1,Go core / CLI / server,internal/app/hook_presence_test.go,120,Test,TestHookPresenceUsesRegistryExecutableProbes,False,legacy-not-retrospectively-reviewed
 LEG-5de4952de93e,L1,Go core / CLI / server,internal/app/hook_presence_test.go,142,Test,TestDetectedCLIWithoutHomeCanConfigureHooks,False,legacy-not-retrospectively-reviewed
@@ -453,11 +465,11 @@ LEG-bd04741fa75b,L1,Go core / CLI / server,internal/app/logsstats_test.go,45,Tes
 LEG-8e6d96f80587,G,Go core / CLI / server,internal/app/logsstats_test.go,66,Test,TestConfigDebugWritesTheSwitchForEveryProcess,False,legacy-not-retrospectively-reviewed
 LEG-032b4f8c2678,L1,Go core / CLI / server,internal/app/menubarapp_remove_test.go,15,Test,TestRemovingTheAppSaysWhetherThereWasOne,False,legacy-not-retrospectively-reviewed
 LEG-6f8e61cf43ef,L1,Go core / CLI / server,internal/app/menubarapp_remove_test.go,50,Test,TestAFailedRemovalIsAFailure,False,legacy-not-retrospectively-reviewed
-LEG-76d8afe20385,L1,Go core / CLI / server,internal/app/newsession_test.go,15,Test,TestRemoteSessionCreationOnIsolatedTmux,False,legacy-not-retrospectively-reviewed
-LEG-dcc101e003ab,L1,Go core / CLI / server,internal/app/newsession_test.go,101,Test,TestSessionNameValidation,False,legacy-not-retrospectively-reviewed
-LEG-a7723a2f8737,L1,Go core / CLI / server,internal/app/newsession_test.go,114,Test,TestSessionReceiptLookupFailureDoesNotCreate,False,legacy-not-retrospectively-reviewed
-LEG-71a71f42c474,L1,Go core / CLI / server,internal/app/newsession_test.go,132,Test,TestSessionStartDir,False,legacy-not-retrospectively-reviewed
-LEG-6d9f5f428095,L1,Go core / CLI / server,internal/app/newsession_test.go,153,Test,TestANewSessionFromTheRootStartsAtHome,False,legacy-not-retrospectively-reviewed
+LEG-76d8afe20385,L1,Go core / CLI / server,internal/app/newsession_test.go,16,Test,TestRemoteSessionCreationOnIsolatedTmux,False,legacy-not-retrospectively-reviewed
+LEG-dcc101e003ab,L1,Go core / CLI / server,internal/app/newsession_test.go,102,Test,TestSessionNameValidation,False,legacy-not-retrospectively-reviewed
+LEG-a7723a2f8737,L1,Go core / CLI / server,internal/app/newsession_test.go,115,Test,TestSessionReceiptLookupFailureDoesNotCreate,False,legacy-not-retrospectively-reviewed
+LEG-71a71f42c474,L1,Go core / CLI / server,internal/app/newsession_test.go,133,Test,TestSessionStartDir,False,legacy-not-retrospectively-reviewed
+LEG-6d9f5f428095,L1,Go core / CLI / server,internal/app/newsession_test.go,154,Test,TestANewSessionFromTheRootStartsAtHome,False,legacy-not-retrospectively-reviewed
 MAP-ad442623e007,L3,reviewed implementation,internal/app/observed_conversation_test.go,15,reviewed-selector,TestSID005ObservedReaderKeepsBoundedWindowAndExactCursor,False,SID-005
 LEG-d0f2364153b7,L1,Go core / CLI / server,internal/app/oneshot_test.go,18,Test,TestScrubHookEnv,False,legacy-not-retrospectively-reviewed
 LEG-70dd41271d72,L1,Go core / CLI / server,internal/app/oneshot_test.go,40,Test,TestShellQuote,False,legacy-not-retrospectively-reviewed
@@ -574,6 +586,9 @@ LEG-98994f65a25c,G,Go core / CLI / server,internal/app/releaseinstall_test.go,37
 LEG-801ddcb495b4,L1,Go core / CLI / server,internal/app/releaseinstall_test.go,383,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-90d7d25461f8,G,Go core / CLI / server,internal/app/restore_app_env_test.go,11,Test,TestRestoreAppInheritedTmuxDoesNotTriggerNestedTerminalGuard,False,legacy-not-retrospectively-reviewed
 LEG-204978fa2880,L1,Go core / CLI / server,internal/app/restore_checkpoint_test.go,12,Test,TestRestorePlanDoesNotReplaceUnsavedThreadWithLaunchID,False,legacy-not-retrospectively-reviewed
+MAP-d98076e1e157,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,15,reviewed-selector,TestRSDHistoricalSourceBeforeDispatch,False,"RSD-001,RSD-002,RSD-003"
+MAP-991e0cd98702,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,61,reviewed-selector,TestRSDCompatibilityUncertainEnter,False,"RSD-001,RSD-002,RSD-003"
+MAP-f1a1a1779293,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,118,reviewed-selector,TestRSDLocalArchiveBoundaries,False,"RSD-001,RSD-002,RSD-003"
 LEG-bf26b4c491f3,L1,Go core / CLI / server,internal/app/restore_output_test.go,32,Test,TestRestoreOutputCompactAndDetailed,False,legacy-not-retrospectively-reviewed
 LEG-ff5ecc3e9ede,L1,Go core / CLI / server,internal/app/restore_output_test.go,64,Test,TestRestoreOutputWidthAndSingleLines,False,legacy-not-retrospectively-reviewed
 LEG-a7839ef3a290,L1,Go core / CLI / server,internal/app/restore_output_test.go,83,Test,TestRestoreOutputPlanCommandIsReadOnlyAndJSONUnchanged,False,legacy-not-retrospectively-reviewed
@@ -598,17 +613,31 @@ LEG-0a004a2615f4,L1,Go core / CLI / server,internal/app/restore_plan_test.go,228
 LEG-71e30c5a3134,L1,Go core / CLI / server,internal/app/restore_plan_test.go,248,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-fa5e976d5e86,L1,Go core / CLI / server,internal/app/restore_plan_test.go,280,Test,TestPendingRestorePlanWithoutSave,False,legacy-not-retrospectively-reviewed
 LEG-e7d4d3e682b0,G,Go core / CLI / server,internal/app/restore_plan_test.go,291,Test,TestPendingRestoreCLIIsReadOnlyEvenInsideTmux,False,legacy-not-retrospectively-reviewed
+MAP-f1d3eb79ff4d,L2,reviewed implementation,internal/app/restore_queued_ownership_test.go,68,reviewed-selector,TestQueuedHistoricalOwnership,False,"RQO-001,RQO-002"
+MAP-ec2dd64339af,L2,reviewed implementation,internal/app/restore_queued_ownership_test.go,106,reviewed-selector,TestQueuedCompatibilityTarget,False,"RQO-001,RQO-002"
 MAP-fbaec0f3be47,L2,reviewed implementation,internal/app/restore_remote_test.go,26,reviewed-selector,TestRemotePreviewOnlyMissingAndBindsProducerInputs,False,"RSR-003,RSR-004,RSR-005"
 MAP-807debf9711a,L2,reviewed implementation,internal/app/restore_remote_test.go,66,reviewed-selector,TestRemoteWorkerRejectsStaleAndBusyBeforeMutating,False,"RSR-003,RSR-004,RSR-005"
 MAP-bc3fb043f111,L2,reviewed implementation,internal/app/restore_remote_test.go,116,reviewed-selector,TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate,False,"RSR-003,RSR-004,RSR-005"
 MAP-11ad15161c7e,L2,reviewed implementation,internal/app/restore_remote_test.go,141,reviewed-selector,TestRemotePaneGuardRechecksExactShellWithoutTouchingOthers,False,"RSR-003,RSR-004,RSR-005"
 MAP-e7599bd04950,L2,reviewed implementation,internal/app/restore_remote_test.go,161,reviewed-selector,TestRestoreExecutionLeaseIsProcessOwnedAndFailsClosed,False,"RSR-003,RSR-004,RSR-005"
 MAP-912002a39f12,L2,reviewed implementation,internal/app/restore_remote_test.go,189,reviewed-selector,TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions,False,"RSR-003,RSR-004,RSR-005"
-MAP-d06f94a439ec,L2,reviewed implementation,internal/app/restore_remote_test.go,256,reviewed-selector,TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology,False,"RSR-003,RSR-004,RSR-005"
+MAP-d06f94a439ec,L2,reviewed implementation,internal/app/restore_remote_test.go,257,reviewed-selector,TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology,False,"RSR-003,RSR-004,RSR-005"
 LEG-afd0ea77fca8,L1,Go core / CLI / server,internal/app/restore_results_test.go,31,Test,TestResumeCommandIsNotAConfirmedConversation,False,legacy-not-retrospectively-reviewed
 LEG-b8ab8ca443d2,L1,Go core / CLI / server,internal/app/restore_results_test.go,55,Test,TestRestoreTerminalPreview,False,legacy-not-retrospectively-reviewed
 LEG-12cf96d1c46f,L1,Go core / CLI / server,internal/app/restore_results_test.go,67,Test,TestRestoreResultsStayReadableAcrossLanguagesAndWidths,False,legacy-not-retrospectively-reviewed
 LEG-c45063623367,L1,Go core / CLI / server,internal/app/restore_results_test.go,93,Test,TestPaneReceiptIsCompactAndRetainsEveryIdentity,False,legacy-not-retrospectively-reviewed
+MAP-e4407b68de5d,L2,reviewed implementation,internal/app/restore_review_boundary_test.go,19,reviewed-selector,TestRRBFinalPauseConfirmsBeforeNextStart,False,"RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+MAP-9546c6cf8013,L2,reviewed implementation,internal/app/restore_review_boundary_test.go,45,reviewed-selector,TestRRBSelectionChangeDuringQueueRefusesSecond,False,"RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+MAP-392311ef00a4,L2,reviewed implementation,internal/app/restore_review_boundary_test.go,95,reviewed-selector,TestRRBUnknownRemainsOccupiedAcrossCompatibilityRoute,False,"RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+MAP-39702e2506f0,L2,reviewed implementation,internal/app/restore_review_boundary_test.go,160,reviewed-selector,TestRRBNativeEntryUsesFullPaneEvidenceAndExactTargets,False,"RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+MAP-6e6e6841404a,L2,reviewed implementation,internal/app/restore_serial_test.go,23,reviewed-selector,TestRestoreSerialWaitsForReadyBeforeNextStart,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-88f5716457f9,L2,reviewed implementation,internal/app/restore_serial_test.go,57,reviewed-selector,TestRestoreSerialTimeoutVisibleBeforeNextStartAndBudgetShared,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-934de1f9f3b2,L2,reviewed implementation,internal/app/restore_serial_test.go,85,reviewed-selector,TestRestoreSerialCancelStopsFurtherStarts,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-5f3e047b5096,L2,reviewed implementation,internal/app/restore_serial_test.go,112,reviewed-selector,TestRestoreSerialTypeAndUnavailableDoNotWait,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-a7a51c9026b2,L2,reviewed implementation,internal/app/restore_serial_test.go,129,reviewed-selector,TestRestoreSerialStableLocatorThenPaneOrder,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-e0787fe90142,L2,reviewed implementation,internal/app/restore_serial_test.go,159,reviewed-selector,TestRestoreSerialNativeIssueKeepsCommandEnterAndStoreOrder,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-de7eb092706c,L2,reviewed implementation,internal/app/restore_serial_test.go,228,reviewed-selector,TestRestoreSerialCancelAfterReserveKeepsOccupationWithoutSend,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-fc043904c69b,L2,reviewed implementation,internal/app/restore_serial_test.go,253,reviewed-selector,TestRestoreSerialUncertainSendWaitsWithoutClaimingReady,False,"CNRV4-003,CNRV4-004,CNRV4-005"
 LEG-0cd430279229,L1,Go core / CLI / server,internal/app/restore_test.go,16,Test,TestEnsureServerRestoresViaResurrect,False,legacy-not-retrospectively-reviewed
 LEG-a1692a02843f,L1,Go core / CLI / server,internal/app/restore_test.go,61,Test,TestSaveHasLayout,False,legacy-not-retrospectively-reviewed
 LEG-ab536efd2aeb,L1,Go core / CLI / server,internal/app/restore_test.go,80,Test,TestResurrectPaths,False,legacy-not-retrospectively-reviewed
@@ -620,6 +649,9 @@ LEG-419583d800fe,L1,Go core / CLI / server,internal/app/restore_test.go,208,Test
 LEG-aa76cde5d64c,L1,Go core / CLI / server,internal/app/restore_test.go,232,Test,TestShouldRecover,False,legacy-not-retrospectively-reviewed
 LEG-fdb1c090b81d,L1,Go core / CLI / server,internal/app/restore_test.go,259,Test,TestSavedSessionNames,False,legacy-not-retrospectively-reviewed
 LEG-f99c2b4b46ac,L1,Go core / CLI / server,internal/app/restore_test.go,277,Test,TestRestorePATH,False,legacy-not-retrospectively-reviewed
+MAP-54bad8843802,L2,reviewed implementation,internal/app/restore_visibility_test.go,89,reviewed-selector,TestRRVLocalTimeoutVisibleBeforeNextPreparation,False,"RRV-001,RRV-002"
+MAP-cf0179917a35,L2,reviewed implementation,internal/app/restore_visibility_test.go,119,reviewed-selector,TestRRVRemoteFinalStoreRetainsFirstIssueFact,False,"RRV-001,RRV-002"
+MAP-4e1e34ccdf4a,L2,reviewed implementation,internal/app/restore_wrapper_cancel_test.go,17,reviewed-selector,TestCompatibilityCancellationDuringFinalTargetQuery,False,RWC-001
 LEG-2d678cf18688,L1,Go core / CLI / server,internal/app/restoreactive_test.go,27,Test,TestParseActiveSpotsFindsTheMarkedWindowAndPane,False,legacy-not-retrospectively-reviewed
 LEG-ad54ff71de01,L1,Go core / CLI / server,internal/app/restoreactive_test.go,51,Test,TestParseActiveSpotsIgnoresSessionsWithNoActiveWindow,False,legacy-not-retrospectively-reviewed
 LEG-14c61b0fbfa6,L1,Go core / CLI / server,internal/app/restoreactive_test.go,61,Test,TestParseActiveSpotsToleratesAMissingOrJunkSave,False,legacy-not-retrospectively-reviewed
@@ -685,12 +717,12 @@ LEG-cdb3ca010e4f,G,Go core / CLI / server,internal/app/sendattach_test.go,278,Te
 LEG-5c5479b21460,L1,Go core / CLI / server,internal/app/sendflags_test.go,17,Test,TestSendRefusesAnUnknownOption,False,legacy-not-retrospectively-reviewed
 LEG-dff2a572a94e,L1,Go core / CLI / server,internal/app/sendflags_test.go,38,Test,TestSendStillTakesTextThatLooksLikeAnOption,False,legacy-not-retrospectively-reviewed
 LEG-8fd4cc3da480,L1,Go core / CLI / server,internal/app/sendflags_test.go,63,Test,TestSendOptionsOnARealPane,False,legacy-not-retrospectively-reviewed
-LEG-39432ce244b5,L1,Go core / CLI / server,internal/app/sendhold_test.go,110,Test,TestAttachHoldOnRealPanes,False,legacy-not-retrospectively-reviewed
+LEG-39432ce244b5,L1,Go core / CLI / server,internal/app/sendhold_test.go,120,Test,TestAttachHoldOnRealPanes,False,legacy-not-retrospectively-reviewed
 LEG-47fbdb4ea576,L1,Go core / CLI / server,internal/app/sendhold_test.go,142,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-177d1d860f53,L1,Go core / CLI / server,internal/app/sendhold_test.go,160,subtest,"send --attach to the menu: refused, nothing typed",False,legacy-not-retrospectively-reviewed
-LEG-200f28eee1d0,L1,Go core / CLI / server,internal/app/sendhold_test.go,172,subtest,a plain send still answers the menu,False,legacy-not-retrospectively-reviewed
-LEG-2b0dd158d577,L1,Go core / CLI / server,internal/app/sendhold_test.go,178,subtest,send --attach past a leftover marker: delivered,False,legacy-not-retrospectively-reviewed
-LEG-b5a94157e3ca,L1,Go core / CLI / server,internal/app/sendhold_test.go,193,Test,TestNoVerifyAttachSaysTheTextWasPasted,False,legacy-not-retrospectively-reviewed
+LEG-177d1d860f53,L1,Go core / CLI / server,internal/app/sendhold_test.go,170,subtest,"send --attach to the menu: refused, nothing typed",False,legacy-not-retrospectively-reviewed
+LEG-200f28eee1d0,L1,Go core / CLI / server,internal/app/sendhold_test.go,182,subtest,a plain send still answers the menu,False,legacy-not-retrospectively-reviewed
+LEG-2b0dd158d577,L1,Go core / CLI / server,internal/app/sendhold_test.go,188,subtest,send --attach past a leftover marker: delivered,False,legacy-not-retrospectively-reviewed
+LEG-b5a94157e3ca,L1,Go core / CLI / server,internal/app/sendhold_test.go,203,Test,TestNoVerifyAttachSaysTheTextWasPasted,False,legacy-not-retrospectively-reviewed
 LEG-742aa1d3cf00,L1,Go core / CLI / server,internal/app/sendkeys_test.go,12,Test,TestAllowedSendKeysWhitelist,False,legacy-not-retrospectively-reviewed
 LEG-1cd95518c834,L1,Go core / CLI / server,internal/app/sendkeys_test.go,43,Test,TestSendToPaneNoTmuxRejects,False,legacy-not-retrospectively-reviewed
 LEG-ad6a73e9d235,L1,Go core / CLI / server,internal/app/sendkeys_test.go,60,Test,TestKeystrokeText,False,legacy-not-retrospectively-reviewed
@@ -2729,6 +2761,15 @@ LEG-75667cf67db3,L1,Go core / CLI / server,internal/resume/launcher_test.go,34,T
 LEG-b5690ed3f961,L1,Go core / CLI / server,internal/resume/launcher_test.go,43,Test,TestLauncherKeepsTheCwdGuard,False,legacy-not-retrospectively-reviewed
 LEG-ed9b13910ea5,L1,Go core / CLI / server,internal/resume/launcher_test.go,50,Test,TestCodexInlineFlagDoesNotInspectSessionIdentity,False,legacy-not-retrospectively-reviewed
 LEG-7fefbcefa784,L1,Go core / CLI / server,internal/resume/launcher_test.go,73,Test,TestResolveKeepsTheLauncher,False,legacy-not-retrospectively-reviewed
+MAP-79c40622d1d5,L2,reviewed implementation,internal/resume/native_restore_test.go,20,reviewed-selector,TestCNR001NativeRestoreCommandRoundTrip,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-0b1e0aa3f9cb,L2,reviewed implementation,internal/resume/native_restore_test.go,139,reviewed-selector,TestCNR002StoppedFrontendMigratesSameSession,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-ec0ee648e4d9,L2,reviewed implementation,internal/resume/native_restore_test.go,163,reviewed-selector,TestCNR003FrontendMigrationRejectsUnknownAndRaces,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-e0f69037b0a9,L2,reviewed implementation,internal/resume/native_restore_test.go,231,reviewed-selector,TestCNR004ReconcileRetriesStoppedSameSession,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-bf14aabdda8a,L2,reviewed implementation,internal/resume/native_restore_test.go,239,reviewed-selector,TestCNR005MigratedNativeSaveCannotReviveFrontend,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-637522e22825,L2,reviewed implementation,internal/resume/native_restore_test.go,272,reviewed-selector,TestCNR107ReservationSurvivesUntilNewBoot,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-6c48808732c2,L2,reviewed implementation,internal/resume/native_restore_test.go,314,reviewed-selector,TestCNR006CorruptAttemptAndLeaseRefuseBeforeAnyWrite,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-2eb3286b5528,L2,reviewed implementation,internal/resume/native_restore_test.go,338,reviewed-selector,TestCNR007NativeConfirmationRequiresExactFreshOwner,False,"CNRV4-001,CNRV4-002,CNRV4-003"
+MAP-205fbc7b2a25,L2,reviewed implementation,internal/resume/native_restore_test.go,412,reviewed-selector,TestCNR006IncumbentAbsenceIsNotReadFailure,False,"CNRV4-001,CNRV4-002,CNRV4-003"
 MAP-56aadbd19e58,L2,reviewed implementation,internal/resume/observed_conversation_test.go,35,reviewed-selector,TestSID003LastKnownHistoryHasNoLiveAuthority,False,SID-003
 MAP-64bbe883d24c,L2,reviewed implementation,internal/resume/observed_conversation_test.go,68,reviewed-selector,TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated,False,SID-003
 LEG-cfd5daadb019,L1,Go core / CLI / server,internal/resume/registry_test.go,12,Test,TestEveryRegistryResumableIsResumable,False,legacy-not-retrospectively-reviewed
@@ -4680,6 +4721,8 @@ MAP-2c624a8ebee0,L3,reviewed implementation,mobileapp/src/api/observed-client-co
 MAP-51014f850982,L3,reviewed implementation,mobileapp/src/api/observed-history.test.ts,4,reviewed-selector,SID006 observed history stays separate from current session authority and survives 304,False,SID-006
 LEG-5e72fc2ccb19,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,3,test,only an observed signal abort is cancellation; marked deadlines remain timeouts,False,legacy-not-retrospectively-reviewed
 LEG-9317901a472a,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,17,test,records the configured deadline independently of delayed JS execution,False,legacy-not-retrospectively-reviewed
+MAP-31b87a6ca685,L2,reviewed implementation,mobileapp/src/api/restore.visibility.test.ts,3,reviewed-selector,RRV003 preserves optional first issue state and accepts old receipts,False,RRV-003
+MAP-514985ebd5bd,L2,reviewed implementation,mobileapp/src/api/restore.visibility.test.ts,8,reviewed-selector,RRV003 rejects malformed first issue state %p,False,RRV-003
 MAP-d269546f4a32,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,10,reviewed-selector,MSD-004 bounds a hung %s and never retries or accepts a late answer,False,MSD-004
 MAP-b95d01602bb2,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,29,reviewed-selector,"MSD-004 keeps exact receipts, legacy success and the server refusal",False,MSD-004
 MAP-c2a5d2e02192,L2,reviewed implementation,mobileapp/src/api/sendFailureCode.test.ts,6,reviewed-selector,SFR-003 keeps the optional known %s refusal,False,SFR-003
@@ -5222,6 +5265,7 @@ MAP-36ceacc1ee88,L2,reviewed implementation,mobileapp/src/screens/RestoreSession
 MAP-790a14df8957,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,44,reviewed-selector,late old host preview cannot replace the new server result; guest never reads or starts,False,RSR-007
 MAP-19a9941dbee1,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,50,reviewed-selector,closed sheet stops polling and partial results remain visibly partial,False,RSR-007
 MAP-157d7028a843,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,58,reviewed-selector,local persistence failure prevents POST; stale preview refresh discards only an explicitly refused request,False,RSR-007
+MAP-f59c85149c2b,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.visibility.test.tsx,15,reviewed-selector,RRV003 shows timeout and original uncertainty in %s,False,RRV-003
 LEG-387d5b0c6c01,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,13,test.each(),scan window leaves controls reachable at %i × %i,True,legacy-not-retrospectively-reviewed
 LEG-1cb0f6c7d8ad,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,24,test,native camera callbacks emit once; cancel makes a queued frame inert,False,legacy-not-retrospectively-reviewed
 MAP-751a1129956a,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.authDraft.test.tsx,37,reviewed-selector,SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once,False,SFR-008
