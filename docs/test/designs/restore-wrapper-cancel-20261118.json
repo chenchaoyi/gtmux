@@ -1,0 +1,24 @@
+{
+  "id": "restore-wrapper-cancel-20261118",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-18",
+    "decision": "Approve before implementation",
+    "notes": "Synchronize with the private display-message process itself. Observe the raw issue result, the batch occupancy map and both sender calls. A stable control must complete through the identical lookup. No real pane or user HOME is used."
+  },
+  "cases": [
+    {
+      "id": "RWC-001",
+      "layer": "L2",
+      "description": "Cancellation during the final wrapper target query suppresses all writes",
+      "setup": "Use an isolated home, two fixture records, and a log-only tmux replacement which pauses the first successful shell lookup until released.",
+      "action": "Cancel the parent context while the last target lookup is outstanding, then release it. Drive the same serial issue paths without cancellation as the control.",
+      "expected": "Cancellation returns cancelled, leaves both identities unclaimed and sends neither text nor Enter to either pane. In the control, both identities are claimed and receive exactly one literal and one Enter each.",
+      "planned_files": [
+        "internal/app/restore_wrapper_cancel_test.go"
+      ]
+    }
+  ],
+  "seal": "d07e866679e3e26ad5d5662b619fdd7a58ff402295a59a62468a9e76e52b9e87"
+}
