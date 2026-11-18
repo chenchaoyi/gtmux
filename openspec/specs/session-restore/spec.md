@@ -865,3 +865,24 @@ replay. Older receipts without the optional issue-state field SHALL remain reada
 - **WHEN** the first send result is unknown and startup later times out
 - **THEN** intermediate and final persisted receipts retain both facts
 - **AND** the client displays uncertainty and timeout in either supported language
+
+### Requirement: Revalidate historical ownership and preserve local archive compatibility
+
+Automatic recovery SHALL recheck the locator supplying a historical record and retain an uncertain write in the batch. Local inventory SHALL accept valid line-bounded saves above the remote preview size limit.
+
+#### Scenario: A historical locator changes owner during serial recovery
+
+- **GIVEN** a renamed pane was matched by directory and layout position
+- **WHEN** its source record changes before the command is written
+- **THEN** restore skips the pane and sends neither text nor Enter
+
+#### Scenario: A compatible launcher returns an uncertain write
+
+- **WHEN** the compatibility sender cannot confirm the literal write or Enter
+- **THEN** the first result records uncertainty and the same batch sends no further command for that conversation
+
+#### Scenario: A local layout exceeds the remote preview size budget
+
+- **WHEN** a valid local archive with individually bounded lines exceeds the remote byte cap
+- **THEN** local preview inventories its panes even above the remote byte cap
+- **AND** a read failure is distinguished from an empty archive

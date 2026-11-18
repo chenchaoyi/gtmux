@@ -2384,7 +2384,7 @@
       "replaces the index with results, rather than showing both",
       "says so when nothing matches, naming what was typed",
       "gives the index back when the query is cleared",
-      "is closed by default \u2014 it is read once, then it is just height",
+      "is closed by default — it is read once, then it is just height",
       "opens on tap",
       "describes the result instead of the ledger verb",
       "write-it-in sends carry with no text, after one confirmation",
@@ -2640,7 +2640,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane\u2019s different current runtime",
+      "a stitched older session never requests the pane’s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -3800,6 +3800,26 @@
     "selectors": [
       "RRV003 preserves optional first issue state and accepts old receipts",
       "RRV003 rejects malformed first issue state %p"
+    ]
+  },
+  "internal/app/restore_dispatch_boundary_test.go": {
+    "cases": [
+      "RSD-001",
+      "RSD-002",
+      "RSD-003"
+    ],
+    "selectors": [
+      "TestRSDHistoricalSourceBeforeDispatch",
+      "TestRSDCompatibilityUncertainEnter",
+      "TestRSDLocalArchiveBoundaries"
+    ]
+  },
+  "internal/app/hold_reader_test.go": {
+    "cases": [
+      "RSD-004"
+    ],
+    "selectors": [
+      "TestHoldReaderChild"
     ]
   }
 }

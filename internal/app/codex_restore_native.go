@@ -279,11 +279,20 @@ func inspectNativeRestoreBinary(lookup string) (nativeRestoreBinary, bool, error
 }
 
 type nativeRestoreSelection struct {
+	Source         *resume.Located
 	Path           string
-	Saved          []byte
+	Digest         []byte
 	ReadError      error
 	Incumbent      resume.NativeRestoreIncumbent
 	IncumbentError error
+}
+
+func (s *nativeRestoreSelection) sourceUnchanged() bool {
+	if s == nil || s.Source == nil {
+		return true
+	}
+	current, err := nativeRestoreReadIncumbent(s.Source.Loc)
+	return err == nil && current.Exists && current.Record == s.Source.Record
 }
 
 func (s *nativeRestoreSelection) unchanged(loc string) bool {
@@ -293,8 +302,8 @@ func (s *nativeRestoreSelection) unchanged(loc string) bool {
 	if s.ReadError != nil || s.IncumbentError != nil || resurrectLastSave() != s.Path {
 		return false
 	}
-	body, err := readRestoreSave(s.Path)
-	if err != nil || !bytes.Equal(body, s.Saved) {
+	body, err := restoreArchiveDigest(s.Path)
+	if err != nil || !bytes.Equal(body, s.Digest) {
 		return false
 	}
 	current, err := nativeRestoreReadIncumbent(loc)
@@ -303,13 +312,13 @@ func (s *nativeRestoreSelection) unchanged(loc string) bool {
 
 func nativeRestoreRevision(rec resume.Record, incumbent resume.NativeRestoreIncumbent) (string, error) {
 	path := resurrectLastSave()
-	saved, err := readRestoreSave(path)
+	saved, err := restoreArchiveDigest(path)
 	if err != nil {
 		return "", err
 	}
 	body, err := json.Marshal(struct {
 		Path      string
-		Saved     []byte
+		Digest    []byte
 		Record    resume.Record
 		Incumbent resume.NativeRestoreIncumbent
 	}{path, saved, rec, incumbent})
@@ -451,7 +460,7 @@ func nativeRestorePlanState(p *nativeRestorePlan) string {
 		}
 	}
 	current, ok := nativeRestoreReadPane(p.Pane.Pane, p.Pane.Loc)
-	if !ok || current != p.Pane {
+	if !ok || current != p.Pane || !p.Selection.sourceUnchanged() {
 		return "target-changed"
 	}
 	return ""

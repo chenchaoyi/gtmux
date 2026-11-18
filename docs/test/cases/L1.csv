@@ -559,12 +559,12 @@ LEG-389422d39ff9,L1,Go core / CLI / server,internal/app/sendattach_test.go,256,s
 LEG-5c5479b21460,L1,Go core / CLI / server,internal/app/sendflags_test.go,17,Test,TestSendRefusesAnUnknownOption,False,legacy-not-retrospectively-reviewed
 LEG-dff2a572a94e,L1,Go core / CLI / server,internal/app/sendflags_test.go,38,Test,TestSendStillTakesTextThatLooksLikeAnOption,False,legacy-not-retrospectively-reviewed
 LEG-8fd4cc3da480,L1,Go core / CLI / server,internal/app/sendflags_test.go,63,Test,TestSendOptionsOnARealPane,False,legacy-not-retrospectively-reviewed
-LEG-39432ce244b5,L1,Go core / CLI / server,internal/app/sendhold_test.go,110,Test,TestAttachHoldOnRealPanes,False,legacy-not-retrospectively-reviewed
+LEG-39432ce244b5,L1,Go core / CLI / server,internal/app/sendhold_test.go,120,Test,TestAttachHoldOnRealPanes,False,legacy-not-retrospectively-reviewed
 LEG-47fbdb4ea576,L1,Go core / CLI / server,internal/app/sendhold_test.go,142,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-177d1d860f53,L1,Go core / CLI / server,internal/app/sendhold_test.go,160,subtest,"send --attach to the menu: refused, nothing typed",False,legacy-not-retrospectively-reviewed
-LEG-200f28eee1d0,L1,Go core / CLI / server,internal/app/sendhold_test.go,172,subtest,a plain send still answers the menu,False,legacy-not-retrospectively-reviewed
-LEG-2b0dd158d577,L1,Go core / CLI / server,internal/app/sendhold_test.go,178,subtest,send --attach past a leftover marker: delivered,False,legacy-not-retrospectively-reviewed
-LEG-b5a94157e3ca,L1,Go core / CLI / server,internal/app/sendhold_test.go,193,Test,TestNoVerifyAttachSaysTheTextWasPasted,False,legacy-not-retrospectively-reviewed
+LEG-177d1d860f53,L1,Go core / CLI / server,internal/app/sendhold_test.go,170,subtest,"send --attach to the menu: refused, nothing typed",False,legacy-not-retrospectively-reviewed
+LEG-200f28eee1d0,L1,Go core / CLI / server,internal/app/sendhold_test.go,182,subtest,a plain send still answers the menu,False,legacy-not-retrospectively-reviewed
+LEG-2b0dd158d577,L1,Go core / CLI / server,internal/app/sendhold_test.go,188,subtest,send --attach past a leftover marker: delivered,False,legacy-not-retrospectively-reviewed
+LEG-b5a94157e3ca,L1,Go core / CLI / server,internal/app/sendhold_test.go,203,Test,TestNoVerifyAttachSaysTheTextWasPasted,False,legacy-not-retrospectively-reviewed
 LEG-742aa1d3cf00,L1,Go core / CLI / server,internal/app/sendkeys_test.go,12,Test,TestAllowedSendKeysWhitelist,False,legacy-not-retrospectively-reviewed
 LEG-1cd95518c834,L1,Go core / CLI / server,internal/app/sendkeys_test.go,43,Test,TestSendToPaneNoTmuxRejects,False,legacy-not-retrospectively-reviewed
 LEG-ad6a73e9d235,L1,Go core / CLI / server,internal/app/sendkeys_test.go,60,Test,TestKeystrokeText,False,legacy-not-retrospectively-reviewed

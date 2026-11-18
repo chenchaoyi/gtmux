@@ -122,11 +122,15 @@ func resumeAgentsContext(parent context.Context) {
 	// The liveness gate. With no parseable save there is no evidence to gate on, so
 	// behave exactly as before rather than refusing every resume — a missing save
 	// must degrade to the old behavior, not to silence.
-	layout := loadSavedLayout(resurrectLastSave())
+	layout := loadResumeLayout(resurrectLastSave())
+	if layout.ReadError != nil {
+		i18n.Sae("Could not read the saved layout.", "无法读取布局存档。")
+		return
+	}
 	selections := map[string]*nativeRestoreSelection{}
 	for _, p := range panes {
 		incumbent, err := nativeRestoreReadIncumbent(p.loc)
-		selections[p.loc] = &nativeRestoreSelection{Path: layout.SavePath, Saved: layout.Saved, ReadError: layout.ReadError, Incumbent: incumbent, IncumbentError: err}
+		selections[p.loc] = &nativeRestoreSelection{Path: layout.SavePath, Digest: layout.Digest, ReadError: layout.ReadError, Incumbent: incumbent, IncumbentError: err}
 	}
 	for loc := range layout.ByLoc {
 		occupied[loc] = true
@@ -292,12 +296,13 @@ func resumeAgentsContext(parent context.Context) {
 					fmt.Sprintf("未恢复 %s 的 agent：无法确定唯一且未被其他窗格占用的会话。", p.loc))
 				continue
 			}
-			ran := run(p.id, *chosen)
+			selections[p.loc].Source = chosen
+			ran := run(p.id, chosen.Record)
 			restoreLogf("restore.resume", "resume[cwd-fallback] pane=%s loc=%s cwd=%s → session=%s ran=%v",
 				p.id, p.loc, cwd, chosen.SessionID, ran)
 			if ran {
 				n++
-				actResumed(p.id, *chosen, "cwd-fallback")
+				actResumed(p.id, chosen.Record, "cwd-fallback")
 			}
 		}
 	}
@@ -328,7 +333,7 @@ const fallbackMaxAge = 14 * 24 * time.Hour
 //
 // ref is the save's timestamp; candidates older than fallbackMaxAge before it are
 // skipped. A zero ref disables that check (no dated evidence to compare against).
-func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool, ref time.Time, occupied map[string]bool) (rec *resume.Record, candidates int) {
+func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool, ref time.Time, occupied map[string]bool) (rec *resume.Located, candidates int) {
 	if cwd == "" {
 		return nil, 0
 	}
@@ -345,7 +350,7 @@ func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool
 		seen[r.SessionID] = true
 		candidates++
 		if rec == nil {
-			rec = &all[i].Record
+			rec = r
 		}
 	}
 	if candidates != 1 {
@@ -411,7 +416,7 @@ func actResumed(pane string, rec resume.Record, match string) {
 		"sent a conversation resume command; startup not yet confirmed", "agent", rec.Agent, "conversation", rec.SessionID, "match", match)
 }
 
-func issueCompatibleRestore(ctx context.Context, paneID, loc string, rec resume.Record, mode resumeMode, used map[string]bool) (resumeAttempt, bool) {
+func issueCompatibleRestore(ctx context.Context, paneID, loc string, rec resume.Record, mode resumeMode, used map[string]bool, selection *nativeRestoreSelection) (resumeAttempt, bool) {
 	if rec.Agent == "codex" && mode == resumeAuto {
 		occupied, err := resume.NativeRestoreOccupied(rec)
 		if occupied || err != nil {
@@ -432,14 +437,21 @@ func issueCompatibleRestore(ctx context.Context, paneID, loc string, rec resume.
 		attempt.State = "cancelled"
 		return attempt, false
 	}
+	if !selection.sourceUnchanged() {
+		attempt.State = "target-changed"
+		return attempt, false
+	}
+	// A lost tmux response can leave a draft or an executed command. Claim the
+	// identity before the first write so the next pane cannot submit it again.
+	used[rec.SessionID] = true
 	if tmux.SendText(paneID, agentenv.Wrap(cmd), mode == resumeAuto) == nil {
 		attempt.State = "pending"
 		if mode == resumeType {
 			attempt.State = "prefilled"
 		}
-		used[rec.SessionID] = true
 		return attempt, true
 	}
+	attempt.State = "unknown"
 	return attempt, false
 }
 
@@ -447,5 +459,5 @@ func routeRestoreCommand(ctx context.Context, pane, loc string, rec resume.Recor
 	if attempt, handled, sent := tryNativeRestoreContext(ctx, pane, loc, rec, cache, mode, used, selection); handled {
 		return attempt, sent
 	}
-	return issueCompatibleRestore(ctx, pane, loc, rec, mode, used)
+	return issueCompatibleRestore(ctx, pane, loc, rec, mode, used, selection)
 }

@@ -2,8 +2,8 @@ package app
 
 import (
 	"bufio"
-	"bytes"
-	"os"
+	"crypto/sha256"
+	"io"
 	"path/filepath"
 	"strings"
 	"time"
@@ -60,7 +60,7 @@ type savedPane struct {
 // them that way) plus a locator index (restore looks panes up by locator).
 type savedLayout struct {
 	SavePath  string
-	Saved     []byte
+	Digest    []byte
 	ReadError error
 	Panes     []savedPane
 	ByLoc     map[string]savedPane
@@ -181,24 +181,39 @@ func argv0(cmdline string) string {
 	return filepath.Base(cmdline)
 }
 
-// loadSavedLayout parses a resurrect save. An empty layout (missing/unreadable save,
-// or no parseable pane lines) is the caller's signal that there is NO evidence to
-// gate on — callers must then behave as they did before this file existed rather
-// than deny every resume.
+func loadResumeLayout(path string) savedLayout {
+	if remoteRestoreSessions == nil {
+		return loadSavedLayout(path)
+	}
+	body, err := readRestoreSave(path)
+	if err != nil {
+		return savedLayout{SavePath: path, ReadError: err}
+	}
+	return remoteSaveLayout(path, body)
+}
+
+// loadSavedLayout hashes the same byte stream that supplies pane evidence. A
+// missing selection is empty; an unreadable or malformed archive carries its error.
 func loadSavedLayout(path string) savedLayout {
 	out := savedLayout{ByLoc: map[string]savedPane{}, SavePath: path}
 	if path == "" {
 		return out
 	}
-	if fi, err := os.Stat(path); err == nil {
-		out.Ref = fi.ModTime()
-	}
-	body, err := readRestoreSave(path)
-	out.Saved, out.ReadError = body, err
+	f, err := openRestoreArchive(path)
 	if err != nil {
+		out.ReadError = err
 		return out
 	}
-	sc := bufio.NewScanner(bytes.NewReader(body))
+	defer f.Close()
+	if st, err := f.Stat(); err == nil {
+		out.Ref = st.ModTime()
+	}
+	return scanRestoreLayout(out, f)
+}
+
+func scanRestoreLayout(out savedLayout, r io.Reader) savedLayout {
+	hash := sha256.New()
+	sc := bufio.NewScanner(io.TeeReader(r, hash))
 	sc.Buffer(make([]byte, 1<<20), 1<<20)
 	for sc.Scan() {
 		sp, ok := parseSavedPaneLine(sc.Text())
@@ -210,7 +225,33 @@ func loadSavedLayout(path string) savedLayout {
 			out.ByLoc[sp.Loc] = sp
 		}
 	}
+	out.ReadError = sc.Err()
+	out.Digest = hash.Sum(nil)
 	return out
+}
+
+func restoreArchiveDigest(path string) ([]byte, error) {
+	if path == "" {
+		return nil, nil
+	}
+	if remoteRestoreSessions != nil {
+		body, err := readRestoreSave(path)
+		if err != nil {
+			return nil, err
+		}
+		sum := sha256.Sum256(body)
+		return sum[:], nil
+	}
+	f, err := openRestoreArchive(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	hash := sha256.New()
+	if _, err := io.Copy(hash, f); err != nil {
+		return nil, err
+	}
+	return hash.Sum(nil), nil
 }
 
 // parseSavedPaneLine parses one `pane` line of a resurrect save, handling BOTH field

@@ -37,6 +37,7 @@ MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_
 MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
 MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
+MAP-8667d3e135cb,L2,reviewed implementation,internal/app/hold_reader_test.go,12,reviewed-selector,TestHoldReaderChild,False,RSD-004
 MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,142,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
@@ -56,6 +57,9 @@ MAP-f9c9dd791852,L2,reviewed implementation,internal/app/relay_inbox_test.go,12,
 MAP-a70b04134255,L2,reviewed implementation,internal/app/relay_inbox_test.go,63,reviewed-selector,TestRBL003CompactNoticeHasVerifiedHQProvenanceAndHumanCopiesDoNot,False,RBL-003
 MAP-93c5d85ec366,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,52,reviewed-selector,TestHRS003ReceiptAwareSharedTranscript,False,HRS-003
 MAP-d400cc0846af,L2,reviewed implementation,internal/app/relay_sender_contract_test.go,89,reviewed-selector,TestHRS003EarlierPagesKeepFirstAttribution,False,HRS-003
+MAP-d98076e1e157,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,15,reviewed-selector,TestRSDHistoricalSourceBeforeDispatch,False,"RSD-001,RSD-002,RSD-003"
+MAP-991e0cd98702,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,61,reviewed-selector,TestRSDCompatibilityUncertainEnter,False,"RSD-001,RSD-002,RSD-003"
+MAP-f1a1a1779293,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,118,reviewed-selector,TestRSDLocalArchiveBoundaries,False,"RSD-001,RSD-002,RSD-003"
 MAP-fbaec0f3be47,L2,reviewed implementation,internal/app/restore_remote_test.go,26,reviewed-selector,TestRemotePreviewOnlyMissingAndBindsProducerInputs,False,"RSR-003,RSR-004,RSR-005"
 MAP-807debf9711a,L2,reviewed implementation,internal/app/restore_remote_test.go,66,reviewed-selector,TestRemoteWorkerRejectsStaleAndBusyBeforeMutating,False,"RSR-003,RSR-004,RSR-005"
 MAP-bc3fb043f111,L2,reviewed implementation,internal/app/restore_remote_test.go,116,reviewed-selector,TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate,False,"RSR-003,RSR-004,RSR-005"

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
@@ -57,7 +58,7 @@ func remoteRestorePlanWith(save string, query func(...string) (string, error), n
 			}
 		}
 	}
-	plan, e := pendingRestorePlan(save, query)
+	plan, e := pendingRestoreLayout(remoteSaveLayout(save, before), query)
 	if e != nil {
 		return p, e
 	}
@@ -161,19 +162,40 @@ func remotePaneStillEligible(id, loc string) bool {
 	f := strings.Split(strings.TrimSpace(out), "\t")
 	return e == nil && len(f) == 3 && f[0] == id && f[1] == loc && remoteRestoreSessions[locSession(loc)] && isShellCommand(f[2])
 }
+
+// The remote inventory parses only the already size-checked snapshot.
+func remoteSaveLayout(path string, body []byte) savedLayout {
+	layout := savedLayout{SavePath: path, ByLoc: map[string]savedPane{}}
+	if path == "" {
+		return layout
+	}
+	if st, err := os.Stat(path); err == nil {
+		layout.Ref = st.ModTime()
+	}
+	return scanRestoreLayout(layout, bytes.NewReader(body))
+}
+
+func openRestoreArchive(path string) (*os.File, error) {
+	f, err := state.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK, 0)
+	if err != nil {
+		return nil, err
+	}
+	st, err := f.Stat()
+	if err != nil || !st.Mode().IsRegular() {
+		f.Close()
+		return nil, fmt.Errorf("restore save unavailable")
+	}
+	return f, nil
+}
 func readRestoreSave(path string) ([]byte, error) {
 	if path == "" {
 		return nil, nil
 	}
-	f, e := state.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK, 0)
+	f, e := openRestoreArchive(path)
 	if e != nil {
 		return nil, e
 	}
 	defer f.Close()
-	st, e := f.Stat()
-	if e != nil || !st.Mode().IsRegular() {
-		return nil, fmt.Errorf("restore save unavailable")
-	}
 	b, e := io.ReadAll(io.LimitReader(f, 8<<20+1))
 	if e != nil || len(b) > 8<<20 {
 		return nil, fmt.Errorf("restore save exceeds budget")

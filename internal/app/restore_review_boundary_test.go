@@ -57,7 +57,7 @@ func TestRRBSelectionChangeDuringQueueRefusesSecond(t *testing.T) {
 				t.Fatal(err)
 			}
 			layout := loadSavedLayout(resurrectLastSave())
-			selected := &nativeRestoreSelection{Path: layout.SavePath, Saved: layout.Saved, ReadError: layout.ReadError, Incumbent: plan.Incumbent}
+			selected := &nativeRestoreSelection{Path: layout.SavePath, Digest: layout.Digest, ReadError: layout.ReadError, Incumbent: plan.Incumbent}
 			g, _ := serialSourceFixture(context.Background(), resumeAuto, 2)
 			changed := false
 			g.observe = func(resumeAttempt) bool { return changed }

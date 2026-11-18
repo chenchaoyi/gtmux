@@ -16,13 +16,13 @@ import (
 )
 
 // holdLab is a private tmux server whose panes show fixed screens: `cat` for a plain
-// pane, and cat under the name `codex` for a pane the radar takes for Codex. Nothing in
+// pane, and a terminal reader named `codex` for a pane the radar takes for Codex. Nothing in
 // it is a real agent, and nothing it does reaches the user's own tmux or gtmux state.
 type holdLab struct {
 	t    *testing.T
 	dir  string
 	run  func(args ...string) string
-	fake string // the fake codex binary
+	fake string // the test-owned terminal reader named codex
 }
 
 func newHoldLab(t *testing.T) *holdLab {
@@ -47,19 +47,25 @@ func newHoldLab(t *testing.T) *holdLab {
 	t.Setenv("TMUX", "")
 	t.Setenv("TMUX_PANE", "")
 	t.Setenv("HOME", dir)
-	cat, err := exec.LookPath("cat")
+	reader, err := os.Executable()
 	if err != nil {
-		t.Skip("no cat")
+		t.Fatal(err)
 	}
-	// A symlink, not a copy: macOS kills a copied system binary on launch. The process
-	// table names it by the link, which is what the radar reads.
+	// Use our own terminal reader: a multicall cat may exit when invoked as codex.
 	fake := filepath.Join(dir, "bin", "codex")
-	if err := os.Symlink(cat, fake); err != nil {
+	if err := os.Symlink(reader, fake); err != nil {
 		t.Fatal(err)
 	}
 	l := &holdLab{t: t, dir: dir, fake: fake}
 	l.run = func(args ...string) string {
-		out, _ := tmux.Run(append([]string{"-f", "/dev/null"}, args...)...)
+		t.Helper()
+		out, err := tmux.Run(append([]string{"-f", "/dev/null"}, args...)...)
+		if err != nil {
+			if ee, ok := err.(*exec.ExitError); ok {
+				t.Fatalf("private tmux %s: %v: %s", args[0], err, ee.Stderr)
+			}
+			t.Fatalf("private tmux %s: %v", args[0], err)
+		}
 		return out
 	}
 	l.run("new-session", "-d", "-s", "lab", "-x", "120", "-y", "30")
@@ -70,15 +76,19 @@ func newHoldLab(t *testing.T) *holdLab {
 	return l
 }
 
-// pane opens a window that prints screen, then becomes prog (cat, or the fake codex).
+// pane opens a window that prints screen, then becomes prog (cat or the test-owned reader).
 func (l *holdLab) pane(name, screen, prog string) string {
 	l.t.Helper()
 	f := filepath.Join(l.dir, name+".txt")
 	if err := os.WriteFile(f, []byte(screen), 0o644); err != nil {
 		l.t.Fatal(err)
 	}
-	id := l.run("new-window", "-d", "-P", "-F", "#{pane_id}", "-t", "lab", "-n", name,
-		"/bin/sh", "-c", `cat "$1"; exec "$2"`, "gtmux-hold", f, prog)
+	args := []string{"new-window", "-d", "-P", "-F", "#{pane_id}", "-t", "lab", "-n", name,
+		"/bin/sh", "-c", `cat "$1" || exit; shift; exec "$@"`, "gtmux-hold", f, prog}
+	if prog == l.fake {
+		args = append(args, "-test.run=^TestHoldReaderChild$")
+	}
+	id := l.run(args...)
 	l.waitFor(id, func(s string) bool { return strings.Contains(s, strings.SplitN(strings.TrimSpace(screen), "\n", 2)[0]) })
 	return id
 }

@@ -377,6 +377,7 @@ LEG-ee334647c7d0,L1,Go core / CLI / server,internal/app/help_test.go,100,Test,Te
 LEG-7a2dfdd85966,L1,Go core / CLI / server,internal/app/help_test.go,115,Test,TestTheScreenSaysWhatARunWillTouch,False,legacy-not-retrospectively-reviewed
 LEG-870d959f871a,L1,Go core / CLI / server,internal/app/help_test.go,129,Test,TestTheJSONCarriesWhatAnAgentNeeds,False,legacy-not-retrospectively-reviewed
 LEG-e9dcdd1be507,L1,Go core / CLI / server,internal/app/help_test.go,177,Test,TestHQHelpEntryPointsAndJSONCatalogAgree,False,legacy-not-retrospectively-reviewed
+MAP-8667d3e135cb,L2,reviewed implementation,internal/app/hold_reader_test.go,12,reviewed-selector,TestHoldReaderChild,False,RSD-004
 LEG-458ab344984a,L1,Go core / CLI / server,internal/app/hook_presence_test.go,71,Test,TestSavedAgentHomesDoNotSelectHooksOrDoctorRepairs,False,legacy-not-retrospectively-reviewed
 LEG-c7127d072da7,L1,Go core / CLI / server,internal/app/hook_presence_test.go,120,Test,TestHookPresenceUsesRegistryExecutableProbes,False,legacy-not-retrospectively-reviewed
 LEG-5de4952de93e,L1,Go core / CLI / server,internal/app/hook_presence_test.go,142,Test,TestDetectedCLIWithoutHomeCanConfigureHooks,False,legacy-not-retrospectively-reviewed
@@ -585,6 +586,9 @@ LEG-98994f65a25c,G,Go core / CLI / server,internal/app/releaseinstall_test.go,37
 LEG-801ddcb495b4,L1,Go core / CLI / server,internal/app/releaseinstall_test.go,383,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-90d7d25461f8,G,Go core / CLI / server,internal/app/restore_app_env_test.go,11,Test,TestRestoreAppInheritedTmuxDoesNotTriggerNestedTerminalGuard,False,legacy-not-retrospectively-reviewed
 LEG-204978fa2880,L1,Go core / CLI / server,internal/app/restore_checkpoint_test.go,12,Test,TestRestorePlanDoesNotReplaceUnsavedThreadWithLaunchID,False,legacy-not-retrospectively-reviewed
+MAP-d98076e1e157,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,15,reviewed-selector,TestRSDHistoricalSourceBeforeDispatch,False,"RSD-001,RSD-002,RSD-003"
+MAP-991e0cd98702,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,61,reviewed-selector,TestRSDCompatibilityUncertainEnter,False,"RSD-001,RSD-002,RSD-003"
+MAP-f1a1a1779293,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,118,reviewed-selector,TestRSDLocalArchiveBoundaries,False,"RSD-001,RSD-002,RSD-003"
 LEG-bf26b4c491f3,L1,Go core / CLI / server,internal/app/restore_output_test.go,32,Test,TestRestoreOutputCompactAndDetailed,False,legacy-not-retrospectively-reviewed
 LEG-ff5ecc3e9ede,L1,Go core / CLI / server,internal/app/restore_output_test.go,64,Test,TestRestoreOutputWidthAndSingleLines,False,legacy-not-retrospectively-reviewed
 LEG-a7839ef3a290,L1,Go core / CLI / server,internal/app/restore_output_test.go,83,Test,TestRestoreOutputPlanCommandIsReadOnlyAndJSONUnchanged,False,legacy-not-retrospectively-reviewed
@@ -710,12 +714,12 @@ LEG-cdb3ca010e4f,G,Go core / CLI / server,internal/app/sendattach_test.go,278,Te
 LEG-5c5479b21460,L1,Go core / CLI / server,internal/app/sendflags_test.go,17,Test,TestSendRefusesAnUnknownOption,False,legacy-not-retrospectively-reviewed
 LEG-dff2a572a94e,L1,Go core / CLI / server,internal/app/sendflags_test.go,38,Test,TestSendStillTakesTextThatLooksLikeAnOption,False,legacy-not-retrospectively-reviewed
 LEG-8fd4cc3da480,L1,Go core / CLI / server,internal/app/sendflags_test.go,63,Test,TestSendOptionsOnARealPane,False,legacy-not-retrospectively-reviewed
-LEG-39432ce244b5,L1,Go core / CLI / server,internal/app/sendhold_test.go,110,Test,TestAttachHoldOnRealPanes,False,legacy-not-retrospectively-reviewed
+LEG-39432ce244b5,L1,Go core / CLI / server,internal/app/sendhold_test.go,120,Test,TestAttachHoldOnRealPanes,False,legacy-not-retrospectively-reviewed
 LEG-47fbdb4ea576,L1,Go core / CLI / server,internal/app/sendhold_test.go,142,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-177d1d860f53,L1,Go core / CLI / server,internal/app/sendhold_test.go,160,subtest,"send --attach to the menu: refused, nothing typed",False,legacy-not-retrospectively-reviewed
-LEG-200f28eee1d0,L1,Go core / CLI / server,internal/app/sendhold_test.go,172,subtest,a plain send still answers the menu,False,legacy-not-retrospectively-reviewed
-LEG-2b0dd158d577,L1,Go core / CLI / server,internal/app/sendhold_test.go,178,subtest,send --attach past a leftover marker: delivered,False,legacy-not-retrospectively-reviewed
-LEG-b5a94157e3ca,L1,Go core / CLI / server,internal/app/sendhold_test.go,193,Test,TestNoVerifyAttachSaysTheTextWasPasted,False,legacy-not-retrospectively-reviewed
+LEG-177d1d860f53,L1,Go core / CLI / server,internal/app/sendhold_test.go,170,subtest,"send --attach to the menu: refused, nothing typed",False,legacy-not-retrospectively-reviewed
+LEG-200f28eee1d0,L1,Go core / CLI / server,internal/app/sendhold_test.go,182,subtest,a plain send still answers the menu,False,legacy-not-retrospectively-reviewed
+LEG-2b0dd158d577,L1,Go core / CLI / server,internal/app/sendhold_test.go,188,subtest,send --attach past a leftover marker: delivered,False,legacy-not-retrospectively-reviewed
+LEG-b5a94157e3ca,L1,Go core / CLI / server,internal/app/sendhold_test.go,203,Test,TestNoVerifyAttachSaysTheTextWasPasted,False,legacy-not-retrospectively-reviewed
 LEG-742aa1d3cf00,L1,Go core / CLI / server,internal/app/sendkeys_test.go,12,Test,TestAllowedSendKeysWhitelist,False,legacy-not-retrospectively-reviewed
 LEG-1cd95518c834,L1,Go core / CLI / server,internal/app/sendkeys_test.go,43,Test,TestSendToPaneNoTmuxRejects,False,legacy-not-retrospectively-reviewed
 LEG-ad6a73e9d235,L1,Go core / CLI / server,internal/app/sendkeys_test.go,60,Test,TestKeystrokeText,False,legacy-not-retrospectively-reviewed
