@@ -355,6 +355,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | RSR-007 | Nothing starts on mount/refresh; explicit confirm starts once; progress reattaches by read on reopen; unknown only checks status using same ID; no cross-host late update/mutation; failure not success; no polling after close |
 | RSR-008 | Restore bypasses generic close, keeps progress without focus theft/reopen; explicit close wins; all other actions retain their behavior |
 | RSR-009 | Clear server identity and explicit restoration scope; owner entry available remotely, guest absent; sheet scrolls with content and safe-area controls |
+| RQO-001 | The stable second target receives its literal and Enter once. Each changed case issues neither and records a changed target. |
+| RQO-002 | The stable target receives the wrapper command and Enter. Changed or unreadable targets receive neither and report target-changed. |
+| RQO-003 | A transient observation can settle at the exact requested directory; a permanent mismatch still fails at the existing 5-second bound. No production timeout or directory logic changes. |
 | RRB-R1 | One cumulative send after unknown; first legal wrapper still sends |
 | RRB-R2 | Second sends zero; unchanged sources still send |
 | RRB-R3 | A confirmed before B starts; no extra sleep; cancellation wins |
