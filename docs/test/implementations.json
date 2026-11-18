@@ -194,19 +194,10 @@
   },
   "internal/app/restore_remote_test.go": {
     "cases": [
-      "RRB-R6",
-      "RSR-003",
-      "RSR-004",
-      "RSR-005"
+      "RRB-R6"
     ],
     "selectors": [
-      "TestRemotePreviewOnlyMissingAndBindsProducerInputs",
-      "TestRemoteWorkerRejectsStaleAndBusyBeforeMutating",
-      "TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate",
-      "TestRemotePaneGuardRechecksExactShellWithoutTouchingOthers",
-      "TestRestoreExecutionLeaseIsProcessOwnedAndFailsClosed",
-      "TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions",
-      "TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology"
+      "TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions"
     ]
   },
   "internal/app/screenshot_deadline_test.go": {
