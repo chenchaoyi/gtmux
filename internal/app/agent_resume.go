@@ -1,8 +1,13 @@
 package app
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
@@ -78,6 +83,14 @@ func autoResumeEnabled() bool {
 //
 // A conversation is used at most once (dedup by session id).
 func resumeAgents() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	resumeAgentsContext(ctx)
+}
+
+func resumeAgentsContext(parent context.Context) {
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
 	mode := effectiveResumeMode()
 	if mode == resumeOff {
 		restoreLogf("restore.resume", "resumeAgents: mode=off — not touching panes")
@@ -138,15 +151,21 @@ func resumeAgents() {
 		panes = eligible
 	}
 
+	// Exact-owner pass still precedes guesses; tmux enumeration cannot change order.
+	sort.SliceStable(panes, func(i, j int) bool {
+		return restoreSerialLess(panes[i].loc, panes[i].id, panes[j].loc, panes[j].id)
+	})
+
+	nativeCapabilities := map[nativeRestoreBinary]nativeRestoreCapability{}
 	n := 0
 	var attempts []resumeAttempt
-	run := func(paneID string, rec resume.Record) bool {
-		if remoteRestoreError != nil {
-			return false
+	issue := func(paneID string, rec resume.Record) (resumeAttempt, bool) {
+		if ctx.Err() != nil || remoteRestoreError != nil {
+			return resumeAttempt{}, false
 		}
 		reportRemoteRestore("agents", attempts)
-		if remoteRestoreError != nil {
-			return false
+		if ctx.Err() != nil || remoteRestoreError != nil {
+			return resumeAttempt{}, false
 		}
 		loc := ""
 		for _, p := range panes {
@@ -156,7 +175,7 @@ func resumeAgents() {
 			}
 		}
 		if used[rec.SessionID] {
-			return false
+			return resumeAttempt{}, false
 		}
 		// Resume from where the conversation is actually FILED, not the cwd we last saw
 		// the pane in — an agent that `cd`s mid-session moves the latter, and resuming
@@ -169,32 +188,65 @@ func resumeAgents() {
 			if rec.Agent == "codex" {
 				status = resume.Recovery(rec).State
 			}
-			attempts = append(attempts, resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: status})
+			attempt := resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: status}
 			restoreLogf("restore.resume", "resume[skip] pane=%s session=%s — conversation not on disk (deleted/expired)", paneID, rec.SessionID)
-			return false
-		}
-		cmd, ok := resume.CommandWithBridge(rec, selfPath())
-		if !ok {
-			return false
+			return attempt, false
 		}
 		expected, allowed := remoteRestoreTargets[loc]
 		if (remoteRestoreSessions != nil && (!allowed || rec.Agent != expected.Agent || rec.SessionID != expected.SessionID || (expected.HomeID != "" && rec.HomeID != expected.HomeID))) || !remotePaneStillEligible(paneID, loc) {
-			attempts = append(attempts, resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: "target-changed"})
-			return false
+			return resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: "target-changed"}, false
+		}
+		if attempt, handled, sent := tryNativeRestoreContext(ctx, paneID, loc, rec, nativeCapabilities, mode, used); handled {
+			return attempt, sent
+		}
+		cmd, ok := resume.CommandWithBridge(rec, selfPath())
+		if !ok {
+			return resumeAttempt{}, false
 		}
 		before, _ := resume.Load(loc)
 		attempt := resumeAttempt{Pane: paneID, Loc: loc, Record: rec, Before: before, IssuedAt: time.Now().Unix(), State: "send-failed"}
+		if ctx.Err() != nil {
+			attempt.State = "cancelled"
+			return attempt, false
+		}
 		if tmux.SendText(paneID, agentenv.Wrap(cmd), mode == resumeAuto) == nil {
 			attempt.State = "pending"
 			if mode == resumeType {
 				attempt.State = "prefilled"
 			}
-			attempts = append(attempts, attempt)
 			used[rec.SessionID] = true
-			return true
+			return attempt, true
 		}
-		attempts = append(attempts, attempt)
-		return false
+		return attempt, false
+	}
+
+	serial := newRestoreSerialGate(ctx, mode, len(panes))
+	serial.stop = func() bool {
+		reportRemoteRestore("agents", attempts)
+		if remoteRestoreError != nil {
+			cancel()
+		}
+		return ctx.Err() != nil
+	}
+	serial.publish = func(a resumeAttempt) {
+		if a.Pane == "" {
+			return
+		}
+		if len(attempts) > 0 && attempts[len(attempts)-1].Pane == a.Pane {
+			attempts[len(attempts)-1] = a
+		} else {
+			attempts = append(attempts, a)
+		}
+		restoreLogf("restore.resume", "resume[serial] pane=%s loc=%s state=%s issue=%s", a.Pane, a.Loc, a.State, a.IssueState)
+		if a.State == "confirmed" {
+			diag.For("restore").Act("act.resume.confirmed", diag.Caller(), a.Pane, diag.OK,
+				"confirmed the target conversation after its resume command", "conversation", a.Record.SessionID)
+		}
+		reportRemoteRestore("agents", attempts)
+	}
+	run := func(paneID string, rec resume.Record) bool {
+		_, sent := serial.run(func() (resumeAttempt, bool) { return issue(paneID, rec) })
+		return sent
 	}
 
 	// Pass 1 — the pane's own evidence: its exact-locator record (hook-fresh), else
@@ -203,6 +255,9 @@ func resumeAgents() {
 	// conversation another pane can prove is its own.
 	var pending []shellPane
 	for _, p := range panes {
+		if serial.stopped {
+			break
+		}
 		rec, ok := resume.LoadLive(p.loc)
 		if gated {
 			rec, ok = layout.ByLoc[p.loc].restorableRecord()
@@ -230,9 +285,12 @@ func resumeAgents() {
 	// pickCwdFallback). This pass is a GUESS — the record it finds belonged to some
 	// other locator — so on top of the liveness gate it also refuses records nobody
 	// has touched in weeks.
-	if len(pending) > 0 {
+	if len(pending) > 0 && !serial.stopped {
 		all := resume.AllLocated() // most-recent first, each with its original locator
 		for _, p := range pending {
+			if serial.stopped {
+				break
+			}
 			// Prefer the directory the SAVE recorded for this pane: it is the
 			// pre-reboot truth, while the live cwd is "/" whenever resurrect failed
 			// to restore the pane's directory (which the shifted-line bug causes).
@@ -260,21 +318,6 @@ func resumeAgents() {
 	reportRemoteRestore("agents", attempts)
 	restoreLogf("restore.resume", "resumeAgents: done resumed=%d", n)
 	reportResume(mode, n)
-	if mode == resumeAuto && n > 0 {
-		// One bounded grace period for the whole fleet, never one wait per pane.
-		time.Sleep(1500 * time.Millisecond)
-	}
-	for i := range attempts {
-		if attempts[i].State != "pending" {
-			continue
-		}
-		current, live := resume.LoadLive(attempts[i].Loc)
-		if resumeAttemptConfirmed(attempts[i], current, live) {
-			attempts[i].State = "confirmed"
-			diag.For("restore").Act("act.resume.confirmed", diag.Caller(), attempts[i].Pane, diag.OK,
-				"confirmed the target conversation after its resume command", "conversation", current.SessionID)
-		}
-	}
 	reportRemoteRestore("agents", attempts)
 	fmt.Print(renderResumeAttempts(attempts, termWidth()))
 }

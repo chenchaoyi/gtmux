@@ -10,11 +10,16 @@ import (
 
 type resumeAttempt struct {
 	Pane, Loc, State string
+	IssueState       string
 	Record, Before   resume.Record
 	IssuedAt         int64
+	Native           *resume.NativeRestoreAttempt
 }
 
 func resumeAttemptConfirmed(attempt resumeAttempt, current resume.Record, live bool) bool {
+	if attempt.Native != nil {
+		return live && resume.ConfirmNativeRestoreAttempt(*attempt.Native, current)
+	}
 	return live && current.Agent == attempt.Record.Agent && current.SessionID == attempt.Record.SessionID &&
 		current.HomeID == attempt.Record.HomeID && current.UpdatedAt >= attempt.IssuedAt &&
 		(current.Frontend != "" && current.Frontend != attempt.Before.Frontend || current.UpdatedAt > attempt.Before.UpdatedAt)
@@ -26,8 +31,24 @@ func resumeStateLabel(state string) string {
 		return i18n.Tr("Confirmed", "已确认")
 	case "pending":
 		return i18n.Tr("Command sent · awaiting startup", "命令已发送 · 待启动确认")
+	case "startup-timeout":
+		return i18n.Tr("Startup wait timed out · inspect pane; no automatic replay", "启动等待已超时 · 请检查窗格，不会自动重发")
+	case "cancelled":
+		return i18n.Tr("Startup queue cancelled · no further commands sent", "启动队列已取消 · 不再发送后续命令")
 	case "prefilled":
 		return i18n.Tr("Prefilled · press Enter in pane", "已预填 · 到窗格按回车")
+	case "unknown":
+		return i18n.Tr("Result unknown · inspect the original pane; no automatic replay", "结果未知 · 请检查原窗格，不会自动重发")
+	case "already-attempted":
+		return i18n.Tr("Already attempted this boot · inspect the original pane", "本次开机已尝试恢复 · 请检查原窗格")
+	case "executable-unavailable":
+		return i18n.Tr("Deferred · native executable could not be verified", "暂缓恢复 · 无法核实原生可执行文件")
+	case "incumbent-unavailable":
+		return i18n.Tr("Deferred · saved pane ownership could not be read", "暂缓恢复 · 无法读取窗格归属记录")
+	case "capability-unknown", "reservation-unavailable":
+		return i18n.Tr("Deferred · startup could not be safely prepared", "暂缓恢复 · 尚无法安全准备启动")
+	case "target-changed":
+		return i18n.Tr("Skipped · target changed before sending", "已跳过 · 发送前目标发生变化")
 	case "missing":
 		return i18n.Tr("Skipped · no saved conversation", "已跳过 · 对话尚未保存或已不存在")
 	case "unreadable":
@@ -71,7 +92,11 @@ func renderResumeAttempts(attempts []resumeAttempt, width int) string {
 			name = a.Pane
 		}
 		prefix := "  " + i18n.PadRight(i18n.TruncDisp(restoreInline(name), nameWidth), nameWidth) + "  "
-		for i, part := range wrapRestoreCell(a.Pane+" · "+resumeStateLabel(a.State), width-nameWidth-4) {
+		label := resumeStateLabel(a.State)
+		if a.IssueState == "unknown" || a.IssueState == "send-failed" {
+			label = resumeStateLabel(a.IssueState) + " · " + label
+		}
+		for i, part := range wrapRestoreCell(a.Pane+" · "+label, width-nameWidth-4) {
 			if i == 0 {
 				b.WriteString(prefix + part + "\n")
 			} else {

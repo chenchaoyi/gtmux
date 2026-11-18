@@ -2392,7 +2392,7 @@
       "replaces the index with results, rather than showing both",
       "says so when nothing matches, naming what was typed",
       "gives the index back when the query is cleared",
-      "is closed by default — it is read once, then it is just height",
+      "is closed by default \u2014 it is read once, then it is just height",
       "opens on tap",
       "describes the result instead of the ledger verb",
       "write-it-in sends carry with no text, after one confirmation",
@@ -2648,7 +2648,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane’s different current runtime",
+      "a stitched older session never requests the pane\u2019s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -3679,6 +3679,60 @@
       "rejects malformed, non-RGB, wrong-size and incomplete final output",
       "protects the full HQ header and complete decision card in both layouts",
       "detects the original final-image shift of minus64 pixels"
+    ]
+  },
+  "internal/app/codex_restore_native_test.go": {
+    "cases": [
+      "CNRV4-001",
+      "CNRV4-003"
+    ],
+    "selectors": [
+      "TestCNR101CapabilityBoundToNativeBinary",
+      "TestCNR102RestoreTargetRecheckedBeforeWrite",
+      "TestCNR103ReservePrecedesProductionSend",
+      "TestCNR104UncertainWriteNeverReplays",
+      "TestCNR105TypeModeNeverPressesEnter",
+      "TestCNR106LeaseChild",
+      "TestCNR106AttemptLeaseAcrossProcesses",
+      "TestCNR109NativePackageClassifierRefusesWrapperAndChangedMetadata",
+      "TestCNR102ExecutableFailureNeverChoosesCompatibility",
+      "TestCNR102IncumbentChangesRefuseBeforeWrite",
+      "TestCNR102ConfiguredProxyTargetsNativeCommand"
+    ]
+  },
+  "internal/resume/native_restore_test.go": {
+    "cases": [
+      "CNRV4-001",
+      "CNRV4-002",
+      "CNRV4-003"
+    ],
+    "selectors": [
+      "TestCNR001NativeRestoreCommandRoundTrip",
+      "TestCNR002StoppedFrontendMigratesSameSession",
+      "TestCNR003FrontendMigrationRejectsUnknownAndRaces",
+      "TestCNR004ReconcileRetriesStoppedSameSession",
+      "TestCNR005MigratedNativeSaveCannotReviveFrontend",
+      "TestCNR107ReservationSurvivesUntilNewBoot",
+      "TestCNR006CorruptAttemptAndLeaseRefuseBeforeAnyWrite",
+      "TestCNR007NativeConfirmationRequiresExactFreshOwner",
+      "TestCNR006IncumbentAbsenceIsNotReadFailure"
+    ]
+  },
+  "internal/app/restore_serial_test.go": {
+    "cases": [
+      "CNRV4-003",
+      "CNRV4-004",
+      "CNRV4-005"
+    ],
+    "selectors": [
+      "TestRestoreSerialWaitsForReadyBeforeNextStart",
+      "TestRestoreSerialTimeoutVisibleBeforeNextStartAndBudgetShared",
+      "TestRestoreSerialCancelStopsFurtherStarts",
+      "TestRestoreSerialTypeAndUnavailableDoNotWait",
+      "TestRestoreSerialStableLocatorThenPaneOrder",
+      "TestRestoreSerialNativeIssueKeepsCommandEnterAndStoreOrder",
+      "TestRestoreSerialCancelAfterReserveKeepsOccupationWithoutSend",
+      "TestRestoreSerialUncertainSendWaitsWithoutClaimingReady"
     ]
   }
 }

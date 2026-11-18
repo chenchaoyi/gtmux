@@ -579,6 +579,8 @@ gtmux restore --plan --json   # the complete saved inventory as JSON
 gtmux restore --plan --pending --json  # only missing saved sessions + live detached sessions (read-only)
 ```
 
+Default recovery of a recognized standalone Codex now runs the native executable directly, without a gtmux frontend socket. Saved ownership, exact conversation/Home and current target checks still apply; explicit custom launchers keep their compatibility path. Eligible sessions are handled in stable order: each start waits for a fresh exact-conversation confirmation or a visible timeout before the next start. A timeout or uncertain send never triggers an automatic resend; cancellation stops later starts. The shared observation allowance does not bound preparation or blocking system calls.
+
 `--pending` checks current tmux topology without starting a server. It excludes attached sessions, includes detached plain-shell sessions even without a save, and returns an error if topology is unknown. External agent histories do not affect it. The menu bar uses this projection independently of its radar count.
 
 One restore at a time: CLI, menu and remote workers share a non-expiring kernel lease. A second run refuses while its owner is alive; process exit releases it. An unavailable lock refuses before restore, rather than running unlocked. `--plan` and `--dry-run` are exempt.

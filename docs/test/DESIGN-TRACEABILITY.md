@@ -35,3 +35,7 @@ For a new requirement: link the relevant OpenSpec scenario, write/review stable 
 cases in `designs/` before implementation, then map executable selectors and actual
 results. Separate implementation completeness, automated coverage and device/visual
 acceptance; do not turn an unimplemented requirement into a green label.
+
+## Native Codex recovery integration (2026-11-18)
+
+`agent_resume.go`, `codex_restore_native.go`, `restore_serial.go` and `internal/resume/native_restore_*` implement the CLI/core route. Reviewed design `designs/codex-native-serial-integration-20261118.json` maps CNRV4-001–005 to three test files. The exact raw candidate has 10 passing focused entries plus a rejected target mutation; the formatted Git candidate needs its own gate results. Full entry/real tmux dispatch, CNR103/104/108 integration, real Codex startup, device and timing acceptance remain separate. App/Mac/Web controls and existing input authority are unchanged.

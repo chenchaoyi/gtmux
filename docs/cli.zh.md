@@ -523,6 +523,8 @@ gtmux restore --plan --json   # the complete saved inventory as JSON
 gtmux restore --plan --pending --json  # only missing saved sessions + live detached sessions (read-only)
 ```
 
+识别为标准独立客户端的 Codex，恢复时直接运行原生可执行文件，不再等待 gtmux frontend socket。保存的归属、准确对话与 Home、当前目标仍须核对；显式自定义启动器保留兼容路径。符合条件的会话按稳定顺序处理：每次启动等到准确对话的新鲜确认，或明确显示超时后，再启动下一项。超时或发送结果未知不会自动重发；取消会停止后续启动。共享观察额度不代表准备阶段或阻塞系统调用的整体耗时上限。
+
 `--pending` 只读检查当前 tmux 现场，不启动 server：排除已连接的会话，也包括没有存档的未连接普通 shell。现场查询失败时返回错误，不当作“没有待恢复会话”。外部 agent 历史不参与判断；菜单栏使用此投影，不依赖雷达数量。
 
 一次只能恢复一次：一次运行会持有一把锁（pid + 启动时间），第二次运行会说明情况然后

@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1316 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1319 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2432 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2460 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 148 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -125,6 +125,11 @@
 | CFR-009 | Canceled upgrade records admission-cancelled; exhausted budget records admission-deadline; live completion continues. A rejected completion does not activate the epoch and no HTTP reply is fabricated after upgrade. Existing epoch and identity checks are unchanged. |
 | CFR-010 | Visible outside/cyclic ancestry is always a hard client-unverified refusal with no PID/authority and no retry. Missing required rows cannot mask that conflict. An actually incomplete peer path remains retryable process-unavailable, and complete valid later evidence may succeed. Existing TTY, foreground, ambiguity and birth checks unchanged. |
 | CBA-006 | Canceled proof causes zero not-yet-started receipt/index writes and no new live authority before close. Factory callback returns the actual cancellation cause. Partial IO only retires its own exact written live proof, retains committed history and a replacement owner. Valid uncanceled legacy/missing-index recovery and original guards remain; no recursive lease or new lock cycle. |
+| CNRV4-001 | Default target is exact physical Codex; preserve cwd/Home/quoted proxy and capability-bound --no-daemon; unknown or preparation errors refuse without compatibility send |
+| CNRV4-002 | Only exact stopped-owner migration may publish; ready requires fresh native owner and exact CAS; unknown/conflicting evidence never grants input authority |
+| CNRV4-003 | Persist occupation before send; unknown never replayed; errors observable, no false absence/fallback; cancellation retains occupation without sending; private helper roles are not ordinary runtime passes |
+| CNRV4-004 | B starts only after A ready/visible timeout; cancel stops starts; original shared1500ms observation allowance and stable locator order; uncertain delivery never claims ready or replays |
+| CNRV4-005 | Path words remain data; actual native executable/argv/cwd/Home/Enter/reserve contract stays strict; native target regression makes focused test fail |
 | CSR-001 | Only the narrow ready stale-active/newer-finished display becomes idle, keeps the existing finished time, and never mints Latest/Confirmed/CompletionID or clears/rewrites any lifecycle or binding marker. Real visible work, CPU, queues and waits win; fresh start and missing/older/future finished evidence remain conservative. Existing exact-session/home/turn guards are unchanged. Accurate baseline production must fail the false-working target assertion. |
 | CSR-002 | Current work remains working. A superseded start is replaced by bounded recognized TUI elapsed time, or since=0 with since_uncertain=true when not known, never the old multi-hour start/window activity. Original valid marker behavior and wire defaults remain compatible. No lifecycle proof/state mutation or work-start fabrication. |
 | CSR-003 | Old descriptor retains complete original JSON and new path contains complete new JSON. Busy lease returns existing ErrLeaseHeld without overwrite or heartbeat publication; released lease allows normal same-owner operation. Refresh legacy-field recovery releases before Bind reacquires. Foreign/newer/reused identities, symlink destinations, write failures and cancellation remain conservative. Exact old Save fails atomic pinned-reader/lease assertions. No unbounded waiting, real config or unique recovery deletion. |
