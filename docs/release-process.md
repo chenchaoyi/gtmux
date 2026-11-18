@@ -40,6 +40,30 @@ This prevents new disclosures; it does not erase metadata already published.
    generated files together, then open the PR. Recheck remote version occupancy and
    active workflows immediately before creating the official annotated tag.
 
+### GitHub squash merge
+
+The identity check above applies to local commits and annotated tags. GitHub creates the
+squash commit on its servers. Before merging, confirm the repository, signed-in
+maintainer and expected public account against a previous release merge. Record the
+current base and reviewed head and verify the required checks passed on that head.
+Use the normal merge command with GitHub's default author selection:
+
+```sh
+gh pr merge "$pr" --repo "$repo" --squash --match-head-commit "$head"
+```
+
+If GitHub rejects an explicit `--author-email` with `Invalid email address`, it rejected
+that override. Confirm the PR is still open at the recorded base and head, then retry
+once with the command above. Guessing another address or changing the account's email,
+privacy settings or global Git configuration is unnecessary. If the default merge
+also fails, retain its error for diagnosis.
+
+Read the resulting commit back from GitHub. Verify its sole parent equals the recorded
+base and its tree equals the reviewed head's tree. Check the mapped author against the
+expected public account and the committer against the GitHub service. Record the SHA
+and identity categories without copying email addresses. A local identity check alone
+cannot establish which author GitHub used.
+
 ## Build once, verify independently
 
 Android CI builds/lints/tests the QA APK once. Phone and tablet jobs download the
