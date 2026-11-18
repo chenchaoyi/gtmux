@@ -3774,5 +3774,32 @@
       "TestAttachHoldOnRealPanes",
       "TestNoVerifyAttachSaysTheTextWasPasted"
     ]
+  },
+  "internal/app/restore_visibility_test.go": {
+    "cases": [
+      "RRV-001",
+      "RRV-002"
+    ],
+    "selectors": [
+      "TestRRVLocalTimeoutVisibleBeforeNextPreparation",
+      "TestRRVRemoteFinalStoreRetainsFirstIssueFact"
+    ]
+  },
+  "mobileapp/src/screens/RestoreSessionsSheet.visibility.test.tsx": {
+    "cases": [
+      "RRV-003"
+    ],
+    "selectors": [
+      "RRV003 shows timeout and original uncertainty in %s"
+    ]
+  },
+  "mobileapp/src/api/restore.visibility.test.ts": {
+    "cases": [
+      "RRV-003"
+    ],
+    "selectors": [
+      "RRV003 preserves optional first issue state and accepts old receipts",
+      "RRV003 rejects malformed first issue state %p"
+    ]
   }
 }

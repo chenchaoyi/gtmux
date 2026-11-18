@@ -259,7 +259,7 @@ func runRemoteRestore(id string, store restorejob.Store, runner remoteRestoreRun
 		if attempts != nil {
 			results = make([]restorejob.Result, 0, len(attempts))
 			for _, a := range attempts {
-				results = append(results, restorejob.Result{Loc: a.Loc, Pane: a.Pane, State: a.State})
+				results = append(results, restorejob.Result{Loc: a.Loc, Pane: a.Pane, State: a.State, IssueState: a.IssueState})
 			}
 		}
 		return store.Update(id, phase, "", nil, results)

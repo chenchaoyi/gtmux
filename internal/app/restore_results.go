@@ -92,10 +92,7 @@ func renderResumeAttempts(attempts []resumeAttempt, width int) string {
 			name = a.Pane
 		}
 		prefix := "  " + i18n.PadRight(i18n.TruncDisp(restoreInline(name), nameWidth), nameWidth) + "  "
-		label := resumeStateLabel(a.State)
-		if a.IssueState == "unknown" || a.IssueState == "send-failed" {
-			label = resumeStateLabel(a.IssueState) + " · " + label
-		}
+		label := resumeAttemptLabel(a)
 		for i, part := range wrapRestoreCell(a.Pane+" · "+label, width-nameWidth-4) {
 			if i == 0 {
 				b.WriteString(prefix + part + "\n")
@@ -125,4 +122,17 @@ func wrapRestoreCell(text string, width int) []string {
 		out = append(out, line)
 	}
 	return out
+}
+
+func resumeAttemptLabel(a resumeAttempt) string {
+	label := resumeStateLabel(a.State)
+	if a.IssueState != a.State && (a.IssueState == "unknown" || a.IssueState == "send-failed") {
+		label = resumeStateLabel(a.IssueState) + " · " + label
+	}
+	return label
+}
+
+// os.Stdout writes this terminal result before the serial gate can start B.
+func renderResumeProgress(a resumeAttempt, width int) string {
+	return strings.Join(wrapRestoreCell(restoreInline(a.Loc)+" · "+a.Pane+" · "+resumeAttemptLabel(a), width), "\n") + "\n"
 }

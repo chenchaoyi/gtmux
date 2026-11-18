@@ -1,7 +1,7 @@
 // Owner-only restore jobs; a completed worker is not proof every agent started.
 export interface RestoreSession {name: string; windows: number; panes: number; agents: number; resumable: number; state: string}
 export interface RestorePlan {revision: string; server_time: number; saved_at: number; resume_mode: 'auto' | 'type' | 'off'; sessions: RestoreSession[]}
-export interface RestoreJob {id: string; revision: string; created_at: number; updated_at: number; phase: string; code?: string; sessions: RestoreSession[]; agents?: {loc: string; pane: string; state: string}[]}
+export interface RestoreJob {id: string; revision: string; created_at: number; updated_at: number; phase: string; code?: string; sessions: RestoreSession[]; agents?: {loc: string; pane: string; state: string; issue_state?: string}[]}
 export interface RestoreSnapshot {plan: RestorePlan; job?: RestoreJob}
 export const restoreTerminal = (phase: string) => ['completed', 'partial', 'failed', 'interrupted'].includes(phase);
 export class RestoreError extends Error {constructor(public code: string, public status = 0) {super(code);}}
@@ -11,7 +11,7 @@ const sessions = (v: any) => Array.isArray(v) && v.length <= 256 && v.every(s =>
 export function parseRestoreJob(v: any): RestoreJob {
   if (!v || !text(v.id, 80) || !/^\d{10}-[A-Za-z0-9-]{16,64}$/.test(v.id) || !/^[a-f0-9]{64}$/.test(v.revision) || !count(v.created_at) || !count(v.updated_at) ||
     !['queued', 'preparing', 'layout', 'agents', 'completed', 'partial', 'failed', 'interrupted'].includes(v.phase) || !sessions(v.sessions) ||
-    (v.code !== undefined && !text(v.code, 80)) || (v.agents !== undefined && (!Array.isArray(v.agents) || v.agents.length > 2048 || !v.agents.every((a: any) => a && text(a.loc) && text(a.pane, 40) && text(a.state, 40))))) throw new RestoreError('invalid_response');
+    (v.code !== undefined && !text(v.code, 80)) || (v.agents !== undefined && (!Array.isArray(v.agents) || v.agents.length > 2048 || !v.agents.every((a: any) => a && text(a.loc) && text(a.pane, 40) && text(a.state, 40) && (a.issue_state === undefined || text(a.issue_state, 40)))))) throw new RestoreError('invalid_response');
   return v;
 }
 export function parseRestoreSnapshot(v: any): RestoreSnapshot {

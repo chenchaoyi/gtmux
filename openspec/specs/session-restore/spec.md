@@ -846,3 +846,22 @@ an automatic compatibility send after a switch to a custom wrapper.
 - **WHEN** a pending attempt becomes ready during its last allowed pause
 - **THEN** a bounded confirmation runs before deciding timeout and starting the next pane
 - **AND** cancellation retains priority and the shared waiting budget is not extended
+
+### Requirement: Startup outcomes remain visible and preserve delivery uncertainty
+
+Local automatic restore SHALL write a pane-identified terminal result before the
+next eligible pane begins preparation. Remote job receipts SHALL persist the first
+issue fact separately from later startup timeout or cancellation. Clients SHALL
+show both timeout and unknown/failed delivery when both apply, without automatic
+replay. Older receipts without the optional issue-state field SHALL remain readable.
+
+#### Scenario: A startup timeout precedes another local preparation
+
+- **WHEN** the first attempt exhausts its startup observation allowance
+- **THEN** the local output identifies that pane and timeout before preparation of the next attempt
+
+#### Scenario: An uncertain send times out in a remote restore job
+
+- **WHEN** the first send result is unknown and startup later times out
+- **THEN** intermediate and final persisted receipts retain both facts
+- **AND** the client displays uncertainty and timeout in either supported language

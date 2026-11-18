@@ -226,6 +226,9 @@ func resumeAgentsContext(parent context.Context) {
 			diag.For("restore").Act("act.resume.confirmed", diag.Caller(), a.Pane, diag.OK,
 				"confirmed the target conversation after its resume command", "conversation", a.Record.SessionID)
 		}
+		if remoteRestoreProgress == nil && a.State != "pending" {
+			fmt.Print(renderResumeProgress(a, termWidth()))
+		}
 		reportRemoteRestore("agents", attempts)
 	}
 	run := func(paneID string, rec resume.Record) bool {

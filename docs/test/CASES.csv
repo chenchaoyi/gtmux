@@ -643,6 +643,8 @@ LEG-419583d800fe,L1,Go core / CLI / server,internal/app/restore_test.go,208,Test
 LEG-aa76cde5d64c,L1,Go core / CLI / server,internal/app/restore_test.go,232,Test,TestShouldRecover,False,legacy-not-retrospectively-reviewed
 LEG-fdb1c090b81d,L1,Go core / CLI / server,internal/app/restore_test.go,259,Test,TestSavedSessionNames,False,legacy-not-retrospectively-reviewed
 LEG-f99c2b4b46ac,L1,Go core / CLI / server,internal/app/restore_test.go,277,Test,TestRestorePATH,False,legacy-not-retrospectively-reviewed
+MAP-54bad8843802,L2,reviewed implementation,internal/app/restore_visibility_test.go,89,reviewed-selector,TestRRVLocalTimeoutVisibleBeforeNextPreparation,False,"RRV-001,RRV-002"
+MAP-cf0179917a35,L2,reviewed implementation,internal/app/restore_visibility_test.go,119,reviewed-selector,TestRRVRemoteFinalStoreRetainsFirstIssueFact,False,"RRV-001,RRV-002"
 LEG-2d678cf18688,L1,Go core / CLI / server,internal/app/restoreactive_test.go,27,Test,TestParseActiveSpotsFindsTheMarkedWindowAndPane,False,legacy-not-retrospectively-reviewed
 LEG-ad54ff71de01,L1,Go core / CLI / server,internal/app/restoreactive_test.go,51,Test,TestParseActiveSpotsIgnoresSessionsWithNoActiveWindow,False,legacy-not-retrospectively-reviewed
 LEG-14c61b0fbfa6,L1,Go core / CLI / server,internal/app/restoreactive_test.go,61,Test,TestParseActiveSpotsToleratesAMissingOrJunkSave,False,legacy-not-retrospectively-reviewed
@@ -4712,6 +4714,8 @@ MAP-2c624a8ebee0,L3,reviewed implementation,mobileapp/src/api/observed-client-co
 MAP-51014f850982,L3,reviewed implementation,mobileapp/src/api/observed-history.test.ts,4,reviewed-selector,SID006 observed history stays separate from current session authority and survives 304,False,SID-006
 LEG-5e72fc2ccb19,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,3,test,only an observed signal abort is cancellation; marked deadlines remain timeouts,False,legacy-not-retrospectively-reviewed
 LEG-9317901a472a,L1,RN / mobile harness,mobileapp/src/api/requestAbort.test.ts,17,test,records the configured deadline independently of delayed JS execution,False,legacy-not-retrospectively-reviewed
+MAP-31b87a6ca685,L2,reviewed implementation,mobileapp/src/api/restore.visibility.test.ts,3,reviewed-selector,RRV003 preserves optional first issue state and accepts old receipts,False,RRV-003
+MAP-514985ebd5bd,L2,reviewed implementation,mobileapp/src/api/restore.visibility.test.ts,8,reviewed-selector,RRV003 rejects malformed first issue state %p,False,RRV-003
 MAP-d269546f4a32,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,10,reviewed-selector,MSD-004 bounds a hung %s and never retries or accepts a late answer,False,MSD-004
 MAP-b95d01602bb2,L2,reviewed implementation,mobileapp/src/api/sendDeadline.test.ts,29,reviewed-selector,"MSD-004 keeps exact receipts, legacy success and the server refusal",False,MSD-004
 MAP-c2a5d2e02192,L2,reviewed implementation,mobileapp/src/api/sendFailureCode.test.ts,6,reviewed-selector,SFR-003 keeps the optional known %s refusal,False,SFR-003
@@ -5254,6 +5258,7 @@ MAP-36ceacc1ee88,L2,reviewed implementation,mobileapp/src/screens/RestoreSession
 MAP-790a14df8957,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,44,reviewed-selector,late old host preview cannot replace the new server result; guest never reads or starts,False,RSR-007
 MAP-19a9941dbee1,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,50,reviewed-selector,closed sheet stops polling and partial results remain visibly partial,False,RSR-007
 MAP-157d7028a843,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.test.tsx,58,reviewed-selector,local persistence failure prevents POST; stale preview refresh discards only an explicitly refused request,False,RSR-007
+MAP-f59c85149c2b,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.visibility.test.tsx,15,reviewed-selector,RRV003 shows timeout and original uncertainty in %s,False,RRV-003
 LEG-387d5b0c6c01,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,13,test.each(),scan window leaves controls reachable at %i × %i,True,legacy-not-retrospectively-reviewed
 LEG-1cb0f6c7d8ad,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,24,test,native camera callbacks emit once; cancel makes a queued frame inert,False,legacy-not-retrospectively-reviewed
 MAP-751a1129956a,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.authDraft.test.tsx,37,reviewed-selector,SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once,False,SFR-008
