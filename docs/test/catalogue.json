@@ -3719,7 +3719,7 @@
         },
         {
           "id": "MAP-479200cd9eee",
-          "line": 142,
+          "line": 146,
           "kind": "reviewed-selector",
           "name": "TestPhase1CursorProspectiveActivation",
           "dynamic": false,
@@ -3728,7 +3728,7 @@
         },
         {
           "id": "MAP-b0e7a04d99c5",
-          "line": 179,
+          "line": 183,
           "kind": "reviewed-selector",
           "name": "TestPhase1CursorEmptyRetentionGap",
           "dynamic": false,
@@ -3737,7 +3737,7 @@
         },
         {
           "id": "MAP-ec07edd88479",
-          "line": 203,
+          "line": 207,
           "kind": "reviewed-selector",
           "name": "TestPhase1CursorFilteredPageBoundary",
           "dynamic": false,
@@ -3745,7 +3745,7 @@
           "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
         }
       ],
-      "sha256": "9574464057f0fddd502bc4ad81f2b83fba58bdf10a57197033fc3600ca749e4d"
+      "sha256": "e8623d5e2e5c3c714f8a75a9d6236ffa1226744e3d2ce1dbb21e6083afc65ccb"
     },
     "internal/app/hqworkspace_overview_test.go": {
       "sha256": "f485fe3bbd99f817308ce7fe4d9d10d8f33615b13efb791e6e6211e0de9eabc5",
