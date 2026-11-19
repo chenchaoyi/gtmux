@@ -40,6 +40,7 @@ MAP-23ca08bdac67,L2,reviewed implementation,internal/agentclient/spool_lifecycle
 MAP-7d70f501da1d,L2,reviewed implementation,internal/agentclient/spool_lifecycle_test.go,65,reviewed-selector,TestSPL002SettlementAndUnconfirmedRecovery,False,"SPL-001,SPL-002,SPL-012"
 MAP-60af8cd5535c,L2,reviewed implementation,internal/agentprofile/mixed_effort_reset_test.go,13,reviewed-selector,TestMixedProfileEffortResetSurvivesLegacyRefresh,False,STOR-007
 MAP-5ac8306c6077,L2,reviewed implementation,internal/agentprofile/mixed_effort_reset_test.go,76,reviewed-selector,TestMixedProfileEffortResetPersistsWithoutOtherFacts,False,STOR-007
+MAP-f8fc1aa4a521,L2,reviewed implementation,internal/agentprofile/mixed_effort_review_test.go,10,reviewed-selector,TestMixedProfileLegacyEffortOnlyAfterReset,False,STOR-009
 MAP-f477967708d8,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,15,reviewed-selector,TestProfileObservationLeaseShardsAreBounded,False,STOR-004
 MAP-fab36ee0bfb3,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,40,reviewed-selector,TestProfileObservationIsolatesMixedWriters,False,STOR-004
 MAP-f6200d4fe8c9,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,9,reviewed-selector,TestSID001PresentationConfigKeepsManagedIdentity,False,SID-001
@@ -895,6 +896,11 @@ MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-con
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,112,reviewed-selector,startFake,False,CT-HTTP
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
+MAP-2efd264ce330,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,43,reviewed-selector,test_pack_refuses_linked_leaf_and_preserves_existing_bytes,False,STOR-008
+MAP-199688655ff0,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,53,reviewed-selector,test_archive_through_external_root_alias_and_failed_replacement,False,STOR-008
+MAP-26d90aaafd85,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,67,reviewed-selector,test_checkpoint_refuses_linked_subdirectory,False,STOR-008
+MAP-56ba48ce0535,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,79,reviewed-selector,test_progress_log_refuses_link_and_appends_to_regular_file,False,STOR-008
+MAP-cbd5577340ec,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,97,reviewed-selector,test_wda_log_refuses_link_before_compiler,False,STOR-008
 MAP-a5b3bb5a1d5d,L2,reviewed implementation,mobileapp/src/api/agentsRead.test.ts,10,reviewed-selector,a real empty agents response is successful data and ordinary rows still map,False,RDR-004
 MAP-5e41be7d3f1b,L2,reviewed implementation,mobileapp/src/api/agentsRead.test.ts,15,reviewed-selector,a malformed successful agents body stays a read failure: %p,False,RDR-004
 MAP-54a9492c8511,L2,reviewed implementation,mobileapp/src/api/client.restore.test.ts,11,reviewed-selector,preview and status are read only; start carries exact stable ID and revision,False,RSR-006

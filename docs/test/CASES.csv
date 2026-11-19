@@ -97,6 +97,7 @@ LEG-04d292ec0526,L1,Go core / CLI / server,internal/agentenv/agentenv_test.go,65
 LEG-decdb5947ab5,L1,Go core / CLI / server,internal/agentenv/agentenv_test.go,80,Test,TestWrapNoDouble,False,legacy-not-retrospectively-reviewed
 MAP-60af8cd5535c,L2,reviewed implementation,internal/agentprofile/mixed_effort_reset_test.go,13,reviewed-selector,TestMixedProfileEffortResetSurvivesLegacyRefresh,False,STOR-007
 MAP-5ac8306c6077,L2,reviewed implementation,internal/agentprofile/mixed_effort_reset_test.go,76,reviewed-selector,TestMixedProfileEffortResetPersistsWithoutOtherFacts,False,STOR-007
+MAP-f8fc1aa4a521,L2,reviewed implementation,internal/agentprofile/mixed_effort_review_test.go,10,reviewed-selector,TestMixedProfileLegacyEffortOnlyAfterReset,False,STOR-009
 MAP-f477967708d8,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,15,reviewed-selector,TestProfileObservationLeaseShardsAreBounded,False,STOR-004
 MAP-fab36ee0bfb3,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,40,reviewed-selector,TestProfileObservationIsolatesMixedWriters,False,STOR-004
 LEG-dba457431b8b,L1,Go core / CLI / server,internal/agentprofile/profile_test.go,23,Test,TestNativeContractsRemainAgentSpecific,False,legacy-not-retrospectively-reviewed
@@ -4603,6 +4604,11 @@ LEG-35e28dc6bf4d,G,RN / mobile harness,mobileapp/scripts/delivery_scope_test.py,
 LEG-f932706c6934,G,RN / mobile harness,mobileapp/scripts/delivery_scope_test.py,90,unittest,test_workflow_checks_scope_before_protected_native_job,False,legacy-not-retrospectively-reviewed
 LEG-ab9a69bdeaaa,G,RN / mobile harness,mobileapp/scripts/delivery_source_test.py,9,unittest,test_legacy_and_parallel_sources,False,legacy-not-retrospectively-reviewed
 LEG-b646dc157b35,G,RN / mobile harness,mobileapp/scripts/delivery_source_test.py,13,unittest,test_no_missing_failed_duplicate_or_mixed_gate_can_pass,True,legacy-not-retrospectively-reviewed
+MAP-2efd264ce330,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,43,reviewed-selector,test_pack_refuses_linked_leaf_and_preserves_existing_bytes,False,STOR-008
+MAP-199688655ff0,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,53,reviewed-selector,test_archive_through_external_root_alias_and_failed_replacement,False,STOR-008
+MAP-26d90aaafd85,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,67,reviewed-selector,test_checkpoint_refuses_linked_subdirectory,False,STOR-008
+MAP-56ba48ce0535,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,79,reviewed-selector,test_progress_log_refuses_link_and_appends_to_regular_file,False,STOR-008
+MAP-cbd5577340ec,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,97,reviewed-selector,test_wda_log_refuses_link_before_compiler,False,STOR-008
 LEG-05dcc6f4e046,G,RN / mobile harness,mobileapp/scripts/fetch_delivery_test.py,67,unittest,test_verified_cache_reuse_and_no_plaintext,False,legacy-not-retrospectively-reviewed
 LEG-897681611aa6,G,RN / mobile harness,mobileapp/scripts/fetch_delivery_test.py,77,unittest,test_wrong_identity_missing_jobs_expiry_and_latest_ci_fail_before_download,True,legacy-not-retrospectively-reviewed
 LEG-e9ed94a1aca7,G,RN / mobile harness,mobileapp/scripts/fetch_delivery_test.py,92,unittest,test_corrupted_transfer_and_cache_are_not_accepted,False,legacy-not-retrospectively-reviewed

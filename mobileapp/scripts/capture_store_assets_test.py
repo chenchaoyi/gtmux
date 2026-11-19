@@ -55,7 +55,7 @@ class CaptureTests(unittest.TestCase):
             self.assertEqual(args[:2], ["xcodebuild", "build-for-testing"])
             self.assertIn(str(project.resolve()), args)
             self.assertIn("id=owned-device-id", args)
-            self.assertIn(str(output / "wda"), args)
+            self.assertIn(str(output.resolve() / "wda"), args)
             self.assertIn("IPHONEOS_DEPLOYMENT_TARGET=26.5", args)
             self.assertEqual(compiler.call_args.kwargs["timeout"], 900)
             self.assertTrue(compiler.call_args.kwargs["check"])

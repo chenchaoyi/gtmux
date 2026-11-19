@@ -10,7 +10,7 @@ import plistlib
 import shutil
 import subprocess
 
-from delivery_source import require_external_path
+from delivery_source import open_delivery_output, prepare_delivery_directory, require_external_path
 from store_artifacts import GROUPS, checkpoint_group, load_checkpoint, png_record, save, tree_hash, verify_records
 
 
@@ -38,9 +38,9 @@ def progress(output, phase, **fields):
     event = {"time": datetime.datetime.now(datetime.timezone.utc).isoformat(), "phase": phase, **fields}
     if output.is_dir():
         line = json.dumps(event)
-        print(line, flush=True)
-        with (output / "progress.jsonl").open("a") as stream:
+        with open_delivery_output(output, "progress.jsonl", "a") as stream:
             stream.write(line + "\n")
+        print(line, flush=True)
 
 
 def load_review(output, context):
@@ -68,9 +68,10 @@ def checkpoint_review(output, context, key, raw):
     if not first or first["sha256"] == records[0]["sha256"]:
         raise ValueError("Dark review did not change the first-launch appearance")
     for name in GROUPS[key]:
-        target = output / "review" / key / (name + ".png")
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(raw / (name + ".png"), target)
+        relative = Path("review") / key / (name + ".png")
+        with (raw / (name + ".png")).open("rb") as source, \
+                open_delivery_output(output, relative, "wb", atomic=True) as target:
+            shutil.copyfileobj(source, target)
     data["groups"][key] = [png_record(output / "review" / key / (name + ".png"), output) for name in GROUPS[key]]
     save(output / "review.json", data)
 
@@ -113,9 +114,10 @@ def prebuild_wda(appium_home, udid, output, slot, platform_version, run=command)
     progress(output, "wda-build", slot=slot, version=version)
     # WDA 15.0.0 carries build-only exit state into its next readiness check.
     # A separate compiler process leaves the new Appium session with fresh state.
-    with (output / f"wda-build-{slot}.log").open("w") as log:
+    derived_data = prepare_delivery_directory(output, "wda")
+    with open_delivery_output(output, f"wda-build-{slot}.log", "w") as log:
         subprocess.run(["xcodebuild", "build-for-testing", "-project", str(project),
-                        "-scheme", "WebDriverAgentRunner", "-derivedDataPath", str(output / "wda"),
+                        "-scheme", "WebDriverAgentRunner", "-derivedDataPath", str(derived_data),
                         "-destination", f"id={udid}", "-jobs", "2",
                         f"IPHONEOS_DEPLOYMENT_TARGET={platform_version}",
                         "GCC_TREAT_WARNINGS_AS_ERRORS=0", "COMPILER_INDEX_STORE_ENABLE=NO"],

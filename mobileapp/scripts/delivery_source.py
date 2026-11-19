@@ -5,7 +5,7 @@ import sys
 
 # These scripts run directly from mobileapp/scripts in checkout and CI jobs.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
-from delivery_storage import require_external_path
+from delivery_storage import open_delivery_output, prepare_delivery_directory, require_external_path
 
 
 class DeliveryError(Exception):

@@ -4261,5 +4261,25 @@
     "selectors": [
       "test_staging_refuses_managed_state_alias"
     ]
+  },
+  "mobileapp/scripts/delivery_write_boundary_test.py": {
+    "cases": [
+      "STOR-008"
+    ],
+    "selectors": [
+      "test_pack_refuses_linked_leaf_and_preserves_existing_bytes",
+      "test_archive_through_external_root_alias_and_failed_replacement",
+      "test_checkpoint_refuses_linked_subdirectory",
+      "test_progress_log_refuses_link_and_appends_to_regular_file",
+      "test_wda_log_refuses_link_before_compiler"
+    ]
+  },
+  "internal/agentprofile/mixed_effort_review_test.go": {
+    "cases": [
+      "STOR-009"
+    ],
+    "selectors": [
+      "TestMixedProfileLegacyEffortOnlyAfterReset"
+    ]
   }
 }

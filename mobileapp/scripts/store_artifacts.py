@@ -11,7 +11,7 @@ import struct
 import subprocess
 import tarfile
 
-from delivery_source import require_external_path
+from delivery_source import open_delivery_output, require_external_path
 
 SCHEMA = 1
 GROUPS = {slot + '-' + lang: names for slot, names in {
@@ -28,12 +28,8 @@ def digest(path):
 
 
 def save(path, data):
-    require_external_path(path)
-    temp = path.with_suffix(path.suffix + '.tmp')
-    require_external_path(temp)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp.write_text(json.dumps(data, indent=2, sort_keys=True) + '\n')
-    temp.replace(path)
+    with open_delivery_output(path.parent, path.name, 'w', atomic=True) as output:
+        output.write(json.dumps(data, indent=2, sort_keys=True) + '\n')
 
 
 def tree_hash(root):
@@ -124,9 +120,10 @@ def checkpoint_group(output, context, key, raw, origin=None):
     if any(r['size'] != expected for r in records) or len({r['sha256'] for r in records}) != len(records):
         raise ValueError('Capture group has wrong orientation/size or duplicate screens')
     for record in records:
-        target = output / 'raw' / key / record['file']
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(raw / record['file'], target)
+        relative = Path('raw') / key / record['file']
+        with (raw / record['file']).open('rb') as source, \
+                open_delivery_output(output, relative, 'wb', atomic=True) as target:
+            shutil.copyfileobj(source, target)
     if origin is not None:
         data.setdefault('origins', {})[key] = origin
     data['groups'][key] = [png_record(output / 'raw' / key / (name + '.png'), output) for name in GROUPS[key]]
@@ -240,12 +237,13 @@ def main():
     else:
         manifest_path = args.root / 'build.json'
         if args.action == 'pack-build':
-            require_external_path(args.root)
+            root = require_external_path(args.root)
             manifest = build_manifest(args.app, args.tag, args.commit, args.xcode, args.arch)
-            args.root.mkdir(parents=True, exist_ok=True)
-            with tarfile.open(args.root / 'simulator-app.tar.gz', 'w:gz') as archive:
-                archive.add(args.app, arcname='gtmux.app')
-            save(manifest_path, manifest)
+            with open_delivery_output(root, 'build.json', 'w', atomic=True) as receipt:
+                receipt.write(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+                with open_delivery_output(root, 'simulator-app.tar.gz', 'wb', atomic=True) as target:
+                    with tarfile.open(fileobj=target, mode='w:gz') as archive:
+                        archive.add(args.app, arcname='gtmux.app')
         else:
             if args.action == 'unpack-build':
                 require_external_path(args.root)

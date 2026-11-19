@@ -100,15 +100,18 @@ func loadObservations(legacyPath, currentPath, agent, session, home string) obse
 	if old.Session == "" {
 		return current
 	}
-	// Use one source for options that can be cleared by a model or permission
-	// change. On a tie the new snapshot also covers any explicit resets.
-	oldModel := observationFact(old.Facts, "model").At > observationFact(current.Facts, "model").At
+	// Model-dependent options belong to the selected model. When both snapshots
+	// agree on it, an effort-only hook can still update the effort independently.
+	oldModel, currentModel := observationFact(old.Facts, "model"), observationFact(current.Facts, "model")
+	sameModel := oldModel.Value == currentModel.Value
+	preferOldModel := oldModel.At > currentModel.At
 	oldPermission := observationFact(old.Facts, "permission").At > observationFact(current.Facts, "permission").At
 	var merged Profile
 	for i, snapshot := range []observation{old, current} {
 		isOld := i == 0
 		for _, f := range snapshot.Facts {
-			if modelOption(f.Key) && oldModel != isOld || f.Key == "mode" && oldPermission != isOld {
+			fromSelectedModel := preferOldModel == isOld || (f.Key == "effort" && sameModel)
+			if modelOption(f.Key) && !fromSelectedModel || f.Key == "mode" && oldPermission != isOld {
 				continue
 			}
 			// A legacy model refresh can carry an older effort without observing it.
