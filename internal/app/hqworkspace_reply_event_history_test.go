@@ -164,7 +164,7 @@ func TestWorkspaceMessageChecksOriginalTargetHistory(t *testing.T) {
 				if blocker == "" && allowed {
 					writes := 0
 					for range 2 {
-						_, e = s.DriveReply(a, 111, func(_ hqworkspace.Conversation, _ string, _ string, valid func() bool) hqworkspace.Delivery {
+						_, e = s.DriveReply(a, 111, workspaceRefusalBoundary, func(_ hqworkspace.Conversation, _ string, _ string, valid func() bool) hqworkspace.Delivery {
 							if !valid() {
 								t.Fatal("current action rejected")
 							}

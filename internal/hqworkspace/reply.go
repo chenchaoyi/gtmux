@@ -152,10 +152,10 @@ func confirmedAfterRefusal(d Database, review ReplyReview, refusal UnsentReceipt
 		return false
 	}
 	if e := review.UserEvent; e != nil {
-		if refusal.EventCursor > 0 {
-			return e.Seq > refusal.EventCursor && e.At >= refusal.At
-		}
-		return e.At > refusal.At
+		// Direct events may be ingested late and their source times have
+		// whole-second precision. Require both a witnessed producer order
+		// and a source time strictly beyond the actual refusal.
+		return refusal.VerifiedBoundary && refusal.EventCursor > 0 && e.Seq > refusal.EventCursor && e.At > refusal.At
 	}
 	msg := d.Messages[strings.TrimPrefix(review.AuthorityRef, "message:")]
 	return msg.Seq > refusal.Revision

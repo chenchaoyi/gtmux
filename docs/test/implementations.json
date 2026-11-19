@@ -3902,5 +3902,13 @@
     "selectors": [
       "TestReplyRecoversOnlyProvenUnsentAction"
     ]
+  },
+  "internal/app/hqworkspace_reply_ordering_test.go": {
+    "cases": [
+      "HRC-013"
+    ],
+    "selectors": [
+      "TestReplyRequiresOriginalProducerAndRefusalOrder"
+    ]
   }
 }

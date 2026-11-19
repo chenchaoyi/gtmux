@@ -176,7 +176,7 @@ func TestReplyReconcilesSavedHistory(t *testing.T) {
 			}
 			calls := 0
 			for range 2 {
-				_, e = s.DriveReply(a, 119, func(target hqworkspace.Conversation, _ string, _ string, valid func() bool) hqworkspace.Delivery {
+				_, e = s.DriveReply(a, 119, workspaceRefusalBoundary, func(target hqworkspace.Conversation, _ string, _ string, valid func() bool) hqworkspace.Delivery {
 					if !valid() || !target.Same(c) {
 						t.Fatal("unverified delivery")
 					}

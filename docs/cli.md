@@ -955,9 +955,12 @@ initialized counter without writing an event or its contents. Re-enabling
 recording preserves that gap. A later verified user resumption can cover the
 same action. A missing initial journal, a changed configuration generation or a
 failed instruction write can also require fresh user authority. A recording fault
-retains only a generation identifier. If the last input gate proves zero submissions,
+retains only a generation identifier. Older instructions lacking proof from the
+original collector require fresh confirmation. If the last input gate proves zero submissions,
 HQ can bind a newer verified user instruction to the original action and receipt.
-The refusal remains in workspace history. A claimed or uncertain submission still
+A direct confirmation must have a verified sequence and source time after the
+recorded refusal. When the refusal has no reliable journal boundary, use a newer
+workspace user instruction. The refusal remains in workspace history. A claimed or uncertain submission still
 requires reconciliation. A newer target instruction invalidates the old review. The claim records the
 reviewed event boundary. `reply_observations` keeps every receipt's latest stage
 after an ordinary `noted` assessment. Claim an unbound receipt and assess

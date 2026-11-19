@@ -46,7 +46,7 @@ func replyInputHold(c workspaceCandidate, io dispatch.IO) string {
 func deliverWorkspaceIntent(target hqworkspace.Conversation, payload, id string, current func() bool, reply bool) hqworkspace.Delivery {
 	live, ok := resolveWorkspaceGoal(target)
 	if !ok {
-		return hqworkspace.Delivery{State: "identity-unavailable", SafeHold: true, BeforeSubmit: true, ObservedEventSeq: events.CurrentSeq()}
+		return hqworkspace.Delivery{State: "identity-unavailable", SafeHold: true, BeforeSubmit: true}
 	}
 	io := workspaceDispatch(live.Pane, target.Agent)
 	hold := func() string {
@@ -63,7 +63,7 @@ func deliverWorkspaceIntent(target hqworkspace.Conversation, payload, id string,
 		return workspaceInputHold(c.Status)
 	}
 	if why := hold(); why != "" {
-		return hqworkspace.Delivery{State: why, SafeHold: true, BeforeSubmit: true, ObservedEventSeq: events.CurrentSeq()}
+		return hqworkspace.Delivery{State: why, SafeHold: true, BeforeSubmit: true}
 	}
 	// A native outcome alone does not prove that the mutation was never
 	// attempted. Remember a refusal we observed in our own pre-claim gate.
@@ -96,7 +96,6 @@ func deliverWorkspaceIntent(target hqworkspace.Conversation, payload, id string,
 	delivery := hqworkspace.Delivery{State: string(result.State), Evidence: result.Evidence, SafeHold: safe}
 	if reply && safe && !result.Delivered && result.Delivery == "" && result.Attempts == 0 && (!enteredNative || refusedAtGate) {
 		delivery.BeforeSubmit = true
-		delivery.ObservedEventSeq = events.CurrentSeq()
 	}
 	return delivery
 }

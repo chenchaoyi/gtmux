@@ -5,12 +5,25 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/relay"
 )
+
+var workspaceReplyTime = func() int64 { return time.Now().Unix() }
+
+// Sample inside the persisted refusal transaction, including when the action
+// became stale before the transport adapter was ever called.
+func workspaceRefusalBoundary() (int64, int64) {
+	seq, err := events.VerifiedSequence()
+	if err != nil {
+		seq = 0
+	}
+	return workspaceReplyTime(), seq
+}
 
 // Only explicit HQ reservations reach this pump. An ordinary reply, even one
 // from an idle source with an open goal, has no path to dispatch.
@@ -41,7 +54,7 @@ func pumpWorkspaceReplies(s *hqworkspace.Store, now int64) error {
 			}
 			continue
 		}
-		_, err = s.DriveReply(a, now, func(c hqworkspace.Conversation, text, id string, current func() bool) hqworkspace.Delivery {
+		_, err = s.DriveReply(a, now, workspaceRefusalBoundary, func(c hqworkspace.Conversation, text, id string, current func() bool) hqworkspace.Delivery {
 			return deliverWorkspaceIntent(c, text, id, func() bool { return current() && replySourceHold(a, d) == "" }, true)
 		})
 		if err != nil && !errors.Is(err, hqworkspace.ErrConflict) {
@@ -87,7 +100,7 @@ func workspaceMessageHistoryHold(d hqworkspace.Database, a hqworkspace.IntentAtt
 	if err != nil || high < a.EventCursor {
 		return "HQ must reconcile the incomplete or unreadable target event history"
 	}
-	if !events.RecordingPolicyCovers(policy, m.At) {
+	if !events.RecordingPolicyCovers(policy) {
 		return "HQ must verify a fresh user instruction after event recording coverage changed"
 	}
 	target := a.Intent.Target
@@ -209,7 +222,7 @@ func workspaceVerifiedUserEvent(ref string) (*hqworkspace.UserEvent, error) {
 		if r.Seq != seq {
 			continue
 		}
-		if !events.RecordingPolicyCovers(r.RecordingPolicy, r.Ts) {
+		if !events.RecordingPolicyCovers(r.RecordingPolicy) {
 			return nil, errors.New("HQ must verify a fresh user instruction after event recording coverage changed")
 		}
 		if r.Event != "UserPromptSubmit" || r.Origin != events.OriginInstruction || r.HomeID == "" || r.AgentSession == "" || r.Ts <= 0 || r.Actor != "" && r.Actor != "user" || events.AuthorOf(rows)[seq] != "" {

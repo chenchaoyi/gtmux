@@ -158,7 +158,7 @@ func TestReviewedReplyAuthorityAndOrder(t *testing.T) {
 				return
 			}
 			calls := 0
-			_, e = s.DriveReply(a, 114, func(target hqworkspace.Conversation, body, id string, valid func() bool) hqworkspace.Delivery {
+			_, e = s.DriveReply(a, 114, workspaceRefusalBoundary, func(target hqworkspace.Conversation, body, id string, valid func() bool) hqworkspace.Delivery {
 				calls++
 				if !target.Same(c) || !valid() {
 					t.Fatal("fresh exact target refused")

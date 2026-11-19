@@ -33,28 +33,29 @@ type IntentAttempt struct {
 // UnsentReceipt is issued only when the local gate proved zero submissions.
 // History retains each refusal even after a later authorization is bound.
 type UnsentReceipt struct {
-	Revision     uint64 `json:"revision"`
-	EventCursor  int64  `json:"event_cursor"`
-	At           int64  `json:"at"`
-	AuthorityRef string `json:"authority_ref"`
+	VerifiedBoundary bool   `json:"verified_boundary,omitempty"`
+	Revision         uint64 `json:"revision"`
+	EventCursor      int64  `json:"event_cursor"`
+	At               int64  `json:"at"`
+	AuthorityRef     string `json:"authority_ref"`
 }
 
 // DriveIntent is called only by an explicit verified HQ action, never by a tick.
 // DeliveryIO reuses the existing identity/draft/input gates; it must recheck the
 // supplied current predicate before paste and submission, not only at resolution.
 func (s *Store) DriveIntent(matter, action string, revision uint64, at int64, send func(Conversation, string, string, func() bool) Delivery) (IntentAttempt, error) {
-	return s.driveIntent(matter, action, "", revision, at, send)
+	return s.driveIntent(matter, action, "", revision, at, nil, send)
 }
 
 // DriveReply consumes only an explicit, durable reply-continuation reservation.
-func (s *Store) DriveReply(a IntentAttempt, at int64, send func(Conversation, string, string, func() bool) Delivery) (IntentAttempt, error) {
+func (s *Store) DriveReply(a IntentAttempt, at int64, boundary func() (int64, int64), send func(Conversation, string, string, func() bool) Delivery) (IntentAttempt, error) {
 	if a.ReplyID == "" {
 		return IntentAttempt{}, ErrConflict
 	}
-	return s.driveIntent(a.MatterID, a.Intent.ID, a.ReplyID, a.Revision, at, send)
+	return s.driveIntent(a.MatterID, a.Intent.ID, a.ReplyID, a.Revision, at, boundary, send)
 }
 
-func (s *Store) driveIntent(matter, action, reply string, revision uint64, at int64, send func(Conversation, string, string, func() bool) Delivery) (IntentAttempt, error) {
+func (s *Store) driveIntent(matter, action, reply string, revision uint64, at int64, boundary func() (int64, int64), send func(Conversation, string, string, func() bool) Delivery) (IntentAttempt, error) {
 	started := time.Now()
 	var out IntentAttempt
 	if err := state.MkdirAll(s.dir, 0700); err != nil {
@@ -163,9 +164,12 @@ func (s *Store) driveIntent(matter, action, reply string, revision uint64, at in
 			}
 		}
 		if reply != "" && out.State == "held" && verdict.BeforeSubmit {
-			refusedAt := at + int64(time.Since(started)/time.Second)
+			refusedAt, seq := at, int64(0)
+			if boundary != nil {
+				refusedAt, seq = boundary()
+			}
 			changed(d, refusedAt, "reply-refused-before-submit", matter, action, out.Evidence)
-			out.Unsent = &UnsentReceipt{Revision: d.Revision, EventCursor: verdict.ObservedEventSeq, At: refusedAt, AuthorityRef: replyAuthorityRef(d.Matters[matter], out)}
+			out.Unsent = &UnsentReceipt{Revision: d.Revision, EventCursor: seq, VerifiedBoundary: seq > 0 && refusedAt > 0, At: refusedAt, AuthorityRef: replyAuthorityRef(d.Matters[matter], out)}
 		}
 		d.IntentAttempts[action] = out
 		changed(d, at, "goal-drive-receipt", matter, action, out.State)

@@ -27,7 +27,7 @@ func recordingGenerationPath() string { return filepath.Join(state.StatusDir(), 
 // witness. It is a single content-free generation, never a copy of the log.
 func hqRecordingFaultPath() string { return filepath.Join(state.HQHome(), "event-coverage-fault") }
 
-func recordingGeneration(initialize bool) (string, bool, error) {
+func recordingGeneration(initialize bool) (string, error) {
 	path := recordingGenerationPath()
 	f, err := state.OpenPrivateRead(path)
 	if initialize && errors.Is(err, os.ErrNotExist) {
@@ -37,39 +37,39 @@ func recordingGeneration(initialize bool) (string, bool, error) {
 			e = errors.Join(e, w.Sync(), w.Close())
 		}
 		if e != nil && !errors.Is(e, os.ErrExist) {
-			return "", false, e
+			return "", e
 		}
 		f, err = state.OpenPrivateRead(path)
 	}
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
 	defer f.Close()
-	key, seenFault, err := readGeneration(f)
+	key, err := readGeneration(f)
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
 	fallback, err := state.OpenPrivateRead(hqRecordingFaultPath())
 	if errors.Is(err, os.ErrNotExist) {
-		return key, seenFault, nil
+		return key, nil
 	}
 	if err != nil {
-		return "", false, err
+		return "", err
 	}
 	defer fallback.Close()
-	other, backupFault, err := readGeneration(fallback)
-	return key + "/" + other, seenFault || backupFault, err
+	other, err := readGeneration(fallback)
+	return key + "/" + other, err
 }
 
-func readGeneration(f *os.File) (string, bool, error) {
+func readGeneration(f *os.File) (string, error) {
 	b, err := io.ReadAll(io.LimitReader(f, 64))
 	if err != nil || len(b) != 33 || (b[0] != '0' && b[0] != '1') {
-		return "", false, errors.New("invalid event coverage generation")
+		return "", errors.New("invalid event coverage generation")
 	}
 	if _, err = hex.DecodeString(string(b[1:])); err != nil {
-		return "", false, errors.New("invalid event coverage nonce")
+		return "", errors.New("invalid event coverage nonce")
 	}
-	return string(b), b[0] == '1', nil
+	return string(b), nil
 }
 
 func invalidateRecording() error {

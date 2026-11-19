@@ -35,6 +35,15 @@ func TestReplyHistoryUsesCommittedOrderAndActiveJournal(t *testing.T) {
 func exerciseReplyCoverage(t *testing.T, scenario string) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("TMUX", "")
+	originalTime := workspaceReplyTime
+	t.Cleanup(func() { workspaceReplyTime = originalTime })
+	delayed := strings.HasPrefix(scenario, "final-no-cursor") || strings.HasPrefix(scenario, "final-delayed") || scenario == "final-same-second"
+	workspaceReplyTime = func() int64 {
+		if delayed {
+			return 118
+		}
+		return 114
+	}
 	must := func(e error) {
 		t.Helper()
 		if e != nil {
@@ -271,12 +280,23 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 		}
 		return []workspaceCandidate{visible}
 	}
+	counterPath := filepath.Join(state.Dir(), "events.seq")
+	hiddenCounter := false
 	writes, callbacks := 0, 0
 	workspaceDispatch = func(string, ...string) dispatch.IO {
 		return dispatch.IO{Capture: func() string { return "› \n\n  ? for shortcuts" }, Now: func() int64 { return 114 }, Sleep: func() {}, SubmitNative: func(o dispatch.Opts, body string, hold func() string) dispatch.Result {
 			callbacks++
 			if final && scenario != "final-before-dispatch" && callbacks == 1 {
 				switch scenario {
+				case "final-no-cursor-earlier", "final-no-cursor-later", "final-no-cursor-message":
+					must(events.AppendChecked(event(116, "UserPromptSubmit", c, "Before the actual refusal")))
+					must(os.Rename(counterPath, counterPath+".saved"))
+					must(os.Mkdir(counterPath, 0700))
+					hiddenCounter = true
+					if why := hold(); why != "" {
+						return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: why}
+					}
+					t.Fatal("unreadable sequence passed native admission")
 				case "final-after-claim":
 					if hold() != "" {
 						t.Fatal("fixture failed initial native claim")
@@ -326,6 +346,10 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 		}}
 	}
 	must(pumpWorkspaceReplies(s, 114))
+	if hiddenCounter {
+		must(os.Remove(counterPath))
+		must(os.Rename(counterPath+".saved", counterPath))
+	}
 	must(pumpWorkspaceReplies(s, 115))
 	proofAt := int64(116)
 	if final {
@@ -342,32 +366,41 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 		}
 		originalRef := a.VerifiedUserEvent
 		switch scenario {
-		case "final-message":
-			_, e := applyWorkspaceAction(s, workspaceAction{Op: "send", ID: "confirmed-after-refusal", Matter: matter, Body: "Continue the original fixture"}, 116)
+		case "final-message", "final-no-cursor-message":
+			_, e := applyWorkspaceAction(s, workspaceAction{Op: "send", ID: "confirmed-after-refusal", Matter: matter, Body: "Continue the original fixture"}, 120)
 			must(e)
 			a.AuthorityRef, a.VerifiedUserEvent = "message:confirmed-after-refusal", ""
 		case "final-same-authority":
 			a.AuthorityRef = originalRef
-		case "final-older-event":
+		case "final-older-event", "final-no-cursor-earlier":
 			a.AuthorityRef, a.VerifiedUserEvent = "events:2", "events:2"
 		default:
-			must(events.AppendChecked(event(116, "UserPromptSubmit", c, "Fresh explicit confirmation")))
+			sourceTime := int64(116)
+			switch scenario {
+			case "final-no-cursor-later", "final-delayed-fresh":
+				sourceTime = 119
+			case "final-delayed-source":
+				sourceTime = 117
+			case "final-same-second":
+				sourceTime = 118
+			}
+			must(events.AppendChecked(event(sourceTime, "UserPromptSubmit", c, "Fresh explicit confirmation")))
 			a.AuthorityRef = "events:" + strconv.FormatInt(events.CurrentSeq(), 10)
 			a.VerifiedUserEvent = a.AuthorityRef
 		}
 		must(ingestWorkspaceObservations(s, 117))
-		review("review-after-final-refusal", 118)
+		review("review-after-final-refusal", 122)
 		a.Revision = current().Revision
-		_, armErr := applyWorkspaceAction(s, a, 119)
-		resume = scenario == "final-event" || scenario == "final-message" || scenario == "final-before-dispatch"
-		if (scenario == "final-same-authority" || scenario == "final-older-event") && (armErr == nil || !strings.Contains(armErr.Error(), "after the recorded refusal")) {
+		_, armErr := applyWorkspaceAction(s, a, 123)
+		resume = scenario == "final-no-cursor-message" || scenario == "final-delayed-fresh" || scenario == "final-event" || scenario == "final-message" || scenario == "final-before-dispatch"
+		if (scenario == "final-same-authority" || scenario == "final-older-event" || delayed && !resume) && (armErr == nil || !strings.Contains(armErr.Error(), "after the recorded refusal")) {
 			t.Fatal("missing fresh authorization interlock", armErr)
 		}
 		if resume {
 			must(armErr)
 		}
-		must(pumpWorkspaceReplies(s, 120))
-		must(pumpWorkspaceReplies(s, 121))
+		must(pumpWorkspaceReplies(s, 124))
+		must(pumpWorkspaceReplies(s, 125))
 		d = phase1CursorDatabase(t, s)
 		if refused {
 			history := false
@@ -390,7 +423,7 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 			t.Fatal("same action did not resume", callbacks, writes, d.IntentAttempts[p.Intent.ID])
 		}
 		allowed = true
-		proofAt = 122
+		proofAt = 126
 	}
 	if allowed != (writes == 1) || writes > 1 {
 		t.Fatalf("allowed=%v native writes=%d", allowed, writes)

@@ -396,3 +396,9 @@ The workspace SHALL project reply, active-turn notice, source fetch and executio
 - **THEN** the prior source requires reconciliation even after an unrelated event and a restart; a new verified instruction can authorize the original step
 - **AND** when the final local input gate proves zero submissions, the workspace preserves that refusal and may rearm the same action only after a later user instruction and a new HQ review
 - **AND** a prior claim, uncertain outcome, or accepted submission remains reserved for reconciliation under its original identifier
+
+#### Scenario: The original collector or refusal boundary cannot establish order
+- **WHEN** a direct source or a workspace instruction lacks evidence from the collection interval in which it was issued
+- **THEN** verification SHALL NOT initialize a new generation to vouch for the old source
+- **AND** rearming after a proven zero submission using a direct event SHALL require a verified journal boundary sampled at the refusal, a higher event sequence and a strictly later source time
+- **AND** a workspace user confirmation committed after the refusal can establish order through its durable revision
