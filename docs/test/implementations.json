@@ -4313,5 +4313,13 @@
     "selectors": [
       "TestWorkspaceTriageCLI"
     ]
+  },
+  "internal/app/hqworkspace_triage_role_test.go": {
+    "cases": [
+      "HPT-004"
+    ],
+    "selectors": [
+      "TestWorkspaceTriageRoleAfterPaneReuse"
+    ]
   }
 }

@@ -319,7 +319,8 @@ The App stacks Needs input and Following on phones and puts them side by side on
 
 The workspace commits eligible instruction-shaped prompts and Stop evidence with the event
 checkpoint even when the source has no unique execution matter. Captured managed terminal
-sources qualify; native sources require the exact configured home and a current HQ follow
+sources qualify. The lifecycle event captures the supervisor or worker role for the exact
+conversation. Reusing a pane number does not discard earlier evidence. Native sources require the exact configured home and a current HQ follow
 that covers the event time. `triage-unassigned:Stop` and `triage-ambiguous:Stop` retain
 the original event citation and identity. Instruction-shaped evidence does not prove
 authorship. Triage uses the existing exact wake retry and requires a verified HQ lease.

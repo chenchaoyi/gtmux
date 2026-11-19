@@ -53,7 +53,7 @@ func TestWorkspaceTriageIngestion(t *testing.T) {
 	source.rows = []events.Record{
 		{Seq: 1, Ts: now, Agent: "Claude Code", AgentSession: "plain", Pane: "%2", Session: "terminal", Event: "UserPromptSubmit", Origin: events.OriginInstruction},
 		{Seq: 2, Ts: now, Agent: "Claude Code", AgentSession: "overlap", Pane: "%3", Session: "terminal", Event: "Stop"},
-		{Seq: 3, Ts: now, Agent: "Claude Code", AgentSession: "old-hq", Pane: "%8", Session: "old", Event: "Stop"},
+		{Seq: 3, Ts: now, Agent: "Claude Code", AgentSession: "old-hq", Pane: "%8", Session: "hq", Event: "Stop"},
 		{Seq: 4, Ts: now, Agent: "Claude Code", Pane: "%5", Session: "missing", Event: "Stop"},
 		{Seq: 5, Ts: now, Agent: "Codex", AgentSession: "not-followed", HomeID: home, Event: "Stop"},
 		{Seq: 6, Ts: now, Agent: "Codex", AgentSession: "followed", HomeID: "foreign", Event: "Stop"},

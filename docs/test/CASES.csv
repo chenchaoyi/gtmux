@@ -438,10 +438,10 @@ LEG-150db10da0b7,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.
 MAP-6c44c0313e74,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,305,reviewed-selector,TestWorkspaceDraftKeepsBothWakeQueues,False,"HPC-004,HPC-005"
 MAP-69d66d9f9a98,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,97,reviewed-selector,TestWorkspaceContinuationCLI,False,"HPC-004,HPC-005"
 MAP-0e82e0de8675,L3,reviewed implementation,internal/app/hqworkspace_continuation_test.go,23,reviewed-selector,TestWorkspaceContinuationIncidentReplay,False,HPC-002
-MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
-MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,146,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
-MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,183,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
-MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,207,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,112,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,149,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,186,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,210,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-d0af369139ad,L2,reviewed implementation,internal/app/hqworkspace_delayed_drive_test.go,12,reviewed-selector,TestGoalRelayAdapterFirstIngestAfterDeadlineDoesNotSend,False,HGD-010
 MAP-5f24b23ab8de,L2,reviewed implementation,internal/app/hqworkspace_goal_regression_test.go,11,reviewed-selector,TestGoalNoNewEventsAfterNotedStillRequiresHQ,False,HGD-005
 MAP-e69b385b8aa2,L3,reviewed implementation,internal/app/hqworkspace_goal_runtime_test.go,48,reviewed-selector,TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch,False,HGD-009
@@ -477,6 +477,7 @@ LEG-b12010762948,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,194,
 LEG-ecada2e2e335,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,206,Test,TestWorkspaceDispatchCannotAdoptLaterOccupantOfItsOldPane,False,legacy-not-retrospectively-reviewed
 LEG-618dafffee1a,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,226,Test,TestWorkspaceDeliveryDoesNotBlockFeedTickOrStartConcurrentWorkers,False,legacy-not-retrospectively-reviewed
 MAP-4472b7512a0d,L3,reviewed implementation,internal/app/hqworkspace_triage_cli_test.go,25,reviewed-selector,TestWorkspaceTriageCLI,False,HPT-003
+MAP-1fb5ea2421ed,L3,reviewed implementation,internal/app/hqworkspace_triage_role_test.go,18,reviewed-selector,TestWorkspaceTriageRoleAfterPaneReuse,False,HPT-004
 MAP-73814841a1bf,L2,reviewed implementation,internal/app/hqworkspace_triage_test.go,19,reviewed-selector,TestWorkspaceTriageIngestion,False,HPT-002
 MAP-acfe376abd7d,L2,reviewed implementation,internal/app/input_archive_doctor_test.go,11,reviewed-selector,TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair,False,SPL-025
 LEG-eb2db2f832b5,L1,Go core / CLI / server,internal/app/install_selection_test.go,13,Test,TestAutoHookSelectionPreservesExplicitScopeAndDisabledPolicy,False,legacy-not-retrospectively-reviewed

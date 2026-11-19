@@ -65,7 +65,7 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 	rows, gap := workspaceReadEvents(cursor)
 	last := cursor
 	observations := []hqworkspace.Observation{}
-	var scope *workspaceTriageScope
+	var scope []resume.Located
 	var senders map[int64]string
 	senderScan := false
 	for i, r := range rows {
@@ -103,10 +103,10 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 					continue
 				}
 			}
-			if scope == nil {
+			if scope == nil && r.TerminalRole == "" {
 				scope = readWorkspaceTriageScope()
 			}
-			if scope.isSupervisor(r, c) {
+			if workspaceTriageSupervisor(r, c, scope) {
 				continue
 			}
 			c.Pane = r.Pane // historical context only; the tuple is the identity
@@ -215,23 +215,32 @@ func workspaceTriageFollowed(c hqworkspace.Conversation, at int64) bool {
 	return follow.HQ && follow.FollowSince > 0 && at >= follow.FollowSince
 }
 
-type workspaceTriageScope struct {
-	hqPane    string
-	hqSources map[hqworkspace.Conversation]bool
-}
-
-func readWorkspaceTriageScope() *workspaceTriageScope {
-	scope := &workspaceTriageScope{hqPane: hqpane.Find(), hqSources: map[hqworkspace.Conversation]bool{}}
+func readWorkspaceTriageScope() []resume.Located {
+	// This is a fallback for events that predate capture-time role metadata.
+	out := []resume.Located{}
 	for _, r := range resume.AllLocated() {
-		if r.SessionID != "" && hqpane.SameDir(r.Cwd, state.HQHome()) {
-			scope.hqSources[hqworkspace.Conversation{Agent: r.Agent, SessionID: r.SessionID, HomeID: r.HomeID}] = true
+		if r.SessionID != "" && r.UpdatedAt > 0 && hqpane.SameDir(r.Cwd, state.HQHome()) {
+			out = append(out, r)
 		}
 	}
-	return scope
+	return out
 }
 
-func (s *workspaceTriageScope) isSupervisor(r events.Record, c hqworkspace.Conversation) bool {
-	return r.Pane != "" && r.Pane == s.hqPane || s.hqSources[c]
+func workspaceTriageSupervisor(r events.Record, c hqworkspace.Conversation, legacy []resume.Located) bool {
+	if r.TerminalRole != "" {
+		return r.TerminalRole == events.TerminalRoleHQ
+	}
+	for _, saved := range legacy {
+		// A later role cannot explain an older event. For terminal events,
+		// the captured session must also match the durable location.
+		if saved.UpdatedAt > r.Ts || saved.Agent != c.Agent || saved.HomeID != c.HomeID || saved.SessionID != c.SessionID {
+			continue
+		}
+		if r.Pane == "" || strings.HasPrefix(saved.Loc, r.Session+":") {
+			return true
+		}
+	}
+	return false
 }
 
 func workspaceHasConversation(d hqworkspace.Database, c hqworkspace.Conversation) bool {

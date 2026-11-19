@@ -1199,10 +1199,15 @@ func Run(stdin io.Reader, args []string) int {
 			origin = events.OriginInstruction
 		}
 		if journalWorthy(event, hadWaiting) {
+			role := ""
+			if pane != "" && session != "" && agentSession != "" &&
+				(event == "Stop" || event == "StopFailure" || origin == events.OriginInstruction) {
+				role = workspaceTerminalRole(pane, agentKey, homeID, agentSession)
+			}
 			events.Append(events.Record{
 				Ts: time.Now().Unix(), Event: event, State: decisionState(d, event),
 				Pane: pane, Session: session, Agent: display, Kind: string(waitKind),
-				Summary: summary, Class: evClass, Origin: origin,
+				Summary: summary, Class: evClass, Origin: origin, TerminalRole: role,
 				// Recorded on EVERY event, not just the pane-less ones: which record will
 				// need attributing later is not knowable when it is written.
 				AgentSession: agentSession, HomeID: homeID, Client: client, KnowledgeAllowed: learning,
@@ -1347,6 +1352,19 @@ func Run(stdin io.Reader, args []string) int {
 	diag.For("hook").Act("act.notify", "system", pane, diag.OK, "queued a desktop notification",
 		"kind", kind, "agent", agentKey)
 	return 0
+}
+
+// workspaceTerminalRole binds the supervisor stamp to the live source
+// conversation. A stale hook for a replaced occupant does not inherit the role.
+func workspaceTerminalRole(pane, agent, home, session string) string {
+	if _, self := hqpane.FindOther(pane); !self {
+		return events.TerminalRoleWorker
+	}
+	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+	if r, ok := resume.LoadLive(loc); ok && r.Agent == agent && r.HomeID == home && r.SessionID == session {
+		return events.TerminalRoleHQ
+	}
+	return ""
 }
 
 // Codex's shared app-server may emit a Stop without enough evidence to bind it
