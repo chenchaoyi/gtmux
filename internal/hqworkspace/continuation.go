@@ -59,11 +59,11 @@ func ContinuationWakeQueue(d Database, now int64) []Reconciliation {
 	var out []Reconciliation
 	for _, q := range ReconciliationQueue(d, now) {
 		o := q.Observation
-		if !o.Continuation || hasLiveClaim(q, now) {
+		if o.OccurredAt > now || hasLiveClaim(q, now) {
 			continue
 		}
 		matter := CanonicalMatter(d, o.MatterID)
-		if continuationNeeded(d, d.Matters[matter], o, now) {
+		if o.NeedsTriage() || o.Continuation && continuationNeeded(d, d.Matters[matter], o, now) {
 			out = append(out, q)
 		}
 	}
@@ -75,7 +75,7 @@ func ContinuationWakeQueue(d Database, now int64) []Reconciliation {
 func ReconciliationWakeQueue(d Database, now int64) []Reconciliation {
 	var out []Reconciliation
 	for _, q := range ReconciliationQueue(d, now) {
-		if q.Observation.Continuation || hasLiveClaim(q, now) {
+		if q.Observation.Continuation || q.Observation.NeedsTriage() || hasLiveClaim(q, now) {
 			continue
 		}
 		out = append(out, q)
@@ -83,15 +83,27 @@ func ReconciliationWakeQueue(d Database, now int64) []Reconciliation {
 	return out
 }
 
+type wakeSource struct {
+	matter               string
+	agent, home, session string
+}
+
+func sourceForWake(d Database, o Observation) wakeSource {
+	if o.NeedsTriage() {
+		return wakeSource{agent: o.Conversation.Agent, home: o.Conversation.HomeID, session: o.Conversation.SessionID}
+	}
+	return wakeSource{matter: CanonicalMatter(d, o.MatterID)}
+}
+
 func dueContinuations(d Database, rows []Reconciliation, now int64) []Reconciliation {
-	lastAttempt := map[string]int64{}
+	lastAttempt := map[wakeSource]int64{}
 	for _, q := range rows {
-		id := CanonicalMatter(d, q.Observation.MatterID)
+		id := sourceForWake(d, q.Observation)
 		lastAttempt[id] = max(lastAttempt[id], q.ReminderAt)
 	}
 	var due []Reconciliation
 	for _, q := range rows {
-		id := CanonicalMatter(d, q.Observation.MatterID)
+		id := sourceForWake(d, q.Observation)
 		gap := int64(continuationRetry)
 		if q.ReminderCount >= continuationFastTries {
 			gap = continuationBackoff

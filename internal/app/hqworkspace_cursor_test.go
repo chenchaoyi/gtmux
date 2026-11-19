@@ -205,6 +205,9 @@ func TestPhase1CursorEmptyRetentionGap(t *testing.T) {
 }
 
 func TestPhase1CursorFilteredPageBoundary(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
 	source := &phase1CursorSource{latest: 10}
 	s, home, c := phase1CursorStore(t, source, true)
 	for seq := int64(11); seq <= 511; seq++ {

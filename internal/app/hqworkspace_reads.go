@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/conversation"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
@@ -353,7 +354,7 @@ func workspaceKnownConversation(c hqworkspace.Conversation) bool {
 			return true
 		}
 	}
-	return false
+	return workspaceTriageFollowed(c, time.Now().Unix()) && conversation.Verified(c.Agent, c.SessionID, c.HomeID)
 }
 
 func workspaceParticipant(s *hqworkspace.Store, matter, id string) (workspaceDetailReport, error) {

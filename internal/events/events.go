@@ -29,16 +29,19 @@ import (
 // Record is one logged lifecycle event (the stable additive contract).
 type Record struct {
 	RecordingPolicy string `json:"recording_policy,omitempty"`
-	MessageID       string `json:"message_id,omitempty"`
-	MessageSeq      int64  `json:"message_seq,omitempty"`
-	MessageRole     string `json:"message_role,omitempty"`
-	HomeID          string `json:"home_id,omitempty"`
-	TaskID          string `json:"task_id,omitempty"`
-	BindingID       string `json:"binding_id,omitempty"`
-	ResourceClosed  *bool  `json:"resource_closed,omitempty"` // reap settlement, not writer/turn release
-	Outcome         string `json:"outcome,omitempty"`         // structured audit settlement; not agent state
-	Phase           string `json:"phase,omitempty"`           // selection | ledger | render | directory-sync
-	Ts              int64  `json:"ts"`                        // unix seconds
+	// TerminalRole is captured by the lifecycle producer. A later tmux pane
+	// number has no bearing on the source of a historical event.
+	TerminalRole   string `json:"terminal_role,omitempty"`
+	MessageID      string `json:"message_id,omitempty"`
+	MessageSeq     int64  `json:"message_seq,omitempty"`
+	MessageRole    string `json:"message_role,omitempty"`
+	HomeID         string `json:"home_id,omitempty"`
+	TaskID         string `json:"task_id,omitempty"`
+	BindingID      string `json:"binding_id,omitempty"`
+	ResourceClosed *bool  `json:"resource_closed,omitempty"` // reap settlement, not writer/turn release
+	Outcome        string `json:"outcome,omitempty"`         // structured audit settlement; not agent state
+	Phase          string `json:"phase,omitempty"`           // selection | ledger | render | directory-sync
+	Ts             int64  `json:"ts"`                        // unix seconds
 	// Seq is a strictly increasing sequence number assigned at the single append
 	// path (hq-attention-system): it gives consumers a total order and a durable
 	// cursor position that survives rotation (byte offsets do not). Additive — a
@@ -116,6 +119,12 @@ type Record struct {
 // OriginInstruction marks a prompt submission whose payload is a real instruction —
 // typed prose or a slash command. See Record.Origin: author-agnostic by design.
 const OriginInstruction = "instruction"
+
+const (
+	TerminalRoleHQ         = "hq"
+	TerminalRoleWorker     = "worker"
+	TerminalRoleUnverified = "unverified"
+)
 
 // ControlPrefix namespaces gtmux's OWN control records (`gtmux:distill`,
 // `gtmux:self-check`, `gtmux:reconcile`, …) apart from the agent lifecycle events the

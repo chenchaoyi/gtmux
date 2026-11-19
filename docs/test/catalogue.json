@@ -3745,7 +3745,7 @@
           "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
         }
       ],
-      "sha256": "e8623d5e2e5c3c714f8a75a9d6236ffa1226744e3d2ce1dbb21e6083afc65ccb"
+      "sha256": "26471addb0d8709804fe2f227af74abae78dabcbdf3ca7e18cc0c0eeb803ed96"
     },
     "internal/app/hqworkspace_overview_test.go": {
       "sha256": "f485fe3bbd99f817308ce7fe4d9d10d8f33615b13efb791e6e6211e0de9eabc5",
@@ -67480,6 +67480,86 @@
         }
       ],
       "sha256": "3b337955deb6443bb995fb3ba08d37ec46f61099318756c9ff033c627ca62ca0"
+    },
+    "internal/app/hqworkspace_triage_cli_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4472b7512a0d",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceTriageCLI",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "HPT-003"
+        }
+      ],
+      "sha256": "a47f579b66586c67a7d260d9e346944fcd55944d6cd2eabc35442004affc3301"
+    },
+    "internal/app/hqworkspace_triage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-73814841a1bf",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceTriageIngestion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HPT-002"
+        }
+      ],
+      "sha256": "d1ac832979657bd71f68650a7d43b670b317175c02d990a93a6dd6a036ecb4d0"
+    },
+    "internal/hqworkspace/triage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6655d6f58f73",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceTriageAssessment",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HPT-001"
+        }
+      ],
+      "sha256": "2d52c3eb04c286ee27ebc98cbc9bef1ea61b68022eae691da587ee94381bcfc7"
+    },
+    "internal/app/hqworkspace_triage_role_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1fb5ea2421ed",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceTriageRoleAfterPaneReuse",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "HPT-004"
+        }
+      ],
+      "sha256": "bf81cb59198da23d048c90b849dc5448b67992f3e3d5d5e11dbc056e3225d8d1"
+    },
+    "internal/app/hqworkspace_triage_late_role_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6ef74dd1c8b6",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceTriageLateWorkerCannotClaimSupervisorRole",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "HPT-005"
+        }
+      ],
+      "sha256": "3ff5c8b462941fbf7587ca82408cb340bdb48a99c0f332cb770f93255d9a7093"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",
