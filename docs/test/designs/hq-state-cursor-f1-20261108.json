@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex continuation implementation owner (self-review; based on independent P1/F1 evidence at exact 9062f9a2)",
-    "date": "2026-11-08",
+    "date": "2026-11-20",
     "decision": "Implement deterministic L2 regressions before the smallest production correction; obtain independent delta review before push",
-    "notes": "Inspected production ingestWorkspaceObservations, events.ReadSince, Store.Ingest/ActivateObservations and the independent retained-event counterexample. Source adapters impose an explicit empty-snapshot then append then sequence-check ordering; no sleep or scheduler lottery. Tests execute the real app ingester and on-disk Store, not a copied algorithm. All adapters restored and all Stores under task temporary storage. This proves the consumer contract under a valid read/append interleaving, not full production event-log scheduling or crash/fsync behavior. 2026-11-19 implementation-owner re-review: the concurrent-append oracle also checks the persisted continuation marker. The exact Stop and StopFailure events are eligible and the user instruction is ordinary. The complete observation equality, cursor and duplicate-ingestion checks remain."
+    "notes": "Inspected production ingestWorkspaceObservations, events.ReadSince, Store.Ingest/ActivateObservations and the independent retained-event counterexample. Source adapters impose an explicit empty-snapshot then append then sequence-check ordering; no sleep or scheduler lottery. Tests execute the real app ingester and on-disk Store, not a copied algorithm. All adapters restored and all Stores under task temporary storage. This proves the consumer contract under a valid read/append interleaving, not full production event-log scheduling or crash/fsync behavior. 2026-11-19 implementation-owner re-review: the concurrent-append oracle also checks the persisted continuation marker. The exact Stop and StopFailure events are eligible and the user instruction is ordinary. The complete observation equality, cursor and duplicate-ingestion checks remain. The v2 fixture review isolates HOME and provider identity without changing the 500-record pagination, filtering, or checkpoint expectations."
   },
   "cases": [
     {
@@ -69,5 +69,5 @@
       ]
     }
   ],
-  "seal": "baf12469e04a04ba17671ad290118ff60f0fdc611ef44ad9fb57f6e0d8980688"
+  "seal": "67f475098a5c90539e197d8d91d845ad298ba7c1c552efb269b424972d8151a4"
 }

@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner (self-review)",
-    "date": "2026-11-19",
+    "date": "2026-11-20",
     "decision": "Ready for implementation and exact-head review",
-    "notes": "Use exact journal identity, role and follow boundaries. A captured instruction can be queued for verification without a sender or execution inference. Exercise the existing transport rather than mocking acceptance. Use the existing HQ claim and assessment endpoint, and verify durable handoff to an explicitly registered or existing goal, never treating acknowledgement as permission. No live account or service is part of the test."
+    "notes": "Use exact journal identity, role and follow boundaries. A captured instruction can be queued for verification without a sender or execution inference. Exercise the existing transport rather than mocking acceptance. Use the existing HQ claim and assessment endpoint, and verify durable handoff to an explicitly registered or existing goal, never treating acknowledgement as permission. No live account or service is part of the test. For legacy supervisor evidence, require the exact saved conversation, matching captured tmux session and a role record at or before the occurrence. New hook events carry the role as captured. Existing expected source and authorization boundaries remain."
   },
   "cases": [
     {
@@ -42,5 +42,5 @@
       ]
     }
   ],
-  "seal": "74cda8e01c1c272b20921b4fb24df5e3cead94f99c5dddea32672edaf97852e3"
+  "seal": "309495d307a58c179b824547b7abfc77dbef3b38343c0a15873492820894e5ec"
 }
