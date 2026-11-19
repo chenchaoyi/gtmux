@@ -315,6 +315,22 @@ identity; see [Clio and HQ topics](hq-topic-research.md).
 
 The App stacks Needs input and Following on phones and puts them side by side on wider iPad windows. Recent changes use the core's explicit overview; delivery uncertainty never reads as completion. Matter sheets show assessment, exact participant membership and a bounded page of saved messages, including correlated public replies. Ask HQ only prefills the existing global console; it does not submit a decision or create a scoped instruction. The existing console owns drafts, input, Trace/Diff, and resource readers. A list 404/501 keeps the legacy HQ UI; transient failures retain prior data and authorization failures clear it. `GET /api/hq/workspace` reuses the CLI list/detail builders and never drains, acknowledges or mutates.
 
+## Unassigned worker triage
+
+The workspace commits eligible instruction-shaped prompts and Stop evidence with the event
+checkpoint even when the source has no unique execution matter. Captured managed terminal
+sources qualify; native sources require the exact configured home and a current HQ follow
+that covers the event time. `triage-unassigned:Stop` and `triage-ambiguous:Stop` retain
+the original event citation and identity. Instruction-shaped evidence does not prove
+authorship. Triage uses the existing exact wake retry and requires a verified HQ lease.
+
+A cited `review_ref` is required for `handoff`, `no-followup` or `deferred`. Handoff
+records `handoff_id` pointing to the current goal follow-up. HQ supplies its exact
+matter revision and execution association covering the source time. A verified goal can
+first be enrolled through `register` and `associate`. An older lease or deferred check
+cannot cover new handoff evidence. Reading and claiming leave the obligation outstanding.
+Neither disposition nor association grants authority or submits input.
+
 ## Continuing goals and next responsibility
 
 The candidate core protocol separates checking an observation from advancing its

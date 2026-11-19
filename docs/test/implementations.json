@@ -4195,5 +4195,29 @@
     "selectors": [
       "TestWorkspaceReconciliationRetriesFromReminderTime"
     ]
+  },
+  "internal/hqworkspace/triage_test.go": {
+    "cases": [
+      "HPT-001"
+    ],
+    "selectors": [
+      "TestWorkspaceTriageAssessment"
+    ]
+  },
+  "internal/app/hqworkspace_triage_test.go": {
+    "cases": [
+      "HPT-002"
+    ],
+    "selectors": [
+      "TestWorkspaceTriageIngestion"
+    ]
+  },
+  "internal/app/hqworkspace_triage_cli_test.go": {
+    "cases": [
+      "HPT-003"
+    ],
+    "selectors": [
+      "TestWorkspaceTriageCLI"
+    ]
   }
 }

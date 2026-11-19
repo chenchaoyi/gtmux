@@ -11,7 +11,7 @@ A worker can receive an instruction directly, stop with an open step, and have b
 ## Surfaces
 
 - Terminal and remote attach use the shared CLI reconciliation queue and its HQ-only dispositions.
-- Menu bar keeps its existing wake presentation. HQ performs assessment in the terminal.
+- macOS menubar keeps its existing wake presentation. HQ performs assessment in the terminal.
 - Phone keeps its existing presentation and follow permission. HQ performs assessment in the terminal.
 - iPad uses the same permissions and behavior as phone.
 - Web keeps its existing matter presentation and access. HQ performs assessment in the terminal.

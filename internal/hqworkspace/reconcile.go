@@ -40,6 +40,7 @@ type Reconciliation struct {
 }
 
 type Assessment struct {
+	ReviewRef      string          `json:"review_ref,omitempty"`
 	Responsibility *Responsibility `json:"responsibility,omitempty"`
 	ResumeRef      string          `json:"resume_ref,omitempty"`
 	ID             string          `json:"id"`
@@ -55,6 +56,7 @@ type Assessment struct {
 }
 
 type AssessmentReceipt struct {
+	HandoffID           string     `json:"handoff_id,omitempty"`
 	ReviewedEventCursor *int64     `json:"reviewed_event_cursor,omitempty"`
 	Assessment          Assessment `json:"assessment"`
 	At                  int64      `json:"at"`
@@ -208,8 +210,16 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 	if q.State != "leased" || q.Owner != a.Owner || q.Generation != a.Generation || q.LeaseUntil <= at {
 		return receipt, ErrConflict
 	}
-	if q.Observation.MatterID != a.MatterID && CanonicalMatter(*d, q.Observation.MatterID) != a.MatterID {
+	triage := q.Observation.NeedsTriage()
+	if !triage && q.Observation.MatterID != a.MatterID && CanonicalMatter(*d, q.Observation.MatterID) != a.MatterID {
 		return receipt, ErrConflict
+	}
+	if triage {
+		if err := validateTriageAssessment(a); err != nil {
+			return receipt, err
+		}
+	} else if a.ReviewRef != "" || a.Decision == "handoff" {
+		return receipt, errors.New("review_ref and handoff require an HQ triage observation")
 	}
 	var m Matter
 	if a.MatterID != "" {
@@ -236,6 +246,13 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 	}
 	receipt = AssessmentReceipt{Assessment: a, At: at, BeforeRevision: m.Revision, AfterRevision: m.Revision}
 	switch a.Decision {
+	case "handoff":
+		var err error
+		receipt.HandoffID, err = handoffTriage(d, q.Observation, m, at)
+		if err != nil {
+			return receipt, err
+		}
+		q.State = "assessed"
 	case "responsibility":
 		if q.Observation.Kind != "goal-followup" || a.Responsibility == nil || a.Revision == 0 {
 			return receipt, ErrConflict
@@ -252,6 +269,10 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 		receipt.ReviewedEventCursor = q.ReviewedEventCursor
 		q.State = "pending"
 	case "no-followup":
+		if triage {
+			q.State = "assessed"
+			break
+		}
 		if q.Observation.Kind != "relay-inbox" && q.Observation.Kind != "relay-fetched" {
 			return receipt, errors.New("no-followup requires a reviewed inbox receipt")
 		}
@@ -345,8 +366,18 @@ func validateTransition(m Matter, state string, revision uint64) error {
 // MatchObservation never uses pane/title. Legacy inclusive interval endpoints
 // are intentionally ambiguous at a shared second, rather than guessed away.
 func MatchObservation(d Database, c Conversation, at int64) (string, uint64) {
+	ids := ObservationMatters(d, c, at)
+	if len(ids) == 1 {
+		return ids[0], d.Matters[ids[0]].Revision
+	}
+	return "", 0
+}
+
+// ObservationMatters returns the canonical execution matches at the source
+// event time. Overlapping associations cannot elect a matter by iteration order.
+func ObservationMatters(d Database, c Conversation, at int64) []string {
 	if c.Agent == "" || c.SessionID == "" {
-		return "", 0
+		return nil
 	}
 	ids := map[string]bool{}
 	for _, m := range d.Matters {
@@ -357,13 +388,12 @@ func MatchObservation(d Database, c Conversation, at int64) (string, uint64) {
 			ids[CanonicalMatter(d, m.ID)] = true
 		}
 	}
-	if len(ids) != 1 {
-		return "", 0
-	}
+	out := make([]string, 0, len(ids))
 	for id := range ids {
-		return id, d.Matters[id].Revision
+		out = append(out, id)
 	}
-	return "", 0
+	sort.Strings(out)
+	return out
 }
 
 // ActivateObservations establishes one prospective boundary for all producers.

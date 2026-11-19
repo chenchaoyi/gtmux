@@ -19,6 +19,7 @@ import (
 // workspaceAction is shared by the local CLI and its native consumer. Message
 // bodies travel over stdin, never shell interpolation or process arguments.
 type workspaceAction struct {
+	ReviewRef         string                      `json:"review_ref,omitempty"`
 	AuthorityRef      string                      `json:"authority_ref,omitempty"`
 	VerifiedUserEvent string                      `json:"verified_user_event,omitempty"`
 	ReplyID           string                      `json:"reply_id,omitempty"`
@@ -71,7 +72,10 @@ Reports return projection:pending-reconciliation; state is a proposal, never a t
 update with body or state requires the nonzero current matter revision; resolve current questions explicitly first.
 reconcile lists due observations and assessment receipts without consuming or executing them.
 claim needs observation_id; assess needs id/observation_id/generation/matter/revision/decision/body.
-Decision is noted|no-followup|transition|deferred|conflict|responsibility; transition needs state, deferred needs future next_check.
+Ordinary decisions are noted|no-followup|transition|deferred|conflict|responsibility.
+Unassigned or ambiguous triage needs a review_ref citation and handoff, no-followup or deferred.
+Handoff needs an exact execution association, current matter and revision. Its handoff_id identifies
+the goal follow-up. It does not grant authority. Deferred needs future next_check; transition needs state.
 responsibility is an explicit current-revision HQ decision, only on a goal-followup observation.
 It saves responsibility {step_id,action,authority_ref,intent?,drive?,hold?}; it never sends.
 Intent needs {id,ref,target:{agent,home_id,session_id},at}; cite existing authority, never infer it.
@@ -290,7 +294,17 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 		if a.Op == "claim" {
 			result, err = s.ClaimObservation(a.ObservationID, owner, now)
 		} else {
-			result, err = s.Assess(hqworkspace.Assessment{ID: a.ID, ObservationID: a.ObservationID, Owner: owner, Generation: a.Generation, MatterID: a.Matter, Revision: a.Revision, Decision: a.Decision, State: a.State, Reason: a.Body, NextCheck: a.NextCheck, Responsibility: a.Responsibility, ResumeRef: a.ResumeRef}, now, a.DryRun)
+			if a.Decision == "handoff" {
+				d, e := s.Read()
+				if e != nil {
+					return nil, e
+				}
+				o := d.Reconciliations[a.ObservationID].Observation
+				if o.NeedsTriage() && o.Conversation.Pane == "" && !workspaceTriageFollowed(o.Conversation, o.OccurredAt) {
+					return nil, errors.New("native conversation is outside current HQ follow coverage")
+				}
+			}
+			result, err = s.Assess(hqworkspace.Assessment{ID: a.ID, ReviewRef: a.ReviewRef, ObservationID: a.ObservationID, Owner: owner, Generation: a.Generation, MatterID: a.Matter, Revision: a.Revision, Decision: a.Decision, State: a.State, Reason: a.Body, NextCheck: a.NextCheck, Responsibility: a.Responsibility, ResumeRef: a.ResumeRef}, now, a.DryRun)
 		}
 	case "drive", "resume-reply":
 		if !workspaceIsHQCaller() || workspaceAssessmentOwner() == "" {

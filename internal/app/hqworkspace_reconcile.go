@@ -9,12 +9,15 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/conversation"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
+	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/relay"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -62,6 +65,9 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 	rows, gap := workspaceReadEvents(cursor)
 	last := cursor
 	observations := []hqworkspace.Observation{}
+	var scope *workspaceTriageScope
+	var senders map[int64]string
+	senderScan := false
 	for i, r := range rows {
 		if i >= 500 {
 			break
@@ -83,15 +89,40 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 			agent = r.Agent
 		}
 		c := hqworkspace.Conversation{Agent: agent, HomeID: r.HomeID, SessionID: r.AgentSession}
-		matter, _ := hqworkspace.MatchObservation(d, c, r.Ts)
-		// Missing/mismatched home or interval stays unassigned for a known session.
-		// Source logs do not carry a goal version: never stamp the current one.
-		// Only explicit workspace members feed this queue. An unmatched event still
-		// belongs to the existing HQ event stream; it must not enroll new work.
-		if matter == "" && !workspaceHasConversation(d, c) {
+		matches := hqworkspace.ObservationMatters(d, c, r.Ts)
+		kind, matter, body := r.Event, "", r.Summary
+		if len(matches) == 1 {
+			matter = matches[0]
+		} else if workspaceTriageSource(r, c) {
+			if r.Event == "UserPromptSubmit" {
+				if !senderScan {
+					senders = events.AuthorOf(rows)
+					senderScan = true
+				}
+				if senders[r.Seq] != "" || (r.Actor != "" && r.Actor != "user") {
+					continue
+				}
+			}
+			if scope == nil {
+				scope = readWorkspaceTriageScope()
+			}
+			if scope.isSupervisor(r, c) {
+				continue
+			}
+			c.Pane = r.Pane // historical context only; the tuple is the identity
+			if r.Pane == "" {
+				body = "" // consent-gated native content stays in the original source
+			}
+			kind = "triage-unassigned:" + kind
+			if len(matches) > 1 {
+				kind = "triage-ambiguous:" + r.Event
+			}
+		} else if !workspaceHasConversation(d, c) {
 			continue
 		}
-		observations = append(observations, hqworkspace.Observation{RecordingPolicy: r.RecordingPolicy, Continuation: matter != "" && (r.Event == "Stop" || r.Event == "StopFailure"), ID: "event-" + strconv.FormatInt(r.Seq, 10), Kind: r.Event, MatterID: matter, MatterRevision: 0, Body: r.Summary, Ref: fmt.Sprintf("events:%d", r.Seq), Conversation: c, OccurredAt: r.Ts})
+		// The event time identifies execution membership, not a goal revision
+		// or user authorization. Neither is supplied by the journal.
+		observations = append(observations, hqworkspace.Observation{RecordingPolicy: r.RecordingPolicy, Continuation: matter != "" && (r.Event == "Stop" || r.Event == "StopFailure"), ID: "event-" + strconv.FormatInt(r.Seq, 10), Kind: kind, MatterID: matter, Body: body, Ref: fmt.Sprintf("events:%d", r.Seq), Conversation: c, OccurredAt: r.Ts})
 	}
 	if gap || workspaceEventSequence() < cursor {
 		observations = append(observations, hqworkspace.Observation{ID: fmt.Sprintf("event-gap-%d-%d", cursor, last), Kind: "source-gap", Ref: fmt.Sprintf("events after %d through %d", cursor, last)})
@@ -157,6 +188,48 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 		return s.Ingest("relay-start", start, start, facts, now)
 	}
 	return nil
+}
+
+// A captured managed terminal identity is evidence even if its original
+// pane later disappears. Pane-less rows require explicit consent for this home.
+func workspaceTriageSource(r events.Record, c hqworkspace.Conversation) bool {
+	if r.Seq <= 0 || r.Ts <= 0 || c.SessionID == "" || c.HomeID != conversation.HomeID(c.Agent) {
+		return false
+	}
+	if _, ok := agents.For(c.Agent); !ok {
+		return false
+	}
+	if r.Pane != "" {
+		return strings.HasPrefix(r.Pane, "%") && r.Session != ""
+	}
+	return workspaceTriageFollowed(c, r.Ts)
+}
+
+func workspaceTriageFollowed(c hqworkspace.Conversation, at int64) bool {
+	if c.HomeID == "" || c.HomeID != conversation.HomeID(c.Agent) {
+		return false
+	}
+	follow := sessionpolicy.GetFor(c.Agent, c.SessionID)
+	return follow.HQ && follow.FollowSince > 0 && at >= follow.FollowSince
+}
+
+type workspaceTriageScope struct {
+	hqPane    string
+	hqSources map[hqworkspace.Conversation]bool
+}
+
+func readWorkspaceTriageScope() *workspaceTriageScope {
+	scope := &workspaceTriageScope{hqPane: hqpane.Find(), hqSources: map[hqworkspace.Conversation]bool{}}
+	for _, r := range resume.AllLocated() {
+		if r.SessionID != "" && hqpane.SameDir(r.Cwd, state.HQHome()) {
+			scope.hqSources[hqworkspace.Conversation{Agent: r.Agent, SessionID: r.SessionID, HomeID: r.HomeID}] = true
+		}
+	}
+	return scope
+}
+
+func (s *workspaceTriageScope) isSupervisor(r events.Record, c hqworkspace.Conversation) bool {
+	return r.Pane != "" && r.Pane == s.hqPane || s.hqSources[c]
 }
 
 func workspaceHasConversation(d hqworkspace.Database, c hqworkspace.Conversation) bool {

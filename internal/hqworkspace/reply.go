@@ -242,7 +242,7 @@ func ReplyBlockReason(d Database, a IntentAttempt, at int64) string {
 	}
 	for _, row := range d.Reconciliations {
 		o := row.Observation
-		if o.Kind != "UserPromptSubmit" || !o.Conversation.Same(target) {
+		if o.sourceKind() != "UserPromptSubmit" || !o.Conversation.Same(target) {
 			continue
 		}
 		seq, _ := strconv.ParseInt(strings.TrimPrefix(o.Ref, "events:"), 10, 64)

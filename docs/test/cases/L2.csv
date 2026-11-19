@@ -90,6 +90,7 @@ MAP-da98c9c39848,L2,reviewed implementation,internal/app/hqworkspace_reply_revie
 MAP-ad249a342e85,L2,reviewed implementation,internal/app/hqworkspace_reply_test.go,21,reviewed-selector,TestReplyLifecycleAcrossStop,False,"HRC-001,HRC-002"
 MAP-67fc4ac7625d,L2,reviewed implementation,internal/app/hqworkspace_reply_test.go,100,reviewed-selector,TestReplyContinuationDispatchAndEvidence,False,"HRC-001,HRC-002"
 MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
+MAP-73814841a1bf,L2,reviewed implementation,internal/app/hqworkspace_triage_test.go,19,reviewed-selector,TestWorkspaceTriageIngestion,False,HPT-002
 MAP-acfe376abd7d,L2,reviewed implementation,internal/app/input_archive_doctor_test.go,11,reviewed-selector,TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair,False,SPL-025
 MAP-7a5ae9fb2039,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,10,reviewed-selector,TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection,False,MSD-002
 MAP-308489bd281c,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,20,reviewed-selector,TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry,False,MSD-002
@@ -290,6 +291,7 @@ MAP-8d3525e25015,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,
 MAP-8c722e686be5,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,151,reviewed-selector,TestPhase1RecoveryFencingAtomicAssessment,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-6cde1202d0f1,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,220,reviewed-selector,TestPhase1OldObservationDeferralAndSchemaMigration,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-05f8c00db7ff,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,281,reviewed-selector,TestPhase1ExactAttributionAndAmbiguity,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-6655d6f58f73,L2,reviewed implementation,internal/hqworkspace/triage_test.go,8,reviewed-selector,TestWorkspaceTriageAssessment,False,HPT-001
 MAP-259bfbcda714,L2,Go core / CLI / server,internal/knowledge/distribute_test.go,161,reviewed-selector,TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions,False,STOR-001
 MAP-f2c2067e1564,L2,reviewed implementation,internal/knowledge/dreamallowance_test.go,13,reviewed-selector,TestDreamAllowancePreservesProgressCostsAndIdempotency,False,KBDREAM-ALLOWANCE
 MAP-ff7b915f1ef1,L2,reviewed implementation,internal/knowledge/dreamallowance_test.go,72,reviewed-selector,TestDreamAllowanceRejectsInvalidActiveAndRetryBypass,False,KBDREAM-ALLOWANCE

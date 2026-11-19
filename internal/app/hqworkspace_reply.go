@@ -68,7 +68,7 @@ func eligibleWorkspaceReply(r relay.Request) bool {
 	return r.State == "replied" && r.ReplyChannel == "inbox" && r.For == "hq" && r.Agent == "codex" && r.HomeID != "" && r.ThreadID != "" && r.ReplyAt >= r.CreatedAt && r.ReplyAt > 0 && !r.Delivered && r.ReplyAttempt == ""
 }
 
-// The general observation stream deliberately skips unenrolled conversations.
+// A durable observation checkpoint is only a lower bound for verified journal history.
 func workspaceMessageHistoryHold(d hqworkspace.Database, a hqworkspace.IntentAttempt) string {
 	m := hqworkspace.ReplyAuthorityMessage(d, a)
 	if m.ID == "" {
