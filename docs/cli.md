@@ -1709,8 +1709,12 @@ session you can attach to and steer.
 
 `gtmux send <pane> <text>` uses the same land-verification by default (it returns as
 soon as it confirms); `--no-verify` opts out, `--force` overrides the interlock, and
-`--json` prints the verified result (`{delivered, state, judged_by, evidence}`,
-verified sends only).
+`--json` reports the text submission, including with `--no-verify`. The usual
+`{delivered, state, judged_by, evidence}` fields remain. A failure exits nonzero
+and can include a stable `code` and `submission`: `not-submitted` when submission
+was ruled out, or `unknown` when it could not be confirmed. A draft can remain
+after a hold before Enter. A successful `submitted` result reports that Enter
+completed without a native receipt. It keeps `delivered: false`.
 
 An option `gtmux send` does not have is refused and nothing is sent: a mistyped
 `--body-file` used to arrive in the other agent's box as text. That holds for any word that

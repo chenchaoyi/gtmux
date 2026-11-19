@@ -20,7 +20,7 @@ func rowDSHTerminal() dcheck {
 	for _, a := range agentclient.All() {
 		if a.Agent == "dsh" && a.Client == "dst" {
 			attached++
-			if a.InputReady {
+			if a.ReadyForInput() {
 				ready++
 			}
 		}

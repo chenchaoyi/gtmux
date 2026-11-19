@@ -93,7 +93,7 @@ func dstCurrent(a Attachment) bool {
 		SessionID string `json:"sessionId"`
 		StartedAt int64  `json:"startedAt"`
 	}
-	if readOwnedJSON(filepath.Join(root, "inject", "servers.json"), &servers, 256<<10) != nil || len(servers) > 256 {
+	if readInputDiscovery(filepath.Join(root, "inject", "servers.json"), &servers) != nil || len(servers) > 256 {
 		return false
 	}
 	matching := 0
@@ -115,7 +115,7 @@ func dstCurrent(a Attachment) bool {
 			SessionIDs []string `json:"sessionIds"`
 		} `json:"owners"`
 	}
-	if readOwnedJSON(filepath.Join(root, "session-mounts.json"), &mounts, 256<<10) != nil || mounts.Version != 1 || len(mounts.Owners) > 256 {
+	if readInputDiscovery(filepath.Join(root, "session-mounts.json"), &mounts) != nil || mounts.Version != 1 || len(mounts.Owners) > 256 {
 		return false
 	}
 	found := false

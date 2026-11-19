@@ -1,13 +1,9 @@
 package agentclient
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,6 +13,8 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
+
+var ErrInputTargetChanged = errors.New("delivery target changed; the same delivery ID cannot retarget input")
 
 type Request struct {
 	Version      int    `json:"version"`
@@ -32,6 +30,8 @@ type Request struct {
 	Text         string `json:"text"`
 	TextHash     string `json:"text_hash,omitempty"`
 	DurableRetry bool   `json:"durable_retry,omitempty"`
+	IndexKey     string `json:"index_key,omitempty"`
+	store        inputStore
 }
 
 type Receipt struct {
@@ -47,8 +47,12 @@ type Receipt struct {
 	CreatedAt int64  `json:"created_at"`
 }
 
-func InputDir() string            { return filepath.Join(state.Dir(), "terminal-input") }
 func (r Request) Command() string { return "/gtmux-send " + r.ID }
+
+func (r Request) persisted() Request {
+	r.store = inputStore{}
+	return r
+}
 
 // MatchesTarget compares the complete prepared address, not just a reused pane.
 // A historical accepted receipt may be read without matching the current target,
@@ -59,114 +63,59 @@ func (r Request) MatchesTarget(a Attachment) bool {
 		r.ServerEpoch == a.ServerEpoch && r.BindingEpoch == a.BindingEpoch
 }
 
+func deliveryIndex(pane, deliveryID string) string {
+	sum := sha256.Sum256([]byte("delivery\x00" + pane + "\x00" + deliveryID))
+	return hex.EncodeToString(sum[:16]) + ".index.json"
+}
+
+// PriorDeliveryUnknown is a conservative read-only check before the current
+// attempt. Even an accepted old delivery can make a new refusal misleading
+// when the caller cannot return that acceptance through the current route.
+func PriorDeliveryUnknown(pane, deliveryID string) bool {
+	if deliveryID == "" {
+		return false
+	}
+	store, err := resolveInputStore(state.Dir())
+	if err != nil {
+		return true
+	}
+	if store.directory == (inputIdentity{}) {
+		return false
+	}
+	queue, err := openInputQueue(store, syncInput)
+	if err != nil {
+		return true
+	}
+	defer queue.dir.Close()
+	data, err := queue.read(deliveryIndex(pane, deliveryID), 8192)
+	if errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	var prior Request
+	if err != nil || decodeInputRecord(data, &prior, requestFields) != nil ||
+		prior.Pane != pane || prior.Version != ProtocolVersion || !instancePattern.MatchString(prior.ID) {
+		return true
+	}
+	receipt, err := queue.committedReceipt(prior)
+	if err == nil {
+		return receipt.State != "refused"
+	}
+	if errors.Is(err, ErrInputUncertain) || !errors.Is(err, os.ErrNotExist) {
+		return true
+	}
+	body, err := queue.read(prior.ID+".pending.json", 2<<20)
+	return err != nil || !matchesInputBody(body, prior) ||
+		!queue.missing(prior.ID+".claimed.json") || !queue.missing(prior.ID+".receipt.json")
+}
+
 // Prepare keeps a durable retry key. A claimed request with no outcome remains
 // uncertain; neither a timeout nor a server restart authorizes duplicate input.
 func Prepare(a Attachment, text, deliveryID string, force bool, now time.Time) (Request, error) {
-	if !a.InputReady || len(text) > 1<<20 || strings.TrimSpace(text) == "" {
-		return Request{}, errors.New("terminal input is unavailable or exceeds its limit")
-	}
-	lease, err := state.TryLease("terminal-input")
+	intent, err := StageInput(a, text, deliveryID, force, now)
 	if err != nil {
 		return Request{}, err
 	}
-	defer lease.Close()
-	dir := InputDir()
-	if err := state.MkdirAll(dir, 0700); err != nil {
-		return Request{}, err
-	}
-	fi, err := os.Lstat(dir)
-	if err != nil || !fi.IsDir() || fi.Mode().Perm()&0077 != 0 {
-		return Request{}, errors.New("untrusted terminal input directory")
-	}
-	if err := pruneInput(dir, now); err != nil {
-		return Request{}, err
-	}
-	textSum := sha256.Sum256([]byte(text))
-	textHash := hex.EncodeToString(textSum[:])
-	seed := a.HomeID + "\x00" + a.SessionID + "\x00" + a.Instance + "\x00" + fmt.Sprint(a.BindingEpoch) + "\x00" + text
-	if deliveryID != "" {
-		seed = "delivery\x00" + a.Pane + "\x00" + deliveryID
-	}
-	key := sha256.Sum256([]byte(seed))
-	index := filepath.Join(dir, hex.EncodeToString(key[:16])+".index.json")
-	var old Request
-	if !force && readOwnedJSON(index, &old, 8192) == nil && instancePattern.MatchString(old.ID) {
-		if old.TextHash != textHash {
-			return Request{}, errors.New("delivery ID was already used for another message")
-		}
-		old.Text = text
-		receipt, known := ReadReceipt(old)
-		if known {
-			switch receipt.State {
-			case "accepted":
-				if deliveryID != "" || now.UnixMilli()-old.CreatedAt <= 15000 {
-					return old, nil
-				}
-			case "uncertain":
-				return Request{}, errors.New("previous input has an uncertain outcome; do not retry automatically")
-			case "refused":
-				return Request{}, errors.New(receipt.Error)
-			}
-		} else {
-			if _, err := os.Lstat(filepath.Join(dir, old.ID+".claimed.json")); err == nil {
-				return Request{}, errors.New("previous input was claimed without a receipt; do not retry automatically")
-			}
-			if !old.MatchesTarget(a) {
-				return Request{}, errors.New("delivery target changed; the same delivery ID cannot retarget input")
-			}
-			if deliveryID != "" || now.UnixMilli()-old.CreatedAt >= 0 && now.UnixMilli()-old.CreatedAt <= 15000 {
-				return old, nil
-			}
-		}
-		if deliveryID != "" && !old.MatchesTarget(a) {
-			return Request{}, errors.New("delivery target changed; the same delivery ID cannot retarget input")
-		}
-	}
-	// Bound the new spool without following directory links or allocating its
-	// complete contents. Existing unresolved requests are never silently deleted.
-	f, err := os.Open(dir)
-	if err != nil {
-		return Request{}, err
-	}
-	entries, readErr := f.ReadDir(4097)
-	_ = f.Close()
-	if readErr != nil && readErr != io.EOF {
-		return Request{}, readErr
-	}
-	if len(entries) > 4096 {
-		return Request{}, errors.New("terminal input spool is full")
-	}
-	var nonce [16]byte
-	if _, err := rand.Read(nonce[:]); err != nil {
-		return Request{}, err
-	}
-	r := Request{Version: ProtocolVersion, ID: hex.EncodeToString(nonce[:]), Instance: a.Instance, HomeID: a.HomeID, SessionID: a.SessionID, PID: a.PID, Pane: a.Pane, ServerEpoch: a.ServerEpoch, BindingEpoch: a.BindingEpoch, CreatedAt: now.UnixMilli(), Text: text, TextHash: textHash, DurableRetry: deliveryID != ""}
-	b, _ := json.Marshal(r)
-	pending := filepath.Join(dir, r.ID+".pending.json")
-	if err := writeExclusive(pending, b); err != nil {
-		return Request{}, err
-	}
-	metadata := r
-	metadata.Text = ""
-	indexBytes, _ := json.Marshal(metadata)
-	if err := atomicPrivate(index, indexBytes); err != nil {
-		_ = os.Remove(pending)
-		return Request{}, err
-	}
-	return r, nil
-}
-
-func writeExclusive(path string, data []byte) error {
-	f, err := state.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(data)
-	closeErr := f.Close()
-	if err != nil {
-		return err
-	}
-	return closeErr
+	return intent.Publish(now)
 }
 
 func atomicPrivate(path string, data []byte) error {
@@ -186,15 +135,87 @@ func atomicPrivate(path string, data []byte) error {
 }
 
 func ReadReceipt(r Request) (Receipt, bool) {
+	return readCommittedInputReceipt(r, syncInput)
+}
+
+func readCommittedInputReceipt(r Request, ops inputDurability) (Receipt, bool) {
+	store, err := resolveInputStore(state.Dir())
+	if err != nil || r.store.path != "" && r.store != store {
+		return Receipt{}, false
+	}
+	queue, err := openInputQueue(store, ops)
+	if err != nil {
+		return Receipt{}, false
+	}
+	defer queue.dir.Close()
+	receipt, err := queue.committedReceipt(r)
+	if err != nil {
+		return Receipt{}, false
+	}
+	current, err := resolveInputStore(state.Dir())
+	return receipt, err == nil && current == store
+}
+
+// Capacity accounting reads a snapshot. It does not acknowledge or retire it.
+func readInputReceipt(dir, id string) (Receipt, bool) {
 	var value Receipt
-	if !instancePattern.MatchString(r.ID) || readOwnedJSON(filepath.Join(InputDir(), r.ID+".receipt.json"), &value, 8192) != nil ||
-		value.Version != ProtocolVersion || value.ID != r.ID || value.Instance != r.Instance || value.PID != r.PID || value.HomeID != r.HomeID {
+	if !instancePattern.MatchString(id) || readInputRecord(filepath.Join(dir, id+".receipt.json"), &value, 8192, receiptFields) != nil {
 		return Receipt{}, false
 	}
-	if value.State == "accepted" && value.SessionID != r.SessionID {
-		return Receipt{}, false
+	return value, validInputReceipt(value, id)
+}
+
+func validInputReceipt(value Receipt, id string) bool {
+	if value.Version != ProtocolVersion || value.ID != id || value.CreatedAt < 0 {
+		return false
 	}
-	return value, value.State == "accepted" || value.State == "refused" || value.State == "uncertain"
+	if value.Delivery != "" && (value.State != "accepted" ||
+		(value.Delivery != "active-turn" && value.Delivery != "started-turn" && value.Delivery != "wake-accepted")) {
+		return false
+	}
+	return value.State == "accepted" || value.State == "refused" || value.State == "uncertain"
+}
+
+func (r Receipt) matchesRequest(request Request) bool {
+	// Older DSH refusals can name the mismatched invocation session. Only an
+	// acceptance can establish delivery to the original conversation.
+	return r.ID == request.ID && r.Instance == request.Instance && r.PID == request.PID && r.HomeID == request.HomeID &&
+		(r.State != "accepted" || r.SessionID == request.SessionID)
+}
+
+func inputRefusal(code dispatch.InputFailureCode, cause error) error {
+	return &dispatch.InputError{Code: code, Submission: dispatch.SubmissionNotSubmitted, Cause: cause}
+}
+
+func inputUnknown(cause error) error {
+	return &dispatch.InputError{Code: dispatch.InputOutcomeUnconfirmed, Submission: dispatch.SubmissionUnknown, Cause: cause}
+}
+
+func inputPreparationError(err error) error {
+	switch {
+	case errors.Is(err, ErrInputFull):
+		return inputRefusal(dispatch.InputSpoolFull, err)
+	case errors.Is(err, ErrInputUncertain):
+		return inputUnknown(err)
+	case errors.Is(err, ErrInputTargetChanged):
+		return inputRefusal(dispatch.InputTargetChanged, err)
+	default:
+		return inputRefusal(dispatch.InputUnavailable, err)
+	}
+}
+
+func settledTerminalInput(r Request) (bool, error) {
+	if receipt, ok := ReadReceipt(r); ok {
+		switch receipt.State {
+		case "accepted":
+			return true, nil
+		case "refused":
+			return false, inputRefusal(dispatch.InputUnavailable, errors.New(receipt.Error))
+		default:
+			return false, inputUnknown(ErrInputUncertain)
+		}
+	}
+	return false, nil
 }
 
 // WrapIO keeps the ordinary draft/fragment/interlock pipeline. Only a known
@@ -202,27 +223,36 @@ func ReadReceipt(r Request) (Receipt, bool) {
 // Enter succeeds solely on the receiving native command's addressed receipt.
 func WrapIO(pane string, io dispatch.IO, lookup func(string) (Attachment, bool)) dispatch.IO {
 	var request *Request
+	var intent InputIntent
 	var beginErr error
 	begin, capture, color, paste, enter, eventRead := io.Begin, io.Capture, io.CaptureColor, io.Paste, io.Enter, io.Events
 	io.Begin = func(opts dispatch.Opts, text string) {
+		request = nil
 		if begin != nil {
 			begin(opts, text)
 		}
 		a, ok := lookup(pane)
 		if !ok || !a.InputReady {
-			beginErr = errors.New("DeepSeek Harness terminal bridge is not loaded or its input grant is unavailable")
+			beginErr = inputRefusal(dispatch.InputUnavailable, errors.New("DeepSeek Harness terminal bridge is not loaded or its input grant is unavailable"))
 			return
 		}
 		if !opts.MatchesTarget(a.SessionID, a.HomeID, a.Instance, a.PID) {
-			beginErr = errors.New("expected conversation changed before preparation")
+			beginErr = inputRefusal(dispatch.InputTargetChanged, errors.New("expected conversation changed before preparation"))
 			return
 		}
-		r, err := Prepare(a, text, opts.DeliveryID, opts.Force && opts.DeliveryID == "", time.Now())
-		beginErr = err
-		if err == nil {
-			request = &r
+		plan, err := StageInput(a, text, opts.DeliveryID, opts.Force && opts.DeliveryID == "", time.Now())
+		beginErr = nil
+		if err != nil {
+			beginErr = inputPreparationError(err)
+			return
 		}
+		intent = plan
+		request = &plan.Request
 	}
+	io.PriorDeliveryUnknown = func(opts dispatch.Opts) bool {
+		return PriorDeliveryUnknown(pane, opts.DeliveryID)
+	}
+	io.PreflightError = func() error { return beginErr }
 	rawFrame := func() string {
 		if color != nil {
 			return color()
@@ -247,58 +277,83 @@ func WrapIO(pane string, io dispatch.IO, lookup func(string) (Attachment, bool))
 		io.CaptureColor = func() string { return translate(dstFrame(color(), true)) }
 	}
 	io.Paste = func(text string) error {
-		a, ok := lookup(pane)
-		if !ok || !a.InputReady {
-			return errors.New("DeepSeek Harness terminal bridge is not loaded or its input grant is unavailable")
-		}
 		if beginErr != nil {
 			return beginErr
 		}
+		a, ok := lookup(pane)
+		if !ok || !a.InputReady {
+			return inputRefusal(dispatch.InputUnavailable, errors.New("DeepSeek Harness terminal bridge is not loaded or its input grant is unavailable"))
+		}
 		if request == nil {
-			return errors.New("native terminal request was not prepared")
+			return inputRefusal(dispatch.InputUnavailable, errors.New("native terminal request was not prepared"))
 		}
-		if request.SessionID != a.SessionID || request.Instance != a.Instance || request.BindingEpoch != a.BindingEpoch {
-			return errors.New("terminal conversation changed before paste")
+		if !request.MatchesTarget(a) {
+			return inputRefusal(dispatch.InputTargetChanged, errors.New("terminal conversation changed before paste"))
 		}
-		if receipt, ok := ReadReceipt(*request); ok && receipt.State == "accepted" {
-			return nil
+		if err := request.CheckInputStore(); err != nil {
+			return inputRefusal(dispatch.InputUnavailable, err)
+		}
+		if a.InputStoreGeneration != request.store.token {
+			return inputRefusal(dispatch.InputUnavailable, ErrInputStoreUnavailable)
+		}
+		if accepted, err := settledTerminalInput(*request); accepted || err != nil {
+			return err
+		}
+		if !missingInputFile(request.store.path, request.ID, ".receipt.json") ||
+			!missingInputFile(request.store.path, request.ID, ".claimed.json") {
+			return inputUnknown(ErrInputUncertain)
 		}
 		if !prompt.IsComposerReady(rawFrame(), "dsh") {
-			return errors.New("DeepSeek Harness terminal composer is unavailable; close menus or expanded editors and use insert mode")
+			return inputRefusal(dispatch.InputUnavailable, errors.New("DeepSeek Harness terminal composer is unavailable; close menus or expanded editors and use insert mode"))
 		}
 		return paste(request.Command())
 	}
 	io.Enter = func() error {
 		if request == nil {
-			return errors.New("native terminal request was not prepared")
+			return inputRefusal(dispatch.InputUnavailable, errors.New("native terminal request was not prepared"))
 		}
-		if receipt, ok := ReadReceipt(*request); ok {
-			if receipt.State == "accepted" {
-				return nil
-			}
-			return errors.New(receipt.Error)
+		if accepted, err := settledTerminalInput(*request); accepted || err != nil {
+			return err
 		}
 		a, ok := lookup(pane)
-		if !ok || !a.InputReady || a.SessionID != request.SessionID || a.Instance != request.Instance || a.BindingEpoch != request.BindingEpoch {
-			return errors.New("terminal conversation changed before submission")
+		if !ok || !a.InputReady {
+			return inputRefusal(dispatch.InputUnavailable, errors.New("DeepSeek Harness terminal bridge is not loaded or its input grant is unavailable"))
+		}
+		if !request.MatchesTarget(a) {
+			return inputRefusal(dispatch.InputTargetChanged, errors.New("terminal conversation changed before submission"))
+		}
+		if err := request.CheckInputStore(); err != nil {
+			return inputRefusal(dispatch.InputUnavailable, err)
+		}
+		if a.InputStoreGeneration != request.store.token {
+			return inputRefusal(dispatch.InputUnavailable, ErrInputStoreUnavailable)
+		}
+		if !missingInputFile(request.store.path, request.ID, ".receipt.json") ||
+			!missingInputFile(request.store.path, request.ID, ".claimed.json") {
+			return inputUnknown(ErrInputUncertain)
 		}
 		if !prompt.IsComposerReady(rawFrame(), "dsh") {
-			return errors.New("DeepSeek Harness terminal composer changed before submission")
+			return inputRefusal(dispatch.InputUnavailable, errors.New("DeepSeek Harness terminal composer changed before submission"))
+		}
+		published, err := intent.Publish(time.Now())
+		if err != nil {
+			return inputPreparationError(err)
+		}
+		request = &published
+		if accepted, err := settledTerminalInput(*request); accepted || err != nil {
+			return err
 		}
 		if err := enter(); err != nil {
-			return err
+			return inputUnknown(err)
 		}
 		deadline := time.Now().Add(3 * time.Second)
 		for time.Now().Before(deadline) {
-			if receipt, ok := ReadReceipt(*request); ok {
-				if receipt.State == "accepted" {
-					return nil
-				}
-				return errors.New(receipt.Error)
+			if accepted, err := settledTerminalInput(*request); accepted || err != nil {
+				return err
 			}
 			time.Sleep(25 * time.Millisecond)
 		}
-		return errors.New("native input acceptance is unconfirmed; retry preserves the same request")
+		return inputUnknown(ErrInputUncertain)
 	}
 	io.Events = func(since int64) []dispatch.Ev {
 		if request != nil {

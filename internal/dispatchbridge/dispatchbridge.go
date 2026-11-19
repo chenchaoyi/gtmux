@@ -107,6 +107,9 @@ func DispatchIO(pane string, agentCmd ...string) dispatch.IO {
 	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
 	if record, ok := resume.Load(loc); ok && record.Agent == "codex" && record.Frontend != "" {
 		dio.SubmitNative = codexNativeSubmit(pane)
+		dio.PriorDeliveryUnknown = func(opts dispatch.Opts) bool {
+			return agentclient.PriorDeliveryUnknown(pane, opts.DeliveryID)
+		}
 	}
 	return dio
 }
@@ -352,5 +355,5 @@ func terminalTransportReady(pane, agent string, lookup func(string) (agentclient
 		return true
 	}
 	a, ok := lookup(pane)
-	return ok && a.Agent == agent && a.InputReady
+	return ok && a.Agent == agent && a.ReadyForInput()
 }

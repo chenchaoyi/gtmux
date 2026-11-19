@@ -1042,6 +1042,37 @@ cache for successful sends; it does not wait for post-submit landing verificatio
 - **THEN** the text is pasted and the Enter is withheld until the draft is confirmed
   to hold the full text, so the reply submits whole rather than as a truncated fragment
 
+#### Scenario: Rejected and unconfirmed submissions are distinct
+
+- **WHEN** a text send through CLI or HTTP is rejected before submission
+- **THEN** the CLI SHALL exit nonzero, or the HTTP request SHALL fail, with a stable reason and the proven submission status
+- **WHEN** a submit may have reached the receiver but acceptance is unconfirmed
+- **THEN** the sender SHALL report the unknown outcome without a successful receipt or success cache entry
+- **AND** a supplied HTTP send ID SHALL remain associated with the failure
+
+### Requirement: Addressed terminal input preserves replay evidence across persistence failures
+
+An addressed Go or DeepSeek Harness receiver SHALL synchronize its exclusive
+claim and its containing directory before removing pending input or invoking
+the receiver. It SHALL publish a complete receipt without replacing an existing
+outcome and synchronize the containing directory before acknowledging acceptance
+or clearing a claim. An existing receipt SHALL be validated and synchronized
+before it can authorize acknowledgement or cleanup. An uncertain outcome SHALL
+retain its claim and original request identity.
+
+Before the final authorization, input may be staged in memory or shown as a
+terminal draft. A guard refusal at that stage SHALL NOT create a persistent
+request. Publication SHALL commit the matching request index and the directory
+ancestry before the pending name can be consumed. An unresolved index or claim
+SHALL retain its identity across retries. An aged settled record with a durable
+delivery ID SHALL keep its index and receipt for idempotent re-use.
+
+#### Scenario: A receipt appears before the directory sync completes
+
+- **WHEN** the receiver may have submitted input and receipt commitment fails
+- **THEN** the sender SHALL report an uncertain outcome and preserve the claim
+- **AND** a later attempt MAY adopt the same verified receipt after synchronization without submitting the input again
+
 ### Requirement: The phone send returns fast (echo not blocked on verification) and is idempotent
 
 `POST /api/send` with `text`+`enter` SHALL return as soon as the keystrokes LAND — the

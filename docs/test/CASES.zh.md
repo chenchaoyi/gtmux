@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1335 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1348 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2485 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2515 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 148 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -257,6 +257,24 @@
 | HQP1-006 | Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox. |
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
+| SPL-008 | Before-submit refusal does not make an Enter call. A potentially attempted send is unknown with its original attempt count. Draft holds retain their evidence prefixes. Success, native precedence and the legacy bool wrapper are retained. |
+| SPL-009 | Failures exit nonzero or fail the HTTP request. Stable codes identify the failure and optional submission status; the HTTP error carries the caller ID and no draft, payload, capture or success receipt. Unknown is not success-cached. Successful requests keep their receipt and caching. A native question is reported only with evidence. |
+| SPL-010 | Only the matching length is accepted. Invalid length and over-limit documents never select the active layout or a legacy fallback. |
+| SPL-014 | No new paste, Enter or RPC. Existing or unverifiable prior outcome reports unknown while the current refusal remains distinguishable from a transport attempt; a verified fresh refusal stays not-submitted. |
+| SPL-015 | Generic success is submitted without claiming delivery, bare shell sent remains delivered, only proven native question emits the HTTP question code, and cached success keeps its original grade without duplicate input. |
+| SPL-016 | Drafts and gates create no durable slot, and the final authorizer publishes only its staged ID. Failed contenders do not replace a previous index. Aged unresolved requests cannot be replaced by force or timeout. A durable accepted ID remains idempotent. |
+| SPL-017 | No pending is claimable before a synced bound index, and no followup occurs without it. Existing v1 is accepted only with a unique matched index. A retained stable mapping returns the same known result. The terminal receipt survives an index deletion failure, and no unknown data is discarded. |
+| SPL-011 | Before durable claim, no delivery may run and pending remains. Until receipt file and directory sync succeed, claim and identity remain and an apparent receipt cannot authorize acknowledgement or pruning. Adoption verifies the same file and directory and never overwrites or replays. Cleanup failure preserves known acceptance. |
+| SPL-012 | Only a strictly addressed durable receipt permits cleanup. Pending and claim copies must be validated before deleting. The old DSH empty marker and unresolved state retain replay protection. At capacity accepted work can still settle, and no new request is admitted without room for temporary and final names together. |
+| SPL-013 | Failed claim cannot reach followup. A failed receipt cannot become success; claim survives. A verified retry adopts the original receipt only after both syncs; conflicting or corrupt outcomes are preserved and never justify more calls. Only durably refused cleanup may retire its empty claim. Accepted and uncertain DSH claims retain compatibility. |
+| SPL-001 | Only a fitting new request is admitted. Existing completion and same-ID lookup remain possible. |
+| SPL-002 | A terminal receipt stays immutable, unconfirmed state cannot replay, bounded cleanup keeps valid evidence through the retention window. |
+| SPL-003 | Admission reports capacity before submission. Uncertainty and explicit refusal remain distinct, with no automatic resend. |
+| SPL-004 | The unconfirmed claim prevents replay. The admissible Go request and the existing DSH request both settle; the over-capacity request is refused. Repeated legacy receive and Go retry reuse one accepted receipt and do not deliver the message again. |
+| SPL-018 | Claimed or accepted IDs are not authorized for resend. Fresh, unclaimed and explicitly refused IDs retain the early hold behavior. No submit or terminal mutation occurs. |
+| SPL-005 | Both consumers agree on the selected directory. Valid legacy input and accepted receipts survive. Active generations retain pending and unknown authority. Unverified layout and stale operations refuse without creating a new request or changing a receipt. |
+| SPL-006 | Valid layouts and addressed v1 UTF-8 payloads remain readable. An invalid layout cannot create a lease or receipt. Damaged records retain their file, do not release addressed replay protection and never call the receiver. |
+| SPL-007 | A verified attachment can stay readable while write readiness is false. Startup, screenshot target resolution and doctor use one read-only predicate. The old handler cannot claim or publish an outcome after readiness is lost. |
 | KBCARRIER-COMPAT | Manual landing succeeds with the exact read token. Everyone remains manual-only; other audiences keep their own exit. Generated manual instructions name the required revision; legacy receipts still fold. |
 | KBCARRIER-REVISION | Stale/missing new receipts append nothing and leave R1 pending; old publication cannot overwrite an already landed R1. Carry publication and settlement share the existing ledger lock. Review following successful R0 carry leaves R1 pending. Current manual ref succeeds; clients propagate the read version and do not silently fetch a new version for an old confirmation. |
 | KBCARRIER-ATOMIC | Successful publication yields complete new content and 0600 private mode while pinned readers retain complete original content. Failure before publish leaves original bytes/mode intact and cannot settle landing. File fsync precedes publication and parent sync follows it; errors propagate. Existing manually changed or duplicate sections stay conflicts. No claim of real power-loss simulation. |
@@ -343,7 +361,7 @@
 | MSD-008 | Only corresponding current echo receives receipt; old failure cannot erase newer success. Old results/retry cannot move to a rotated HQ/client/pane; newer control-key screen remains. Confirmation retires only the matching new turn and accepted echo is not resurrected. |
 | MSD-009 | The matching text echo becomes accepted, but old snapshot neither invalidates current reads nor replaces newer text, geometry or cursor. No replay and target guards stay in place. |
 | MSD-010 | Picker/upload ordering, cancellation, retry, no auto-send, draft/server/session isolation and matter state assertions all remain. Only callback shape changes; new receipt semantics are covered separately by MSD007/008. |
-| MSD-011 | Unresolved durable retries reuse one requestID regardless of age and remain protected at the existing spool cap. Only one nested handler may claim/mutate. Matching pending proof and input lease are required before native claim; pruned/settled/replaced old requests cannot regain authority. Changed target/body, claimed/uncertain and historical accepted results retain their safeguards; completed retention is unchanged. No real queue or RPC is accessed. |
+| MSD-011 | Unresolved durable retries reuse one requestID regardless of age and remain protected at the existing spool cap. Only one nested handler may claim/mutate. Matching pending proof and input lease are required before native claim; pruned/settled/replaced old requests cannot regain authority. Changed target/body, claimed/uncertain and historical accepted results retain their safeguards; completed retention is unchanged. No real queue or RPC is accessed. Mismatched index and pending timestamps refuse before RPC and preserve the originals; matched older records allow both callers to observe the original ID but only one claims and submits, and retries reuse its accepted receipt. Compare the persisted v1 fields without the in-process store binding. |
 | PFR-001 | No duplicate same-intent network writes or busy flicker; pending work remains authoritative through unrelated edits; successful current result remains synced until bounded refresh is due. Old provider fails call/state assertions semantically. |
 | PFR-002 | Automatic failures use bounded30s-to5min delays and one foreground retry timer; duplicate triggers coalesce. User retry may bypass cooldown only for requested Mac. State becomes visibly syncing then pending/synced; background/unmount has no retry loop. |
 | PFR-003 | Fresh intent is eligible immediately and stays behind the actual old transport barrier; newest disable wins. Late old results do not overwrite current state. Other Mac proceeds, guests/unknown token never register, and no stale timer survives removal/unmount. |

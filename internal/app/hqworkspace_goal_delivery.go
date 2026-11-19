@@ -4,6 +4,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -63,6 +64,11 @@ func deliverWorkspaceIntent(target hqworkspace.Conversation, payload, id string,
 		return workspaceInputHold(c.Status)
 	}
 	if why := hold(); why != "" {
+		// This invocation can prove it did not send. The same reply ID may
+		// still carry evidence of an earlier native submission.
+		if reply && agentclient.PriorDeliveryUnknown(live.Pane, id) {
+			return hqworkspace.Delivery{State: string(dispatch.StateFailed), Evidence: string(dispatch.InputOutcomeUnconfirmed)}
+		}
 		return hqworkspace.Delivery{State: why, SafeHold: true, BeforeSubmit: true}
 	}
 	// A native outcome alone does not prove that the mutation was never

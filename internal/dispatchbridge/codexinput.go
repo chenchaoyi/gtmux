@@ -2,6 +2,7 @@ package dispatchbridge
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,50 +23,55 @@ var codexUserInputs = codexrpc.UserInputs
 var codexIdleWakeInputs = codexrpc.IdleWakeInputs
 
 func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) dispatch.Result {
-	return func(opts dispatch.Opts, text string, hold func() string) dispatch.Result {
+	return func(opts dispatch.Opts, text string, hold func() string) (result dispatch.Result) {
+		if agentclient.PriorDeliveryUnknown(pane, opts.DeliveryID) {
+			defer func() { result = result.WithUnverifiedPriorDelivery() }()
+		}
 		if opts.IdleWakeInput && (opts.DirectUserInput || opts.ActiveImageInput) {
-			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "conflicting-native-input-policy"}
+			return codexInputRefusal(dispatch.StateRefusedWaiting, "conflicting-native-input-policy", "conflicting-native-input-policy")
 		}
 		f, ok := codexInputTarget(pane)
 		if !ok {
-			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "codex-frontend-unavailable"}
+			return codexInputRefusal(dispatch.StateRefusedWaiting, "codex-frontend-unavailable", "codex-frontend-unavailable")
 		}
 		if !opts.MatchesTarget(f.SessionID, f.HomeID, f.Instance, f.PID) {
-			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "expected-conversation-changed"}
+			return codexInputRefusal(dispatch.StateRefusedWaiting, "expected-conversation-changed", "expected-conversation-changed")
 		}
 		a := agentclient.Attachment{Version: agentclient.ProtocolVersion, Agent: "codex", Client: "codex", Pane: pane,
 			PID: f.PID, Instance: f.Instance, HomeID: f.HomeID, SessionID: f.SessionID, Cwd: f.Cwd, ServerEpoch: f.RootStart,
 			BindingEpoch: f.StartedAt, StartedAt: f.StartedAt, UpdatedAt: time.Now().UnixMilli(), InputReady: true, NativeSession: true}
-		r, err := agentclient.Prepare(a, text, opts.DeliveryID, opts.Force && opts.DeliveryID == "", time.Now())
+		intent, err := agentclient.StageInput(a, text, opts.DeliveryID, opts.Force && opts.DeliveryID == "", time.Now())
 		if err != nil {
-			return dispatch.Result{State: dispatch.StateFailed, Evidence: "codex-input-retry-held: " + err.Error()}
+			return codexPreparationFailure(err)
 		}
-		if receipt, known := agentclient.ReadReceipt(r); known && receipt.State == "accepted" {
-			if receipt.Delivery == "wake-accepted" {
-				return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: receipt.Delivery, Evidence: "codex-wake-already-accepted"}
-			}
-			if receipt.Delivery == "active-turn" || receipt.Delivery == "started-turn" {
-				evidence := "codex-active-already-accepted"
-				if receipt.Delivery == "started-turn" {
-					evidence = "codex-turn-already-accepted"
-				}
-				return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: receipt.Delivery, Evidence: evidence}
-			}
-			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Evidence: "codex-queue-already-accepted"}
+		r := intent.Request
+		if receipt, known := agentclient.ReadReceipt(r); known {
+			return codexRecordedResult(receipt)
 		}
 		if !r.MatchesTarget(a) {
-			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "codex-input-target-changed"}
+			return codexInputRefusal(dispatch.StateRefusedWaiting, "codex-input-target-changed", "codex-input-target-changed")
 		}
 		claimed := false
+		var claimErr, publishErr error
 		check := func() bool {
 			current, valid := codexInputTarget(pane)
 			if !r.MatchesTarget(a) || !valid || current.Instance != f.Instance || current.HomeID != f.HomeID || current.SessionID != f.SessionID || current.PID != f.PID || current.StartedAt != f.StartedAt || current.RootStart != f.RootStart || current.BackendPID != f.BackendPID || current.BackendStart != f.BackendStart || (hold != nil && hold() != "") {
 				return false
 			}
 			if claimed {
-				return true
-			} // only an explicit unsupported method may retry via queue
-			if agentclient.ClaimNative(r) != nil {
+				// An explicit unsupported method can retry via queue, but
+				// cannot carry its claim into another generation.
+				claimErr = r.CheckInputStore()
+				return claimErr == nil
+			}
+			published, err := intent.Publish(time.Now())
+			if err != nil {
+				publishErr = err
+				return false
+			}
+			r = published
+			claimErr = agentclient.ClaimNative(r)
+			if claimErr != nil {
 				return false
 			}
 			claimed = true
@@ -85,6 +91,23 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 			ctx = context.Background()
 		}
 		outcome := submit(ctx, codexrpc.Target{HomeID: f.HomeID, ThreadID: f.SessionID, BackendPID: f.BackendPID, BackendStart: f.BackendStart}, r.ID, inputs, check)
+		if publishErr != nil {
+			if errors.Is(publishErr, agentclient.ErrInputUncertain) {
+				if receipt, ok := agentclient.ReadReceipt(r); ok {
+					return codexRecordedResult(receipt)
+				}
+			}
+			return codexPreparationFailure(publishErr)
+		}
+		if claimErr != nil {
+			if receipt, ok := agentclient.ReadReceipt(r); ok {
+				return codexRecordedResult(receipt)
+			}
+			if !outcome.Attempted && errors.Is(claimErr, agentclient.ErrInputStoreUnavailable) {
+				return codexPreparationFailure(claimErr)
+			}
+			return codexInputUnknown("codex-input-receipt-unconfirmed", outcome.Attempted)
+		}
 		if outcome.Accepted {
 			delivery, evidence := "", "codex-queue-accepted:"+outcome.QueueID
 			if outcome.ActiveTurnID != "" {
@@ -97,7 +120,7 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 				delivery, evidence = "wake-accepted", "codex-wake-accepted:"+outcome.AcknowledgedTurnID
 			}
 			if err := agentclient.FinishNativeDelivery(r, "accepted", outcome.AcknowledgedTurnID, delivery); err != nil {
-				return dispatch.Result{State: dispatch.StateFailed, Evidence: "codex-input-receipt-unconfirmed"}
+				return codexInputUnknown("codex-input-receipt-unconfirmed", true)
 			}
 			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: delivery, Evidence: evidence, Attempts: 1}
 		}
@@ -106,13 +129,84 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 			if !outcome.Attempted {
 				verdict = "refused"
 			}
-			_ = agentclient.FinishNative(r, verdict, outcome.Reason)
-			if opts.IdleWakeInput && !outcome.Attempted {
-				return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: outcome.Reason}
+			if err := agentclient.FinishNative(r, verdict, outcome.Reason); err != nil {
+				return codexInputUnknown("codex-input-receipt-unconfirmed", outcome.Attempted)
 			}
-			return dispatch.Result{State: dispatch.StateFailed, Evidence: "codex-input-" + verdict + ":" + outcome.Reason}
+			if outcome.Attempted {
+				return codexInputUnknown("codex-input-uncertain:"+outcome.Reason, true)
+			}
+			if opts.IdleWakeInput {
+				return codexInputRefusal(dispatch.StateRefusedWaiting, outcome.Reason, outcome.Reason)
+			}
+			return codexInputRefusal(dispatch.StateFailed, outcome.Reason, "codex-input-refused:"+outcome.Reason)
 		}
-		return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: outcome.Reason}
+		if outcome.Attempted {
+			return codexInputUnknown("codex-input-uncertain:"+outcome.Reason, true)
+		}
+		return codexInputRefusal(dispatch.StateRefusedWaiting, outcome.Reason, outcome.Reason)
+	}
+}
+
+func codexInputRefusal(state dispatch.State, reason, evidence string) dispatch.Result {
+	code := dispatch.InputUnavailable
+	switch reason {
+	case "input-spool-full":
+		code = dispatch.InputSpoolFull
+	case "input-awaiting-confirmation":
+		code = dispatch.InputQuestion
+	case "codex-frontend-unavailable":
+		code = dispatch.InputAssociationMissing
+	case "expected-conversation-changed", "codex-input-target-changed", "target-changed", "backend-changed", "server-home-mismatch":
+		code = dispatch.InputTargetChanged
+	case "input-thread-not-loaded":
+		code = dispatch.InputSessionNotLoaded
+	}
+	return dispatch.Result{State: state, Evidence: evidence, FailureCode: code,
+		Submission: dispatch.SubmissionNotSubmitted, NativeQuestion: reason == "input-awaiting-confirmation"}
+}
+
+func codexInputUnknown(evidence string, attempted bool) dispatch.Result {
+	result := dispatch.Result{State: dispatch.StateFailed, Evidence: evidence,
+		FailureCode: dispatch.InputOutcomeUnconfirmed, Submission: dispatch.SubmissionUnknown}
+	if attempted {
+		result.Attempts = 1
+	}
+	return result
+}
+
+func codexPreparationFailure(err error) dispatch.Result {
+	var refused *agentclient.InputRefused
+	switch {
+	case errors.Is(err, agentclient.ErrInputFull):
+		return codexInputRefusal(dispatch.StateFailed, "input-spool-full", "input-spool-full")
+	case errors.Is(err, agentclient.ErrInputUncertain):
+		return codexInputUnknown("codex-input-receipt-unconfirmed", false)
+	case errors.Is(err, agentclient.ErrInputTargetChanged):
+		return codexInputRefusal(dispatch.StateFailed, "target-changed", "codex-input-retry-held: "+err.Error())
+	case errors.As(err, &refused):
+		return codexInputRefusal(dispatch.StateFailed, refused.Reason, "codex-input-refused:"+refused.Reason)
+	default:
+		return codexInputRefusal(dispatch.StateFailed, "", "codex-input-retry-held: "+err.Error())
+	}
+}
+
+func codexRecordedResult(receipt agentclient.Receipt) dispatch.Result {
+	switch receipt.State {
+	case "accepted":
+		kind := "queue"
+		switch receipt.Delivery {
+		case "wake-accepted":
+			kind = "wake"
+		case "started-turn":
+			kind = "turn"
+		case "active-turn":
+			kind = "active"
+		}
+		return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: receipt.Delivery, Evidence: "codex-" + kind + "-already-accepted"}
+	case "refused":
+		return codexPreparationFailure(&agentclient.InputRefused{Reason: receipt.Error})
+	default:
+		return codexPreparationFailure(agentclient.ErrInputUncertain)
 	}
 }
 

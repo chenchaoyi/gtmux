@@ -3,6 +3,7 @@ package app
 import (
 	"testing"
 
+	"github.com/chenchaoyi/gtmux/internal/server"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -79,14 +80,14 @@ func TestKeystrokeText(t *testing.T) {
 // without re-injecting (send-idempotent-receipt). Only successes are remembered.
 func TestSendCacheIdempotency(t *testing.T) {
 	const id = "gtmux-test-send-abc123"
-	if sendCacheSucceeded(id) {
+	if _, known := readPhoneReceipt(id); known {
 		t.Error("an unknown send id must not read as already-landed")
 	}
-	sendCacheRecord(id)
-	if !sendCacheSucceeded(id) {
+	rememberPhoneReceipt(id, server.InputReceipt{State: "submitted"})
+	if got, known := readPhoneReceipt(id); !known || got.State != "submitted" {
 		t.Error("a recorded send id must read as landed (a retry returns success, no re-send)")
 	}
-	if sendCacheSucceeded("some-other-id") {
+	if _, known := readPhoneReceipt("some-other-id"); known {
 		t.Error("a different id must be independent")
 	}
 }
