@@ -197,14 +197,20 @@ const defaultCapMB = 20
 // capBytes reads the configured cap (~/.config/gtmux/config.json eventsCapMB),
 // defaulting to 20 MB. A non-positive value disables the log entirely (0 cap).
 func capBytes() int64 {
+	size, _ := configuredCapBytes()
+	return size
+}
+
+func configuredCapBytes() (int64, error) {
 	mb := defaultCapMB
 	var c struct {
 		EventsCapMB *int `json:"eventsCapMB"`
 	}
-	if usercfg.Load(&c) == nil && c.EventsCapMB != nil {
+	err := usercfg.Load(&c)
+	if err == nil && c.EventsCapMB != nil {
 		mb = *c.EventsCapMB
 	}
-	return int64(mb) << 20
+	return int64(mb) << 20, err
 }
 
 // Append writes one record (best-effort — a telemetry log must never fail a
@@ -219,16 +225,24 @@ func Append(r Record) {
 // AppendChecked lets a source reconciler advance only after journal delivery.
 // A disabled journal cannot claim coverage of a conversation's messages.
 func AppendChecked(r Record) error {
-	if capBytes() <= 0 {
-		return fmt.Errorf("event journal is disabled")
-	}
-	return appendChecked(r)
+	return appendWithCap(r, capBytes(), true)
 }
 
 func appendChecked(r Record) error {
-	cap := capBytes()
+	return appendWithCap(r, capBytes(), false)
+}
+
+func appendWithCap(r Record, cap int64, required bool) error {
 	if cap <= 0 {
-		return nil // explicitly disabled
+		// Leave a gap in an existing sequence if a user instruction could not
+		// be recorded. No event file, body or target identity is written.
+		if r.Event == "UserPromptSubmit" && r.Origin == OriginInstruction {
+			advanceSequence(os.O_RDWR)
+		}
+		if required {
+			return fmt.Errorf("event journal is disabled")
+		}
+		return nil
 	}
 	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
 		return err

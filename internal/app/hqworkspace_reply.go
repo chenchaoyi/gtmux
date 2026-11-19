@@ -2,6 +2,7 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -64,14 +65,15 @@ func workspaceMessageHistoryHold(d hqworkspace.Database, a hqworkspace.IntentAtt
 	if m.EventCursor != nil {
 		floor = *m.EventCursor
 	} else {
-		// A retained, committed observation ingested strictly before this
-		// legacy message is a lower bound even when the log has rotated.
-		for _, q := range d.Reconciliations {
-			if q.ReceivedAt <= 0 || q.ReceivedAt >= m.At || !strings.HasPrefix(q.Observation.Ref, "events:") {
+		// Compare durable workspace revisions. A scan can start before the
+		// user message and commit its later producer rows after the message.
+		for _, change := range d.Changes {
+			if change.Kind != "observation" || change.Seq >= m.Seq {
 				continue
 			}
-			seq, e := strconv.ParseInt(strings.TrimPrefix(q.Observation.Ref, "events:"), 10, 64)
-			if e == nil && q.Observation.ID == "event-"+strconv.FormatInt(seq, 10) && seq > floor {
+			o := d.Reconciliations[change.Target].Observation
+			seq, e := strconv.ParseInt(strings.TrimPrefix(o.Ref, "events:"), 10, 64)
+			if e == nil && seq > floor && o.ID == "event-"+strconv.FormatInt(seq, 10) {
 				floor = seq
 			}
 		}
@@ -82,18 +84,20 @@ func workspaceMessageHistoryHold(d hqworkspace.Database, a hqworkspace.IntentAtt
 	}
 	target := a.Intent.Target
 	for _, r := range rows {
-		if r.Event != "UserPromptSubmit" || r.Origin != events.OriginInstruction || !hqworkspace.MessageHistoryAfter(m, r.Seq, r.Ts) {
-			continue
-		}
-		if r.AgentSession != "" && r.AgentSession != target.SessionID || r.HomeID != "" && r.HomeID != target.HomeID {
-			continue
-		}
-		if agent := agents.KeyForLabel(r.Agent); agent != "" && agent != target.Agent {
+		if !hqworkspace.MessageHistoryAfter(m, r.Seq, r.Ts) || !replyTargetInstruction(r, target) {
 			continue
 		}
 		return "HQ must reconcile the later or unordered instruction in the target conversation"
 	}
 	return ""
+}
+
+func replyTargetInstruction(r events.Record, target hqworkspace.Conversation) bool {
+	if r.Event != "UserPromptSubmit" || r.Origin != events.OriginInstruction || r.AgentSession != "" && r.AgentSession != target.SessionID || r.HomeID != "" && r.HomeID != target.HomeID {
+		return false
+	}
+	agent := agents.KeyForLabel(r.Agent)
+	return agent == "" || agent == target.Agent
 }
 
 // A restored workspace snapshot is not a substitute for the live relay ledger.
@@ -189,9 +193,9 @@ func workspaceVerifiedUserEvent(ref string) (*hqworkspace.UserEvent, error) {
 	if err != nil || seq <= 0 || ref != "events:"+strconv.FormatInt(seq, 10) {
 		return nil, errors.New("verified_user_event requires an exact events:N reference")
 	}
-	rows, gap := workspaceReadEvents(0)
-	if gap || len(rows) == 0 || rows[len(rows)-1].Seq != workspaceEventSequence() {
-		return nil, errors.New("HQ must reconcile the original user event history gap")
+	rows, err := events.VerifiedInstructionHistory(seq)
+	if err != nil {
+		return nil, fmt.Errorf("HQ must reconcile the original user event history: %w", err)
 	}
 	for _, r := range rows {
 		if r.Seq != seq {
@@ -205,7 +209,7 @@ func workspaceVerifiedUserEvent(ref string) (*hqworkspace.UserEvent, error) {
 			agent = r.Agent
 		}
 		for _, later := range rows {
-			if later.Seq > seq && later.Event == "UserPromptSubmit" && later.Origin == events.OriginInstruction && later.AgentSession == r.AgentSession && (later.HomeID == "" || later.HomeID == r.HomeID) {
+			if (later.Seq > seq || later.Seq == 0 && (later.Ts <= 0 || later.Ts >= r.Ts)) && replyTargetInstruction(later, hqworkspace.Conversation{Agent: agent, HomeID: r.HomeID, SessionID: r.AgentSession}) {
 				return nil, errors.New("HQ must verify the newer instruction in the target conversation")
 			}
 		}

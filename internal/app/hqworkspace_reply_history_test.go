@@ -14,7 +14,7 @@ func TestReplyReconcilesSavedHistory(t *testing.T) {
 	for _, scenario := range []string{"later-answer", "unreviewed-answer", "old-answer", "legacy-event", "late-membership", "late-received", "late-execution", "late-user-report", "late-source-unavailable", "ambiguous-history", "intermediate-overlap", "wrong-source", "ordinary-queued", "ordinary-landed", "ordinary-uncertain"} {
 		t.Run(scenario, func(t *testing.T) {
 			t.Setenv("HOME", t.TempDir())
-			seedReplyJournal(t)
+
 			source := &phase1CursorSource{}
 			_, _, c := phase1CursorStore(t, source, true)
 			home := t.TempDir()
@@ -48,6 +48,9 @@ func TestReplyReconcilesSavedHistory(t *testing.T) {
 			if scenario == "legacy-event" || late {
 				source.rows = []events.Record{{Seq: 1, Ts: 102, Event: "UserPromptSubmit", Origin: events.OriginInstruction, Agent: "Codex", HomeID: c.HomeID, AgentSession: c.SessionID, Summary: "Original scope", Pane: "%test"}}
 				source.latest = 1
+				persistReplyEvents(t, source.rows...)
+			} else {
+				seedReplyJournal(t)
 			}
 			if late {
 				registeredAt = 109

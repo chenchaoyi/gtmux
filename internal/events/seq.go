@@ -22,9 +22,11 @@ func seqPath() string { return filepath.Join(state.Dir(), "events.seq") }
 // journal write. The lock
 // is held only for the tiny read-increment-write, so contention is microseconds on
 // an uncontended local file.
-func nextSeq() (seq int64) {
+func nextSeq() int64 { return advanceSequence(os.O_RDWR | os.O_CREATE) }
+
+func advanceSequence(flags int) (seq int64) {
 	// The counter file doubles as the lock target.
-	f, err := state.OpenFile(seqPath(), os.O_RDWR|os.O_CREATE, 0o644)
+	f, err := state.OpenFile(seqPath(), flags, 0o644)
 	if err != nil {
 		return 0
 	}
@@ -40,7 +42,10 @@ func nextSeq() (seq int64) {
 
 	buf := make([]byte, 32)
 	n, _ := f.ReadAt(buf, 0)
-	cur, _ := strconv.ParseInt(strings.TrimSpace(string(buf[:n])), 10, 64)
+	cur, parseErr := strconv.ParseInt(strings.TrimSpace(string(buf[:n])), 10, 64)
+	if flags&os.O_CREATE == 0 && (parseErr != nil || cur <= 0) {
+		return 0
+	}
 	next := cur + 1
 	// Rewrite from the start (the value only grows, so length is non-decreasing).
 	b := []byte(strconv.FormatInt(next, 10))

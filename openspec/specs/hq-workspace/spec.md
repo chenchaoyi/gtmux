@@ -385,3 +385,8 @@ The workspace SHALL project reply, active-turn notice, source fetch and executio
 - **WHEN** an exact target's instruction follows a workspace user message but predates enrollment and the general observation cursor has already passed it
 - **THEN** the continuation checks the source journal from the original message before submission and holds for HQ when the target changed, the interval is unavailable, or a legacy same-second instruction is unordered
 - **AND** a verified later user resumption can cover the same saved action through its original gates
+
+#### Scenario: History coverage changes before dispatch
+- **WHEN** a legacy message is committed during an asynchronous scan, or recording is disabled after a direct user assignment
+- **THEN** a scan's start time cannot advance that message's lower bound, and the original direct assignment requires verified journal coverage through submission
+- **AND** an unrecorded instruction leaves a coverage gap in an already initialized journal counter without storing an event or its contents

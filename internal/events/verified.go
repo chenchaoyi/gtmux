@@ -13,7 +13,11 @@ import (
 // VerifiedSequence reads the assigned watermark without folding I/O or parse
 // failures into zero. A new journal has neither a counter nor any generation.
 func VerifiedSequence() (int64, error) {
-	if capBytes() <= 0 {
+	size, err := configuredCapBytes()
+	if err != nil {
+		return 0, fmt.Errorf("event journal configuration unreadable: %w", err)
+	}
+	if size <= 0 {
 		return 0, errors.New("event journal disabled")
 	}
 	info, err := os.Stat(seqPath())
@@ -45,6 +49,20 @@ func VerifiedSequence() (int64, error) {
 // VerifiedSince requires a readable contiguous interval including the assigned
 // tail. Ordinary telemetry readers can skip invalid rows; an input gate cannot.
 func VerifiedSince(floor int64) ([]Record, int64, error) {
+	return verifiedHistory(floor, false)
+}
+
+// VerifiedInstructionHistory also keeps the preceding retained records for
+// AuthorOf, since a send audit can precede its matching prompt.
+func VerifiedInstructionHistory(seq int64) ([]Record, error) {
+	if seq <= 0 {
+		return nil, errors.New("invalid instruction sequence")
+	}
+	records, _, err := verifiedHistory(seq-1, true)
+	return records, err
+}
+
+func verifiedHistory(floor int64, includeContext bool) ([]Record, int64, error) {
 	high, err := VerifiedSequence()
 	if err != nil {
 		return nil, 0, err
@@ -55,7 +73,7 @@ func VerifiedSince(floor int64) ([]Record, int64, error) {
 	if floor < 0 || high < floor {
 		return nil, 0, errors.New("event watermark regressed")
 	}
-	var rows, legacy []Record
+	var rows, context []Record
 	var latest int64
 	for _, p := range []string{rotatedPath(), Path()} {
 		info, e := os.Stat(p)
@@ -84,10 +102,10 @@ func VerifiedSince(floor int64) ([]Record, int64, error) {
 				break
 			}
 			latest = max(latest, r.Seq)
-			if r.Seq == 0 {
-				legacy = append(legacy, r)
-			} else if r.Seq > floor {
+			if r.Seq > floor {
 				rows = append(rows, r)
+			} else if includeContext || r.Seq == 0 {
+				context = append(context, r)
 			}
 		}
 		if e == nil {
@@ -103,5 +121,5 @@ func VerifiedSince(floor int64) ([]Record, int64, error) {
 	if e != nil || end != high || latest != high || gap || int64(len(rows)) != high-floor || len(rows) > 0 && (rows[0].Seq != floor+1 || rows[len(rows)-1].Seq != high) {
 		return nil, 0, errors.New("event history gap or moving watermark")
 	}
-	return append(rows, legacy...), high, nil
+	return append(context, rows...), high, nil
 }

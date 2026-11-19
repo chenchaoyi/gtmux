@@ -15,7 +15,7 @@ func TestReviewedReplyAuthorityAndOrder(t *testing.T) {
 	for _, scenario := range []string{"direct", "direct-superseded", "late-send-audit", "explicit-disposition", "direct-unattested", "wrong-source", "machine-event", "cleared-answer", "unresolved-answer", "noted-fetch", "earlier-received", "earlier-empty-progress", "consumed-pause", "coordination-echo"} {
 		t.Run(scenario, func(t *testing.T) {
 			t.Setenv("HOME", t.TempDir())
-			seedReplyJournal(t)
+
 			source := &phase1CursorSource{}
 			_, _, c := phase1CursorStore(t, source, true)
 			home := t.TempDir()
@@ -59,7 +59,9 @@ func TestReviewedReplyAuthorityAndOrder(t *testing.T) {
 					source.rows = append(source.rows, events.Record{Seq: 2, Event: events.AuditEventSend, Pane: "%9", Actor: "hq", Summary: "landed: existing fixture scope", Ts: 102})
 					source.latest = 2
 				}
+				persistReplyEvents(t, source.rows...)
 			} else {
+				seedReplyJournal(t)
 				_, err = s.Submit("user-scope", matter, "Original user assignment", 101)
 				must(err)
 			}
@@ -149,6 +151,7 @@ func TestReviewedReplyAuthorityAndOrder(t *testing.T) {
 			if scenario == "late-send-audit" {
 				source.rows = append(source.rows, events.Record{Seq: 2, Event: events.AuditEventSend, Pane: "%9", Actor: "hq", Summary: "landed: existing fixture scope", Ts: 114})
 				source.latest = 2
+				persistReplyEvents(t, source.rows[1])
 				if why := replySourceHold(a, phase1CursorDatabase(t, s)); why == "" {
 					t.Fatal("newly attributed machine input authorized a send")
 				}

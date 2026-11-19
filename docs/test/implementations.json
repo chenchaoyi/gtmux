@@ -3878,5 +3878,13 @@
     "selectors": [
       "TestWorkspaceMessageChecksOriginalTargetHistory"
     ]
+  },
+  "internal/app/hqworkspace_reply_continuity_test.go": {
+    "cases": [
+      "HRC-010"
+    ],
+    "selectors": [
+      "TestReplyHistoryUsesCommittedOrderAndActiveJournal"
+    ]
   }
 }
