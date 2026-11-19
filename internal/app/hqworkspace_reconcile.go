@@ -179,17 +179,20 @@ var workspaceReconciliationRunner workspaceRunner
 var workspaceReconciliationNext int64
 var workspaceReconciliationWakeAt int64
 var workspaceGoalCheckStamp int64
+var workspaceReconciliationNow = func() int64 { return time.Now().Unix() }
+
+const workspaceReconciliationInterval = 30
 
 func scheduleWorkspaceReconciliation() {
 	if workspaceReconciliationRunner.running.Load() {
 		return // Leave a marker received during the current scan for the next tick.
 	}
-	now := time.Now().Unix()
+	now := workspaceReconciliationNow()
 	stamp := hqworkspace.GoalCheckStamp(state.HQHome())
 	if now < workspaceReconciliationNext && stamp <= workspaceGoalCheckStamp {
 		return
 	}
-	workspaceReconciliationNext = now + 30
+	workspaceReconciliationNext = now + workspaceReconciliationInterval
 	workspaceGoalCheckStamp = stamp
 	workspaceReconciliationRunner.start(func() {
 		s := workspaceStore()
@@ -197,7 +200,11 @@ func scheduleWorkspaceReconciliation() {
 			diag.ReportStoreFailure("hq-reconciliation", err)
 			return
 		}
-		next, err := notifyWorkspaceReconciliation(s, time.Now().Unix(), workspaceReconciliationWakeAt)
+		checkedAt := workspaceReconciliationNow()
+		// Ingestion may cross a second boundary. Schedule the next scan on
+		// the same clock sample used to record the reminder's retry deadline.
+		workspaceReconciliationNext = checkedAt + workspaceReconciliationInterval
+		next, err := notifyWorkspaceReconciliation(s, checkedAt, workspaceReconciliationWakeAt)
 		if err != nil {
 			diag.ReportStoreFailure("hq-reconciliation", err)
 			return

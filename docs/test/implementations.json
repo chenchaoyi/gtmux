@@ -4187,5 +4187,13 @@
     "selectors": [
       "TestContinuationClaimCoversOnlyItsExactObservation"
     ]
+  },
+  "internal/app/hqworkspace_reconcile_timing_test.go": {
+    "cases": [
+      "HPC-006"
+    ],
+    "selectors": [
+      "TestWorkspaceReconciliationRetriesFromReminderTime"
+    ]
   }
 }
