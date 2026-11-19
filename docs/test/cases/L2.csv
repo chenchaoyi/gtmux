@@ -73,10 +73,10 @@ MAP-c7f093bf6da7,L2,reviewed implementation,internal/app/dsh_terminal_spool_test
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
 MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
 MAP-8667d3e135cb,L2,reviewed implementation,internal/app/hold_reader_test.go,12,reviewed-selector,TestHoldReaderChild,False,RSD-004
-MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,112,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
-MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,149,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
-MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,186,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
-MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,210,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,146,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,183,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
+MAP-ec07edd88479,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,207,reviewed-selector,TestPhase1CursorFilteredPageBoundary,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-d0af369139ad,L2,reviewed implementation,internal/app/hqworkspace_delayed_drive_test.go,12,reviewed-selector,TestGoalRelayAdapterFirstIngestAfterDeadlineDoesNotSend,False,HGD-010
 MAP-5f24b23ab8de,L2,reviewed implementation,internal/app/hqworkspace_goal_regression_test.go,11,reviewed-selector,TestGoalNoNewEventsAfterNotedStillRequiresHQ,False,HGD-005
 MAP-b9ea2545c70d,L2,reviewed implementation,internal/app/hqworkspace_goal_test.go,13,reviewed-selector,TestGoalActionAuthorityAndExactReceiptEnvelope,False,"HGD-002,HGD-004,HGD-005"

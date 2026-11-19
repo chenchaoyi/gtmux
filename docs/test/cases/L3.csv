@@ -4,7 +4,7 @@ MAP-6c44c0313e74,L3,reviewed implementation,internal/app/hqworkspace_continuatio
 MAP-69d66d9f9a98,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,97,reviewed-selector,TestWorkspaceContinuationCLI,False,"HPC-004,HPC-005"
 MAP-0e82e0de8675,L3,reviewed implementation,internal/app/hqworkspace_continuation_test.go,23,reviewed-selector,TestWorkspaceContinuationIncidentReplay,False,HPC-002
 MAP-e69b385b8aa2,L3,reviewed implementation,internal/app/hqworkspace_goal_runtime_test.go,48,reviewed-selector,TestGoalRuntimeCLIStopServeCallbackAndGuardedDispatch,False,HGD-009
-MAP-4472b7512a0d,L3,reviewed implementation,internal/app/hqworkspace_triage_cli_test.go,25,reviewed-selector,TestWorkspaceTriageCLI,False,HPT-003
+MAP-4472b7512a0d,L3,reviewed implementation,internal/app/hqworkspace_triage_cli_test.go,24,reviewed-selector,TestWorkspaceTriageCLI,False,HPT-003
 MAP-1fb5ea2421ed,L3,reviewed implementation,internal/app/hqworkspace_triage_role_test.go,18,reviewed-selector,TestWorkspaceTriageRoleAfterPaneReuse,False,HPT-004
 MAP-ad442623e007,L3,reviewed implementation,internal/app/observed_conversation_test.go,15,reviewed-selector,TestSID005ObservedReaderKeepsBoundedWindowAndExactCursor,False,SID-005
 MAP-8b7815d10836,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,64,reviewed-selector,TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames,False,WTR-003

@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -131,6 +130,10 @@ func TestWorkspaceTriageCLI(t *testing.T) {
 		}
 		return stop.ID != "" && dueFile != ""
 	})
+	wakeReads := filepath.Join(r.home, "triage-terminal-wakes")
+	if _, err := os.Stat(wakeReads); !os.IsNotExist(err) {
+		t.Fatal("first workspace wake reached the private terminal", err)
+	}
 	if err := os.Rename(dueFile, filepath.Join(r.home, "dropped-wake.txt")); err != nil {
 		t.Fatal(err)
 	}
@@ -176,15 +179,9 @@ func TestWorkspaceTriageCLI(t *testing.T) {
 	if receipt.HandoffID != hqworkspace.GoalFollowupID(m) || d.Reconciliations[receipt.HandoffID].State != "pending" || len(d.IntentAttempts) != 0 {
 		t.Fatal("verified handoff lost the goal or created authority", receipt)
 	}
-	journal, _ := events.ReadSince(0)
-	delivered := 0
-	for _, e := range journal {
-		if e.Pane == pane && e.Event == events.AuditEventWakeDelivered && strings.Contains(e.Summary, workspaceContinuationWake) {
-			delivered++
-		}
-	}
-	if delivered != 1 {
-		t.Fatal("first wake was not lost or retry was duplicated", delivered)
+	seen, err := os.ReadFile(wakeReads)
+	if err != nil || strings.Count(string(seen), workspaceContinuationWake) != 1 {
+		t.Fatalf("expected exactly one workspace wake read by the HQ terminal, got %q: %v", seen, err)
 	}
 	t.Logf("worker %s; exact %s; verified owner %s; handoff %s; attempts %d", worker, stop.Ref, q.Owner, receipt.HandoffID, len(d.IntentAttempts))
 }
@@ -221,6 +218,17 @@ func runTriageFixtureHQ(t *testing.T) {
 			code, raw := goalCLI(t, "", "hq", "workspace", "reconcile", "--json")
 			if code != 0 {
 				t.Fatal(code, raw)
+			}
+			// The terminal's completed read is independent of a transport audit
+			// arriving after the terminal has started handling the wake.
+			f, err := os.OpenFile(filepath.Join(state.Home(), "triage-terminal-wakes"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = fmt.Fprintln(f, line)
+			closeErr := f.Close()
+			if err != nil || closeErr != nil {
+				t.Fatal(err, closeErr)
 			}
 			workspaceReplayWrite(t, "triage-cli-read", []byte(raw))
 		}

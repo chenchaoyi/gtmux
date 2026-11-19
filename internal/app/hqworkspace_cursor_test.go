@@ -46,9 +46,6 @@ func (s *phase1CursorSource) read(cursor int64) ([]events.Record, bool) {
 
 func phase1CursorStore(t *testing.T, source *phase1CursorSource, initialized bool) (*hqworkspace.Store, string, hqworkspace.Conversation) {
 	t.Helper()
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
 	oldRead, oldSeq, oldRelays, oldObserve := workspaceReadEvents, workspaceEventSequence, workspaceRelayRecords, workspaceObserveEvent
 	t.Cleanup(func() {
 		workspaceReadEvents, workspaceEventSequence, workspaceRelayRecords, workspaceObserveEvent = oldRead, oldSeq, oldRelays, oldObserve
@@ -59,8 +56,8 @@ func phase1CursorStore(t *testing.T, source *phase1CursorSource, initialized boo
 	workspaceObserveEvent = func(_ string, _ string, sid string, _ string, _ int64, _ ...string) bool {
 		return sid != "denied-thread"
 	}
-	storeHome := t.TempDir()
-	s := hqworkspace.New(storeHome)
+	home := t.TempDir()
+	s := hqworkspace.New(home)
 	if _, err := s.Create("cursor-goal", "Synthetic cursor goal", 100); err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +70,7 @@ func phase1CursorStore(t *testing.T, source *phase1CursorSource, initialized boo
 			t.Fatal(err)
 		}
 	}
-	return s, storeHome, c
+	return s, home, c
 }
 
 func phase1CursorEvent(c hqworkspace.Conversation, seq int64) events.Record {
@@ -208,6 +205,9 @@ func TestPhase1CursorEmptyRetentionGap(t *testing.T) {
 }
 
 func TestPhase1CursorFilteredPageBoundary(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
 	source := &phase1CursorSource{latest: 10}
 	s, home, c := phase1CursorStore(t, source, true)
 	for seq := int64(11); seq <= 511; seq++ {

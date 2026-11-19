@@ -3710,7 +3710,7 @@
       "cases": [
         {
           "id": "MAP-9931f487fae1",
-          "line": 112,
+          "line": 109,
           "kind": "reviewed-selector",
           "name": "TestPhase1CursorEmptyScanConcurrentAppend",
           "dynamic": false,
@@ -3719,7 +3719,7 @@
         },
         {
           "id": "MAP-479200cd9eee",
-          "line": 149,
+          "line": 146,
           "kind": "reviewed-selector",
           "name": "TestPhase1CursorProspectiveActivation",
           "dynamic": false,
@@ -3728,7 +3728,7 @@
         },
         {
           "id": "MAP-b0e7a04d99c5",
-          "line": 186,
+          "line": 183,
           "kind": "reviewed-selector",
           "name": "TestPhase1CursorEmptyRetentionGap",
           "dynamic": false,
@@ -3737,7 +3737,7 @@
         },
         {
           "id": "MAP-ec07edd88479",
-          "line": 210,
+          "line": 207,
           "kind": "reviewed-selector",
           "name": "TestPhase1CursorFilteredPageBoundary",
           "dynamic": false,
@@ -3745,7 +3745,7 @@
           "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
         }
       ],
-      "sha256": "2a6594a33a4d2933879e75069cc1741a18bf15f4a2468f79951b422bedd3ef5a"
+      "sha256": "26471addb0d8709804fe2f227af74abae78dabcbdf3ca7e18cc0c0eeb803ed96"
     },
     "internal/app/hqworkspace_overview_test.go": {
       "sha256": "f485fe3bbd99f817308ce7fe4d9d10d8f33615b13efb791e6e6211e0de9eabc5",
@@ -67487,7 +67487,7 @@
       "cases": [
         {
           "id": "MAP-4472b7512a0d",
-          "line": 25,
+          "line": 24,
           "kind": "reviewed-selector",
           "name": "TestWorkspaceTriageCLI",
           "dynamic": false,
@@ -67495,7 +67495,7 @@
           "design": "HPT-003"
         }
       ],
-      "sha256": "8e751797f02d21fb4b6089d05832491ee7128c1928b296bae0bb7a48f4d48d21"
+      "sha256": "a47f579b66586c67a7d260d9e346944fcd55944d6cd2eabc35442004affc3301"
     },
     "internal/app/hqworkspace_triage_test.go": {
       "layer": "L2",
