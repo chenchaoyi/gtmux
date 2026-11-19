@@ -193,14 +193,16 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 // A captured managed terminal identity is evidence even if its original
 // pane later disappears. Pane-less rows require explicit consent for this home.
 func workspaceTriageSource(r events.Record, c hqworkspace.Conversation) bool {
-	if r.Seq <= 0 || r.Ts <= 0 || c.SessionID == "" || c.HomeID != conversation.HomeID(c.Agent) {
+	if r.Seq <= 0 || r.Ts <= 0 || c.SessionID == "" {
 		return false
 	}
 	if _, ok := agents.For(c.Agent); !ok {
 		return false
 	}
 	if r.Pane != "" {
-		return strings.HasPrefix(r.Pane, "%") && r.Session != ""
+		// Incomplete terminal rows cannot prove management. Do not resolve
+		// a provider home until the recorded terminal identity qualifies.
+		return strings.HasPrefix(r.Pane, "%") && r.Session != "" && c.HomeID == conversation.HomeID(c.Agent)
 	}
 	return workspaceTriageFollowed(c, r.Ts)
 }
