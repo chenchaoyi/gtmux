@@ -18,6 +18,7 @@ import (
 // workspaceAction is shared by the local CLI and its native consumer. Message
 // bodies travel over stdin, never shell interpolation or process arguments.
 type workspaceAction struct {
+	AuthorityRef      string                      `json:"authority_ref,omitempty"`
 	VerifiedUserEvent string                      `json:"verified_user_event,omitempty"`
 	ReplyID           string                      `json:"reply_id,omitempty"`
 	Responsibility    *hqworkspace.Responsibility `json:"responsibility,omitempty"`
@@ -81,6 +82,9 @@ resume-reply needs matter/id/revision/reply_id. HQ reviews the existing authoriz
 and its message:ID (user instruction or verified answer to a cleared question) before arming
 one idle-only fetch reminder. For a verified original direct user assignment, cite events:N
 as authority_ref and verified_user_event after checking original authorship and scope.
+Review the original action again after a later user confirmation. resume-reply may add its
+authority_ref without rewriting the plan. A verified later membership records attribution
+separately; a previous ordinary drive remains reserved for reconciliation.
 reply_observations retains receipt stages after noted. Assess no-followup on an unbound receipt
 to record that HQ has verified it needs no action.
 Inspect the goal and intent_attempts for the fetch, input blocker and execution evidence.
@@ -291,7 +295,7 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 					return nil, err
 				}
 			}
-			result, err = s.ArmReply(a.Matter, a.ID, a.ReplyID, a.Revision, now, event)
+			result, err = s.ArmReply(a.Matter, a.ID, a.ReplyID, a.Revision, now, hqworkspace.ReplyReview{AuthorityRef: a.AuthorityRef, UserEvent: event, Reports: workspaceReplyReports(a.Matter, a.ID)})
 		} else {
 			result, err = s.DriveIntent(a.Matter, a.ID, a.Revision, now, workspaceDeliverGoal)
 		}

@@ -49,6 +49,7 @@ MAP-b6ae467c793b,L2,reviewed implementation,internal/app/hqworkspace_goal_test.g
 MAP-9a346dda931b,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,15,reviewed-selector,TestPhase1WorkspaceIngestionRecoveryAndReadIndependence,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-4a6d3760f38d,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,105,reviewed-selector,TestPhase1WorkspaceActionAuthorizationAndCompatibility,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-c7c7feed6e2a,L2,reviewed implementation,internal/app/hqworkspace_reconcile_test.go,149,reviewed-selector,TestPhase1HQCanClaimDryRunAndCommit,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-10b4ee84e100,L2,reviewed implementation,internal/app/hqworkspace_reply_history_test.go,13,reviewed-selector,TestReplyReconcilesSavedHistory,False,"HRC-006,HRC-007,HRC-008"
 MAP-da98c9c39848,L2,reviewed implementation,internal/app/hqworkspace_reply_review_test.go,14,reviewed-selector,TestReviewedReplyAuthorityAndOrder,False,"HRC-003,HRC-004,HRC-005"
 MAP-ad249a342e85,L2,reviewed implementation,internal/app/hqworkspace_reply_test.go,21,reviewed-selector,TestReplyLifecycleAcrossStop,False,"HRC-001,HRC-002"
 MAP-67fc4ac7625d,L2,reviewed implementation,internal/app/hqworkspace_reply_test.go,100,reviewed-selector,TestReplyContinuationDispatchAndEvidence,False,"HRC-001,HRC-002"

@@ -14,16 +14,19 @@ import (
 // IntentAttempt is a durable one-shot claim, not a second dispatch queue. Even a
 // safe refusal needs HQ verification; a timeout or restart never replays an action.
 type IntentAttempt struct {
-	UserEvent   *UserEvent   `json:"user_event,omitempty"`
-	EventCursor int64        `json:"event_cursor,omitempty"`
-	ReplyID     string       `json:"reply_id,omitempty"`
-	Revision    uint64       `json:"revision,omitempty"`
-	MatterID    string       `json:"matter_id"`
-	StepID      string       `json:"step_id"`
-	Intent      ActionIntent `json:"intent"`
-	State       string       `json:"state"`
-	Evidence    string       `json:"evidence,omitempty"`
-	At          int64        `json:"at"`
+	AuthorityRef  string       `json:"authority_ref,omitempty"` // Supplemental evidence for the original, immutable action.
+	ReviewedAt    int64        `json:"reviewed_at,omitempty"`
+	PriorDelivery bool         `json:"prior_delivery,omitempty"`
+	UserEvent     *UserEvent   `json:"user_event,omitempty"`
+	EventCursor   int64        `json:"event_cursor,omitempty"`
+	ReplyID       string       `json:"reply_id,omitempty"`
+	Revision      uint64       `json:"revision,omitempty"`
+	MatterID      string       `json:"matter_id"`
+	StepID        string       `json:"step_id"`
+	Intent        ActionIntent `json:"intent"`
+	State         string       `json:"state"`
+	Evidence      string       `json:"evidence,omitempty"`
+	At            int64        `json:"at"`
 }
 
 // DriveIntent is called only by an explicit verified HQ action, never by a tick.

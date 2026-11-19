@@ -15,9 +15,15 @@ type UserEvent struct {
 	Source Conversation `json:"source"`
 }
 
+type ReplyReview struct {
+	AuthorityRef string
+	UserEvent    *UserEvent
+	Reports      []Observation
+}
+
 // ArmReply binds an existing action. A prior transport/external attempt can
 // gain a reply reference for reconciliation, but can never become armed again.
-func (s *Store) ArmReply(matter, action, reply string, revision uint64, at int64, event *UserEvent) (IntentAttempt, error) {
+func (s *Store) ArmReply(matter, action, reply string, revision uint64, at int64, evidence ReplyReview) (IntentAttempt, error) {
 	var out IntentAttempt
 	err := s.transaction(func(d *Database) error {
 		if !validID(reply) || revision == 0 {
@@ -28,6 +34,9 @@ func (s *Store) ArmReply(matter, action, reply string, revision uint64, at int64
 			return ErrConflict
 		}
 		if used && old.ReplyID == reply && old.Revision == revision {
+			if evidence.AuthorityRef != "" && evidence.AuthorityRef != old.AuthorityRef {
+				return ErrConflict
+			}
 			out = old
 			return nil
 		}
@@ -67,9 +76,22 @@ func (s *Store) ArmReply(matter, action, reply string, revision uint64, at int64
 		} else if old.State == "submitting" {
 			return errors.New("HQ must reconcile the original in-flight submission")
 		}
+		if used && old.ReplyID == "" {
+			out.PriorDelivery = true
+		}
+		// A later user confirmation can supplement a saved action without
+		// changing its identity, original scope or any past delivery result.
+		out.ReviewedAt = review.At
+		if evidence.AuthorityRef != "" {
+			out.AuthorityRef = evidence.AuthorityRef
+			out.UserEvent = nil
+			if msg, ok := d.Messages[strings.TrimPrefix(evidence.AuthorityRef, "message:")]; ok && msg.Seq > review.BeforeRevision {
+				return errors.New("HQ must review the current user confirmation for the original action")
+			}
+		}
 		out.ReplyID, out.Revision, out.EventCursor = reply, revision, *review.ReviewedEventCursor
-		if event != nil {
-			out.UserEvent = event
+		if evidence.UserEvent != nil {
+			out.UserEvent = evidence.UserEvent
 		}
 		if why := ReplyBlockReason(*d, out, at); why != "" {
 			return errors.New(why)
@@ -77,8 +99,39 @@ func (s *Store) ArmReply(matter, action, reply string, revision uint64, at int64
 		if out.State == "armed" {
 			out.Evidence = ""
 		}
+		if d.Reconciliations["relay-"+reply].Observation.MatterID == "" || d.Reconciliations["inbox:"+reply].Observation.MatterID == "" {
+			id := "attribution:" + reply
+			if prior, ok := d.Reconciliations[id]; ok {
+				if prior.Observation.MatterID != matter || !prior.Observation.Conversation.Same(out.Intent.Target) {
+					return ErrConflict
+				}
+			} else {
+				observation := Observation{ID: id, Kind: "relay-attribution", MatterID: matter, MatterRevision: revision, Ref: "relay:" + reply, Conversation: out.Intent.Target, OccurredAt: at, Body: "HQ verified the original request and reply against the execution membership interval."}
+				if err := recordObservation(d, observation, at); err != nil {
+					return err
+				}
+			}
+		}
 		d.IntentAttempts[action] = out
 		changed(d, at, "reply-continuation-bound", matter, action, reply)
+		// A report may already exist when the intent or its source membership
+		// becomes known. Reserve the same action before it can reach the pump.
+		for _, o := range evidence.Reports {
+			raw := d.Reconciliations[o.ID].Observation
+			if raw.Kind != "relay-report" || raw.Ref != o.Ref || raw.Body != o.Body || raw.OccurredAt != o.OccurredAt || !raw.Conversation.Same(o.Conversation) || !driveEvidenceMatches(*d, m, o, at) {
+				continue
+			}
+			if raw.MatterID == "" {
+				o.ID = "attributed:" + strings.TrimPrefix(raw.Ref, "relay:")
+				if err := recordObservation(d, o, at); err != nil {
+					return err
+				}
+			} else if raw.MatterID != matter || !reflect.DeepEqual(raw.DriveProof, o.DriveProof) {
+				continue
+			}
+			attachDrive(d, o, at)
+		}
+		out = d.IntentAttempts[action]
 		return nil
 	})
 	return out, err
@@ -99,15 +152,26 @@ func clearedAnswer(d Database, answer Message) bool {
 	return false
 }
 
+func replyAuthorityRef(m Matter, a IntentAttempt) string {
+	if a.AuthorityRef != "" {
+		return a.AuthorityRef
+	}
+	return m.Responsibility.AuthorityRef
+}
+
 func replyAuthority(d Database, m Matter, a IntentAttempt) bool {
-	ref := m.Responsibility.AuthorityRef
+	ref := replyAuthorityRef(m, a)
+	latest := a.Intent.At
+	if a.AuthorityRef != "" {
+		latest = a.ReviewedAt
+	}
 	msg := d.Messages[strings.TrimPrefix(ref, "message:")]
 	if e := a.UserEvent; e != nil {
 		member, _ := MatchObservation(d, e.Source, e.At)
-		if ref != "events:"+strconv.FormatInt(e.Seq, 10) || e.Seq <= 0 || e.Seq > a.EventCursor || e.At <= 0 || e.At > a.Intent.At || !e.Source.Same(a.Intent.Target) || member != m.ID {
+		if ref != "events:"+strconv.FormatInt(e.Seq, 10) || e.Seq <= 0 || e.Seq > a.EventCursor || e.At <= 0 || e.At > latest || !e.Source.Same(a.Intent.Target) || member != m.ID {
 			return false
 		}
-	} else if msg.ID == "" || ref != "message:"+msg.ID || msg.Speaker != "user" || msg.Kind != "instruction" || msg.MatterID != m.ID || msg.At > a.Intent.At || msg.Delivery == "cancelled" || msg.ReplyTo != "" && !clearedAnswer(d, msg) {
+	} else if msg.ID == "" || ref != "message:"+msg.ID || msg.Speaker != "user" || msg.Kind != "instruction" || msg.MatterID != m.ID || msg.At > latest || msg.Delivery == "cancelled" || msg.ReplyTo != "" && !clearedAnswer(d, msg) {
 		return false
 	}
 	for _, later := range d.Messages {
@@ -146,7 +210,7 @@ func ReplyBlockReason(d Database, a IntentAttempt, at int64) string {
 			continue
 		}
 		seq, _ := strconv.ParseInt(strings.TrimPrefix(o.Ref, "events:"), 10, 64)
-		if seq > a.EventCursor || a.UserEvent == nil && o.OccurredAt > d.Messages[strings.TrimPrefix(p.AuthorityRef, "message:")].At {
+		if seq > a.EventCursor || a.UserEvent == nil && o.OccurredAt > d.Messages[strings.TrimPrefix(replyAuthorityRef(m, a), "message:")].At {
 			return "HQ must review the newer instruction in the target conversation"
 		}
 	}
@@ -157,24 +221,46 @@ func ReplyBlockReason(d Database, a IntentAttempt, at int64) string {
 	request := d.Reconciliations["relay-"+a.ReplyID].Observation
 	for _, fact := range []Observation{request, o} {
 		member, _ := MatchObservation(d, target, fact.OccurredAt)
-		if fact.Ref != "relay:"+a.ReplyID || !fact.Conversation.Same(target) || member != m.ID || fact.MatterID != m.ID || fact.OccurredAt > at {
+		if fact.Ref != "relay:"+a.ReplyID || !fact.Conversation.Same(target) || member != m.ID || fact.MatterID != "" && fact.MatterID != m.ID || fact.OccurredAt > at {
 			return "HQ must verify the inbox reply and its exact source"
 		}
 	}
-	continuous := false
-	for _, member := range m.Participants {
-		if member.Role == "execution" && member.Conversation.Same(target) && member.From <= request.OccurredAt && (member.Until == 0 || member.Until >= at) && (member.RemovedAt == 0 || member.RemovedAt > at) {
-			continuous = true
-			break
-		}
+	from := min(request.OccurredAt, a.Intent.At)
+	if a.UserEvent != nil {
+		from = min(from, a.UserEvent.At)
 	}
-	if !continuous {
-		return "HQ must review the interrupted execution membership"
+	if !uniqueReplyInterval(d, m, target, from, at) {
+		return "HQ must review the interrupted or ambiguous execution membership"
 	}
 	if o.Kind != "relay-inbox" || o.OccurredAt < request.OccurredAt {
 		return "HQ must verify an eligible inbox reply"
 	}
 	return ""
+}
+
+// A competing membership can begin and end between the request and the final
+// probe. Sampling only their endpoints would miss that use of the same target.
+func uniqueReplyInterval(d Database, m Matter, target Conversation, from, to int64) bool {
+	covered := false
+	for _, candidate := range d.Matters {
+		owner := CanonicalMatter(d, candidate.ID)
+		for _, member := range candidate.Participants {
+			if member.Role != "execution" || !member.Conversation.Same(target) {
+				continue
+			}
+			if owner == m.ID {
+				if candidate.ID == m.ID && member.From <= from && (member.Until == 0 || member.Until >= to) && (member.RemovedAt == 0 || member.RemovedAt > to) {
+					covered = true
+				}
+				continue
+			}
+			first := max(from, member.From)
+			if first <= to && (member.Until == 0 || member.Until >= first) && (member.RemovedAt == 0 || member.RemovedAt > first) {
+				return false
+			}
+		}
+	}
+	return covered
 }
 
 // Remember a preflight blocker without consuming the one-shot submission.
@@ -215,6 +301,9 @@ func replyResponsibility(d Database, a IntentAttempt, at int64) GoalStatus {
 		reason = "HQ must reconcile source receipt " + a.Evidence
 	case "queued", "landed":
 		reason = "reminder submitted; HQ must check the source receipt"
+		if a.PriorDelivery {
+			reason = "HQ must reconcile the original " + a.State + " drive and check its source receipt"
+		}
 	}
 	return GoalStatus{State: "owes-hq", Reason: stage + "; " + reason, ObservationID: observationID}
 }
@@ -250,6 +339,9 @@ func ReplyObservations(d Database) map[string]Observation {
 		if f, ok := d.Reconciliations["fetched:"+id]; ok {
 			o = f.Observation
 		}
+		if o.MatterID == "" {
+			o.MatterID = d.Reconciliations["attribution:"+id].Observation.MatterID
+		}
 		out[id] = o
 	}
 	return out
@@ -261,11 +353,21 @@ func pendingReply(d Database, m Matter) Observation {
 	var latest Observation
 	for _, q := range d.Reconciliations {
 		o := q.Observation
-		if o.MatterID != m.ID || (o.Kind != "relay-inbox" && o.Kind != "relay-fetched") || q.State == "superseded" {
+		if (o.Kind != "relay-inbox" && o.Kind != "relay-fetched") || q.State == "superseded" {
 			continue
 		}
 		id := strings.TrimPrefix(o.Ref, "relay:")
-		if replyDischarged(d, id) {
+		if o.MatterID == "" {
+			// An unassigned raw receipt can nominate a current historical match
+			// for HQ review. Only ArmReply records the explicit attribution.
+			request := d.Reconciliations["relay-"+id].Observation
+			owner, _ := MatchObservation(d, o.Conversation, request.OccurredAt)
+			if owner != m.ID {
+				continue
+			}
+			o.MatterID, _ = MatchObservation(d, o.Conversation, o.OccurredAt)
+		}
+		if o.MatterID != m.ID || replyDischarged(d, id) {
 			continue
 		}
 		if p := m.Responsibility; p != nil && p.Intent != nil && (!o.Conversation.Same(p.Intent.Target) || o.OccurredAt < p.Intent.At) {

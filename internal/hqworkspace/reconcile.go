@@ -71,7 +71,7 @@ func recordObservation(d *Database, o Observation, at int64) error {
 		return nil
 	}
 	status := "pending"
-	if o.Kind == "relay-notice" || o.Kind == "relay-legacy-delivery" {
+	if o.Kind == "relay-attribution" || o.Kind == "relay-notice" || o.Kind == "relay-legacy-delivery" {
 		status = "recorded"
 	}
 	d.Reconciliations[o.ID] = Reconciliation{Observation: o, State: status, ReceivedAt: at}

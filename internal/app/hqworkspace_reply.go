@@ -76,9 +76,13 @@ func replySourceHold(a hqworkspace.IntentAttempt, db hqworkspace.Database) strin
 		}
 	}
 	found := false
+	liveReports := map[string]bool{}
 	for _, r := range workspaceRelayRecords() {
 		if r.Agent != target.Agent || r.HomeID != target.HomeID || r.ThreadID != target.SessionID {
 			continue
+		}
+		if r.Kind == "report" {
+			liveReports["relay:"+r.ID] = true
 		}
 		if r.For == "user" && (r.State == "pending" || r.State == "claimed") && r.Blocking {
 			return "awaiting user decision: " + r.ID
@@ -96,10 +100,38 @@ func replySourceHold(a hqworkspace.IntentAttempt, db hqworkspace.Database) strin
 			return "HQ must reconcile the unconfirmed active-turn hint"
 		}
 	}
+	// Legacy unassigned reports do not retain their recipient separately.
+	// If the source record disappeared, do not guess it was safe to repeat.
+	for _, q := range db.Reconciliations {
+		o := q.Observation
+		if o.Kind != "relay-report" || liveReports[o.Ref] || !o.Conversation.Same(target) || o.OccurredAt < a.Intent.At {
+			continue
+		}
+		if p := workspaceRelayDriveProof(o.Body, a.MatterID); p != nil && p.ActionID == a.Intent.ID && p.StepID == a.StepID && p.Ref == a.Intent.Ref {
+			return "HQ must reconcile the historical source report: " + o.Ref
+		}
+	}
 	if !found {
 		return "inbox source unavailable or changed"
 	}
 	return ""
+}
+
+// Re-read source metadata for reports predating enrollment. An unassigned raw
+// observation alone does not say whether its recipient was HQ or the user.
+func workspaceReplyReports(matter, action string) []hqworkspace.Observation {
+	var out []hqworkspace.Observation
+	for _, r := range workspaceRelayRecords() {
+		if r.For == "user" || r.Kind != "report" {
+			continue
+		}
+		proof := workspaceRelayDriveProof(r.Body, matter)
+		if proof == nil || proof.ActionID != action {
+			continue
+		}
+		out = append(out, hqworkspace.Observation{ID: "relay-" + r.ID, Kind: "relay-report", MatterID: matter, Ref: "relay:" + r.ID, Conversation: hqworkspace.Conversation{Agent: r.Agent, HomeID: r.HomeID, SessionID: r.ThreadID}, OccurredAt: r.CreatedAt, Body: r.Body, DriveProof: proof})
+	}
+	return out
 }
 
 // The operator attests authorship after inspecting the original source. The

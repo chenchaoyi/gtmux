@@ -937,6 +937,13 @@ user's answer to the exact cleared question. For an existing direct assignment,
 verify the original user authorship and scope independently, cite the retained
 target instruction as `authority_ref:"events:N"`, and pass the same ID in
 `verified_user_event`. An unattributed prompt alone cannot establish authorship.
+For an existing action whose user confirmation came later, review the same saved
+responsibility after the confirmation. Pass the verified `authority_ref` in
+`resume-reply` to supplement the original citation. This preserves the action
+ID, original plan, and prior delivery outcome. A late association must cover
+the original request, reply and current exact execution member. The binding
+records that attribution separately from the original observations. Previously
+queued or landed ordinary drives remain reserved for reconciliation.
 A newer target instruction invalidates the old review. The claim records the
 reviewed event boundary. `reply_observations` keeps every receipt's latest stage
 after an ordinary `noted` assessment. Claim an unbound receipt and assess
