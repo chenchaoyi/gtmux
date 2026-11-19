@@ -1180,7 +1180,8 @@ func rememberPhoneReceipt(key string, receipt server.InputReceipt) {
 }
 
 func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe func(dispatch.Result)) error {
-	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
+	pane := tmux.Display(id, "#{pane_id}")
+	if pane == "" {
 		return fmt.Errorf("pane not found")
 	}
 	if key != "" && !terminalkeys.Legacy(key) {
@@ -1196,6 +1197,8 @@ func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe
 		return tmux.SendKey(id, key)
 	}
 	if text != "" && enter {
+		// Resolve an alias to the same pane ID used by the durable native index.
+		id = pane
 		// FAST ECHO. The phone send returns as soon as the keystrokes LAND
 		// (paste→confirm→submit via PasteAndSubmit); it does NOT block on the post-submit
 		// verify loop. Routing this through the verified `Deliver` regressed /api/send: the
@@ -1218,6 +1221,9 @@ func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe
 			// in the pane's scrollback (see plainsend.go). Type + Enter directly; the
 			// shell's echo in the response snapshot is the confirmation. No MarkAwaited
 			// — there is no agent whose completion could be awaited.
+			if err := agentclient.TerminalFallbackError(id, sendID); err != nil {
+				return phoneSendFailure(dispatch.InputFailureResult(err, 0))
+			}
 			if err := typePlain(id, text); err != nil {
 				return phoneSendFailure(dispatch.InputFailureResult(err, 0))
 			}

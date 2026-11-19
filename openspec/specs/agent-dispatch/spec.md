@@ -1102,6 +1102,12 @@ re-injecting, so a retry after an ambiguous network failure never double-sends.
   `send_id`
 - **THEN** the server returns success without re-injecting the message
 
+#### Scenario: An addressed send ID cannot switch to raw terminal input
+
+- **WHEN** a retried `send_id` belongs to a durable addressed request and its native route is no longer selected
+- **THEN** neither the regular tmux paste path nor the direct shell path SHALL type or submit it
+- **AND** if the original outcome cannot be verified through the selected route, the sender SHALL preserve the ID and return an unconfirmed outcome without a success receipt
+
 ### Requirement: A plain terminal pane is typed into directly, not box-confirmed
 
 The send pipeline's draft confirmation validates a delivery against an AGENT's input

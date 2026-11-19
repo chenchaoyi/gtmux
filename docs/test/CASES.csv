@@ -732,6 +732,7 @@ MAP-0a7c46985229,L2,reviewed implementation,internal/app/send_association_test.g
 MAP-cf745b02117a,L2,reviewed implementation,internal/app/send_outcome_test.go,22,reviewed-selector,TestSPL009CLIAndHTTPDispatchOutcomes,False,"SPL-009,SPL-014,SPL-015"
 MAP-abf5a520d210,L2,reviewed implementation,internal/app/send_outcome_test.go,200,reviewed-selector,TestSPL014UnavailableDSHDoesNotSettlePriorID,False,"SPL-009,SPL-014,SPL-015"
 MAP-2e07d6cc9bdd,L2,reviewed implementation,internal/app/send_outcome_test.go,230,reviewed-selector,TestSPL015UnverifiedSuccessAndCacheKeepTheirOriginalGrade,False,"SPL-009,SPL-014,SPL-015"
+MAP-eead4da54a3b,L2,reviewed implementation,internal/app/send_transport_fallback_test.go,21,reviewed-selector,TestSPL019HTTPProtectsNativeIDAfterRouteLoss,False,SPL-019
 LEG-7da71da6d8fe,L1,Go core / CLI / server,internal/app/sendattach_test.go,17,Test,TestSaveAttachmentIsNamedByContent,False,legacy-not-retrospectively-reviewed
 LEG-d9b48bc703cf,L1,Go core / CLI / server,internal/app/sendattach_test.go,51,Test,TestSaveAttachmentKeepsAnAwkwardNameInsideUploads,False,legacy-not-retrospectively-reviewed
 LEG-9477fc989e3b,L1,Go core / CLI / server,internal/app/sendattach_test.go,67,Test,TestWithAttachmentsPutsEachPathOnItsOwnLine,False,legacy-not-retrospectively-reviewed

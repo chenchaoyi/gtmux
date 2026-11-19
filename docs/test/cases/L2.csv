@@ -121,6 +121,7 @@ MAP-0a7c46985229,L2,reviewed implementation,internal/app/send_association_test.g
 MAP-cf745b02117a,L2,reviewed implementation,internal/app/send_outcome_test.go,22,reviewed-selector,TestSPL009CLIAndHTTPDispatchOutcomes,False,"SPL-009,SPL-014,SPL-015"
 MAP-abf5a520d210,L2,reviewed implementation,internal/app/send_outcome_test.go,200,reviewed-selector,TestSPL014UnavailableDSHDoesNotSettlePriorID,False,"SPL-009,SPL-014,SPL-015"
 MAP-2e07d6cc9bdd,L2,reviewed implementation,internal/app/send_outcome_test.go,230,reviewed-selector,TestSPL015UnverifiedSuccessAndCacheKeepTheirOriginalGrade,False,"SPL-009,SPL-014,SPL-015"
+MAP-eead4da54a3b,L2,reviewed implementation,internal/app/send_transport_fallback_test.go,21,reviewed-selector,TestSPL019HTTPProtectsNativeIDAfterRouteLoss,False,SPL-019
 MAP-59b391120a04,L2,reviewed implementation,internal/app/serve_energy_snapshot_test.go,14,reviewed-selector,TestPWR003SSEPublishesItsActualNativeObservationForREST,False,PWR-003
 LEG-0a1e3b761625,L2,Go core / CLI / server,internal/app/serve_startup_test.go,94,Test,TestExistingRadarRequiresIdentityAndSavedCredential,False,legacy-not-retrospectively-reviewed
 LEG-13803c4faffb,L2,Go core / CLI / server,internal/app/servememory_test.go,80,Test,TestMemoryDiagnosticsAbsentFromApplicationRoutes,False,legacy-not-retrospectively-reviewed

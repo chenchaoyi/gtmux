@@ -4083,5 +4083,13 @@
     "selectors": [
       "TestSPL018WorkspaceEarlyHoldPreservesPriorDelivery"
     ]
+  },
+  "internal/app/send_transport_fallback_test.go": {
+    "cases": [
+      "SPL-019"
+    ],
+    "selectors": [
+      "TestSPL019HTTPProtectsNativeIDAfterRouteLoss"
+    ]
   }
 }

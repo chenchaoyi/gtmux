@@ -110,7 +110,13 @@ func DispatchIO(pane string, agentCmd ...string) dispatch.IO {
 		dio.PriorDeliveryUnknown = func(opts dispatch.Opts) bool {
 			return agentclient.PriorDeliveryUnknown(pane, opts.DeliveryID)
 		}
+		return dio
 	}
+	var fallbackErr error
+	dio.Begin = func(opts dispatch.Opts, _ string) {
+		fallbackErr = agentclient.TerminalFallbackError(pane, opts.DeliveryID)
+	}
+	dio.PreflightError = func() error { return fallbackErr }
 	return dio
 }
 

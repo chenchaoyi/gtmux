@@ -68,6 +68,37 @@ func deliveryIndex(pane, deliveryID string) string {
 	return hex.EncodeToString(sum[:16]) + ".index.json"
 }
 
+// TerminalFallbackError prevents a durable native ID from becoming a raw
+// terminal send when its native route is no longer selected. A pending index
+// still belongs to that route: a receiver could claim it independently.
+func TerminalFallbackError(pane, deliveryID string) error {
+	if deliveryID == "" || terminalSendUnbound(pane, deliveryID) {
+		return nil
+	}
+	return inputUnknown(ErrInputUncertain)
+}
+
+func terminalSendUnbound(pane, deliveryID string) bool {
+	root := state.Dir()
+	store, err := resolveInputStore(root)
+	if err != nil {
+		return false
+	}
+	if store.directory == (inputIdentity{}) {
+		return true
+	}
+	queue, err := openInputQueue(store, syncInput)
+	if err != nil {
+		return false
+	}
+	defer queue.dir.Close()
+	if !queue.missing(deliveryIndex(pane, deliveryID)) {
+		return false
+	}
+	current, err := resolveInputStore(root)
+	return err == nil && current == store
+}
+
 // PriorDeliveryUnknown is a conservative read-only check before the current
 // attempt. Even an accepted old delivery can make a new refusal misleading
 // when the caller cannot return that acceptance through the current route.
