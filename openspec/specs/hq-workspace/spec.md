@@ -370,3 +370,8 @@ The workspace SHALL project reply, active-turn notice, source fetch and executio
 #### Scenario: Restart with an explicit continuation
 - **WHEN** the daemon restarts with a reviewed reservation and the exact source becomes ready
 - **THEN** it may submit the bounded reminder once, preserves blockers and uncertain submissions, and keeps ordinary replies pull-only for idle or unsupported clients
+
+#### Scenario: Reviewed authority and receipt ordering
+- **WHEN** HQ claims the current responsibility and verifies a workspace user instruction, an answer to its cleared question, or an independently authenticated direct user assignment with its exact retained target event
+- **THEN** the reservation preserves its reviewed event boundary and a later instruction fences the old step even after ingestion
+- **AND** noting a fetch or observing a transport receipt before reservation preserves the specific reply and outstanding work; a matching prior attempt is reconciled without resubmission

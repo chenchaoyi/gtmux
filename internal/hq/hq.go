@@ -197,7 +197,7 @@ const hqPlaybookVersion = 66
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
-	66: "01ce1b7366e945ed",
+	66: "20f73c00b27d3866",
 	65: "a31739bfc2e0d0ba",
 	64: "a15fe47202f4e190",
 	63: "42d58cd9950f40cc",

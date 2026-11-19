@@ -18,15 +18,16 @@ import (
 // workspaceAction is shared by the local CLI and its native consumer. Message
 // bodies travel over stdin, never shell interpolation or process arguments.
 type workspaceAction struct {
-	ReplyID         string                      `json:"reply_id,omitempty"`
-	Responsibility  *hqworkspace.Responsibility `json:"responsibility,omitempty"`
-	ResumeRef       string                      `json:"resume_ref,omitempty"`
-	RequestRevision uint64                      `json:"request_revision,omitempty"`
-	ObservationID   string                      `json:"observation_id,omitempty"`
-	Generation      uint64                      `json:"generation,omitempty"`
-	Decision        string                      `json:"decision,omitempty"`
-	NextCheck       int64                       `json:"next_check,omitempty"`
-	DryRun          bool                        `json:"dry_run,omitempty"`
+	VerifiedUserEvent string                      `json:"verified_user_event,omitempty"`
+	ReplyID           string                      `json:"reply_id,omitempty"`
+	Responsibility    *hqworkspace.Responsibility `json:"responsibility,omitempty"`
+	ResumeRef         string                      `json:"resume_ref,omitempty"`
+	RequestRevision   uint64                      `json:"request_revision,omitempty"`
+	ObservationID     string                      `json:"observation_id,omitempty"`
+	Generation        uint64                      `json:"generation,omitempty"`
+	Decision          string                      `json:"decision,omitempty"`
+	NextCheck         int64                       `json:"next_check,omitempty"`
+	DryRun            bool                        `json:"dry_run,omitempty"`
 
 	UserInput            *hqworkspace.UserInput  `json:"user_input,omitempty"`
 	Op                   string                  `json:"op"`
@@ -68,7 +69,7 @@ Reports return projection:pending-reconciliation; state is a proposal, never a t
 update with body or state requires the nonzero current matter revision; resolve current questions explicitly first.
 reconcile lists due observations and assessment receipts without consuming or executing them.
 claim needs observation_id; assess needs id/observation_id/generation/matter/revision/decision/body.
-Decision is noted|transition|deferred|conflict|responsibility; transition needs state, deferred needs future next_check.
+Decision is noted|no-followup|transition|deferred|conflict|responsibility; transition needs state, deferred needs future next_check.
 responsibility is an explicit current-revision HQ decision, only on a goal-followup observation.
 It saves responsibility {step_id,action,authority_ref,intent?,drive?,hold?}; it never sends.
 Intent needs {id,ref,target:{agent,home_id,session_id},at}; cite existing authority, never infer it.
@@ -77,7 +78,11 @@ drive needs matter/id (saved intent ID)/revision, is HQ-only, and attempts that 
 through ordinary delivery gates. queued means awaiting receipt; unknown/refused attempts
 are not retried. Inspect intent_attempts before planning another action.
 resume-reply needs matter/id/revision/reply_id. HQ reviews the existing authorized step
-and its message:<user instruction ID> authority_ref before arming one idle-only fetch reminder.
+and its message:ID (user instruction or verified answer to a cleared question) before arming
+one idle-only fetch reminder. For a verified original direct user assignment, cite events:N
+as authority_ref and verified_user_event after checking original authorship and scope.
+reply_observations retains receipt stages after noted. Assess no-followup on an unbound receipt
+to record that HQ has verified it needs no action.
 Inspect the goal and intent_attempts for the fetch, input blocker and execution evidence.
 Both are HQ-only. assess accepts dry_run:true. A stale observation cannot transition a newer matter.
 send may include request_revision with reply_to; legacy exact question IDs remain supported.
@@ -279,7 +284,14 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 			return nil, errors.New("only the verified current HQ may drive a saved intent")
 		}
 		if a.Op == "resume-reply" {
-			result, err = s.ArmReply(a.Matter, a.ID, a.ReplyID, a.Revision, now)
+			var event *hqworkspace.UserEvent
+			if a.VerifiedUserEvent != "" {
+				event, err = workspaceVerifiedUserEvent(a.VerifiedUserEvent)
+				if err != nil {
+					return nil, err
+				}
+			}
+			result, err = s.ArmReply(a.Matter, a.ID, a.ReplyID, a.Revision, now, event)
 		} else {
 			result, err = s.DriveIntent(a.Matter, a.ID, a.Revision, now, workspaceDeliverGoal)
 		}

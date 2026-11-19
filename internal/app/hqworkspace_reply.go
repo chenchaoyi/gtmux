@@ -2,7 +2,10 @@ package app
 
 import (
 	"errors"
+	"strconv"
+	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/relay"
@@ -54,6 +57,13 @@ func eligibleWorkspaceReply(r relay.Request) bool {
 // A restored workspace snapshot is not a substitute for the live relay ledger.
 func replySourceHold(a hqworkspace.IntentAttempt, db hqworkspace.Database) string {
 	target := a.Intent.Target
+	if a.UserEvent != nil {
+		// The send audit can land after the prompt and after HQ arms the action.
+		e, err := workspaceVerifiedUserEvent("events:" + strconv.FormatInt(a.UserEvent.Seq, 10))
+		if err != nil || e.At != a.UserEvent.At || !e.Source.Same(a.UserEvent.Source) {
+			return "HQ must reconcile the original user event and its authorship"
+		}
+	}
 	if seq := workspaceEventSequence(); seq != a.EventCursor {
 		rows, gap := workspaceReadEvents(a.EventCursor)
 		if gap || seq < a.EventCursor {
@@ -90,4 +100,37 @@ func replySourceHold(a hqworkspace.IntentAttempt, db hqworkspace.Database) strin
 		return "inbox source unavailable or changed"
 	}
 	return ""
+}
+
+// The operator attests authorship after inspecting the original source. The
+// journal verifies event kind, exact source and time, and vetoes known sends.
+// An unattributed prompt, by itself, is never user authorization.
+func workspaceVerifiedUserEvent(ref string) (*hqworkspace.UserEvent, error) {
+	seq, err := strconv.ParseInt(strings.TrimPrefix(ref, "events:"), 10, 64)
+	if err != nil || seq <= 0 || ref != "events:"+strconv.FormatInt(seq, 10) {
+		return nil, errors.New("verified_user_event requires an exact events:N reference")
+	}
+	rows, gap := workspaceReadEvents(0)
+	if gap {
+		return nil, errors.New("HQ must reconcile the original user event history gap")
+	}
+	for _, r := range rows {
+		if r.Seq != seq {
+			continue
+		}
+		if r.Event != "UserPromptSubmit" || r.Origin != events.OriginInstruction || r.HomeID == "" || r.AgentSession == "" || r.Ts <= 0 || r.Actor != "" && r.Actor != "user" || events.AuthorOf(rows)[seq] != "" {
+			break
+		}
+		agent := agents.KeyForLabel(r.Agent)
+		if agent == "" {
+			agent = r.Agent
+		}
+		for _, later := range rows {
+			if later.Seq > seq && later.Event == "UserPromptSubmit" && later.Origin == events.OriginInstruction && later.AgentSession == r.AgentSession && (later.HomeID == "" || later.HomeID == r.HomeID) {
+				return nil, errors.New("HQ must verify the newer instruction in the target conversation")
+			}
+		}
+		return &hqworkspace.UserEvent{Seq: seq, At: r.Ts, Source: hqworkspace.Conversation{Agent: agent, HomeID: r.HomeID, SessionID: r.AgentSession}}, nil
+	}
+	return nil, errors.New("original direct user event is missing, machine-delivered or lacks exact identity")
 }

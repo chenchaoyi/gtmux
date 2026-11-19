@@ -126,6 +126,9 @@ func GoalResponsibility(d Database, m Matter, now int64) (out GoalStatus) {
 	if a := d.IntentAttempts[i.ID]; a.ReplyID != "" && !replyExecutionProof(o) {
 		return replyResponsibility(d, a, now)
 	}
+	if fact := pendingReply(d, m); fact.ID != "" && !replyExecutionProof(o) {
+		return GoalStatus{State: "owes-hq", Reason: fact.Ref + "; HQ must reconcile the existing receipt for step " + p.StepID + "; execution evidence is outstanding", ObservationID: fact.ID}
+	}
 	if !ok || !driveEvidenceMatches(d, m, o, now) {
 		return GoalStatus{State: "verify", Reason: "drive evidence does not cover this step, action and exact conversation"}
 	}

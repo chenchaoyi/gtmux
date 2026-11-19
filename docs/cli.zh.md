@@ -819,7 +819,9 @@ op:drive 携 matter/id/当前 revision，只经既有门禁尝试已保存意图
 
 回复入箱后，HQ 可以用
 `{"op":"resume-reply","matter":"MATTER","id":"ACTION","revision":42,"reply_id":"RECEIPT"}`
-显式登记已经核准的续接动作。`authority_ref:"message:ID"` 指向该事项当前的用户指令。
+显式登记已经核准的续接动作。`authority_ref:"message:ID"` 可引用当前工作台用户指令，或引用经 HQ 核实且已清除对应问题的真实用户回答。
+直接交办的既有步骤须独立核实用户身份与授权范围，引用目标会话保留的原始指令 `authority_ref:"events:N"`，并在续接动作的 `verified_user_event` 中填写同一引用。缺少投递署名不能证明用户身份。
+领取审查时保存事件游标，更新的目标指令会阻断旧审查。`reply_observations` 在普通 `noted` 后保留各回执的最新阶段。经核实无需后续动作时可领取未绑定回执并以 `no-followup` 记录结论。
 serve 等待确切的 Codex 执行会话已加载、空闲且无草稿，再发一次短提醒，指明需取回的回执和
 原步骤。阻塞原因见 `intent_attempts` 和 `next_responsibility`；来源用既有 drive 回执的
 `drive.evidence` 引用实际执行结果。普通回复仍可主动拉取，并沿用活跃回合的短提醒。

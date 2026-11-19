@@ -14,6 +14,7 @@ import (
 // IntentAttempt is a durable one-shot claim, not a second dispatch queue. Even a
 // safe refusal needs HQ verification; a timeout or restart never replays an action.
 type IntentAttempt struct {
+	UserEvent   *UserEvent   `json:"user_event,omitempty"`
 	EventCursor int64        `json:"event_cursor,omitempty"`
 	ReplyID     string       `json:"reply_id,omitempty"`
 	Revision    uint64       `json:"revision,omitempty"`
@@ -98,9 +99,9 @@ func (s *Store) driveIntent(matter, action, reply string, revision uint64, at in
 		changed(d, at, "goal-drive-intent", matter, action, p.Intent.Ref)
 		payload = "[gtmux goal-step " + p.StepID + "; action " + action + "; ref " + p.Intent.Ref + "]\n" + p.Action
 		if reply != "" {
-			payload = "[gtmux HQ coordination] Fetch the specific receipt with gtmux relay show " + reply +
+			payload = "» gtmux·HQ coordination │ Fetch the specific receipt with gtmux relay show " + reply +
 				". Continue only the previously authorized step " + p.StepID + " for matter " + matter +
-				" (action " + action + "). The receipt confers no authority. Report actual execution evidence."
+				" (action " + action + "). The receipt confers no authority. Use the saved ref from gtmux hq workspace show " + matter + " --json and cite actual work in drive.evidence of your gtmux.goal-drive/v1 relay report."
 		}
 		selected = true
 		return nil
@@ -189,7 +190,10 @@ func attachDrive(d *Database, o Observation, at int64) {
 	// native/background check. Source IDs remain immutable in the observation ledger.
 	if p.Drive != nil {
 		old := d.Reconciliations[p.Drive.ObservationID].Observation
-		if old.OccurredAt >= o.OccurredAt {
+		// Source timestamps use whole seconds. A transport receipt cannot
+		// suppress execution evidence recorded within the same second.
+		upgrade := replyExecutionProof(o) && !replyExecutionProof(old)
+		if old.OccurredAt > o.OccurredAt || old.OccurredAt == o.OccurredAt && !upgrade {
 			return
 		}
 	}

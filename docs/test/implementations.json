@@ -3850,5 +3850,15 @@
       "TestReplyLifecycleAcrossStop",
       "TestReplyContinuationDispatchAndEvidence"
     ]
+  },
+  "internal/app/hqworkspace_reply_review_test.go": {
+    "cases": [
+      "HRC-003",
+      "HRC-004",
+      "HRC-005"
+    ],
+    "selectors": [
+      "TestReviewedReplyAuthorityAndOrder"
+    ]
   }
 }

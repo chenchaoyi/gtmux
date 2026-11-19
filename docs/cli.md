@@ -932,7 +932,15 @@ external holds, exact native/background receipt envelopes and restore boundaries
 
 After an inbox reply, HQ can explicitly arm its reviewed intent using
 `{"op":"resume-reply","matter":"MATTER","id":"ACTION","revision":42,"reply_id":"RECEIPT"}`.
-Use the saved current user instruction as `authority_ref:"message:ID"`. Serve waits
+Use `authority_ref:"message:ID"` for the latest workspace user instruction or the
+user's answer to the exact cleared question. For an existing direct assignment,
+verify the original user authorship and scope independently, cite the retained
+target instruction as `authority_ref:"events:N"`, and pass the same ID in
+`verified_user_event`. An unattributed prompt alone cannot establish authorship.
+A newer target instruction invalidates the old review. The claim records the
+reviewed event boundary. `reply_observations` keeps every receipt's latest stage
+after an ordinary `noted` assessment. Claim an unbound receipt and assess
+`no-followup` to record an explicit disposition. Serve waits
 for the exact Codex execution member to be loaded, idle and free of drafts. It sends
 one short reminder to fetch that receipt and continue the authorized step. Inspect
 `intent_attempts` and `next_responsibility` for blockers. The source reports actual

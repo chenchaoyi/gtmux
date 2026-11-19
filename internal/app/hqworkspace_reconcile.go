@@ -202,7 +202,7 @@ func workspaceReconciliationJSON(s *hqworkspace.Store, now int64) (json.RawMessa
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(map[string]any{"revision": d.Revision, "pending": hqworkspace.ReconciliationQueue(d, now), "assessments": d.Assessments, "goals": workspaceGoalStatuses(d, now), "intent_attempts": d.IntentAttempts})
+	return json.Marshal(map[string]any{"revision": d.Revision, "pending": hqworkspace.ReconciliationQueue(d, now), "assessments": d.Assessments, "goals": workspaceGoalStatuses(d, now), "reply_observations": hqworkspace.ReplyObservations(d), "intent_attempts": d.IntentAttempts})
 }
 
 func notifyWorkspaceReconciliation(s *hqworkspace.Store, now, next int64) (int64, error) {
