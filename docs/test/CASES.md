@@ -212,6 +212,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HRS-001 | Only first exact prompt after lower bound matches. First record remains stable across append; rewrite/replacement/continuation changes invalidate. Complete lines only; no result bodies retained. Cancelled/error reads do not grant attribution. |
 | HRS-002 | Only accepted exact canonical HQ reply in correct Codex home/thread at its first source record gets from.kind=hq. Wrong identity, receipt state, body, missing clock/record or later human copy remains unattributed; existing sender preserved; no new sends or ledger writes. |
 | HRS-003 | App/Web API turn JSON exposes identical HQ sender; new receipt invalidates prior human snapshot, unchanged snapshot is cacheable; old pages keep correct first-only attribution; policy/ledger/source unchanged by reads; CLI-origin and desktop-origin both work. |
+| HRC-006 | Only a reviewed exact current authority permits the original unused action to submit once. Submitted or uncertain work remains reserved. |
+| HRC-007 | Only a unique continuous exact source joins. Original observations remain immutable and a durable attribution identifies the same receipt. |
+| HRC-008 | Reconciliation identifies the original delivery, reports zero fresh reminders, and still requires source execution evidence. |
 | HRC-003 | Only the exact reviewed instruction or resolved user decision can cover the existing action. No new user message or approval is minted. |
 | HRC-004 | The original reply and step remain visible. A received or unsupported execution claim cannot discharge work or be replayed. Exact evidence covers the step. |
 | HRC-005 | A consumed pause cannot slip past the reviewed boundary; an explicit fresh review is needed. The coordination echo produces no instruction goal; real user prose still does. |
