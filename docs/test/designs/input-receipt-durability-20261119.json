@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, self-review",
     "date": "2026-11-19",
     "decision": "Verify persistence barriers without executing production input or using real queue state.",
-    "notes": "Inject file sync, directory sync, exclusive publication and removal failures. The maintained bounds are 4096 admission and 8192 scan; account for the brief extra name during non-replacing receipt publication. Runtime filesystem and power-loss claims remain separate."
+    "notes": "Inject file sync, directory sync, exclusive publication and removal failures. The maintained bounds are 4096 admission and 8192 scan; account for the brief extra name during non-replacing receipt publication. Runtime filesystem and power-loss claims remain separate. Final-head CI review verified the injected error sentinel rename preserves all existing fault assertions."
   },
   "cases": [
     {
@@ -45,5 +45,5 @@
       ]
     }
   ],
-  "seal": "768672a6c92703f98b30f5d54982620c4ede02c61480b991673e59c8d00b618d"
+  "seal": "9e80caaab87245591f3e2e14441af2c89d6a985abe4ee356f0b339493fb5c2a9"
 }

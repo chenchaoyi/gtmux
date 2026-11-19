@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, self-review",
     "date": "2026-11-19",
     "decision": "Bound full receipts, keep exact retired acceptance evidence, and handle cancellation on both sides of the persistence boundary.",
-    "notes": "Use only private HOME, synthetic clock jumps, bounded fixture slots, injected sync/unlink failure and a fake Codex RPC peer. Check original replay and compatible new admissions as well as zero mutation. Rechecked 2026-11-19 for sealed pooled archive pages and scoped integrity failures. The original fault and cancellation assertions remain."
+    "notes": "Use only private HOME, synthetic clock jumps, bounded fixture slots, injected sync/unlink failure and a fake Codex RPC peer. Check original replay and compatible new admissions as well as zero mutation. Rechecked 2026-11-19 for sealed pooled archive pages and scoped integrity failures. The original fault and cancellation assertions remain. Final-head CI review verified the injected error sentinel rename preserves all existing fault assertions."
   },
   "cases": [
     {
@@ -44,5 +44,5 @@
       ]
     }
   ],
-  "seal": "f5c69c5a9b7e520e4149dd20bf42efeacea07b021e9c00f5178aa0084f68b22b"
+  "seal": "5eff9d6472a8df1e6986e8706013870ef4f736f1597d2868f75695e8d2eb479d"
 }

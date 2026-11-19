@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, self-review",
     "date": "2026-11-19",
     "decision": "Stage only in memory until the final dispatch gate and make the stable ID and initial directory part of durable authorization.",
-    "notes": "P1.3 plus the independent P1.4 blocker 86f8150a. Go and DSH share the same index contract; old v1 pending without an index key must resolve a unique matching index in a bounded scan. Index unlink failure must retain the durable receipt. Unknown, unstable and partially written evidence is preserved. Tests are isolated and not a simulation of target-media power loss."
+    "notes": "P1.3 plus the independent P1.4 blocker 86f8150a. Go and DSH share the same index contract; old v1 pending without an index key must resolve a unique matching index in a bounded scan. Index unlink failure must retain the durable receipt. Unknown, unstable and partially written evidence is preserved. Tests are isolated and not a simulation of target-media power loss. Final-head CI review verified the injected error sentinel rename preserves all existing fault assertions."
   },
   "cases": [
     {
@@ -37,5 +37,5 @@
       ]
     }
   ],
-  "seal": "d49958be5fb0684afcb11d982ad3b26d00ec83bfd1a09da96f0fdc517fd5c928"
+  "seal": "b4899c846099c0e12d9697d91fa896c56c5f1faaeaccae8c5e4fe0dbcb0abed2"
 }
