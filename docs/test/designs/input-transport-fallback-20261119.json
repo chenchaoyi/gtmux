@@ -1,0 +1,24 @@
+{
+  "id": "input-transport-fallback-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Protect durable native send IDs before either raw tmux send route.",
+    "notes": "A stable ID reserved in the native queue cannot select a different transport. Reuse the actual HTTP handler and route selection with a synthetic executable, isolated HOME and no agent or tmux process."
+  },
+  "cases": [
+    {
+      "id": "SPL-019",
+      "layer": "L2",
+      "description": "A native send ID remains protected after Codex loses its native route or the pane becomes a shell.",
+      "setup": "Save a Codex binding and use a real private terminal-input store to prepare and claim a stable send ID without writing a receipt. Use a recording fake tmux executable for observations and mutations.",
+      "action": "Retry that ID through POST /api/send after removing the saved binding, after leaving a record without a frontend, and after identifying a bare shell. Exercise a separate fresh ID and retry it on each of the same routes.",
+      "expected": "Each old ID returns outcome-unconfirmed with the same ID and no success or cached receipt. No raw text or Enter reaches tmux and the old claim is unchanged. Fresh IDs still submit through the selected compatible route exactly once.",
+      "planned_files": [
+        "internal/app/send_transport_fallback_test.go"
+      ]
+    }
+  ],
+  "seal": "77a3ac378ccbc473ca9137a38e7077ae1995a7cb79af103b198607b690facadc"
+}
