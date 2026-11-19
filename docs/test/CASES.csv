@@ -477,6 +477,7 @@ LEG-b12010762948,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,194,
 LEG-ecada2e2e335,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,206,Test,TestWorkspaceDispatchCannotAdoptLaterOccupantOfItsOldPane,False,legacy-not-retrospectively-reviewed
 LEG-618dafffee1a,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,226,Test,TestWorkspaceDeliveryDoesNotBlockFeedTickOrStartConcurrentWorkers,False,legacy-not-retrospectively-reviewed
 MAP-4472b7512a0d,L3,reviewed implementation,internal/app/hqworkspace_triage_cli_test.go,24,reviewed-selector,TestWorkspaceTriageCLI,False,HPT-003
+MAP-6ef74dd1c8b6,L3,reviewed implementation,internal/app/hqworkspace_triage_late_role_test.go,14,reviewed-selector,TestWorkspaceTriageLateWorkerCannotClaimSupervisorRole,False,HPT-005
 MAP-1fb5ea2421ed,L3,reviewed implementation,internal/app/hqworkspace_triage_role_test.go,18,reviewed-selector,TestWorkspaceTriageRoleAfterPaneReuse,False,HPT-004
 MAP-73814841a1bf,L2,reviewed implementation,internal/app/hqworkspace_triage_test.go,19,reviewed-selector,TestWorkspaceTriageIngestion,False,HPT-002
 MAP-acfe376abd7d,L2,reviewed implementation,internal/app/input_archive_doctor_test.go,11,reviewed-selector,TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair,False,SPL-025

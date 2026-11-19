@@ -121,8 +121,9 @@ type Record struct {
 const OriginInstruction = "instruction"
 
 const (
-	TerminalRoleHQ     = "hq"
-	TerminalRoleWorker = "worker"
+	TerminalRoleHQ         = "hq"
+	TerminalRoleWorker     = "worker"
+	TerminalRoleUnverified = "unverified"
 )
 
 // ControlPrefix namespaces gtmux's OWN control records (`gtmux:distill`,

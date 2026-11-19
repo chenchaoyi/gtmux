@@ -4321,5 +4321,13 @@
     "selectors": [
       "TestWorkspaceTriageRoleAfterPaneReuse"
     ]
+  },
+  "internal/app/hqworkspace_triage_late_role_test.go": {
+    "cases": [
+      "HPT-005"
+    ],
+    "selectors": [
+      "TestWorkspaceTriageLateWorkerCannotClaimSupervisorRole"
+    ]
   }
 }

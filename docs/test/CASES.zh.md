@@ -2,13 +2,13 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1369 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1370 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2547 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 153 | [L3.csv](cases/L3.csv) |
+| L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 507 | [G.csv](cases/G.csv) |
@@ -266,6 +266,7 @@
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
 | HPT-004 | The old worker evidence survives under its exact source and sequence, the new HQ Stop does not add an obligation, and the cursor advances after persistence. The journal records distinct terminal roles and exact identities. |
+| HPT-005 | Both late worker facts retain review status, even when the first hook wrote resume metadata. The separately bound real HQ Stop remains excluded and the cursor advances over the durably recorded evidence. |
 | HPT-001 | Source identity stays unchanged, unauthorized dispositions fail, and the target receipt retains the exact goal follow-up. Reassessment preserves user hold, unknown delivery and terminal state safeguards. |
 | HPT-002 | Eligible source rows become durable triage once, while wrong, suppressed and HQ rows create no triage. A uniquely matched Stop keeps the existing continuation path. |
 | HPT-003 | A one-time lost wake does not erase evidence or issue input. The exact CLI lease and handoff receipt point to durable, visible next responsibility with the worker untouched until separate authorization. Foreground handling and all synthetic terminal behavior are separately identified. |
