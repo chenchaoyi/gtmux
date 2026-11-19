@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (self-review)",
     "date": "2026-11-20",
     "decision": "Implement the independent review correction",
-    "notes": "The two-stage test uses an actual private tmux server restart and the ordinary lifecycle hook. A reused numeric pane cannot identify a historical agent. Check the journal and workspace cursor after ingestion and confirm new actual HQ lifecycle evidence remains excluded."
+    "notes": "The two-stage test uses an actual private tmux server restart and the ordinary lifecycle hook. A reused numeric pane cannot identify a historical agent. Check the journal and workspace cursor after ingestion and confirm new actual HQ lifecycle evidence remains excluded. The verified HQ fixture establishes its own SessionStart binding before Stop, separate from the delayed worker reproduction."
   },
   "cases": [
     {
@@ -20,5 +20,5 @@
       ]
     }
   ],
-  "seal": "6b994da7be88631d80329feb79b18536e418fc64334fbc26c4711bffe89cd011"
+  "seal": "b6d6914b2344a910b1ba17151bcc9f46d0010d11810133e66d08e693a5b63b23"
 }

@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-20",
+    "decision": "Implement the independent late-hook correction",
+    "notes": "Capture HQ attribution before the incoming hook can write the resume record. A prior exact binding and HQ context are required. An unresolved role remains explicit and does not permit legacy inference from this event\u2019s own write."
+  },
+  "cases": [
+    {
+      "id": "HPT-005",
+      "layer": "L3",
+      "description": "A late Stop cannot promote its own resume entry to supervisor evidence",
+      "setup": "Real hooks and one private tmux server restarted into a numeric pane formerly used by a worker. The new pane has an HQ stamp before its real conversation starts.",
+      "action": "Deliver the old worker Stop after reuse, including another delivery without cwd. Start the real HQ session and capture its Stop. Ingest the exact journal delta.",
+      "expected": "Both late worker facts retain review status, even when the first hook wrote resume metadata. The separately bound real HQ Stop remains excluded and the cursor advances over the durably recorded evidence.",
+      "planned_files": [
+        "internal/app/hqworkspace_triage_late_role_test.go"
+      ]
+    }
+  ],
+  "seal": "1b4051e029a59721615a3c11c0efbb392c4edaaa01cafb6c5f4e043fd16d0cf3"
+}
