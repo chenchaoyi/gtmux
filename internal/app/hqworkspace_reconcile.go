@@ -39,7 +39,15 @@ var workspaceReadEvents = events.ReadSince
 var workspaceEventSequence = events.CurrentSeq
 var workspaceRelayRecords = relay.List
 var workspaceObserveEvent = sessionpolicy.ObserveEvent
-var workspaceReconcileWake = func(line string) { hqnudge.EnqueueKeyed("workspace-reconciliation", line) }
+var workspaceReconcileWake = enqueueWorkspaceReconciliationWake
+
+func enqueueWorkspaceReconciliationWake(line string) {
+	key := "workspace-reconciliation"
+	if strings.Contains(line, workspaceContinuationWake) {
+		key = "workspace-continuation"
+	}
+	hqnudge.EnqueueKeyed(key, line)
+}
 
 func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 	d, err := s.Read()
@@ -83,7 +91,7 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 		if matter == "" && !workspaceHasConversation(d, c) {
 			continue
 		}
-		observations = append(observations, hqworkspace.Observation{RecordingPolicy: r.RecordingPolicy, ID: "event-" + strconv.FormatInt(r.Seq, 10), Kind: r.Event, MatterID: matter, MatterRevision: 0, Body: r.Summary, Ref: fmt.Sprintf("events:%d", r.Seq), Conversation: c, OccurredAt: r.Ts})
+		observations = append(observations, hqworkspace.Observation{RecordingPolicy: r.RecordingPolicy, Continuation: matter != "" && (r.Event == "Stop" || r.Event == "StopFailure"), ID: "event-" + strconv.FormatInt(r.Seq, 10), Kind: r.Event, MatterID: matter, MatterRevision: 0, Body: r.Summary, Ref: fmt.Sprintf("events:%d", r.Seq), Conversation: c, OccurredAt: r.Ts})
 	}
 	if gap || workspaceEventSequence() < cursor {
 		observations = append(observations, hqworkspace.Observation{ID: fmt.Sprintf("event-gap-%d-%d", cursor, last), Kind: "source-gap", Ref: fmt.Sprintf("events after %d through %d", cursor, last)})
@@ -114,6 +122,7 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 			o = hqworkspace.Observation{ID: "relay-" + r.ID, Kind: "relay-" + r.Kind, MatterID: matter, Body: r.Body, Ref: "relay:" + r.ID, Conversation: c, OccurredAt: r.CreatedAt}
 			if r.Kind == "report" && r.For != "user" {
 				o.DriveProof = workspaceRelayDriveProof(r.Body, matter)
+				o.Continuation = matter != "" && o.DriveProof == nil
 			}
 			facts = append(facts, o)
 		}
@@ -172,6 +181,9 @@ var workspaceReconciliationWakeAt int64
 var workspaceGoalCheckStamp int64
 
 func scheduleWorkspaceReconciliation() {
+	if workspaceReconciliationRunner.running.Load() {
+		return // Leave a marker received during the current scan for the next tick.
+	}
 	now := time.Now().Unix()
 	stamp := hqworkspace.GoalCheckStamp(state.HQHome())
 	if now < workspaceReconciliationNext && stamp <= workspaceGoalCheckStamp {
@@ -185,15 +197,15 @@ func scheduleWorkspaceReconciliation() {
 			diag.ReportStoreFailure("hq-reconciliation", err)
 			return
 		}
-		if err := pumpWorkspaceReplies(s, time.Now().Unix()); err != nil {
-			diag.ReportStoreFailure("hq-reply-continuation", err)
-		}
-		next, err := notifyWorkspaceReconciliation(s, now, workspaceReconciliationWakeAt)
+		next, err := notifyWorkspaceReconciliation(s, time.Now().Unix(), workspaceReconciliationWakeAt)
 		if err != nil {
 			diag.ReportStoreFailure("hq-reconciliation", err)
 			return
 		}
 		workspaceReconciliationWakeAt = next
+		if err := pumpWorkspaceReplies(s, time.Now().Unix()); err != nil {
+			diag.ReportStoreFailure("hq-reply-continuation", err)
+		}
 	})
 }
 
@@ -213,7 +225,14 @@ func notifyWorkspaceReconciliation(s *hqworkspace.Store, now, next int64) (int64
 	if err != nil {
 		return next, err
 	}
-	rows := hqworkspace.ReconciliationQueue(d, now)
+	signals, err := s.RemindContinuations(d, now)
+	if err != nil {
+		return next, err
+	}
+	if len(signals) > 0 {
+		workspaceReconcileWake(workspaceContinuationLine(signals, strconv.FormatInt(now, 10)))
+	}
+	rows := hqworkspace.ReconciliationWakeQueue(d, now)
 	if len(rows) > 0 && now >= next {
 		goals, repeated, err := s.RemindGoals(now)
 		if err != nil {
@@ -281,10 +300,29 @@ func workspaceReconciliationProbe(line string) (bool, string) {
 	return revalidateWorkspaceReconciliation(d, time.Now().Unix(), line)
 }
 
+const workspaceContinuationWake = "workspace reconciliation follow-up"
+
+func workspaceContinuationLine(rows []hqworkspace.Reconciliation, check string) string {
+	latest := rows[len(rows)-1].Observation
+	// The queue key coalesces waiting input. The check timestamp gives each
+	// periodic attempt its own native delivery ID even if the facts match.
+	return hqwake.Line(hqwake.ClassTick, workspaceContinuationWake+" "+check,
+		fmt.Sprintf("pending:%d · %s", len(rows), latest.Ref),
+		"claim the new evidence: gtmux hq workspace reconcile --json")
+}
+
 func revalidateWorkspaceReconciliation(d hqworkspace.Database, now int64, line string) (bool, string) {
+	if _, tail, ok := strings.Cut(line, workspaceContinuationWake); ok {
+		rows := hqworkspace.ContinuationWakeQueue(d, now)
+		if len(rows) == 0 {
+			return false, ""
+		}
+		check, _, _ := strings.Cut(tail, hqwake.FieldSep())
+		return true, workspaceContinuationLine(rows, strings.TrimSpace(check))
+	}
 	pending := 0
 	repeated := false
-	for _, q := range hqworkspace.ReconciliationQueue(d, now) {
+	for _, q := range hqworkspace.ReconciliationWakeQueue(d, now) {
 		if q.Observation.Kind == "goal-followup" {
 			m, ok := d.Matters[q.Observation.MatterID]
 			if ok {

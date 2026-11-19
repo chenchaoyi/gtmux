@@ -10,6 +10,7 @@ import (
 // Observation is immutable input, not permission to execute or change a goal.
 // ID is namespaced by its producer; Ref points to the original durable record.
 type Observation struct {
+	Continuation    bool         `json:"continuation,omitempty"`
 	RecordingPolicy string       `json:"recording_policy,omitempty"`
 	DriveProof      *DriveProof  `json:"drive_proof,omitempty"`
 	ID              string       `json:"id"`
@@ -29,6 +30,7 @@ type Reconciliation struct {
 	ReminderCount       uint64      `json:"reminder_count,omitempty"`
 	Observation         Observation `json:"observation"`
 	State               string      `json:"state"` // pending | recorded | leased | assessed | deferred | conflict | superseded
+	ClaimedAt           int64       `json:"claimed_at,omitempty"`
 	ReceivedAt          int64       `json:"received_at"`
 	Owner               string      `json:"owner,omitempty"`
 	Generation          uint64      `json:"generation"`
@@ -91,8 +93,12 @@ func (s *Store) Ingest(source string, expected, cursor int64, observations []Obs
 			return ErrConflict
 		}
 		for _, o := range observations {
+			_, seen := d.Reconciliations[o.ID]
 			if err := recordObservation(d, o, at); err != nil {
 				return err
+			}
+			if !seen && o.Continuation {
+				reopenDeferredGoal(d, o, at)
 			}
 		}
 		for _, o := range observations {
@@ -170,6 +176,7 @@ func (s *Store) ClaimObservation(id, owner string, at int64) (Reconciliation, er
 		}
 		q.State = "leased"
 		q.Owner = owner
+		q.ClaimedAt = at
 		q.Generation++
 		q.LeaseUntil = at + 300
 		d.Reconciliations[id] = q

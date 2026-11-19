@@ -323,7 +323,7 @@ The workspace SHALL persist a reconciliation queue independently of event consum
 - **THEN** ingestion retains its previous cursor and any gap notice, and the next read durably queues the retained event before advancing past it
 
 ### Requirement: Continuing goals retain next responsibility
-Every explicitly enrolled nonterminal goal SHALL retain either a verified current step drive, an unanswered concrete human request, a sourced hold, or durable HQ follow-up/verification debt. A step SHALL have a stable ID, intended action and citation to existing authority. Missing legacy fields SHALL require HQ verification and SHALL NOT authorize automatic resumption. Ordinary observation acknowledgement, read watermarks, quiet presentation, process restart and healthy rotation SHALL NOT discharge goal debt. The existing reconciliation pass SHALL scan a bounded number of goals with a durable cursor even without new events. Stop SHALL only request a lightweight check.
+Every explicitly enrolled nonterminal goal SHALL retain either a verified current step drive, an unanswered concrete human request, a sourced hold, or durable HQ follow-up/verification debt. A step SHALL have a stable ID, intended action and citation to existing authority. Missing legacy fields SHALL require HQ verification and SHALL NOT authorize automatic resumption. Ordinary observation acknowledgement, read watermarks, quiet presentation, process restart and healthy rotation SHALL NOT discharge goal debt. The existing reconciliation pass SHALL scan a bounded number of goals with a durable cursor even without new events. Stop and a newly saved HQ relay report SHALL request a lightweight check through the existing workspace marker.
 
 #### Scenario: All observations are noted but work remains
 - **WHEN** HQ notes the latest stage report and no new unread events arrive
@@ -334,6 +334,15 @@ Every explicitly enrolled nonterminal goal SHALL retain either a verified curren
 - **WHEN** presentation is quiet or HQ performs a healthy handoff
 - **THEN** the same durable next responsibility remains recoverable without blocking rotation
 - **AND** repeated reminders identify HQ's unfinished coordination rather than asking for already granted permission
+
+#### Scenario: A fresh participant conclusion arrives before an old recheck
+- **WHEN** a new Stop or HQ relay report is attributed to the exact participant and leaves HQ coordination outstanding
+- **THEN** the workspace reopens any older deferred goal check, and serve schedules a keyed wake independently of the standing reminder interval
+- **AND** the next reconciliation cycle can recover a missed wake while the evidence awaits a verified claim for that exact observation
+- **AND** other observations stay eligible even if their claim or receipt times match
+- **AND** urgent and standing wakes keep independent queue entries and schedules while a draft delays them
+- **AND** enqueue, transport and claim remain independently observable; assessment and verified resolution still govern the goal
+- **AND** sourced holds and independently verified continuing work prevent unnecessary wakes or execution
 
 ### Requirement: Step intent precedes guarded delivery
 HQ SHALL persist a stable action ID, exact agent/home/session and task/message/native reference before an explicit drive action. The drive action SHALL use the existing input, identity and draft gates and SHALL attempt a saved action at most once. Queued SHALL mean reliably waiting for reception, not started or completed. Submission uncertainty, refusal and absent probes SHALL require verification, never automatic replay or another channel. Receipt coverage SHALL match the same step, action, reference and unambiguous conversation interval. Existing reliable native/background coverage SHALL prevent duplicate drive.

@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1355 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1359 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2531 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 148 | [L3.csv](cases/L3.csv) |
+| L2 · Component / contract | 2533 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 151 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 501 | [G.csv](cases/G.csv) |
@@ -189,6 +189,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |
 | MC-HQ-WINDOW | The complete native HQ window keeps a long question header, original conversation and composer inside narrow/wide viewports; AX choice activation updates the real NSTextView and focus, independent of read timeout. |
 | MC-HQ-READ | Stored matter/overview reads do not perform roster or historical discovery. Slow or failed optional source enrichment cannot block selection/preparing replies or replace newer matters/drafts. Legacy CLI fallback is bounded to explicit unsupported flags. |
+| HPC-003 | Older claims and same-second siblings never suppress an unclaimed observation. An exact live lease suppresses itself, expiry restores eligibility, and a successor fences the old generation. |
+| HPC-004 | The draft stays intact. Revalidation drops the settled urgent wake and still delivers the standing wake. Neither path spends the other's scheduling interval. |
+| HPC-005 | Claim-only issues no work and leaves debt. Current owner and generation control the assessment. The authorized live worker receives and performs the exact action once and an independently produced exact progress receipt covers the step. A wrong target and external wait yield zero input. Unknown submission keeps its intent reserved without duplicate work. |
 | HGD-001 | One material goal debt remains, no dispatch, no duplicate debt; stale generation cannot commit. |
 | HGD-002 | Only one send per action ID; queued is not work started; exact receipt covers the step; stale SID, ambiguous interval, native/background coverage and unavailable evidence never cause duplicate delivery. |
 | HGD-003 | User pause/refusal never expire; external due time requests verification; only a real unanswered question is human debt; verified answer withdraws question and leaves next-step duty. |
@@ -207,6 +210,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MC-HQ-OVERVIEW-STATE | Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records. |
 | MC-HQ-OVERVIEW-MORE | At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry. |
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
+| HPC-001 | New evidence bypasses the old defer and is available for HQ in the same scan. Duplicate ingestion preserves generation and retry counters; claim suppresses duplicate waking until the lease expires; noting receipt leaves goal debt. Unmatched, stale, paused or independently covered work does not reopen it or drive. |
+| HPC-002 | Fresh evidence bypasses generic wake backoff; the next reconciliation cycle recovers one missing wake. Draft remains intact while the durable obligation waits. Enqueue alone creates no claim or intent; exact accepted/claimed work is distinct. After lease expiry a successor can claim; the old generation cannot assess. No scenario issues unauthorised source input. A delivered but unclaimed wake creates no ownership. Its bounded recheck has a different transport batch ID and leaves exactly one durable claim. |
 | HRC-001 | Request, reply, hint, fetch and actual work are distinct. Both unfetched and fetched without execution remain visible. A queue or input receipt cannot prove work. |
 | HRC-002 | Only one exact idle native transport can receive the bounded receipt-specific reminder. No implicit grant, fallback, stale replay or second submission; blockers and original attempt remain inspectable. |
 | HRS-001 | Only first exact prompt after lower bound matches. First record remains stable across append; rewrite/replacement/continuation changes invalidate. Complete lines only; no result bodies retained. Cancelled/error reads do not grant attribution. |

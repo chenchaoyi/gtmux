@@ -17,9 +17,11 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
+	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/relay"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -143,6 +145,9 @@ func cmdRelay(args []string) int {
 		}
 		if fresh {
 			diag.Did("act.relay", pane, diag.OK, "agent request saved", "id", id, "kind", sub)
+		}
+		if fresh && r.Kind == "report" && r.For == "hq" {
+			_ = hqworkspace.RequestGoalCheck(state.HQHome())
 		}
 		if fresh && r.Blocking {
 			line := relayWake(r)

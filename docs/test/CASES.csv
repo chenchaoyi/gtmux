@@ -429,6 +429,9 @@ LEG-b4c53a66c7ba,L1,Go core / CLI / server,internal/app/hooksilence_test.go,56,T
 LEG-22c10bb33192,L1,Go core / CLI / server,internal/app/hqmemory_row_test.go,30,Test,TestHQMemoryRowReadsItsThreeStates,False,legacy-not-retrospectively-reviewed
 LEG-7d78fb6a41eb,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,15,Test,TestStitchEarlierKeepsEachHQAgentsIdentity,False,legacy-not-retrospectively-reviewed
 LEG-150db10da0b7,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,45,Test,TestTranscriptOnlyStitchesSupervisorHistory,False,legacy-not-retrospectively-reviewed
+MAP-6c44c0313e74,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,305,reviewed-selector,TestWorkspaceDraftKeepsBothWakeQueues,False,"HPC-004,HPC-005"
+MAP-69d66d9f9a98,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,97,reviewed-selector,TestWorkspaceContinuationCLI,False,"HPC-004,HPC-005"
+MAP-0e82e0de8675,L3,reviewed implementation,internal/app/hqworkspace_continuation_test.go,23,reviewed-selector,TestWorkspaceContinuationIncidentReplay,False,HPC-002
 MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,142,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,179,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
@@ -2090,6 +2093,8 @@ LEG-dc57f44d25e7,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,7,T
 LEG-16bf780da221,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,41,Test,TestConsumeReadRequiresContiguity,False,legacy-not-retrospectively-reviewed
 LEG-97b3ed8b57ae,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,64,Test,TestUnreadIsStandingPriority,False,legacy-not-retrospectively-reviewed
 LEG-61812fc046b5,L1,Go core / CLI / server,internal/hqwake/watermark_test.go,71,Test,TestUnreadConfigDefaults,False,legacy-not-retrospectively-reviewed
+MAP-4b3c41b1f130,L2,reviewed implementation,internal/hqworkspace/continuation_claim_test.go,5,reviewed-selector,TestContinuationClaimCoversOnlyItsExactObservation,False,HPC-003
+MAP-230b9e9a7ad4,L2,reviewed implementation,internal/hqworkspace/continuation_test.go,5,reviewed-selector,TestContinuationEvidenceReopensDeferredResponsibility,False,HPC-001
 MAP-4661cc9cbfd1,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,9,reviewed-selector,TestDelayedFirstDriverReceiptNeverPermitsReplay,False,HGD-010
 MAP-701fff56a879,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,59,reviewed-selector,TestDelayedDriverHistoryRequiresExactHistoricalAttribution,False,HGD-010
 MAP-7aceebb4a273,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,128,reviewed-selector,TestDelayedDriverReceiptRetainsOriginalIntentAcrossPlanChanges,False,HGD-010

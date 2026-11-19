@@ -118,7 +118,8 @@
       "HQP1-006",
       "HQP1-007",
       "HQP1-008",
-      "HGD-005"
+      "HGD-005",
+      "HPC-004"
     ],
     "selectors": [
       "TestPhase1WorkspaceIngestionRecoveryAndReadIndependence",
@@ -4151,6 +4152,40 @@
       "TestSPL026ArchiveBootstrapSurvivesProcessExit",
       "TestSPL026ArchiveBootstrapExitChild",
       "TestSPL026ArchiveBootstrapPreservesExistingDestination"
+    ]
+  },
+  "internal/hqworkspace/continuation_test.go": {
+    "cases": [
+      "HPC-001"
+    ],
+    "selectors": [
+      "TestContinuationEvidenceReopensDeferredResponsibility"
+    ]
+  },
+  "internal/app/hqworkspace_continuation_test.go": {
+    "cases": [
+      "HPC-002"
+    ],
+    "selectors": [
+      "TestWorkspaceContinuationIncidentReplay"
+    ]
+  },
+  "internal/app/hqworkspace_continuation_cli_test.go": {
+    "cases": [
+      "HPC-004",
+      "HPC-005"
+    ],
+    "selectors": [
+      "TestWorkspaceDraftKeepsBothWakeQueues",
+      "TestWorkspaceContinuationCLI"
+    ]
+  },
+  "internal/hqworkspace/continuation_claim_test.go": {
+    "cases": [
+      "HPC-003"
+    ],
+    "selectors": [
+      "TestContinuationClaimCoversOnlyItsExactObservation"
     ]
   }
 }

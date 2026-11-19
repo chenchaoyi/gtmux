@@ -267,6 +267,8 @@ MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_t
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,102,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"
 MAP-62d7c36b98c4,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,119,reviewed-selector,TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity,False,"HRW-004,HRW-005,HRW-008"
 MAP-f6f7a40c985c,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,149,reviewed-selector,TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource,False,"HRW-004,HRW-005,HRW-008"
+MAP-4b3c41b1f130,L2,reviewed implementation,internal/hqworkspace/continuation_claim_test.go,5,reviewed-selector,TestContinuationClaimCoversOnlyItsExactObservation,False,HPC-003
+MAP-230b9e9a7ad4,L2,reviewed implementation,internal/hqworkspace/continuation_test.go,5,reviewed-selector,TestContinuationEvidenceReopensDeferredResponsibility,False,HPC-001
 MAP-4661cc9cbfd1,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,9,reviewed-selector,TestDelayedFirstDriverReceiptNeverPermitsReplay,False,HGD-010
 MAP-701fff56a879,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,59,reviewed-selector,TestDelayedDriverHistoryRequiresExactHistoricalAttribution,False,HGD-010
 MAP-7aceebb4a273,L2,reviewed implementation,internal/hqworkspace/delayed_drive_test.go,128,reviewed-selector,TestDelayedDriverReceiptRetainsOriginalIntentAcrossPlanChanges,False,HGD-010
