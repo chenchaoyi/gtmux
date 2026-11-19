@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Require producer evidence at original authority and a verified sequence after a refusal",
+    "notes": "Seventh independent review found that a new recording generation cannot attest to pre-upgrade gaps and a stale pump time cannot order direct authorization when a refusal cursor is unavailable."
+  },
+  "cases": [
+    {
+      "id": "HRC-013",
+      "layer": "L2",
+      "description": "Legacy source without collection proof and direct confirmation without a proven refusal boundary remain blocked until ordered user authority is available.",
+      "setup": "Isolated workspace and unchanged recording config with legacy event rows, a lost pause before upgrade, a later ordinary event, and a zero-submission receipt.",
+      "action": "Attempt to arm unmarked original authority before and after creating a modern coverage generation. Test a refusal after a delayed preflight, both with a readable live cursor and with no verifiable cursor. Reopen and supply prior and fresh confirmations.",
+      "expected": "A first generation cannot retrofit coverage. An earlier direct event cannot become a confirmation through timestamps. A later journaled source with a proven boundary or a newer workspace user instruction can authorize the same action once. Existing and unknown submissions stay reserved.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_ordering_test.go"
+      ]
+    }
+  ],
+  "seal": "350cbe12fd9175ee8897820dd5634c2d172167d01a033f9ed394daae480205d6"
+}
