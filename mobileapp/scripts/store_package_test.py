@@ -182,6 +182,30 @@ class StorePackageTests(unittest.TestCase):
                 store.unpack(ipa, root / 'out')
             self.assertFalse((root / 'escape').exists())
 
+    def test_cli_rejects_managed_receipt_before_package_verification(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = root / '.config/gtmux'
+            config.mkdir(parents=True)
+            previous = config / 'receipt.json'
+            previous.write_text('original')
+            alias = root / 'alias'
+            alias.symlink_to(config, target_is_directory=True)
+            args = ['store_package.py', '--ipa', 'candidate.ipa', '--baseline', 'original.ipa',
+                    '--version', '1.2.3', '--build', '26', '--team', self.team]
+            old_umask = os.umask(0o022)
+            try:
+                with patch.dict(os.environ, {'HOME': str(root)}), patch.object(store, 'verify') as verify:
+                    for target in (config / 'receipt.json', alias / 'new/receipt.json'):
+                        with self.subTest(target=target), patch('sys.argv', args + ['--receipt', str(target)]):
+                            with self.assertRaisesRegex(ValueError, 'outside gtmux'):
+                                store.main()
+                    verify.assert_not_called()
+            finally:
+                os.umask(old_umask)
+            self.assertEqual(previous.read_text(), 'original')
+            self.assertFalse((config / 'new').exists())
+
 
 if __name__ == '__main__':
     unittest.main()

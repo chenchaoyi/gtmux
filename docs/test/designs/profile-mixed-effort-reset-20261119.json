@@ -1,0 +1,27 @@
+{
+  "id": "profile-mixed-effort-reset-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-19",
+    "decision": "Test a late same-model legacy write after the new observer explicitly clears effort",
+    "notes": "Use a disposable HOME and generation-one fixtures. Apply the actual hook parser and the old same-model update semantics to the legacy JSON under its original lease, without invoking an installed hook or real tmux. Compare the original candidate and the fixed candidate; model-only refresh must not count as a new effort observation."
+  },
+  "cases": [
+    {
+      "id": "STOR-007",
+      "layer": "L2",
+      "description": "A model-only refresh from a legacy profile writer cannot resurrect effort cleared by the new writer",
+      "setup": "A private HOME with an old profile containing a model and effort, or an effort-only profile without a model.",
+      "action": "Read the old record, clear effort via the new observer, then update just the same model via the old writer semantics. Read a second time and verify that a separately observed later effort can still be used. In the effort-only case read after clearing the final fact.",
+      "expected": "Legacy facts remain readable before the new observer runs. Clearing persists even when it leaves no facts. Old files and lock namespaces remain independent. The later model-only write may advance model time while its carried-forward effort stays hidden. A genuinely later option observation is accepted.",
+      "planned_files": [
+        "internal/agentprofile/mixed_effort_reset_test.go"
+      ],
+      "surfaces": [
+        "Current native hook participant profiles"
+      ]
+    }
+  ],
+  "seal": "920bd13fc7f98bba2436c95d32b56665bf81140bee2cfcd0ce9dd698144041e4"
+}

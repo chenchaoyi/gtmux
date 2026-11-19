@@ -40,6 +40,18 @@ frames only. This is not a global event-log scan or a strict 2 MiB compressed-fi
 limit. Bounded metadata snapshots live privately under `participant-profiles/`
 (0700 directory, 0600 files), scoped by agent, home and session.
 
+New hook observations write to `participant-profiles/v2/` using up to 256
+reusable locks in its `locks/` subdirectory. Older hooks keep their original
+files. Current reads combine both generations for the same identity and take
+model options and permission-dependent mode from the corresponding newer
+observation. For matching models, including two observations without a model,
+a separate effort observation can cross snapshot generations when it is newer than
+the selected model record. This avoids restoring old effort when the model switches
+away and back. A legacy effort at or before the last reset stays cleared even if the
+legacy hook refreshes the model later.
+Process inspection runs before acquiring a shard. Leave old lock anchors in place
+until all writers that can use them have been retired.
+
 The other seven integrations keep registry identity and any observed launch chain.
 There is no account query, configuration execution, model request, arbitrary CLI
 probe, or guessed model/tier for them. The full table includes future adapter
