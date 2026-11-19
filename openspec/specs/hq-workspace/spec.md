@@ -359,3 +359,46 @@ A user pause/refusal SHALL NOT expire automatically; changing it SHALL require a
 - **WHEN** a backup contains a queued or received intent or native/background evidence
 - **THEN** restored evidence requires explicit review and cannot replay the saved action
 - **AND** a saved user pause/refusal remains effective
+
+### Requirement: Explicit continuation after an inbox reply
+The workspace SHALL project reply, active-turn notice, source fetch and execution evidence separately. Only a verified current HQ action binding one eligible receipt to an existing authorized intent MAY arm an idle continuation. The daemon SHALL recheck the original authorization, matter revision, execution membership, current native identity, idle state and composer through ordinary delivery gates before issuing at most one receipt-specific reminder. A submission with unknown outcome SHALL remain reserved for reconciliation.
+
+#### Scenario: Stop precedes a durable reply
+- **WHEN** an enrolled source stops after checking its inbox and a reply is saved later
+- **THEN** reconciliation records that receipt even if it previously ingested the request, and a later fetch leaves the next step outstanding until the source reports matching execution evidence
+
+#### Scenario: Restart with an explicit continuation
+- **WHEN** the daemon restarts with a reviewed reservation and the exact source becomes ready
+- **THEN** it may submit the bounded reminder once, preserves blockers and uncertain submissions, and keeps ordinary replies pull-only for idle or unsupported clients
+
+#### Scenario: Reviewed authority and receipt ordering
+- **WHEN** HQ claims the current responsibility and verifies a workspace user instruction, an answer to its cleared question, or an independently authenticated direct user assignment with its exact retained target event
+- **THEN** the reservation preserves its reviewed event boundary and a later instruction fences the old step even after ingestion
+- **AND** noting a fetch or observing a transport receipt before reservation preserves the specific reply and outstanding work; a matching prior attempt is reconciled without resubmission
+
+#### Scenario: Confirmation or membership becomes known after the original plan
+- **WHEN** HQ reviews later user confirmation for the same saved action, or verifies continuous unique membership covering a previously unassigned request and reply
+- **THEN** the binding records supplemental authority and attributed receipts without rewriting the original action or observations
+- **AND** a prior ordinary queued, landed or uncertain drive remains reserved for reconciliation and cannot become a fresh reminder
+
+#### Scenario: A target pauses before it is enrolled
+- **WHEN** an exact target's instruction follows a workspace user message but predates enrollment and the general observation cursor has already passed it
+- **THEN** the continuation checks the source journal from the original message before submission and holds for HQ when the target changed, the interval is unavailable, or a legacy same-second instruction is unordered
+- **AND** a verified later user resumption can cover the same saved action through its original gates
+
+#### Scenario: History coverage changes before dispatch
+- **WHEN** a legacy message is committed during an asynchronous scan, or recording is disabled after a direct user assignment
+- **THEN** a scan's start time cannot advance that message's lower bound, and the original direct assignment requires verified journal coverage through submission
+- **AND** an unrecorded instruction leaves a coverage gap in an already initialized journal counter without storing an event or its contents
+
+#### Scenario: A recording failure or final refusal interrupts a reserved action
+- **WHEN** an enabled journal cannot persist an instruction, or its authority source lacks a proven initial boundary
+- **THEN** the prior source requires reconciliation even after an unrelated event and a restart; a new verified instruction can authorize the original step
+- **AND** when the final local input gate proves zero submissions, the workspace preserves that refusal and may rearm the same action only after a later user instruction and a new HQ review
+- **AND** a prior claim, uncertain outcome, or accepted submission remains reserved for reconciliation under its original identifier
+
+#### Scenario: The original collector or refusal boundary cannot establish order
+- **WHEN** a direct source or a workspace instruction lacks evidence from the collection interval in which it was issued
+- **THEN** verification SHALL NOT initialize a new generation to vouch for the old source
+- **AND** rearming after a proven zero submission using a direct event SHALL require a verified journal boundary sampled at the refusal, a higher event sequence and a strictly later source time
+- **AND** a workspace user confirmation committed after the refusal can establish order through its durable revision

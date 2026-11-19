@@ -15,9 +15,10 @@ import (
 // Delivery is the adapter's verified verdict. SafeHold means NOTHING was typed;
 // a draft refusal after paste is uncertain, not eligible for automatic replay.
 type Delivery struct {
-	State    string
-	Evidence string
-	SafeHold bool
+	State        string
+	Evidence     string
+	SafeHold     bool
+	BeforeSubmit bool
 }
 
 type DeliveryIO struct {

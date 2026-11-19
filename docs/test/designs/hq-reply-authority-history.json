@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Cover the three ordering defects from independent review before implementing the revision",
+    "notes": "Keep the original intent ID, raw observations and historical receipts immutable. Verify the later association at request, reply and current time, and never convert prior attempts into a fresh submission."
+  },
+  "cases": [
+    {
+      "id": "HRC-006",
+      "layer": "L2",
+      "description": "A verified user confirmation may supplement an unattempted saved action while its identity and original authorization history remain intact.",
+      "setup": "Save a responsibility first; receive and clear a real user answer later, or verify a legacy original direct instruction.",
+      "action": "Review the existing action and bind a current supplemental authority citation. Try a stale answer or unconfirmed event, and retry an already attempted action.",
+      "expected": "Only a reviewed exact current authority permits the original unused action to submit once. Submitted or uncertain work remains reserved.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_history_test.go"
+      ]
+    },
+    {
+      "id": "HRC-007",
+      "layer": "L2",
+      "description": "A request observed before membership retains its original provenance and an explicitly reviewed, temporally unique attribution.",
+      "setup": "Ingest a request and reply before enrolling the author. Backdate the exact history or create an ambiguous or unrelated member.",
+      "action": "Bind the receipt through verified HQ, reload, inspect original and attribution and try wrong or ambiguous targets.",
+      "expected": "Only a unique continuous exact source joins. Original observations remain immutable and a durable attribution identifies the same receipt.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_history_test.go"
+      ]
+    },
+    {
+      "id": "HRC-008",
+      "layer": "L2",
+      "description": "A prior ordinary queued or landed drive stays distinguishable from a new receipt reminder.",
+      "setup": "An ordinary synthetic drive has a saved receipt before HQ reviews the inbox.",
+      "action": "Bind the same action, run another drive pass, reopen, and inspect responsibility text and submission count.",
+      "expected": "Reconciliation identifies the original delivery, reports zero fresh reminders, and still requires source execution evidence.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_history_test.go"
+      ]
+    }
+  ],
+  "seal": "a42ad9c5b11f62fb6365773f16bd96587b1ab34250db2b7d35239e83edd6f8d1"
+}

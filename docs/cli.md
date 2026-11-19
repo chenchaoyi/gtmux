@@ -930,6 +930,47 @@ contract](design/hq-workspace.md#continuing-goals-and-next-responsibility) for s
 external holds, exact native/background receipt envelopes and restore boundaries.
 
 
+After an inbox reply, HQ can explicitly arm its reviewed intent using
+`{"op":"resume-reply","matter":"MATTER","id":"ACTION","revision":42,"reply_id":"RECEIPT"}`.
+Use `authority_ref:"message:ID"` for the latest workspace user instruction or the
+user's answer to the exact cleared question. For an existing direct assignment,
+verify the original user authorship and scope independently, cite the retained
+target instruction as `authority_ref:"events:N"`, and pass the same ID in
+`verified_user_event`. An unattributed prompt alone cannot establish authorship.
+For an existing action whose user confirmation came later, review the same saved
+responsibility after the confirmation. Pass the verified `authority_ref` in
+`resume-reply` to supplement the original citation. This preserves the action
+ID, original plan, and prior delivery outcome. A late association must cover
+the original request, reply and current exact execution member. The binding
+records that attribution separately from the original observations. Previously
+queued or landed ordinary drives remain reserved for reconciliation.
+New user messages retain the journal sequence observed at submission. The
+continuation checks the target history from the original message, including
+instructions ingested before enrollment. A legacy message with an unordered
+same-second target instruction, a missing interval or an unreadable journal
+leaves an explicit HQ blocker. Legacy bounds use the workspace commit order.
+Direct-user citations also require a readable, enabled journal through the
+current watermark. With recording disabled, an input leaves a gap in an already
+initialized counter without writing an event or its contents. Re-enabling
+recording preserves that gap. A later verified user resumption can cover the
+same action. A missing initial journal, a changed configuration generation or a
+failed instruction write can also require fresh user authority. A recording fault
+retains only a generation identifier. Older instructions lacking proof from the
+original collector require fresh confirmation. If the last input gate proves zero submissions,
+HQ can bind a newer verified user instruction to the original action and receipt.
+A direct confirmation must have a verified sequence and source time after the
+recorded refusal. When the refusal has no reliable journal boundary, use a newer
+workspace user instruction. The refusal remains in workspace history. A claimed or uncertain submission still
+requires reconciliation. A newer target instruction invalidates the old review. The claim records the
+reviewed event boundary. `reply_observations` keeps every receipt's latest stage
+after an ordinary `noted` assessment. Claim an unbound receipt and assess
+`no-followup` to record an explicit disposition. Serve waits
+for the exact Codex execution member to be loaded, idle and free of drafts. It sends
+one short reminder to fetch that receipt and continue the authorized step. Inspect
+`intent_attempts` and `next_responsibility` for blockers. The source reports actual
+work using the existing drive envelope with `drive.evidence` citing an execution
+result. Ordinary replies keep their existing pull and active-turn hint behavior.
+
 ## `gtmux digest` + `gtmux hq`: HQ, the supervisor session
 
 `gtmux digest` lists agent goals, recent replies, wait reasons and usage in a table:

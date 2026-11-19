@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1327 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1335 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2476 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2485 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 148 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -207,9 +207,22 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MC-HQ-OVERVIEW-STATE | Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records. |
 | MC-HQ-OVERVIEW-MORE | At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry. |
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
+| HRC-001 | Request, reply, hint, fetch and actual work are distinct. Both unfetched and fetched without execution remain visible. A queue or input receipt cannot prove work. |
+| HRC-002 | Only one exact idle native transport can receive the bounded receipt-specific reminder. No implicit grant, fallback, stale replay or second submission; blockers and original attempt remain inspectable. |
 | HRS-001 | Only first exact prompt after lower bound matches. First record remains stable across append; rewrite/replacement/continuation changes invalidate. Complete lines only; no result bodies retained. Cancelled/error reads do not grant attribution. |
 | HRS-002 | Only accepted exact canonical HQ reply in correct Codex home/thread at its first source record gets from.kind=hq. Wrong identity, receipt state, body, missing clock/record or later human copy remains unattributed; existing sender preserved; no new sends or ledger writes. |
 | HRS-003 | App/Web API turn JSON exposes identical HQ sender; new receipt invalidates prior human snapshot, unchanged snapshot is cacheable; old pages keep correct first-only attribution; policy/ledger/source unchanged by reads; CLI-origin and desktop-origin both work. |
+| HRC-006 | Only a reviewed exact current authority permits the original unused action to submit once. Submitted or uncertain work remains reserved. |
+| HRC-007 | Only a unique continuous exact source joins. Original observations remain immutable and a durable attribution identifies the same receipt. |
+| HRC-008 | Reconciliation identifies the original delivery, reports zero fresh reminders, and still requires source execution evidence. |
+| HRC-010 | Old observations use ledger commit order. A disabled or unverifiable interval stays blocked; a still-valid direct instruction and genuinely newer confirmation remain eligible for one guarded action. |
+| HRC-009 | Only a covered instruction interval and current confirmed step can deliver. An unknown range remains a specific reconciliation blocker and valid new user confirmation preserves the original action ID. |
+| HRC-013 | A first generation cannot retrofit coverage. An earlier direct event cannot become a confirmation through timestamps. A later journaled source with a proven boundary or a newer workspace user instruction can authorize the same action once. Existing and unknown submissions stay reserved. |
+| HRC-003 | Only the exact reviewed instruction or resolved user decision can cover the existing action. No new user message or approval is minted. |
+| HRC-004 | The original reply and step remain visible. A received or unsupported execution claim cannot discharge work or be replayed. Exact evidence covers the step. |
+| HRC-005 | A consumed pause cannot slip past the reviewed boundary; an explicit fresh review is needed. The coordination echo produces no instruction goal; real user prose still does. |
+| HRC-011 | Neither later availability nor an ordinary Stop revives the old authority. Failed counter persistence is observable and the old reference remains unsafe; an explicit newer confirmed step can use the same action once. No disabled event or private input is recorded. |
+| HRC-012 | Old direct and workspace authority cannot cross the enabled outage. A fresh explicit instruction can recover. A durable zero-submission receipt survives recovery and only a later authority can drive the original ID once. Unknown, prior, and submitted attempts remain reserved for reconciliation. |
 | HRW-012 | Unknown is not falsely reported as session changed and never authorizes reset. First unavailable time survives repeat ticks and reason changes; unresolved management evidence yields one precise attention failure within 60 seconds/original deadline. Exact recovery still respects drafts/active/waiting/boundary guards, while real changed SID/agent refuses immediately. Sent requests never repeat input. Reasons are bounded value-free known codes or explicit unknown; no fabricated cause. |
 | HRW-013 | Original record and live boolean remain identical to the original predicate; unavailable/conflict codes are value-free and precise only where actually observed. No new binding, input, retry or authority from a code, and no source PID/home/SID borrowed from another location. |
 | HRW-001 | Fresh verified idle metadata is required before at most one normal turn/start attempt. Known busy/unknown/unloaded/approval states refuse before claim; no steer, queue/add, resume, retry or fallback. Sample-to-submit external race is explicitly possible: a valid response records acceptance and an observed turn ID only, not proof of a newly caused turn. Missing acknowledgement remains uncertain, never automatically resubmitted. Explicit user/image/legacy queue unchanged. |

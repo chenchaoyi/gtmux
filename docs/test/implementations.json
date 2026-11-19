@@ -3840,5 +3840,75 @@
     "selectors": [
       "TestCompatibilityCancellationDuringFinalTargetQuery"
     ]
+  },
+  "internal/app/hqworkspace_reply_test.go": {
+    "cases": [
+      "HRC-001",
+      "HRC-002"
+    ],
+    "selectors": [
+      "TestReplyLifecycleAcrossStop",
+      "TestReplyContinuationDispatchAndEvidence"
+    ]
+  },
+  "internal/app/hqworkspace_reply_review_test.go": {
+    "cases": [
+      "HRC-003",
+      "HRC-004",
+      "HRC-005"
+    ],
+    "selectors": [
+      "TestReviewedReplyAuthorityAndOrder"
+    ]
+  },
+  "internal/app/hqworkspace_reply_history_test.go": {
+    "cases": [
+      "HRC-006",
+      "HRC-007",
+      "HRC-008"
+    ],
+    "selectors": [
+      "TestReplyReconcilesSavedHistory"
+    ]
+  },
+  "internal/app/hqworkspace_reply_event_history_test.go": {
+    "cases": [
+      "HRC-009"
+    ],
+    "selectors": [
+      "TestWorkspaceMessageChecksOriginalTargetHistory"
+    ]
+  },
+  "internal/app/hqworkspace_reply_continuity_test.go": {
+    "cases": [
+      "HRC-010"
+    ],
+    "selectors": [
+      "TestReplyHistoryUsesCommittedOrderAndActiveJournal"
+    ]
+  },
+  "internal/app/hqworkspace_reply_baseline_test.go": {
+    "cases": [
+      "HRC-011"
+    ],
+    "selectors": [
+      "TestReplyRequiresProvenRecordingBaseline"
+    ]
+  },
+  "internal/app/hqworkspace_reply_recovery_test.go": {
+    "cases": [
+      "HRC-012"
+    ],
+    "selectors": [
+      "TestReplyRecoversOnlyProvenUnsentAction"
+    ]
+  },
+  "internal/app/hqworkspace_reply_ordering_test.go": {
+    "cases": [
+      "HRC-013"
+    ],
+    "selectors": [
+      "TestReplyRequiresOriginalProducerAndRefusalOrder"
+    ]
   }
 }

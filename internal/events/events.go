@@ -14,6 +14,7 @@ package events
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,16 +28,17 @@ import (
 
 // Record is one logged lifecycle event (the stable additive contract).
 type Record struct {
-	MessageID      string `json:"message_id,omitempty"`
-	MessageSeq     int64  `json:"message_seq,omitempty"`
-	MessageRole    string `json:"message_role,omitempty"`
-	HomeID         string `json:"home_id,omitempty"`
-	TaskID         string `json:"task_id,omitempty"`
-	BindingID      string `json:"binding_id,omitempty"`
-	ResourceClosed *bool  `json:"resource_closed,omitempty"` // reap settlement, not writer/turn release
-	Outcome        string `json:"outcome,omitempty"`         // structured audit settlement; not agent state
-	Phase          string `json:"phase,omitempty"`           // selection | ledger | render | directory-sync
-	Ts             int64  `json:"ts"`                        // unix seconds
+	RecordingPolicy string `json:"recording_policy,omitempty"`
+	MessageID       string `json:"message_id,omitempty"`
+	MessageSeq      int64  `json:"message_seq,omitempty"`
+	MessageRole     string `json:"message_role,omitempty"`
+	HomeID          string `json:"home_id,omitempty"`
+	TaskID          string `json:"task_id,omitempty"`
+	BindingID       string `json:"binding_id,omitempty"`
+	ResourceClosed  *bool  `json:"resource_closed,omitempty"` // reap settlement, not writer/turn release
+	Outcome         string `json:"outcome,omitempty"`         // structured audit settlement; not agent state
+	Phase           string `json:"phase,omitempty"`           // selection | ledger | render | directory-sync
+	Ts              int64  `json:"ts"`                        // unix seconds
 	// Seq is a strictly increasing sequence number assigned at the single append
 	// path (hq-attention-system): it gives consumers a total order and a durable
 	// cursor position that survives rotation (byte offsets do not). Additive — a
@@ -197,14 +199,20 @@ const defaultCapMB = 20
 // capBytes reads the configured cap (~/.config/gtmux/config.json eventsCapMB),
 // defaulting to 20 MB. A non-positive value disables the log entirely (0 cap).
 func capBytes() int64 {
+	size, _ := configuredCapBytes()
+	return size
+}
+
+func configuredCapBytes() (int64, error) {
 	mb := defaultCapMB
 	var c struct {
 		EventsCapMB *int `json:"eventsCapMB"`
 	}
-	if usercfg.Load(&c) == nil && c.EventsCapMB != nil {
+	err := usercfg.Load(&c)
+	if err == nil && c.EventsCapMB != nil {
 		mb = *c.EventsCapMB
 	}
-	return int64(mb) << 20
+	return int64(mb) << 20, err
 }
 
 // Append writes one record (best-effort — a telemetry log must never fail a
@@ -219,19 +227,46 @@ func Append(r Record) {
 // AppendChecked lets a source reconciler advance only after journal delivery.
 // A disabled journal cannot claim coverage of a conversation's messages.
 func AppendChecked(r Record) error {
-	if capBytes() <= 0 {
-		return fmt.Errorf("event journal is disabled")
-	}
-	return appendChecked(r)
+	return appendWithCap(r, capBytes(), true)
 }
 
 func appendChecked(r Record) error {
-	cap := capBytes()
+	return appendWithCap(r, capBytes(), false)
+}
+
+func appendWithCap(r Record, cap int64, required bool) (err error) {
 	if cap <= 0 {
-		return nil // explicitly disabled
+		// Leave a gap in an existing sequence if a user instruction could not
+		// be recorded. No event file, body or target identity is written.
+		if r.Event == "UserPromptSubmit" && r.Origin == OriginInstruction {
+			if _, err := os.Lstat(seqPath()); !os.IsNotExist(err) && advanceSequence(os.O_RDWR) == 0 {
+				return fmt.Errorf("cannot advance existing sequence while event recording is disabled")
+			}
+		}
+		if required {
+			return fmt.Errorf("event journal is disabled")
+		}
+		return nil
+	}
+	// Sequence allocation and the journal are both fallible. A missed user
+	// instruction invalidates previous coverage even if the next ordinary
+	// record can reuse a perfectly contiguous sequence.
+	if r.Event == "UserPromptSubmit" && r.Origin == OriginInstruction {
+		defer func() {
+			if err != nil {
+				err = errors.Join(err, invalidateRecording())
+			}
+		}()
 	}
 	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
 		return err
+	}
+	// Only these sources can establish an authority boundary for a continuation.
+	if r.Event == "UserPromptSubmit" || r.Event == "Stop" || r.Event == "StopFailure" {
+		r.RecordingPolicy = RecordingPolicy()
+		if size, err := configuredCapBytes(); err != nil || size <= 0 {
+			return fmt.Errorf("event recording policy changed during append")
+		}
 	}
 	// Stamp the attention tier at the source so it is persisted and queryable
 	// without recompute; leave an explicitly-set value untouched (future-proofing).

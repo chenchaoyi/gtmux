@@ -83,7 +83,7 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 		if matter == "" && !workspaceHasConversation(d, c) {
 			continue
 		}
-		observations = append(observations, hqworkspace.Observation{ID: "event-" + strconv.FormatInt(r.Seq, 10), Kind: r.Event, MatterID: matter, MatterRevision: 0, Body: r.Summary, Ref: fmt.Sprintf("events:%d", r.Seq), Conversation: c, OccurredAt: r.Ts})
+		observations = append(observations, hqworkspace.Observation{RecordingPolicy: r.RecordingPolicy, ID: "event-" + strconv.FormatInt(r.Seq, 10), Kind: r.Event, MatterID: matter, MatterRevision: 0, Body: r.Summary, Ref: fmt.Sprintf("events:%d", r.Seq), Conversation: c, OccurredAt: r.Ts})
 	}
 	if gap || workspaceEventSequence() < cursor {
 		observations = append(observations, hqworkspace.Observation{ID: fmt.Sprintf("event-gap-%d-%d", cursor, last), Kind: "source-gap", Ref: fmt.Sprintf("events after %d through %d", cursor, last)})
@@ -100,25 +100,52 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 	if start == 0 {
 		return s.Ingest("relay-start", 0, now, nil, now)
 	}
+	var facts []hqworkspace.Observation
 	for _, r := range workspaceRelayRecords() {
-		if r.CreatedAt < start {
-			continue
-		}
-		id := "relay-" + r.ID
-		if _, ok := d.Reconciliations[id]; ok {
+		inbox := eligibleWorkspaceReply(r)
+		if r.CreatedAt < start && !(inbox && (r.ReplyAt >= start || r.FetchedAt >= start)) {
 			continue
 		}
 		c := hqworkspace.Conversation{Agent: r.Agent, HomeID: r.HomeID, SessionID: r.ThreadID}
-		matter, _ := hqworkspace.MatchObservation(d, c, r.CreatedAt)
-		// Explicit relay reports are already addressed to HQ; unresolved identity
-		// remains unassigned instead of borrowing a task's recycled pane.
-		o := hqworkspace.Observation{ID: id, Kind: "relay-" + r.Kind, MatterID: matter, MatterRevision: 0, Body: r.Body, Ref: "relay:" + r.ID, Conversation: c, OccurredAt: r.CreatedAt}
-		if r.Kind == "report" {
-			o.DriveProof = workspaceRelayDriveProof(r.Body, matter)
+		request, seen := d.Reconciliations["relay-"+r.ID]
+		o := request.Observation
+		if !seen {
+			matter, _ := hqworkspace.MatchObservation(d, c, r.CreatedAt)
+			o = hqworkspace.Observation{ID: "relay-" + r.ID, Kind: "relay-" + r.Kind, MatterID: matter, Body: r.Body, Ref: "relay:" + r.ID, Conversation: c, OccurredAt: r.CreatedAt}
+			if r.Kind == "report" && r.For != "user" {
+				o.DriveProof = workspaceRelayDriveProof(r.Body, matter)
+			}
+			facts = append(facts, o)
 		}
-		if err = s.Ingest("relay-start", start, start, []hqworkspace.Observation{o}, now); err != nil {
-			return err
+		if r.ReplyAt <= 0 || r.ReplyAt > now || !o.Conversation.Same(c) {
+			continue
 		}
+		// Stage IDs cannot collide with request IDs. Never copy the reply body.
+		stage := func(prefix, kind, body string, when int64) {
+			id := prefix + ":" + r.ID
+			if _, exists := d.Reconciliations[id]; !exists {
+				facts = append(facts, hqworkspace.Observation{ID: id, Kind: kind, MatterID: o.MatterID, Conversation: c, Ref: o.Ref, Body: body, OccurredAt: when})
+			}
+		}
+		if !inbox {
+			if r.State == "replied" && r.Agent == "codex" && (r.ReplyAttempt != "" || r.Delivered) {
+				stage("legacy-reply", "relay-legacy-delivery", "Historical reply delivery record. Inspect the original transport receipt; no continuation is eligible.", r.ReplyAt)
+			}
+			continue
+		}
+		stage("inbox", "relay-inbox", "Reply entered the source inbox. HQ must check fetch and next responsibility.", r.ReplyAt)
+		if n := r.Notice; n != nil && n.At >= r.ReplyAt && n.At <= now {
+			switch n.State {
+			case "submitting", "accepted", "unconfirmed":
+				stage("notice-"+n.State, "relay-notice", "Short active-turn inbox hint: "+n.State, n.At)
+			}
+		}
+		if r.FetchedAt >= r.ReplyAt && r.FetchedAt <= now {
+			stage("fetched", "relay-fetched", "Source fetched the reply. HQ must check execution evidence for the authorized step.", r.FetchedAt)
+		}
+	}
+	if len(facts) > 0 {
+		return s.Ingest("relay-start", start, start, facts, now)
 	}
 	return nil
 }
@@ -158,6 +185,9 @@ func scheduleWorkspaceReconciliation() {
 			diag.ReportStoreFailure("hq-reconciliation", err)
 			return
 		}
+		if err := pumpWorkspaceReplies(s, time.Now().Unix()); err != nil {
+			diag.ReportStoreFailure("hq-reply-continuation", err)
+		}
 		next, err := notifyWorkspaceReconciliation(s, now, workspaceReconciliationWakeAt)
 		if err != nil {
 			diag.ReportStoreFailure("hq-reconciliation", err)
@@ -172,7 +202,7 @@ func workspaceReconciliationJSON(s *hqworkspace.Store, now int64) (json.RawMessa
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(map[string]any{"revision": d.Revision, "pending": hqworkspace.ReconciliationQueue(d, now), "assessments": d.Assessments, "goals": workspaceGoalStatuses(d, now), "intent_attempts": d.IntentAttempts})
+	return json.Marshal(map[string]any{"revision": d.Revision, "pending": hqworkspace.ReconciliationQueue(d, now), "assessments": d.Assessments, "goals": workspaceGoalStatuses(d, now), "reply_observations": hqworkspace.ReplyObservations(d), "intent_attempts": d.IntentAttempts})
 }
 
 func notifyWorkspaceReconciliation(s *hqworkspace.Store, now, next int64) (int64, error) {

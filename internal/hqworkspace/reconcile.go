@@ -4,34 +4,37 @@ import (
 	"errors"
 	"reflect"
 	"sort"
+	"strings"
 )
 
 // Observation is immutable input, not permission to execute or change a goal.
 // ID is namespaced by its producer; Ref points to the original durable record.
 type Observation struct {
-	DriveProof     *DriveProof  `json:"drive_proof,omitempty"`
-	ID             string       `json:"id"`
-	Kind           string       `json:"kind"`
-	MatterID       string       `json:"matter_id,omitempty"`
-	MatterRevision uint64       `json:"matter_revision,omitempty"`
-	Body           string       `json:"body,omitempty"`
-	Ref            string       `json:"ref,omitempty"`
-	Conversation   Conversation `json:"conversation,omitempty"`
-	OccurredAt     int64        `json:"occurred_at"`
+	RecordingPolicy string       `json:"recording_policy,omitempty"`
+	DriveProof      *DriveProof  `json:"drive_proof,omitempty"`
+	ID              string       `json:"id"`
+	Kind            string       `json:"kind"`
+	MatterID        string       `json:"matter_id,omitempty"`
+	MatterRevision  uint64       `json:"matter_revision,omitempty"`
+	Body            string       `json:"body,omitempty"`
+	Ref             string       `json:"ref,omitempty"`
+	Conversation    Conversation `json:"conversation,omitempty"`
+	OccurredAt      int64        `json:"occurred_at"`
 }
 
 type Reconciliation struct {
-	GoalPremise   string      `json:"goal_premise,omitempty"`
-	ReminderAt    int64       `json:"reminder_at,omitempty"`
-	ReminderCount uint64      `json:"reminder_count,omitempty"`
-	Observation   Observation `json:"observation"`
-	State         string      `json:"state"` // pending | leased | assessed | deferred | conflict | superseded
-	ReceivedAt    int64       `json:"received_at"`
-	Owner         string      `json:"owner,omitempty"`
-	Generation    uint64      `json:"generation"`
-	LeaseUntil    int64       `json:"lease_until,omitempty"`
-	NextCheck     int64       `json:"next_check,omitempty"`
-	ReceiptID     string      `json:"receipt_id,omitempty"`
+	ReviewedEventCursor *int64      `json:"reviewed_event_cursor,omitempty"`
+	GoalPremise         string      `json:"goal_premise,omitempty"`
+	ReminderAt          int64       `json:"reminder_at,omitempty"`
+	ReminderCount       uint64      `json:"reminder_count,omitempty"`
+	Observation         Observation `json:"observation"`
+	State               string      `json:"state"` // pending | recorded | leased | assessed | deferred | conflict | superseded
+	ReceivedAt          int64       `json:"received_at"`
+	Owner               string      `json:"owner,omitempty"`
+	Generation          uint64      `json:"generation"`
+	LeaseUntil          int64       `json:"lease_until,omitempty"`
+	NextCheck           int64       `json:"next_check,omitempty"`
+	ReceiptID           string      `json:"receipt_id,omitempty"`
 }
 
 type Assessment struct {
@@ -43,18 +46,19 @@ type Assessment struct {
 	Generation     uint64          `json:"generation"`
 	MatterID       string          `json:"matter_id,omitempty"`
 	Revision       uint64          `json:"revision,omitempty"`
-	Decision       string          `json:"decision"` // noted | transition | deferred | conflict | responsibility
+	Decision       string          `json:"decision"` // noted | no-followup | transition | deferred | conflict | responsibility
 	State          string          `json:"state,omitempty"`
 	Reason         string          `json:"reason"`
 	NextCheck      int64           `json:"next_check,omitempty"`
 }
 
 type AssessmentReceipt struct {
-	Assessment     Assessment `json:"assessment"`
-	At             int64      `json:"at"`
-	BeforeRevision uint64     `json:"before_revision,omitempty"`
-	AfterRevision  uint64     `json:"after_revision,omitempty"`
-	QueueState     string     `json:"queue_state"`
+	ReviewedEventCursor *int64     `json:"reviewed_event_cursor,omitempty"`
+	Assessment          Assessment `json:"assessment"`
+	At                  int64      `json:"at"`
+	BeforeRevision      uint64     `json:"before_revision,omitempty"`
+	AfterRevision       uint64     `json:"after_revision,omitempty"`
+	QueueState          string     `json:"queue_state"`
 }
 
 func recordObservation(d *Database, o Observation, at int64) error {
@@ -67,7 +71,11 @@ func recordObservation(d *Database, o Observation, at int64) error {
 		}
 		return nil
 	}
-	d.Reconciliations[o.ID] = Reconciliation{Observation: o, State: "pending", ReceivedAt: at}
+	status := "pending"
+	if o.Kind == "relay-attribution" || o.Kind == "relay-notice" || o.Kind == "relay-legacy-delivery" {
+		status = "recorded"
+	}
+	d.Reconciliations[o.ID] = Reconciliation{Observation: o, State: status, ReceivedAt: at}
 	changed(d, at, "observation", o.MatterID, o.ID, o.Kind)
 	return nil
 }
@@ -88,6 +96,16 @@ func (s *Store) Ingest(source string, expected, cursor int64, observations []Obs
 			}
 		}
 		for _, o := range observations {
+			if o.Kind == "relay-fetched" {
+				key := "inbox:" + strings.TrimPrefix(o.Ref, "relay:")
+				if old, ok := d.Reconciliations[key]; ok && old.State != "superseded" {
+					old.State = "superseded"
+					old.LeaseUntil = 0
+					old.Generation++
+					d.Reconciliations[key] = old
+					changed(d, at, "inbox-fetched", o.MatterID, key, o.ID)
+				}
+			}
 			if o.DriveProof != nil {
 				attachDrive(d, o, at)
 			}
@@ -103,7 +121,7 @@ func (s *Store) Ingest(source string, expected, cursor int64, observations []Obs
 func ReconciliationQueue(d Database, now int64) []Reconciliation {
 	out := []Reconciliation{}
 	for _, q := range d.Reconciliations {
-		if q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > now {
+		if q.State == "recorded" || q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > now {
 			continue
 		}
 		out = append(out, q)
@@ -140,7 +158,14 @@ func (s *Store) ClaimObservation(id, owner string, at int64) (Reconciliation, er
 				return ErrConflict
 			}
 			q.GoalPremise = goalPremise(*d, m, at)
-		} else if q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > at {
+			cursor := d.ObservationCursors["events"]
+			q.ReviewedEventCursor = &cursor
+		} else if q.State == "assessed" {
+			receipt := q.Observation.Kind == "relay-inbox" || q.Observation.Kind == "relay-fetched"
+			if !receipt || replyDischarged(*d, strings.TrimPrefix(q.Observation.Ref, "relay:")) {
+				return ErrConflict
+			}
+		} else if q.State == "recorded" || q.State == "superseded" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > at {
 			return ErrConflict
 		}
 		q.State = "leased"
@@ -217,7 +242,18 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 			return receipt, e
 		}
 		m.Responsibility = a.Responsibility
+		receipt.ReviewedEventCursor = q.ReviewedEventCursor
 		q.State = "pending"
+	case "no-followup":
+		if q.Observation.Kind != "relay-inbox" && q.Observation.Kind != "relay-fetched" {
+			return receipt, errors.New("no-followup requires a reviewed inbox receipt")
+		}
+		for _, attempt := range d.IntentAttempts {
+			if "relay:"+attempt.ReplyID == q.Observation.Ref {
+				return receipt, errors.New("reconcile the receipt's bound intent before closing its matter")
+			}
+		}
+		q.State = "assessed"
 	case "noted":
 		q.State = "assessed"
 	case "conflict":
