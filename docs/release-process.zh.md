@@ -124,8 +124,7 @@ API 中的 job started_at 也可能包含审核等待，必须对照审核和真
 保留成功产物；重跑沿用原 ref 和 SHA。以后若迁移 runner，应对照官方
 [runner 清单](https://github.com/actions/runner-images)，另做原生构建和签名链路验证。
 
-下载运输副本和编译中间产物留在任务存储，只将独有恢复材料和简明证据按原保留规则
-归档。流程改动不会授权删除旧的受保护档案。
+下载运输副本和编译中间产物留在任务存储，只归档独有恢复材料和简明证据。写入正式发行档案前，先做[项目归属和保留预检](design/hq-storage-recovery.zh.md#交付材料)。流程改动不会授权删除旧的受保护档案。
 
 浏览器改动先运行 `node --test internal/server/web/*.test.cjs`，再运行 `npm test --prefix tests/web`。VM 逻辑测试环境必须加载与真实页面相同的共享生成模型；浏览器渲染通过不代表测试环境的依赖完整。`make check` 是核心门禁，不包含这两层独立浏览器检查。
 

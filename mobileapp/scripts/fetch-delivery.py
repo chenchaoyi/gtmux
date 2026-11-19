@@ -19,7 +19,7 @@ import urllib.parse
 import urllib.request
 import zipfile
 
-from delivery_source import DeliveryError, validate_ci
+from delivery_source import DeliveryError, require_external_path, validate_ci
 
 REPO = "chenchaoyi/gtmux"
 API = f"https://api.github.com/repos/{REPO}/"
@@ -117,6 +117,10 @@ def validate(platform, source, run, attempt, artifact_id, metadata, jobs, artifa
 
 
 def private_directory(folder):
+    try:
+        require_external_path(folder)
+    except ValueError as error:
+        raise DeliveryError(str(error)) from error
     info = folder.lstat()
     require(stat.S_ISDIR(info.st_mode) and info.st_uid == os.getuid()
             and info.st_mode & 0o077 == 0, "Use an existing owner-only output directory")

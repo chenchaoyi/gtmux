@@ -15,6 +15,8 @@ import subprocess
 import tempfile
 import zipfile
 
+from delivery_source import require_external_path
+
 _spec = importlib.util.spec_from_file_location('delivery', Path(__file__).with_name('hosted-ios-delivery.py'))
 _delivery = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_delivery)
@@ -198,13 +200,20 @@ def main():
     parser.add_argument('--team', required=True)
     parser.add_argument('--receipt', type=Path, required=True)
     args = parser.parse_args()
+    require_external_path(args.receipt)
+    receipt = require_external_path(args.receipt.parent) / args.receipt.name
     result = verify(args.ipa, args.baseline, args.version, args.build, args.team)
-    args.receipt.parent.mkdir(parents=True, exist_ok=True)
-    temp = args.receipt.with_suffix('.tmp')
-    with open(temp, 'w', opener=lambda path, flags: os.open(path, flags, 0o600)) as stream:
-        json.dump(result, stream, indent=2)
-        stream.write('\n')
-    temp.replace(args.receipt)
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=receipt.parent,
+                                     prefix='.store-package-', delete=False) as stream:
+        temp = Path(stream.name)
+        try:
+            json.dump(result, stream, indent=2)
+            stream.write('\n')
+            stream.close()
+            temp.replace(receipt)
+        finally:
+            temp.unlink(missing_ok=True)
     print('Store package verified before upload: app and both extensions; private receipt saved.', flush=True)
 
 

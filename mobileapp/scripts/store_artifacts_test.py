@@ -155,6 +155,26 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual(calls[0][1]['cwd'], source)
             self.assertEqual(calls[1][0][1], str(renderer / 'frame-shots.mjs'))
 
+    def test_managed_render_and_reuse_paths_fail_before_setup(self):
+        import os
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            managed = root / '.local/share/gtmux'
+            managed.mkdir(parents=True)
+            alias = root / 'alias'
+            alias.symlink_to(managed, target_is_directory=True)
+            with patch.dict(os.environ, {'HOME': str(root)}), patch.object(store, 'complete_checkpoint') as checkpoint, \
+                    patch.object(store.subprocess, 'check_output') as api:
+                for target in (managed / 'appstore', alias / 'appstore'):
+                    with self.subTest(target=target), self.assertRaisesRegex(ValueError, 'outside gtmux'):
+                        store.render(root, root, root, target, 'v1.2.3', 'a' * 40, 'b' * 40)
+                    with self.subTest(target=target), self.assertRaisesRegex(ValueError, 'outside gtmux'):
+                        store.fetch_artifact(target, '123', 'checkpoint', 'owner/repo')
+                checkpoint.assert_not_called()
+                api.assert_not_called()
+            self.assertEqual(list(managed.iterdir()), [])
+
 
 if __name__ == '__main__':
     unittest.main()

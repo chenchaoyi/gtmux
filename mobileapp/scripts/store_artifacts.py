@@ -11,6 +11,8 @@ import struct
 import subprocess
 import tarfile
 
+from delivery_source import open_delivery_output, require_external_path
+
 SCHEMA = 1
 GROUPS = {slot + '-' + lang: names for slot, names in {
     'phone': ('00-demo-entry', '01-radar', '02-terminal-approval', '03-hq', '04-console', '05-usage', '06-servers'),
@@ -26,10 +28,8 @@ def digest(path):
 
 
 def save(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_suffix(path.suffix + '.tmp')
-    temp.write_text(json.dumps(data, indent=2, sort_keys=True) + '\n')
-    temp.replace(path)
+    with open_delivery_output(path.parent, path.name, 'w', atomic=True) as output:
+        output.write(json.dumps(data, indent=2, sort_keys=True) + '\n')
 
 
 def tree_hash(root):
@@ -113,15 +113,17 @@ def load_checkpoint(output, context=None):
 
 
 def checkpoint_group(output, context, key, raw, origin=None):
+    require_external_path(output)
     data = load_checkpoint(output, context)
     records = [png_record(raw / (name + '.png'), raw) for name in GROUPS[key]]
     expected = [2752, 2064] if key.startswith('ipad-') else [1320, 2868]
     if any(r['size'] != expected for r in records) or len({r['sha256'] for r in records}) != len(records):
         raise ValueError('Capture group has wrong orientation/size or duplicate screens')
     for record in records:
-        target = output / 'raw' / key / record['file']
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(raw / record['file'], target)
+        relative = Path('raw') / key / record['file']
+        with (raw / record['file']).open('rb') as source, \
+                open_delivery_output(output, relative, 'wb', atomic=True) as target:
+            shutil.copyfileobj(source, target)
     if origin is not None:
         data.setdefault('origins', {})[key] = origin
     data['groups'][key] = [png_record(output / 'raw' / key / (name + '.png'), output) for name in GROUPS[key]]
@@ -137,6 +139,7 @@ def complete_checkpoint(output, tag, commit):
 
 
 def render(source, renderer, captures, output, tag, commit, render_commit):
+    output = require_external_path(output)
     data = complete_checkpoint(captures, tag, commit)
     if output.exists():
         raise ValueError('Use a fresh render output directory')
@@ -184,6 +187,7 @@ def render(source, renderer, captures, output, tag, commit, render_commit):
 
 
 def fetch_artifact(root, run_id, kind, repository, optional=False):
+    root = require_external_path(root)
     if not re.fullmatch(r"[1-9][0-9]*", str(run_id)) or kind not in ("simulator", "checkpoint"):
         raise ValueError("Invalid reuse run or artifact kind")
     def api(path):
@@ -229,17 +233,20 @@ def main():
     elif args.action == 'verify-run':
         verify_run(json.loads((args.root / 'run.json').read_text()), args.repository, args.workflow_id)
     elif args.action == 'render':
-        render(args.source.resolve(), args.renderer.resolve(), args.captures.resolve(), args.root.resolve(), args.tag, args.commit, args.render_commit)
+        render(args.source.resolve(), args.renderer.resolve(), args.captures.resolve(), args.root, args.tag, args.commit, args.render_commit)
     else:
         manifest_path = args.root / 'build.json'
         if args.action == 'pack-build':
+            root = require_external_path(args.root)
             manifest = build_manifest(args.app, args.tag, args.commit, args.xcode, args.arch)
-            args.root.mkdir(parents=True, exist_ok=True)
-            with tarfile.open(args.root / 'simulator-app.tar.gz', 'w:gz') as archive:
-                archive.add(args.app, arcname='gtmux.app')
-            save(manifest_path, manifest)
+            with open_delivery_output(root, 'build.json', 'w', atomic=True) as receipt:
+                receipt.write(json.dumps(manifest, indent=2, sort_keys=True) + '\n')
+                with open_delivery_output(root, 'simulator-app.tar.gz', 'wb', atomic=True) as target:
+                    with tarfile.open(fileobj=target, mode='w:gz') as archive:
+                        archive.add(args.app, arcname='gtmux.app')
         else:
             if args.action == 'unpack-build':
+                require_external_path(args.root)
                 with tarfile.open(args.root / 'simulator-app.tar.gz') as archive:
                     if any(Path(m.name).is_absolute() or '..' in Path(m.name).parts or not (m.name == 'gtmux.app' or m.name.startswith('gtmux.app/')) for m in archive):
                         raise ValueError('Unexpected path in simulator archive')
