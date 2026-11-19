@@ -7,6 +7,9 @@ LEG-43437c4aac58,L2,Worker,download-worker/test/service.test.mjs,108,test,"GET/H
 LEG-acf4b90662e1,L2,Worker,download-worker/test/service.test.mjs,125,test,stable promotion uses an atomic conditional write,False,legacy-not-retrospectively-reviewed
 LEG-e6e66ce49ff1,L2,Worker,download-worker/test/service.test.mjs,134,test,metadata and artifact publication is bounded,False,legacy-not-retrospectively-reviewed
 MAP-62f498f7d987,L2,reviewed implementation,internal/agentclient/expected_target_test.go,9,reviewed-selector,TestASC004ExpectedHarnessIdentityRefusesBeforePreparingInput,False,ASC-004
+MAP-dbf0d0012d6d,L2,reviewed implementation,internal/agentclient/input_archive_bootstrap_test.go,14,reviewed-selector,TestSPL026ArchiveBootstrapSurvivesProcessExit,False,SPL-026
+MAP-c85de4153666,L2,reviewed implementation,internal/agentclient/input_archive_bootstrap_test.go,32,reviewed-selector,TestSPL026ArchiveBootstrapExitChild,False,SPL-026
+MAP-e96d7a2046b7,L2,reviewed implementation,internal/agentclient/input_archive_bootstrap_test.go,130,reviewed-selector,TestSPL026ArchiveBootstrapPreservesExistingDestination,False,SPL-026
 MAP-65e0cef52929,L2,reviewed implementation,internal/agentclient/input_archive_test.go,18,reviewed-selector,TestSPL023FullPageAndNearFullQueueKeepAdmitting,False,"SPL-023,SPL-024,SPL-025"
 MAP-6ffb7ee7fe3f,L2,reviewed implementation,internal/agentclient/input_archive_test.go,77,reviewed-selector,TestSPL023ArchiveBudgetKeepsSpaceForSettlement,False,"SPL-023,SPL-024,SPL-025"
 MAP-5632014f5e1e,L2,reviewed implementation,internal/agentclient/input_archive_test.go,115,reviewed-selector,TestSPL024DamagedCommitBlocksOnlyUnverifiableIDs,False,"SPL-023,SPL-024,SPL-025"

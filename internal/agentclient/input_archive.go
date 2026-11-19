@@ -2,7 +2,6 @@ package agentclient
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -18,6 +17,7 @@ import (
 
 const (
 	archiveCatalogName  = ".retired-catalog.json"
+	archiveCatalogStage = ".retired-catalog.stage"
 	archiveCatalogLimit = 192 << 10
 	archivePageBytes    = 256 << 10
 	archiveBudget       = 64 << 20
@@ -133,18 +133,40 @@ func (q *inputQueue) writeArchiveCatalog(catalog inputArchiveCatalog, replace bo
 	if err != nil || len(body) > archiveCatalogLimit {
 		return ErrInputArchiveIntegrity
 	}
-	if !replace {
-		return q.publishDocument(archiveCatalogName, body)
-	}
-	tmp := ".input-archive-stage-" + rand.Text()
-	defer q.remove(tmp)
-	if err := q.createSynced(tmp, body); err != nil {
+	// The spool lease lets a writer discard a leftover private staging file.
+	// A single rename publishes the catalogue without a hard-link interval.
+	if err := q.discardArchiveStage(); err != nil {
 		return err
 	}
-	if err := unix.Renameat(q.fd(), tmp, q.fd(), archiveCatalogName); err != nil {
+	defer q.remove(archiveCatalogStage)
+	if err := q.createSynced(archiveCatalogStage, body); err != nil {
+		return err
+	}
+	if replace {
+		err = unix.Renameat(q.fd(), archiveCatalogStage, q.fd(), archiveCatalogName)
+	} else {
+		err = q.ops.renameNew(q.fd(), archiveCatalogStage, archiveCatalogName)
+	}
+	if err != nil {
 		return err
 	}
 	return q.ops.syncDir(q.dir)
+}
+
+func (q *inputQueue) discardArchiveStage() error {
+	f, err := q.open(archiveCatalogStage, unix.O_RDONLY)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	_, readErr := readOpenInputBytes(f, archiveCatalogLimit, true)
+	if err := errors.Join(readErr, f.Close()); err != nil {
+		// Preserve a file whose ownership or link count is not trustworthy.
+		return errors.Join(ErrInputArchiveIntegrity, err)
+	}
+	return q.remove(archiveCatalogStage)
 }
 
 func archivePageName(prefix string, n int) string {

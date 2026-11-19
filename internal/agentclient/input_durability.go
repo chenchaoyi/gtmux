@@ -16,6 +16,7 @@ type inputDurability struct {
 	syncParent func(*os.File) error
 	link       func(int, string, int, string, int) error
 	unlink     func(int, string, int) error
+	renameNew  func(int, string, string) error
 }
 
 var syncInput = inputDurability{
@@ -24,6 +25,7 @@ var syncInput = inputDurability{
 	syncParent: (*os.File).Sync,
 	link:       unix.Linkat,
 	unlink:     unix.Unlinkat,
+	renameNew:  renameNewInputFile,
 }
 
 // The held directory binds I/O to the directory checked by the input store.

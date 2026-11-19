@@ -4142,5 +4142,15 @@
     "selectors": [
       "TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair"
     ]
+  },
+  "internal/agentclient/input_archive_bootstrap_test.go": {
+    "cases": [
+      "SPL-026"
+    ],
+    "selectors": [
+      "TestSPL026ArchiveBootstrapSurvivesProcessExit",
+      "TestSPL026ArchiveBootstrapExitChild",
+      "TestSPL026ArchiveBootstrapPreservesExistingDestination"
+    ]
   }
 }

@@ -97,16 +97,16 @@ func TestSPL017PublicationFaultsNeverExposePendingBeforeIndex(t *testing.T) {
 			ops := syncInput
 			switch kind {
 			case "fresh parent":
-				ops.syncParent = func(*os.File) error { return injectedInputFault }
+				ops.syncParent = func(*os.File) error { return errInjectedInputFault }
 			case "existing index file":
-				ops.syncFile = func(*os.File) error { return injectedInputFault }
+				ops.syncFile = func(*os.File) error { return errInjectedInputFault }
 			case "existing index link":
-				ops.link = func(int, string, int, string, int) error { return injectedInputFault }
+				ops.link = func(int, string, int, string, int) error { return errInjectedInputFault }
 			default:
-				ops.syncDir = func(*os.File) error { return injectedInputFault }
+				ops.syncDir = func(*os.File) error { return errInjectedInputFault }
 			}
 			_, err = plan.publish(now, ops)
-			if !errors.Is(err, injectedInputFault) {
+			if !errors.Is(err, errInjectedInputFault) {
 				t.Fatalf("fault was not reached: %v", err)
 			}
 			dir := InputDir()

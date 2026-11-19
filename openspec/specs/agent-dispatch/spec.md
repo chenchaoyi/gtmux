@@ -1075,7 +1075,10 @@ a bounded owner-only index, and a subsequent send with that ID SHALL NOT acquire
 new submission authority, including through raw tmux fallback. The index SHALL pool
 page capacity across prefixes and reserve the final capacity for already admitted
 records. An independently committed catalogue SHALL bind page lengths and content
-digests before reclamation. An unavailable or mismatched committed page SHALL
+digests before reclamation. First catalogue publication SHALL use an atomic
+no-replace rename after synchronizing staged content. A leftover private stage
+from an interrupted writer may be cleared under the spool lease.
+An unavailable or mismatched committed page SHALL
 prevent a negative lookup within its prefix. Healthy prefixes SHALL remain usable
 when the global catalogue and available active capacity allow. Doctor SHALL
 report capacity, integrity and pending recovery without modifying the archive.

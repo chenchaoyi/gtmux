@@ -144,7 +144,7 @@ func TestSPL021InterruptedRetirementReconcilesExactTail(t *testing.T) {
 			removedPayload, removedReceipt := false, false
 			ops.unlink = func(fd int, name string, flags int) error {
 				if (step == "index unlink" && name == index) || (step == "receipt unlink" && name == receipt) {
-					return injectedInputFault
+					return errInjectedInputFault
 				}
 				err := syncInput.unlink(fd, name, flags)
 				removedPayload = removedPayload || name == claimed && err == nil
@@ -153,7 +153,7 @@ func TestSPL021InterruptedRetirementReconcilesExactTail(t *testing.T) {
 			}
 			ops.syncDir = func(f *os.File) error {
 				if (step == "receipt barrier" && removedReceipt) || (step == "payload barrier" && removedPayload) {
-					return injectedInputFault
+					return errInjectedInputFault
 				}
 				return syncInput.syncDir(f)
 			}
@@ -163,7 +163,7 @@ func TestSPL021InterruptedRetirementReconcilesExactTail(t *testing.T) {
 			}
 			removed, err := q.reconcileInput(index, age)
 			q.dir.Close()
-			if removed || !errors.Is(err, injectedInputFault) {
+			if removed || !errors.Is(err, errInjectedInputFault) {
 				t.Fatalf("fault did not interrupt retirement: %v %v", removed, err)
 			}
 			if step == "receipt unlink" {

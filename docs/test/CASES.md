@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1354 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1355 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2528 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2531 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 148 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -257,6 +257,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQP1-006 | Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox. |
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
+| SPL-026 | A stale temporary name can be recovered under the lease. The published record is a single-link file; earlier evidence still protects both native and raw routing. A verified new stable ID can publish and settle. A competing destination is preserved. |
 | SPL-023 | Overflow from the shared budget frees active slots, verified old keys never regain authority, and exhausted total budget and warning headroom are explicit. |
 | SPL-024 | Native and raw checks retain unknown on affected IDs; verified unrelated admissions remain available where their prefix and the catalogue are intact. Recovery preserves committed bytes and unrelated orphan records. |
 | SPL-025 | Capacity and integrity have distinct actionable states and persistent evidence is retained. |

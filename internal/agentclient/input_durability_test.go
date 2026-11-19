@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var injectedInputFault = errors.New("injected input persistence fault")
+var errInjectedInputFault = errors.New("injected input persistence fault")
 
 func prepareDurabilityFixture(t *testing.T) (Request, Attachment, string) {
 	t.Helper()
@@ -47,14 +47,14 @@ func TestSPL011ClaimFlushPrecedesInputAuthority(t *testing.T) {
 			ops.syncFile = func(f *os.File) error {
 				trace = append(trace, "file")
 				if stage == "file" {
-					return injectedInputFault
+					return errInjectedInputFault
 				}
 				return syncInput.syncFile(f)
 			}
 			ops.syncDir = func(f *os.File) error {
 				trace = append(trace, "directory")
 				if stage == "directory" {
-					return injectedInputFault
+					return errInjectedInputFault
 				}
 				return syncInput.syncDir(f)
 			}
@@ -70,7 +70,7 @@ func TestSPL011ClaimFlushPrecedesInputAuthority(t *testing.T) {
 				assertInputName(t, r, ".pending.json", false)
 				return
 			}
-			if !errors.Is(err, injectedInputFault) || len(trace) == 0 || strings.Contains(strings.Join(trace, ","), "unlink") {
+			if !errors.Is(err, errInjectedInputFault) || len(trace) == 0 || strings.Contains(strings.Join(trace, ","), "unlink") {
 				t.Fatalf("failed claim granted authority: %v %v", trace, err)
 			}
 			assertInputName(t, r, ".claimed.json", true)
@@ -94,21 +94,21 @@ func TestSPL011ReceiptFlushPrecedesAckAndClaimCleanup(t *testing.T) {
 			ops.syncFile = func(f *os.File) error {
 				trace = append(trace, "file")
 				if stage == "file" {
-					return injectedInputFault
+					return errInjectedInputFault
 				}
 				return syncInput.syncFile(f)
 			}
 			ops.link = func(src int, tmp string, dst int, name string, flags int) error {
 				trace = append(trace, "link")
 				if stage == "link" {
-					return injectedInputFault
+					return errInjectedInputFault
 				}
 				return syncInput.link(src, tmp, dst, name, flags)
 			}
 			ops.syncDir = func(f *os.File) error {
 				trace = append(trace, "directory")
 				if stage == "directory" {
-					return injectedInputFault
+					return errInjectedInputFault
 				}
 				return syncInput.syncDir(f)
 			}
@@ -116,7 +116,7 @@ func TestSPL011ReceiptFlushPrecedesAckAndClaimCleanup(t *testing.T) {
 				if strings.HasSuffix(name, ".claimed.json") {
 					trace = append(trace, "claim cleanup")
 					if stage == "cleanup" {
-						return injectedInputFault
+						return errInjectedInputFault
 					}
 				}
 				return syncInput.unlink(fd, name, flags)
@@ -126,7 +126,7 @@ func TestSPL011ReceiptFlushPrecedesAckAndClaimCleanup(t *testing.T) {
 				if err != nil || strings.Join(trace, ",") != "file,link,directory,claim cleanup" {
 					t.Fatalf("committed receipt changed on cleanup error: %v %v", trace, err)
 				}
-			} else if !errors.Is(err, injectedInputFault) || strings.Contains(strings.Join(trace, ","), "claim cleanup") {
+			} else if !errors.Is(err, errInjectedInputFault) || strings.Contains(strings.Join(trace, ","), "claim cleanup") {
 				t.Fatalf("cleanup outran receipt commitment: %v %v", trace, err)
 			}
 			assertInputName(t, r, ".claimed.json", true)
@@ -229,7 +229,7 @@ func TestSPL012RetirementKeepsReceiptUntilPayloadRemovalIsDurable(t *testing.T) 
 	ops.syncDir = func(f *os.File) error {
 		calls++
 		if calls == 2 {
-			return injectedInputFault
+			return errInjectedInputFault
 		}
 		return syncInput.syncDir(f)
 	}
@@ -238,7 +238,7 @@ func TestSPL012RetirementKeepsReceiptUntilPayloadRemovalIsDurable(t *testing.T) 
 		t.Fatal(err)
 	}
 	defer q.dir.Close()
-	if removed, err := q.reconcileInput(index, time.Now().Add(48*time.Hour)); removed || !errors.Is(err, injectedInputFault) {
+	if removed, err := q.reconcileInput(index, time.Now().Add(48*time.Hour)); removed || !errors.Is(err, errInjectedInputFault) {
 		t.Fatalf("did not stop before retiring receipt: %t %v", removed, err)
 	}
 	assertInputName(t, r, ".receipt.json", true)
@@ -258,7 +258,7 @@ func TestSPL017IndexDeletionFailureKeepsReceipt(t *testing.T) {
 	ops := syncInput
 	ops.unlink = func(fd int, name string, flags int) error {
 		if name == index {
-			return injectedInputFault
+			return errInjectedInputFault
 		}
 		return syncInput.unlink(fd, name, flags)
 	}
@@ -267,7 +267,7 @@ func TestSPL017IndexDeletionFailureKeepsReceipt(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer q.dir.Close()
-	if removed, err := q.reconcileInput(index, time.Now().Add(48*time.Hour)); removed || !errors.Is(err, injectedInputFault) {
+	if removed, err := q.reconcileInput(index, time.Now().Add(48*time.Hour)); removed || !errors.Is(err, errInjectedInputFault) {
 		t.Fatalf("unexpected retirement: %t %v", removed, err)
 	}
 	assertInputName(t, r, ".receipt.json", true)
