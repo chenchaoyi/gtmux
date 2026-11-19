@@ -39,7 +39,7 @@ func (s *Store) Start(id, title, messageID, body string, at int64) (Matter, erro
 		saveMatter(d, out, at)
 		out = d.Matters[id]
 		changed(d, at, "instruction", id, messageID, "")
-		d.Messages[messageID] = Message{EventCursor: s.instructionCursor, ID: messageID, MatterID: id, Speaker: "user", Kind: "instruction", Subject: title, Body: body, At: at, Seq: d.Revision, Delivery: "pending"}
+		d.Messages[messageID] = Message{RecordingPolicy: s.recordingPolicy, EventCursor: s.instructionCursor, ID: messageID, MatterID: id, Speaker: "user", Kind: "instruction", Subject: title, Body: body, At: at, Seq: d.Revision, Delivery: "pending"}
 		return recordObservation(d, Observation{ID: "message-" + messageID, Kind: "instruction", MatterID: id, MatterRevision: out.Revision, Body: body, Ref: messageID, OccurredAt: at}, at)
 	})
 	return out, err
@@ -91,7 +91,7 @@ func (s *Store) SubmitReplyVersion(id, matter, body, replyTo string, requestRevi
 			m.UserInput = &q
 			saveMatter(d, m, at)
 		}
-		out = Message{EventCursor: s.instructionCursor, RequestRevision: requestRevision, ID: id, MatterID: matter, Speaker: "user", Kind: "instruction", Body: body, At: at, Seq: d.Revision, Delivery: "pending", ReplyTo: replyTo}
+		out = Message{RecordingPolicy: s.recordingPolicy, EventCursor: s.instructionCursor, RequestRevision: requestRevision, ID: id, MatterID: matter, Speaker: "user", Kind: "instruction", Body: body, At: at, Seq: d.Revision, Delivery: "pending", ReplyTo: replyTo}
 		d.Messages[id] = out
 		var revision uint64
 		if matter != "" {

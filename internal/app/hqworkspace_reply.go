@@ -62,6 +62,7 @@ func workspaceMessageHistoryHold(d hqworkspace.Database, a hqworkspace.IntentAtt
 		return "HQ must verify the original workspace instruction"
 	}
 	floor := int64(0)
+	policy := m.RecordingPolicy
 	if m.EventCursor != nil {
 		floor = *m.EventCursor
 	} else {
@@ -75,10 +76,17 @@ func workspaceMessageHistoryHold(d hqworkspace.Database, a hqworkspace.IntentAtt
 			seq, e := strconv.ParseInt(strings.TrimPrefix(o.Ref, "events:"), 10, 64)
 			if e == nil && seq > floor && o.ID == "event-"+strconv.FormatInt(seq, 10) {
 				floor = seq
+				policy = o.RecordingPolicy
 			}
 		}
 	}
+	if floor <= 0 {
+		return "HQ must verify a fresh user instruction with an initialized event journal"
+	}
 	rows, high, err := events.VerifiedSince(floor)
+	if !events.RecordingPolicyCovers(policy, m.At) {
+		return "HQ must verify a fresh user instruction after the recording policy changed"
+	}
 	if err != nil || high < a.EventCursor {
 		return "HQ must reconcile the incomplete or unreadable target event history"
 	}
@@ -200,6 +208,9 @@ func workspaceVerifiedUserEvent(ref string) (*hqworkspace.UserEvent, error) {
 	for _, r := range rows {
 		if r.Seq != seq {
 			continue
+		}
+		if !events.RecordingPolicyCovers(r.RecordingPolicy, r.Ts) {
+			return nil, errors.New("HQ must verify a fresh user instruction after the recording policy changed")
 		}
 		if r.Event != "UserPromptSubmit" || r.Origin != events.OriginInstruction || r.HomeID == "" || r.AgentSession == "" || r.Ts <= 0 || r.Actor != "" && r.Actor != "user" || events.AuthorOf(rows)[seq] != "" {
 			break

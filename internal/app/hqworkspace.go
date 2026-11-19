@@ -244,11 +244,12 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 	var err error
 	var result any = map[string]bool{"ok": true}
 	if a.Op == "create" || a.Op == "send" {
+		policy := events.RecordingPolicy()
 		seq, e := events.VerifiedSequence()
 		if e != nil {
 			seq = -1
 		}
-		s = s.WithInstructionCursor(seq)
+		s = s.WithInstructionCursor(seq, policy)
 	}
 	switch a.Op {
 	case "create":

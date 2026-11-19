@@ -62,13 +62,13 @@ func TestReviewedReplyAuthorityAndOrder(t *testing.T) {
 				persistReplyEvents(t, source.rows...)
 			} else {
 				seedReplyJournal(t)
-				_, err = s.Submit("user-scope", matter, "Original user assignment", 101)
+				_, err = s.WithInstructionCursor(events.CurrentSeq(), events.RecordingPolicy()).Submit("user-scope", matter, "Original user assignment", 101)
 				must(err)
 			}
 			if scenario == "cleared-answer" || scenario == "unresolved-answer" {
 				q := hqworkspace.UserInput{ID: "user-choice", Kind: "decision", Prompt: "Run fixture?", Why: "User decision", Impact: "Fixture output"}
 				must(s.RequestInput(matter, q, current().Revision, 102))
-				_, err = s.SubmitReply("chosen-answer", matter, "Proceed with the verified fixture", q.ID, 103)
+				_, err = s.WithInstructionCursor(events.CurrentSeq(), events.RecordingPolicy()).SubmitReply("chosen-answer", matter, "Proceed with the verified fixture", q.ID, 103)
 				must(err)
 				ref = "message:chosen-answer"
 				if scenario == "cleared-answer" {

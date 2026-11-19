@@ -21,14 +21,6 @@ func VerifiedSequence() (int64, error) {
 		return 0, errors.New("event journal disabled")
 	}
 	info, err := os.Stat(seqPath())
-	if errors.Is(err, os.ErrNotExist) {
-		for _, p := range []string{rotatedPath(), Path()} {
-			if _, e := os.Stat(p); !errors.Is(e, os.ErrNotExist) {
-				return 0, errors.New("event journal watermark unavailable")
-			}
-		}
-		return 0, nil
-	}
 	if err != nil {
 		return 0, err
 	}

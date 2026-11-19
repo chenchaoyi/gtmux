@@ -47,7 +47,15 @@ func TestWorkspaceMessageChecksOriginalTargetHistory(t *testing.T) {
 			add := func(kind, session string, at int64) {
 				must(events.AppendChecked(events.Record{Ts: at, Event: kind, Origin: events.OriginInstruction, HomeID: c.HomeID, Agent: "Codex", AgentSession: session, Summary: "Fixture target instruction"}))
 			}
-			if scenario != "no-journal" {
+			if strings.HasPrefix(scenario, "legacy-") {
+				other := c
+				other.SessionID = "earlier-source"
+				n, err := s.Register("previous", "Earlier work", "Earlier scope", "open", hqworkspace.Origin{Kind: "task", Ref: "task:earlier"}, 90)
+				must(err)
+				must(s.Associate(n.ID, hqworkspace.Association{ID: "earlier-worker", Role: "execution", Conversation: other, From: 90}, n.Revision, 91))
+				add("Stop", other.SessionID, 96)
+				must(ingestWorkspaceObservations(s, 97))
+			} else if scenario != "no-journal" {
 				add("Stop", c.SessionID, 96)
 			}
 			send := func(id string, at int64) {

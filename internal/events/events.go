@@ -27,16 +27,17 @@ import (
 
 // Record is one logged lifecycle event (the stable additive contract).
 type Record struct {
-	MessageID      string `json:"message_id,omitempty"`
-	MessageSeq     int64  `json:"message_seq,omitempty"`
-	MessageRole    string `json:"message_role,omitempty"`
-	HomeID         string `json:"home_id,omitempty"`
-	TaskID         string `json:"task_id,omitempty"`
-	BindingID      string `json:"binding_id,omitempty"`
-	ResourceClosed *bool  `json:"resource_closed,omitempty"` // reap settlement, not writer/turn release
-	Outcome        string `json:"outcome,omitempty"`         // structured audit settlement; not agent state
-	Phase          string `json:"phase,omitempty"`           // selection | ledger | render | directory-sync
-	Ts             int64  `json:"ts"`                        // unix seconds
+	RecordingPolicy string `json:"recording_policy,omitempty"`
+	MessageID       string `json:"message_id,omitempty"`
+	MessageSeq      int64  `json:"message_seq,omitempty"`
+	MessageRole     string `json:"message_role,omitempty"`
+	HomeID          string `json:"home_id,omitempty"`
+	TaskID          string `json:"task_id,omitempty"`
+	BindingID       string `json:"binding_id,omitempty"`
+	ResourceClosed  *bool  `json:"resource_closed,omitempty"` // reap settlement, not writer/turn release
+	Outcome         string `json:"outcome,omitempty"`         // structured audit settlement; not agent state
+	Phase           string `json:"phase,omitempty"`           // selection | ledger | render | directory-sync
+	Ts              int64  `json:"ts"`                        // unix seconds
 	// Seq is a strictly increasing sequence number assigned at the single append
 	// path (hq-attention-system): it gives consumers a total order and a durable
 	// cursor position that survives rotation (byte offsets do not). Additive — a
@@ -237,7 +238,9 @@ func appendWithCap(r Record, cap int64, required bool) error {
 		// Leave a gap in an existing sequence if a user instruction could not
 		// be recorded. No event file, body or target identity is written.
 		if r.Event == "UserPromptSubmit" && r.Origin == OriginInstruction {
-			advanceSequence(os.O_RDWR)
+			if _, err := os.Lstat(seqPath()); !os.IsNotExist(err) && advanceSequence(os.O_RDWR) == 0 {
+				return fmt.Errorf("cannot advance existing sequence while event recording is disabled")
+			}
 		}
 		if required {
 			return fmt.Errorf("event journal is disabled")
@@ -246,6 +249,13 @@ func appendWithCap(r Record, cap int64, required bool) error {
 	}
 	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
 		return err
+	}
+	// Only these sources can establish an authority boundary for a continuation.
+	if r.Event == "UserPromptSubmit" || r.Event == "Stop" || r.Event == "StopFailure" {
+		r.RecordingPolicy = RecordingPolicy()
+		if size, err := configuredCapBytes(); err != nil || size <= 0 {
+			return fmt.Errorf("event recording policy changed during append")
+		}
 	}
 	// Stamp the attention tier at the source so it is persisted and queryable
 	// without recompute; leave an explicitly-set value untouched (future-proofing).

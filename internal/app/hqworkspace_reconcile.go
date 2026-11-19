@@ -83,7 +83,7 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 		if matter == "" && !workspaceHasConversation(d, c) {
 			continue
 		}
-		observations = append(observations, hqworkspace.Observation{ID: "event-" + strconv.FormatInt(r.Seq, 10), Kind: r.Event, MatterID: matter, MatterRevision: 0, Body: r.Summary, Ref: fmt.Sprintf("events:%d", r.Seq), Conversation: c, OccurredAt: r.Ts})
+		observations = append(observations, hqworkspace.Observation{RecordingPolicy: r.RecordingPolicy, ID: "event-" + strconv.FormatInt(r.Seq, 10), Kind: r.Event, MatterID: matter, MatterRevision: 0, Body: r.Summary, Ref: fmt.Sprintf("events:%d", r.Seq), Conversation: c, OccurredAt: r.Ts})
 	}
 	if gap || workspaceEventSequence() < cursor {
 		observations = append(observations, hqworkspace.Observation{ID: fmt.Sprintf("event-gap-%d-%d", cursor, last), Kind: "source-gap", Ref: fmt.Sprintf("events after %d through %d", cursor, last)})

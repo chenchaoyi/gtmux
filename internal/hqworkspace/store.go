@@ -17,13 +17,15 @@ import (
 type Store struct {
 	dir               string
 	instructionCursor *int64
+	recordingPolicy   string
 }
 
 // WithInstructionCursor attaches the original journal boundary only to a newly
 // written user message. Idempotent retries return its first persisted boundary.
-func (s *Store) WithInstructionCursor(seq int64) *Store {
+func (s *Store) WithInstructionCursor(seq int64, recordingPolicy string) *Store {
 	copy := *s
 	copy.instructionCursor = &seq
+	copy.recordingPolicy = recordingPolicy
 	return &copy
 }
 

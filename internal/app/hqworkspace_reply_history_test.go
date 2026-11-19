@@ -65,7 +65,7 @@ func TestReplyReconcilesSavedHistory(t *testing.T) {
 			if scenario == "legacy-event" || late {
 				authority = "user:instruction"
 			} else {
-				_, e = s.Submit("original-user", matter, "Complete the fixture", 101)
+				_, e = s.WithInstructionCursor(events.CurrentSeq(), events.RecordingPolicy()).Submit("original-user", matter, "Complete the fixture", 101)
 				must(e)
 			}
 			must(ingestWorkspaceObservations(s, 110))
@@ -98,7 +98,7 @@ func TestReplyReconcilesSavedHistory(t *testing.T) {
 			if strings.Contains(scenario, "answer") || scenario == "ordinary-uncertain" {
 				question := hqworkspace.UserInput{ID: "decision", Kind: "decision", Prompt: "Proceed with the original task?", Why: "User confirmation", Impact: "Execute the fixture"}
 				must(s.RequestInput(matter, question, current().Revision, 113))
-				_, e = s.SubmitReply("confirmed", matter, "Continue the same action", question.ID, 114)
+				_, e = s.WithInstructionCursor(events.CurrentSeq(), events.RecordingPolicy()).SubmitReply("confirmed", matter, "Continue the same action", question.ID, 114)
 				must(e)
 				must(s.ClearInput(matter, question.ID, "confirmed-choice", "Verified same step", current().Revision, 115))
 				if scenario != "unreviewed-answer" {

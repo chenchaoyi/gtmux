@@ -83,6 +83,7 @@ type Association struct {
 }
 
 type Message struct {
+	RecordingPolicy string `json:"recording_policy,omitempty"`
 	EventCursor     *int64 `json:"event_cursor,omitempty"`
 	TargetRevision  uint64 `json:"target_revision,omitempty"`
 	Projection      string `json:"projection,omitempty"`

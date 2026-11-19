@@ -154,7 +154,7 @@ func TestReplyContinuationDispatchAndEvidence(t *testing.T) {
 			}
 			scan()
 			m := func() hqworkspace.Matter { return phase1CursorDatabase(t, s).Matters[matter] }
-			if _, e = s.Submit("source-scope", matter, "original user instruction", 101); e != nil {
+			if _, e = s.WithInstructionCursor(events.CurrentSeq(), events.RecordingPolicy()).Submit("source-scope", matter, "original user instruction", 101); e != nil {
 				t.Fatal(e)
 			}
 			if e = s.ScanGoals(clock(), 64); e != nil {
@@ -222,7 +222,7 @@ func TestReplyContinuationDispatchAndEvidence(t *testing.T) {
 				source.latest = 1
 				source.rows = []events.Record{{Seq: 1, Ts: clock(), Event: "UserPromptSubmit", Origin: events.OriginInstruction, AgentSession: c.SessionID, HomeID: c.HomeID}}
 			case "new-instruction":
-				_, e = s.Submit("new-scope", matter, "changed instruction", clock())
+				_, e = s.WithInstructionCursor(events.CurrentSeq(), events.RecordingPolicy()).Submit("new-scope", matter, "changed instruction", clock())
 			}
 			if e != nil {
 				t.Fatal(e)

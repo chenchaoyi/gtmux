@@ -10,15 +10,16 @@ import (
 // Observation is immutable input, not permission to execute or change a goal.
 // ID is namespaced by its producer; Ref points to the original durable record.
 type Observation struct {
-	DriveProof     *DriveProof  `json:"drive_proof,omitempty"`
-	ID             string       `json:"id"`
-	Kind           string       `json:"kind"`
-	MatterID       string       `json:"matter_id,omitempty"`
-	MatterRevision uint64       `json:"matter_revision,omitempty"`
-	Body           string       `json:"body,omitempty"`
-	Ref            string       `json:"ref,omitempty"`
-	Conversation   Conversation `json:"conversation,omitempty"`
-	OccurredAt     int64        `json:"occurred_at"`
+	RecordingPolicy string       `json:"recording_policy,omitempty"`
+	DriveProof      *DriveProof  `json:"drive_proof,omitempty"`
+	ID              string       `json:"id"`
+	Kind            string       `json:"kind"`
+	MatterID        string       `json:"matter_id,omitempty"`
+	MatterRevision  uint64       `json:"matter_revision,omitempty"`
+	Body            string       `json:"body,omitempty"`
+	Ref             string       `json:"ref,omitempty"`
+	Conversation    Conversation `json:"conversation,omitempty"`
+	OccurredAt      int64        `json:"occurred_at"`
 }
 
 type Reconciliation struct {

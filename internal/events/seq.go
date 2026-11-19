@@ -1,6 +1,7 @@
 package events
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -41,15 +42,21 @@ func advanceSequence(flags int) (seq int64) {
 	defer syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
 
 	buf := make([]byte, 32)
-	n, _ := f.ReadAt(buf, 0)
+	n, readErr := f.ReadAt(buf, 0)
+	if readErr != nil && readErr != io.EOF {
+		return 0
+	}
 	cur, parseErr := strconv.ParseInt(strings.TrimSpace(string(buf[:n])), 10, 64)
-	if flags&os.O_CREATE == 0 && (parseErr != nil || cur <= 0) {
+	if (n > 0 || flags&os.O_CREATE == 0) && (parseErr != nil || cur <= 0) {
 		return 0
 	}
 	next := cur + 1
 	// Rewrite from the start (the value only grows, so length is non-decreasing).
 	b := []byte(strconv.FormatInt(next, 10))
 	if n, err := f.WriteAt(b, 0); err != nil || n != len(b) {
+		return 0
+	}
+	if flags&os.O_CREATE == 0 && f.Sync() != nil {
 		return 0
 	}
 	return next

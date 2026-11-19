@@ -3886,5 +3886,13 @@
     "selectors": [
       "TestReplyHistoryUsesCommittedOrderAndActiveJournal"
     ]
+  },
+  "internal/app/hqworkspace_reply_baseline_test.go": {
+    "cases": [
+      "HRC-011"
+    ],
+    "selectors": [
+      "TestReplyRequiresProvenRecordingBaseline"
+    ]
   }
 }
