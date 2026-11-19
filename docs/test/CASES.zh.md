@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1352 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1354 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2522 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2528 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 148 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -257,6 +257,9 @@
 | HQP1-006 | Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox. |
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
+| SPL-023 | Overflow from the shared budget frees active slots, verified old keys never regain authority, and exhausted total budget and warning headroom are explicit. |
+| SPL-024 | Native and raw checks retain unknown on affected IDs; verified unrelated admissions remain available where their prefix and the catalogue are intact. Recovery preserves committed bytes and unrelated orphan records. |
+| SPL-025 | Capacity and integrity have distinct actionable states and persistent evidence is retained. |
 | SPL-008 | Before-submit refusal does not make an Enter call. A potentially attempted send is unknown with its original attempt count. Draft holds retain their evidence prefixes. Success, native precedence and the legacy bool wrapper are retained. |
 | SPL-009 | Failures exit nonzero or fail the HTTP request. Stable codes identify the failure and optional submission status; the HTTP error carries the caller ID and no draft, payload, capture or success receipt. Unknown is not success-cached. Successful requests keep their receipt and caching. A native question is reported only with evidence. |
 | SPL-010 | Only the matching length is accepted. Invalid length and over-limit documents never select the active layout or a legacy fallback. |

@@ -48,6 +48,11 @@ LEG-2d8c15087dfd,L1,Go core / CLI / server,internal/agentclient/delivery_test.go
 LEG-f2eb89500de5,L1,Go core / CLI / server,internal/agentclient/delivery_test.go,93,Test,TestDSTFrameKeepsDraftAndDropsOnlyComposerChrome,False,legacy-not-retrospectively-reviewed
 LEG-80c9ca4caf84,L1,Go core / CLI / server,internal/agentclient/delivery_test.go,101,Test,TestDeliveryIDCannotRetargetAfterSwitchOrRestart,False,legacy-not-retrospectively-reviewed
 MAP-62f498f7d987,L2,reviewed implementation,internal/agentclient/expected_target_test.go,9,reviewed-selector,TestASC004ExpectedHarnessIdentityRefusesBeforePreparingInput,False,ASC-004
+MAP-65e0cef52929,L2,reviewed implementation,internal/agentclient/input_archive_test.go,18,reviewed-selector,TestSPL023FullPageAndNearFullQueueKeepAdmitting,False,"SPL-023,SPL-024,SPL-025"
+MAP-6ffb7ee7fe3f,L2,reviewed implementation,internal/agentclient/input_archive_test.go,77,reviewed-selector,TestSPL023ArchiveBudgetKeepsSpaceForSettlement,False,"SPL-023,SPL-024,SPL-025"
+MAP-5632014f5e1e,L2,reviewed implementation,internal/agentclient/input_archive_test.go,115,reviewed-selector,TestSPL024DamagedCommitBlocksOnlyUnverifiableIDs,False,"SPL-023,SPL-024,SPL-025"
+MAP-2c2e0f0b5970,L2,reviewed implementation,internal/agentclient/input_archive_test.go,225,reviewed-selector,TestSPL024UncommittedPageSuffixReconcilesToVerifiedPrefix,False,"SPL-023,SPL-024,SPL-025"
+MAP-caa62e90d8e6,L2,reviewed implementation,internal/agentclient/input_archive_test.go,178,reviewed-selector,TestSPL024ArchiveReopenChild,False,"SPL-023,SPL-024,SPL-025"
 MAP-8379a7b73c9f,L2,reviewed implementation,internal/agentclient/input_durability_test.go,41,reviewed-selector,TestSPL011ClaimFlushPrecedesInputAuthority,False,"SPL-011,SPL-012,SPL-017"
 MAP-a469aecfcb37,L2,reviewed implementation,internal/agentclient/input_durability_test.go,85,reviewed-selector,TestSPL011ReceiptFlushPrecedesAckAndClaimCleanup,False,"SPL-011,SPL-012,SPL-017"
 MAP-1173f4b26dc3,L2,reviewed implementation,internal/agentclient/input_durability_test.go,172,reviewed-selector,TestSPL011CompetingAndUnknownReceiptsPreserveClaims,False,"SPL-011,SPL-012,SPL-017"
@@ -62,7 +67,7 @@ MAP-c73e0f22dcfc,L2,reviewed implementation,internal/agentclient/input_layout_si
 MAP-12f9a5ee88fc,L2,reviewed implementation,internal/agentclient/input_records_test.go,13,reviewed-selector,TestSPL006DamagedRecordsRetainTheirReplayProtection,False,"SPL-006,SPL-012"
 MAP-8c806990051d,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,15,reviewed-selector,TestSPL020StableReceiptsAllowLongRunningAdmission,False,"SPL-020,SPL-021,SPL-022"
 MAP-5f88c87fb0f4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,127,reviewed-selector,TestSPL021InterruptedRetirementReconcilesExactTail,False,"SPL-020,SPL-021,SPL-022"
-MAP-dc573b29470b,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,219,reviewed-selector,TestSPL022CancelDuringParentSyncDoesNotPublish,False,"SPL-020,SPL-021,SPL-022"
+MAP-dc573b29470b,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,215,reviewed-selector,TestSPL022CancelDuringParentSyncDoesNotPublish,False,"SPL-020,SPL-021,SPL-022"
 MAP-c7858b7eb2d4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,192,reviewed-selector,TestSPL021FullArchiveShardRetainsAcceptance,False,"SPL-020,SPL-021,SPL-022"
 MAP-98170c4a2ad3,L2,reviewed implementation,internal/agentclient/input_store_gate_test.go,18,reviewed-selector,TestSPL005TerminalInputStoreGate,False,"SPL-005,SPL-006,SPL-007,SPL-017"
 MAP-bb463252599b,L2,reviewed implementation,internal/agentclient/input_store_gate_test.go,423,reviewed-selector,TestSPL007VerifiedAttachmentChecksCurrentInputGeneration,False,"SPL-005,SPL-006,SPL-007,SPL-017"
@@ -458,6 +463,7 @@ LEG-a59c31c5a07b,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,186,
 LEG-b12010762948,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,194,Test,TestStructuredProgressDoesNotHideLaterPublicCommentary,False,legacy-not-retrospectively-reviewed
 LEG-ecada2e2e335,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,206,Test,TestWorkspaceDispatchCannotAdoptLaterOccupantOfItsOldPane,False,legacy-not-retrospectively-reviewed
 LEG-618dafffee1a,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,226,Test,TestWorkspaceDeliveryDoesNotBlockFeedTickOrStartConcurrentWorkers,False,legacy-not-retrospectively-reviewed
+MAP-acfe376abd7d,L2,reviewed implementation,internal/app/input_archive_doctor_test.go,11,reviewed-selector,TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair,False,SPL-025
 LEG-eb2db2f832b5,L1,Go core / CLI / server,internal/app/install_selection_test.go,13,Test,TestAutoHookSelectionPreservesExplicitScopeAndDisabledPolicy,False,legacy-not-retrospectively-reviewed
 LEG-48a2a40df323,L1,Go core / CLI / server,internal/app/install_selection_test.go,32,Test,TestDSHBinaryDetectionDoesNotEnableTUI,False,legacy-not-retrospectively-reviewed
 LEG-ea2ca368e422,L1,Go core / CLI / server,internal/app/install_selection_test.go,53,Test,TestExplicitDSHInstallUsesBundledWriter,False,legacy-not-retrospectively-reviewed

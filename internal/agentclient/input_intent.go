@@ -261,6 +261,13 @@ func (i InputIntent) publishContext(ctx context.Context, now time.Time, ops inpu
 		if retired, err := queue.retiredAccepted(i.name); retired || err != nil {
 			return Request{}, ErrInputUncertain
 		}
+		catalog, _, err := queue.archiveCatalog(false)
+		if err != nil {
+			return Request{}, ErrInputUncertain
+		}
+		if catalog.occupancy() >= archiveBudget-archiveReservation {
+			return Request{}, ErrInputArchiveCapacity
+		}
 	}
 	if old.ID != "" {
 		if err := queue.recoverRetirement(); err != nil {

@@ -1072,7 +1072,14 @@ Settled records with durable delivery IDs SHALL retain their full validated rece
 for 72 hours from settlement. After expiration, bounded reclamation MAY retire the
 receipt and payload. A known acceptance SHALL first commit an exact retired ID into
 a bounded owner-only index, and a subsequent send with that ID SHALL NOT acquire
-new submission authority, including through raw tmux fallback. A proven refusal
+new submission authority, including through raw tmux fallback. The index SHALL pool
+page capacity across prefixes and reserve the final capacity for already admitted
+records. An independently committed catalogue SHALL bind page lengths and content
+digests before reclamation. An unavailable or mismatched committed page SHALL
+prevent a negative lookup within its prefix. Healthy prefixes SHALL remain usable
+when the global catalogue and available active capacity allow. Doctor SHALL
+report capacity, integrity and pending recovery without modifying the archive.
+A proven refusal
 may expire without an acceptance entry. Missing, malformed, conflicting or
 indeterminate outcomes SHALL remain protected. Reclamation SHALL preserve a durable
 checkpoint until the exact index and receipt removals are committed so a failed

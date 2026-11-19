@@ -193,25 +193,21 @@ func TestSPL021FullArchiveShardRetainsAcceptance(t *testing.T) {
 	_, target, _ := attachmentFixture(t)
 	now := time.Now()
 	r := settleRetirementFixture(t, target, "full-archive-shard", "accepted", now)
-	path := filepath.Join(InputDir(), retiredInputDir)
-	if err := os.Mkdir(path, 0700); err != nil {
+	q, err := openInputQueue(r.store, syncInput)
+	if err != nil {
 		t.Fatal(err)
 	}
-	shard, _, ok := retiredKey(r.IndexKey + ".index.json")
-	if !ok {
-		t.Fatal("invalid fixture key")
-	}
-	if err := os.WriteFile(filepath.Join(path, shard), make([]byte, retiredShardLimit), 0600); err != nil {
-		t.Fatal(err)
-	}
+	defer q.dir.Close()
+	prefix := r.IndexKey[:2]
+	seedFullArchivePage(t, q, target.Pane, archiveFixtureID(target.Pane, prefix, "first-page"))
 	late := now.Add(96 * time.Hour)
 	if _, err := Prepare(target, "fresh", "fresh-id", false, late); err != nil {
 		t.Fatalf("a different ID could not use available slots: %v", err)
 	}
-	if got, err := Prepare(target, r.Text, "full-archive-shard", false, late); err != nil || got.ID != r.ID {
-		t.Fatalf("full archive shard discarded accepted input: %+v %v", got, err)
+	if _, err := Prepare(target, r.Text, "full-archive-shard", false, late); !errors.Is(err, ErrInputUncertain) {
+		t.Fatalf("full archive shard discarded accepted input protection: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(path, retirementTail)); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(InputDir(), retiredInputDir, retirementTail)); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("full shard left behind a blocking checkpoint: %v", err)
 	}
 }

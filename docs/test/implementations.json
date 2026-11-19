@@ -4120,5 +4120,27 @@
     "selectors": [
       "TestSPL022WireChecksCancellationAroundFinalGuard"
     ]
+  },
+  "internal/agentclient/input_archive_test.go": {
+    "cases": [
+      "SPL-023",
+      "SPL-024",
+      "SPL-025"
+    ],
+    "selectors": [
+      "TestSPL023FullPageAndNearFullQueueKeepAdmitting",
+      "TestSPL023ArchiveBudgetKeepsSpaceForSettlement",
+      "TestSPL024DamagedCommitBlocksOnlyUnverifiableIDs",
+      "TestSPL024UncommittedPageSuffixReconcilesToVerifiedPrefix",
+      "TestSPL024ArchiveReopenChild"
+    ]
+  },
+  "internal/app/input_archive_doctor_test.go": {
+    "cases": [
+      "SPL-025"
+    ],
+    "selectors": [
+      "TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair"
+    ]
   }
 }

@@ -1,11 +1,9 @@
 package agentclient
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"os"
-	"strings"
 	"time"
 
 	"golang.org/x/sys/unix"
@@ -16,7 +14,6 @@ const (
 	retiredInputDir        = ".retired"
 	retirementTail         = "tail.json"
 	retirementTailLimit    = 20 << 10
-	retiredShardLimit      = 256 << 10 // 256 shards, at most 64 MiB of exact IDs.
 )
 
 type inputRetirement struct {
@@ -46,86 +43,16 @@ func (q *inputQueue) openRetired(create bool) (*inputQueue, error) {
 	return &inputQueue{dir: f, ops: q.ops}, nil
 }
 
-func retiredKey(index string) (string, [16]byte, bool) {
-	var id [16]byte
-	key, ok := strings.CutSuffix(index, ".index.json")
-	if !ok || !instancePattern.MatchString(key) {
-		return "", id, false
-	}
-	if _, err := hex.Decode(id[:], []byte(key)); err != nil {
-		return "", id, false
-	}
-	return key[:2] + ".ids", id, true
-}
-
-func containsRetiredID(shard []byte, id [16]byte) (bool, error) {
-	if len(shard)%len(id) != 0 {
-		return false, ErrInputUncertain
-	}
-	for len(shard) != 0 {
-		if [16]byte(shard[:16]) == id {
-			return true, nil
-		}
-		shard = shard[16:]
-	}
-	return false, nil
-}
-
-func (q *inputQueue) retiredAccepted(index string) (bool, error) {
-	name, id, valid := retiredKey(index)
-	if !valid {
-		return false, ErrInputUncertain
-	}
-	retired, err := q.openRetired(false)
-	if errors.Is(err, os.ErrNotExist) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	defer retired.dir.Close()
-	shard, err := retired.read(name, retiredShardLimit)
-	if errors.Is(err, os.ErrNotExist) {
-		return false, nil
-	}
-	if err != nil {
-		return false, err
-	}
-	return containsRetiredID(shard, id)
-}
-
-// Retire accepted IDs into exact fixed-size keys before deleting their index.
-// A damaged or exhausted shard never silently evicts an accepted key.
-func (q *inputQueue) rememberRetiredAcceptance(index string) error {
-	name, id, valid := retiredKey(index)
-	if !valid {
-		return ErrInputUncertain
-	}
-	f, err := q.open(name, unix.O_RDWR|unix.O_APPEND|unix.O_CREAT)
+func (q *inputQueue) retireInput(index string, r Request, receipt Receipt) error {
+	catalog, exists, err := q.archiveCatalog(false)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	shard, err := readOpenInputBytes(f, retiredShardLimit, true)
-	if err != nil {
-		return err
-	}
-	present, err := containsRetiredID(shard, id)
-	if err != nil {
-		return err
-	}
-	if !present {
-		if len(shard)+len(id) > retiredShardLimit {
-			return ErrInputFull
-		}
-		if _, err := f.Write(id[:]); err != nil {
+	if !exists {
+		if err := q.writeArchiveCatalog(catalog, false); err != nil {
 			return err
 		}
 	}
-	return q.syncDocument(f)
-}
-
-func (q *inputQueue) retireInput(index string, r Request, receipt Receipt) error {
 	retired, err := q.openRetired(true)
 	if err != nil {
 		return err
@@ -137,10 +64,9 @@ func (q *inputQueue) retireInput(index string, r Request, receipt Receipt) error
 	if err := q.finishRetirement(retired); err != nil {
 		return err
 	}
-	// Discover a full shard before creating the retirement checkpoint. Its
-	// accepted receipts can remain in place while other records retire.
+	// Commit the accepted key before creating a destructive checkpoint.
 	if r.DurableRetry && receipt.State == "accepted" {
-		if err := retired.rememberRetiredAcceptance(index); err != nil {
+		if err := q.rememberRetiredAcceptance(retired, index); err != nil {
 			return err
 		}
 	}
@@ -162,14 +88,28 @@ func (q *inputQueue) recoverRetirement() error {
 		return nil
 	}
 	if err != nil {
-		return err
+		return errors.Join(ErrInputArchiveIntegrity, err)
 	}
 	defer retired.dir.Close()
 	return q.finishRetirement(retired)
 }
 
+func (q *inputQueue) readRetirement() (inputRetirement, *os.File, error) {
+	var tail inputRetirement
+	f, err := q.open(retirementTail, unix.O_RDONLY)
+	if err != nil {
+		return tail, nil, err
+	}
+	data, err := readOpenInputBytes(f, retirementTailLimit, true)
+	if err != nil || decodeInputRecord(data, &tail, inputRecordFields{names: []string{"index", "request", "receipt"}, required: 3}) != nil {
+		_ = f.Close()
+		return tail, nil, ErrInputArchiveIntegrity
+	}
+	return tail, f, nil
+}
+
 func (q *inputQueue) finishRetirement(retired *inputQueue) error {
-	f, err := retired.open(retirementTail, unix.O_RDONLY)
+	tail, f, err := retired.readRetirement()
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
 	}
@@ -177,19 +117,14 @@ func (q *inputQueue) finishRetirement(retired *inputQueue) error {
 		return err
 	}
 	defer f.Close()
-	data, err := readOpenInputBytes(f, retirementTailLimit, true)
-	var tail inputRetirement
-	if err != nil || decodeInputRecord(data, &tail, inputRecordFields{names: []string{"index", "request", "receipt"}, required: 3}) != nil {
-		return ErrInputUncertain
-	}
 	r := tail.Request
-	_, _, valid := retiredKey(tail.Index)
+	_, _, valid := archiveKey(tail.Index)
 	if !valid || r.IndexKey != "" && tail.Index != r.IndexKey+".index.json" ||
 		r.Version != ProtocolVersion || r.CreatedAt <= 0 || r.Text != "" || !instancePattern.MatchString(r.ID) ||
 		!validInputReceipt(tail.Receipt, r.ID) || !tail.Receipt.matchesRequest(r) ||
 		tail.Receipt.State != "accepted" && tail.Receipt.State != "refused" ||
 		!q.missing(r.ID+".pending.json") || !q.missing(r.ID+".claimed.json") {
-		return ErrInputUncertain
+		return ErrInputArchiveIntegrity
 	}
 	if err := retired.syncDocument(f); err != nil {
 		return err
@@ -197,16 +132,17 @@ func (q *inputQueue) finishRetirement(retired *inputQueue) error {
 	index, err := q.loadIndex(tail.Index)
 	hasIndex := err == nil
 	if hasIndex && index != r || err != nil && !errors.Is(err, os.ErrNotExist) {
-		return ErrInputUncertain
+		return ErrInputArchiveIntegrity
 	}
 	receipt, err := q.committedReceipt(r)
 	hasReceipt := err == nil
 	if hasReceipt && receipt != tail.Receipt || !hasReceipt && (hasIndex || !errors.Is(err, os.ErrNotExist) || errors.Is(err, ErrInputUncertain)) {
-		return ErrInputUncertain
+		return ErrInputArchiveIntegrity
 	}
 	if r.DurableRetry && tail.Receipt.State == "accepted" {
-		if err := retired.rememberRetiredAcceptance(tail.Index); err != nil {
-			return err
+		present, err := q.retiredAccepted(tail.Index)
+		if err != nil || !present {
+			return errors.Join(ErrInputArchiveIntegrity, err)
 		}
 	}
 	if hasIndex {

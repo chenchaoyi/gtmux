@@ -154,7 +154,7 @@ func (q *inputQueue) reconcileInputAt(index string, now time.Time, retireSettled
 		return false, err
 	}
 	if err := q.retireInput(index, r, receipt); err != nil {
-		if errors.Is(err, ErrInputFull) {
+		if errors.Is(err, ErrInputFull) || errors.Is(err, ErrInputArchiveIntegrity) {
 			return false, nil
 		}
 		return false, err
@@ -185,6 +185,11 @@ func matchesInputBody(data []byte, r Request) bool {
 
 func (q *inputQueue) pruneInput(now time.Time) error {
 	if err := q.recoverRetirement(); err != nil {
+		if errors.Is(err, ErrInputArchiveIntegrity) {
+			// Keep the checkpoint for repair. Healthy IDs can use any
+			// available slots without running a second retirement.
+			return nil
+		}
 		return err
 	}
 	names, err := inputDirectoryNames(q.dir)
