@@ -1,0 +1,24 @@
+{
+  "id": "input-archive-bootstrap-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Make initial archive catalogue publication atomic and exclusive.",
+    "notes": "An isolated child exits before or just after the real rename, before the parent can run cleanup. Parent reopens through a fresh private queue process, checks preserved native/raw replay evidence and continued stable-ID admission. Probe an existing destination so that first publication cannot replace it."
+  },
+  "cases": [
+    {
+      "id": "SPL-026",
+      "layer": "L2",
+      "description": "Interrupted first catalogue publication never leaves an ambiguous linked record or blocks healthy stable IDs.",
+      "setup": "A private input queue contains a settled stable ID and a distinct in-flight claim. Hooks bracket the real exclusive kernel rename.",
+      "action": "Exit the child after file sync but before rename, or after rename before directory sync, then reopen and continue with the normal publication path. Also place a destination just before exclusive rename.",
+      "expected": "A stale temporary name can be recovered under the lease. The published record is a single-link file; earlier evidence still protects both native and raw routing. A verified new stable ID can publish and settle. A competing destination is preserved.",
+      "planned_files": [
+        "internal/agentclient/input_archive_bootstrap_test.go"
+      ]
+    }
+  ],
+  "seal": "54ccb55687ae86b7a68845bfd9a48c318fafa60defd70b98b9c3a74d3a101a2e"
+}

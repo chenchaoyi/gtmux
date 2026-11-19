@@ -313,7 +313,9 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 		// The menu-bar app is its own concern — install state + version + on-disk path.
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks},
 		{i18n.Tr("Remote access", "远程访问"), remoteChecks},
-		{i18n.Tr("Storage", "存储"), func() []dcheck { return []dcheck{rowHQMemory(), rowHQProcessMaterials(), rowDiskUsage(), rowUploads()} }},
+		{i18n.Tr("Storage", "存储"), func() []dcheck {
+			return []dcheck{rowHQMemory(), rowHQProcessMaterials(), rowDiskUsage(), rowUploads(), rowInputArchive()}
+		}},
 		{i18n.Tr("Logs", "日志"), func() []dcheck { return logsChecks(time.Unix(now, 0)) }},
 	}
 	// Only for a machine that actually runs a supervisor — on any other install these

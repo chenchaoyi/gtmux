@@ -1439,8 +1439,11 @@ headless 能力，否则拒绝，不会降级成交互式 spawn。runner 把目�
 ### `gtmux send`
 
 `gtmux send <pane> <text>` 默认用同一套落地核验（一确认就返回）；`--no-verify` 跳过
-核验，`--force` 越过互锁，`--json` 打印核验结果（`{delivered, state, judged_by, evidence}`，
-仅限核验过的发送）。
+核验，`--force` 越过互锁。`--json` 可用于文本提交，包括 `--no-verify`，原有的
+`{delivered, state, judged_by, evidence}` 字段继续保留。失败时退出码非零，结果可包含稳定的
+`code` 和 `submission`。其中 `not-submitted` 表示已确认未提交，`unknown` 表示结果未确认。
+如果在按回车前停下，文字可能还留在输入框。
+成功的 `submitted` 表示已按回车，`delivered: false` 表示尚无原生回执。
 
 `gtmux send` 不认识的选项会被拒绝，什么都不发：以前拼错的 `--body-file` 会当成正文进到对方
 agent 的输入框。以 `--` 开头的词不管夹在正文哪里都算，`gtmux send %5 make --dry-run` 也会被拒。

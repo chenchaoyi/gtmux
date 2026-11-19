@@ -1,0 +1,48 @@
+{
+  "id": "input-retention-cancel-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Bound full receipts, keep exact retired acceptance evidence, and handle cancellation on both sides of the persistence boundary.",
+    "notes": "Use only private HOME, synthetic clock jumps, bounded fixture slots, injected sync/unlink failure and a fake Codex RPC peer. Check original replay and compatible new admissions as well as zero mutation. Rechecked 2026-11-19 for sealed pooled archive pages and scoped integrity failures. The original fault and cancellation assertions remain. Final-head CI review verified the injected error sentinel rename preserves all existing fault assertions."
+  },
+  "cases": [
+    {
+      "id": "SPL-020",
+      "layer": "L2",
+      "description": "Stable receipt retention and retirement free capacity without reissuing old input.",
+      "setup": "Private spool with stable accepted and refused outcomes, pending and uncertain ids, a near-full committed backlog and simulated passage beyond the previous 24-hour window.",
+      "action": "Look up within extended retention, continue admissions through multiple aged windows, settle an in-flight request at capacity and retry retired, pending and unknown IDs.",
+      "expected": "Full receipts are reusable within retention; expired terminal metadata frees room, a retired acceptance blocks native and fallback replay, and unknown evidence is preserved.",
+      "planned_files": [
+        "internal/agentclient/input_retirement_test.go"
+      ]
+    },
+    {
+      "id": "SPL-021",
+      "layer": "L2",
+      "description": "An interrupted retirement reconciles its exact receipt and keeps replay protection.",
+      "setup": "Private spool and fault-injected durable retirement of an aged stable acceptance.",
+      "action": "Fail after payload removal, on index deletion, on receipt unlink and after receipt unlink before its directory barrier. Reopen with the normal operations and admit a new ID.",
+      "expected": "Committed accepted evidence is never converted into new authority; exact tail is recoverable even when its index is absent; unrelated orphan and unknown remain.",
+      "planned_files": [
+        "internal/agentclient/input_retirement_test.go"
+      ]
+    },
+    {
+      "id": "SPL-022",
+      "layer": "L2",
+      "description": "Cancellation boundaries distinguish no publication, definite no mutation and uncertainty after attempted mutation.",
+      "setup": "Private spool around the final Codex guard and a fake RPC peer observing wire mutations.",
+      "action": "Cancel before or during final publication checks, cancel or expire after publication and before wire mutation, exercise raw RPC deadline checks, and attempt a transport mutation that loses its outcome.",
+      "expected": "Pre-publication cancellation leaves no durable request; post-publication zero mutation records a reclaimable refusal; actual or ambiguous attempts remain unknown and non-retryable.",
+      "planned_files": [
+        "internal/agentclient/input_retirement_test.go",
+        "internal/dispatchbridge/input_cancel_test.go",
+        "internal/codexrpc/input_cancel_test.go"
+      ]
+    }
+  ],
+  "seal": "5eff9d6472a8df1e6986e8706013870ef4f736f1597d2868f75695e8d2eb479d"
+}

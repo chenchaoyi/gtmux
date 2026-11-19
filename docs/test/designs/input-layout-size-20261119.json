@@ -1,0 +1,24 @@
+{
+  "id": "input-layout-size-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Bind Go layout reads to the length returned by stat on the open descriptor.",
+    "notes": "Addresses one finding of independent review 100e601a. The deterministic reader injects exact, short and long snapshots without a scheduling race. No runtime validation or independent approval of the change is claimed."
+  },
+  "cases": [
+    {
+      "id": "SPL-010",
+      "layer": "L2",
+      "description": "A Go layout document must match the size of the open file.",
+      "setup": "A bounded reader with injected stat sizes, plus a private journal and marker fixture.",
+      "action": "Read an exact snapshot and reject parseable bytes shorter or longer than the stat size. Resolve a valid active layout at the byte limit, then extend the journal or marker by a byte.",
+      "expected": "Only the matching length is accepted. Invalid length and over-limit documents never select the active layout or a legacy fallback.",
+      "planned_files": [
+        "internal/agentclient/input_layout_size_test.go"
+      ]
+    }
+  ],
+  "seal": "103a7b225b314000c6dc100d3d59253ea2ce39a0f7fac3451fa5020c25558e42"
+}

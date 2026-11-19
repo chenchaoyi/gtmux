@@ -11,46 +11,31 @@ import (
 
 func TestSFR001PhoneRefusalNeedsExplicitNativeQuestion(t *testing.T) {
 	for _, tc := range []struct {
-		name, evidence, code string
-		refused, nativeState dispatch.State
-		question             bool
+		name, evidence string
+		code           dispatch.InputFailureCode
+		boundary       dispatch.Submission
+		want           string
+		question       bool
+		native         bool
 	}{
-		{"verified question", "input-awaiting-confirmation", server.SendInputQuestion, dispatch.StateRefusedWaiting, dispatch.StateRefusedWaiting, true},
-		{"claimed but refused question", "codex-input-refused:input-awaiting-confirmation", server.SendInputQuestion, dispatch.StateFailed, dispatch.StateFailed, true},
-		{"unknown input", "input-state-unavailable", server.SendInputUnavailable, dispatch.StateRefusedWaiting, dispatch.StateRefusedWaiting, false},
-		{"future native policy", "conflicting-native-input-policy", server.SendInputUnavailable, dispatch.StateRefusedWaiting, dispatch.StateRefusedWaiting, false},
-		{"question substring is not proof", "future:input-awaiting-confirmation", server.SendInputUnavailable, dispatch.StateRefusedWaiting, dispatch.StateRefusedWaiting, false},
-		{"inconsistent result is not proof", "input-awaiting-confirmation", server.SendInputUnavailable, dispatch.StateRefusedWaiting, dispatch.StateFailed, false},
-		{"association", "codex-frontend-unavailable", server.SendConversationUnavailable, dispatch.StateRefusedWaiting, dispatch.StateRefusedWaiting, false},
-		{"target changed", "expected-conversation-changed", server.SendTargetChanged, dispatch.StateRefusedWaiting, dispatch.StateRefusedWaiting, false},
-		{"input target changed", "codex-input-target-changed", server.SendTargetChanged, dispatch.StateRefusedWaiting, dispatch.StateRefusedWaiting, false},
-		{"not loaded", "codex-input-refused:input-thread-not-loaded", server.SendSessionNotLoaded, dispatch.StateFailed, dispatch.StateFailed, false},
-		{"uncertain", "codex-input-uncertain:timeout", server.SendOutcomeUnconfirmed, dispatch.StateFailed, dispatch.StateFailed, false},
-		{"receipt lost", "codex-input-receipt-unconfirmed", server.SendOutcomeUnconfirmed, dispatch.StateFailed, dispatch.StateFailed, false},
+		{"verified question", "input-awaiting-confirmation", dispatch.InputQuestion, dispatch.SubmissionNotSubmitted, server.SendInputQuestion, true, true},
+		{"unknown wins", "input-awaiting-confirmation", dispatch.InputQuestion, dispatch.SubmissionUnknown, server.SendOutcomeUnconfirmed, false, true},
+		{"evidence substring is not proof", "future:input-awaiting-confirmation", dispatch.InputUnavailable, dispatch.SubmissionNotSubmitted, server.SendInputUnavailable, false, false},
+		{"association", "codex-frontend-unavailable", dispatch.InputAssociationMissing, dispatch.SubmissionNotSubmitted, server.SendConversationUnavailable, false, false},
+		{"screen menu", dispatch.EvidenceMenuOpen, dispatch.InputQuestion, dispatch.SubmissionNotSubmitted, server.SendInputUnavailable, false, false},
+		{"not loaded", "private transport details", dispatch.InputSessionNotLoaded, dispatch.SubmissionNotSubmitted, server.SendSessionNotLoaded, false, false},
+		{"draft", "private transport details", dispatch.InputDraftPresent, dispatch.SubmissionNotSubmitted, server.SendDraftPresent, false, false},
+		{"fragment", "private transport details", dispatch.InputUnconfirmed, dispatch.SubmissionNotSubmitted, server.SendInputUnconfirmed, false, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := phoneSendRefusal(tc.refused, &dispatch.Result{State: tc.nativeState, Evidence: tc.evidence})
+			err := phoneSendFailure(dispatch.Result{State: dispatch.StateFailed, Evidence: tc.evidence, FailureCode: tc.code, Submission: tc.boundary, NativeQuestion: tc.native})
 			var got *server.SendError
-			if !errors.As(err, &got) || got.Code != tc.code {
+			if !errors.As(err, &got) || got.Code != tc.want || got.Submission != string(tc.boundary) {
 				t.Fatal("wrong refusal", err, got)
 			}
-			if strings.Contains(err.Error(), "is asking something") != tc.question {
-				t.Fatal("invented or lost a verified question", err)
-			}
-			if tc.code == server.SendOutcomeUnconfirmed && !strings.Contains(err.Error(), "will not be replayed") {
-				t.Fatal("unknown-outcome advice lost", err)
+			if strings.Contains(err.Error(), "is asking something") != tc.question || strings.Contains(err.Error(), "private transport details") {
+				t.Fatal("unsafe or inaccurate diagnostic", err)
 			}
 		})
-	}
-	for state, code := range map[dispatch.State]string{
-		dispatch.StateRefusedWaiting: server.SendInputUnavailable,
-		dispatch.StateRefusedDraft:   server.SendDraftPresent,
-		dispatch.StateFailed:         server.SendInputUnconfirmed,
-	} {
-		err := phoneSendRefusal(state, nil)
-		var got *server.SendError
-		if !errors.As(err, &got) || got.Code != code || strings.Contains(err.Error(), "asking something") {
-			t.Fatal("generic state was called a question", state, err)
-		}
 	}
 }

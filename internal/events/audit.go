@@ -176,12 +176,30 @@ func AuditWakeDropped(reason, line string, now int64) {
 // disagree about one act. It is what lets a reader attribute a turn later: pane + head
 // says WHICH message, and the actor says whose it was (who-sent-this-turn).
 func AuditSend(pane, state, payload string, now int64) {
+	auditSend(pane, state, payload, now, "", "")
+}
+
+// AuditSendFailure retains the send journal's state and adds the classified
+// reason and submission boundary to the diagnostic action.
+func AuditSendFailure(pane, state, payload string, now int64, code, submission string) {
+	auditSend(pane, state, payload, now, code, submission)
+}
+
+func auditSend(pane, state, payload string, now int64, code, submission string) {
 	id := auditAppend(Record{
 		Event: AuditEventSend, Pane: pane, Actor: diag.Caller(),
 		Summary: state + ": " + auditLine(payload, auditSendMax),
 	}, now)
 	outcome, msg := sendOutcome(state)
 	kv := []any{"state", state, "bytes", len(payload), "sha", diag.Sum(payload), "op_id", id}
+	if code != "" {
+		kv = append(kv, "code", code, "submission", submission)
+		if submission == "not-submitted" {
+			outcome, msg = diag.Refused, "input was refused before submission"
+		} else if submission == "unknown" {
+			outcome, msg = diag.Failed, "input submission was not confirmed"
+		}
+	}
 	switch outcome {
 	case diag.Refused:
 		kv = append(kv, "reason", state)

@@ -86,8 +86,8 @@ func TestNativeSpoolRetentionAndUnknownClaims(t *testing.T) {
 	}
 	putJSON(t, filepath.Join(InputDir(), r.ID+".receipt.json"), Receipt{Version: 1, ID: r.ID, Instance: r.Instance, HomeID: r.HomeID, SessionID: r.SessionID, PID: r.PID, State: "accepted"})
 	next, err := Prepare(a, "synthetic", "retry-key", false, now.Add(48*time.Hour))
-	if err != nil || next.ID == r.ID {
-		t.Fatal("completed expired metadata did not age out")
+	if err != nil || next.ID != r.ID {
+		t.Fatal("settled durable ID lost replay protection after age-out")
 	}
 }
 func TestDSTFrameKeepsDraftAndDropsOnlyComposerChrome(t *testing.T) {

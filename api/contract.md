@@ -284,8 +284,8 @@ against a shell false-failed whenever stale box-drawing sat in the pane's scroll
 pane that used to run an agent): "not confirmed" for a send that would have worked.
 `send_id` makes a retry idempotent: a token that already LANDED returns `200` WITHOUT
 re-injecting, so an ambiguous network timeout (the send may have landed on the Mac while the
-response was lost) can be retried without double-sending. A `400` "not confirmed" leaves the
-id retryable. An old client that omits `send_id` falls back to the payload-hash re-send
+response was lost) can be retried without double-sending. An unknown submission has no successful receipt. Keep its original `send_id`
+and inspect the conversation before deciding whether to retry. An old client that omits `send_id` falls back to the payload-hash re-send
 interlock.
 
 ```
@@ -299,12 +299,17 @@ A send callback refusal may add an optional `code` beside the existing `error` s
 HTTP status and legacy error wrapping are unchanged. Known values are
 `input-awaiting-confirmation`, `input-state-unavailable`, `draft-present`,
 `conversation-unavailable`, `target-changed`, `session-not-loaded`,
-`outcome-unconfirmed` and `input-unconfirmed`. Unknown codes are omitted by the
+`input-spool-full`, `outcome-unconfirmed` and `input-unconfirmed`. A full input spool refuses a new request before native submission. Unknown codes are omitted by the
 server and ignored by clients. Only explicit native `input-awaiting-confirmation`
 evidence identifies a question; a generic waiting/unavailable verdict does not.
 These codes describe the failed attempt, not current agent state or permission to
 replay it. Authorization remains authoritative: 401/403 are never overridden by
-a body code. No target repair, automatic retry or input-policy override is added.
+a body code. A typed text-send failure can also return `submission: "not-submitted"` when zero
+submission is established, or `submission: "unknown"` when acceptance is unresolved.
+It echoes the original `send_id` if supplied and omits a success receipt.
+A draft may remain on screen after a hold before Enter. A current refusal leaves
+a same-ID outcome unknown if earlier submission cannot be ruled out. Success
+reuses the original acknowledgement grade (`submitted`, `queued` or `accepted`).
 
 The successful response includes the post-send pane snapshot when it can be read.
 `cols` and `cursor` are optional, with the same meanings as `GET /api/pane`.

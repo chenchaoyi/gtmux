@@ -25,6 +25,9 @@ type Input struct {
 	Path string `json:"path,omitempty"`
 }
 
+// InputTimeout also bounds final durable preparation performed by the caller.
+const InputTimeout = 8 * time.Second
+
 // Outcome describes transport acceptance, never model execution or completion.
 // Once Attempted is true, missing confirmation must not authorize a fresh send.
 type Outcome struct {
@@ -128,7 +131,7 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 		len(target.ThreadID) > 256 || messageID == "" || len(messageID) > 256 || !valid || bytes > 1<<20 {
 		return Outcome{Reason: "invalid-input-target"}
 	}
-	ctx, cancel := context.WithTimeout(ctx, 8*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, InputTimeout)
 	defer cancel()
 	c, err := connect(ctx)
 	if err != nil {
@@ -186,6 +189,24 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 	if policy == wakeInput && !startIdle {
 		return Outcome{Reason: "wake-loaded-idle-required"}
 	}
+	checkInput := func() string {
+		if ctx.Err() != nil {
+			return "input-deadline"
+		}
+		if check != nil && !check() {
+			if ctx.Err() != nil {
+				return "input-deadline"
+			}
+			return "target-changed"
+		}
+		if ctx.Err() != nil {
+			return "input-deadline"
+		}
+		return ""
+	}
+	if ctx.Err() != nil {
+		return Outcome{Reason: "input-deadline"}
+	}
 	if coordination != nil {
 		if turnID == "" || startIdle {
 			return Outcome{Reason: "notice-active-turn-required"}
@@ -194,11 +215,8 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 			return Outcome{Reason: "notice-coalesced-or-target-changed"}
 		}
 	}
-	if check != nil && !check() {
-		return Outcome{Reason: "target-changed"}
-	}
-	if ctx.Err() != nil {
-		return Outcome{Reason: "input-deadline"}
+	if why := checkInput(); why != "" {
+		return Outcome{Reason: why}
 	}
 	result := Outcome{Attempted: true, Reason: "acceptance-unconfirmed"}
 	if startIdle {
@@ -232,11 +250,8 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 			return result
 		}
 		id++
-		if check != nil && !check() {
-			return Outcome{Reason: "target-changed"}
-		}
-		if ctx.Err() != nil {
-			return Outcome{Reason: "input-deadline"}
+		if why := checkInput(); why != "" {
+			return Outcome{Reason: why}
 		}
 	}
 	if turnID != "" {
@@ -265,8 +280,8 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 			return result
 		}
 		id++
-		if check != nil && !check() {
-			return Outcome{Reason: "target-changed"}
+		if why := checkInput(); why != "" {
+			return Outcome{Reason: why}
 		}
 	}
 	if send(id, "thread/queue/add", map[string]any{

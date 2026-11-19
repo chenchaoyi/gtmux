@@ -1,0 +1,41 @@
+{
+  "id": "input-publish-boundary-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Stage only in memory until the final dispatch gate and make the stable ID and initial directory part of durable authorization.",
+    "notes": "P1.3 plus the independent P1.4 blocker 86f8150a. Go and DSH share the same index contract; old v1 pending without an index key must resolve a unique matching index in a bounded scan. Index unlink failure must retain the durable receipt. Unknown, unstable and partially written evidence is preserved. Tests are isolated and not a simulation of target-media power loss. Final-head CI review verified the injected error sentinel rename preserves all existing fault assertions."
+  },
+  "cases": [
+    {
+      "id": "SPL-016",
+      "layer": "L2",
+      "description": "Draft, waiting, duplicate and late hold do not consume durable input slots.",
+      "setup": "Private empty or preexisting legacy queue, staged DSH and Codex input, injected composer and final native gate.",
+      "action": "Refuse submissions repeatedly before and after paste; inspect queue and lock names. Publish a winning intent, race a second attempt for the same ID and retry an old pending or accepted ID. Verify old age-out for settled non-durable attempts and stable replay protection for durable IDs.",
+      "expected": "Drafts and gates create no durable slot, and the final authorizer publishes only its staged ID. Failed contenders do not replace a previous index. Aged unresolved requests cannot be replaced by force or timeout. A durable accepted ID remains idempotent.",
+      "planned_files": [
+        "internal/agentclient/input_intent_test.go",
+        "internal/dispatchbridge/input_publish_test.go",
+        "internal/agentclient/delivery_test.go",
+        "internal/agentclient/pending_retry_lifetime_test.go"
+      ]
+    },
+    {
+      "id": "SPL-017",
+      "layer": "L2",
+      "description": "Index and initial directory survive the durability boundary before a receiver can mutate.",
+      "setup": "Private HOME with fresh or existing queue, injected index/parent/queue synchronization faults, actual shipped DSH synthetic receiver.",
+      "action": "Block initial directory sync, index write/flush and index publication; retry a committed input through a new intent; remove or damage old DSH index; interrupt retirement at index deletion.",
+      "expected": "No pending is claimable before a synced bound index, and no followup occurs without it. Existing v1 is accepted only with a unique matched index. A retained stable mapping returns the same known result. The terminal receipt survives an index deletion failure, and no unknown data is discarded.",
+      "planned_files": [
+        "internal/agentclient/input_intent_test.go",
+        "internal/agentclient/input_durability_test.go",
+        "internal/agentclient/input_store_gate_test.go",
+        "internal/app/dsh_terminal_test.go"
+      ]
+    }
+  ],
+  "seal": "b4899c846099c0e12d9697d91fa896c56c5f1faaeaccae8c5e4fe0dbcb0abed2"
+}
