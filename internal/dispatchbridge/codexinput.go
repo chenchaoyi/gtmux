@@ -51,9 +51,19 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 		if !r.MatchesTarget(a) {
 			return codexInputRefusal(dispatch.StateRefusedWaiting, "codex-input-target-changed", "codex-input-target-changed")
 		}
+		ctx := opts.Context
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		// Share the RPC's overall deadline with the final durable publication.
+		ctx, cancel := context.WithTimeout(ctx, codexrpc.InputTimeout)
+		defer cancel()
 		claimed := false
 		var claimErr, publishErr error
 		check := func() bool {
+			if ctx.Err() != nil {
+				return false
+			}
 			current, valid := codexInputTarget(pane)
 			if !r.MatchesTarget(a) || !valid || current.Instance != f.Instance || current.HomeID != f.HomeID || current.SessionID != f.SessionID || current.PID != f.PID || current.StartedAt != f.StartedAt || current.RootStart != f.RootStart || current.BackendPID != f.BackendPID || current.BackendStart != f.BackendStart || (hold != nil && hold() != "") {
 				return false
@@ -64,7 +74,7 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 				claimErr = r.CheckInputStore()
 				return claimErr == nil
 			}
-			published, err := intent.Publish(time.Now())
+			published, err := intent.PublishContext(ctx, time.Now())
 			if err != nil {
 				publishErr = err
 				return false
@@ -86,12 +96,11 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 		} else if opts.ActiveImageInput && len(inputs) > 1 {
 			submit = codexImageInputs
 		}
-		ctx := opts.Context
-		if ctx == nil {
-			ctx = context.Background()
-		}
 		outcome := submit(ctx, codexrpc.Target{HomeID: f.HomeID, ThreadID: f.SessionID, BackendPID: f.BackendPID, BackendStart: f.BackendStart}, r.ID, inputs, check)
 		if publishErr != nil {
+			if errors.Is(publishErr, context.Canceled) || errors.Is(publishErr, context.DeadlineExceeded) {
+				return codexInputRefusal(dispatch.StateRefusedWaiting, "input-deadline", "input-deadline")
+			}
 			if errors.Is(publishErr, agentclient.ErrInputUncertain) {
 				if receipt, ok := agentclient.ReadReceipt(r); ok {
 					return codexRecordedResult(receipt)

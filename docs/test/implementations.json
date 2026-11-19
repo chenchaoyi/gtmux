@@ -4091,5 +4091,34 @@
     "selectors": [
       "TestSPL019HTTPProtectsNativeIDAfterRouteLoss"
     ]
+  },
+  "internal/agentclient/input_retirement_test.go": {
+    "cases": [
+      "SPL-020",
+      "SPL-021",
+      "SPL-022"
+    ],
+    "selectors": [
+      "TestSPL020StableReceiptsAllowLongRunningAdmission",
+      "TestSPL021InterruptedRetirementReconcilesExactTail",
+      "TestSPL022CancelDuringParentSyncDoesNotPublish",
+      "TestSPL021FullArchiveShardRetainsAcceptance"
+    ]
+  },
+  "internal/dispatchbridge/input_cancel_test.go": {
+    "cases": [
+      "SPL-022"
+    ],
+    "selectors": [
+      "TestSPL022NativeCancellationSeparatesPublicationAndMutation"
+    ]
+  },
+  "internal/codexrpc/input_cancel_test.go": {
+    "cases": [
+      "SPL-022"
+    ],
+    "selectors": [
+      "TestSPL022WireChecksCancellationAroundFinalGuard"
+    ]
   }
 }

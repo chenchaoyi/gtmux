@@ -1062,10 +1062,21 @@ retain its claim and original request identity.
 
 Before the final authorization, input may be staged in memory or shown as a
 terminal draft. A guard refusal at that stage SHALL NOT create a persistent
-request. Publication SHALL commit the matching request index and the directory
-ancestry before the pending name can be consumed. An unresolved index or claim
-SHALL retain its identity across retries. An aged settled record with a durable
-delivery ID SHALL keep its index and receipt for idempotent re-use.
+request. Publication SHALL recheck the cancellation boundary and commit the matching
+request index and directory ancestry before the pending name can be consumed.
+Cancellation after durable publication but before any possible mutating RPC SHALL
+record a definite refusal when the claim is owned. An unresolved index or claim
+SHALL retain its identity across retries.
+
+Settled records with durable delivery IDs SHALL retain their full validated receipts
+for 72 hours from settlement. After expiration, bounded reclamation MAY retire the
+receipt and payload. A known acceptance SHALL first commit an exact retired ID into
+a bounded owner-only index, and a subsequent send with that ID SHALL NOT acquire
+new submission authority, including through raw tmux fallback. A proven refusal
+may expire without an acceptance entry. Missing, malformed, conflicting or
+indeterminate outcomes SHALL remain protected. Reclamation SHALL preserve a durable
+checkpoint until the exact index and receipt removals are committed so a failed
+tail cleanup can resume without discarding unrelated orphan records.
 
 #### Scenario: A receipt appears before the directory sync completes
 

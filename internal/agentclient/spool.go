@@ -106,7 +106,7 @@ func admitInput(dir string) error {
 }
 
 // Reconcile only an addressed v1 record. Never infer delivery from age or a
-// claim. Remove the index last, and stop on a failed unlink.
+// claim. Retire a settlement only after its exact evidence is durable.
 func (q *inputQueue) reconcileInput(index string, now time.Time) (bool, error) {
 	return q.reconcileInputAt(index, now, false)
 }
@@ -128,10 +128,14 @@ func (q *inputQueue) reconcileInputAt(index string, now time.Time, retireSettled
 	// A late receipt starts a fresh retention window. Older v1 fixtures may
 	// omit its timestamp, in which case the request supplies the lower bound.
 	settledAt := max(receipt.CreatedAt, r.CreatedAt)
-	if r.DurableRetry || !retireSettled && now.Sub(time.UnixMilli(settledAt)) < 24*time.Hour {
-		// Empty DSH claims remain replay markers through the retention window.
+	retention := 24 * time.Hour
+	if r.DurableRetry {
+		retention = stableReceiptRetention
+	}
+	if (!retireSettled || r.DurableRetry) && now.Sub(time.UnixMilli(settledAt)) < retention {
+		// A committed, matching receipt can replace a settled claim, including the legacy DSH marker.
 		body, err := q.read(claim, 2<<20)
-		if err != nil || !q.missing(pending) || !matchesInputBody(body, r) || q.syncDocument(file) != nil {
+		if err != nil || !q.missing(pending) || len(body) != 0 && !matchesInputBody(body, r) || q.syncDocument(file) != nil {
 			return false, nil
 		}
 		return true, q.remove(claim)
@@ -149,16 +153,13 @@ func (q *inputQueue) reconcileInputAt(index string, now time.Time, retireSettled
 	if err := q.ops.syncDir(q.dir); err != nil {
 		return false, err
 	}
-	if err := q.remove(index); err != nil {
+	if err := q.retireInput(index, r, receipt); err != nil {
+		if errors.Is(err, ErrInputFull) {
+			return false, nil
+		}
 		return false, err
 	}
-	if err := q.ops.syncDir(q.dir); err != nil {
-		return false, err
-	}
-	if err := q.remove(file.Name()); err != nil && !errors.Is(err, os.ErrNotExist) {
-		return false, err
-	}
-	return true, q.ops.syncDir(q.dir)
+	return true, nil
 }
 
 func (q *inputQueue) reclaimableInputBody(name string, r Request, allowLegacyClaim bool) bool {
@@ -183,6 +184,9 @@ func matchesInputBody(data []byte, r Request) bool {
 }
 
 func (q *inputQueue) pruneInput(now time.Time) error {
+	if err := q.recoverRetirement(); err != nil {
+		return err
+	}
 	names, err := inputDirectoryNames(q.dir)
 	if err != nil {
 		return err

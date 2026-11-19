@@ -92,7 +92,11 @@ func terminalSendUnbound(pane, deliveryID string) bool {
 		return false
 	}
 	defer queue.dir.Close()
-	if !queue.missing(deliveryIndex(pane, deliveryID)) {
+	name := deliveryIndex(pane, deliveryID)
+	if !queue.missing(name) {
+		return false
+	}
+	if retired, err := queue.retiredAccepted(name); retired || err != nil {
 		return false
 	}
 	current, err := resolveInputStore(root)
@@ -118,9 +122,11 @@ func PriorDeliveryUnknown(pane, deliveryID string) bool {
 		return true
 	}
 	defer queue.dir.Close()
-	data, err := queue.read(deliveryIndex(pane, deliveryID), 8192)
+	name := deliveryIndex(pane, deliveryID)
+	data, err := queue.read(name, 8192)
 	if errors.Is(err, os.ErrNotExist) {
-		return false
+		retired, err := queue.retiredAccepted(name)
+		return retired || err != nil
 	}
 	var prior Request
 	if err != nil || decodeInputRecord(data, &prior, requestFields) != nil ||

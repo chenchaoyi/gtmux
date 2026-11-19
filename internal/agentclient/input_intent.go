@@ -1,6 +1,7 @@
 package agentclient
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -130,6 +131,10 @@ func StageInput(a Attachment, text, deliveryID string, force bool, now time.Time
 			}
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return InputIntent{}, ErrInputUncertain
+		} else if deliveryID != "" {
+			if retired, err := queue.retiredAccepted(name); retired || err != nil {
+				return InputIntent{}, ErrInputUncertain
+			}
 		}
 		// A saturated directory without indices has nothing we can retire.
 		// Preserve the fast refusal before native RPC setup in this case.
@@ -189,10 +194,21 @@ func (q *inputQueue) pendingMatches(r Request) bool {
 }
 
 func (i InputIntent) Publish(now time.Time) (Request, error) {
-	return i.publish(now, syncInput)
+	return i.PublishContext(context.Background(), now)
+}
+
+func (i InputIntent) PublishContext(ctx context.Context, now time.Time) (Request, error) {
+	return i.publishContext(ctx, now, syncInput)
 }
 
 func (i InputIntent) publish(now time.Time, ops inputDurability) (Request, error) {
+	return i.publishContext(context.Background(), now, ops)
+}
+
+func (i InputIntent) publishContext(ctx context.Context, now time.Time, ops inputDurability) (Request, error) {
+	if err := ctx.Err(); err != nil {
+		return Request{}, err
+	}
 	r := i.Request
 	lease, err := state.TryLease("terminal-input")
 	if err != nil {
@@ -238,7 +254,18 @@ func (i InputIntent) publish(now time.Time, ops inputDurability) (Request, error
 		}
 		return Request{}, ErrInputUncertain
 	}
+	if err := ctx.Err(); err != nil {
+		return Request{}, err
+	}
+	if r.DurableRetry {
+		if retired, err := queue.retiredAccepted(i.name); retired || err != nil {
+			return Request{}, ErrInputUncertain
+		}
+	}
 	if old.ID != "" {
+		if err := queue.recoverRetirement(); err != nil {
+			return Request{}, err
+		}
 		removed, err := queue.reconcileInputAt(i.name, now, true)
 		if err != nil {
 			return Request{}, err
@@ -266,6 +293,9 @@ func (i InputIntent) publish(now time.Time, ops inputDurability) (Request, error
 	pending, err := json.Marshal(r)
 	if err != nil || len(pending) > 2<<20 {
 		return Request{}, ErrInputStoreUnavailable
+	}
+	if err := ctx.Err(); err != nil {
+		return Request{}, err
 	}
 	if err := queue.publishDocument(i.name, indexData); err != nil {
 		return Request{}, errors.Join(ErrInputUncertain, err)
