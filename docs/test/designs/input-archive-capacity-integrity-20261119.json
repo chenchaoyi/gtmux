@@ -1,0 +1,47 @@
+{
+  "id": "input-archive-capacity-integrity-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Share the total page budget across ID prefixes; require independent committed length and digest before trusting a negative lookup.",
+    "notes": "Use private queues, committed fixtures and injected I/O. Preserve the already-reviewed retirement tail, request lifecycle and route protection. A corrupt prefix refuses unknown IDs while unaffected prefixes may use available active space. An exhausted total budget stops new durable IDs before sacrificing retained evidence."
+  },
+  "cases": [
+    {
+      "id": "SPL-023",
+      "layer": "L2",
+      "description": "A full archive page and nearly full active queue still retire and admit IDs for the same prefix.",
+      "setup": "Private queue with a full verified first page, live reservation and aged settled same-prefix IDs.",
+      "action": "Retire using overflow pages, settle the reserved ID, repeatedly admit and age new IDs and verify original archived IDs.",
+      "expected": "Overflow from the shared budget frees active slots, verified old keys never regain authority, and exhausted total budget and warning headroom are explicit.",
+      "planned_files": [
+        "internal/agentclient/input_archive_test.go"
+      ]
+    },
+    {
+      "id": "SPL-024",
+      "layer": "L2",
+      "description": "Committed archive damage cannot create a false negative after restart.",
+      "setup": "Real accepted native retirements and persistent, separately committed archive metadata.",
+      "action": "Remove a committed file or directory, truncate on a key boundary, overwrite equal-length bytes, remove or damage the catalogue, and reopen the queue. Exercise uncommitted short extension recovery and an invalid retirement tail.",
+      "expected": "Native and raw checks retain unknown on affected IDs; verified unrelated admissions remain available where their prefix and the catalogue are intact. Recovery preserves committed bytes and unrelated orphan records.",
+      "planned_files": [
+        "internal/agentclient/input_archive_test.go"
+      ]
+    },
+    {
+      "id": "SPL-025",
+      "layer": "L2",
+      "description": "Doctor makes archive capacity and repair boundaries visible without mutating the queue.",
+      "setup": "Private state roots or explicit archive health snapshots representing normal, warning, exhausted and invalid archive data.",
+      "action": "Read doctor status and guidance in both locales; inventory committed pages without running repairs.",
+      "expected": "Capacity and integrity have distinct actionable states and persistent evidence is retained.",
+      "planned_files": [
+        "internal/app/input_archive_doctor_test.go",
+        "internal/agentclient/input_archive_test.go"
+      ]
+    }
+  ],
+  "seal": "d3367d05dd1a05d3d5658d3710644818944859c87f48776ff324c6110be7ca15"
+}
