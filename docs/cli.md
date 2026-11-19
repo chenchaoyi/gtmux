@@ -930,6 +930,15 @@ contract](design/hq-workspace.md#continuing-goals-and-next-responsibility) for s
 external holds, exact native/background receipt envelopes and restore boundaries.
 
 
+After an inbox reply, HQ can explicitly arm its reviewed intent using
+`{"op":"resume-reply","matter":"MATTER","id":"ACTION","revision":42,"reply_id":"RECEIPT"}`.
+Use the saved current user instruction as `authority_ref:"message:ID"`. Serve waits
+for the exact Codex execution member to be loaded, idle and free of drafts. It sends
+one short reminder to fetch that receipt and continue the authorized step. Inspect
+`intent_attempts` and `next_responsibility` for blockers. The source reports actual
+work using the existing drive envelope with `drive.evidence` citing an execution
+result. Ordinary replies keep their existing pull and active-turn hint behavior.
+
 ## `gtmux digest` + `gtmux hq`: HQ, the supervisor session
 
 `gtmux digest` lists agent goals, recent replies, wait reasons and usage in a table:

@@ -359,3 +359,14 @@ A user pause/refusal SHALL NOT expire automatically; changing it SHALL require a
 - **WHEN** a backup contains a queued or received intent or native/background evidence
 - **THEN** restored evidence requires explicit review and cannot replay the saved action
 - **AND** a saved user pause/refusal remains effective
+
+### Requirement: Explicit continuation after an inbox reply
+The workspace SHALL project reply, active-turn notice, source fetch and execution evidence separately. Only a verified current HQ action binding one eligible receipt to an existing authorized intent MAY arm an idle continuation. The daemon SHALL recheck the original authorization, matter revision, execution membership, current native identity, idle state and composer through ordinary delivery gates before issuing at most one receipt-specific reminder. A submission with unknown outcome SHALL remain reserved for reconciliation.
+
+#### Scenario: Stop precedes a durable reply
+- **WHEN** an enrolled source stops after checking its inbox and a reply is saved later
+- **THEN** reconciliation records that receipt even if it previously ingested the request, and a later fetch leaves the next step outstanding until the source reports matching execution evidence
+
+#### Scenario: Restart with an explicit continuation
+- **WHEN** the daemon restarts with a reviewed reservation and the exact source becomes ready
+- **THEN** it may submit the bounded reminder once, preserves blockers and uncertain submissions, and keeps ordinary replies pull-only for idle or unsupported clients

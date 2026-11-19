@@ -817,6 +817,13 @@ op:drive 携 matter/id/当前 revision，只经既有门禁尝试已保存意图
 用户真实恢复指令。外部等待、准确原生/后台回执与备份恢复边界见[责任合同](design/hq-workspace.zh.md#持续目标与下一责任)。
 
 
+回复入箱后，HQ 可以用
+`{"op":"resume-reply","matter":"MATTER","id":"ACTION","revision":42,"reply_id":"RECEIPT"}`
+显式登记已经核准的续接动作。`authority_ref:"message:ID"` 指向该事项当前的用户指令。
+serve 等待确切的 Codex 执行会话已加载、空闲且无草稿，再发一次短提醒，指明需取回的回执和
+原步骤。阻塞原因见 `intent_attempts` 和 `next_responsibility`；来源用既有 drive 回执的
+`drive.evidence` 引用实际执行结果。普通回复仍可主动拉取，并沿用活跃回合的短提醒。
+
 ## `gtmux digest` + `gtmux hq`：HQ，也就是中控会话
 
 `gtmux digest` 以表格列出各 agent 的目标、最近回复、等待原因和用量：

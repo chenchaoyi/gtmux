@@ -4,6 +4,7 @@ import (
 	"errors"
 	"reflect"
 	"sort"
+	"strings"
 )
 
 // Observation is immutable input, not permission to execute or change a goal.
@@ -25,7 +26,7 @@ type Reconciliation struct {
 	ReminderAt    int64       `json:"reminder_at,omitempty"`
 	ReminderCount uint64      `json:"reminder_count,omitempty"`
 	Observation   Observation `json:"observation"`
-	State         string      `json:"state"` // pending | leased | assessed | deferred | conflict | superseded
+	State         string      `json:"state"` // pending | recorded | leased | assessed | deferred | conflict | superseded
 	ReceivedAt    int64       `json:"received_at"`
 	Owner         string      `json:"owner,omitempty"`
 	Generation    uint64      `json:"generation"`
@@ -67,7 +68,11 @@ func recordObservation(d *Database, o Observation, at int64) error {
 		}
 		return nil
 	}
-	d.Reconciliations[o.ID] = Reconciliation{Observation: o, State: "pending", ReceivedAt: at}
+	status := "pending"
+	if o.Kind == "relay-notice" || o.Kind == "relay-legacy-delivery" {
+		status = "recorded"
+	}
+	d.Reconciliations[o.ID] = Reconciliation{Observation: o, State: status, ReceivedAt: at}
 	changed(d, at, "observation", o.MatterID, o.ID, o.Kind)
 	return nil
 }
@@ -88,6 +93,16 @@ func (s *Store) Ingest(source string, expected, cursor int64, observations []Obs
 			}
 		}
 		for _, o := range observations {
+			if o.Kind == "relay-fetched" {
+				key := "inbox:" + strings.TrimPrefix(o.Ref, "relay:")
+				if old, ok := d.Reconciliations[key]; ok && old.State != "assessed" && old.State != "superseded" {
+					old.State = "superseded"
+					old.LeaseUntil = 0
+					old.Generation++
+					d.Reconciliations[key] = old
+					changed(d, at, "inbox-fetched", o.MatterID, key, o.ID)
+				}
+			}
 			if o.DriveProof != nil {
 				attachDrive(d, o, at)
 			}
@@ -103,7 +118,7 @@ func (s *Store) Ingest(source string, expected, cursor int64, observations []Obs
 func ReconciliationQueue(d Database, now int64) []Reconciliation {
 	out := []Reconciliation{}
 	for _, q := range d.Reconciliations {
-		if q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > now {
+		if q.State == "recorded" || q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > now {
 			continue
 		}
 		out = append(out, q)
@@ -140,7 +155,7 @@ func (s *Store) ClaimObservation(id, owner string, at int64) (Reconciliation, er
 				return ErrConflict
 			}
 			q.GoalPremise = goalPremise(*d, m, at)
-		} else if q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > at {
+		} else if q.State == "recorded" || q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > at {
 			return ErrConflict
 		}
 		q.State = "leased"

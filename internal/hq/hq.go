@@ -191,12 +191,13 @@ import (
 // v60 — reserve gtmux homes for managed state; project work uses project/task storage.
 // v63 — consult before planning; evidence-gated capture and bounded review on distill.
 // v64 — durable per-item dreaming, HQ-selected existing CLI, truthful cost limits.
-const hqPlaybookVersion = 65
+const hqPlaybookVersion = 66
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	66: "01ce1b7366e945ed",
 	65: "a31739bfc2e0d0ba",
 	64: "a15fe47202f4e190",
 	63: "42d58cd9950f40cc",

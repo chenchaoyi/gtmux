@@ -3840,5 +3840,15 @@
     "selectors": [
       "TestCompatibilityCancellationDuringFinalTargetQuery"
     ]
+  },
+  "internal/app/hqworkspace_reply_test.go": {
+    "cases": [
+      "HRC-001",
+      "HRC-002"
+    ],
+    "selectors": [
+      "TestReplyLifecycleAcrossStop",
+      "TestReplyContinuationDispatchAndEvidence"
+    ]
   }
 }

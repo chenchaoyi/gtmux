@@ -36,6 +36,7 @@ type DriveRef struct {
 // DriveProof is supplied by a source adapter, never synthesized from idle/working
 // or an unstructured report. Ref and action bind receipts to one saved intent.
 type DriveProof struct {
+	Evidence  string `json:"evidence,omitempty"`
 	StepID    string `json:"step_id"`
 	ActionID  string `json:"action_id"`
 	Ref       string `json:"ref"`
@@ -70,7 +71,15 @@ func goalKey(m Matter) string {
 func GoalFollowupID(m Matter) string { return goalKey(m) }
 
 func GoalResponsibility(d Database, m Matter, now int64) (out GoalStatus) {
-	defer func() { out.FollowupID = goalKey(m) }()
+	defer func() {
+		out.FollowupID = goalKey(m)
+		if goalOwed(out) && out.ObservationID == "" {
+			if o := pendingReply(d, m); o.ID != "" {
+				out.ObservationID = o.ID
+				out.Reason = o.Ref + " — " + o.Body + " " + out.Reason
+			}
+		}
+	}()
 	if m.MergedInto != "" || m.State == "completed" || m.State == "closed" {
 		return GoalStatus{State: "terminal", Reason: "explicit terminal state"}
 	}
@@ -99,6 +108,11 @@ func GoalResponsibility(d Database, m Matter, now int64) (out GoalStatus) {
 	if m.UserInput != nil {
 		return GoalStatus{State: "owes-hq", Reason: "HQ must verify the saved answer and clear the exact question"}
 	}
+	if p.Intent != nil && p.Drive == nil {
+		if a := d.IntentAttempts[p.Intent.ID]; a.ReplyID != "" {
+			return replyResponsibility(d, a, now)
+		}
+	}
 	if p.Intent == nil || p.Drive == nil {
 		return GoalStatus{State: "owes-hq", Reason: "next step has no verified drive; check existing intent before any delivery"}
 	}
@@ -109,6 +123,9 @@ func GoalResponsibility(d Database, m Matter, now int64) (out GoalStatus) {
 	o := q.Observation
 	proof := o.DriveProof
 	i := p.Intent
+	if a := d.IntentAttempts[i.ID]; a.ReplyID != "" && !replyExecutionProof(o) {
+		return replyResponsibility(d, a, now)
+	}
 	if !ok || !driveEvidenceMatches(d, m, o, now) {
 		return GoalStatus{State: "verify", Reason: "drive evidence does not cover this step, action and exact conversation"}
 	}
@@ -188,6 +205,9 @@ func validateResponsibility(d Database, m Matter, p Responsibility, now int64) e
 		}
 		// An action ID remains immutable even across step revisions and failed sends.
 		for _, r := range d.Assessments {
+			if x := r.Assessment.Responsibility; x != nil && x.Intent != nil && CanonicalMatter(d, r.Assessment.MatterID) == m.ID && x.StepID == p.StepID && x.AuthorityRef == p.AuthorityRef && x.Intent.ID != p.Intent.ID && d.IntentAttempts[x.Intent.ID].ReplyID != "" {
+				return errors.New("this authorized step already has a reply continuation; verify its original receipt")
+			}
 			if x := r.Assessment.Responsibility; CanonicalMatter(d, r.Assessment.MatterID) == m.ID && sameIntentWork(x, &p) && x.Intent.ID != p.Intent.ID {
 				return errors.New("this work already has a saved action identity; a new step label does not authorize replay")
 			}

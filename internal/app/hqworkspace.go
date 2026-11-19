@@ -18,6 +18,7 @@ import (
 // workspaceAction is shared by the local CLI and its native consumer. Message
 // bodies travel over stdin, never shell interpolation or process arguments.
 type workspaceAction struct {
+	ReplyID         string                      `json:"reply_id,omitempty"`
 	Responsibility  *hqworkspace.Responsibility `json:"responsibility,omitempty"`
 	ResumeRef       string                      `json:"resume_ref,omitempty"`
 	RequestRevision uint64                      `json:"request_revision,omitempty"`
@@ -60,7 +61,7 @@ gtmux hq workspace reconcile --json
 The workspace keeps explicit goals, conversation membership and instruction receipts.
 list --stored reads only saved matters/overview, without live or historical session discovery.
 act reads ONE JSON object from stdin. Operations: create, register, send, report, request-input, clear-input, update,
-associate, unlink, move, interval, merge, split, cancel, retry, focus, claim, assess, drive.
+associate, unlink, move, interval, merge, split, cancel, retry, focus, claim, assess, drive, resume-reply.
 create needs id/title/body (one new goal and first instruction); send needs id/body
 and optional matter; report needs id/kind/body and optional matter/reply_to/state.
 Reports return projection:pending-reconciliation; state is a proposal, never a transition.
@@ -75,6 +76,9 @@ A user pause/refusal requires resume_ref before changing its hold.
 drive needs matter/id (saved intent ID)/revision, is HQ-only, and attempts that action once
 through ordinary delivery gates. queued means awaiting receipt; unknown/refused attempts
 are not retried. Inspect intent_attempts before planning another action.
+resume-reply needs matter/id/revision/reply_id. HQ reviews the existing authorized step
+and its message:<user instruction ID> authority_ref before arming one idle-only fetch reminder.
+Inspect the goal and intent_attempts for the fetch, input blocker and execution evidence.
 Both are HQ-only. assess accepts dry_run:true. A stale observation cannot transition a newer matter.
 send may include request_revision with reply_to; legacy exact question IDs remain supported.
 register needs id/title/body/state/origin {kind: board|task|conversation, ref: citation}.
@@ -270,11 +274,15 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 		} else {
 			result, err = s.Assess(hqworkspace.Assessment{ID: a.ID, ObservationID: a.ObservationID, Owner: owner, Generation: a.Generation, MatterID: a.Matter, Revision: a.Revision, Decision: a.Decision, State: a.State, Reason: a.Body, NextCheck: a.NextCheck, Responsibility: a.Responsibility, ResumeRef: a.ResumeRef}, now, a.DryRun)
 		}
-	case "drive":
+	case "drive", "resume-reply":
 		if !workspaceIsHQCaller() || workspaceAssessmentOwner() == "" {
 			return nil, errors.New("only the verified current HQ may drive a saved intent")
 		}
-		result, err = s.DriveIntent(a.Matter, a.ID, a.Revision, now, workspaceDeliverGoal)
+		if a.Op == "resume-reply" {
+			result, err = s.ArmReply(a.Matter, a.ID, a.ReplyID, a.Revision, now)
+		} else {
+			result, err = s.DriveIntent(a.Matter, a.ID, a.Revision, now, workspaceDeliverGoal)
+		}
 	case "update":
 		err = s.Update(a.Matter, a.Title, a.State, a.Body, a.Revision, now)
 	case "associate":
