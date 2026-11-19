@@ -100,17 +100,19 @@ func loadObservations(legacyPath, currentPath, agent, session, home string) obse
 	if old.Session == "" {
 		return current
 	}
-	// Model-dependent options belong to the selected model. When both snapshots
-	// agree on it, an effort-only hook can still update the effort independently.
+	// Model-dependent options belong to the selected model. Matching names
+	// alone do not rule out a switch away and back between observations.
 	oldModel, currentModel := observationFact(old.Facts, "model"), observationFact(current.Facts, "model")
 	sameModel := oldModel.Value == currentModel.Value
 	preferOldModel := oldModel.At > currentModel.At
+	selectedModelAt := max(oldModel.At, currentModel.At)
 	oldPermission := observationFact(old.Facts, "permission").At > observationFact(current.Facts, "permission").At
 	var merged Profile
 	for i, snapshot := range []observation{old, current} {
 		isOld := i == 0
 		for _, f := range snapshot.Facts {
-			fromSelectedModel := preferOldModel == isOld || (f.Key == "effort" && sameModel)
+			fromSelectedModel := preferOldModel == isOld ||
+				(f.Key == "effort" && sameModel && f.At > selectedModelAt)
 			if modelOption(f.Key) && !fromSelectedModel || f.Key == "mode" && oldPermission != isOld {
 				continue
 			}

@@ -4281,5 +4281,13 @@
     "selectors": [
       "TestMixedProfileLegacyEffortOnlyAfterReset"
     ]
+  },
+  "internal/agentprofile/model_return_test.go": {
+    "cases": [
+      "STOR-010"
+    ],
+    "selectors": [
+      "TestMixedProfileModelReturnDoesNotRestoreEffort"
+    ]
   }
 }

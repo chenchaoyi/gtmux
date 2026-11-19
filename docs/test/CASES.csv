@@ -98,6 +98,7 @@ LEG-decdb5947ab5,L1,Go core / CLI / server,internal/agentenv/agentenv_test.go,80
 MAP-60af8cd5535c,L2,reviewed implementation,internal/agentprofile/mixed_effort_reset_test.go,13,reviewed-selector,TestMixedProfileEffortResetSurvivesLegacyRefresh,False,STOR-007
 MAP-5ac8306c6077,L2,reviewed implementation,internal/agentprofile/mixed_effort_reset_test.go,76,reviewed-selector,TestMixedProfileEffortResetPersistsWithoutOtherFacts,False,STOR-007
 MAP-f8fc1aa4a521,L2,reviewed implementation,internal/agentprofile/mixed_effort_review_test.go,10,reviewed-selector,TestMixedProfileLegacyEffortOnlyAfterReset,False,STOR-009
+MAP-992a1aa7b6f9,L2,reviewed implementation,internal/agentprofile/model_return_test.go,12,reviewed-selector,TestMixedProfileModelReturnDoesNotRestoreEffort,False,STOR-010
 MAP-f477967708d8,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,15,reviewed-selector,TestProfileObservationLeaseShardsAreBounded,False,STOR-004
 MAP-fab36ee0bfb3,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,40,reviewed-selector,TestProfileObservationIsolatesMixedWriters,False,STOR-004
 LEG-dba457431b8b,L1,Go core / CLI / server,internal/agentprofile/profile_test.go,23,Test,TestNativeContractsRemainAgentSpecific,False,legacy-not-retrospectively-reviewed

@@ -45,8 +45,10 @@ reusable locks in its `locks/` subdirectory. Older hooks keep their original
 files. Current reads combine both generations for the same identity and take
 model options and permission-dependent mode from the corresponding newer
 observation. For matching models, including two observations without a model,
-an effort-only hook may update effort independently. A legacy effort at or before
-the last reset stays cleared even if the legacy hook refreshes the model later.
+a separate effort observation can cross snapshot generations when it is newer than
+the selected model record. This avoids restoring old effort when the model switches
+away and back. A legacy effort at or before the last reset stays cleared even if the
+legacy hook refreshes the model later.
 Process inspection runs before acquiring a shard. Leave old lock anchors in place
 until all writers that can use them have been retired.
 
