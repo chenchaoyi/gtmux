@@ -1,0 +1,24 @@
+{
+  "id": "input-store-gate-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Verify the same terminal-input layout contract in the production Go sender and DSH receiver.",
+    "notes": "Owner review before the implementation. All fixtures live in a temporary HOME. The isolated proof cannot certify actual writer drain, service order or power-loss recovery. Scope uses the small agentclient test package with the shipped DSH module in a private fixture."
+  },
+  "cases": [
+    {
+      "id": "SPL-005",
+      "layer": "L2",
+      "description": "Terminal input uses an explicitly bound layout across Go and DSH.",
+      "setup": "Private v1 queue with pending, unknown and accepted actions, installed copies of the shipped DSH plugin, a synthetic agent, and a private tmux stub.",
+      "action": "Check legacy and active layouts, preserve v1 entries after changing the layout, retry by the same ID, and change or remove the journal while a writer is prepared. Check missing, prepared, malformed, foreign identity and unmatched receiver generation.",
+      "expected": "Both consumers agree on the selected directory. Valid legacy input and accepted receipts survive. Active generations retain pending and unknown authority. Unverified layout and stale operations refuse without creating a new request or changing a receipt.",
+      "planned_files": [
+        "internal/agentclient/input_store_gate_test.go"
+      ]
+    }
+  ],
+  "seal": "71decb5d26701a579e78fcac8b8dcd167e82f554c4b3717ba0dc1f92651a6a99"
+}

@@ -1,0 +1,38 @@
+{
+  "id": "input-outcome-review-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Verify the independent P1.2 findings against the actual CLI, HTTP and native gates.",
+    "notes": "Isolated fixtures only. The finding review d9ca8bb9 covers the original frozen P1.2, while this pre-implementation self-review defines new regressions. It preserves #1897's actual pre-claim observation and old evidence labels."
+  },
+  "cases": [
+    {
+      "id": "SPL-014",
+      "layer": "L2",
+      "description": "A current refusal does not settle the same ID's earlier unknown input.",
+      "setup": "Private queue, synthetic DSH attachment and Codex frontend, same stable ID and separate first-time request.",
+      "action": "Leave a claim with no receipt; remove attachment or invalidate layout, then retry with the same ID. Check clean-state absence and the same guard after an actual refusal.",
+      "expected": "No new paste, Enter or RPC. Existing or unverifiable prior outcome reports unknown while the current refusal remains distinguishable from a transport attempt; a verified fresh refusal stays not-submitted.",
+      "planned_files": [
+        "internal/app/send_outcome_test.go",
+        "internal/dispatchbridge/spool_capacity_test.go"
+      ]
+    },
+    {
+      "id": "SPL-015",
+      "layer": "L2",
+      "description": "JSON terminal success and HTTP question/receipt grades keep their distinct meanings.",
+      "setup": "CLI fixture without a native receipt, synthetic screen menu or exact native input question, and two HTTP calls sharing an ID.",
+      "action": "Submit once without verification, compare screen and native question codes, preserve the old unavailable evidence label, and retry submitted or queued success with the same ID.",
+      "expected": "Generic success is submitted without claiming delivery, bare shell sent remains delivered, only proven native question emits the HTTP question code, and cached success keeps its original grade without duplicate input.",
+      "planned_files": [
+        "internal/app/send_outcome_test.go",
+        "internal/app/phone_send_failure_test.go",
+        "internal/app/sendkeys_test.go"
+      ]
+    }
+  ],
+  "seal": "09d7eb29085c279f60fac65f5ba5761d818063db71b185d28ef6e923c4d416e9"
+}

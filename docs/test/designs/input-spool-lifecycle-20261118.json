@@ -1,0 +1,47 @@
+{
+  "id": "input-spool-lifecycle-20261118",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-18",
+    "decision": "Exercise the shared v1 input protocol at admission, claim, completion and replay.",
+    "notes": "Use synthetic requests in private homes and sockets. Observe file counts, actual receipt state, dispatch evidence and explicit capacity recovery copy. Include existing durable retry, address and native plugin contracts. No live delivery or repair of unknown actions."
+  },
+  "cases": [
+    {
+      "id": "SPL-001",
+      "layer": "L2",
+      "description": "Admit only requests with completion headroom, including overlapping and old records.",
+      "setup": "Private directory with foreign entries and v1 requests.",
+      "action": "Fill close to the entry limit, overlap reservations, complete claims, and retry the original ID at capacity.",
+      "expected": "Only a fitting new request is admitted. Existing completion and same-ID lookup remain possible.",
+      "planned_files": [
+        "internal/agentclient/spool_lifecycle_test.go"
+      ]
+    },
+    {
+      "id": "SPL-002",
+      "layer": "L2",
+      "description": "Reconcile receipts, compact settled bodies, and preserve uncertain authority across restarts.",
+      "setup": "Private legacy pending, claimed and receipt fixtures plus a held lease.",
+      "action": "Race completion with the lease, repeat and contradict a receipt, simulate partial or corrupt state and expire settled results.",
+      "expected": "A terminal receipt stays immutable, unconfirmed state cannot replay, bounded cleanup keeps valid evidence through the retention window.",
+      "planned_files": [
+        "internal/agentclient/spool_lifecycle_test.go"
+      ]
+    },
+    {
+      "id": "SPL-003",
+      "layer": "L2",
+      "description": "Capacity and receipt uncertainty have distinct send recovery outcomes.",
+      "setup": "Real Go dispatch and phone refusal helpers with synthetic target and private HOME.",
+      "action": "Fill the spool, call the native input entry point, classify the resulting refusal and compare with an unconfirmed receipt.",
+      "expected": "Admission reports capacity before submission. Uncertainty and explicit refusal remain distinct, with no automatic resend.",
+      "planned_files": [
+        "internal/dispatchbridge/spool_capacity_test.go",
+        "internal/app/spool_failure_test.go"
+      ]
+    }
+  ],
+  "seal": "9cf3cdee4a04f51eab4eff2b151e046117557e5df4423747fa5f269ca4fcee0b"
+}

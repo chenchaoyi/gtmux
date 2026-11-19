@@ -1,0 +1,49 @@
+{
+  "id": "input-receipt-durability-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Verify persistence barriers without executing production input or using real queue state.",
+    "notes": "Inject file sync, directory sync, exclusive publication and removal failures. The maintained bounds are 4096 admission and 8192 scan; account for the brief extra name during non-replacing receipt publication. Runtime filesystem and power-loss claims remain separate."
+  },
+  "cases": [
+    {
+      "id": "SPL-011",
+      "layer": "L2",
+      "description": "Go claims and accepted receipts cross a durability boundary before mutation or cleanup.",
+      "setup": "Private queue with an addressed pending request, state lease, controlled file and directory operations.",
+      "action": "Fail claim sync or directory sync; fail receipt sync, publication or post-publication directory sync; retry adoption of the existing receipt; fail claim removal after a committed receipt.",
+      "expected": "Before durable claim, no delivery may run and pending remains. Until receipt file and directory sync succeed, claim and identity remain and an apparent receipt cannot authorize acknowledgement or pruning. Adoption verifies the same file and directory and never overwrites or replays. Cleanup failure preserves known acceptance.",
+      "planned_files": [
+        "internal/agentclient/input_durability_test.go"
+      ]
+    },
+    {
+      "id": "SPL-012",
+      "layer": "L2",
+      "description": "Queue reconciliation protects corrupt or unresolved evidence and accounts for an extra publication name.",
+      "setup": "Addressed Go records, an old DSH empty claim, mixed compatible receiver and producer, and a bounded near-full private queue.",
+      "action": "Try aged and recent cleanup with failed receipt or directory sync, invalid body, unresolved receipt and a valid terminal receipt; hold an in-flight request near capacity while submitting a second.",
+      "expected": "Only a strictly addressed durable receipt permits cleanup. Pending and claim copies must be validated before deleting. The old DSH empty marker and unresolved state retain replay protection. At capacity accepted work can still settle, and no new request is admitted without room for temporary and final names together.",
+      "planned_files": [
+        "internal/agentclient/input_records_test.go",
+        "internal/agentclient/input_durability_test.go",
+        "internal/agentclient/spool_lifecycle_test.go",
+        "internal/app/dsh_terminal_spool_test.go"
+      ]
+    },
+    {
+      "id": "SPL-013",
+      "layer": "L2",
+      "description": "Shipped DSH persists exclusive claim and receipt and reports uncertain settlement without repeating input.",
+      "setup": "Private HOME and queue, shipped DSH module and fake agent, scoped operation faults.",
+      "action": "Fail claim file/dir flush before followup; fail receipt file/dir sync or exclusive link after followup; retry a visible receipt, simulate competing settlement and test a known refusal before mutation.",
+      "expected": "Failed claim cannot reach followup. A failed receipt cannot become success; claim survives. A verified retry adopts the original receipt only after both syncs; conflicting or corrupt outcomes are preserved and never justify more calls. Only durably refused cleanup may retire its empty claim. Accepted and uncertain DSH claims retain compatibility.",
+      "planned_files": [
+        "internal/app/dsh_terminal_test.go"
+      ]
+    }
+  ],
+  "seal": "768672a6c92703f98b30f5d54982620c4ede02c61480b991673e59c8d00b618d"
+}

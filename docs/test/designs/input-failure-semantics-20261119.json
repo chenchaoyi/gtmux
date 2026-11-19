@@ -1,0 +1,38 @@
+{
+  "id": "input-failure-semantics-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Exercise no-submit, unknown and confirmed results at separate transport and caller boundaries.",
+    "notes": "P1.2 on f14bc6a2. Review preserves state strings, wait evidence prefixes, native hold and replay gates. Assertions use private HOME and fake terminal I/O or a fake tmux binary. No independent approval or execution is claimed."
+  },
+  "cases": [
+    {
+      "id": "SPL-008",
+      "layer": "L2",
+      "description": "Shared dispatch preserves a typed transport failure and the known submission boundary.",
+      "setup": "Injected paste, Enter, hold and native outcomes with invocation counters.",
+      "action": "Refuse on a typed paste error, stop at a fragment or hold, pass a known pre-Enter rejection or an unconfirmed Enter, and observe native admission versus a possible mutation.",
+      "expected": "Before-submit refusal does not make an Enter call. A potentially attempted send is unknown with its original attempt count. Draft holds retain their evidence prefixes. Success, native precedence and the legacy bool wrapper are retained.",
+      "planned_files": [
+        "internal/dispatch/input_failure_test.go",
+        "internal/dispatchbridge/spool_capacity_test.go"
+      ]
+    },
+    {
+      "id": "SPL-009",
+      "layer": "L2",
+      "description": "CLI and HTTP present the same failure class without reporting acceptance or promising a retry.",
+      "setup": "Real CLI argument handling and HTTP handler with isolated terminal attachment, fake I/O and no live session.",
+      "action": "Exercise CLI verified and no-verify text submission, HTTP text submission with a stable send ID, capacity, invalid layout, target change, unknown outcome and a successful send.",
+      "expected": "Failures exit nonzero or fail the HTTP request. Stable codes identify the failure and optional submission status; the HTTP error carries the caller ID and no draft, payload, capture or success receipt. Unknown is not success-cached. Successful requests keep their receipt and caching. A native question is reported only with evidence.",
+      "planned_files": [
+        "internal/app/phone_send_failure_test.go",
+        "internal/app/spool_failure_test.go",
+        "internal/app/send_outcome_test.go"
+      ]
+    }
+  ],
+  "seal": "d0ba9ef997bcaa06af8d4fc6ebb19b371224bac77a0a4d2da30701ca85197b3b"
+}

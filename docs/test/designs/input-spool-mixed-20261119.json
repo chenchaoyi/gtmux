@@ -1,0 +1,24 @@
+{
+  "id": "input-spool-mixed-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Exercise the v1 DSH receiver from the release against the candidate Go writer in a private shared spool.",
+    "notes": "The isolated prototype first established that both paths are reachable. This review records the observed boundary and design for the final catalogue. It does not claim independent approval, installed-agent verification, or capacity enforcement by older Go writers."
+  },
+  "cases": [
+    {
+      "id": "SPL-004",
+      "layer": "L2",
+      "description": "A v1 receiver and current Go writer finish in the same bounded input spool.",
+      "setup": "Private HOME with the shipped DSH module, addressed synthetic pending request, and near-capacity unrelated entries.",
+      "action": "Pause the actual DSH receiver after it claims but before it writes a receipt. Retry its ID, admit one Go request and reject another. Finish the Go request, release the v1 receiver, and repeat the addressed legacy invocation.",
+      "expected": "The unconfirmed claim prevents replay. The admissible Go request and the existing DSH request both settle; the over-capacity request is refused. Repeated legacy receive and Go retry reuse one accepted receipt and do not deliver the message again.",
+      "planned_files": [
+        "internal/app/dsh_terminal_spool_test.go"
+      ]
+    }
+  ],
+  "seal": "f3fc05a14c6750030679032b62034e5cbbc0481ac53b3882a07a4d9324b71f79"
+}
