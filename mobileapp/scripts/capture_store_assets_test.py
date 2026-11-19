@@ -309,6 +309,23 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(calls[-2:], [["xcrun", "simctl", "shutdown", "owned-device-id"],
                                      ["xcrun", "simctl", "delete", "owned-device-id"]])
 
+    def test_managed_capture_output_refused_before_tools(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            managed = root / '.config/gtmux'
+            managed.mkdir(parents=True)
+            alias = root / 'alias'
+            alias.symlink_to(managed, target_is_directory=True)
+            args = ['capture-store-assets.py', '--source', tmp, '--app', tmp, '--harness', tmp]
+            with patch.dict(capture.os.environ, {'HOME': tmp, 'GITHUB_ACTIONS': 'true'}), \
+                    patch.object(capture, 'command') as command:
+                for target in (managed / 'appstore', alias / 'appstore'):
+                    with self.subTest(target=target), patch('sys.argv', args + ['--output', str(target)]):
+                        with self.assertRaisesRegex(ValueError, 'outside gtmux'):
+                            capture.main()
+                command.assert_not_called()
+            self.assertEqual(list(managed.iterdir()), [])
+
 
 if __name__ == "__main__":
     unittest.main()

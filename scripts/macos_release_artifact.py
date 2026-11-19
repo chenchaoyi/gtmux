@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 import shutil
 
+from delivery_storage import require_external_path
+
 LIMIT = 90 * 1024**2
 
 
@@ -37,6 +39,7 @@ def digest(path):
 
 
 def seal(directory, archive, expected):
+    require_external_path(directory)
     require(archive.is_file() and not archive.is_symlink() and archive.name == expected['file']
             and 0 < archive.stat().st_size <= LIMIT, 'Unexpected Mac ZIP')
     directory.mkdir(mode=0o700)  # A second build must select a new artifact, never replace one.

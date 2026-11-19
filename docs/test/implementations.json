@@ -4195,5 +4195,71 @@
     "selectors": [
       "TestWorkspaceReconciliationRetriesFromReminderTime"
     ]
+  },
+  "internal/agentprofile/mixed_effort_reset_test.go": {
+    "cases": [
+      "STOR-007"
+    ],
+    "selectors": [
+      "TestMixedProfileEffortResetSurvivesLegacyRefresh",
+      "TestMixedProfileEffortResetPersistsWithoutOtherFacts"
+    ]
+  },
+  "internal/agentprofile/observation_storage_test.go": {
+    "cases": [
+      "STOR-004"
+    ],
+    "selectors": [
+      "TestProfileObservationLeaseShardsAreBounded",
+      "TestProfileObservationIsolatesMixedWriters"
+    ]
+  },
+  "mobileapp/scripts/capture_store_assets_test.py": {
+    "cases": [
+      "STOR-006"
+    ],
+    "selectors": [
+      "test_managed_capture_output_refused_before_tools"
+    ]
+  },
+  "mobileapp/scripts/fetch_delivery_test.py": {
+    "cases": [
+      "STOR-005"
+    ],
+    "selectors": [
+      "test_managed_output_refused_before_transport"
+    ]
+  },
+  "mobileapp/scripts/store_artifacts_test.py": {
+    "cases": [
+      "STOR-006"
+    ],
+    "selectors": [
+      "test_managed_render_and_reuse_paths_fail_before_setup"
+    ]
+  },
+  "mobileapp/scripts/store_package_test.py": {
+    "cases": [
+      "STOR-005"
+    ],
+    "selectors": [
+      "test_cli_rejects_managed_receipt_before_package_verification"
+    ]
+  },
+  "scripts/check_delivery_retention_test.py": {
+    "cases": [
+      "STOR-003"
+    ],
+    "selectors": [
+      "test_project_archive_destination"
+    ]
+  },
+  "scripts/macos_release_artifact_test.py": {
+    "cases": [
+      "STOR-005"
+    ],
+    "selectors": [
+      "test_staging_refuses_managed_state_alias"
+    ]
   }
 }

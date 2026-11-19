@@ -11,6 +11,8 @@ import struct
 import subprocess
 import tarfile
 
+from delivery_source import require_external_path
+
 SCHEMA = 1
 GROUPS = {slot + '-' + lang: names for slot, names in {
     'phone': ('00-demo-entry', '01-radar', '02-terminal-approval', '03-hq', '04-console', '05-usage', '06-servers'),
@@ -26,8 +28,10 @@ def digest(path):
 
 
 def save(path, data):
-    path.parent.mkdir(parents=True, exist_ok=True)
+    require_external_path(path)
     temp = path.with_suffix(path.suffix + '.tmp')
+    require_external_path(temp)
+    path.parent.mkdir(parents=True, exist_ok=True)
     temp.write_text(json.dumps(data, indent=2, sort_keys=True) + '\n')
     temp.replace(path)
 
@@ -113,6 +117,7 @@ def load_checkpoint(output, context=None):
 
 
 def checkpoint_group(output, context, key, raw, origin=None):
+    require_external_path(output)
     data = load_checkpoint(output, context)
     records = [png_record(raw / (name + '.png'), raw) for name in GROUPS[key]]
     expected = [2752, 2064] if key.startswith('ipad-') else [1320, 2868]
@@ -137,6 +142,7 @@ def complete_checkpoint(output, tag, commit):
 
 
 def render(source, renderer, captures, output, tag, commit, render_commit):
+    output = require_external_path(output)
     data = complete_checkpoint(captures, tag, commit)
     if output.exists():
         raise ValueError('Use a fresh render output directory')
@@ -184,6 +190,7 @@ def render(source, renderer, captures, output, tag, commit, render_commit):
 
 
 def fetch_artifact(root, run_id, kind, repository, optional=False):
+    root = require_external_path(root)
     if not re.fullmatch(r"[1-9][0-9]*", str(run_id)) or kind not in ("simulator", "checkpoint"):
         raise ValueError("Invalid reuse run or artifact kind")
     def api(path):
@@ -229,10 +236,11 @@ def main():
     elif args.action == 'verify-run':
         verify_run(json.loads((args.root / 'run.json').read_text()), args.repository, args.workflow_id)
     elif args.action == 'render':
-        render(args.source.resolve(), args.renderer.resolve(), args.captures.resolve(), args.root.resolve(), args.tag, args.commit, args.render_commit)
+        render(args.source.resolve(), args.renderer.resolve(), args.captures.resolve(), args.root, args.tag, args.commit, args.render_commit)
     else:
         manifest_path = args.root / 'build.json'
         if args.action == 'pack-build':
+            require_external_path(args.root)
             manifest = build_manifest(args.app, args.tag, args.commit, args.xcode, args.arch)
             args.root.mkdir(parents=True, exist_ok=True)
             with tarfile.open(args.root / 'simulator-app.tar.gz', 'w:gz') as archive:
@@ -240,6 +248,7 @@ def main():
             save(manifest_path, manifest)
         else:
             if args.action == 'unpack-build':
+                require_external_path(args.root)
                 with tarfile.open(args.root / 'simulator-app.tar.gz') as archive:
                     if any(Path(m.name).is_absolute() or '..' in Path(m.name).parts or not (m.name == 'gtmux.app' or m.name.startswith('gtmux.app/')) for m in archive):
                         raise ValueError('Unexpected path in simulator archive')

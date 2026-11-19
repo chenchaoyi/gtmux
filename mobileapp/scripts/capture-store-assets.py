@@ -10,6 +10,7 @@ import plistlib
 import shutil
 import subprocess
 
+from delivery_source import require_external_path
 from store_artifacts import GROUPS, checkpoint_group, load_checkpoint, png_record, save, tree_hash, verify_records
 
 
@@ -183,9 +184,10 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--harness", required=True, type=Path)
     args = parser.parse_args()
-    source, app, output = args.source.resolve(), args.app.resolve(), args.output.resolve()
     if os.environ.get("GITHUB_ACTIONS") != "true":
         raise ValueError("This headless helper requires an isolated Actions runner; use the local e2e workflow on a shared Mac")
+    output = require_external_path(args.output)
+    source, app = args.source.resolve(), args.app.resolve()
     if not app.is_dir():
         raise ValueError("Need a verified simulator app")
     actual_commit = command(["git", "rev-parse", "HEAD"], cwd=source)

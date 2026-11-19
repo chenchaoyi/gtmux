@@ -38,6 +38,10 @@ MAP-daaea5392f1c,L2,reviewed implementation,internal/agentclient/pending_retry_l
 MAP-e76ce32b2c0e,L2,reviewed implementation,internal/agentclient/pending_target_test.go,8,reviewed-selector,TestMSD006PendingTargetIdentity,False,MSD-006
 MAP-23ca08bdac67,L2,reviewed implementation,internal/agentclient/spool_lifecycle_test.go,16,reviewed-selector,TestSPL001AdmissionReservesCompletion,False,"SPL-001,SPL-002,SPL-012"
 MAP-7d70f501da1d,L2,reviewed implementation,internal/agentclient/spool_lifecycle_test.go,65,reviewed-selector,TestSPL002SettlementAndUnconfirmedRecovery,False,"SPL-001,SPL-002,SPL-012"
+MAP-60af8cd5535c,L2,reviewed implementation,internal/agentprofile/mixed_effort_reset_test.go,13,reviewed-selector,TestMixedProfileEffortResetSurvivesLegacyRefresh,False,STOR-007
+MAP-5ac8306c6077,L2,reviewed implementation,internal/agentprofile/mixed_effort_reset_test.go,76,reviewed-selector,TestMixedProfileEffortResetPersistsWithoutOtherFacts,False,STOR-007
+MAP-f477967708d8,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,15,reviewed-selector,TestProfileObservationLeaseShardsAreBounded,False,STOR-004
+MAP-fab36ee0bfb3,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,40,reviewed-selector,TestProfileObservationIsolatesMixedWriters,False,STOR-004
 MAP-f6200d4fe8c9,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,9,reviewed-selector,TestSID001PresentationConfigKeepsManagedIdentity,False,SID-001
 MAP-410b581f2c06,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,35,reviewed-selector,TestSID001HelpStillRecognizesCommandsAfterDisplayConfig,False,SID-001
 MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go,30,reviewed-selector,TestClientHTTPContracts,False,CT-HTTP
