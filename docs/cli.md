@@ -944,7 +944,12 @@ ID, original plan, and prior delivery outcome. A late association must cover
 the original request, reply and current exact execution member. The binding
 records that attribution separately from the original observations. Previously
 queued or landed ordinary drives remain reserved for reconciliation.
-A newer target instruction invalidates the old review. The claim records the
+New user messages retain the journal sequence observed at submission. The
+continuation checks the target history from the original message, including
+instructions ingested before enrollment. A legacy message with an unordered
+same-second target instruction, a missing interval or an unreadable journal
+leaves an explicit HQ blocker. A later verified user resumption can cover the
+same action. A newer target instruction invalidates the old review. The claim records the
 reviewed event boundary. `reply_observations` keeps every receipt's latest stage
 after an ordinary `noted` assessment. Claim an unbound receipt and assess
 `no-followup` to record an explicit disposition. Serve waits

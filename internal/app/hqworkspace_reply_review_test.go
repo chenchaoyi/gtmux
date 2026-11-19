@@ -15,6 +15,7 @@ func TestReviewedReplyAuthorityAndOrder(t *testing.T) {
 	for _, scenario := range []string{"direct", "direct-superseded", "late-send-audit", "explicit-disposition", "direct-unattested", "wrong-source", "machine-event", "cleared-answer", "unresolved-answer", "noted-fetch", "earlier-received", "earlier-empty-progress", "consumed-pause", "coordination-echo"} {
 		t.Run(scenario, func(t *testing.T) {
 			t.Setenv("HOME", t.TempDir())
+			seedReplyJournal(t)
 			source := &phase1CursorSource{}
 			_, _, c := phase1CursorStore(t, source, true)
 			home := t.TempDir()

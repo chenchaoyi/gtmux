@@ -54,6 +54,48 @@ func eligibleWorkspaceReply(r relay.Request) bool {
 	return r.State == "replied" && r.ReplyChannel == "inbox" && r.For == "hq" && r.Agent == "codex" && r.HomeID != "" && r.ThreadID != "" && r.ReplyAt >= r.CreatedAt && r.ReplyAt > 0 && !r.Delivered && r.ReplyAttempt == ""
 }
 
+// The general observation stream deliberately skips unenrolled conversations.
+func workspaceMessageHistoryHold(d hqworkspace.Database, a hqworkspace.IntentAttempt) string {
+	m := hqworkspace.ReplyAuthorityMessage(d, a)
+	if m.ID == "" {
+		return "HQ must verify the original workspace instruction"
+	}
+	floor := int64(0)
+	if m.EventCursor != nil {
+		floor = *m.EventCursor
+	} else {
+		// A retained, committed observation ingested strictly before this
+		// legacy message is a lower bound even when the log has rotated.
+		for _, q := range d.Reconciliations {
+			if q.ReceivedAt <= 0 || q.ReceivedAt >= m.At || !strings.HasPrefix(q.Observation.Ref, "events:") {
+				continue
+			}
+			seq, e := strconv.ParseInt(strings.TrimPrefix(q.Observation.Ref, "events:"), 10, 64)
+			if e == nil && q.Observation.ID == "event-"+strconv.FormatInt(seq, 10) && seq > floor {
+				floor = seq
+			}
+		}
+	}
+	rows, high, err := events.VerifiedSince(floor)
+	if err != nil || high < a.EventCursor {
+		return "HQ must reconcile the incomplete or unreadable target event history"
+	}
+	target := a.Intent.Target
+	for _, r := range rows {
+		if r.Event != "UserPromptSubmit" || r.Origin != events.OriginInstruction || !hqworkspace.MessageHistoryAfter(m, r.Seq, r.Ts) {
+			continue
+		}
+		if r.AgentSession != "" && r.AgentSession != target.SessionID || r.HomeID != "" && r.HomeID != target.HomeID {
+			continue
+		}
+		if agent := agents.KeyForLabel(r.Agent); agent != "" && agent != target.Agent {
+			continue
+		}
+		return "HQ must reconcile the later or unordered instruction in the target conversation"
+	}
+	return ""
+}
+
 // A restored workspace snapshot is not a substitute for the live relay ledger.
 func replySourceHold(a hqworkspace.IntentAttempt, db hqworkspace.Database) string {
 	target := a.Intent.Target
@@ -62,6 +104,11 @@ func replySourceHold(a hqworkspace.IntentAttempt, db hqworkspace.Database) strin
 		e, err := workspaceVerifiedUserEvent("events:" + strconv.FormatInt(a.UserEvent.Seq, 10))
 		if err != nil || e.At != a.UserEvent.At || !e.Source.Same(a.UserEvent.Source) {
 			return "HQ must reconcile the original user event and its authorship"
+		}
+	}
+	if a.UserEvent == nil {
+		if why := workspaceMessageHistoryHold(db, a); why != "" {
+			return why
 		}
 	}
 	if seq := workspaceEventSequence(); seq != a.EventCursor {
@@ -143,7 +190,7 @@ func workspaceVerifiedUserEvent(ref string) (*hqworkspace.UserEvent, error) {
 		return nil, errors.New("verified_user_event requires an exact events:N reference")
 	}
 	rows, gap := workspaceReadEvents(0)
-	if gap {
+	if gap || len(rows) == 0 || rows[len(rows)-1].Seq != workspaceEventSequence() {
 		return nil, errors.New("HQ must reconcile the original user event history gap")
 	}
 	for _, r := range rows {

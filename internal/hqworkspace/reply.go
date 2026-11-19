@@ -16,6 +16,7 @@ type UserEvent struct {
 }
 
 type ReplyReview struct {
+	MessageHold  func(Database, IntentAttempt) string
 	AuthorityRef string
 	UserEvent    *UserEvent
 	Reports      []Observation
@@ -98,6 +99,9 @@ func (s *Store) ArmReply(matter, action, reply string, revision uint64, at int64
 		}
 		if out.State == "armed" {
 			out.Evidence = ""
+			if out.UserEvent == nil && evidence.MessageHold != nil {
+				out.Evidence = evidence.MessageHold(*d, out)
+			}
 		}
 		if d.Reconciliations["relay-"+reply].Observation.MatterID == "" || d.Reconciliations["inbox:"+reply].Observation.MatterID == "" {
 			id := "attribution:" + reply
@@ -159,6 +163,18 @@ func replyAuthorityRef(m Matter, a IntentAttempt) string {
 	return m.Responsibility.AuthorityRef
 }
 
+func ReplyAuthorityMessage(d Database, a IntentAttempt) Message {
+	return d.Messages[strings.TrimPrefix(replyAuthorityRef(d.Matters[a.MatterID], a), "message:")]
+}
+
+// A legacy timestamp cannot order two instructions in the same second.
+func MessageHistoryAfter(m Message, seq, at int64) bool {
+	if m.EventCursor != nil && seq > 0 {
+		return seq > *m.EventCursor
+	}
+	return at <= 0 || at >= m.At
+}
+
 func replyAuthority(d Database, m Matter, a IntentAttempt) bool {
 	ref := replyAuthorityRef(m, a)
 	latest := a.Intent.At
@@ -210,7 +226,7 @@ func ReplyBlockReason(d Database, a IntentAttempt, at int64) string {
 			continue
 		}
 		seq, _ := strconv.ParseInt(strings.TrimPrefix(o.Ref, "events:"), 10, 64)
-		if seq > a.EventCursor || a.UserEvent == nil && o.OccurredAt > d.Messages[strings.TrimPrefix(replyAuthorityRef(m, a), "message:")].At {
+		if seq > a.EventCursor || a.UserEvent == nil && MessageHistoryAfter(ReplyAuthorityMessage(d, a), seq, o.OccurredAt) {
 			return "HQ must review the newer instruction in the target conversation"
 		}
 	}

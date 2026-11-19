@@ -14,6 +14,7 @@ func TestReplyReconcilesSavedHistory(t *testing.T) {
 	for _, scenario := range []string{"later-answer", "unreviewed-answer", "old-answer", "legacy-event", "late-membership", "late-received", "late-execution", "late-user-report", "late-source-unavailable", "ambiguous-history", "intermediate-overlap", "wrong-source", "ordinary-queued", "ordinary-landed", "ordinary-uncertain"} {
 		t.Run(scenario, func(t *testing.T) {
 			t.Setenv("HOME", t.TempDir())
+			seedReplyJournal(t)
 			source := &phase1CursorSource{}
 			_, _, c := phase1CursorStore(t, source, true)
 			home := t.TempDir()

@@ -14,7 +14,18 @@ import (
 
 // Store is local to one HQ home. Tests always supply an isolated directory.
 // Atomic snapshots preserve a complete previous version on pre-rename failures.
-type Store struct{ dir string }
+type Store struct {
+	dir               string
+	instructionCursor *int64
+}
+
+// WithInstructionCursor attaches the original journal boundary only to a newly
+// written user message. Idempotent retries return its first persisted boundary.
+func (s *Store) WithInstructionCursor(seq int64) *Store {
+	copy := *s
+	copy.instructionCursor = &seq
+	return &copy
+}
 
 func New(home string) *Store { return &Store{dir: filepath.Join(home, "workspace")} }
 

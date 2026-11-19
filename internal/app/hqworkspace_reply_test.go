@@ -110,6 +110,7 @@ func TestReplyContinuationDispatchAndEvidence(t *testing.T) {
 				tmux.Bin = oldBin
 				workspaceIsHQCaller, workspaceAssessmentOwner, workspaceGoalCandidates, workspaceDispatch = oldHQ, oldOwner, oldCandidates, oldIO
 			})
+			seedReplyJournal(t)
 			source := &phase1CursorSource{}
 			s, home, c := phase1CursorStore(t, source, true)
 			workspaceRelayRecords = relay.List

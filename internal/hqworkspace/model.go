@@ -83,6 +83,7 @@ type Association struct {
 }
 
 type Message struct {
+	EventCursor     *int64 `json:"event_cursor,omitempty"`
 	TargetRevision  uint64 `json:"target_revision,omitempty"`
 	Projection      string `json:"projection,omitempty"`
 	RequestRevision uint64 `json:"request_revision,omitempty"`

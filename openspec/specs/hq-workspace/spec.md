@@ -380,3 +380,8 @@ The workspace SHALL project reply, active-turn notice, source fetch and executio
 - **WHEN** HQ reviews later user confirmation for the same saved action, or verifies continuous unique membership covering a previously unassigned request and reply
 - **THEN** the binding records supplemental authority and attributed receipts without rewriting the original action or observations
 - **AND** a prior ordinary queued, landed or uncertain drive remains reserved for reconciliation and cannot become a fresh reminder
+
+#### Scenario: A target pauses before it is enrolled
+- **WHEN** an exact target's instruction follows a workspace user message but predates enrollment and the general observation cursor has already passed it
+- **THEN** the continuation checks the source journal from the original message before submission and holds for HQ when the target changed, the interval is unavailable, or a legacy same-second instruction is unordered
+- **AND** a verified later user resumption can cover the same saved action through its original gates

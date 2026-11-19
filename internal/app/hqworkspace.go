@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -242,6 +243,13 @@ func readWorkspaceAction(reader io.Reader) (workspaceAction, error) {
 func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (any, error) {
 	var err error
 	var result any = map[string]bool{"ok": true}
+	if a.Op == "create" || a.Op == "send" {
+		seq, e := events.VerifiedSequence()
+		if e != nil {
+			seq = -1
+		}
+		s = s.WithInstructionCursor(seq)
+	}
 	switch a.Op {
 	case "create":
 		result, err = s.Start(a.ID, a.Title, a.ID+"-instruction", a.Body, now)
@@ -295,7 +303,7 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 					return nil, err
 				}
 			}
-			result, err = s.ArmReply(a.Matter, a.ID, a.ReplyID, a.Revision, now, hqworkspace.ReplyReview{AuthorityRef: a.AuthorityRef, UserEvent: event, Reports: workspaceReplyReports(a.Matter, a.ID)})
+			result, err = s.ArmReply(a.Matter, a.ID, a.ReplyID, a.Revision, now, hqworkspace.ReplyReview{AuthorityRef: a.AuthorityRef, UserEvent: event, Reports: workspaceReplyReports(a.Matter, a.ID), MessageHold: workspaceMessageHistoryHold})
 		} else {
 			result, err = s.DriveIntent(a.Matter, a.ID, a.Revision, now, workspaceDeliverGoal)
 		}
