@@ -14,6 +14,7 @@ package events
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -233,7 +234,7 @@ func appendChecked(r Record) error {
 	return appendWithCap(r, capBytes(), false)
 }
 
-func appendWithCap(r Record, cap int64, required bool) error {
+func appendWithCap(r Record, cap int64, required bool) (err error) {
 	if cap <= 0 {
 		// Leave a gap in an existing sequence if a user instruction could not
 		// be recorded. No event file, body or target identity is written.
@@ -246,6 +247,16 @@ func appendWithCap(r Record, cap int64, required bool) error {
 			return fmt.Errorf("event journal is disabled")
 		}
 		return nil
+	}
+	// Sequence allocation and the journal are both fallible. A missed user
+	// instruction invalidates previous coverage even if the next ordinary
+	// record can reuse a perfectly contiguous sequence.
+	if r.Event == "UserPromptSubmit" && r.Origin == OriginInstruction {
+		defer func() {
+			if err != nil {
+				err = errors.Join(err, invalidateRecording())
+			}
+		}()
 	}
 	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
 		return err

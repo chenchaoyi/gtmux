@@ -3894,5 +3894,13 @@
     "selectors": [
       "TestReplyRequiresProvenRecordingBaseline"
     ]
+  },
+  "internal/app/hqworkspace_reply_recovery_test.go": {
+    "cases": [
+      "HRC-012"
+    ],
+    "selectors": [
+      "TestReplyRecoversOnlyProvenUnsentAction"
+    ]
   }
 }

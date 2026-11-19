@@ -36,10 +36,15 @@ func recordingPolicy() (string, int64) {
 
 func RecordingPolicy() string {
 	key, _ := recordingPolicy()
-	if key == "" {
+	size, err := configuredCapBytes()
+	if key == "" || err != nil || size <= 0 {
 		return "unknown"
 	}
-	return key
+	generation, _, err := recordingGeneration(true)
+	if err != nil {
+		return "unknown"
+	}
+	return key + "." + generation
 }
 
 // Legacy sources carry only seconds. Accept their policy history only when
@@ -49,8 +54,12 @@ func RecordingPolicyCovers(key string, at int64) bool {
 	if current == "" {
 		return false
 	}
-	if key == "" {
-		return changed < at
+	generation, seenFault, err := recordingGeneration(key == "")
+	if err != nil {
+		return false
 	}
-	return key == current
+	if key == "" {
+		return changed < at && !seenFault
+	}
+	return key == current+"."+generation
 }

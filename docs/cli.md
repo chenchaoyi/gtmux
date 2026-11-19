@@ -953,7 +953,12 @@ Direct-user citations also require a readable, enabled journal through the
 current watermark. With recording disabled, an input leaves a gap in an already
 initialized counter without writing an event or its contents. Re-enabling
 recording preserves that gap. A later verified user resumption can cover the
-same action. A newer target instruction invalidates the old review. The claim records the
+same action. A missing initial journal, a changed configuration generation or a
+failed instruction write can also require fresh user authority. A recording fault
+retains only a generation identifier. If the last input gate proves zero submissions,
+HQ can bind a newer verified user instruction to the original action and receipt.
+The refusal remains in workspace history. A claimed or uncertain submission still
+requires reconciliation. A newer target instruction invalidates the old review. The claim records the
 reviewed event boundary. `reply_observations` keeps every receipt's latest stage
 after an ordinary `noted` assessment. Claim an unbound receipt and assess
 `no-followup` to record an explicit disposition. Serve waits

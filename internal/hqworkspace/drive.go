@@ -14,19 +14,29 @@ import (
 // IntentAttempt is a durable one-shot claim, not a second dispatch queue. Even a
 // safe refusal needs HQ verification; a timeout or restart never replays an action.
 type IntentAttempt struct {
-	AuthorityRef  string       `json:"authority_ref,omitempty"` // Supplemental evidence for the original, immutable action.
-	ReviewedAt    int64        `json:"reviewed_at,omitempty"`
-	PriorDelivery bool         `json:"prior_delivery,omitempty"`
-	UserEvent     *UserEvent   `json:"user_event,omitempty"`
-	EventCursor   int64        `json:"event_cursor,omitempty"`
-	ReplyID       string       `json:"reply_id,omitempty"`
-	Revision      uint64       `json:"revision,omitempty"`
-	MatterID      string       `json:"matter_id"`
-	StepID        string       `json:"step_id"`
-	Intent        ActionIntent `json:"intent"`
-	State         string       `json:"state"`
-	Evidence      string       `json:"evidence,omitempty"`
-	At            int64        `json:"at"`
+	Unsent        *UnsentReceipt `json:"unsent,omitempty"`
+	AuthorityRef  string         `json:"authority_ref,omitempty"` // Supplemental evidence for the original, immutable action.
+	ReviewedAt    int64          `json:"reviewed_at,omitempty"`
+	PriorDelivery bool           `json:"prior_delivery,omitempty"`
+	UserEvent     *UserEvent     `json:"user_event,omitempty"`
+	EventCursor   int64          `json:"event_cursor,omitempty"`
+	ReplyID       string         `json:"reply_id,omitempty"`
+	Revision      uint64         `json:"revision,omitempty"`
+	MatterID      string         `json:"matter_id"`
+	StepID        string         `json:"step_id"`
+	Intent        ActionIntent   `json:"intent"`
+	State         string         `json:"state"`
+	Evidence      string         `json:"evidence,omitempty"`
+	At            int64          `json:"at"`
+}
+
+// UnsentReceipt is issued only when the local gate proved zero submissions.
+// History retains each refusal even after a later authorization is bound.
+type UnsentReceipt struct {
+	Revision     uint64 `json:"revision"`
+	EventCursor  int64  `json:"event_cursor"`
+	At           int64  `json:"at"`
+	AuthorityRef string `json:"authority_ref"`
 }
 
 // DriveIntent is called only by an explicit verified HQ action, never by a tick.
@@ -129,7 +139,7 @@ func (s *Store) driveIntent(matter, action, reply string, revision uint64, at in
 		id, _ := MatchObservation(d, out.Intent.Target, now)
 		return id == matter
 	}
-	verdict := Delivery{State: "stale-premise", SafeHold: true}
+	verdict := Delivery{State: "stale-premise", SafeHold: true, BeforeSubmit: true}
 	if current() {
 		verdict = send(out.Intent.Target, payload, action, current)
 	}
@@ -151,6 +161,11 @@ func (s *Store) driveIntent(matter, action, reply string, revision uint64, at in
 					out.Evidence = verdict.State
 				}
 			}
+		}
+		if reply != "" && out.State == "held" && verdict.BeforeSubmit {
+			refusedAt := at + int64(time.Since(started)/time.Second)
+			changed(d, refusedAt, "reply-refused-before-submit", matter, action, out.Evidence)
+			out.Unsent = &UnsentReceipt{Revision: d.Revision, EventCursor: verdict.ObservedEventSeq, At: refusedAt, AuthorityRef: replyAuthorityRef(d.Matters[matter], out)}
 		}
 		d.IntentAttempts[action] = out
 		changed(d, at, "goal-drive-receipt", matter, action, out.State)

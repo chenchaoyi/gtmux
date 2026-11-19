@@ -12,6 +12,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
 	"github.com/chenchaoyi/gtmux/internal/relay"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
@@ -81,7 +82,9 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 	}
 	legacy := strings.HasPrefix(scenario, "legacy-")
 	cold := strings.HasPrefix(scenario, "cold-")
-	readOnly := strings.HasPrefix(scenario, "counter-read-only")
+	enabledFault := strings.HasPrefix(scenario, "enabled-counter")
+	final := strings.HasPrefix(scenario, "final-")
+	readOnly := strings.HasPrefix(scenario, "counter-read-only") || enabledFault
 	if readOnly && scenario != "counter-read-only-remove-policy" {
 		setCap("20")
 	} else if readOnly {
@@ -113,7 +116,7 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 		}
 		must(events.AppendChecked(event(102, "Stop", other, "unrelated")))
 		must(ingestWorkspaceObservations(s, 99)) // cycle started before M, but committed after M
-	} else if scenario == "counter-read-only-message" {
+	} else if scenario == "counter-read-only-message" || scenario == "enabled-counter-message" {
 		must(events.AppendChecked(event(96, "Stop", other, "initialized")))
 		_, e = applyWorkspaceAction(s, workspaceAction{Op: "send", ID: "legacy-user", Matter: matter, Body: "Original assignment"}, 100)
 		must(e)
@@ -127,7 +130,7 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 	workspaceRelayRecords = func() []relay.Request { return rows }
 	must(ingestWorkspaceObservations(s, 106))
 	ref := "events:1"
-	messageAuthority := legacy || cold || scenario == "counter-read-only-message"
+	messageAuthority := legacy || cold || (scenario == "counter-read-only-message" || scenario == "enabled-counter-message")
 	if messageAuthority {
 		ref = "message:legacy-user"
 	}
@@ -166,14 +169,30 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 				restoredLink = true
 			}
 		}
-		setCap("0")
+		fallback := strings.Contains(scenario, "fallback")
+		coverage := filepath.Join(state.StatusDir(), "event-coverage")
+		if fallback {
+			must(os.Rename(coverage, coverage+".saved"))
+			must(os.Symlink(coverage+".saved", coverage))
+		}
+		if !enabledFault {
+			setCap("0")
+		}
 		events.Append(event(108, "UserPromptSubmit", c, "Private pause while recording is disabled"))
 		if readOnly {
 			if events.CurrentSeq() != 1 {
 				t.Fatal("failed counter write changed watermark")
 			}
-			if err := events.AppendChecked(event(108, "UserPromptSubmit", c, "Private pause")); err == nil || !strings.Contains(err.Error(), "cannot advance") {
+			if err := events.AppendChecked(event(108, "UserPromptSubmit", c, "Private pause")); err == nil || (!enabledFault && !strings.Contains(err.Error(), "cannot advance")) {
 				t.Fatal("failed counter did not surface its write failure", err)
+			}
+			if fallback {
+				must(os.Rename(coverage+".saved", coverage))
+				b, e := os.ReadFile(filepath.Join(state.HQHome(), "event-coverage-fault"))
+				must(e)
+				if len(b) > 64 || strings.Contains(string(b), "Private") {
+					t.Fatal("fault witness contains payload", string(b))
+				}
 			}
 			if restoredLink {
 				must(os.Rename(counter+".saved", counter))
@@ -202,20 +221,20 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 		blind()
 		if scenario == "counter-read-only-remove-policy" {
 			must(os.Remove(usercfg.Path()))
-		} else {
+		} else if !enabledFault {
 			setCap("20")
 		}
 		must(events.AppendChecked(event(109, "Stop", other, "unrelated")))
 		s = hqworkspace.New(home)
 	}
-	if readOnly && scenario != "counter-read-only-after-arm" && scenario != "counter-read-only-final" {
+	if readOnly && scenario != "counter-read-only-after-arm" && scenario != "counter-read-only-final" && scenario != "enabled-counter-final" {
 		recoverCounter()
 	}
 	if strings.HasPrefix(scenario, "off-on-") {
 		blind()
 		setCap("20")
 	}
-	resume := scenario == "off-on-explicit-resume" || scenario == "counter-read-only-resume" || scenario == "cold-message-resume"
+	resume := scenario == "off-on-explicit-resume" || scenario == "counter-read-only-resume" || scenario == "cold-message-resume" || (enabledFault && strings.HasSuffix(scenario, "-resume"))
 	if resume {
 		if v, err := applyWorkspaceAction(s, a, 110); err == nil && v.(hqworkspace.IntentAttempt).Evidence == "" {
 			t.Fatal("original authority revived before fresh confirmation")
@@ -244,11 +263,53 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 	visible := workspaceCandidate{Conversation: c, Status: "idle"}
 	visible.Pane = "%test"
 	visible.Loc = "fixture:0.0"
-	workspaceGoalCandidates = func() []workspaceCandidate { return []workspaceCandidate{visible} }
-	writes := 0
+	resolutions := 0
+	workspaceGoalCandidates = func() []workspaceCandidate {
+		resolutions++
+		if scenario == "final-before-dispatch" && resolutions == 2 {
+			must(events.AppendChecked(event(114, "UserPromptSubmit", c, "Pause at preflight")))
+		}
+		return []workspaceCandidate{visible}
+	}
+	writes, callbacks := 0, 0
 	workspaceDispatch = func(string, ...string) dispatch.IO {
 		return dispatch.IO{Capture: func() string { return "› \n\n  ? for shortcuts" }, Now: func() int64 { return 114 }, Sleep: func() {}, SubmitNative: func(o dispatch.Opts, body string, hold func() string) dispatch.Result {
-			if scenario == "counter-read-only-final" {
+			callbacks++
+			if final && scenario != "final-before-dispatch" && callbacks == 1 {
+				switch scenario {
+				case "final-after-claim":
+					if hold() != "" {
+						t.Fatal("fixture failed initial native claim")
+					}
+					writes++
+					must(events.AppendChecked(event(114, "UserPromptSubmit", c, "Pause after possible submit")))
+					if why := hold(); why != "" {
+						return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: why}
+					}
+					t.Fatal("later native hold missed new instruction")
+				case "final-unknown":
+					writes++
+					return dispatch.Result{State: dispatch.StateFailed, Evidence: "native receipt unavailable"}
+				case "final-accepted":
+				case "final-same-authority":
+					visible.Status = "working"
+					why := hold()
+					visible.Status = "idle"
+					if why == "" {
+						t.Fatal("working target passed the last hold")
+					}
+					return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: why}
+				case "final-unproven":
+					return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "prior native claim"}
+				default:
+					must(events.AppendChecked(event(114, "UserPromptSubmit", c, "Pause before submission")))
+					if why := hold(); why != "" {
+						return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: why}
+					}
+					t.Fatal("last gate allowed a paused target")
+				}
+			}
+			if scenario == "counter-read-only-final" || scenario == "enabled-counter-final" {
 				recoverCounter()
 			}
 			if scenario == "disabled-final-gate" {
@@ -266,6 +327,71 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 	}
 	must(pumpWorkspaceReplies(s, 114))
 	must(pumpWorkspaceReplies(s, 115))
+	proofAt := int64(116)
+	if final {
+		s = hqworkspace.New(home)
+		d := phase1CursorDatabase(t, s)
+		old := d.IntentAttempts[p.Intent.ID]
+		refused := scenario != "final-unknown" && scenario != "final-after-claim" && scenario != "final-accepted" && scenario != "final-unproven"
+		initialCalls := 1
+		if scenario == "final-before-dispatch" {
+			initialCalls = 0
+		}
+		if callbacks != initialCalls || (refused && (old.State != "held" || writes != 0)) {
+			t.Fatal("initial transport", old, callbacks, writes)
+		}
+		originalRef := a.VerifiedUserEvent
+		switch scenario {
+		case "final-message":
+			_, e := applyWorkspaceAction(s, workspaceAction{Op: "send", ID: "confirmed-after-refusal", Matter: matter, Body: "Continue the original fixture"}, 116)
+			must(e)
+			a.AuthorityRef, a.VerifiedUserEvent = "message:confirmed-after-refusal", ""
+		case "final-same-authority":
+			a.AuthorityRef = originalRef
+		case "final-older-event":
+			a.AuthorityRef, a.VerifiedUserEvent = "events:2", "events:2"
+		default:
+			must(events.AppendChecked(event(116, "UserPromptSubmit", c, "Fresh explicit confirmation")))
+			a.AuthorityRef = "events:" + strconv.FormatInt(events.CurrentSeq(), 10)
+			a.VerifiedUserEvent = a.AuthorityRef
+		}
+		must(ingestWorkspaceObservations(s, 117))
+		review("review-after-final-refusal", 118)
+		a.Revision = current().Revision
+		_, armErr := applyWorkspaceAction(s, a, 119)
+		resume = scenario == "final-event" || scenario == "final-message" || scenario == "final-before-dispatch"
+		if (scenario == "final-same-authority" || scenario == "final-older-event") && (armErr == nil || !strings.Contains(armErr.Error(), "after the recorded refusal")) {
+			t.Fatal("missing fresh authorization interlock", armErr)
+		}
+		if resume {
+			must(armErr)
+		}
+		must(pumpWorkspaceReplies(s, 120))
+		must(pumpWorkspaceReplies(s, 121))
+		d = phase1CursorDatabase(t, s)
+		if refused {
+			history := false
+			for _, ch := range d.Changes {
+				if ch.Kind == "reply-refused-before-submit" && ch.Target == p.Intent.ID && ch.Detail != "" {
+					history = true
+				}
+			}
+			if !history {
+				t.Fatal("zero-submission receipt lost", d.IntentAttempts[p.Intent.ID])
+			}
+		}
+		if !resume {
+			if callbacks != 1 {
+				t.Fatal("previous or unknown action replayed", callbacks, writes)
+			}
+			return
+		}
+		if callbacks != initialCalls+1 {
+			t.Fatal("same action did not resume", callbacks, writes, d.IntentAttempts[p.Intent.ID])
+		}
+		allowed = true
+		proofAt = 122
+	}
 	if allowed != (writes == 1) || writes > 1 {
 		t.Fatalf("allowed=%v native writes=%d", allowed, writes)
 	}
@@ -273,18 +399,18 @@ func exerciseReplyCoverage(t *testing.T, scenario string) {
 		return
 	}
 	if resume {
-		rows[0].FetchedAt = 116
-		must(ingestWorkspaceObservations(s, 116))
+		rows[0].FetchedAt = proofAt
+		must(ingestWorkspaceObservations(s, proofAt))
 		result := filepath.Join(t.TempDir(), "result")
 		must(os.WriteFile(result, []byte("original fixture executed"), 0600))
 		b, e := os.ReadFile(result)
 		must(e)
 		proof, e := json.Marshal(map[string]any{"schema": "gtmux.goal-drive/v1", "matter": matter, "drive": hqworkspace.DriveProof{State: "progress", ActionID: p.Intent.ID, StepID: p.StepID, Ref: p.Intent.Ref, Evidence: string(b), NextCheck: 200}})
 		must(e)
-		rows = append(rows, relay.Request{ID: "work", Kind: "report", For: "hq", Agent: c.Agent, HomeID: c.HomeID, ThreadID: c.SessionID, CreatedAt: 117, Body: string(proof)})
-		must(ingestWorkspaceObservations(s, 117))
+		rows = append(rows, relay.Request{ID: "work", Kind: "report", For: "hq", Agent: c.Agent, HomeID: c.HomeID, ThreadID: c.SessionID, CreatedAt: proofAt + 1, Body: string(proof)})
+		must(ingestWorkspaceObservations(s, proofAt+1))
 		d := phase1CursorDatabase(t, s)
-		g := hqworkspace.GoalResponsibility(d, current(), 118)
+		g := hqworkspace.GoalResponsibility(d, current(), proofAt+2)
 		if g.State != "driving" || g.ObservationID != "relay-work" {
 			t.Fatal(g)
 		}

@@ -390,3 +390,9 @@ The workspace SHALL project reply, active-turn notice, source fetch and executio
 - **WHEN** a legacy message is committed during an asynchronous scan, or recording is disabled after a direct user assignment
 - **THEN** a scan's start time cannot advance that message's lower bound, and the original direct assignment requires verified journal coverage through submission
 - **AND** an unrecorded instruction leaves a coverage gap in an already initialized journal counter without storing an event or its contents
+
+#### Scenario: A recording failure or final refusal interrupts a reserved action
+- **WHEN** an enabled journal cannot persist an instruction, or its authority source lacks a proven initial boundary
+- **THEN** the prior source requires reconciliation even after an unrelated event and a restart; a new verified instruction can authorize the original step
+- **AND** when the final local input gate proves zero submissions, the workspace preserves that refusal and may rearm the same action only after a later user instruction and a new HQ review
+- **AND** a prior claim, uncertain outcome, or accepted submission remains reserved for reconciliation under its original identifier

@@ -94,6 +94,12 @@ func (s *Store) ArmReply(matter, action, reply string, revision uint64, at int64
 		if evidence.UserEvent != nil {
 			out.UserEvent = evidence.UserEvent
 		}
+		if old.State == "held" && old.Unsent != nil && !old.PriorDelivery {
+			if !confirmedAfterRefusal(*d, evidence, *old.Unsent) {
+				return errors.New("HQ must verify a new user instruction after the recorded refusal")
+			}
+			out.State, out.Unsent = "armed", nil
+		}
 		if why := ReplyBlockReason(*d, out, at); why != "" {
 			return errors.New(why)
 		}
@@ -139,6 +145,20 @@ func (s *Store) ArmReply(matter, action, reply string, revision uint64, at int64
 		return nil
 	})
 	return out, err
+}
+
+func confirmedAfterRefusal(d Database, review ReplyReview, refusal UnsentReceipt) bool {
+	if review.AuthorityRef == "" || review.AuthorityRef == refusal.AuthorityRef {
+		return false
+	}
+	if e := review.UserEvent; e != nil {
+		if refusal.EventCursor > 0 {
+			return e.Seq > refusal.EventCursor && e.At >= refusal.At
+		}
+		return e.At > refusal.At
+	}
+	msg := d.Messages[strings.TrimPrefix(review.AuthorityRef, "message:")]
+	return msg.Seq > refusal.Revision
 }
 
 func clearedAnswer(d Database, answer Message) bool {
@@ -312,7 +332,11 @@ func replyResponsibility(d Database, a IntentAttempt, at int64) GoalStatus {
 	case "submitting", "uncertain":
 		reason = "HQ must reconcile the original submission before any further action"
 	case "held":
-		reason = "HQ must inspect the refused delivery: " + reason
+		if a.Unsent != nil {
+			reason = "HQ must verify fresh user authority after the zero-submission refusal: " + reason
+		} else {
+			reason = "HQ must inspect the refused delivery: " + reason
+		}
 	case "external":
 		reason = "HQ must reconcile source receipt " + a.Evidence
 	case "queued", "landed":
