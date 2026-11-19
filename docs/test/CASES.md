@@ -215,6 +215,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HRC-006 | Only a reviewed exact current authority permits the original unused action to submit once. Submitted or uncertain work remains reserved. |
 | HRC-007 | Only a unique continuous exact source joins. Original observations remain immutable and a durable attribution identifies the same receipt. |
 | HRC-008 | Reconciliation identifies the original delivery, reports zero fresh reminders, and still requires source execution evidence. |
+| HRC-010 | Old observations use ledger commit order. A disabled or unverifiable interval stays blocked; a still-valid direct instruction and genuinely newer confirmation remain eligible for one guarded action. |
 | HRC-009 | Only a covered instruction interval and current confirmed step can deliver. An unknown range remains a specific reconciliation blocker and valid new user confirmation preserves the original action ID. |
 | HRC-003 | Only the exact reviewed instruction or resolved user decision can cover the existing action. No new user message or approval is minted. |
 | HRC-004 | The original reply and step remain visible. A received or unsupported execution claim cannot discharge work or be replayed. Exact evidence covers the step. |

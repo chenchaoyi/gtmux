@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Verify committed ledger ordering and readable direct-user journal history at reservation and submission",
+    "notes": "Fourth independent review observed a stale cycle timestamp and a disabled journal retaining its former tail. Test the original paths with isolated real journal files. Only earlier committed observations can bound a legacy message. Every direct-user authorization must cover its retained source range and authorship audit."
+  },
+  "cases": [
+    {
+      "id": "HRC-010",
+      "layer": "L2",
+      "description": "A late asynchronous ingest cannot hide a pause before enrollment; disabled or incomplete direct-user history cannot authorize a reminder.",
+      "setup": "Legacy user workspace message with a producer batch spanning it, or an explicitly verified original direct event in a real isolated journal.",
+      "action": "Ingest a pause and a later unrelated stop at an old cycle timestamp; recheck a direct event before and after disabling its journal or losing source history. Exercise the normal binding, pump and final input guard.",
+      "expected": "Old observations use ledger commit order. A disabled or unverifiable interval stays blocked; a still-valid direct instruction and genuinely newer confirmation remain eligible for one guarded action.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_continuity_test.go"
+      ]
+    }
+  ],
+  "seal": "adb550698342f43e4c38a6ca46d49c529bd7f021297c538b1d5bc6b75b10d52b"
+}
