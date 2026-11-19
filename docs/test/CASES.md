@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1355 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1360 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2531 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 148 | [L3.csv](cases/L3.csv) |
+| L2 · Component / contract | 2534 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 151 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 501 | [G.csv](cases/G.csv) |
@@ -189,6 +189,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |
 | MC-HQ-WINDOW | The complete native HQ window keeps a long question header, original conversation and composer inside narrow/wide viewports; AX choice activation updates the real NSTextView and focus, independent of read timeout. |
 | MC-HQ-READ | Stored matter/overview reads do not perform roster or historical discovery. Slow or failed optional source enrichment cannot block selection/preparing replies or replace newer matters/drafts. Legacy CLI fallback is bounded to explicit unsupported flags. |
+| HPC-003 | Older claims and same-second siblings never suppress an unclaimed observation. An exact live lease suppresses itself, expiry restores eligibility, and a successor fences the old generation. |
+| HPC-004 | The draft stays intact. Revalidation drops the settled urgent wake and still delivers the standing wake. Neither path spends the other's scheduling interval. |
+| HPC-005 | Claim-only issues no work and leaves debt. Current owner and generation control the assessment. The authorized live worker receives and performs the exact action once and an independently produced exact progress receipt covers the step. A wrong target and external wait yield zero input. Unknown submission keeps its intent reserved without duplicate work. |
 | HGD-001 | One material goal debt remains, no dispatch, no duplicate debt; stale generation cannot commit. |
 | HGD-002 | Only one send per action ID; queued is not work started; exact receipt covers the step; stale SID, ambiguous interval, native/background coverage and unavailable evidence never cause duplicate delivery. |
 | HGD-003 | User pause/refusal never expire; external due time requests verification; only a real unanswered question is human debt; verified answer withdraws question and leaves next-step duty. |
@@ -207,6 +210,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MC-HQ-OVERVIEW-STATE | Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records. |
 | MC-HQ-OVERVIEW-MORE | At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry. |
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
+| HPC-001 | New evidence bypasses the old defer and is available for HQ in the same scan. Duplicate ingestion preserves generation and retry counters; claim suppresses duplicate waking until the lease expires; noting receipt leaves goal debt. Unmatched, stale, paused or independently covered work does not reopen it or drive. |
+| HPC-002 | Fresh evidence bypasses generic wake backoff; the next reconciliation cycle recovers one missing wake. Draft remains intact while the durable obligation waits. Enqueue alone creates no claim or intent; exact accepted/claimed work is distinct. After lease expiry a successor can claim; the old generation cannot assess. No scenario issues unauthorised source input. A delivered but unclaimed wake creates no ownership. Its bounded recheck has a different transport batch ID and leaves exactly one durable claim. |
 | HRC-001 | Request, reply, hint, fetch and actual work are distinct. Both unfetched and fetched without execution remain visible. A queue or input receipt cannot prove work. |
 | HRC-002 | Only one exact idle native transport can receive the bounded receipt-specific reminder. No implicit grant, fallback, stale replay or second submission; blockers and original attempt remain inspectable. |
 | HRS-001 | Only first exact prompt after lower bound matches. First record remains stable across append; rewrite/replacement/continuation changes invalidate. Complete lines only; no result bodies retained. Cancelled/error reads do not grant attribution. |
@@ -245,7 +250,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQR-004 | Contention exits1 without changing AGENTS/backup/other files; after release exactly one upgrade succeeds, no session effects or deadlock. No sleep/probabilistic race proof. |
 | HQR-005 | Exit1 without following links/special files or blocking FIFO, without chmod repair of the source or seeding/migration. No downgrade of future versions. Only the pre-existing shared lock outside the HQ home may be created; no credentials/real homes read. |
 | HQR-006 | Collisions get a fresh bounded numbered backup and never overwrite/delete existing material; full namespace or backup I/O failure exits1 with the original AGENTS unchanged. Successful publication is atomic via the existing private state writer; a post-rename sync failure may leave complete new content plus backup and is an error, not promised rollback. |
-| HQP1-F1-001 | The empty read leaves cursor 10 and persists the gap notice. The next read durably queues exact event-11 with its own type/body/conversation, then cursor 11. Repeated reads leave the database byte-for-byte unchanged. Old code must fail without source mutation or sleeps. |
+| HQP1-F1-001 | The empty read leaves cursor 10 and persists the gap notice. The next read durably queues exact event-11 with its own type/body/conversation, then cursor 11. Repeated reads leave the database byte-for-byte unchanged. Old code must fail without source mutation or sleeps. The complete durable observation includes the continuation marker for Stop or StopFailure. The instruction remains ordinary. |
 | HQP1-F1-002 | Activation does not ingest history and writes an explicit events cursor even at zero. The new event at boundary+1 is queued with its actual identity, persists across reopen, and is never treated as historical on a second activation. |
 | HQP1-F1-003 | The empty gap keeps cursor 10 and one stable gap record; retry changes no bytes. Actual retained event 16 is queued atomically with cursor 16, and neither gaps nor duplicate reads erase it. Source epoch-reset repair remains out of scope. |
 | HQP1-F1-004 | First pass advances to 510, creates no prohibited or unregistered observations and does not claim sequence 511. Next pass queues event-511 and advances to 511; repeat has identical stored bytes. No policy broadening or hidden replay occurs. |
@@ -257,6 +262,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQP1-006 | Source ingestion uses exact conversation/time attribution, records ambiguous/unassigned observations and source gaps; cursor advances only with durable inbox. |
 | HQP1-007 | CLI operations enforce HQ authority and expose pending reconciliation; periodic ingestion/wake is independent from delivery and restart-safe. |
 | HQP1-008 | Schema 1 reads migrate without invented history, schema 2 prevents old writer loss, and seeded bilingual playbook explains safe processing. |
+| HPC-006 | No early repeat. At the next eligible tick, the exact evidence remains pending and its second wake is enqueued without waiting for another full interval. |
 | SPL-026 | A stale temporary name can be recovered under the lease. The published record is a single-link file; earlier evidence still protects both native and raw routing. A verified new stable ID can publish and settle. A competing destination is preserved. |
 | SPL-023 | Overflow from the shared budget frees active slots, verified old keys never regain authority, and exhausted total budget and warning headroom are explicit. |
 | SPL-024 | Native and raw checks retain unknown on affected IDs; verified unrelated admissions remain available where their prefix and the catalogue are intact. Recovery preserves committed bytes and unrelated orphan records. |

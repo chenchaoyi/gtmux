@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Ready for deterministic scheduler regression",
+    "notes": "The isolated replay exposed a lost wake when ingestion and reminder recording used different Unix seconds. The standing deadline remains independent, and the existing reconciliation cadence must retry from the same clock sample used to record the reminder."
+  },
+  "cases": [
+    {
+      "id": "HPC-006",
+      "layer": "L2",
+      "description": "A lost workspace wake retries at the next interval when ingestion crosses a clock second",
+      "setup": "Disposable workspace, synthetic event adapter and deterministic reconciliation clock",
+      "action": "Start the scan in one second and ingest before the next. Drop the first workspace wake. Tick one second before and at the reminder retry boundary.",
+      "expected": "No early repeat. At the next eligible tick, the exact evidence remains pending and its second wake is enqueued without waiting for another full interval.",
+      "planned_files": [
+        "internal/app/hqworkspace_reconcile_timing_test.go"
+      ]
+    }
+  ],
+  "seal": "d537d2833e79bdfbf3d440f9be89986be108499bcfea3b79b19e25ccd5ab83ff"
+}

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Ready for isolated implementation and verification",
+    "notes": "Reuses workspace ingestion, durable observation leases, and the existing serve wake queue. The replay uses synthetic identifiers and clocks for a queued report followed by Stop. A private terminal fixture can attest accepted input and a real CLI claim by that fixture; it does not establish production or model behavior. Drive admission remains with the existing verified HQ action and #1897 reply path. Confirm that the baseline would fail the immediate wake and deferred-goal assertions. Follow-up self-review of the keyed wake producer and native delivery adapter found that an identical pre-drain payload can reuse a delivery ID. The replay now covers a confirmed transport delivery without a claim and compares the next accepted batch identity. A new workspace retry must have its own audit/delivery identity while the existing queue still coalesces waiting input. 2026-11-19 follow-up review: the existing private tmux lifecycle fixture claims each of two actionable evidence IDs individually to preserve exact suppression in this replay. Other timings and original expected outcomes stay intact."
+  },
+  "cases": [
+    {
+      "id": "HPC-001",
+      "layer": "L2",
+      "description": "New exact participant evidence reopens unresolved HQ responsibility without granting authority or bypassing a sourced hold",
+      "setup": "Disposable Go store, verified execution association, old future defer and current workspace clock; vary exact source, stale fact, covered drive and pause.",
+      "action": "Ingest new reviewer report and Stop; repeat the same rows; claim and note the report; run successive wake passes and simulate an expired HQ lease.",
+      "expected": "New evidence bypasses the old defer and is available for HQ in the same scan. Duplicate ingestion preserves generation and retry counters; claim suppresses duplicate waking until the lease expires; noting receipt leaves goal debt. Unmatched, stale, paused or independently covered work does not reopen it or drive.",
+      "planned_files": [
+        "internal/hqworkspace/continuation_test.go"
+      ]
+    },
+    {
+      "id": "HPC-002",
+      "layer": "L3",
+      "description": "Idle HQ picks up quiet incident replay through the existing serve callback, real keyed wake/drain and exact workspace claim",
+      "setup": "Disposable HOME, private tmux server and synthetic HQ participant, exact worker/reviewer records and old next_check. Exercise the same serve callback, real wake guards and durable store. Use a real command boundary for HQ claim where the fixture permits.",
+      "action": "Replay relay report then Stop; vary normal/quiet, suppress one workspace wake, hold a typed draft, duplicate inputs and rotate the exact claiming workspace identity. Track enqueue and claim times. In a distinct case the receiver consumes the first real terminal submission without claiming the obligation, then claims when receiving the second.",
+      "expected": "Fresh evidence bypasses generic wake backoff; the next reconciliation cycle recovers one missing wake. Draft remains intact while the durable obligation waits. Enqueue alone creates no claim or intent; exact accepted/claimed work is distinct. After lease expiry a successor can claim; the old generation cannot assess. No scenario issues unauthorised source input. A delivered but unclaimed wake creates no ownership. Its bounded recheck has a different transport batch ID and leaves exactly one durable claim.",
+      "planned_files": [
+        "internal/app/hqworkspace_continuation_test.go"
+      ]
+    }
+  ],
+  "seal": "073e81ddd3a1d1cec13d5fffb2c82d9f0eebd8b03d8ea41ab202ace214003dbd"
+}

@@ -328,7 +328,7 @@ Each explicit continuing goal can carry a stable `step_id`, `action` and `author
 The citation points to existing authority; no report text, owner name or scheduler creates
 permission. A missing proof remains unknown. The existing reconciliation pass scans at
 most 64 matters per tick using a persistent cursor, including when no new events arrived.
-Stop only touches an existing workspace's check marker. Handoff/rotation keeps the same
+Stop and a newly saved HQ relay report refresh the existing workspace check marker. Handoff/rotation keeps the same
 store; unfinished work does not prevent a healthy rotation.
 
 A `goal-followup` observation is keyed by canonical matter, stable step, action and authority.
@@ -339,6 +339,19 @@ explicitly identify HQ's unfinished coordination; they do not invent a missing u
 Quiet limits presentation, never responsibility. The reminder uses the existing keyed queue
 and rereads the current premise before delivery, including in hook processes. A stale reminder
 is dropped or rerendered; original instructions, source records and logs remain intact.
+
+New Stop evidence or a relay report attributed to an exact enrolled participant can
+reopen an uncovered HQ obligation before its previous deferred check. The daemon
+enqueues this wake independently of the standing reminder interval. An enqueue attempt,
+transport acceptance and an HQ claim are separate facts. The claim records the current
+HQ identity, generation and `claimed_at`. A live lease suppresses the wake for that
+exact observation. Other observations keep their own eligibility, even when their
+recorded times match. Urgent and standing wakes use separate keyed queue entries
+and schedules. Each entry can survive a shared draft and is revalidated on drain. Without a claim, the existing reconciliation cycle
+retries on its 30-second cadence, then backs off to five minutes after three attempts.
+The retry record points HQ to the outstanding receipt and the wake channel to inspect.
+Sourced holds still apply. The wake carries a receipt reference for review and leaves
+step selection, authorization and guarded source delivery to the existing workspace actions.
 
 HQ claims `goals[MATTER].followup_id` and assesses with `decision:responsibility`, the lease's
 generation, current nonzero matter revision, a reason and `responsibility`. This is an explicit
