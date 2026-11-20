@@ -66913,7 +66913,7 @@
           "design": "SPL-004,SPL-012"
         }
       ],
-      "sha256": "24b09228201fb1f4c718aeb394f7b92eed859a9d0002ce4f03e30d57a603a18a"
+      "sha256": "9367a99e0c05a04c77041dcf5fcda65ebdcc6225b9578a923ceccc4fe9d8f1ab"
     },
     "internal/app/hqworkspace_input_replay_test.go": {
       "layer": "L2",

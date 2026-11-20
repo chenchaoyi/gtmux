@@ -161,7 +161,9 @@ assert.equal(submissions, 1);
 	if again, err := agentclient.Prepare(target, dsh.Text, "dsh-action", false, now.Add(2*time.Second)); err != nil || again.ID != dsh.ID {
 		t.Fatalf("legacy receipt did not preserve request identity: %+v, %v", again, err)
 	}
-	if entries, err := os.ReadDir(dir); err != nil || len(entries) != 4093 {
-		t.Fatalf("unexpected completed spool occupancy: %d entries, %v", len(entries), err)
+	// Two names for each settled request, plus the legacy DSH claim.
+	completed, err := agentclient.InspectInputSpool()
+	if err != nil || completed.Entries != missing+5 || completed.UsedSlots != completed.Entries {
+		t.Fatalf("unexpected completed spool occupancy: %+v, %v", completed, err)
 	}
 }
