@@ -26,6 +26,7 @@ MAP-8c576f125b78,L2,reviewed implementation,internal/agentclient/input_intent_te
 MAP-e2967847a639,L2,reviewed implementation,internal/agentclient/input_intent_test.go,124,reviewed-selector,TestSPL017DurableIDAcrossProcessRestart,False,"SPL-016,SPL-017"
 MAP-efc697ff20fb,L2,reviewed implementation,internal/agentclient/input_intent_test.go,145,reviewed-selector,TestSPL017RestartChild,False,"SPL-016,SPL-017"
 MAP-c73e0f22dcfc,L2,reviewed implementation,internal/agentclient/input_layout_size_test.go,11,reviewed-selector,TestSPL010LayoutReadMatchesOpenFileSize,False,SPL-010
+MAP-e96c50c754e8,L2,reviewed implementation,internal/agentclient/input_legacy_pressure_test.go,11,reviewed-selector,TestLegacyInputPressurePreservesPriorDeliveries,False,SPL-INCIDENT-001
 MAP-12f9a5ee88fc,L2,reviewed implementation,internal/agentclient/input_records_test.go,13,reviewed-selector,TestSPL006DamagedRecordsRetainTheirReplayProtection,False,"SPL-006,SPL-012"
 MAP-8c806990051d,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,15,reviewed-selector,TestSPL020StableReceiptsAllowLongRunningAdmission,False,"SPL-020,SPL-021,SPL-022"
 MAP-5f88c87fb0f4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,127,reviewed-selector,TestSPL021InterruptedRetirementReconcilesExactTail,False,"SPL-020,SPL-021,SPL-022"

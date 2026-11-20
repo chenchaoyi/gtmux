@@ -32,6 +32,8 @@ type unpublishedInput struct {
 	expires time.Time
 }
 
+const unpublishedInputLimit = 4096
+
 var unpublished = struct {
 	sync.Mutex
 	items map[string]unpublishedInput
@@ -51,13 +53,13 @@ func rememberInputTarget(r Request, target Attachment, now time.Time) (Request, 
 		}
 		r.ID = old.address.ID
 	}
-	if len(unpublished.items) >= inputLimit {
+	if len(unpublished.items) >= unpublishedInputLimit {
 		for key, old := range unpublished.items {
 			if !now.Before(old.expires) {
 				delete(unpublished.items, key)
 			}
 		}
-		if _, existing := unpublished.items[key]; !existing && len(unpublished.items) >= inputLimit {
+		if _, existing := unpublished.items[key]; !existing && len(unpublished.items) >= unpublishedInputLimit {
 			return Request{}, ErrInputFull
 		}
 	}

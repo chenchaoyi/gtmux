@@ -12,10 +12,13 @@ import (
 )
 
 const (
-	inputLimit = 4096
-	// A previous writer may have admitted at the limit and still owe a
-	// receipt per request. Bound enumeration, including that legacy overhang.
-	inputScanLimit = 2 * inputLimit
+	// Legacy writers counted names without reserving the remaining claim
+	// and receipt names. Retain their unresolved input while giving the
+	// active queue room for new sends.
+	inputLimit = 8192
+	// Keep the scan bound independent of admission and identical to the DSH
+	// receiver bound. Reserved completion slots count toward inputLimit.
+	inputScanLimit = 8192
 	reclaimBatch   = 32
 	// One index, plus claim and both names during exclusive receipt publication.
 	inputReservation = 4

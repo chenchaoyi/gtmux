@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1370 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1371 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2547 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2548 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -278,6 +278,7 @@
 | SPL-008 | Before-submit refusal does not make an Enter call. A potentially attempted send is unknown with its original attempt count. Draft holds retain their evidence prefixes. Success, native precedence and the legacy bool wrapper are retained. |
 | SPL-009 | Failures exit nonzero or fail the HTTP request. Stable codes identify the failure and optional submission status; the HTTP error carries the caller ID and no draft, payload, capture or success receipt. Unknown is not success-cached. Successful requests keep their receipt and caching. A native question is reported only with evidence. |
 | SPL-010 | Only the matching length is accepted. Invalid length and over-limit documents never select the active layout or a legacy fallback. |
+| SPL-INCIDENT-001 | The new request is accepted, original pending bytes remain identical, and the accepted stable ID still resolves to its original receipt. Directory enumeration keeps the independent 8192-name bound. |
 | SPL-014 | No new paste, Enter or RPC. Existing or unverifiable prior outcome reports unknown while the current refusal remains distinguishable from a transport attempt; a verified fresh refusal stays not-submitted. |
 | SPL-015 | Generic success is submitted without claiming delivery, bare shell sent remains delivered, only proven native question emits the HTTP question code, and cached success keeps its original grade without duplicate input. |
 | SPL-016 | Drafts and gates create no durable slot, and the final authorizer publishes only its staged ID. Failed contenders do not replace a previous index. Aged unresolved requests cannot be replaced by force or timeout. A durable accepted ID remains idempotent. |

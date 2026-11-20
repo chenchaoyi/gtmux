@@ -4329,5 +4329,13 @@
     "selectors": [
       "TestWorkspaceTriageLateWorkerCannotClaimSupervisorRole"
     ]
+  },
+  "internal/agentclient/input_legacy_pressure_test.go": {
+    "cases": [
+      "SPL-INCIDENT-001"
+    ],
+    "selectors": [
+      "TestLegacyInputPressurePreservesPriorDeliveries"
+    ]
   }
 }

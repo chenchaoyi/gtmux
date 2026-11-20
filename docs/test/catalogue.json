@@ -67560,6 +67560,22 @@
         }
       ],
       "sha256": "3ff5c8b462941fbf7587ca82408cb340bdb48a99c0f332cb770f93255d9a7093"
+    },
+    "internal/agentclient/input_legacy_pressure_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e96c50c754e8",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestLegacyInputPressurePreservesPriorDeliveries",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-INCIDENT-001"
+        }
+      ],
+      "sha256": "3e7ef73ae63cf8ac13a4fa37a0a86541b5662849c31146f139fafec95615051e"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

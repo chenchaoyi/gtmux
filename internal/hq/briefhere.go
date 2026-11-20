@@ -144,7 +144,8 @@ func briefPaneWorker(pane, agentCmd string) int {
 		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
 	landed := briefLanded(res)
 	diag.Did("act.hq.brief", pane, briefOutcome(res), "delivered HQ's startup briefing",
-		"state", string(res.State), "judgedBy", res.JudgedBy, "how", "detached")
+		"state", string(res.State), "judgedBy", res.JudgedBy, "how", "detached",
+		"failureCode", string(res.FailureCode), "submission", string(res.Submission))
 	if !landed {
 		return 1
 	}

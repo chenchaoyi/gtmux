@@ -40,13 +40,13 @@ Inventory this user's `com.gtmux.serve`, `com.gtmux.selftunnel` and `com.gtmux.t
 
 ## Capacity
 
-The default remains 4,096 effective slots and the scan bound is 8,192 names. The 4,515-slot fixture consisted of 3,168 names and 1,347 reservations, and admitted new input and settled old input at 6,144. The fixture also changed a derived scan bound, so it cannot justify raising the production scan. A bounded transition setting requires an owner-only scope, expiry, an independent scan budget and a byte budget for serialized and allocated records, claims, receipts and writes in progress. The 1 MiB maximum body size cannot substitute for that budget.
+The incident fix allows 8,192 effective slots and retains the separate 8,192-name scan bound. This keeps pending input and accepted records in the existing queue. The 4,515-slot fixture consisted of 3,168 names and 1,347 reservations, and admitted new input and settled old input at 6,144. The fixture also changed a derived scan bound, so it cannot justify raising the production scan. A bounded transition setting requires an owner-only scope, expiry, an independent scan budget and a byte budget for serialized and allocated records, claims, receipts and writes in progress. The 1 MiB maximum body size cannot substitute for that budget.
 
 Production use requires actual stop-and-drain coordination, verified activation and recovery tooling, service restart and fault validation, independent review, normal CI and release gates.
 
 ## Retired send IDs
 
-The complete receipt stays available for at least 72 hours. On retirement, accepted stable IDs move to exact 16-byte keys in the private `.retired` directory. Prefixes share a 64 MiB budget for committed keys and can allocate additional 256 KiB pages within that budget. This is separate from the 4,096 active slots and 8,192-entry scan bound. The last 128 KiB of key capacity is reserved for already admitted records.
+The complete receipt stays available for at least 72 hours. On retirement, accepted stable IDs move to exact 16-byte keys in the private `.retired` directory. Prefixes share a 64 MiB budget for committed keys and can allocate additional 256 KiB pages within that budget. This is separate from the active-slot and directory scan bounds. The last 128 KiB of key capacity is reserved for already admitted records.
 
 Run `gtmux doctor --no-prompt` to check archive occupancy, integrity and recovery state. At 80 percent, plan capacity and take a consistent backup. At the settlement reserve, admission pauses for new stable IDs. Complete admitted operations normally and keep their receipts. Continued stable admission requires a capacity increase in a supported version or a migration that preserves every accepted key. Deleting pages cannot supply safe capacity.
 
