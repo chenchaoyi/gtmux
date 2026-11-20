@@ -2,10 +2,10 @@
   "id": "input-outcome-review-20261119",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner, self-review",
-    "date": "2026-11-19",
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-20",
     "decision": "Verify the independent P1.2 findings against the actual CLI, HTTP and native gates.",
-    "notes": "Isolated fixtures only. The finding review d9ca8bb9 covers the original frozen P1.2, while this pre-implementation self-review defines new regressions. It preserves #1897's actual pre-claim observation and old evidence labels."
+    "notes": "Isolated fixtures only. The finding review d9ca8bb9 covers the original frozen P1.2, while this pre-implementation self-review defines new regressions. It preserves #1897's actual pre-claim observation and old evidence labels. Capacity fixture re-review: derive the nearly full queue from the production active slots and reservation. Retain existing refusal, settlement, replay, corruption and cancellation assertions."
   },
   "cases": [
     {
@@ -34,5 +34,5 @@
       ]
     }
   ],
-  "seal": "09d7eb29085c279f60fac65f5ba5761d818063db71b185d28ef6e923c4d416e9"
+  "seal": "61953f82d2e90a81a349c8465f71909320b35a985f2808dd4334f5e43210c9a6"
 }

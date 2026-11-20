@@ -2,10 +2,10 @@
   "id": "input-spool-mixed-20261119",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner, self-review",
-    "date": "2026-11-19",
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-20",
     "decision": "Exercise the v1 DSH receiver from the release against the candidate Go writer in a private shared spool.",
-    "notes": "The isolated prototype first established that both paths are reachable. This review records the observed boundary and design for the final catalogue. It does not claim independent approval, installed-agent verification, or capacity enforcement by older Go writers."
+    "notes": "The isolated prototype first established that both paths are reachable. This review records the observed boundary and design for the final catalogue. It does not claim independent approval, installed-agent verification, or capacity enforcement by older Go writers. Capacity fixture re-review: derive the nearly full queue from the production active slots and reservation. Retain existing refusal, settlement, replay, corruption and cancellation assertions."
   },
   "cases": [
     {
@@ -20,5 +20,5 @@
       ]
     }
   ],
-  "seal": "f3fc05a14c6750030679032b62034e5cbbc0481ac53b3882a07a4d9324b71f79"
+  "seal": "de0c0bbc14ac44480275aad543e3f633926153a9e1bea997f3d5b1f87262fdd3"
 }

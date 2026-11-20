@@ -2,10 +2,10 @@
   "id": "input-spool-lifecycle-20261118",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner, self-review",
-    "date": "2026-11-18",
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-20",
     "decision": "Exercise the shared v1 input protocol at admission, claim, completion and replay.",
-    "notes": "Use synthetic requests in private homes and sockets. Observe file counts, actual receipt state, dispatch evidence and explicit capacity recovery copy. Include existing durable retry, address and native plugin contracts. No live delivery or repair of unknown actions."
+    "notes": "Use synthetic requests in private homes and sockets. Observe file counts, actual receipt state, dispatch evidence and explicit capacity recovery copy. Include existing durable retry, address and native plugin contracts. No live delivery or repair of unknown actions. Capacity fixture re-review: derive the nearly full queue from the production active slots and reservation. Retain existing refusal, settlement, replay, corruption and cancellation assertions."
   },
   "cases": [
     {
@@ -43,5 +43,5 @@
       ]
     }
   ],
-  "seal": "9cf3cdee4a04f51eab4eff2b151e046117557e5df4423747fa5f269ca4fcee0b"
+  "seal": "05f52019818c9cd54872e7aaad1be41ad528d151e9c21255c0adc610e6104aec"
 }
