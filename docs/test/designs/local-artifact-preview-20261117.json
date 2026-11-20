@@ -1,0 +1,79 @@
+{
+  "id": "local-artifact-preview-20261117",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (self-review)",
+    "date": "2026-11-20",
+    "decision": "Implement the registered snapshot preview and verify it on isolated fixtures.",
+    "notes": "Revised before test implementation. Links printed for terminal delivery carry only snapshot identity. Pairing remains a separate owner action. Use the registered parent for local HTML image resolution, allow resource-free CSS for layout, and account for all admitted raster images. Verify the bundled CLI and macOS route separately from ordinary HTTP navigation."
+  },
+  "cases": [
+    {
+      "id": "LAP-001",
+      "layer": "L2",
+      "description": "Local show resolves only a canonical registered ID and validates immutable bytes",
+      "setup": "Private HOME and project fixture files registered through the real artifact store.",
+      "action": "Invoke actual show with ID and URI, then change/delete original; separately try bad IDs, removed entries and corrupt snapshot bytes.",
+      "expected": "Exact registered metadata and original scope are returned after byte/hash checks; source changes do not replace the snapshot. Missing/revoked/corrupt fail without source fallback or scanning.",
+      "planned_files": [
+        "internal/app/artifact_preview_test.go"
+      ]
+    },
+    {
+      "id": "LAP-002",
+      "layer": "L2",
+      "description": "Registration and local open produce an identity-only terminal link",
+      "setup": "Private artifact store and injected local browser opener.",
+      "action": "Read Markdown and JSON registration outputs, open by ID and URI, and print a URL for a nondefault port. Round-trip reserved identity characters. Reject invalid flags and opener errors.",
+      "expected": "Both App reference and local HTTP link name the registered bytes. The link contains only the original document/session/home and the browser must pair independently.",
+      "planned_files": [
+        "internal/app/artifact_preview_test.go"
+      ]
+    },
+    {
+      "id": "LAP-003",
+      "layer": "L2",
+      "description": "Startup document fragments reject ambiguous or malformed identity",
+      "setup": "Real standalone browser fragment parser with encoded and duplicate parameter controls.",
+      "action": "Parse the identity-only link, rejecting invalid, mixed credential/document, duplicate and overlong fields.",
+      "expected": "Only bounded canonical requests reach the reader; fragment parsing grants no access and no arbitrary filesystem route.",
+      "planned_files": [
+        "internal/server/web/artifact-open.test.cjs"
+      ]
+    },
+    {
+      "id": "LAP-004",
+      "layer": "L4",
+      "description": "Local startup previews the same authenticated conversation snapshot",
+      "setup": "Existing synthetic fixture, isolated headless browser, registered HTML/image metadata and delayed access/content responses.",
+      "action": "Open the generated identity fragment with an existing browser credential or by entering a pairing code. Check guest denial, wrong home, changed ID, byte length/digest mismatch, revocation, inline and parent-scoped local PNGs, CSS layout and resource restrictions.",
+      "expected": "Only verified bytes for the requested identity render. The browser admits bounded PNG/JPEG images through one image path and preserves resource-free layout. Closing or losing access retires the viewer.",
+      "planned_files": [
+        "tests/web/artifact-open.test.cjs"
+      ]
+    },
+    {
+      "id": "LAP-005",
+      "layer": "L2",
+      "description": "macOS file URI routing invokes the same explicit local preview command",
+      "setup": "Production URL dispatcher, packaged host and disposable synthetic artifact in an isolated macOS runner.",
+      "action": "Check canonical URL mapping and existing usage scheme, then deliver a synthetic file URL to the built host and record the target passed to its browser opener.",
+      "expected": "The app routes only canonical snapshot IDs through the CLI. The local browser target matches the registered identity; existing usage links stay routable.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift"
+      ]
+    },
+    {
+      "id": "LAP-006",
+      "layer": "L4",
+      "description": "Verified PDF has an explicit browser preview action and malformed PDF stays unsupported",
+      "setup": "Private synthetic PDF metadata/content in the existing isolated browser fixture; no real file or user download.",
+      "action": "Open a PDF with matching hash and valid signature; inspect the explicit blob-backed user action and close the viewer. Repeat with invalid signature.",
+      "expected": "No automatic new window or external fetch occurs. The ready action uses only verified PDF bytes and noreferrer/noopener; malformed PDF never exposes the action. Closing cancels viewer resources.",
+      "planned_files": [
+        "tests/web/artifact-open.test.cjs"
+      ]
+    }
+  ],
+  "seal": "8077b0ab9823ea534371be4a44014e1ef0fd15ffd3a6d0f66b9ce3d9259092ea"
+}
