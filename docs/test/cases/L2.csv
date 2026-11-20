@@ -70,6 +70,8 @@ MAP-37c101d9ff65,L2,reviewed implementation,internal/app/doctor_conversation_hea
 MAP-4f8292b157e5,L2,reviewed implementation,internal/app/doctor_frontend_recovery_test.go,16,reviewed-selector,TestDPC004DoctorDoesNotPromiseAutomaticRecovery,False,DPC-004
 MAP-6eef5ace4810,L2,reviewed implementation,internal/app/doctor_hq_storage_test.go,14,reviewed-selector,TestDPC002DoctorStorageExplainsScopeWithoutRemoval,False,DPC-002
 MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_test.go,48,reviewed-selector,TestDKC001DoctorPendingCountMatchesCaptureProjection,False,DKC-001
+MAP-f167ee401a33,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,60,reviewed-selector,TestSTOR011DoctorReportsLegacyProfileLocksWithoutChanges,False,"STOR-011,STOR-012"
+MAP-e5e0b1ca236e,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,86,reviewed-selector,TestSTOR012DoctorPrunesOnlyConfirmedIdleLegacyProfileLocks,False,"STOR-011,STOR-012"
 MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
 MAP-c7f093bf6da7,L2,reviewed implementation,internal/app/dsh_terminal_spool_test.go,21,reviewed-selector,TestDSHTerminalReceiverSharesSpoolWithGo,False,"SPL-004,SPL-012"
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001

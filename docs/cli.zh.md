@@ -1746,7 +1746,7 @@ on`）能往更短的那份「可输入」清单里打字。owner 设置和 HQ A
 
 | 命令 | 用途 |
 |---|---|
-| `gtmux doctor [--fix [--yes] \| --bundle]` | 体检这台 Mac，然后把缺的配上 |
+| `gtmux doctor [--fix [--yes] \| --bundle \| --prune-profile-locks]` | 检查本机并查看可用修复 |
 | `gtmux install [hooks\|app\|cloudflared]` | 安装 agent hook 或菜单栏 app |
 | `gtmux uninstall [hooks\|app]` | 把 gtmux 装过的东西撤掉 |
 | `gtmux update [--check]` | 更新 gtmux，CLI 和菜单栏 app 一起 |
@@ -1789,6 +1789,10 @@ CLI、App 是否安装，以及激活是否失败；已安装组件的更新说�
 状态为 `ok`、`recommended`、`blocking`、`info`；存在阻塞项时退出码为 1，报告仍完整返回。
 `--json`、`--no-prompt` 不能与修复或打包参数组合。
 `doctor --fix --terminal` 在终端打开交互修复，不能搭配 `--yes`；打开终端不代表修复成功。
+
+「存储」会统计旧版参与者资料的空锁文件。升级或停用所有旧版 hook 写入方、等待执行中的
+旧版 hook 退出后，在终端运行 `gtmux doctor --prune-profile-locks` 并确认。
+命令保留资料快照和新版分组锁，并报告仍被持有的旧锁。
 
 检查是否完成，与结果分类是两回事：
 
