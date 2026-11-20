@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.188',
+    en: [
+      '- Opening conversation files now gives clearer guidance when a file is unavailable or a new link is needed. Repeated attempts keep their conversation context.',
+      '- Appearance controls are in one place. Reply, settings and session controls have clearer labels and more room to tap.',
+      '- Sending now explains when the server\'s terminal input queue is full and confirms that your message was not submitted, so you can retry when space is available.',
+    ],
+    zh: [
+      '- 对话文件暂时不可用或需要新链接时，会说明原因和下一步。重试时保留原会话的上下文。',
+      '- 外观设置集中在同一处。回复、设置和会话控件的标签更清楚，触控范围更宽。',
+      '- 服务端终端发送队列已满时，明确告知消息未发送，方便在队列恢复后重试。',
+    ],
+  },
+  {
     version: '1.0.185',
     en: [
       '- When you scroll back in the terminal, new output keeps your place until you return to the live view.',

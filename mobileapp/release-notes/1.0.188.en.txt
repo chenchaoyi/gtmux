@@ -1,0 +1,3 @@
+- Opening conversation files now gives clearer guidance when a file is unavailable or a new link is needed. Repeated attempts keep their conversation context.
+- Appearance controls are in one place. Reply, settings and session controls have clearer labels and more room to tap.
+- Sending now explains when the server's terminal input queue is full and confirms that your message was not submitted, so you can retry when space is available.
