@@ -1,0 +1,24 @@
+{
+  "id": "local-artifact-endpoint-20261120",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (self-review following independent review)",
+    "date": "2026-11-20",
+    "decision": "Use the active local workspace for every preview entry.",
+    "notes": "Publishing the immutable App reference must still succeed offline. Generate a local browser address only from an identifiable running workspace. Verify a fresh private serve status against its live loopback boot identity without sending a credential. Bind families determine the literal loopback host. An explicit port must agree with the verified endpoint. The packaged-host fixture will run a private nondefault workspace."
+  },
+  "cases": [
+    {
+      "id": "LAP-007",
+      "layer": "L2",
+      "description": "Local preview follows the running workspace port and refuses an unavailable endpoint",
+      "setup": "Synthetic private serve status, random loopback listener, disposable artifact store and an injected opener. Check default-port address selection without binding the developer's default port.",
+      "action": "Generate a registration receipt and open command URL, including an explicit port. Test IPv4 and IPv6 bind selection, absent or stale status, closed listener, wrong boot, malformed response and mismatched port.",
+      "expected": "Only a verified local service yields an HTTP address. The published App reference survives unavailable service and the CLI reports how to retry. An explicit port cannot send a credential or select a foreign host.",
+      "planned_files": [
+        "internal/app/artifact_endpoint_test.go"
+      ]
+    }
+  ],
+  "seal": "e4ba4d7eb0982b1e80219806df35462880d37d07cf10033fc4f5a2f5defc03da"
+}

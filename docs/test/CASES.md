@@ -2,14 +2,14 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1383 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1392 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3816 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2569 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2581 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 109 | [L4.csv](cases/L4.csv) |
+| L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 507 | [G.csv](cases/G.csv) |
 
@@ -361,6 +361,19 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | LPV-001 | Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and remains bounded14lines/220pt. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain. |
 | LPV-002 | Old capture is absent immediately in the new Live scope; late A cannot replace B. Current B capture appears only after its read settles. Historical Chat send/keys/uploads remain disabled and no send is made. No additional poller is introduced. |
 | LPV-003 | Existing disclosure works and displays only the bounded current-pane tail, with explicit pane/association caption. Closing hides output. No send or authority promotion and no page/console errors. |
+| LAP-007 | Only a verified local service yields an HTTP address. The published App reference survives unavailable service and the CLI reports how to retry. An explicit port cannot send a credential or select a foreign host. |
+| LAP-001 | Exact registered metadata and original scope are returned after byte/hash checks; source changes do not replace the snapshot. Missing/revoked/corrupt fail without source fallback or scanning. |
+| LAP-002 | Both App reference and local HTTP link name the registered bytes. The link contains only the original document/session/home and the browser must pair independently. |
+| LAP-003 | Only bounded canonical requests reach the reader; fragment parsing grants no access and no arbitrary filesystem route. |
+| LAP-004 | Only verified bytes for the requested identity render. The browser admits bounded PNG/JPEG images through one image path and preserves resource-free layout. Closing or losing access retires the viewer. |
+| LAP-005 | The app routes only canonical snapshot IDs through the CLI. The local browser target matches the registered identity; existing usage links stay routable. |
+| LAP-006 | No automatic new window or external fetch occurs. The ready action uses only verified PDF bytes and noreferrer/noopener; malformed PDF never exposes the action. Closing cancels viewer resources. |
+| LAP-008 | The previous viewer closes and late bytes cannot render. New requests use the current identity or prompt for pairing. A layout transition leaves no stranded pending reader. |
+| LAP-009 | The over-budget body is never requested. Verified text and the other image render. Permission refusal still fails the whole reader. |
+| LAP-010 | The prior view retires. Each identity restores its own draft and marked turn. The unpaired view offers pairing and cannot show private data. |
+| LAP-012 | The pending change is saved in the old profile when the switch is processed, never in the new profile. |
+| LAP-013 | The mark and page-only feedback survive the redraw, removal works, and no bookmark is persisted. |
+| LAP-011 | No private composer data or bookmarks are restored. Normal credential changes still save drafts only for their original identity. |
 | AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
 | BLP-001 | All three distinct fixed panes become highlighted in cyclic order, with smooth crossfade, constant mark footprint and no whole-logo opacity flashing or physical rotation. Repeated cycle boundary is continuous. Old whole-mark breathing fails a rendered-pane assertion semantically. |
 | BLP-002 | Static brand state until motion is known to be allowed. Reduced Motion, background/inactive and hidden/unmounted indicators have no running loop. Live preference wins over stale query; listeners and loops clean up, foreground may resume only when allowed. No frame-by-frame spoken announcements. |

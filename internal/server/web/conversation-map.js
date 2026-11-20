@@ -174,14 +174,15 @@
         }
         if (saved.has(key)) saved.delete(key);
         else saved.add(key);
+        volatile = true;
         try {
-          localStorage.setItem(storageKey, JSON.stringify(Array.from(saved)));
-          volatile = false;
-          pageBookmarks.delete(storageKey);
-        } catch (e) {
-          volatile = true;
-          pageBookmarks.set(storageKey, new Set(saved));
-        }
+          if (!options.canSave || options.canSave()) {
+            localStorage.setItem(storageKey, JSON.stringify(Array.from(saved)));
+            volatile = false;
+          }
+        } catch (e) {}
+        if (volatile) pageBookmarks.set(storageKey, new Set(saved));
+        else pageBookmarks.delete(storageKey);
         feedback.textContent = volatile
           ? T(
               'Saved for this page only; browser storage is unavailable.',

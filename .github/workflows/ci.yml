@@ -551,6 +551,16 @@ jobs:
           GTMUX_UNIVERSAL: '1'
         run: bash macapp/Widget/build-extension.sh
 
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.27'
+          cache: true
+
+      - name: Package the app and its CLI for the desktop URL test
+        env:
+          GTMUX_UNIVERSAL: '1'
+        run: bash macapp/build.sh
+
       - name: swift test (model + design conformance)
         env:
           GTMUX_WORKSPACE_PREVIEW_DIR: ${{ runner.temp }}/hq-workspace-previews

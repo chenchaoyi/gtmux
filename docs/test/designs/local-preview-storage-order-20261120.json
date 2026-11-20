@@ -1,0 +1,24 @@
+{
+  "id": "local-preview-storage-order-20261120",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner following independent review",
+    "date": "2026-11-20",
+    "decision": "Check write-time pairing and explicit clearing with delayed view notification.",
+    "notes": "Use isolated synthetic browser pages. Hold only the notification in one page, and exercise normal save and page-hide handlers after user clearing or a fixture server refusal. Model the actual persisted credential in the existing component fixture."
+  },
+  "cases": [
+    {
+      "id": "LAP-011",
+      "layer": "L4",
+      "description": "Explicit clearing wins over pending saves in other tabs",
+      "setup": "Disposable same-origin browser pages with a paired identity and pending input.",
+      "action": "Clear site storage or receive a real HTTP authorization refusal in another page. Allow the old page's timer and page-hide callback to run before it processes the notification.",
+      "expected": "No private composer data or bookmarks are restored. Normal credential changes still save drafts only for their original identity.",
+      "planned_files": [
+        "tests/web/artifact-storage-clear.test.cjs"
+      ]
+    }
+  ],
+  "seal": "80db1986d5e9c24ad2e3c4c48f8da76f2e3fdc9eaae75710af6cf35525b87d72"
+}

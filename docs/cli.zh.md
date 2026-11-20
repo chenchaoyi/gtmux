@@ -2291,12 +2291,17 @@ HQ 目录以外的读取同样显示原始视图，但不算消费。
 gtmux artifact add /absolute/path/report.html --session-id SESSION_ID [--home-id HOME_ID] [--json]
 gtmux artifact list
 gtmux artifact remove ID
+gtmux artifact show gtmux-file:ID [--json]
+gtmux artifact open gtmux-file:ID [--print-url] [--port PORT]
 ```
 
 `add` 保存本人拥有的普通文件快照，单份不超过 30 MiB，输出 Markdown 引用；`--json`
 改为输出元数据。需指定真实的对话及目录身份。`list` 以 JSON 列出副本；`remove` 只移除
 已登记副本并停止后续下载，不触碰原文件，不能撤回设备已下载的文件。总上限为 256 份、
 240 MiB。支持格式及限制见[会话文件预览](design/conversation-documents.zh.md)。
+
+`show gtmux-file:ID --json` 校验已登记快照并输出元数据。本机工作台运行时，交付固定版本可保留 `add` 的两个链接：App 使用文件引用，Codex 终端使用 **Open on this computer**。JSON 始终提供 `reference`，确认本机服务运行后再提供 `local_preview_url`。离线登记也能取得 App 引用。HTTP 链接在运行工作台的本机打开，浏览器可按提示配对。每次读取都需要本人全权限，并核对登记的会话与 home。
+`open ID` 打开同一份预览。`--print-url` 输出不含凭据的地址，默认自动识别运行端口，可用 `--port PORT` 要求与指定端口一致。macOS 菜单栏应用也识别标准 `gtmux-file:` 链接。
 
 HQ 界面可使用 `gtmux hq workspace list --overview --stored --json` 读取存储中的权威事项，不发现会话；`sources_included:false` 表示没有附带可选会话元数据。普通 list 仍提供实时及历史来源。详见 [HQ 选项反馈](design/HQ-CHOICE-RESPONSE.zh.md)。
 

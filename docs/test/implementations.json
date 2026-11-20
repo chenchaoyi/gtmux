@@ -4481,5 +4481,105 @@
       "no booted device is not permission to pick and drive a random stored device",
       "unavailable or duplicate device records never become an ambiguous target"
     ]
+  },
+  "internal/app/artifact_preview_test.go": {
+    "cases": [
+      "LAP-001",
+      "LAP-002"
+    ],
+    "selectors": [
+      "TestLAP001LocalShowReadsSnapshotAfterOriginalChanges",
+      "TestLAP001LocalShowRejectsBadRemovedAndCorruptFiles",
+      "TestLAP002RegistrationAndOpenUseSameLocalURL"
+    ]
+  },
+  "internal/server/web/artifact-open.test.cjs": {
+    "cases": [
+      "LAP-003"
+    ],
+    "selectors": [
+      "LAP-003 canonical startup keeps the original scope and pairing stays separate",
+      "LAP-003 rejects ambiguous or malformed "
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift": {
+    "cases": [
+      "LAP-005"
+    ],
+    "selectors": [
+      "testLAP005CanonicalFileLinkUsesSeparateArguments",
+      "testLAP005RejectsOtherRoutesAndCommandText",
+      "testLAP005BundleDeclaresFileSchemeAndPreservesUsage",
+      "testLAP005PackagedHostOpensRegisteredArtifact"
+    ]
+  },
+  "tests/web/artifact-open.test.cjs": {
+    "cases": [
+      "LAP-004",
+      "LAP-006"
+    ],
+    "selectors": [
+      "static HTML and immutable identity ",
+      "restricted owner remains forbidden",
+      "wrong home stays unavailable",
+      "revoked credentials retire the delayed document",
+      "corrupt bytes cannot enter HTML renderer",
+      "existing credentials retain original scope without enrollment",
+      "LAP-006 PDF waits for a user action and releases its blob on close",
+      "LAP-006 invalid PDF never exposes the preview action",
+      "first pairing resumes the requested snapshot",
+      "local image uses verified parent and layout stays resource-free",
+      "different registered ID is refused before reading bytes",
+      "short document body stays unavailable",
+      "inline raster type and count are checked before display"
+    ]
+  },
+  "internal/app/artifact_endpoint_test.go": {
+    "cases": [
+      "LAP-007"
+    ],
+    "selectors": [
+      "TestLAP007OnlyCurrentWorkspaceOffersALocalPreview",
+      "TestLAP007LoopbackAddressesUseRecordedPort",
+      "TestLAP007UnexpectedHealthNeverProvidesAnAddress"
+    ]
+  },
+  "tests/web/artifact-lifetime.test.cjs": {
+    "cases": [
+      "LAP-008",
+      "LAP-009"
+    ],
+    "selectors": [
+      "LAP-008 another tab switches to a guest and signs out",
+      "LAP-008 resizing retires a pending reader",
+      "LAP-009 oversized related image leaves the rest of the report readable"
+    ]
+  },
+  "tests/web/artifact-pairing-storage.test.cjs": {
+    "cases": [
+      "LAP-010"
+    ],
+    "selectors": [
+      "LAP-010 switching pairing in another tab restores both profiles"
+    ]
+  },
+  "tests/web/artifact-storage-clear.test.cjs": {
+    "cases": [
+      "LAP-011"
+    ],
+    "selectors": [
+      "LAP-011 clearing site data retires a scheduled save",
+      "LAP-011 server revocation wins before the other tab retires"
+    ]
+  },
+  "tests/web/artifact-pending-edits.test.cjs": {
+    "cases": [
+      "LAP-012",
+      "LAP-013"
+    ],
+    "selectors": [
+      "LAP-012 pending draft survives an early",
+      "LAP-013 bookmarks remain usable without persistent"
+    ]
   }
 }

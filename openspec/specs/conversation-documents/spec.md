@@ -37,6 +37,26 @@ The system SHALL privately snapshot explicitly published documents and, on an ow
 - **THEN** the server verifies the destination in the parent snapshot and requires the same session/home and a file within the parent directory tree
 - **AND** symlink escapes, undeclared files, foreign parents and removed parents fail before a source snapshot is provided
 
+### Requirement: Local registered file recognition and preview
+
+The local CLI SHALL identify canonical registered IDs through `artifact show` and preview
+through `artifact open`, using the same verified immutable copy and its original session/home.
+It SHALL NOT substitute original source bytes or recreate removed copies. Opening SHALL use
+a credential-free loopback HTTP link from the running workspace alongside the App reference.
+If the private heartbeat or loopback boot identity cannot be verified, registration SHALL still
+return the App reference and local open SHALL report the unavailable workspace. The browser SHALL use existing
+full-access pairing or request pairing before resolving the snapshot. Browser startup SHALL clear the
+fragment and recheck full-scope access. macOS canonical file links SHALL route through the
+same argument-safe command while preserving existing usage links.
+
+#### Scenario: Preview an immutable file on the server computer
+
+- **WHEN** the owner opens a valid registered file ID locally
+- **THEN** the browser verifies its metadata, full bytes and hash in the original conversation scope
+- **AND** HTML remains static in an opaque sandbox without scripts or external resources; validated inline raster images and native disclosures remain usable
+- **AND** verified PDFs offer a user-selected browser action, while denied, removed, corrupt or retired reads never expose a ready preview
+- **AND** failure to authenticate the workspace or open a browser is explicit, with no automatic service start or source fallback
+
 ### Requirement: Isolated native preview
 
 The iOS app SHALL immediately present loading/progress/error UI, download through the

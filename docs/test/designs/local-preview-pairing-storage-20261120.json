@@ -1,0 +1,24 @@
+{
+  "id": "local-preview-pairing-storage-20261120",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner following independent exact-head review",
+    "date": "2026-11-20",
+    "decision": "Exercise ordinary cross-tab credential replacement and removal with two stored profiles.",
+    "notes": "Use a disposable browser origin. Create real drafts and turn bookmarks using each synthetic identity. Restore both profiles after another tab changes the credential. Keep the existing explicit revocation tests."
+  },
+  "cases": [
+    {
+      "id": "LAP-010",
+      "layer": "L4",
+      "description": "Cross-tab pairing preserves each identity's saved input and bookmarks",
+      "setup": "Two same-origin pages, two synthetic identities and a conversation with bookmarkable turns.",
+      "action": "Use the composer and bookmark controls under each identity, switch from the other tab, remove the credential, then reconnect and reload.",
+      "expected": "The prior view retires. Each identity restores its own draft and marked turn. The unpaired view offers pairing and cannot show private data.",
+      "planned_files": [
+        "tests/web/artifact-pairing-storage.test.cjs"
+      ]
+    }
+  ],
+  "seal": "567c4d7a30828cff1453c678404771c57e3a2059cccb08c78ed90511bd9997fa"
+}

@@ -2705,6 +2705,8 @@ command; use it for an immutable revision or a document outside those links.
 gtmux artifact add /absolute/path/report.html --session-id SESSION_ID [--home-id HOME_ID] [--json]
 gtmux artifact list
 gtmux artifact remove ID
+gtmux artifact show gtmux-file:ID [--json]
+gtmux artifact open gtmux-file:ID [--print-url] [--port PORT]
 ```
 
 `add` snapshots an owned regular document, at most 30 MiB, and prints a Markdown
@@ -2713,6 +2715,10 @@ identity. `list` prints JSON; `remove` revokes future downloads and removes only
 the registered copy. Total storage is bounded to 256 copies / 240 MiB. Originals
 and copies already downloaded by devices remain. See
 [document preview](design/conversation-documents.md) for supported formats and limits.
+
+`show gtmux-file:ID --json` verifies a registered snapshot and prints its metadata.
+With the local workspace running, include both links from `add` for a fixed revision: the App file reference and **Open on this computer** for a Codex terminal. JSON always includes `reference`. A verified running workspace adds `local_preview_url`. Offline registration still provides the App reference. The HTTP link opens on the computer hosting the running workspace. Pair the browser when prompted. Every read requires owner/full access to that document in its original conversation and home.
+`open ID` opens the same preview. Use `--print-url` to print its credential-free address and `--port PORT` to require a specific running workspace port. The CLI detects the active port by default. The macOS menu-bar app also handles canonical `gtmux-file:` URLs.
 
 HQ UI readers may use `gtmux hq workspace list --overview --stored --json` for authoritative stored matters without session discovery; `sources_included:false` denotes unavailable optional session metadata. Ordinary list retains live/historical sources. See [HQ choice response](design/HQ-CHOICE-RESPONSE.md).
 
