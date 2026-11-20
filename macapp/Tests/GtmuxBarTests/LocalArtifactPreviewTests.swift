@@ -33,13 +33,14 @@ extension LocalArtifactPreviewTests {
         }
         let mac = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()
-        let host = mac.appendingPathComponent("build/widget/Build/Products/Release/Gtmux.app")
+        let host = mac.appendingPathComponent("build/Gtmux.app")
         let fm = FileManager.default
         XCTAssertTrue(fm.fileExists(atPath: host.appendingPathComponent("Contents/MacOS/GtmuxBar").path))
         let tmp = fm.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try fm.createDirectory(at: tmp, withIntermediateDirectories: true)
         defer { try? fm.removeItem(at: tmp) }
-        let cli = tmp.appendingPathComponent("candidate-cli")
+        let cli = host.appendingPathComponent("Contents/MacOS/gtmux")
+        XCTAssertTrue(fm.isExecutableFile(atPath: cli.path))
         func run(_ executable: URL, _ arguments: [String], _ environment: [String: String]) throws -> Data {
             let proc = Process(), out = Pipe()
             proc.currentDirectoryURL = mac.deletingLastPathComponent()
@@ -53,14 +54,29 @@ extension LocalArtifactPreviewTests {
             XCTAssertEqual(proc.terminationStatus, 0)
             return data
         }
-        let inherited = ProcessInfo.processInfo.environment
-        _ = try run(URL(fileURLWithPath: "/usr/bin/env"), ["go", "build", "-o", cli.path, "./cmd/gtmux"], inherited)
         let fixture = tmp.appendingPathComponent("report.html")
         try Data("<p>Desktop preview</p>".utf8).write(to: fixture)
-        let receipt = try run(cli, ["artifact", "add", fixture.path, "--session-id", "desktop-fixture", "--json"], ["HOME": tmp.path])
+        let environment = ["HOME": tmp.path, "PATH": "/usr/bin:/bin", "TMUX_TMPDIR": tmp.path]
+        let workspace = Process()
+        let port = Int.random(in: 49152...65535)
+        workspace.executableURL = cli
+        workspace.arguments = ["serve", "--bind", "127.0.0.1", "--port", String(port)]
+        workspace.environment = environment
+        workspace.standardOutput = FileHandle.nullDevice
+        workspace.standardError = FileHandle.nullDevice
+        try workspace.run()
+        defer { if workspace.isRunning { workspace.terminate(); workspace.waitUntilExit() } }
+        let status = tmp.appendingPathComponent(".local/share/gtmux/status/serve.json")
+        let startup = Date().addingTimeInterval(10)
+        while workspace.isRunning, !fm.fileExists(atPath: status.path), Date() < startup {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.05))
+        }
+        XCTAssertTrue(workspace.isRunning)
+        let receipt = try run(cli, ["artifact", "add", fixture.path, "--session-id", "desktop-fixture", "--json"], environment)
         let meta = try XCTUnwrap(JSONSerialization.jsonObject(with: receipt) as? [String: Any])
         let ref = try XCTUnwrap(meta["reference"] as? String)
         let target = try XCTUnwrap(meta["local_preview_url"] as? String)
+        XCTAssertEqual(URL(string: target)?.port, port)
         func executable(_ name: String, _ source: String) throws -> URL {
             let url = tmp.appendingPathComponent(name)
             try Data(source.utf8).write(to: url)

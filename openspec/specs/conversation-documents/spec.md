@@ -42,7 +42,9 @@ The system SHALL privately snapshot explicitly published documents and, on an ow
 The local CLI SHALL identify canonical registered IDs through `artifact show` and preview
 through `artifact open`, using the same verified immutable copy and its original session/home.
 It SHALL NOT substitute original source bytes or recreate removed copies. Opening SHALL use
-a credential-free loopback HTTP link alongside the App reference. The browser SHALL use existing
+a credential-free loopback HTTP link from the running workspace alongside the App reference.
+If the private heartbeat or loopback boot identity cannot be verified, registration SHALL still
+return the App reference and local open SHALL report the unavailable workspace. The browser SHALL use existing
 full-access pairing or request pairing before resolving the snapshot. Browser startup SHALL clear the
 fragment and recheck full-scope access. macOS canonical file links SHALL route through the
 same argument-safe command while preserving existing usage links.

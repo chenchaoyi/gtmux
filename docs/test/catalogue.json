@@ -67939,7 +67939,7 @@
       "cases": [
         {
           "id": "MAP-61ca47d1d1d3",
-          "line": 29,
+          "line": 30,
           "kind": "reviewed-selector",
           "name": "TestLAP001LocalShowReadsSnapshotAfterOriginalChanges",
           "dynamic": false,
@@ -67948,7 +67948,7 @@
         },
         {
           "id": "MAP-5ca59e22715c",
-          "line": 51,
+          "line": 52,
           "kind": "reviewed-selector",
           "name": "TestLAP001LocalShowRejectsBadRemovedAndCorruptFiles",
           "dynamic": false,
@@ -67957,7 +67957,7 @@
         },
         {
           "id": "MAP-99f641958692",
-          "line": 71,
+          "line": 72,
           "kind": "reviewed-selector",
           "name": "TestLAP002RegistrationAndOpenUseSameLocalURL",
           "dynamic": false,
@@ -67965,7 +67965,7 @@
           "design": "LAP-001,LAP-002"
         }
       ],
-      "sha256": "d8b4a26214a89c6c3bf3f56209ae7c3693349741a8af821c7ec8f9f256cd0457"
+      "sha256": "5b8590cac247261e2c5aa07cb657b1c0dd1cdcc72f4c241c75d7fbffe00eb33c"
     },
     "internal/server/web/artifact-open.test.cjs": {
       "layer": "L2",
@@ -68033,7 +68033,7 @@
           "design": "LAP-005"
         }
       ],
-      "sha256": "4c82e1c6a40e3df6116ca7eb1045c02d16d5036a7e2c9b3c9ca19ec315e268f0"
+      "sha256": "33ed9facacfa53649e00610f63164598ecca1a4562c36b37078e2c05816f82ae"
     },
     "tests/web/artifact-open.test.cjs": {
       "layer": "L4",
@@ -68041,7 +68041,7 @@
       "cases": [
         {
           "id": "MAP-9a7f2aab5da8",
-          "line": 57,
+          "line": 21,
           "kind": "reviewed-selector",
           "name": "static HTML and immutable identity ",
           "dynamic": false,
@@ -68050,7 +68050,7 @@
         },
         {
           "id": "MAP-cc25f4911385",
-          "line": 78,
+          "line": 42,
           "kind": "reviewed-selector",
           "name": "restricted owner remains forbidden",
           "dynamic": false,
@@ -68059,7 +68059,7 @@
         },
         {
           "id": "MAP-9565991f5715",
-          "line": 85,
+          "line": 49,
           "kind": "reviewed-selector",
           "name": "wrong home stays unavailable",
           "dynamic": false,
@@ -68068,7 +68068,7 @@
         },
         {
           "id": "MAP-2e82555927c4",
-          "line": 90,
+          "line": 54,
           "kind": "reviewed-selector",
           "name": "revoked credentials retire the delayed document",
           "dynamic": false,
@@ -68077,7 +68077,7 @@
         },
         {
           "id": "MAP-0e617a1fc9ab",
-          "line": 101,
+          "line": 65,
           "kind": "reviewed-selector",
           "name": "corrupt bytes cannot enter HTML renderer",
           "dynamic": false,
@@ -68086,7 +68086,7 @@
         },
         {
           "id": "MAP-bfb8f256385c",
-          "line": 109,
+          "line": 73,
           "kind": "reviewed-selector",
           "name": "existing credentials retain original scope without enrollment",
           "dynamic": false,
@@ -68095,7 +68095,7 @@
         },
         {
           "id": "MAP-9619f18de952",
-          "line": 125,
+          "line": 89,
           "kind": "reviewed-selector",
           "name": "LAP-006 PDF waits for a user action and releases its blob on close",
           "dynamic": false,
@@ -68104,7 +68104,7 @@
         },
         {
           "id": "MAP-b677734d392a",
-          "line": 145,
+          "line": 109,
           "kind": "reviewed-selector",
           "name": "LAP-006 invalid PDF never exposes the preview action",
           "dynamic": false,
@@ -68113,7 +68113,7 @@
         },
         {
           "id": "MAP-fb7c969e0888",
-          "line": 153,
+          "line": 117,
           "kind": "reviewed-selector",
           "name": "first pairing resumes the requested snapshot",
           "dynamic": false,
@@ -68122,7 +68122,7 @@
         },
         {
           "id": "MAP-36907fd16000",
-          "line": 165,
+          "line": 129,
           "kind": "reviewed-selector",
           "name": "local image uses verified parent and layout stays resource-free",
           "dynamic": false,
@@ -68131,7 +68131,7 @@
         },
         {
           "id": "MAP-635d70afc09c",
-          "line": 180,
+          "line": 144,
           "kind": "reviewed-selector",
           "name": "different registered ID is refused before reading bytes",
           "dynamic": false,
@@ -68140,7 +68140,7 @@
         },
         {
           "id": "MAP-d30f439538bd",
-          "line": 189,
+          "line": 153,
           "kind": "reviewed-selector",
           "name": "short document body stays unavailable",
           "dynamic": false,
@@ -68149,7 +68149,7 @@
         },
         {
           "id": "MAP-3e9e7cfd2b21",
-          "line": 195,
+          "line": 159,
           "kind": "reviewed-selector",
           "name": "inline raster type and count are checked before display",
           "dynamic": false,
@@ -68157,7 +68157,75 @@
           "design": "LAP-004,LAP-006"
         }
       ],
-      "sha256": "6f6d709222c5c861a820a091e7c32ab9582508b599e21ad9773b2fd83310d81f"
+      "sha256": "453c9f1f366640525dd437223f009bc96670e4ce300ff76cbed77629c8073e3e"
+    },
+    "internal/app/artifact_endpoint_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9d9c69aa8fd5",
+          "line": 43,
+          "kind": "reviewed-selector",
+          "name": "TestLAP007OnlyCurrentWorkspaceOffersALocalPreview",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LAP-007"
+        },
+        {
+          "id": "MAP-db260902bb5a",
+          "line": 86,
+          "kind": "reviewed-selector",
+          "name": "TestLAP007LoopbackAddressesUseRecordedPort",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LAP-007"
+        },
+        {
+          "id": "MAP-66f016a34c89",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "TestLAP007UnexpectedHealthNeverProvidesAnAddress",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LAP-007"
+        }
+      ],
+      "sha256": "fd83013b2bda26968a310f230de6993ea9f2666662b9efa6e408fa9c4b355d50"
+    },
+    "tests/web/artifact-lifetime.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ef5264e03fa7",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "LAP-008 another tab switches to a guest and signs out",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LAP-008,LAP-009"
+        },
+        {
+          "id": "MAP-f9189f690459",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "LAP-008 resizing retires a pending reader",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LAP-008,LAP-009"
+        },
+        {
+          "id": "MAP-ff125c9f699b",
+          "line": 73,
+          "kind": "reviewed-selector",
+          "name": "LAP-009 oversized related image leaves the rest of the report readable",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LAP-008,LAP-009"
+        }
+      ],
+      "sha256": "ea824c1327e9e228362f2e24eebee5034f52dc1a598bba52ccbaf67d79ade759"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

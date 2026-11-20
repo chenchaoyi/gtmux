@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -70,6 +71,8 @@ func TestLAP001LocalShowRejectsBadRemovedAndCorruptFiles(t *testing.T) {
 }
 func TestLAP002RegistrationAndOpenUseSameLocalURL(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	server := newPreviewWorkspace(t)
+	port := strconv.Itoa(server.port)
 	source := filepath.Join(t.TempDir(), "report.html")
 	if err := os.WriteFile(source, []byte("<p>Fixture</p>"), 0600); err != nil {
 		t.Fatal(err)
@@ -104,9 +107,9 @@ func TestLAP002RegistrationAndOpenUseSameLocalURL(t *testing.T) {
 	t.Cleanup(func() { artifactPreviewLaunch = old })
 	var opened string
 	artifactPreviewLaunch = func(endpoint string) error { opened = endpoint; return nil }
-	run([]string{"open", receipt.ID, "--port", "12345"})
+	run([]string{"open", receipt.ID, "--port", port})
 	u, err := url.Parse(opened)
-	if err != nil || u.Scheme != "http" || u.Host != "127.0.0.1:12345" || u.Path != "/" || u.User != nil || u.RawQuery != "" {
+	if err != nil || u.Scheme != "http" || u.Host != "127.0.0.1:"+port || u.Path != "/" || u.User != nil || u.RawQuery != "" {
 		t.Fatal(opened, err)
 	}
 	_, raw, ok := strings.Cut(opened, "#")

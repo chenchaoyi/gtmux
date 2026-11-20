@@ -258,7 +258,7 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { if (activeSessionTool) activeSessionTool.sheet.el.retire(); $('session-toolbar').hidden = which !== 'chat' && which !== 'pane'; $('session-trace').hidden = !(curAgent && (curAgent.agent || readableConversation(curAgent))); $('session-diff').hidden = !hasPane(curAgent); if (which !== 'chat') $('chat-interaction').hidden = true; cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); }
+  function show(which) { if (activeSessionTool) activeSessionTool.sheet.el.retire(); $('session-toolbar').hidden = which !== 'chat' && which !== 'pane'; $('session-trace').hidden = !(curAgent && (curAgent.agent || readableConversation(curAgent))); $('session-diff').hidden = !hasPane(curAgent); if (which !== 'chat') $('chat-interaction').hidden = true; retireDocumentReaders(); cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); }
   function updatePageTitle(view) {
     view = view || ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].find(function (id) { return !$(id).hidden; });
     var title = T('Agent workspace', 'Agent 工作台');
@@ -3259,9 +3259,13 @@
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
     return true;
   }
+  function retireDocumentReaders() {
+    document.querySelectorAll('.conversation-document').forEach(dialog => dialog.retire());
+  }
+
   function openPendingDocument() {
     if (!pendingDocument) return;
-    document.querySelectorAll('.conversation-document').forEach(dialog => dialog.retire());
+    retireDocumentReaders();
     var request = pendingDocument;
     pendingDocument = null;
     showConversationDocument(request.reference, request, true);
@@ -3273,13 +3277,8 @@
     var sheet = browserDialog(target.name || T('File', '文件')), credential = token, epoch = viewEpoch;
     sheet.el.classList.add('conversation-document');
     var controller = new AbortController(), objectURL = '', closed = false;
-    function credentialChanged(event) {
-      if (event.storageArea === localStorage && (event.key === TOKEN_KEY || event.key === null)) sheet.el.retire();
-    }
-    window.addEventListener('storage', credentialChanged);
     sheet.onClose = function () {
       closed = true;
-      window.removeEventListener('storage', credentialChanged);
       controller.abort();
       if (objectURL) URL.revokeObjectURL(objectURL);
     };
@@ -3308,7 +3307,9 @@
       if (!file || (!parentID && reference.startsWith('gtmux-file:') && reference !== 'gtmux-file:' + file.id)) throw new Error('failed');
       if (parentID && file.kind !== 'image') throw new Error('failed');
       if (file.kind === 'image') limit = Math.min(limit, window.GtmuxArtifactOpen.maxImageBytes);
-      if (file.bytes > limit || !valid()) throw new Error('failed');
+      if (!valid()) throw new Error('retired');
+      if (parentID && file.bytes > limit) return null;
+      if (file.bytes > limit) throw new Error('failed');
       const query = new URLSearchParams({id: file.id, session_id: body.session_id, home_id: body.home_id});
       const response = await api('/api/artifacts/content?' + query, options);
       requireOK(response);
@@ -3350,7 +3351,7 @@
         var rendered = await window.GtmuxArtifactOpen.htmlDocument(new TextDecoder().decode(bytes), rasterType, async function (src, limit) {
           try {
             const child = await readFile(src, file.id, limit);
-            return {bytes: child.bytes, type: child.file.media_type};
+            return child && {bytes: child.bytes, type: child.file.media_type};
           } catch (error) {
             if (error.message === 'unpublished') return null;
             throw error;
@@ -3540,7 +3541,7 @@
   }
 
   function startWorkbench() {
-    cancelReads(); viewEpoch++;
+    retireDocumentReaders(); cancelReads(); viewEpoch++;
     WB.on = true; updatePageTitle('workbench');
     ['gate', 'radar', 'panes', 'pane', 'chat', 'chat-input'].forEach(function (id) { $(id).hidden = true; });
     clearInterval(panesTimer); panesTimer = null;
@@ -4320,6 +4321,19 @@
       // in it. It used to go home, and the workbench drew under a browser left showing.
       if (!$('panes').hidden) return;
       home();
+    });
+    // All tabs at this workspace share pairing. Discard the previous view
+    // and its reads before issuing any requests with the new identity.
+    window.addEventListener('storage', function (event) {
+      if (event.storageArea !== localStorage || (event.key !== TOKEN_KEY && event.key !== null)) return;
+      const current = localStorage.getItem(TOKEN_KEY);
+      if (current === token) return;
+      if (token) pendingDocument = null;
+      token = current;
+      gate('unpaired');
+      if (token) {
+        home(); fetchTheme(); fetchShare(); openPendingDocument();
+      }
     });
     var authHash = takeDocumentAddress() ? '' : location.hash;
     window.addEventListener('hashchange', function () {

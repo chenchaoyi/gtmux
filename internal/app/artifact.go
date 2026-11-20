@@ -78,15 +78,22 @@ func cmdArtifact(args []string) int {
 		return 1
 	}
 	diag.For("artifact").Act("act.artifact", diag.Caller(), session, diag.OK, "document published", "id", file.ID, "bytes", file.Bytes)
+	preview, previewErr := localArtifactPreviewURL(file, 0)
+	if previewErr != nil {
+		fmt.Fprintf(os.Stderr, "Snapshot registered. Local preview unavailable: %v. Retry with gtmux artifact open %s.\n", previewErr, file.ID)
+	}
+
 	if structured {
 		_ = json.NewEncoder(os.Stdout).Encode(struct {
 			artifact.File
 			Reference       string `json:"reference"`
-			LocalPreviewURL string `json:"local_preview_url"`
-		}{file, file.Reference(), localArtifactPreviewURL(file, defaultServePort)})
+			LocalPreviewURL string `json:"local_preview_url,omitempty"`
+		}{file, file.Reference(), preview})
 	} else {
 		fmt.Printf("[%s](%s)\n", strings.NewReplacer("[", "", "]", "").Replace(file.Name), file.Reference())
-		fmt.Printf("[Open on this computer](%s)\n", localArtifactPreviewURL(file, defaultServePort))
+		if preview != "" {
+			fmt.Printf("[Open on this computer](%s)\n", preview)
+		}
 	}
 	return 0
 }

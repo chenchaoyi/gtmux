@@ -4523,5 +4523,26 @@
       "short document body stays unavailable",
       "inline raster type and count are checked before display"
     ]
+  },
+  "internal/app/artifact_endpoint_test.go": {
+    "cases": [
+      "LAP-007"
+    ],
+    "selectors": [
+      "TestLAP007OnlyCurrentWorkspaceOffersALocalPreview",
+      "TestLAP007LoopbackAddressesUseRecordedPort",
+      "TestLAP007UnexpectedHealthNeverProvidesAnAddress"
+    ]
+  },
+  "tests/web/artifact-lifetime.test.cjs": {
+    "cases": [
+      "LAP-008",
+      "LAP-009"
+    ],
+    "selectors": [
+      "LAP-008 another tab switches to a guest and signs out",
+      "LAP-008 resizing retires a pending reader",
+      "LAP-009 oversized related image leaves the rest of the report readable"
+    ]
   }
 }

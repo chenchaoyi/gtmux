@@ -48,9 +48,12 @@ MAP-f477967708d8,L2,reviewed implementation,internal/agentprofile/observation_st
 MAP-fab36ee0bfb3,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,40,reviewed-selector,TestProfileObservationIsolatesMixedWriters,False,STOR-004
 MAP-f6200d4fe8c9,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,9,reviewed-selector,TestSID001PresentationConfigKeepsManagedIdentity,False,SID-001
 MAP-410b581f2c06,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,35,reviewed-selector,TestSID001HelpStillRecognizesCommandsAfterDisplayConfig,False,SID-001
-MAP-61ca47d1d1d3,L2,reviewed implementation,internal/app/artifact_preview_test.go,29,reviewed-selector,TestLAP001LocalShowReadsSnapshotAfterOriginalChanges,False,"LAP-001,LAP-002"
-MAP-5ca59e22715c,L2,reviewed implementation,internal/app/artifact_preview_test.go,51,reviewed-selector,TestLAP001LocalShowRejectsBadRemovedAndCorruptFiles,False,"LAP-001,LAP-002"
-MAP-99f641958692,L2,reviewed implementation,internal/app/artifact_preview_test.go,71,reviewed-selector,TestLAP002RegistrationAndOpenUseSameLocalURL,False,"LAP-001,LAP-002"
+MAP-9d9c69aa8fd5,L2,reviewed implementation,internal/app/artifact_endpoint_test.go,43,reviewed-selector,TestLAP007OnlyCurrentWorkspaceOffersALocalPreview,False,LAP-007
+MAP-db260902bb5a,L2,reviewed implementation,internal/app/artifact_endpoint_test.go,86,reviewed-selector,TestLAP007LoopbackAddressesUseRecordedPort,False,LAP-007
+MAP-66f016a34c89,L2,reviewed implementation,internal/app/artifact_endpoint_test.go,95,reviewed-selector,TestLAP007UnexpectedHealthNeverProvidesAnAddress,False,LAP-007
+MAP-61ca47d1d1d3,L2,reviewed implementation,internal/app/artifact_preview_test.go,30,reviewed-selector,TestLAP001LocalShowReadsSnapshotAfterOriginalChanges,False,"LAP-001,LAP-002"
+MAP-5ca59e22715c,L2,reviewed implementation,internal/app/artifact_preview_test.go,52,reviewed-selector,TestLAP001LocalShowRejectsBadRemovedAndCorruptFiles,False,"LAP-001,LAP-002"
+MAP-99f641958692,L2,reviewed implementation,internal/app/artifact_preview_test.go,72,reviewed-selector,TestLAP002RegistrationAndOpenUseSameLocalURL,False,"LAP-001,LAP-002"
 MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go,30,reviewed-selector,TestClientHTTPContracts,False,CT-HTTP
 LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,40,Test,TestCloudflaredMetricsTransportRefusesRedirectsAndOversizedBodies,False,legacy-not-retrospectively-reviewed
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed

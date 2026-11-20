@@ -2712,8 +2712,8 @@ and copies already downloaded by devices remain. See
 [document preview](design/conversation-documents.md) for supported formats and limits.
 
 `show gtmux-file:ID --json` verifies a registered snapshot and prints its metadata.
-For a fixed revision, include both links from `add`: the App file reference and **Open on this computer** for a Codex terminal. JSON output includes `reference` and `local_preview_url`. The HTTP link opens on the computer hosting the running workspace. Pair the browser when prompted. Every read requires owner/full access to that document in its original conversation and home.
-`open ID` opens the same preview. Use `--print-url` to print its credential-free address and `--port PORT` for a nondefault local workspace. The macOS menu-bar app also handles canonical `gtmux-file:` URLs.
+With the local workspace running, include both links from `add` for a fixed revision: the App file reference and **Open on this computer** for a Codex terminal. JSON always includes `reference`. A verified running workspace adds `local_preview_url`. Offline registration still provides the App reference. The HTTP link opens on the computer hosting the running workspace. Pair the browser when prompted. Every read requires owner/full access to that document in its original conversation and home.
+`open ID` opens the same preview. Use `--print-url` to print its credential-free address and `--port PORT` to require a specific running workspace port. The CLI detects the active port by default. The macOS menu-bar app also handles canonical `gtmux-file:` URLs.
 
 HQ UI readers may use `gtmux hq workspace list --overview --stored --json` for authoritative stored matters without session discovery; `sources_included:false` denotes unavailable optional session metadata. Ordinary list retains live/historical sources. See [HQ choice response](design/HQ-CHOICE-RESPONSE.md).
 
