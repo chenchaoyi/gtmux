@@ -910,6 +910,8 @@ MAP-2fd3cafb008c,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-con
 MAP-01cd8c62d09e,L2,reviewed implementation,mobileapp/e2e/fake-serve/backend-contract.test.ts,53,reviewed-selector,RN client consumes original ordinals,False,CT-HTTP
 MAP-f2ed2637baa9,L2,reviewed implementation,mobileapp/e2e/fake-serve/server.ts,112,reviewed-selector,startFake,False,CT-HTTP
 MAP-f4f657590af5,L2,reviewed implementation,mobileapp/e2e/fake-serve/world.ts,111,reviewed-selector,export class World,False,CT-HTTP
+MAP-b46b9e14b098,L2,reviewed implementation,mobileapp/e2e/setup/global-setup-target.test.ts,39,reviewed-selector,the actual E2E setup pins Appium and container access to the same discovered simulator,False,"SIM272-010,SIM272-011"
+MAP-effb65cbf6a7,L2,reviewed implementation,mobileapp/e2e/setup/global-setup-target.test.ts,57,reviewed-selector,ambiguous default selection fails before reclaiming processes or touching app data,False,"SIM272-010,SIM272-011"
 MAP-2efd264ce330,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,43,reviewed-selector,test_pack_refuses_linked_leaf_and_preserves_existing_bytes,False,STOR-008
 MAP-199688655ff0,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,53,reviewed-selector,test_archive_through_external_root_alias_and_failed_replacement,False,STOR-008
 MAP-26d90aaafd85,L2,reviewed implementation,mobileapp/scripts/delivery_write_boundary_test.py,67,reviewed-selector,test_checkpoint_refuses_linked_subdirectory,False,STOR-008

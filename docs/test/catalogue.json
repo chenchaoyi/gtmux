@@ -67819,6 +67819,119 @@
         }
       ],
       "sha256": "09f6f02c50019fafaa592d9c3cd0c442dff3f9141a274076141ce5cce985fc0a"
+    },
+    "mobileapp/e2e/setup/global-setup-target.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b46b9e14b098",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "the actual E2E setup pins Appium and container access to the same discovered simulator",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SIM272-010,SIM272-011"
+        },
+        {
+          "id": "MAP-effb65cbf6a7",
+          "line": 57,
+          "kind": "reviewed-selector",
+          "name": "ambiguous default selection fails before reclaiming processes or touching app data",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SIM272-010,SIM272-011"
+        }
+      ],
+      "sha256": "0622e57773b65e4dc2e65359020ffbf6320c9576365f7b23da94c08dcd53ed10"
+    },
+    "mobileapp/e2e/setup/simulator-target.test.ts": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-340fa1ac9847",
+          "line": 21,
+          "kind": "reviewed-selector",
+          "name": "a sole booted device supplies its real runtime, name and UDID after 26.5 removal",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SIM272-001,SIM272-002,SIM272-003,SIM272-004,SIM272-005,SIM272-006,SIM272-007,SIM272-008,SIM272-009"
+        },
+        {
+          "id": "MAP-1fc648c7d4dc",
+          "line": 27,
+          "kind": "reviewed-selector",
+          "name": "explicit UDID selects an available shutdown device even when another device is booted",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SIM272-001,SIM272-002,SIM272-003,SIM272-004,SIM272-005,SIM272-006,SIM272-007,SIM272-008,SIM272-009"
+        },
+        {
+          "id": "MAP-5d48e007c54c",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "an explicit older runtime remains usable when it is installed and requested",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SIM272-001,SIM272-002,SIM272-003,SIM272-004,SIM272-005,SIM272-006,SIM272-007,SIM272-008,SIM272-009"
+        },
+        {
+          "id": "MAP-27e7be1b76d1",
+          "line": 43,
+          "kind": "reviewed-selector",
+          "name": "an unavailable requested runtime never silently falls forward to the new runtime",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SIM272-001,SIM272-002,SIM272-003,SIM272-004,SIM272-005,SIM272-006,SIM272-007,SIM272-008,SIM272-009"
+        },
+        {
+          "id": "MAP-4ebcc8f300f4",
+          "line": 47,
+          "kind": "reviewed-selector",
+          "name": "a device named duo is not mistaken for the Duo hardware type",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SIM272-001,SIM272-002,SIM272-003,SIM272-004,SIM272-005,SIM272-006,SIM272-007,SIM272-008,SIM272-009"
+        },
+        {
+          "id": "MAP-f239ca02e69f",
+          "line": 54,
+          "kind": "reviewed-selector",
+          "name": "unknown UDIDs and contradictory explicit device names fail before Appium starts",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SIM272-001,SIM272-002,SIM272-003,SIM272-004,SIM272-005,SIM272-006,SIM272-007,SIM272-008,SIM272-009"
+        },
+        {
+          "id": "MAP-47c29b90b8e5",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "multiple booted devices require a UDID even if a name filter could narrow Appium",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SIM272-001,SIM272-002,SIM272-003,SIM272-004,SIM272-005,SIM272-006,SIM272-007,SIM272-008,SIM272-009"
+        },
+        {
+          "id": "MAP-516ec45d267c",
+          "line": 67,
+          "kind": "reviewed-selector",
+          "name": "no booted device is not permission to pick and drive a random stored device",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SIM272-001,SIM272-002,SIM272-003,SIM272-004,SIM272-005,SIM272-006,SIM272-007,SIM272-008,SIM272-009"
+        },
+        {
+          "id": "MAP-d350d716fefe",
+          "line": 73,
+          "kind": "reviewed-selector",
+          "name": "unavailable or duplicate device records never become an ambiguous target",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "SIM272-001,SIM272-002,SIM272-003,SIM272-004,SIM272-005,SIM272-006,SIM272-007,SIM272-008,SIM272-009"
+        }
+      ],
+      "sha256": "8eebe019d2efc175eaebd42c274b1917a0a02019adff6c05c650222fa18f7413"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

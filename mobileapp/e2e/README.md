@@ -11,9 +11,13 @@ WebDriverAgent), so it works where raw synthetic clicks don't.
 
 ## Prerequisites
 
-- A booted iOS simulator. Default target: **iPhone 17 Pro / iOS 26.5**
-  (`e2e/setup/capabilities.ts`; override with `GTMUX_E2E_DEVICE` / `GTMUX_E2E_OS`
-  / `GTMUX_E2E_UDID`).
+- A dedicated iOS simulator. With no UDID override, boot exactly one device.
+  Setup gets its OS, name and UDID from `simctl` and pins Appium and app
+  container access to that device. Set `GTMUX_E2E_UDID` for parallel runs or
+  to select an available shutdown device. `GTMUX_E2E_DEVICE` (device name
+  or hardware type) and `GTMUX_E2E_OS` are optional constraints. If the
+  requested target is missing, ambiguous or unavailable, setup stops
+  before Appium starts.
 - **Node 22.11+ within the 22.x line.** `package.json` requires at least 22.11;
   Node 20 does not satisfy it. The harness has a recorded Node 26 failure: webdriverio's request
   fails inside undici before it leaves the client (`UND_ERR_INVALID_ARG` on
