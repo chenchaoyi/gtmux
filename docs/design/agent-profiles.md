@@ -50,7 +50,8 @@ the selected model record. This avoids restoring old effort when the model switc
 away and back. A legacy effort at or before the last reset stays cleared even if the
 legacy hook refreshes the model later.
 Process inspection runs before acquiring a shard. Leave old lock anchors in place
-until all writers that can use them have been retired.
+until all writers that can use them have been retired, then run
+`gtmux doctor --prune-profile-locks` to remove the empty legacy anchors.
 
 The other seven integrations keep registry identity and any observed launch chain.
 There is no account query, configuration execution, model request, arbitrary CLI

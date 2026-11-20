@@ -82,6 +82,7 @@ func cmdDoctor(args []string) int {
 	jsonOut, noPrompt, inTerminal := false, false, false
 	bundle, bundlePath, withEvents := false, "", false
 	forceProgress := false
+	pruneProfileLocks := false
 	for i := 0; i < len(args); i++ {
 		switch a := args[i]; {
 		case a == "-h" || a == "--help":
@@ -97,6 +98,8 @@ func cmdDoctor(args []string) int {
 			fix = true
 		case a == "--progress":
 			forceProgress = true
+		case a == "--prune-profile-locks":
+			pruneProfileLocks = true
 		case a == "-y" || a == "--yes":
 			yes = true
 		case a == "--bundle":
@@ -110,6 +113,13 @@ func cmdDoctor(args []string) int {
 		case a == "--with-events":
 			withEvents = true
 		}
+	}
+	if pruneProfileLocks {
+		if len(args) != 1 {
+			i18n.Sae("doctor: --prune-profile-locks must be used on its own", "doctor：--prune-profile-locks 需单独使用")
+			return 2
+		}
+		return doctorPruneProfileLocks(confirmRisky)
 	}
 	if withEvents && !bundle {
 		i18n.Sae("gtmux doctor: --with-events goes with --bundle", "gtmux doctor：--with-events 要和 --bundle 一起用")
@@ -314,7 +324,7 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks},
 		{i18n.Tr("Remote access", "远程访问"), remoteChecks},
 		{i18n.Tr("Storage", "存储"), func() []dcheck {
-			return []dcheck{rowHQMemory(), rowHQProcessMaterials(), rowDiskUsage(), rowUploads(), rowInputSpool(), rowInputArchive()}
+			return []dcheck{rowHQMemory(), rowHQProcessMaterials(), rowDiskUsage(), rowUploads(), rowInputSpool(), rowInputArchive(), rowLegacyProfileLocks()}
 		}},
 		{i18n.Tr("Logs", "日志"), func() []dcheck { return logsChecks(time.Unix(now, 0)) }},
 	}
