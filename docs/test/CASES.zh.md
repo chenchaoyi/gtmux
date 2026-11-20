@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1371 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1373 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2548 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2550 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 108 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -289,6 +289,8 @@
 | SPL-020 | Full receipts are reusable within retention; expired terminal metadata frees room, a retired acceptance blocks native and fallback replay, and unknown evidence is preserved. |
 | SPL-021 | Committed accepted evidence is never converted into new authority; exact tail is recoverable even when its index is absent; unrelated orphan and unknown remain. |
 | SPL-022 | Pre-publication cancellation leaves no durable request; post-publication zero mutation records a reclaimable refusal; actual or ambiguous attempts remain unknown and non-retryable. |
+| SPL-INCIDENT-002 | The report distinguishes names from reserved slots, agrees with admission before and after saturation and leaves queue contents intact. On scan overflow it reports only the observed lower bound. |
+| SPL-INCIDENT-003 | Users can see active slots and the raw name count. Missing measurements are not represented as zero usage and the notes preserve unresolved and replay records. |
 | SPL-001 | Only a fitting new request is admitted. Existing completion and same-ID lookup remain possible. |
 | SPL-002 | A terminal receipt stays immutable, unconfirmed state cannot replay, bounded cleanup keeps valid evidence through the retention window. |
 | SPL-003 | Admission reports capacity before submission. Uncertainty and explicit refusal remain distinct, with no automatic resend. |

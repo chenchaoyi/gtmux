@@ -4337,5 +4337,21 @@
     "selectors": [
       "TestLegacyInputPressurePreservesPriorDeliveries"
     ]
+  },
+  "internal/agentclient/input_spool_health_test.go": {
+    "cases": [
+      "SPL-INCIDENT-002"
+    ],
+    "selectors": [
+      "TestInputSpoolHealthAgreesWithAdmission"
+    ]
+  },
+  "internal/app/input_spool_doctor_test.go": {
+    "cases": [
+      "SPL-INCIDENT-003"
+    ],
+    "selectors": [
+      "TestInputSpoolDoctorShowsWeightedSaturation"
+    ]
   }
 }

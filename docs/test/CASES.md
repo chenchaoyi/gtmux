@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1371 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1373 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2548 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2550 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -289,6 +289,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | SPL-020 | Full receipts are reusable within retention; expired terminal metadata frees room, a retired acceptance blocks native and fallback replay, and unknown evidence is preserved. |
 | SPL-021 | Committed accepted evidence is never converted into new authority; exact tail is recoverable even when its index is absent; unrelated orphan and unknown remain. |
 | SPL-022 | Pre-publication cancellation leaves no durable request; post-publication zero mutation records a reclaimable refusal; actual or ambiguous attempts remain unknown and non-retryable. |
+| SPL-INCIDENT-002 | The report distinguishes names from reserved slots, agrees with admission before and after saturation and leaves queue contents intact. On scan overflow it reports only the observed lower bound. |
+| SPL-INCIDENT-003 | Users can see active slots and the raw name count. Missing measurements are not represented as zero usage and the notes preserve unresolved and replay records. |
 | SPL-001 | Only a fitting new request is admitted. Existing completion and same-ID lookup remain possible. |
 | SPL-002 | A terminal receipt stays immutable, unconfirmed state cannot replay, bounded cleanup keeps valid evidence through the retention window. |
 | SPL-003 | Admission reports capacity before submission. Uncertainty and explicit refusal remain distinct, with no automatic resend. |

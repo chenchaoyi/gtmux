@@ -44,6 +44,10 @@ The incident fix allows 8,192 effective slots and retains the separate 8,192-nam
 
 Production use requires actual stop-and-drain coordination, verified activation and recovery tooling, service restart and fault validation, independent review, normal CI and release gates.
 
+## Active queue occupancy
+
+Run `gtmux doctor --no-prompt` to see active slots and the directory entry count. Each unresolved indexed request can reserve space for its claim and receipt. The active limit is 8,192 slots, with a separate scan limit of 8,192 names. A warning starts at 80 percent of the slot limit. Saturation refuses new input while retaining space for requests already admitted. Keep pending or uncertain input and stable-ID evidence. A high count alone does not establish which records can be removed.
+
 ## Retired send IDs
 
 The complete receipt stays available for at least 72 hours. On retirement, accepted stable IDs move to exact 16-byte keys in the private `.retired` directory. Prefixes share a 64 MiB budget for committed keys and can allocate additional 256 KiB pages within that budget. This is separate from the active-slot and directory scan bounds. The last 128 KiB of key capacity is reserved for already admitted records.

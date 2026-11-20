@@ -32,6 +32,7 @@ MAP-8c806990051d,L2,reviewed implementation,internal/agentclient/input_retiremen
 MAP-5f88c87fb0f4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,127,reviewed-selector,TestSPL021InterruptedRetirementReconcilesExactTail,False,"SPL-020,SPL-021,SPL-022"
 MAP-dc573b29470b,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,215,reviewed-selector,TestSPL022CancelDuringParentSyncDoesNotPublish,False,"SPL-020,SPL-021,SPL-022"
 MAP-c7858b7eb2d4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,192,reviewed-selector,TestSPL021FullArchiveShardRetainsAcceptance,False,"SPL-020,SPL-021,SPL-022"
+MAP-84076d0f2108,L2,reviewed implementation,internal/agentclient/input_spool_health_test.go,11,reviewed-selector,TestInputSpoolHealthAgreesWithAdmission,False,SPL-INCIDENT-002
 MAP-98170c4a2ad3,L2,reviewed implementation,internal/agentclient/input_store_gate_test.go,18,reviewed-selector,TestSPL005TerminalInputStoreGate,False,"SPL-005,SPL-006,SPL-007,SPL-017"
 MAP-bb463252599b,L2,reviewed implementation,internal/agentclient/input_store_gate_test.go,423,reviewed-selector,TestSPL007VerifiedAttachmentChecksCurrentInputGeneration,False,"SPL-005,SPL-006,SPL-007,SPL-017"
 MAP-0090673148dd,L2,reviewed implementation,internal/agentclient/pending_retry_lifetime_test.go,9,reviewed-selector,TestMSD011DurablePendingKeepsOneIdentityAcrossRetryAndPrune,False,MSD-011
@@ -99,6 +100,7 @@ MAP-67fc4ac7625d,L2,reviewed implementation,internal/app/hqworkspace_reply_test.
 MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test.go,10,reviewed-selector,TestWorkspaceStoredCLILeavesDiscoveryAndRecordsUntouched,False,MC-HQ-READ
 MAP-73814841a1bf,L2,reviewed implementation,internal/app/hqworkspace_triage_test.go,19,reviewed-selector,TestWorkspaceTriageIngestion,False,HPT-002
 MAP-acfe376abd7d,L2,reviewed implementation,internal/app/input_archive_doctor_test.go,11,reviewed-selector,TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair,False,SPL-025
+MAP-a528c4dea12f,L2,reviewed implementation,internal/app/input_spool_doctor_test.go,12,reviewed-selector,TestInputSpoolDoctorShowsWeightedSaturation,False,SPL-INCIDENT-003
 MAP-7a5ae9fb2039,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,10,reviewed-selector,TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection,False,MSD-002
 MAP-308489bd281c,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,20,reviewed-selector,TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry,False,MSD-002
 MAP-6616de8ce6d1,L2,reviewed implementation,internal/app/recent_transcript_test.go,14,reviewed-selector,TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault,False,LCL-002

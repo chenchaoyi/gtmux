@@ -73,6 +73,7 @@ MAP-8c806990051d,L2,reviewed implementation,internal/agentclient/input_retiremen
 MAP-5f88c87fb0f4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,127,reviewed-selector,TestSPL021InterruptedRetirementReconcilesExactTail,False,"SPL-020,SPL-021,SPL-022"
 MAP-dc573b29470b,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,215,reviewed-selector,TestSPL022CancelDuringParentSyncDoesNotPublish,False,"SPL-020,SPL-021,SPL-022"
 MAP-c7858b7eb2d4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,192,reviewed-selector,TestSPL021FullArchiveShardRetainsAcceptance,False,"SPL-020,SPL-021,SPL-022"
+MAP-84076d0f2108,L2,reviewed implementation,internal/agentclient/input_spool_health_test.go,11,reviewed-selector,TestInputSpoolHealthAgreesWithAdmission,False,SPL-INCIDENT-002
 MAP-98170c4a2ad3,L2,reviewed implementation,internal/agentclient/input_store_gate_test.go,18,reviewed-selector,TestSPL005TerminalInputStoreGate,False,"SPL-005,SPL-006,SPL-007,SPL-017"
 MAP-bb463252599b,L2,reviewed implementation,internal/agentclient/input_store_gate_test.go,423,reviewed-selector,TestSPL007VerifiedAttachmentChecksCurrentInputGeneration,False,"SPL-005,SPL-006,SPL-007,SPL-017"
 LEG-b5e2800d7909,L1,Go core / CLI / server,internal/agentclient/launch_test.go,10,Test,TestManagedLaunchSkipsLandingWithoutChangingClientIdentity,False,legacy-not-retrospectively-reviewed
@@ -482,6 +483,7 @@ MAP-6ef74dd1c8b6,L3,reviewed implementation,internal/app/hqworkspace_triage_late
 MAP-1fb5ea2421ed,L3,reviewed implementation,internal/app/hqworkspace_triage_role_test.go,18,reviewed-selector,TestWorkspaceTriageRoleAfterPaneReuse,False,HPT-004
 MAP-73814841a1bf,L2,reviewed implementation,internal/app/hqworkspace_triage_test.go,19,reviewed-selector,TestWorkspaceTriageIngestion,False,HPT-002
 MAP-acfe376abd7d,L2,reviewed implementation,internal/app/input_archive_doctor_test.go,11,reviewed-selector,TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair,False,SPL-025
+MAP-a528c4dea12f,L2,reviewed implementation,internal/app/input_spool_doctor_test.go,12,reviewed-selector,TestInputSpoolDoctorShowsWeightedSaturation,False,SPL-INCIDENT-003
 LEG-eb2db2f832b5,L1,Go core / CLI / server,internal/app/install_selection_test.go,13,Test,TestAutoHookSelectionPreservesExplicitScopeAndDisabledPolicy,False,legacy-not-retrospectively-reviewed
 LEG-48a2a40df323,L1,Go core / CLI / server,internal/app/install_selection_test.go,32,Test,TestDSHBinaryDetectionDoesNotEnableTUI,False,legacy-not-retrospectively-reviewed
 LEG-ea2ca368e422,L1,Go core / CLI / server,internal/app/install_selection_test.go,53,Test,TestExplicitDSHInstallUsesBundledWriter,False,legacy-not-retrospectively-reviewed

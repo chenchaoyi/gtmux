@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
 const (
@@ -44,24 +46,31 @@ func inputDirectoryNames(f *os.File) ([]string, error) {
 		return nil, err
 	}
 	if len(names) > inputScanLimit {
-		return nil, ErrInputFull
+		return names, ErrInputFull
 	}
 	return names, nil
 }
 
-// Each indexed operation can occupy three more names (claim, staged receipt
-// and newly linked receipt). Count observed
-// orphans and unrelated files too. Anchor reservations to the immutable index
-// even if an unlocked v1 plugin changes payload names during enumeration.
 func admitInput(dir string) error {
 	names, err := inputNames(dir)
 	if err != nil {
 		return err
 	}
-	used := len(names)
-	if used*inputReservation+inputReservation <= inputLimit {
+	if len(names)*inputReservation+inputReservation <= inputLimit {
 		return nil
 	}
+	if inputUsedSlots(dir, names)+inputReservation > inputLimit {
+		return ErrInputFull
+	}
+	return nil
+}
+
+// Each indexed operation can occupy three more names (claim, staged receipt
+// and newly linked receipt). Count orphan and unrelated names too. Anchor
+// reservations to the index even if an unlocked v1 plugin changes payload names
+// during enumeration.
+func inputUsedSlots(dir string, names []string) int {
+	used := len(names)
 	parts := make(map[string]int)
 	receipts := make(map[string]Receipt)
 	settled := make(map[string]bool)
@@ -102,10 +111,35 @@ func admitInput(dir string) error {
 			used += max(0, inputReservation-1-n)
 		}
 	}
-	if used+inputReservation > inputLimit {
-		return ErrInputFull
+	return used
+}
+
+// InputSpoolUsage is a read-only sample of the active queue. An over-limit
+// scan reports a lower bound for Entries and leaves UsedSlots unmeasured.
+type InputSpoolUsage struct {
+	Entries, ScanLimit   int
+	UsedSlots, SlotLimit int
+	Reservation          int
+}
+
+// InspectInputSpool reports active names and settlement reservations using
+// the same accounting as new input admission. It does not create or prune
+// the queue. Intake and settlement can change usage after it is sampled.
+func InspectInputSpool() (InputSpoolUsage, error) {
+	result := InputSpoolUsage{
+		ScanLimit: inputScanLimit, SlotLimit: inputLimit, Reservation: inputReservation,
 	}
-	return nil
+	store, err := resolveInputStore(state.Dir())
+	if err != nil || store.directory == (inputIdentity{}) {
+		return result, err
+	}
+	names, err := inputNames(store.path)
+	result.Entries = len(names)
+	if err != nil {
+		return result, err
+	}
+	result.UsedSlots = inputUsedSlots(store.path, names)
+	return result, nil
 }
 
 // Reconcile only an addressed v1 record. Never infer delivery from age or a
