@@ -1,0 +1,27 @@
+{
+  "id": "input-spool-transport-capacity-20261120",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-20",
+    "decision": "Keep the pre-RPC capacity refusal regression exact when the product slot budget changes",
+    "notes": "Use the production weighted limit and reservation reported in a private HOME and a native RPC fixture that fails if invoked."
+  },
+  "cases": [
+    {
+      "id": "SPL-INCIDENT-004",
+      "layer": "L2",
+      "description": "Current slot budget exhaustion refuses before transport setup",
+      "setup": "Make a private queue with one slot less than a new reservation needs, without reaching the separate scan bound. Replace native RPC with a fail-on-call fixture.",
+      "action": "Submit independently from a simulated bound Codex pane.",
+      "expected": "Input spool full is returned, the attempt remains not submitted, and native RPC is never invoked.",
+      "planned_files": [
+        "internal/dispatchbridge/spool_capacity_test.go"
+      ],
+      "surfaces": [
+        "Native Codex terminal transport"
+      ]
+    }
+  ],
+  "seal": "8ca60c3e982bc378b12abe05907b168cd34809acceefe1d3d10c94fd31ea0938"
+}

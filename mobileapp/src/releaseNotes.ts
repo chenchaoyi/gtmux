@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.185',
+    en: [
+      '- When you scroll back in the terminal, new output keeps your place until you return to the live view.',
+      '- The session list shows when a refresh is still running. Photo attachments show upload progress and let you retry a failed upload.',
+      '- Restore results show when startup times out and retain an earlier send failure or uncertain result, so you can check the affected pane.',
+    ],
+    zh: [
+      '- 在终端上翻查看历史时，新输出会保留当前阅读位置，直到你返回实时画面。',
+      '- 会话列表会显示刷新进度。发送照片时可以查看上传进度，上传失败可以重试。',
+      '- 恢复结果会提示启动等待超时，并保留先前的发送失败或结果未知提示，方便你检查对应窗格。',
+    ],
+  },
+  {
     version: '1.0.183',
     en: [
       '- Chat messages, activity, timestamps and reply actions use tighter, more consistent spacing.',

@@ -46,6 +46,8 @@ type Attachment struct {
 	UpdatedAt     int64  `json:"updated_at"`
 	InputReady    bool   `json:"input_ready"`
 	NativeSession bool   `json:"native_session"`
+
+	InputStoreGeneration string `json:"input_store_generation,omitempty"`
 }
 
 func Dir() string { return filepath.Join(state.Dir(), "terminal-clients") }
@@ -121,7 +123,7 @@ func Load(dir string, inspect Inspector) []Attachment {
 			continue
 		}
 		var a Attachment
-		if readOwnedJSON(filepath.Join(dir, entry.Name()), &a, 16<<10) != nil {
+		if readInputRecord(filepath.Join(dir, entry.Name()), &a, 16<<10, attachmentFields) != nil {
 			continue
 		}
 		provider, ok := adapters[a.Client]
@@ -200,7 +202,7 @@ func ForSession(agent, home, id string) (Attachment, bool) {
 func Same(a, b Attachment) bool {
 	return a.Agent == b.Agent && a.Client == b.Client && a.HomeID == b.HomeID &&
 		a.SessionID == b.SessionID && a.Pane == b.Pane && a.PID == b.PID &&
-		a.Instance == b.Instance && a.ServerEpoch == b.ServerEpoch && a.BindingEpoch == b.BindingEpoch
+		a.Instance == b.Instance && a.ServerEpoch == b.ServerEpoch && a.BindingEpoch == b.BindingEpoch && a.InputStoreGeneration == b.InputStoreGeneration
 }
 
 func readOwnedJSON(path string, value any, limit int64) error {

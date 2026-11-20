@@ -37,6 +37,7 @@ bundle exec fastlane upload ipa:/private/path/store.ipa \
 
 将完整归档和 dSYM 加密备份到其他机器；符号 UUID 必须与包匹配，见
 [Apple 指引](https://developer.apple.com/documentation/xcode/adding-identifiable-symbol-names-to-a-crash-report)。
+保存正式上架交付前先做[项目归属和保留预检](../design/hq-storage-recovery.zh.md#交付材料)，在项目下按版本和构建号保存对应 IPA 及最终回执。
 已有云端测试分发的加密恢复附件现在包含归档的 Products、Info 和 dSYM，
 排除嵌入 profile、签名配置与符号链接，仍使用操作者已有的接收密钥加密。
 在附件 **14 天**到期前下载、解密并核实。恢复的是经过筛选的归档，再导出时需另行提供已授权的 profile。

@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Ready for fixes and exact-head isolated acceptance",
+    "notes": "Responds to independent review of the initial continuation implementation. Observations will use their own active lease as the only claim suppression. Keep standing and urgent wakes in separate keyed durable slots and let each path apply its own schedule. Reuse private tmux, real CLI commands and the production terminal dispatcher for end-to-end verification. Any fixture-only roster, clock crossing, or generated source receipt must be disclosed. The existing replay now checks that both exact observations are explicitly claimed. The original ingestion test observes both independent wake paths while retaining cursor and restart assertions. The same-second store assertion lives in a separate first-edit file to preserve the prior test coverage. The prior runtime file retains its original case and now explicitly claims both evidence IDs."
+  },
+  "cases": [
+    {
+      "id": "HPC-003",
+      "layer": "L2",
+      "description": "The live lease for one observation covers exactly that observation",
+      "setup": "Disposable workspace with a matter, an older inbox receipt and ordinary observation, and independent exact Stop and reviewer report.",
+      "action": "Claim unrelated evidence before and after ingestion, including identical wall-clock seconds. Claim one of two urgent observations, advance past the claim lease and restart.",
+      "expected": "Older claims and same-second siblings never suppress an unclaimed observation. An exact live lease suppresses itself, expiry restores eligibility, and a successor fences the old generation.",
+      "planned_files": [
+        "internal/hqworkspace/continuation_claim_test.go"
+      ]
+    },
+    {
+      "id": "HPC-004",
+      "layer": "L3",
+      "description": "One private tmux draft can defer two independently tracked workspace matters",
+      "setup": "Real guarded HQ wake drain and private tmux, a draft, one standing matter and another with a fresh urgent report.",
+      "action": "Queue standing evidence, then put the urgent matter into the same draft window. Finish the urgent matter before clearing the draft. Separately observe both notifications when due at the same scan.",
+      "expected": "The draft stays intact. Revalidation drops the settled urgent wake and still delivers the standing wake. Neither path spends the other's scheduling interval.",
+      "planned_files": [
+        "internal/app/hqworkspace_continuation_cli_test.go",
+        "internal/app/hqworkspace_reconcile_test.go"
+      ]
+    },
+    {
+      "id": "HPC-005",
+      "layer": "L3",
+      "description": "HQ CLI reads new evidence, saves responsibility and drives the exact pre-authorized reversible worker step",
+      "setup": "Private tmux, real workspace and dispatcher CLI, fixture HQ and worker with exact location/conversation markers, persisted user scope, a reversible file fixture and explicit matching worker receipts.",
+      "action": "Deliver a real wake, read and claim the exact source, then run explicit responsibility assessment and drive. Exercise claim-only then an expired lease/successor, a replaced worker session, valid external wait and a lost delivery receipt.",
+      "expected": "Claim-only issues no work and leaves debt. Current owner and generation control the assessment. The authorized live worker receives and performs the exact action once and an independently produced exact progress receipt covers the step. A wrong target and external wait yield zero input. Unknown submission keeps its intent reserved without duplicate work.",
+      "planned_files": [
+        "internal/app/hqworkspace_continuation_cli_test.go"
+      ]
+    }
+  ],
+  "seal": "a95cbb3c1f77ece554ce78c708a101c670b862d3a6578b82f1080451a9c2570e"
+}

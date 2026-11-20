@@ -1042,6 +1042,58 @@ cache for successful sends; it does not wait for post-submit landing verificatio
 - **THEN** the text is pasted and the Enter is withheld until the draft is confirmed
   to hold the full text, so the reply submits whole rather than as a truncated fragment
 
+#### Scenario: Rejected and unconfirmed submissions are distinct
+
+- **WHEN** a text send through CLI or HTTP is rejected before submission
+- **THEN** the CLI SHALL exit nonzero, or the HTTP request SHALL fail, with a stable reason and the proven submission status
+- **WHEN** a submit may have reached the receiver but acceptance is unconfirmed
+- **THEN** the sender SHALL report the unknown outcome without a successful receipt or success cache entry
+- **AND** a supplied HTTP send ID SHALL remain associated with the failure
+
+### Requirement: Addressed terminal input preserves replay evidence across persistence failures
+
+An addressed Go or DeepSeek Harness receiver SHALL synchronize its exclusive
+claim and its containing directory before removing pending input or invoking
+the receiver. It SHALL publish a complete receipt without replacing an existing
+outcome and synchronize the containing directory before acknowledging acceptance
+or clearing a claim. An existing receipt SHALL be validated and synchronized
+before it can authorize acknowledgement or cleanup. An uncertain outcome SHALL
+retain its claim and original request identity.
+
+Before the final authorization, input may be staged in memory or shown as a
+terminal draft. A guard refusal at that stage SHALL NOT create a persistent
+request. Publication SHALL recheck the cancellation boundary and commit the matching
+request index and directory ancestry before the pending name can be consumed.
+Cancellation after durable publication but before any possible mutating RPC SHALL
+record a definite refusal when the claim is owned. An unresolved index or claim
+SHALL retain its identity across retries.
+
+Settled records with durable delivery IDs SHALL retain their full validated receipts
+for 72 hours from settlement. After expiration, bounded reclamation MAY retire the
+receipt and payload. A known acceptance SHALL first commit an exact retired ID into
+a bounded owner-only index, and a subsequent send with that ID SHALL NOT acquire
+new submission authority, including through raw tmux fallback. The index SHALL pool
+page capacity across prefixes and reserve the final capacity for already admitted
+records. An independently committed catalogue SHALL bind page lengths and content
+digests before reclamation. First catalogue publication SHALL use an atomic
+no-replace rename after synchronizing staged content. A leftover private stage
+from an interrupted writer may be cleared under the spool lease.
+An unavailable or mismatched committed page SHALL
+prevent a negative lookup within its prefix. Healthy prefixes SHALL remain usable
+when the global catalogue and available active capacity allow. Doctor SHALL
+report capacity, integrity and pending recovery without modifying the archive.
+A proven refusal
+may expire without an acceptance entry. Missing, malformed, conflicting or
+indeterminate outcomes SHALL remain protected. Reclamation SHALL preserve a durable
+checkpoint until the exact index and receipt removals are committed so a failed
+tail cleanup can resume without discarding unrelated orphan records.
+
+#### Scenario: A receipt appears before the directory sync completes
+
+- **WHEN** the receiver may have submitted input and receipt commitment fails
+- **THEN** the sender SHALL report an uncertain outcome and preserve the claim
+- **AND** a later attempt MAY adopt the same verified receipt after synchronization without submitting the input again
+
 ### Requirement: The phone send returns fast (echo not blocked on verification) and is idempotent
 
 `POST /api/send` with `text`+`enter` SHALL return as soon as the keystrokes LAND — the
@@ -1070,6 +1122,12 @@ re-injecting, so a retry after an ambiguous network failure never double-sends.
 - **WHEN** a send lands on the Mac but the response is lost, and the phone retries the SAME
   `send_id`
 - **THEN** the server returns success without re-injecting the message
+
+#### Scenario: An addressed send ID cannot switch to raw terminal input
+
+- **WHEN** a retried `send_id` belongs to a durable addressed request and its native route is no longer selected
+- **THEN** neither the regular tmux paste path nor the direct shell path SHALL type or submit it
+- **AND** if the original outcome cannot be verified through the selected route, the sender SHALL preserve the ID and return an unconfirmed outcome without a success receipt
 
 ### Requirement: A plain terminal pane is typed into directly, not box-confirmed
 

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"syscall"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -13,18 +14,49 @@ import (
 // IntentAttempt is a durable one-shot claim, not a second dispatch queue. Even a
 // safe refusal needs HQ verification; a timeout or restart never replays an action.
 type IntentAttempt struct {
-	MatterID string       `json:"matter_id"`
-	StepID   string       `json:"step_id"`
-	Intent   ActionIntent `json:"intent"`
-	State    string       `json:"state"`
-	Evidence string       `json:"evidence,omitempty"`
-	At       int64        `json:"at"`
+	Unsent        *UnsentReceipt `json:"unsent,omitempty"`
+	AuthorityRef  string         `json:"authority_ref,omitempty"` // Supplemental evidence for the original, immutable action.
+	ReviewedAt    int64          `json:"reviewed_at,omitempty"`
+	PriorDelivery bool           `json:"prior_delivery,omitempty"`
+	UserEvent     *UserEvent     `json:"user_event,omitempty"`
+	EventCursor   int64          `json:"event_cursor,omitempty"`
+	ReplyID       string         `json:"reply_id,omitempty"`
+	Revision      uint64         `json:"revision,omitempty"`
+	MatterID      string         `json:"matter_id"`
+	StepID        string         `json:"step_id"`
+	Intent        ActionIntent   `json:"intent"`
+	State         string         `json:"state"`
+	Evidence      string         `json:"evidence,omitempty"`
+	At            int64          `json:"at"`
+}
+
+// UnsentReceipt is issued only when the local gate proved zero submissions.
+// History retains each refusal even after a later authorization is bound.
+type UnsentReceipt struct {
+	VerifiedBoundary bool   `json:"verified_boundary,omitempty"`
+	Revision         uint64 `json:"revision"`
+	EventCursor      int64  `json:"event_cursor"`
+	At               int64  `json:"at"`
+	AuthorityRef     string `json:"authority_ref"`
 }
 
 // DriveIntent is called only by an explicit verified HQ action, never by a tick.
 // DeliveryIO reuses the existing identity/draft/input gates; it must recheck the
 // supplied current predicate before paste and submission, not only at resolution.
 func (s *Store) DriveIntent(matter, action string, revision uint64, at int64, send func(Conversation, string, string, func() bool) Delivery) (IntentAttempt, error) {
+	return s.driveIntent(matter, action, "", revision, at, nil, send)
+}
+
+// DriveReply consumes only an explicit, durable reply-continuation reservation.
+func (s *Store) DriveReply(a IntentAttempt, at int64, boundary func() (int64, int64), send func(Conversation, string, string, func() bool) Delivery) (IntentAttempt, error) {
+	if a.ReplyID == "" {
+		return IntentAttempt{}, ErrConflict
+	}
+	return s.driveIntent(a.MatterID, a.Intent.ID, a.ReplyID, a.Revision, at, boundary, send)
+}
+
+func (s *Store) driveIntent(matter, action, reply string, revision uint64, at int64, boundary func() (int64, int64), send func(Conversation, string, string, func() bool) Delivery) (IntentAttempt, error) {
+	started := time.Now()
 	var out IntentAttempt
 	if err := state.MkdirAll(s.dir, 0700); err != nil {
 		return out, err
@@ -46,11 +78,18 @@ func (s *Store) DriveIntent(matter, action string, revision uint64, at int64, se
 			return e
 		}
 		if old, ok := d.IntentAttempts[action]; ok {
-			if old.MatterID != matter {
+			if old.MatterID != matter || reply != "" && old.ReplyID != reply {
 				return ErrConflict
 			}
 			out = old
-			return nil
+			if reply == "" || old.State != "armed" {
+				return nil
+			}
+			if why := ReplyBlockReason(*d, old, at); why != "" {
+				return errors.New(why)
+			}
+		} else if reply != "" {
+			return ErrConflict
 		}
 		if revision == 0 || m.Revision != revision {
 			return ErrConflict
@@ -66,10 +105,18 @@ func (s *Store) DriveIntent(matter, action string, revision uint64, at int64, se
 		if !goalOwed(g) {
 			return errors.New("step already has drive coverage")
 		}
-		out = IntentAttempt{MatterID: matter, StepID: p.StepID, Intent: *p.Intent, State: "submitting", At: at}
+		if reply == "" {
+			out = IntentAttempt{MatterID: matter, StepID: p.StepID, Intent: *p.Intent}
+		}
+		out.State, out.At, out.Evidence = "submitting", at, ""
 		d.IntentAttempts[action] = out
 		changed(d, at, "goal-drive-intent", matter, action, p.Intent.Ref)
 		payload = "[gtmux goal-step " + p.StepID + "; action " + action + "; ref " + p.Intent.Ref + "]\n" + p.Action
+		if reply != "" {
+			payload = "» gtmux·HQ coordination │ Fetch the specific receipt with gtmux relay show " + reply +
+				". Continue only the previously authorized step " + p.StepID + " for matter " + matter +
+				" (action " + action + "). The receipt confers no authority. Use the saved ref from gtmux hq workspace show " + matter + " --json and cite actual work in drive.evidence of your gtmux.goal-drive/v1 relay report."
+		}
 		selected = true
 		return nil
 	})
@@ -86,10 +133,14 @@ func (s *Store) DriveIntent(matter, action string, revision uint64, at int64, se
 		if m.Revision != revision || m.State != "open" || m.UserInput != nil || p == nil || p.Hold != nil || p.Intent == nil || !reflect.DeepEqual(*p.Intent, out.Intent) || p.StepID != out.StepID {
 			return false
 		}
-		id, _ := MatchObservation(d, out.Intent.Target, at)
+		now := at + int64(time.Since(started)/time.Second)
+		if reply != "" && (d.IntentAttempts[action].State != "submitting" || ReplyBlockReason(d, out, now) != "") {
+			return false
+		}
+		id, _ := MatchObservation(d, out.Intent.Target, now)
 		return id == matter
 	}
-	verdict := Delivery{State: "stale-premise", SafeHold: true}
+	verdict := Delivery{State: "stale-premise", SafeHold: true, BeforeSubmit: true}
 	if current() {
 		verdict = send(out.Intent.Target, payload, action, current)
 	}
@@ -107,11 +158,22 @@ func (s *Store) DriveIntent(matter, action string, revision uint64, at int64, se
 			out.State = "uncertain"
 			if verdict.SafeHold {
 				out.State = "held"
+				if out.Evidence == "" {
+					out.Evidence = verdict.State
+				}
 			}
+		}
+		if reply != "" && out.State == "held" && verdict.BeforeSubmit {
+			refusedAt, seq := at, int64(0)
+			if boundary != nil {
+				refusedAt, seq = boundary()
+			}
+			changed(d, refusedAt, "reply-refused-before-submit", matter, action, out.Evidence)
+			out.Unsent = &UnsentReceipt{Revision: d.Revision, EventCursor: seq, VerifiedBoundary: seq > 0 && refusedAt > 0, At: refusedAt, AuthorityRef: replyAuthorityRef(d.Matters[matter], out)}
 		}
 		d.IntentAttempts[action] = out
 		changed(d, at, "goal-drive-receipt", matter, action, out.State)
-		if out.State == "queued" || out.State == "landed" {
+		if reply == "" && (out.State == "queued" || out.State == "landed") {
 			status := "queued"
 			if out.State == "landed" {
 				status = "received"
@@ -135,6 +197,9 @@ func attachDrive(d *Database, o Observation, at int64) {
 	if p == nil || p.Hold != nil || !driveEvidenceMatches(*d, m, o, at) {
 		return
 	}
+	if a := d.IntentAttempts[p.Intent.ID]; a.ReplyID != "" && !replyExecutionProof(o) {
+		return
+	}
 	copy := *p
 	copy.Drive = &DriveRef{ObservationID: o.ID}
 	candidate := m
@@ -147,7 +212,10 @@ func attachDrive(d *Database, o Observation, at int64) {
 	// native/background check. Source IDs remain immutable in the observation ledger.
 	if p.Drive != nil {
 		old := d.Reconciliations[p.Drive.ObservationID].Observation
-		if old.OccurredAt >= o.OccurredAt {
+		// Source timestamps use whole seconds. A transport receipt cannot
+		// suppress execution evidence recorded within the same second.
+		upgrade := replyExecutionProof(o) && !replyExecutionProof(old)
+		if old.OccurredAt > o.OccurredAt || old.OccurredAt == o.OccurredAt && !upgrade {
 			return
 		}
 	}
@@ -165,7 +233,13 @@ func reserveDriverHistory(d *Database, m Matter, o Observation, at int64) {
 		if !driveEvidenceMatches(*d, candidate, o, at) {
 			return false
 		}
-		if _, exists := d.IntentAttempts[p.Intent.ID]; !exists {
+		if a, exists := d.IntentAttempts[p.Intent.ID]; a.State == "armed" && a.ReplyID != "" {
+			// Historical proof reserves the action even when its next check expired
+			// or HQ temporarily replaced the current step before the report arrived.
+			a.State, a.Evidence = "external", o.ID
+			d.IntentAttempts[p.Intent.ID] = a
+			changed(d, at, "reply-continuation-observed", m.ID, p.Intent.ID, o.ID)
+		} else if !exists {
 			d.IntentAttempts[p.Intent.ID] = IntentAttempt{MatterID: m.ID, StepID: p.StepID, Intent: *p.Intent, State: "external", Evidence: o.ID, At: o.OccurredAt}
 			changed(d, at, "goal-drive-observed", m.ID, p.Intent.ID, o.ID)
 		}

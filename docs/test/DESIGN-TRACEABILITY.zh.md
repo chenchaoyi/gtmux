@@ -76,3 +76,7 @@ STATE-LABEL / FILE-SCOPE；组件×平台×状态×主题矩阵见 SURFACES。
 DesignConsistency / SettingsAppearance 执行真实 App 组件；Web 测试执行真实 XHR
 阶段与角色分组；Mac 测试渲染 NSImage 并比较非 RGB 几何。这些覆盖不冒充原生布局、
 材质或设备实际朗读验收。商店素材与文案单列冻结候选及 Apple 审核状态，源码合入不等于素材已公开展示。
+
+## 原生 Codex 恢复集成（2026-11-18）
+
+CLI/core 由 `agent_resume.go`、`codex_restore_native.go`、`restore_serial.go` 和 `internal/resume/native_restore_*` 实现。已评审设计 `designs/codex-native-serial-integration-20261118.json` 将 CNRV4-001–005 映射到三份测试。固定原始候选已有10项聚焦通过和目标变异被拒证据；格式化后的Git候选另核门禁。完整入口/真实tmux发送、CNR103/104/108集成、真实Codex启动、设备及时延仍需分别验收。App/Mac/Web控制入口和既有输入权限不变。

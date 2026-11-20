@@ -1,0 +1,4 @@
+- [x] Keep eligible unassigned and ambiguous evidence durable before wake delivery.
+- [x] Reuse exact claim and wake retry with explicit reviewed disposition and current-goal handoff.
+- [x] Verify consent, supervisor echo, stale leases, ambiguous identity and one deliberately removed wake.
+- [x] Exercise the real CLI and serve with a private tmux socket; retain evidence and distinguish fixture boundaries.

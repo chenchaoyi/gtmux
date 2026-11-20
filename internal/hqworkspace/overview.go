@@ -106,6 +106,9 @@ func BuildOverview(d Database, now int64) Overview {
 			items[i].MatterProjection = ProjectMatter(d, d.Matters[items[i].MatterID], now)
 			if q := d.Matters[items[i].MatterID].UserInput; q != nil && d.Matters[items[i].MatterID].State == "needs-input" {
 				items[i].Preview = &OverviewPreview{MessageID: q.ID, Kind: "question", Body: q.Prompt, At: q.At}
+			} else if g := items[i].NextResponsibility; strings.HasPrefix(g.ObservationID, "inbox:") || strings.HasPrefix(g.ObservationID, "fetched:") {
+				body, clipped := overviewExcerpt(g.Reason, 768)
+				items[i].Preview = &OverviewPreview{Kind: "goal-followup", SourceRef: g.ObservationID, Body: body, Truncated: clipped}
 			} else if msg, ok := latest[items[i].MatterID]; ok {
 				body, clipped := overviewExcerpt(msg.Body, 768)
 				items[i].Preview = &OverviewPreview{MessageID: msg.ID, Kind: msg.Kind, Body: body, At: msg.At, Truncated: clipped}

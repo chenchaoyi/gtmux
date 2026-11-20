@@ -9,7 +9,8 @@
   },
   "internal/agentclient/pending_retry_lifetime_test.go": {
     "cases": [
-      "MSD-011"
+      "MSD-011",
+      "SPL-016"
     ],
     "selectors": [
       "TestMSD011DurablePendingKeepsOneIdentityAcrossRetryAndPrune",
@@ -117,7 +118,8 @@
       "HQP1-006",
       "HQP1-007",
       "HQP1-008",
-      "HGD-005"
+      "HGD-005",
+      "HPC-004"
     ],
     "selectors": [
       "TestPhase1WorkspaceIngestionRecoveryAndReadIndependence",
@@ -194,18 +196,10 @@
   },
   "internal/app/restore_remote_test.go": {
     "cases": [
-      "RSR-003",
-      "RSR-004",
-      "RSR-005"
+      "RRB-R6"
     ],
     "selectors": [
-      "TestRemotePreviewOnlyMissingAndBindsProducerInputs",
-      "TestRemoteWorkerRejectsStaleAndBusyBeforeMutating",
-      "TestRemoteWorkerKeepsPartialAndConfirmedResultsSeparate",
-      "TestRemotePaneGuardRechecksExactShellWithoutTouchingOthers",
-      "TestRestoreExecutionLeaseIsProcessOwnedAndFailsClosed",
-      "TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions",
-      "TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology"
+      "TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions"
     ]
   },
   "internal/app/screenshot_deadline_test.go": {
@@ -560,7 +554,8 @@
       "MSD-011"
     ],
     "selectors": [
-      "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit"
+      "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit",
+      "TestMSD011MismatchedPendingClockRefusesBeforeRPC"
     ]
   },
   "internal/dispatchbridge/pending_retry_target_test.go": {
@@ -3268,7 +3263,9 @@
   },
   "internal/app/phone_send_failure_test.go": {
     "cases": [
-      "SFR-001"
+      "SFR-001",
+      "SPL-009",
+      "SPL-015"
     ],
     "selectors": [
       "TestSFR001PhoneRefusalNeedsExplicitNativeQuestion"
@@ -3681,6 +3678,683 @@
       "rejects malformed, non-RGB, wrong-size and incomplete final output",
       "protects the full HQ header and complete decision card in both layouts",
       "detects the original final-image shift of minus64 pixels"
+    ]
+  },
+  "internal/app/codex_restore_native_test.go": {
+    "cases": [
+      "CNRV4-001",
+      "CNRV4-003"
+    ],
+    "selectors": [
+      "TestCNR101CapabilityBoundToNativeBinary",
+      "TestCNR102RestoreTargetRecheckedBeforeWrite",
+      "TestCNR103ReservePrecedesProductionSend",
+      "TestCNR104UncertainWriteNeverReplays",
+      "TestCNR105TypeModeNeverPressesEnter",
+      "TestCNR106LeaseChild",
+      "TestCNR106AttemptLeaseAcrossProcesses",
+      "TestCNR109NativePackageClassifierRefusesWrapperAndChangedMetadata",
+      "TestCNR102ExecutableFailureNeverChoosesCompatibility",
+      "TestCNR102IncumbentChangesRefuseBeforeWrite",
+      "TestCNR102ConfiguredProxyTargetsNativeCommand"
+    ]
+  },
+  "internal/resume/native_restore_test.go": {
+    "cases": [
+      "CNRV4-001",
+      "CNRV4-002",
+      "CNRV4-003"
+    ],
+    "selectors": [
+      "TestCNR001NativeRestoreCommandRoundTrip",
+      "TestCNR002StoppedFrontendMigratesSameSession",
+      "TestCNR003FrontendMigrationRejectsUnknownAndRaces",
+      "TestCNR004ReconcileRetriesStoppedSameSession",
+      "TestCNR005MigratedNativeSaveCannotReviveFrontend",
+      "TestCNR107ReservationSurvivesUntilNewBoot",
+      "TestCNR006CorruptAttemptAndLeaseRefuseBeforeAnyWrite",
+      "TestCNR007NativeConfirmationRequiresExactFreshOwner",
+      "TestCNR006IncumbentAbsenceIsNotReadFailure"
+    ]
+  },
+  "internal/app/restore_serial_test.go": {
+    "cases": [
+      "CNRV4-003",
+      "CNRV4-004",
+      "CNRV4-005"
+    ],
+    "selectors": [
+      "TestRestoreSerialWaitsForReadyBeforeNextStart",
+      "TestRestoreSerialTimeoutVisibleBeforeNextStartAndBudgetShared",
+      "TestRestoreSerialCancelStopsFurtherStarts",
+      "TestRestoreSerialTypeAndUnavailableDoNotWait",
+      "TestRestoreSerialStableLocatorThenPaneOrder",
+      "TestRestoreSerialNativeIssueKeepsCommandEnterAndStoreOrder",
+      "TestRestoreSerialCancelAfterReserveKeepsOccupationWithoutSend",
+      "TestRestoreSerialUncertainSendWaitsWithoutClaimingReady"
+    ]
+  },
+  "internal/app/restore_review_boundary_test.go": {
+    "cases": [
+      "RRB-R1",
+      "RRB-R2",
+      "RRB-R3",
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestRRBFinalPauseConfirmsBeforeNextStart",
+      "TestRRBSelectionChangeDuringQueueRefusesSecond",
+      "TestRRBUnknownRemainsOccupiedAcrossCompatibilityRoute",
+      "TestRRBNativeEntryUsesFullPaneEvidenceAndExactTargets"
+    ]
+  },
+  "internal/app/agent_resume_launcher_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestRestoreResumesThroughTheRecordedLauncher",
+      "TestRestoreManagedCodexBridge"
+    ]
+  },
+  "internal/app/agent_resume_ownership_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestRestoreConversationOwnership"
+    ]
+  },
+  "internal/app/newsession_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestANewSessionFromTheRootStartsAtHome",
+      "TestRemoteSessionCreationOnIsolatedTmux"
+    ]
+  },
+  "internal/app/sendhold_test.go": {
+    "cases": [
+      "RRB-R6"
+    ],
+    "selectors": [
+      "TestAttachHoldOnRealPanes",
+      "TestNoVerifyAttachSaysTheTextWasPasted"
+    ]
+  },
+  "internal/app/restore_visibility_test.go": {
+    "cases": [
+      "RRV-001",
+      "RRV-002"
+    ],
+    "selectors": [
+      "TestRRVLocalTimeoutVisibleBeforeNextPreparation",
+      "TestRRVRemoteFinalStoreRetainsFirstIssueFact"
+    ]
+  },
+  "mobileapp/src/screens/RestoreSessionsSheet.visibility.test.tsx": {
+    "cases": [
+      "RRV-003"
+    ],
+    "selectors": [
+      "RRV003 shows timeout and original uncertainty in %s"
+    ]
+  },
+  "mobileapp/src/api/restore.visibility.test.ts": {
+    "cases": [
+      "RRV-003"
+    ],
+    "selectors": [
+      "RRV003 preserves optional first issue state and accepts old receipts",
+      "RRV003 rejects malformed first issue state %p"
+    ]
+  },
+  "internal/app/restore_dispatch_boundary_test.go": {
+    "cases": [
+      "RSD-001",
+      "RSD-002",
+      "RSD-003"
+    ],
+    "selectors": [
+      "TestRSDHistoricalSourceBeforeDispatch",
+      "TestRSDCompatibilityUncertainEnter",
+      "TestRSDLocalArchiveBoundaries"
+    ]
+  },
+  "internal/app/hold_reader_test.go": {
+    "cases": [
+      "RSD-004"
+    ],
+    "selectors": [
+      "TestHoldReaderChild"
+    ]
+  },
+  "internal/app/restore_queued_ownership_test.go": {
+    "cases": [
+      "RQO-001",
+      "RQO-002"
+    ],
+    "selectors": [
+      "TestQueuedHistoricalOwnership",
+      "TestQueuedCompatibilityTarget"
+    ]
+  },
+  "internal/app/restore_wrapper_cancel_test.go": {
+    "cases": [
+      "RWC-001"
+    ],
+    "selectors": [
+      "TestCompatibilityCancellationDuringFinalTargetQuery"
+    ]
+  },
+  "internal/app/hqworkspace_reply_test.go": {
+    "cases": [
+      "HRC-001",
+      "HRC-002"
+    ],
+    "selectors": [
+      "TestReplyLifecycleAcrossStop",
+      "TestReplyContinuationDispatchAndEvidence"
+    ]
+  },
+  "internal/app/hqworkspace_reply_review_test.go": {
+    "cases": [
+      "HRC-003",
+      "HRC-004",
+      "HRC-005"
+    ],
+    "selectors": [
+      "TestReviewedReplyAuthorityAndOrder"
+    ]
+  },
+  "internal/app/hqworkspace_reply_history_test.go": {
+    "cases": [
+      "HRC-006",
+      "HRC-007",
+      "HRC-008"
+    ],
+    "selectors": [
+      "TestReplyReconcilesSavedHistory"
+    ]
+  },
+  "internal/app/hqworkspace_reply_event_history_test.go": {
+    "cases": [
+      "HRC-009"
+    ],
+    "selectors": [
+      "TestWorkspaceMessageChecksOriginalTargetHistory"
+    ]
+  },
+  "internal/app/hqworkspace_reply_continuity_test.go": {
+    "cases": [
+      "HRC-010"
+    ],
+    "selectors": [
+      "TestReplyHistoryUsesCommittedOrderAndActiveJournal"
+    ]
+  },
+  "internal/app/hqworkspace_reply_baseline_test.go": {
+    "cases": [
+      "HRC-011"
+    ],
+    "selectors": [
+      "TestReplyRequiresProvenRecordingBaseline"
+    ]
+  },
+  "internal/app/hqworkspace_reply_recovery_test.go": {
+    "cases": [
+      "HRC-012"
+    ],
+    "selectors": [
+      "TestReplyRecoversOnlyProvenUnsentAction"
+    ]
+  },
+  "internal/app/hqworkspace_reply_ordering_test.go": {
+    "cases": [
+      "HRC-013"
+    ],
+    "selectors": [
+      "TestReplyRequiresOriginalProducerAndRefusalOrder"
+    ]
+  },
+  "internal/agentclient/delivery_test.go": {
+    "cases": [
+      "SPL-016"
+    ],
+    "selectors": [
+      "TestNativeSpoolRetentionAndUnknownClaims"
+    ]
+  },
+  "internal/agentclient/input_durability_test.go": {
+    "cases": [
+      "SPL-011",
+      "SPL-012",
+      "SPL-017"
+    ],
+    "selectors": [
+      "TestSPL011ClaimFlushPrecedesInputAuthority",
+      "TestSPL011ReceiptFlushPrecedesAckAndClaimCleanup",
+      "TestSPL011CompetingAndUnknownReceiptsPreserveClaims",
+      "TestSPL012RetirementKeepsReceiptUntilPayloadRemovalIsDurable",
+      "TestSPL017IndexDeletionFailureKeepsReceipt"
+    ]
+  },
+  "internal/agentclient/input_intent_test.go": {
+    "cases": [
+      "SPL-016",
+      "SPL-017"
+    ],
+    "selectors": [
+      "TestSPL016RepeatedRefusalsLeaveNoPersistentSlot",
+      "TestSPL016PublisherUsesStagedIDAndNeverReplacesUnresolved",
+      "TestSPL017PublicationFaultsNeverExposePendingBeforeIndex",
+      "TestSPL017DurableIDAcrossProcessRestart",
+      "TestSPL017RestartChild"
+    ]
+  },
+  "internal/agentclient/input_layout_size_test.go": {
+    "cases": [
+      "SPL-010"
+    ],
+    "selectors": [
+      "TestSPL010LayoutReadMatchesOpenFileSize"
+    ]
+  },
+  "internal/agentclient/input_records_test.go": {
+    "cases": [
+      "SPL-006",
+      "SPL-012"
+    ],
+    "selectors": [
+      "TestSPL006DamagedRecordsRetainTheirReplayProtection"
+    ]
+  },
+  "internal/agentclient/input_store_gate_test.go": {
+    "cases": [
+      "SPL-005",
+      "SPL-006",
+      "SPL-007",
+      "SPL-017"
+    ],
+    "selectors": [
+      "TestSPL005TerminalInputStoreGate",
+      "TestSPL007VerifiedAttachmentChecksCurrentInputGeneration"
+    ]
+  },
+  "internal/agentclient/spool_lifecycle_test.go": {
+    "cases": [
+      "SPL-001",
+      "SPL-002",
+      "SPL-012"
+    ],
+    "selectors": [
+      "TestSPL001AdmissionReservesCompletion",
+      "TestSPL002SettlementAndUnconfirmedRecovery"
+    ]
+  },
+  "internal/app/dsh_terminal_spool_test.go": {
+    "cases": [
+      "SPL-004",
+      "SPL-012"
+    ],
+    "selectors": [
+      "TestDSHTerminalReceiverSharesSpoolWithGo"
+    ]
+  },
+  "internal/app/dsh_terminal_test.go": {
+    "cases": [
+      "SPL-006",
+      "SPL-013",
+      "SPL-017"
+    ],
+    "selectors": [
+      "TestDSHTerminalNativeRequestContract"
+    ]
+  },
+  "internal/app/send_outcome_test.go": {
+    "cases": [
+      "SPL-009",
+      "SPL-014",
+      "SPL-015"
+    ],
+    "selectors": [
+      "TestSPL009CLIAndHTTPDispatchOutcomes",
+      "TestSPL014UnavailableDSHDoesNotSettlePriorID",
+      "TestSPL015UnverifiedSuccessAndCacheKeepTheirOriginalGrade"
+    ]
+  },
+  "internal/app/sendkeys_test.go": {
+    "cases": [
+      "SPL-015"
+    ],
+    "selectors": [
+      "TestSendCacheIdempotency"
+    ]
+  },
+  "internal/app/spool_failure_test.go": {
+    "cases": [
+      "SPL-003",
+      "SPL-009"
+    ],
+    "selectors": [
+      "TestSPL003PhoneClassifiesCapacityAndUnknown"
+    ]
+  },
+  "internal/dispatch/input_failure_test.go": {
+    "cases": [
+      "SPL-008"
+    ],
+    "selectors": [
+      "TestSPL008SubmissionBoundary",
+      "TestSPL008VerifiedHoldKeepsItsEvidenceAndSubmitCount",
+      "TestSPL008RefusedRetryDoesNotResolveEarlierEnter"
+    ]
+  },
+  "internal/dispatchbridge/input_publish_test.go": {
+    "cases": [
+      "SPL-016"
+    ],
+    "selectors": [
+      "TestSPL016CodexNativeHoldPublishesNothing"
+    ]
+  },
+  "internal/dispatchbridge/spool_capacity_test.go": {
+    "cases": [
+      "SPL-003",
+      "SPL-008",
+      "SPL-014",
+      "SPL-INCIDENT-004"
+    ],
+    "selectors": [
+      "TestSPL003CapacityRefusesBeforeRPC",
+      "TestSPL008CodexSeparatesRefusalFromUnresolvedSubmission",
+      "TestSPL014MissingCodexFrontendKeepsPriorOutcomeUnknown"
+    ]
+  },
+  "internal/dispatchbridge/terminal_ready_test.go": {
+    "cases": [
+      "SPL-007"
+    ],
+    "selectors": [
+      "TestTerminalReadinessWaitsForItsNativeReceiverAndGrant"
+    ]
+  },
+  "internal/app/hqworkspace_input_replay_test.go": {
+    "cases": [
+      "SPL-018"
+    ],
+    "selectors": [
+      "TestSPL018WorkspaceEarlyHoldPreservesPriorDelivery"
+    ]
+  },
+  "internal/app/send_transport_fallback_test.go": {
+    "cases": [
+      "SPL-019"
+    ],
+    "selectors": [
+      "TestSPL019HTTPProtectsNativeIDAfterRouteLoss"
+    ]
+  },
+  "internal/agentclient/input_retirement_test.go": {
+    "cases": [
+      "SPL-020",
+      "SPL-021",
+      "SPL-022"
+    ],
+    "selectors": [
+      "TestSPL020StableReceiptsAllowLongRunningAdmission",
+      "TestSPL021InterruptedRetirementReconcilesExactTail",
+      "TestSPL022CancelDuringParentSyncDoesNotPublish",
+      "TestSPL021FullArchiveShardRetainsAcceptance"
+    ]
+  },
+  "internal/dispatchbridge/input_cancel_test.go": {
+    "cases": [
+      "SPL-022"
+    ],
+    "selectors": [
+      "TestSPL022NativeCancellationSeparatesPublicationAndMutation"
+    ]
+  },
+  "internal/codexrpc/input_cancel_test.go": {
+    "cases": [
+      "SPL-022"
+    ],
+    "selectors": [
+      "TestSPL022WireChecksCancellationAroundFinalGuard"
+    ]
+  },
+  "internal/agentclient/input_archive_test.go": {
+    "cases": [
+      "SPL-023",
+      "SPL-024",
+      "SPL-025"
+    ],
+    "selectors": [
+      "TestSPL023FullPageAndNearFullQueueKeepAdmitting",
+      "TestSPL023ArchiveBudgetKeepsSpaceForSettlement",
+      "TestSPL024DamagedCommitBlocksOnlyUnverifiableIDs",
+      "TestSPL024UncommittedPageSuffixReconcilesToVerifiedPrefix",
+      "TestSPL024ArchiveReopenChild"
+    ]
+  },
+  "internal/app/input_archive_doctor_test.go": {
+    "cases": [
+      "SPL-025"
+    ],
+    "selectors": [
+      "TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair"
+    ]
+  },
+  "internal/agentclient/input_archive_bootstrap_test.go": {
+    "cases": [
+      "SPL-026"
+    ],
+    "selectors": [
+      "TestSPL026ArchiveBootstrapSurvivesProcessExit",
+      "TestSPL026ArchiveBootstrapExitChild",
+      "TestSPL026ArchiveBootstrapPreservesExistingDestination"
+    ]
+  },
+  "internal/hqworkspace/continuation_test.go": {
+    "cases": [
+      "HPC-001"
+    ],
+    "selectors": [
+      "TestContinuationEvidenceReopensDeferredResponsibility"
+    ]
+  },
+  "internal/app/hqworkspace_continuation_test.go": {
+    "cases": [
+      "HPC-002"
+    ],
+    "selectors": [
+      "TestWorkspaceContinuationIncidentReplay"
+    ]
+  },
+  "internal/app/hqworkspace_continuation_cli_test.go": {
+    "cases": [
+      "HPC-004",
+      "HPC-005"
+    ],
+    "selectors": [
+      "TestWorkspaceDraftKeepsBothWakeQueues",
+      "TestWorkspaceContinuationCLI"
+    ]
+  },
+  "internal/hqworkspace/continuation_claim_test.go": {
+    "cases": [
+      "HPC-003"
+    ],
+    "selectors": [
+      "TestContinuationClaimCoversOnlyItsExactObservation"
+    ]
+  },
+  "internal/app/hqworkspace_reconcile_timing_test.go": {
+    "cases": [
+      "HPC-006"
+    ],
+    "selectors": [
+      "TestWorkspaceReconciliationRetriesFromReminderTime"
+    ]
+  },
+  "internal/agentprofile/mixed_effort_reset_test.go": {
+    "cases": [
+      "STOR-007"
+    ],
+    "selectors": [
+      "TestMixedProfileEffortResetSurvivesLegacyRefresh",
+      "TestMixedProfileEffortResetPersistsWithoutOtherFacts"
+    ]
+  },
+  "internal/agentprofile/observation_storage_test.go": {
+    "cases": [
+      "STOR-004"
+    ],
+    "selectors": [
+      "TestProfileObservationLeaseShardsAreBounded",
+      "TestProfileObservationIsolatesMixedWriters"
+    ]
+  },
+  "mobileapp/scripts/capture_store_assets_test.py": {
+    "cases": [
+      "STOR-006"
+    ],
+    "selectors": [
+      "test_managed_capture_output_refused_before_tools"
+    ]
+  },
+  "mobileapp/scripts/fetch_delivery_test.py": {
+    "cases": [
+      "STOR-005"
+    ],
+    "selectors": [
+      "test_managed_output_refused_before_transport"
+    ]
+  },
+  "mobileapp/scripts/store_artifacts_test.py": {
+    "cases": [
+      "STOR-006"
+    ],
+    "selectors": [
+      "test_managed_render_and_reuse_paths_fail_before_setup"
+    ]
+  },
+  "mobileapp/scripts/store_package_test.py": {
+    "cases": [
+      "STOR-005"
+    ],
+    "selectors": [
+      "test_cli_rejects_managed_receipt_before_package_verification"
+    ]
+  },
+  "scripts/check_delivery_retention_test.py": {
+    "cases": [
+      "STOR-003"
+    ],
+    "selectors": [
+      "test_project_archive_destination"
+    ]
+  },
+  "scripts/macos_release_artifact_test.py": {
+    "cases": [
+      "STOR-005"
+    ],
+    "selectors": [
+      "test_staging_refuses_managed_state_alias"
+    ]
+  },
+  "mobileapp/scripts/delivery_write_boundary_test.py": {
+    "cases": [
+      "STOR-008"
+    ],
+    "selectors": [
+      "test_pack_refuses_linked_leaf_and_preserves_existing_bytes",
+      "test_archive_through_external_root_alias_and_failed_replacement",
+      "test_checkpoint_refuses_linked_subdirectory",
+      "test_progress_log_refuses_link_and_appends_to_regular_file",
+      "test_wda_log_refuses_link_before_compiler"
+    ]
+  },
+  "internal/agentprofile/mixed_effort_review_test.go": {
+    "cases": [
+      "STOR-009"
+    ],
+    "selectors": [
+      "TestMixedProfileLegacyEffortOnlyAfterReset"
+    ]
+  },
+  "internal/agentprofile/model_return_test.go": {
+    "cases": [
+      "STOR-010"
+    ],
+    "selectors": [
+      "TestMixedProfileModelReturnDoesNotRestoreEffort"
+    ]
+  },
+  "internal/hqworkspace/triage_test.go": {
+    "cases": [
+      "HPT-001"
+    ],
+    "selectors": [
+      "TestWorkspaceTriageAssessment"
+    ]
+  },
+  "internal/app/hqworkspace_triage_test.go": {
+    "cases": [
+      "HPT-002"
+    ],
+    "selectors": [
+      "TestWorkspaceTriageIngestion"
+    ]
+  },
+  "internal/app/hqworkspace_triage_cli_test.go": {
+    "cases": [
+      "HPT-003"
+    ],
+    "selectors": [
+      "TestWorkspaceTriageCLI"
+    ]
+  },
+  "internal/app/hqworkspace_triage_role_test.go": {
+    "cases": [
+      "HPT-004"
+    ],
+    "selectors": [
+      "TestWorkspaceTriageRoleAfterPaneReuse"
+    ]
+  },
+  "internal/app/hqworkspace_triage_late_role_test.go": {
+    "cases": [
+      "HPT-005"
+    ],
+    "selectors": [
+      "TestWorkspaceTriageLateWorkerCannotClaimSupervisorRole"
+    ]
+  },
+  "internal/agentclient/input_legacy_pressure_test.go": {
+    "cases": [
+      "SPL-INCIDENT-001"
+    ],
+    "selectors": [
+      "TestLegacyInputPressurePreservesPriorDeliveries"
+    ]
+  },
+  "internal/agentclient/input_spool_health_test.go": {
+    "cases": [
+      "SPL-INCIDENT-002"
+    ],
+    "selectors": [
+      "TestInputSpoolHealthAgreesWithAdmission"
+    ]
+  },
+  "internal/app/input_spool_doctor_test.go": {
+    "cases": [
+      "SPL-INCIDENT-003"
+    ],
+    "selectors": [
+      "TestInputSpoolDoctorShowsWeightedSaturation"
     ]
   },
   "mobileapp/src/ui/DesignConsistency.test.tsx": {

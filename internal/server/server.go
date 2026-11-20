@@ -941,13 +941,14 @@ func (s *Server) handleSend(w http.ResponseWriter, r *http.Request) {
 		sendErr = s.deps.Send(req.ID, req.Text, req.Key, req.Enter, req.SendID)
 	}
 	if err := sendErr; err != nil {
+		body := sendFailureBody(err, req.SendID)
 		outcome := diag.Failed
-		if strings.Contains(err.Error(), "draft") {
-			outcome = diag.Refused // the box held someone's unsent text
+		if body["submission"] == "not-submitted" {
+			outcome = diag.Refused
 		}
-		lg.Act("act.send", actorOf(r.Context()), req.ID, outcome, "typing into a pane did not happen",
-			"error", err, "bytes", len(req.Text), "key", req.Key)
-		writeJSON(w, http.StatusBadRequest, sendFailureBody(err))
+		lg.Act("act.send", actorOf(r.Context()), req.ID, outcome, "input for a pane was not confirmed",
+			"error", err, "code", body["code"], "submission", body["submission"], "bytes", len(req.Text), "key", req.Key)
+		writeJSON(w, http.StatusBadRequest, body)
 		return
 	}
 	lg.Act("act.send", actorOf(r.Context()), req.ID, diag.OK, "accepted input for a pane",

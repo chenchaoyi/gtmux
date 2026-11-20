@@ -21,6 +21,7 @@ import (
 var codexProcessClients = codexterminal.Resolve
 var codexProcessIdentity = launchhost.ReadAgent
 var codexProcessInteractive = codexterminal.InteractiveMode
+var codexProcessBindingWrite = writeBindingJSON
 var codexProcessPanes = func() []codexterminal.Pane {
 	var panes []codexterminal.Pane
 	for _, line := range tmux.Lines("list-panes", "-a", "-F", "#{pane_id}\t#{pane_current_command}\t#{pane_pid}\t#{pane_tty}\t#{pane_current_path}\t#{session_name}:#{window_index}.#{pane_index}") {
@@ -86,6 +87,10 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 			return errors.New("process observation is not a conversation")
 		}
 	}
+	oldFrontend, migrateFrontend, err := processFrontendForSameSession(target.Loc, incumbent, r, target)
+	if err != nil {
+		return err
+	}
 	if err := state.MkdirAll(Dir(), 0700); err != nil {
 		return err
 	}
@@ -122,14 +127,26 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 			return errors.New("process observation changed during verification")
 		}
 	}
+	// Recheck native incarnation AND the old receipt while the publication lease is held.
+	fresh, ok = processTarget(r, codexProcessPanes())
+	if !ok || fresh != target {
+		return errors.New("terminal changed under publication lease")
+	}
+	frontend, migrate, err := processFrontendForSameSession(target.Loc, incumbent, r, target)
+	if err != nil || frontend != oldFrontend || migrate != migrateFrontend {
+		return errors.New("frontend disposition changed under publication lease")
+	}
 	record := Record{Agent: "codex", HomeID: r.HomeID, SessionID: r.SessionID, Cwd: target.Cwd, UpdatedAt: now, Launcher: target.Launcher}
 	if incumbent.SessionID == r.SessionID && incumbent.HomeID == r.HomeID {
 		record.TerminalClient = incumbent.TerminalClient
-		if incumbent.Agent == "codex" {
+		record.RecoverySessionID = incumbent.RecoverySessionID
+		record.RecoveryCwd = incumbent.RecoveryCwd
+		record.RecoveryAt = incumbent.RecoveryAt
+		if incumbent.Agent == "codex" && !migrateFrontend {
 			record.Frontend = incumbent.Frontend
 		}
 	}
-	if err := writeBindingJSON(fileFor(target.Loc), record); err != nil {
+	if err := codexProcessBindingWrite(fileFor(target.Loc), record); err != nil {
 		return err
 	}
 	diag.For("resume").Info("codex.binding.process.confirmed", "verified foreground terminal client bound to its exact session", "pane", target.Pane, "agent_session", r.SessionID, "pid", r.PID)
@@ -185,7 +202,10 @@ func ReconcileCodexProcesses(scope *transcript.CodexPathScope, records []native.
 		bound := false
 		for _, loc := range locations {
 			current, _ := Load(loc)
-			bound = bound || current.Agent == "codex" && current.HomeID == r.HomeID && current.SessionID == r.SessionID
+			if current.Agent == "codex" && current.HomeID == r.HomeID && current.SessionID == r.SessionID {
+				// A positively stopped bridge still needs the strict same-SID native migration.
+				bound = bound || current.Frontend == "" || LoadFrontendRecoveryKind(loc) != FrontendRecoveryStopped
+			}
 		}
 		if !bound {
 			unbound = append(unbound, r)
@@ -205,4 +225,33 @@ func ReconcileCodexProcesses(scope *transcript.CodexPathScope, records []native.
 			diag.For("resume").Info("codex.binding.process.deferred", "terminal observation no longer proves an unchanged binding", "pane", target.Pane, "agent_session", r.SessionID, "error", err)
 		}
 	}
+}
+
+// processFrontendDisposition never treats a missing receipt as a stopped bridge.
+// Same-owner live bridges keep their marker; only a proved stopped incarnation
+// may migrate, after this exact receipt and native target are checked under lease.
+func processFrontendDisposition(loc string, incumbent Record, target CodexBindingTarget) (CodexFrontend, bool, error) {
+	if incumbent.Agent != "codex" || incumbent.Frontend == "" {
+		return CodexFrontend{}, false, nil
+	}
+	f, ok := readFrontend(incumbent.Frontend)
+	if !ok || f.Loc != loc || f.SessionID != incumbent.SessionID || f.HomeID != incumbent.HomeID {
+		return CodexFrontend{}, false, errors.New("frontend receipt unavailable for native migration")
+	}
+	if freshFrontend(f, false) && f.Pane == target.Pane && f.PID == target.PID &&
+		f.ClientStart == target.ClientStart && f.RootStart == target.RootStart &&
+		strings.TrimPrefix(f.TTY, "/dev/") == strings.TrimPrefix(target.TTY, "/dev/") && hqpane.SameDir(f.Cwd, target.Cwd) {
+		return f, false, nil
+	}
+	if LoadFrontendRecoveryKind(loc) != FrontendRecoveryStopped {
+		return CodexFrontend{}, false, errors.New("frontend is live or its exit is unknown")
+	}
+	return f, true, nil
+}
+
+func processFrontendForSameSession(loc string, incumbent Record, observed native.Record, target CodexBindingTarget) (CodexFrontend, bool, error) {
+	if incumbent.SessionID != observed.SessionID || incumbent.HomeID != observed.HomeID {
+		return CodexFrontend{}, false, nil
+	}
+	return processFrontendDisposition(loc, incumbent, target)
 }

@@ -2,6 +2,7 @@ package dispatch
 
 import (
 	"context"
+	"errors"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,6 +18,7 @@ type State string
 const (
 	StateLanded     State = "landed"            // confirmed in the conversation
 	StateQueued     State = "queued"            // accepted input, not yet confirmed in the conversation
+	StateSubmitted  State = "submitted"         // unverified Enter completed without a native receipt
 	StateFailed     State = "failed"            // not confirmed within the timeout
 	StateRefusedDup State = "refused-duplicate" // identical payload re-sent inside the window
 	// StateRefusedDraft: the pane's input box already held UNSUBMITTED text that is not
@@ -40,12 +42,15 @@ const (
 
 // Result is what Deliver returns. Delivered is true ONLY for StateLanded.
 type Result struct {
-	Delivered bool
-	Delivery  string // optional native receipt: active-turn or started-turn; never completion
-	State     State
-	Evidence  string // capture tail on failure, or a short note
-	Attempts  int    // submit (Enter) attempts made
-	JudgedBy  string // JudgedByDriver | JudgedByScreen ("" when refused before judging)
+	Delivered      bool
+	Delivery       string // optional native receipt: active-turn or started-turn; never completion
+	State          State
+	Evidence       string // capture tail on failure, or a short note
+	Attempts       int    // submit (Enter) attempts made
+	JudgedBy       string // JudgedByDriver | JudgedByScreen ("" when refused before judging)
+	FailureCode    InputFailureCode
+	Submission     Submission
+	NativeQuestion bool // explicit refusal from a native receiver
 }
 
 // Event kinds carried by IO.Events (mapped from the session-events stream).
@@ -73,6 +78,10 @@ type IO struct {
 	// Begin selects optional transport retry semantics before any draft check.
 	// It never types or bypasses the ordinary pane safeguards.
 	Begin func(Opts, string)
+	// PreflightError preserves a failed native preparation before draft or
+	// submit checks can turn it into an unrelated refusal.
+	PreflightError       func() error
+	PriorDeliveryUnknown func(Opts) bool
 	// Accepted proves this exact prepared transport request was already queued.
 	Accepted func() bool
 	Capture  func() string // full-screen capture (with scrollback margin)
@@ -190,13 +199,21 @@ func (o *Opts) fillDefaults() {
 // Deliver pastes text into a pane and verifies it LANDED, layered: deterministic
 // hook evidence first, a hardened two-frame screen-read as a fallback. See the
 // hq-dispatch design for the full state machine.
-func Deliver(io IO, opts Opts, text string) Result {
+func Deliver(io IO, opts Opts, text string) (result Result) {
+	if io.PriorDeliveryUnknown != nil && io.PriorDeliveryUnknown(opts) {
+		defer func() { result = result.WithUnverifiedPriorDelivery() }()
+	}
 	opts.fillDefaults()
 	if io.Begin != nil {
 		io.Begin(opts, text)
 	}
 	if io.Accepted != nil && io.Accepted() {
 		return Result{Delivered: true, State: StateLanded, JudgedBy: JudgedByDriver}
+	}
+	if io.PreflightError != nil {
+		if err := io.PreflightError(); err != nil {
+			return InputFailureResult(err, 0)
+		}
 	}
 	// The event needle rides the SAME pipeline as the hook-recorded Summary
 	// (NormalizeNeedle) so a cleaning difference can never make the verifier
@@ -233,18 +250,15 @@ func Deliver(io IO, opts Opts, text string) Result {
 	// same as the interlock.
 	if resumeDraft {
 		if !stableCollapsedDraft(io, text) {
-			return Result{State: StateRefusedDraft, Evidence: evidenceTail(io.Capture())}
+			return draftRefusal(evidenceTail(io.Capture()))
 		}
 	} else if blocked, evidence := draftBlocked(io, opts, text); blocked {
-		if strings.HasPrefix(evidence, EvidenceMenuOpen) {
-			return Result{State: StateRefusedWaiting, Evidence: evidence}
-		}
-		return Result{State: StateRefusedDraft, Evidence: evidence}
+		return draftRefusal(evidence)
 	}
 
 	// 1c · Hold, before anything is typed.
 	if why := held(io); why != "" {
-		return Result{State: StateRefusedWaiting, Evidence: why}
+		return waitingRefusal(why, InputUnavailable)
 	}
 	if io.SubmitNative != nil {
 		return io.SubmitNative(opts, text, io.Hold)
@@ -269,8 +283,14 @@ func Deliver(io IO, opts Opts, text string) Result {
 	// match (StateFailed). A hook-LESS agent has no receipt, so the draft scrape stays its
 	// only confirmation and a settled fragment must still fail (submitting a known-truncated
 	// draft is worse than reporting it).
-	if !resumeDraft && !pasteWithGuard(pasteIO, opts, text) {
-		return failed(io, opts, text, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), JudgedBy: JudgedByScreen})
+	if !resumeDraft {
+		if err := pasteWithGuard(pasteIO, opts, text); err != nil {
+			result := InputFailureResult(err, 0)
+			if err == errUnconfirmedPaste {
+				result.Evidence, result.JudgedBy = evidenceTail(io.Capture()), JudgedByScreen
+			}
+			return failed(io, opts, text, result)
+		}
 	}
 	if !resumeDraft && io.RecordSend != nil {
 		io.RecordSend(opts.Pane, PayloadHash(opts.Pane, text), io.Now())
@@ -279,12 +299,13 @@ func Deliver(io IO, opts Opts, text string) Result {
 	// 4 · Submit — unless something started asking between the paste and now. The text
 	// stays where it went; the Enter that would submit it, or pick a menu's default, does not.
 	if why := held(io); why != "" {
-		return failed(io, opts, text, Result{State: StateRefusedWaiting,
-			Evidence: EvidenceHeldBeforeEnter + why + "\n" + evidenceTail(io.Capture()), JudgedBy: JudgedByScreen})
+		result := waitingRefusal(EvidenceHeldBeforeEnter+why+"\n"+evidenceTail(io.Capture()), InputUnavailable)
+		result.JudgedBy = JudgedByScreen
+		return failed(io, opts, text, result)
 	}
 	attempts := 1
 	if err := io.Enter(); err != nil {
-		return failed(io, opts, text, Result{State: StateFailed, Evidence: err.Error(), Attempts: attempts})
+		return failed(io, opts, text, InputFailureResult(err, attempts))
 	}
 	lastEnter := io.Now()
 	heldWhy := "" // set once Hold stops the Enter retries
@@ -361,7 +382,10 @@ func Deliver(io IO, opts Opts, text string) Result {
 				io.Now()-lastEnter >= backoff(attempts) {
 				if heldWhy = held(io); heldWhy == "" {
 					if err := io.Enter(); err != nil {
-						return failed(io, opts, text, Result{State: StateFailed, Evidence: err.Error(), Attempts: attempts})
+						result := InputFailureResult(err, attempts)
+						// A blocked retry cannot resolve the previous Enter.
+						result.FailureCode, result.Submission = InputOutcomeUnconfirmed, SubmissionUnknown
+						return failed(io, opts, text, result)
 					}
 					attempts++
 					lastEnter = io.Now()
@@ -382,16 +406,19 @@ func Deliver(io IO, opts Opts, text string) Result {
 			if heldWhy != "" {
 				// The first Enter did not submit, and by the retry something was asking.
 				return failed(io, opts, text, Result{State: StateRefusedWaiting,
-					Evidence: EvidenceHeldBeforeRetry + heldWhy + "\n" + evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
+					Evidence: EvidenceHeldBeforeRetry + heldWhy + "\n" + evidenceTail(io.Capture()), Attempts: attempts,
+					JudgedBy: JudgedByScreen, FailureCode: InputOutcomeUnconfirmed, Submission: SubmissionUnknown})
 			}
 			if chipWent {
 				// Our folded paste left the box after the Enter, and nothing on screen
 				// proves where it went: its chip has scrolled out of the history, or it
 				// never showed. It most likely went, so the interlock record stays and a
 				// retry of the same text is refused, not sent twice (--force overrides).
-				return Result{State: StateFailed, Evidence: EvidenceChipLeftBox + evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen}
+				return Result{State: StateFailed, Evidence: EvidenceChipLeftBox + evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen,
+					FailureCode: InputOutcomeUnconfirmed, Submission: SubmissionUnknown}
 			}
-			return failed(io, opts, text, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts, JudgedBy: JudgedByScreen})
+			return failed(io, opts, text, Result{State: StateFailed, Evidence: evidenceTail(io.Capture()), Attempts: attempts,
+				JudgedBy: JudgedByScreen, FailureCode: InputOutcomeUnconfirmed, Submission: SubmissionUnknown})
 		}
 	}
 }
@@ -455,44 +482,54 @@ func submitConfirmed(io IO, opts Opts, head string, since int64) bool {
 // silently dropping the send — the receipt still lands on the event stream). It is
 // WITHHELD only when the guard positively settled on a fragment it could not place in
 // full ON A QUIET pane: submitting a known-truncated draft is exactly what this fixes.
-// Returns whether Enter was sent (true once the paste was placed by any of the above).
+// The bool wrapper preserves the older callers' success and refusal contract.
 func PasteAndSubmit(io IO, opts Opts, text string) (ok bool, refused State) {
+	result := PasteAndSubmitResult(io, opts, text)
+	if result.Submitted() {
+		return true, ""
+	}
+	return false, result.State
+}
+
+// PasteAndSubmitResult also carries the reason and the submission boundary.
+func PasteAndSubmitResult(io IO, opts Opts, text string) (result Result) {
+	if io.PriorDeliveryUnknown != nil && io.PriorDeliveryUnknown(opts) {
+		defer func() { result = result.WithUnverifiedPriorDelivery() }()
+	}
 	opts.fillDefaults()
 	if io.Begin != nil {
 		io.Begin(opts, text)
 	}
 	if io.Accepted != nil && io.Accepted() {
-		return true, ""
+		return Result{Delivered: true, State: StateLanded, JudgedBy: JudgedByDriver}
 	}
-	// The UNVERIFIED path needs the draft guard just as much — more, in fact. It is what
-	// `POST /api/send` uses, so it is a send from ANOTHER DEVICE into a pane whose owner
-	// may be mid-sentence at the keyboard: the one case where nobody watching can undo it.
-	if blocked, evidence := draftBlocked(io, opts, text); blocked {
-		if strings.HasPrefix(evidence, EvidenceMenuOpen) {
-			return false, StateRefusedWaiting
+	if io.PreflightError != nil {
+		if err := io.PreflightError(); err != nil {
+			return InputFailureResult(err, 0)
 		}
-		return false, StateRefusedDraft
 	}
-	if held(io) != "" {
-		return false, StateRefusedWaiting
+	if blocked, evidence := draftBlocked(io, opts, text); blocked {
+		return draftRefusal(evidence)
+	}
+	if why := held(io); why != "" {
+		return waitingRefusal(why, InputUnavailable)
 	}
 	if io.SubmitNative != nil {
-		result := io.SubmitNative(opts, text, io.Hold)
-		if result.Delivered || result.State == StateQueued {
-			return true, ""
-		}
-		return false, result.State
+		return io.SubmitNative(opts, text, io.Hold)
 	}
-	if !pasteWithGuard(io, opts, text) {
-		return false, StateFailed // a settled fragment — do not submit a truncated draft
+	if err := pasteWithGuard(io, opts, text); err != nil {
+		return InputFailureResult(err, 0)
 	}
-	if held(io) != "" {
-		return false, StateRefusedWaiting // pasted, not submitted
+	if why := held(io); why != "" {
+		return waitingRefusal(EvidenceHeldBeforeEnter+why, InputUnavailable)
 	}
-	if io.Enter() != nil {
-		return false, StateFailed
+	if err := io.Enter(); err != nil {
+		return InputFailureResult(err, 1)
 	}
-	return true, ""
+	if io.Accepted != nil && io.Accepted() {
+		return Result{Delivered: true, State: StateLanded, JudgedBy: JudgedByDriver, Attempts: 1}
+	}
+	return Result{State: StateSubmitted, Attempts: 1}
 }
 
 // draftBlocked reports whether the pane's input box holds someone ELSE's unsubmitted text,
@@ -592,8 +629,8 @@ func menuHints(draft string) bool {
 }
 
 // pasteWithGuard puts text in the pane's input draft and confirms the FULL text (or
-// a collapsed-paste placeholder) is there, retrying a genuine fragment. Returns
-// false if it cannot place the full text within PasteRetries.
+// a collapsed-paste placeholder) is there, retrying a genuine fragment. It
+// preserves a transport error and uses errUnconfirmedPaste for a settled fragment.
 //
 // The guard is IDEMPOTENT: the same text is never pasted twice into the same draft.
 // It used to be — a stale frame or an unconfirmed clear sent it round the loop, and
@@ -606,19 +643,21 @@ func menuHints(draft string) bool {
 // shell prompt), it does NOT treat the empty draft as a fragment — clearing the
 // draft (C-u) there would DESTROY the just-pasted text. It proceeds and lets
 // post-submit verification decide.
-func pasteWithGuard(io IO, opts Opts, text string) bool {
+var errUnconfirmedPaste = errors.New("the input box did not settle on the full message")
+
+func pasteWithGuard(io IO, opts Opts, text string) error {
 	for attempt := 0; ; attempt++ {
 		// A retry re-reads FIRST: if the last attempt's paste is now in the draft (it
 		// only rendered late), it is already delivered and pasting again would duplicate it.
 		if attempt > 0 && draftHolds(io, text) {
-			return true
+			return nil
 		}
 		// Copy/view-mode swallows paste-buffer (and the later Enter) as mode-nav
 		// commands (incident: a scrolled pane silently ate a whole dispatch). Drop out
 		// of the mode BEFORE pasting so the payload actually reaches the input box.
 		exitCopyMode(io)
 		if err := io.Paste(text); err != nil {
-			return false
+			return err
 		}
 		verdict, _ := confirmPaste(io, opts, text)
 		// A fragment verdict on a pane where something DID reach the box is the one case
@@ -635,10 +674,10 @@ func pasteWithGuard(io IO, opts Opts, text string) bool {
 		// A hook-LESS agent has no receipt, so the scrape stays its only evidence and the
 		// clear-and-retry remains (submitting a known-truncated draft would be worse).
 		if verdict == pasteFragment && opts.HookEquipped {
-			return true
+			return nil
 		}
 		if verdict == pasteWrongFold {
-			return false
+			return errUnconfirmedPaste
 		}
 		switch verdict {
 		case pasteInDraft, pasteUnverifiable, pasteBusy:
@@ -647,11 +686,11 @@ func pasteWithGuard(io IO, opts Opts, text string) bool {
 			// good paste) and let the submit go through; the receipt / post-submit verify
 			// is the authority. Withholding here is the "message never sent into a working
 			// pane" bug.
-			return true
+			return nil
 		}
 		// A settled fragment. Retry only while a retry can't duplicate anything.
 		if attempt >= opts.PasteRetries || !clearedForRetry(io, opts) {
-			return false
+			return errUnconfirmedPaste
 		}
 	}
 }

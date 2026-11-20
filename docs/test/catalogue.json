@@ -409,7 +409,7 @@
       ]
     },
     "internal/agentclient/delivery_test.go": {
-      "sha256": "a5977bf0caabada5e378b1f525844d6c9555d895454c2e562f7e2b8072d792ae",
+      "sha256": "d69967573789d3575ad9a4bfc929fda9aacc297deab4ce2d00f3df3f2eaafc1a",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -602,7 +602,7 @@
           "design": "MSD-011"
         }
       ],
-      "sha256": "c21d55c7558b311dd89de202546c65f5314c8e31e7c70020f800fc96479cfb7c"
+      "sha256": "5c2787ef8364828f55a6d746b8a4fbb207125db9f68e02fdb8c7d47b915fd2a1"
     },
     "internal/agentclient/pending_target_test.go": {
       "layer": "L2",
@@ -1140,7 +1140,7 @@
       ]
     },
     "internal/app/agent_resume_launcher_test.go": {
-      "sha256": "7a4bde1637481669a7aa8ed1a1c8614e7cf2c68d2648e06edc3000aa1978c608",
+      "sha256": "b9d7b6befd513bde140a1de52f159bb4a120550fbaf2902e31bc4133d461bafe",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -1154,7 +1154,7 @@
         },
         {
           "id": "LEG-eb2b52825e97",
-          "line": 85,
+          "line": 74,
           "kind": "subtest",
           "name": "capture-pane",
           "dynamic": false,
@@ -1162,7 +1162,7 @@
         },
         {
           "id": "LEG-5fd574ba1eea",
-          "line": 99,
+          "line": 102,
           "kind": "Test",
           "name": "TestRestoreManagedCodexBridge",
           "dynamic": false,
@@ -1170,7 +1170,7 @@
         },
         {
           "id": "LEG-3f26c30e5e74",
-          "line": 171,
+          "line": 74,
           "kind": "subtest",
           "name": "capture-pane",
           "dynamic": false,
@@ -1179,7 +1179,7 @@
       ]
     },
     "internal/app/agent_resume_ownership_test.go": {
-      "sha256": "8eb0e26a45bbbf3f3c4668b481b57fe4d1e2a73ca1ac29bce92cb1ba6c3b5d31",
+      "sha256": "bf8e768bf818e931acdda1a331a7987c7cc0466138ba9e63f68609d3f1dbcdbc",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -1201,7 +1201,7 @@
         },
         {
           "id": "LEG-54deec499e13",
-          "line": 101,
+          "line": 104,
           "kind": "subtest",
           "name": "capture-pane",
           "dynamic": false,
@@ -3214,7 +3214,7 @@
       ]
     },
     "internal/app/dsh_terminal_test.go": {
-      "sha256": "74c898c8d6b969e37dc61d5aaeb85942da4027ec07f11c87630ba37058cf5324",
+      "sha256": "fc6c5e01bef51cbfe9c7c51211c32898ddd307eb1978c6e8d6e8050b861d3db4",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -3228,7 +3228,7 @@
         },
         {
           "id": "LEG-f77bf015624b",
-          "line": 88,
+          "line": 185,
           "kind": "Test",
           "name": "TestDSHTerminalArtifactPreflightPreservesForeignFiles",
           "dynamic": false,
@@ -3719,7 +3719,7 @@
         },
         {
           "id": "MAP-479200cd9eee",
-          "line": 142,
+          "line": 146,
           "kind": "reviewed-selector",
           "name": "TestPhase1CursorProspectiveActivation",
           "dynamic": false,
@@ -3728,7 +3728,7 @@
         },
         {
           "id": "MAP-b0e7a04d99c5",
-          "line": 179,
+          "line": 183,
           "kind": "reviewed-selector",
           "name": "TestPhase1CursorEmptyRetentionGap",
           "dynamic": false,
@@ -3737,7 +3737,7 @@
         },
         {
           "id": "MAP-ec07edd88479",
-          "line": 203,
+          "line": 207,
           "kind": "reviewed-selector",
           "name": "TestPhase1CursorFilteredPageBoundary",
           "dynamic": false,
@@ -3745,7 +3745,7 @@
           "design": "HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
         }
       ],
-      "sha256": "9574464057f0fddd502bc4ad81f2b83fba58bdf10a57197033fc3600ca749e4d"
+      "sha256": "26471addb0d8709804fe2f227af74abae78dabcbdf3ca7e18cc0c0eeb803ed96"
     },
     "internal/app/hqworkspace_overview_test.go": {
       "sha256": "f485fe3bbd99f817308ce7fe4d9d10d8f33615b13efb791e6e6211e0de9eabc5",
@@ -3802,7 +3802,7 @@
           "design": "HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
         }
       ],
-      "sha256": "83dc27e2c1fe745a7440ca1f9d63c25f393543eae2e2e3f299aa5bdb14567d82"
+      "sha256": "5e2a9c1beff9e633fa5f9671a25faf809b7aa9825ee4e1e6caf413fb3df12b66"
     },
     "internal/app/hqworkspace_stored_test.go": {
       "layer": "L2",
@@ -4291,13 +4291,13 @@
       ]
     },
     "internal/app/newsession_test.go": {
-      "sha256": "54264bd9ac76b5eff0e40abcdb64a7273ef4e3f31f82454a7c909cf5adfccfa6",
+      "sha256": "1ea97f455c7b97e6ceced09ddcf7f396fa65de9112eb348e8bfae835b72280fc",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-76d8afe20385",
-          "line": 15,
+          "line": 16,
           "kind": "Test",
           "name": "TestRemoteSessionCreationOnIsolatedTmux",
           "dynamic": false,
@@ -4305,7 +4305,7 @@
         },
         {
           "id": "LEG-dcc101e003ab",
-          "line": 101,
+          "line": 102,
           "kind": "Test",
           "name": "TestSessionNameValidation",
           "dynamic": false,
@@ -4313,7 +4313,7 @@
         },
         {
           "id": "LEG-a7723a2f8737",
-          "line": 114,
+          "line": 115,
           "kind": "Test",
           "name": "TestSessionReceiptLookupFailureDoesNotCreate",
           "dynamic": false,
@@ -4321,7 +4321,7 @@
         },
         {
           "id": "LEG-71a71f42c474",
-          "line": 132,
+          "line": 133,
           "kind": "Test",
           "name": "TestSessionStartDir",
           "dynamic": false,
@@ -4329,7 +4329,7 @@
         },
         {
           "id": "LEG-6d9f5f428095",
-          "line": 153,
+          "line": 154,
           "kind": "Test",
           "name": "TestANewSessionFromTheRootStartsAtHome",
           "dynamic": false,
@@ -5770,7 +5770,7 @@
         },
         {
           "id": "MAP-d06f94a439ec",
-          "line": 256,
+          "line": 257,
           "kind": "reviewed-selector",
           "name": "TestRemotePreviewRejectsLargeSaveBeforeHistoryOrTopology",
           "dynamic": false,
@@ -5778,7 +5778,7 @@
           "design": "RSR-003,RSR-004,RSR-005"
         }
       ],
-      "sha256": "df8a2ad03cc8648ece5484c4f4e8394f98445708f5e9ebfdb63689b1d9496de4"
+      "sha256": "f66cc2cc15d1ebd28ebc7b5f4e6ee0bf7bc38dcebd1ed393514271e8daf87898"
     },
     "internal/app/restore_results_test.go": {
       "sha256": "11da009c6a4f9256161ce1c063186e21403d025b46d155fdb4135332a3c2465e",
@@ -6533,13 +6533,13 @@
       ]
     },
     "internal/app/sendhold_test.go": {
-      "sha256": "42a7ea6f028cc42621f4fd25b17c1fd9131fc28ee04ce39a65eb77db1b665a91",
+      "sha256": "ef8ee573ef72f9fef31146d19ad3763e923c009e48847bd288b7af0751e6015e",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-39432ce244b5",
-          "line": 110,
+          "line": 120,
           "kind": "Test",
           "name": "TestAttachHoldOnRealPanes",
           "dynamic": false,
@@ -6555,7 +6555,7 @@
         },
         {
           "id": "LEG-177d1d860f53",
-          "line": 160,
+          "line": 170,
           "kind": "subtest",
           "name": "send --attach to the menu: refused, nothing typed",
           "dynamic": false,
@@ -6563,7 +6563,7 @@
         },
         {
           "id": "LEG-200f28eee1d0",
-          "line": 172,
+          "line": 182,
           "kind": "subtest",
           "name": "a plain send still answers the menu",
           "dynamic": false,
@@ -6571,7 +6571,7 @@
         },
         {
           "id": "LEG-2b0dd158d577",
-          "line": 178,
+          "line": 188,
           "kind": "subtest",
           "name": "send --attach past a leftover marker: delivered",
           "dynamic": false,
@@ -6579,7 +6579,7 @@
         },
         {
           "id": "LEG-b5a94157e3ca",
-          "line": 193,
+          "line": 203,
           "kind": "Test",
           "name": "TestNoVerifyAttachSaysTheTextWasPasted",
           "dynamic": false,
@@ -6588,13 +6588,13 @@
       ]
     },
     "internal/app/sendkeys_test.go": {
-      "sha256": "73d6c569446ae9bf138f34a7a54da2f86356c678d70d6720977ef3cee00994f2",
+      "sha256": "9b4d637ccd6c69f1737e74c6da0d34278ad539a899357affb719fbff884e93e1",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-742aa1d3cf00",
-          "line": 12,
+          "line": 13,
           "kind": "Test",
           "name": "TestAllowedSendKeysWhitelist",
           "dynamic": false,
@@ -6602,7 +6602,7 @@
         },
         {
           "id": "LEG-1cd95518c834",
-          "line": 43,
+          "line": 44,
           "kind": "Test",
           "name": "TestSendToPaneNoTmuxRejects",
           "dynamic": false,
@@ -6610,7 +6610,7 @@
         },
         {
           "id": "LEG-ad6a73e9d235",
-          "line": 60,
+          "line": 61,
           "kind": "Test",
           "name": "TestKeystrokeText",
           "dynamic": false,
@@ -6618,7 +6618,7 @@
         },
         {
           "id": "LEG-9284b4bd8007",
-          "line": 80,
+          "line": 81,
           "kind": "Test",
           "name": "TestSendCacheIdempotency",
           "dynamic": false,
@@ -11842,15 +11842,24 @@
       "cases": [
         {
           "id": "MAP-98c91aed6905",
-          "line": 20,
+          "line": 59,
           "kind": "reviewed-selector",
           "name": "TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit",
           "dynamic": false,
           "layer": "L2",
           "design": "MSD-011"
+        },
+        {
+          "id": "MAP-cdced80f8629",
+          "line": 23,
+          "kind": "reviewed-selector",
+          "name": "TestMSD011MismatchedPendingClockRefusesBeforeRPC",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MSD-011"
         }
       ],
-      "sha256": "4b459fd1af03c2f51220f8e5e8213bfd2e212380c7db2e62d4a5ab0a973cf35b"
+      "sha256": "d02406598fcb680834a0133795210aa6b8b53f6bdc8f56a9e2106cc3973afb72"
     },
     "internal/dispatchbridge/pending_retry_target_test.go": {
       "layer": "L2",
@@ -11894,13 +11903,13 @@
       "sha256": "2f3fe680ebcf82a7a4380433142f753c4dbc59c2708c7fd7d09155a5ebfbc40d"
     },
     "internal/dispatchbridge/terminal_ready_test.go": {
-      "sha256": "3506c643fec9c8477db1bbabd55e09a4e5b9e2a4dc473ec112cca8c77e0d20f2",
+      "sha256": "2dc4d98dcdf55c7e56dd45fa89ba14a529bc238380486023500c7afa94086497",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-aa275da099d8",
-          "line": 8,
+          "line": 12,
           "kind": "Test",
           "name": "TestTerminalReadinessWaitsForItsNativeReceiverAndGrant",
           "dynamic": false,
@@ -42360,7 +42369,7 @@
       ]
     },
     "mobileapp/scripts/capture_store_assets_test.py": {
-      "sha256": "a81aaf868f195787dc43f37c3b529729d01713d0183721b631a895ae34f391d7",
+      "sha256": "5e7489dd578d6290e76d2fe6e79960bd34952a2732fa825339a1eeb507e45a5d",
       "layer": "G",
       "stack": "RN / mobile harness",
       "cases": [
@@ -42483,6 +42492,15 @@
           "name": "test_boot_failure_cleans_only_the_device_it_created",
           "dynamic": false,
           "layer": "G"
+        },
+        {
+          "id": "MAP-558453e7f3fc",
+          "line": 312,
+          "kind": "reviewed-selector",
+          "name": "test_managed_capture_output_refused_before_tools",
+          "dynamic": false,
+          "layer": "G",
+          "design": "STOR-006"
         }
       ]
     },
@@ -42637,7 +42655,7 @@
       ]
     },
     "mobileapp/scripts/fetch_delivery_test.py": {
-      "sha256": "9887d32f0827d6279be7ef61d14b64b6ca2d8b3b12fb4341c5cf9f2c7a4bf2e1",
+      "sha256": "8511f3c7d10ac3bafe1e490ef073dcfc61ebda9c409b67726cc9e8bd9f627b94",
       "layer": "G",
       "stack": "RN / mobile harness",
       "cases": [
@@ -42683,7 +42701,7 @@
         },
         {
           "id": "LEG-08e1b94d2316",
-          "line": 119,
+          "line": 134,
           "kind": "unittest",
           "name": "test_get_retry_bound_and_safe_diagnostics",
           "dynamic": false,
@@ -42691,11 +42709,20 @@
         },
         {
           "id": "LEG-b2883658ac28",
-          "line": 132,
+          "line": 147,
           "kind": "unittest",
           "name": "test_authentication_is_never_forwarded_and_redirects_are_not_followed",
           "dynamic": true,
           "layer": "G"
+        },
+        {
+          "id": "MAP-3644eecf40f2",
+          "line": 117,
+          "kind": "reviewed-selector",
+          "name": "test_managed_output_refused_before_transport",
+          "dynamic": false,
+          "layer": "G",
+          "design": "STOR-005"
         }
       ]
     },
@@ -42938,7 +42965,7 @@
       ]
     },
     "mobileapp/scripts/store_artifacts_test.py": {
-      "sha256": "f67a03a61ba9c80d3ae66942f56c894cad4c04b5eaae02faaee4470f202578da",
+      "sha256": "429d924f9f79c6304869a57379bf211dc6de490f3f81edfcf4bfb3d132a281d1",
       "layer": "G",
       "stack": "RN / mobile harness",
       "cases": [
@@ -43005,11 +43032,20 @@
           "name": "test_render_uses_current_renderer_and_released_widget_without_capture_or_build",
           "dynamic": false,
           "layer": "G"
+        },
+        {
+          "id": "MAP-560cae06a71d",
+          "line": 158,
+          "kind": "reviewed-selector",
+          "name": "test_managed_render_and_reuse_paths_fail_before_setup",
+          "dynamic": false,
+          "layer": "G",
+          "design": "STOR-006"
         }
       ]
     },
     "mobileapp/scripts/store_package_test.py": {
-      "sha256": "f6cdcc6facd4e4ff4e3d012f71a3cface0ef5d5f290e99ed0950f07f4e529298",
+      "sha256": "286e15fdca7647a23d062c8c1bc8678bf59ed847f847f1eb7d8aa2414a45f7e4",
       "layer": "G",
       "stack": "RN / mobile harness",
       "cases": [
@@ -43068,6 +43104,15 @@
           "name": "test_unsafe_zip_fails_before_extraction",
           "dynamic": false,
           "layer": "G"
+        },
+        {
+          "id": "MAP-c92befec2c3d",
+          "line": 185,
+          "kind": "reviewed-selector",
+          "name": "test_cli_rejects_managed_receipt_before_package_verification",
+          "dynamic": false,
+          "layer": "G",
+          "design": "STOR-005"
         }
       ]
     },
@@ -61473,13 +61518,13 @@
       ]
     },
     "scripts/check_delivery_retention_test.py": {
-      "sha256": "9c79069983c7e008ad3d80df1aa8e288d8f2b3771403d096ef12ad925b279473",
+      "sha256": "c110c170b1c3569dc4820250debc610b663c8955e474fe4c78815d4b875e3370",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
         {
           "id": "LEG-e408f7c2349a",
-          "line": 17,
+          "line": 19,
           "kind": "unittest",
           "name": "test_valid_scope_and_no_payload_read_or_deletion",
           "dynamic": false,
@@ -61487,7 +61532,7 @@
         },
         {
           "id": "LEG-547bfb37ddbf",
-          "line": 29,
+          "line": 31,
           "kind": "unittest",
           "name": "test_unknown_private_metadata_and_auto_delete_refused",
           "dynamic": false,
@@ -61495,11 +61540,20 @@
         },
         {
           "id": "LEG-ae9f8cf7bdd1",
-          "line": 36,
+          "line": 38,
           "kind": "unittest",
           "name": "test_budget_failure_does_not_clean_data",
           "dynamic": false,
           "layer": "G"
+        },
+        {
+          "id": "MAP-352a358c7e1d",
+          "line": 49,
+          "kind": "reviewed-selector",
+          "name": "test_project_archive_destination",
+          "dynamic": false,
+          "layer": "G",
+          "design": "STOR-003"
         }
       ]
     },
@@ -61947,7 +62001,7 @@
       ]
     },
     "scripts/macos_release_artifact_test.py": {
-      "sha256": "c7caa9dcae2a82705b943e3ddb0266619c23567684a3a344d9fe118ba1a57ef0",
+      "sha256": "8b9ec0f884fd434aeffea8c2c2a110fb75fc1370e895e843d81f8e4bfe924d41",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -62009,11 +62063,20 @@
         },
         {
           "id": "LEG-2c4103097c81",
-          "line": 93,
+          "line": 106,
           "kind": "unittest",
           "name": "test_builds_overlap_but_publication_and_mirror_wait_for_all_successes",
           "dynamic": false,
           "layer": "G"
+        },
+        {
+          "id": "MAP-bdae33b97993",
+          "line": 91,
+          "kind": "reviewed-selector",
+          "name": "test_staging_refuses_managed_state_alias",
+          "dynamic": false,
+          "layer": "G",
+          "design": "STOR-005"
         }
       ]
     },
@@ -64851,7 +64914,7 @@
           "design": "SFR-001"
         }
       ],
-      "sha256": "5b216bbf52b723019ae9e0df92dae3ff8291182186e3652d2cfaf3d0251e9264"
+      "sha256": "63a0555decaa84eeb3497a879087fb5db50053bc61c82fca1ba27f6724bb2423"
     },
     "internal/server/send_failure_code_test.go": {
       "layer": "L2",
@@ -66040,6 +66103,1512 @@
       ],
       "sha256": "4e41e32c27a44f136063921a94aaa80c9a4f7818d7a58ad258bdfc9faa42871e"
     },
+    "internal/app/codex_restore_native_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8a4106253ad4",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "TestCNR101CapabilityBoundToNativeBinary",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        },
+        {
+          "id": "MAP-d60f0dd41b6e",
+          "line": 140,
+          "kind": "reviewed-selector",
+          "name": "TestCNR102RestoreTargetRecheckedBeforeWrite",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        },
+        {
+          "id": "MAP-57f1588cdf35",
+          "line": 174,
+          "kind": "reviewed-selector",
+          "name": "TestCNR103ReservePrecedesProductionSend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        },
+        {
+          "id": "MAP-c8b2597f46db",
+          "line": 217,
+          "kind": "reviewed-selector",
+          "name": "TestCNR104UncertainWriteNeverReplays",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        },
+        {
+          "id": "MAP-f6343284dbd6",
+          "line": 255,
+          "kind": "reviewed-selector",
+          "name": "TestCNR105TypeModeNeverPressesEnter",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        },
+        {
+          "id": "MAP-d4a7056548ff",
+          "line": 273,
+          "kind": "reviewed-selector",
+          "name": "TestCNR106LeaseChild",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        },
+        {
+          "id": "MAP-f1473975a6bb",
+          "line": 278,
+          "kind": "reviewed-selector",
+          "name": "TestCNR106AttemptLeaseAcrossProcesses",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        },
+        {
+          "id": "MAP-24d3c61bba70",
+          "line": 318,
+          "kind": "reviewed-selector",
+          "name": "TestCNR109NativePackageClassifierRefusesWrapperAndChangedMetadata",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        },
+        {
+          "id": "MAP-f2fac5bc69f5",
+          "line": 401,
+          "kind": "reviewed-selector",
+          "name": "TestCNR102ExecutableFailureNeverChoosesCompatibility",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        },
+        {
+          "id": "MAP-c525550a2589",
+          "line": 465,
+          "kind": "reviewed-selector",
+          "name": "TestCNR102IncumbentChangesRefuseBeforeWrite",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        },
+        {
+          "id": "MAP-3d87c76df13d",
+          "line": 570,
+          "kind": "reviewed-selector",
+          "name": "TestCNR102ConfiguredProxyTargetsNativeCommand",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-003"
+        }
+      ],
+      "sha256": "a3f0cfacbc00b36ba88bc13d3a3f83c4d12d97aca224545b74a90329a31f2766"
+    },
+    "internal/app/restore_serial_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6e6e6841404a",
+          "line": 23,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreSerialWaitsForReadyBeforeNextStart",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-003,CNRV4-004,CNRV4-005"
+        },
+        {
+          "id": "MAP-88f5716457f9",
+          "line": 57,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreSerialTimeoutVisibleBeforeNextStartAndBudgetShared",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-003,CNRV4-004,CNRV4-005"
+        },
+        {
+          "id": "MAP-934de1f9f3b2",
+          "line": 85,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreSerialCancelStopsFurtherStarts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-003,CNRV4-004,CNRV4-005"
+        },
+        {
+          "id": "MAP-5f3e047b5096",
+          "line": 112,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreSerialTypeAndUnavailableDoNotWait",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-003,CNRV4-004,CNRV4-005"
+        },
+        {
+          "id": "MAP-a7a51c9026b2",
+          "line": 129,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreSerialStableLocatorThenPaneOrder",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-003,CNRV4-004,CNRV4-005"
+        },
+        {
+          "id": "MAP-e0787fe90142",
+          "line": 159,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreSerialNativeIssueKeepsCommandEnterAndStoreOrder",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-003,CNRV4-004,CNRV4-005"
+        },
+        {
+          "id": "MAP-de7eb092706c",
+          "line": 228,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreSerialCancelAfterReserveKeepsOccupationWithoutSend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-003,CNRV4-004,CNRV4-005"
+        },
+        {
+          "id": "MAP-fc043904c69b",
+          "line": 253,
+          "kind": "reviewed-selector",
+          "name": "TestRestoreSerialUncertainSendWaitsWithoutClaimingReady",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-003,CNRV4-004,CNRV4-005"
+        }
+      ],
+      "sha256": "3fff8486fb7b8c196237d41889d7b56e270da43d0c758d8deaa50f23adccf2d5"
+    },
+    "internal/resume/native_restore_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-79c40622d1d5",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestCNR001NativeRestoreCommandRoundTrip",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-002,CNRV4-003"
+        },
+        {
+          "id": "MAP-0b1e0aa3f9cb",
+          "line": 139,
+          "kind": "reviewed-selector",
+          "name": "TestCNR002StoppedFrontendMigratesSameSession",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-002,CNRV4-003"
+        },
+        {
+          "id": "MAP-ec0ee648e4d9",
+          "line": 163,
+          "kind": "reviewed-selector",
+          "name": "TestCNR003FrontendMigrationRejectsUnknownAndRaces",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-002,CNRV4-003"
+        },
+        {
+          "id": "MAP-e0f69037b0a9",
+          "line": 231,
+          "kind": "reviewed-selector",
+          "name": "TestCNR004ReconcileRetriesStoppedSameSession",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-002,CNRV4-003"
+        },
+        {
+          "id": "MAP-bf14aabdda8a",
+          "line": 239,
+          "kind": "reviewed-selector",
+          "name": "TestCNR005MigratedNativeSaveCannotReviveFrontend",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-002,CNRV4-003"
+        },
+        {
+          "id": "MAP-637522e22825",
+          "line": 272,
+          "kind": "reviewed-selector",
+          "name": "TestCNR107ReservationSurvivesUntilNewBoot",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-002,CNRV4-003"
+        },
+        {
+          "id": "MAP-6c48808732c2",
+          "line": 314,
+          "kind": "reviewed-selector",
+          "name": "TestCNR006CorruptAttemptAndLeaseRefuseBeforeAnyWrite",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-002,CNRV4-003"
+        },
+        {
+          "id": "MAP-2eb3286b5528",
+          "line": 338,
+          "kind": "reviewed-selector",
+          "name": "TestCNR007NativeConfirmationRequiresExactFreshOwner",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-002,CNRV4-003"
+        },
+        {
+          "id": "MAP-205fbc7b2a25",
+          "line": 412,
+          "kind": "reviewed-selector",
+          "name": "TestCNR006IncumbentAbsenceIsNotReadFailure",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CNRV4-001,CNRV4-002,CNRV4-003"
+        }
+      ],
+      "sha256": "5965065597fe699056c9df0c5ced82ad6df84601942f85c240bef241ae0d3145"
+    },
+    "internal/app/restore_review_boundary_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e4407b68de5d",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "TestRRBFinalPauseConfirmsBeforeNextStart",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+        },
+        {
+          "id": "MAP-9546c6cf8013",
+          "line": 45,
+          "kind": "reviewed-selector",
+          "name": "TestRRBSelectionChangeDuringQueueRefusesSecond",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+        },
+        {
+          "id": "MAP-392311ef00a4",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "TestRRBUnknownRemainsOccupiedAcrossCompatibilityRoute",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+        },
+        {
+          "id": "MAP-39702e2506f0",
+          "line": 160,
+          "kind": "reviewed-selector",
+          "name": "TestRRBNativeEntryUsesFullPaneEvidenceAndExactTargets",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RRB-R1,RRB-R2,RRB-R3,RRB-R6"
+        }
+      ],
+      "sha256": "6a5f0815c1e88cf8b37d531cd12bdcc0c97de92c0732dcc5b045a2e7adad3b10"
+    },
+    "internal/app/restore_visibility_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-54bad8843802",
+          "line": 89,
+          "kind": "reviewed-selector",
+          "name": "TestRRVLocalTimeoutVisibleBeforeNextPreparation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RRV-001,RRV-002"
+        },
+        {
+          "id": "MAP-cf0179917a35",
+          "line": 119,
+          "kind": "reviewed-selector",
+          "name": "TestRRVRemoteFinalStoreRetainsFirstIssueFact",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RRV-001,RRV-002"
+        }
+      ],
+      "sha256": "cf445253b8923635ae39cd2a85d66cc0bc5bdaf4ce459d676b347a18fcecf7ec"
+    },
+    "mobileapp/src/api/restore.visibility.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-31b87a6ca685",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "RRV003 preserves optional first issue state and accepts old receipts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RRV-003"
+        },
+        {
+          "id": "MAP-514985ebd5bd",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "RRV003 rejects malformed first issue state %p",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RRV-003"
+        }
+      ],
+      "sha256": "58ef959aea53e66364c9abb67411b2822dda7c2f02dc65b84134071ccfbcf92d"
+    },
+    "mobileapp/src/screens/RestoreSessionsSheet.visibility.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f59c85149c2b",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "RRV003 shows timeout and original uncertainty in %s",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RRV-003"
+        }
+      ],
+      "sha256": "e61d8790dac775a0dbe9526ee33664ee589902c5dd51e0c490f6c0007429f1b0"
+    },
+    "internal/app/hold_reader_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8667d3e135cb",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestHoldReaderChild",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSD-004"
+        }
+      ],
+      "sha256": "e1a862a5493bb078ab44878e99b82324faba5328539930afdab3f7e98ad607e5"
+    },
+    "internal/app/restore_dispatch_boundary_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d98076e1e157",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestRSDHistoricalSourceBeforeDispatch",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSD-001,RSD-002,RSD-003"
+        },
+        {
+          "id": "MAP-991e0cd98702",
+          "line": 61,
+          "kind": "reviewed-selector",
+          "name": "TestRSDCompatibilityUncertainEnter",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSD-001,RSD-002,RSD-003"
+        },
+        {
+          "id": "MAP-f1a1a1779293",
+          "line": 118,
+          "kind": "reviewed-selector",
+          "name": "TestRSDLocalArchiveBoundaries",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RSD-001,RSD-002,RSD-003"
+        }
+      ],
+      "sha256": "449693da6b6b4efeea5e4648536e5c06ac2f8f04999bb4c9975d8f94cab5a37f"
+    },
+    "internal/app/restore_queued_ownership_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f1d3eb79ff4d",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "TestQueuedHistoricalOwnership",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RQO-001,RQO-002"
+        },
+        {
+          "id": "MAP-ec2dd64339af",
+          "line": 106,
+          "kind": "reviewed-selector",
+          "name": "TestQueuedCompatibilityTarget",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RQO-001,RQO-002"
+        }
+      ],
+      "sha256": "49b37f3a2ad0faea7e5f4ddc4638e69ad297199cda10058a7fe4f4745ba16f2e"
+    },
+    "internal/app/restore_wrapper_cancel_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4e1e34ccdf4a",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestCompatibilityCancellationDuringFinalTargetQuery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "RWC-001"
+        }
+      ],
+      "sha256": "1cc05c563b0e8a5aa3bf48d90f89c13cf5cc3194f5b40af0ac9e235b74453796"
+    },
+    "internal/app/hqworkspace_reply_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ad249a342e85",
+          "line": 21,
+          "kind": "reviewed-selector",
+          "name": "TestReplyLifecycleAcrossStop",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRC-001,HRC-002"
+        },
+        {
+          "id": "MAP-67fc4ac7625d",
+          "line": 100,
+          "kind": "reviewed-selector",
+          "name": "TestReplyContinuationDispatchAndEvidence",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRC-001,HRC-002"
+        }
+      ],
+      "sha256": "0cf2d31215d234c896bc9ad235b05fd6c3c62b4830fa7df85ce3fa92a11e6474"
+    },
+    "internal/app/hqworkspace_reply_review_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-da98c9c39848",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestReviewedReplyAuthorityAndOrder",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRC-003,HRC-004,HRC-005"
+        }
+      ],
+      "sha256": "cffc2ac41dc24edb54098874c6c34dd3c0762025198e89f9dead976d5785d70c"
+    },
+    "internal/app/hqworkspace_reply_history_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-10b4ee84e100",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestReplyReconcilesSavedHistory",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRC-006,HRC-007,HRC-008"
+        }
+      ],
+      "sha256": "c880e82c01df7dad55d0ec7c1ec7812cd1dd4ceccc1587595f09d4f20314be95"
+    },
+    "internal/app/hqworkspace_reply_event_history_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-26497814f53a",
+          "line": 23,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceMessageChecksOriginalTargetHistory",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRC-009"
+        }
+      ],
+      "sha256": "a9839f696d531715ee814f3ce4e22a31af28b47971339553cced0f39bf139930"
+    },
+    "internal/app/hqworkspace_reply_continuity_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-80bb397eee3a",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "TestReplyHistoryUsesCommittedOrderAndActiveJournal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRC-010"
+        }
+      ],
+      "sha256": "f2aec6516f888ad1d7df16385475cf4563e0c5a1c7037bc6e84848596635cfb3"
+    },
+    "internal/app/hqworkspace_reply_baseline_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-20ecc91d13fa",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestReplyRequiresProvenRecordingBaseline",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRC-011"
+        }
+      ],
+      "sha256": "f86e64b4fc7cd2caa4b6abe0133cbbb50d1cf4fb6cff7960bddf80e6e2fd0ee6"
+    },
+    "internal/app/hqworkspace_reply_recovery_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-029e4fa5391c",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestReplyRecoversOnlyProvenUnsentAction",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRC-012"
+        }
+      ],
+      "sha256": "85038473a9368afe3fa4fbb7d7f7981581dc1f1b96c314107bf513479cdb3d9b"
+    },
+    "internal/app/hqworkspace_reply_ordering_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c0f743076f48",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestReplyRequiresOriginalProducerAndRefusalOrder",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRC-013"
+        }
+      ],
+      "sha256": "cb5870ff4a2331aeec1cfc4fe3ea985f9d8e7a21bb723dfb3485363916e688f0"
+    },
+    "internal/agentclient/input_durability_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8379a7b73c9f",
+          "line": 41,
+          "kind": "reviewed-selector",
+          "name": "TestSPL011ClaimFlushPrecedesInputAuthority",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-011,SPL-012,SPL-017"
+        },
+        {
+          "id": "MAP-a469aecfcb37",
+          "line": 85,
+          "kind": "reviewed-selector",
+          "name": "TestSPL011ReceiptFlushPrecedesAckAndClaimCleanup",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-011,SPL-012,SPL-017"
+        },
+        {
+          "id": "MAP-1173f4b26dc3",
+          "line": 172,
+          "kind": "reviewed-selector",
+          "name": "TestSPL011CompetingAndUnknownReceiptsPreserveClaims",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-011,SPL-012,SPL-017"
+        },
+        {
+          "id": "MAP-c5ee18bb869c",
+          "line": 216,
+          "kind": "reviewed-selector",
+          "name": "TestSPL012RetirementKeepsReceiptUntilPayloadRemovalIsDurable",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-011,SPL-012,SPL-017"
+        },
+        {
+          "id": "MAP-90cd958b5147",
+          "line": 250,
+          "kind": "reviewed-selector",
+          "name": "TestSPL017IndexDeletionFailureKeepsReceipt",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-011,SPL-012,SPL-017"
+        }
+      ],
+      "sha256": "dd22816ebb7764b4a61c3eb09fef8410a1cd55e0a2af6974d47535d2c437fe0a"
+    },
+    "internal/agentclient/input_intent_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c64192df80c1",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestSPL016RepeatedRefusalsLeaveNoPersistentSlot",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-016,SPL-017"
+        },
+        {
+          "id": "MAP-dddc4afc55d9",
+          "line": 53,
+          "kind": "reviewed-selector",
+          "name": "TestSPL016PublisherUsesStagedIDAndNeverReplacesUnresolved",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-016,SPL-017"
+        },
+        {
+          "id": "MAP-8c576f125b78",
+          "line": 83,
+          "kind": "reviewed-selector",
+          "name": "TestSPL017PublicationFaultsNeverExposePendingBeforeIndex",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-016,SPL-017"
+        },
+        {
+          "id": "MAP-e2967847a639",
+          "line": 124,
+          "kind": "reviewed-selector",
+          "name": "TestSPL017DurableIDAcrossProcessRestart",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-016,SPL-017"
+        },
+        {
+          "id": "MAP-efc697ff20fb",
+          "line": 145,
+          "kind": "reviewed-selector",
+          "name": "TestSPL017RestartChild",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-016,SPL-017"
+        }
+      ],
+      "sha256": "ff708ff7140d06d22b2e9556fe262177ab9e9712f507d862706d16ea1700685f"
+    },
+    "internal/agentclient/input_layout_size_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c73e0f22dcfc",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestSPL010LayoutReadMatchesOpenFileSize",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-010"
+        }
+      ],
+      "sha256": "5bd4dbb264a8346c2c456b89e39d40561659e67b6720cebe8f4378b6cf4e32e3"
+    },
+    "internal/agentclient/input_records_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-12f9a5ee88fc",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestSPL006DamagedRecordsRetainTheirReplayProtection",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-006,SPL-012"
+        }
+      ],
+      "sha256": "2834d82f0f3155773caf39aa2f452f9cd6c6a4f7f1bdcc857c53243e1e7ba965"
+    },
+    "internal/agentclient/input_store_gate_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-98170c4a2ad3",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "TestSPL005TerminalInputStoreGate",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-005,SPL-006,SPL-007,SPL-017"
+        },
+        {
+          "id": "MAP-bb463252599b",
+          "line": 423,
+          "kind": "reviewed-selector",
+          "name": "TestSPL007VerifiedAttachmentChecksCurrentInputGeneration",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-005,SPL-006,SPL-007,SPL-017"
+        }
+      ],
+      "sha256": "4aeb0506a488fe2fb35d1f24f9091bf7b63040abc6cc92effd2e040a27091436"
+    },
+    "internal/agentclient/spool_lifecycle_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-23ca08bdac67",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "TestSPL001AdmissionReservesCompletion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-001,SPL-002,SPL-012"
+        },
+        {
+          "id": "MAP-7d70f501da1d",
+          "line": 65,
+          "kind": "reviewed-selector",
+          "name": "TestSPL002SettlementAndUnconfirmedRecovery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-001,SPL-002,SPL-012"
+        }
+      ],
+      "sha256": "8caa7e4d40fe371ef8aeebe293807f6776728d1af1e37b5bb420a149dc13d1ae"
+    },
+    "internal/app/dsh_terminal_spool_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c7f093bf6da7",
+          "line": 21,
+          "kind": "reviewed-selector",
+          "name": "TestDSHTerminalReceiverSharesSpoolWithGo",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-004,SPL-012"
+        }
+      ],
+      "sha256": "9367a99e0c05a04c77041dcf5fcda65ebdcc6225b9578a923ceccc4fe9d8f1ab"
+    },
+    "internal/app/hqworkspace_input_replay_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-84312339824c",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestSPL018WorkspaceEarlyHoldPreservesPriorDelivery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-018"
+        }
+      ],
+      "sha256": "4cff51f05e39745fd5990e6563e7a0398a34c9828c8928c0406ae6793233eaf2"
+    },
+    "internal/app/send_outcome_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-cf745b02117a",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "TestSPL009CLIAndHTTPDispatchOutcomes",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-009,SPL-014,SPL-015"
+        },
+        {
+          "id": "MAP-abf5a520d210",
+          "line": 200,
+          "kind": "reviewed-selector",
+          "name": "TestSPL014UnavailableDSHDoesNotSettlePriorID",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-009,SPL-014,SPL-015"
+        },
+        {
+          "id": "MAP-2e07d6cc9bdd",
+          "line": 230,
+          "kind": "reviewed-selector",
+          "name": "TestSPL015UnverifiedSuccessAndCacheKeepTheirOriginalGrade",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-009,SPL-014,SPL-015"
+        }
+      ],
+      "sha256": "160ad792ecc8976aa93c611e5bf63d96be1a1ee92fa886a11a61301345d27a70"
+    },
+    "internal/app/spool_failure_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-c282c98b7ee6",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestSPL003PhoneClassifiesCapacityAndUnknown",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-003,SPL-009"
+        }
+      ],
+      "sha256": "cfa310f4e15bf3511d9fe6c5828df805a58dde79318f4f0f2d448ade25ed6805"
+    },
+    "internal/dispatch/input_failure_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e3a6e2c9d7d3",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestSPL008SubmissionBoundary",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-008"
+        },
+        {
+          "id": "MAP-d66dd1dfe23b",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "TestSPL008VerifiedHoldKeepsItsEvidenceAndSubmitCount",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-008"
+        },
+        {
+          "id": "MAP-67f17c50f18e",
+          "line": 89,
+          "kind": "reviewed-selector",
+          "name": "TestSPL008RefusedRetryDoesNotResolveEarlierEnter",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-008"
+        }
+      ],
+      "sha256": "c1c48f63d27f9eee34af6e3c366fd0201bfc663a09f52eb845ebce08f4e6ef42"
+    },
+    "internal/dispatchbridge/input_publish_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8eab7f05e805",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestSPL016CodexNativeHoldPublishesNothing",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-016"
+        }
+      ],
+      "sha256": "3e1b917d959af7d3b77f06fa4ab22e61a979af0f49a84f00e1a97e6ca23ed99a"
+    },
+    "internal/dispatchbridge/spool_capacity_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ad8a60de1ec5",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "TestSPL003CapacityRefusesBeforeRPC",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-003,SPL-008,SPL-014"
+        },
+        {
+          "id": "MAP-ef188f69cbff",
+          "line": 50,
+          "kind": "reviewed-selector",
+          "name": "TestSPL008CodexSeparatesRefusalFromUnresolvedSubmission",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-003,SPL-008,SPL-014"
+        },
+        {
+          "id": "MAP-2139dd816fa1",
+          "line": 99,
+          "kind": "reviewed-selector",
+          "name": "TestSPL014MissingCodexFrontendKeepsPriorOutcomeUnknown",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-003,SPL-008,SPL-014"
+        }
+      ],
+      "sha256": "7cd31e40e088f8630b1e5fc8db684fbdf12112f89906b79dca384d87757a2279"
+    },
+    "internal/app/send_transport_fallback_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-eead4da54a3b",
+          "line": 21,
+          "kind": "reviewed-selector",
+          "name": "TestSPL019HTTPProtectsNativeIDAfterRouteLoss",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-019"
+        }
+      ],
+      "sha256": "ffc9e3027053e432ca0d90c99e13efe233cb517b5cf99a55083a99236c85d766"
+    },
+    "internal/agentclient/input_retirement_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8c806990051d",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestSPL020StableReceiptsAllowLongRunningAdmission",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-020,SPL-021,SPL-022"
+        },
+        {
+          "id": "MAP-5f88c87fb0f4",
+          "line": 131,
+          "kind": "reviewed-selector",
+          "name": "TestSPL021InterruptedRetirementReconcilesExactTail",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-020,SPL-021,SPL-022"
+        },
+        {
+          "id": "MAP-dc573b29470b",
+          "line": 219,
+          "kind": "reviewed-selector",
+          "name": "TestSPL022CancelDuringParentSyncDoesNotPublish",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-020,SPL-021,SPL-022"
+        },
+        {
+          "id": "MAP-c7858b7eb2d4",
+          "line": 196,
+          "kind": "reviewed-selector",
+          "name": "TestSPL021FullArchiveShardRetainsAcceptance",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-020,SPL-021,SPL-022"
+        }
+      ],
+      "sha256": "b277210ff5fdb5a7265e5f8b6d51d26a5b75107d0d1ae000a779f3e8b6fc8ed5"
+    },
+    "internal/codexrpc/input_cancel_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-980af6c817a4",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestSPL022WireChecksCancellationAroundFinalGuard",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-022"
+        }
+      ],
+      "sha256": "6627d45ba8313302b5e40cde4bfe40b061eb8988a6f930a952c0e2548d9fd958"
+    },
+    "internal/dispatchbridge/input_cancel_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0061899ab94a",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestSPL022NativeCancellationSeparatesPublicationAndMutation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-022"
+        }
+      ],
+      "sha256": "2d10826c8c27207822a4f2c98c17a7708dee985bcc62bd3ad46f048a80547555"
+    },
+    "internal/agentclient/input_archive_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-65e0cef52929",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "TestSPL023FullPageAndNearFullQueueKeepAdmitting",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-023,SPL-024,SPL-025"
+        },
+        {
+          "id": "MAP-6ffb7ee7fe3f",
+          "line": 77,
+          "kind": "reviewed-selector",
+          "name": "TestSPL023ArchiveBudgetKeepsSpaceForSettlement",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-023,SPL-024,SPL-025"
+        },
+        {
+          "id": "MAP-5632014f5e1e",
+          "line": 115,
+          "kind": "reviewed-selector",
+          "name": "TestSPL024DamagedCommitBlocksOnlyUnverifiableIDs",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-023,SPL-024,SPL-025"
+        },
+        {
+          "id": "MAP-2c2e0f0b5970",
+          "line": 225,
+          "kind": "reviewed-selector",
+          "name": "TestSPL024UncommittedPageSuffixReconcilesToVerifiedPrefix",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-023,SPL-024,SPL-025"
+        },
+        {
+          "id": "MAP-caa62e90d8e6",
+          "line": 178,
+          "kind": "reviewed-selector",
+          "name": "TestSPL024ArchiveReopenChild",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-023,SPL-024,SPL-025"
+        }
+      ],
+      "sha256": "dab11aa5c567aebb023139bc2a0ebd3949512ceb628587a2c150886816ba4db0"
+    },
+    "internal/app/input_archive_doctor_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-acfe376abd7d",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-025"
+        }
+      ],
+      "sha256": "2267052825f2524810c5f58ffb056c4903d7969aafc77c862b74b0a3df565d6c"
+    },
+    "internal/agentclient/input_archive_bootstrap_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-dbf0d0012d6d",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestSPL026ArchiveBootstrapSurvivesProcessExit",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-026"
+        },
+        {
+          "id": "MAP-c85de4153666",
+          "line": 32,
+          "kind": "reviewed-selector",
+          "name": "TestSPL026ArchiveBootstrapExitChild",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-026"
+        },
+        {
+          "id": "MAP-e96d7a2046b7",
+          "line": 130,
+          "kind": "reviewed-selector",
+          "name": "TestSPL026ArchiveBootstrapPreservesExistingDestination",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-026"
+        }
+      ],
+      "sha256": "d45a0fed75089e07254715547ad4f603337b279d5824581c2efcc07890da8f51"
+    },
+    "internal/app/hqworkspace_continuation_cli_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6c44c0313e74",
+          "line": 305,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceDraftKeepsBothWakeQueues",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "HPC-004,HPC-005"
+        },
+        {
+          "id": "MAP-69d66d9f9a98",
+          "line": 97,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceContinuationCLI",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "HPC-004,HPC-005"
+        }
+      ],
+      "sha256": "557badb0af889d5ae2030ece293090204ebb279e00bc3c4e308b2c47984ab69b"
+    },
+    "internal/app/hqworkspace_continuation_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0e82e0de8675",
+          "line": 23,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceContinuationIncidentReplay",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "HPC-002"
+        }
+      ],
+      "sha256": "4ed1b30c2d42c1dd074c5ad5a7f401ebc4807ba791171239ffaa1c82163ccb4f"
+    },
+    "internal/hqworkspace/continuation_claim_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4b3c41b1f130",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestContinuationClaimCoversOnlyItsExactObservation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HPC-003"
+        }
+      ],
+      "sha256": "b8089c0ee5fe7c76a952ef9a9965baeef3198d1ef91ef58f7873a13066e191fe"
+    },
+    "internal/hqworkspace/continuation_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-230b9e9a7ad4",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestContinuationEvidenceReopensDeferredResponsibility",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HPC-001"
+        }
+      ],
+      "sha256": "244144adcaba9e887be90a9d31a2a850cca5c95f0925ac5671922c9d8a7841b1"
+    },
+    "internal/app/hqworkspace_reconcile_timing_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-110cf288ef04",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceReconciliationRetriesFromReminderTime",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HPC-006"
+        }
+      ],
+      "sha256": "ef850dd0a0580da9d2c2993cc8cf03c3516ab089d94fbaf60ddebc08ce39c6a8"
+    },
+    "internal/agentprofile/mixed_effort_reset_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-60af8cd5535c",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestMixedProfileEffortResetSurvivesLegacyRefresh",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-007"
+        },
+        {
+          "id": "MAP-5ac8306c6077",
+          "line": 76,
+          "kind": "reviewed-selector",
+          "name": "TestMixedProfileEffortResetPersistsWithoutOtherFacts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-007"
+        }
+      ],
+      "sha256": "686958d35d9c902b488b55f9bef7500b9d35171cbf6d35df0922658f0128c7d1"
+    },
+    "internal/agentprofile/observation_storage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f477967708d8",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestProfileObservationLeaseShardsAreBounded",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-004"
+        },
+        {
+          "id": "MAP-fab36ee0bfb3",
+          "line": 40,
+          "kind": "reviewed-selector",
+          "name": "TestProfileObservationIsolatesMixedWriters",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-004"
+        }
+      ],
+      "sha256": "90eab03f8e6b8028dabcac6892feaa61e8f26f5513562f05df69ea58fa4389c3"
+    },
+    "internal/agentprofile/mixed_effort_review_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f8fc1aa4a521",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestMixedProfileLegacyEffortOnlyAfterReset",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-009"
+        }
+      ],
+      "sha256": "e152d9604a1eb3f8522cf7b6a838a1b6a79f3df3a6fac0667ef57ce7241a6c06"
+    },
+    "mobileapp/scripts/delivery_write_boundary_test.py": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2efd264ce330",
+          "line": 43,
+          "kind": "reviewed-selector",
+          "name": "test_pack_refuses_linked_leaf_and_preserves_existing_bytes",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-008"
+        },
+        {
+          "id": "MAP-199688655ff0",
+          "line": 53,
+          "kind": "reviewed-selector",
+          "name": "test_archive_through_external_root_alias_and_failed_replacement",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-008"
+        },
+        {
+          "id": "MAP-26d90aaafd85",
+          "line": 67,
+          "kind": "reviewed-selector",
+          "name": "test_checkpoint_refuses_linked_subdirectory",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-008"
+        },
+        {
+          "id": "MAP-56ba48ce0535",
+          "line": 79,
+          "kind": "reviewed-selector",
+          "name": "test_progress_log_refuses_link_and_appends_to_regular_file",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-008"
+        },
+        {
+          "id": "MAP-cbd5577340ec",
+          "line": 97,
+          "kind": "reviewed-selector",
+          "name": "test_wda_log_refuses_link_before_compiler",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-008"
+        }
+      ],
+      "sha256": "58939a07a11d1f8ad902f6b536613415bcca3950afbe3106345a35c3c4e164f5"
+    },
+    "internal/agentprofile/model_return_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-992a1aa7b6f9",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestMixedProfileModelReturnDoesNotRestoreEffort",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-010"
+        }
+      ],
+      "sha256": "3b337955deb6443bb995fb3ba08d37ec46f61099318756c9ff033c627ca62ca0"
+    },
+    "internal/app/hqworkspace_triage_cli_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4472b7512a0d",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceTriageCLI",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "HPT-003"
+        }
+      ],
+      "sha256": "a47f579b66586c67a7d260d9e346944fcd55944d6cd2eabc35442004affc3301"
+    },
+    "internal/app/hqworkspace_triage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-73814841a1bf",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceTriageIngestion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HPT-002"
+        }
+      ],
+      "sha256": "d1ac832979657bd71f68650a7d43b670b317175c02d990a93a6dd6a036ecb4d0"
+    },
+    "internal/hqworkspace/triage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6655d6f58f73",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceTriageAssessment",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HPT-001"
+        }
+      ],
+      "sha256": "2d52c3eb04c286ee27ebc98cbc9bef1ea61b68022eae691da587ee94381bcfc7"
+    },
+    "internal/app/hqworkspace_triage_role_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1fb5ea2421ed",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceTriageRoleAfterPaneReuse",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "HPT-004"
+        }
+      ],
+      "sha256": "bf81cb59198da23d048c90b849dc5448b67992f3e3d5d5e11dbc056e3225d8d1"
+    },
+    "internal/app/hqworkspace_triage_late_role_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6ef74dd1c8b6",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestWorkspaceTriageLateWorkerCannotClaimSupervisorRole",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "HPT-005"
+        }
+      ],
+      "sha256": "3ff5c8b462941fbf7587ca82408cb340bdb48a99c0f332cb770f93255d9a7093"
+    },
+    "internal/agentclient/input_legacy_pressure_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e96c50c754e8",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestLegacyInputPressurePreservesPriorDeliveries",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-INCIDENT-001"
+        }
+      ],
+      "sha256": "3e7ef73ae63cf8ac13a4fa37a0a86541b5662849c31146f139fafec95615051e"
+    },
+    "internal/agentclient/input_spool_health_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-84076d0f2108",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestInputSpoolHealthAgreesWithAdmission",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-INCIDENT-002"
+        }
+      ],
+      "sha256": "6e65b784ee6e2178aeae56a43f33b11432ef25217047eab22653ce01542449cb"
+    },
+    "internal/app/input_spool_doctor_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a528c4dea12f",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestInputSpoolDoctorShowsWeightedSaturation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "SPL-INCIDENT-003"
+        }
+      ],
+      "sha256": "4f81ecd2e6356bfc0622c635eaeb2d561ac81d95f0a26c2489e899b6908f5c8e"
+    },
     "internal/server/web/design-consistency.test.cjs": {
       "layer": "L2",
       "stack": "reviewed implementation",
@@ -66109,6 +67678,22 @@
         }
       ],
       "sha256": "cfdff96c07f2a4806c259518d0fefe28d57f5fa1a6d34f9a3e864406c8fa4362"
+    },
+    "internal/server/web/design-recovery.test.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-92676feada09",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "DFR-001",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFR-001"
+        }
+      ],
+      "sha256": "7e4208d4e46ad090baa139e3385c382bd2eee01ea2753e4c0cb32dd94f3f54c9"
     },
     "macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift": {
       "layer": "L1",
@@ -66218,22 +67803,6 @@
         }
       ],
       "sha256": "879008329449a6bc1889cf6cfa281198eb41e191b02c114b235d9e4354f9616b"
-    },
-    "internal/server/web/design-recovery.test.cjs": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-92676feada09",
-          "line": 46,
-          "kind": "reviewed-selector",
-          "name": "DFR-001",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "DFR-001"
-        }
-      ],
-      "sha256": "7e4208d4e46ad090baa139e3385c382bd2eee01ea2753e4c0cb32dd94f3f54c9"
     },
     "tests/web/design-recovery.test.cjs": {
       "layer": "L4",

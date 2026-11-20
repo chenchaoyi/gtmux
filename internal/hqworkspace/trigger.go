@@ -16,7 +16,8 @@ func RequestGoalCheck(home string) error {
 	} else if err != nil {
 		return err
 	}
-	return state.Touch(filepath.Join(dir, ".goal-check"))
+	// Touch only creates the file. Each producer edge must change its mtime.
+	return state.WriteMarker(filepath.Join(dir, ".goal-check"), "check\n")
 }
 func GoalCheckStamp(home string) int64 {
 	fi, err := os.Stat(filepath.Join(home, "workspace", ".goal-check"))

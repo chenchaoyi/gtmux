@@ -41,9 +41,10 @@ type Plan struct {
 	Sessions   []Session         `json:"sessions"`
 }
 type Result struct {
-	Loc   string `json:"loc"`
-	Pane  string `json:"pane"`
-	State string `json:"state"`
+	IssueState string `json:"issue_state,omitempty"`
+	Loc        string `json:"loc"`
+	Pane       string `json:"pane"`
+	State      string `json:"state"`
 }
 type Job struct {
 	ID        string    `json:"id"`

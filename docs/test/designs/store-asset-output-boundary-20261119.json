@@ -1,0 +1,28 @@
+{
+  "id": "store-asset-output-boundary-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-19",
+    "decision": "Cover Store capture progress, reuse and render outputs that contribute most historical bytes",
+    "notes": "Same path boundary as package receipts. Refusing a managed output should happen before capture setup, reading a render checkpoint, or provider access. Read-only verification still accepts an existing path. Use temporary fixtures and mocked commands."
+  },
+  "cases": [
+    {
+      "id": "STOR-006",
+      "layer": "G",
+      "description": "App Store image capture, render and reuse respect the project storage boundary",
+      "setup": "Isolated HOME with project-side alias into the gtmux data directory and mocked capture and provider commands.",
+      "action": "Pass managed or aliased output to the Store capture command, renderer and artifact retrieval.",
+      "expected": "Each writer rejects the output before simulator setup, provider reads or destination creation. Existing successful capture/render tests exercise legitimate task-owned output.",
+      "planned_files": [
+        "mobileapp/scripts/capture_store_assets_test.py",
+        "mobileapp/scripts/store_artifacts_test.py"
+      ],
+      "surfaces": [
+        "Store asset capture and render tooling"
+      ]
+    }
+  ],
+  "seal": "59e69b79edfa3b434142f6b09ade2396359355529be3ed4d0e651da23635cf98"
+}

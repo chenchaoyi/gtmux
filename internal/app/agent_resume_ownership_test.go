@@ -14,6 +14,7 @@ import (
 
 // The live-owner regression must assert what restore actually types, on a private server.
 func TestRestoreConversationOwnership(t *testing.T) {
+	rrbCompatibleExecutable(t)
 	if _, err := exec.LookPath("tmux"); err != nil {
 		t.Skip("tmux not installed")
 	}
@@ -34,6 +35,7 @@ func TestRestoreConversationOwnership(t *testing.T) {
 			}
 			home := t.TempDir()
 			t.Setenv("HOME", home)
+			t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
 			t.Setenv("XDG_DATA_HOME", filepath.Join(home, "data"))
 			t.Setenv("TMUX_TMPDIR", sock)
 			t.Setenv("TMUX", "")
@@ -95,6 +97,7 @@ func TestRestoreConversationOwnership(t *testing.T) {
 			if tc.ambiguous {
 				record("other:0.0", "thread-b")
 			}
+			rrbWaitShell(t, "worker:0.0")
 			resumeAgents()
 			var screen string
 			for deadline := time.Now().Add(2 * time.Second); ; time.Sleep(50 * time.Millisecond) {

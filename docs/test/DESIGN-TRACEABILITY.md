@@ -46,3 +46,7 @@ components; browser tests execute actual XHR handlers/role grouping; Mac tests r
 NSImage alpha geometry. This coverage does not certify native layout, material or
 spoken screen-reader output. Store creative/copy has its own frozen candidate and
 Apple asset-review state; source merge does not mean published placement.
+
+## Native Codex recovery integration (2026-11-18)
+
+`agent_resume.go`, `codex_restore_native.go`, `restore_serial.go` and `internal/resume/native_restore_*` implement the CLI/core route. Reviewed design `designs/codex-native-serial-integration-20261118.json` maps CNRV4-001–005 to three test files. The exact raw candidate has 10 passing focused entries plus a rejected target mutation; the formatted Git candidate needs its own gate results. Full entry/real tmux dispatch, CNR103/104/108 integration, real Codex startup, device and timing acceptance remain separate. App/Mac/Web controls and existing input authority are unchanged.

@@ -959,6 +959,17 @@ func Run(stdin io.Reader, args []string) int {
 	if agentKey == "dsh" {
 		homeID = dsh.HomeID()
 	}
+	goal := ""
+	if event == "UserPromptSubmit" {
+		goal = goalOf(promptText)
+	}
+	// Snapshot role before this hook can create or update its own resume
+	// record. Otherwise a late worker event can attest to its own identity.
+	role := ""
+	if pane != "" && session != "" && agentSession != "" &&
+		(event == "Stop" || event == "StopFailure" || goal != "") {
+		role = workspaceTerminalRole(pane, agentKey, homeID, agentSession, resumeCwd)
+	}
 	if pane != "" && !codexProcessBound && (resume.Resumable(agentKey) || terminalAttachment.Client != "") {
 		if loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"); loc != "" {
 			cwd := resumeCwd
@@ -1170,10 +1181,6 @@ func Run(stdin io.Reader, args []string) int {
 	// pulls a filtered stream must be able to SEE what the user told a session to do)
 	// and it is the goal-changed wake's payload. One classifier, so the tier and the
 	// wake can never disagree about what a user act is.
-	goal := ""
-	if event == "UserPromptSubmit" {
-		goal = goalOf(promptText)
-	}
 	client := ""
 	if pane == "" && (agentKey == "codex" || agentKey == "dsh" || agentKey == "opencode" && payload.OpencodeV2) {
 		client = "unconfirmed"
@@ -1202,7 +1209,7 @@ func Run(stdin io.Reader, args []string) int {
 			events.Append(events.Record{
 				Ts: time.Now().Unix(), Event: event, State: decisionState(d, event),
 				Pane: pane, Session: session, Agent: display, Kind: string(waitKind),
-				Summary: summary, Class: evClass, Origin: origin,
+				Summary: summary, Class: evClass, Origin: origin, TerminalRole: role,
 				// Recorded on EVERY event, not just the pane-less ones: which record will
 				// need attributing later is not knowable when it is written.
 				AgentSession: agentSession, HomeID: homeID, Client: client, KnowledgeAllowed: learning,
@@ -1347,6 +1354,25 @@ func Run(stdin io.Reader, args []string) int {
 	diag.For("hook").Act("act.notify", "system", pane, diag.OK, "queued a desktop notification",
 		"kind", kind, "agent", agentKey)
 	return 0
+}
+
+// workspaceTerminalRole binds the supervisor stamp to the live source
+// conversation. A stale hook for a replaced occupant does not inherit the role.
+func workspaceTerminalRole(pane, agent, home, session, sourceCwd string) string {
+	if _, self := hqpane.FindOther(pane); !self {
+		return events.TerminalRoleWorker
+	}
+	hqHome := state.HQHome()
+	if hqpane.SameDir(sourceCwd, hqHome) {
+		loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+		if r, ok := resume.LoadLive(loc); ok && r.Agent == agent && r.HomeID == home &&
+			r.SessionID == session && hqpane.SameDir(r.Cwd, hqHome) {
+			return events.TerminalRoleHQ
+		}
+	}
+	// Distinguish an attempted check from a legacy event. The consumer must
+	// not derive HQ from resume metadata that this hook writes afterward.
+	return events.TerminalRoleUnverified
 }
 
 // Codex's shared app-server may emit a Stop without enough evidence to bind it

@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Implement the five independently identified receipt and authorization boundaries",
+    "notes": "Fresh pre-implementation design after the independent request for changes on f8d65090. Preserve the earlier cases. Verify the exact source event and the operator-reviewed scope for existing direct assignments, or a verified user answer and matching cleared question. Never authorize from a body or missing authorship alone. A pause already ingested before reservation must fence the prior reviewed plan. Acknowledging a fetch must retain concrete receipt debt. A prior transport-only receipt must reserve the action without claiming execution or sending again. Only coordination/system prompts are excluded from goal extraction; a human instruction remains a real change."
+  },
+  "cases": [
+    {
+      "id": "HRC-003",
+      "layer": "L2",
+      "description": "Previously authorized direct assignments and cleared user answers retain a verifiable authority path.",
+      "setup": "Isolated registered matter, verified HQ review, source event, exact session and question ledger.",
+      "action": "Arm against a cited direct instruction or cleared answer; vary source identity, event kind, authority citation, newer instruction, user answer and clearance.",
+      "expected": "Only the exact reviewed instruction or resolved user decision can cover the existing action. No new user message or approval is minted.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_review_test.go"
+      ]
+    },
+    {
+      "id": "HRC-004",
+      "layer": "L2",
+      "description": "Acknowledged reply stages and older transport receipts retain concrete execution debt.",
+      "setup": "Isolated durable source and workspace, existing step, synthetic receipt and fetch.",
+      "action": "Note a fetch, reopen, ingest received or progress without evidence before arm and reconcile the same action repeatedly.",
+      "expected": "The original reply and step remain visible. A received or unsupported execution claim cannot discharge work or be replayed. Exact evidence covers the step.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_review_test.go"
+      ]
+    },
+    {
+      "id": "HRC-005",
+      "layer": "L2",
+      "description": "An intervening target instruction fences the reviewed plan and the workspace reminder does not masquerade as user authority.",
+      "setup": "Controlled source cursor and saved responsibility; production prompt classifier with a generated reminder.",
+      "action": "Ingest target pause before arming at the old revision and test the authenticated action's fixed coordination text against a normal new user prompt.",
+      "expected": "A consumed pause cannot slip past the reviewed boundary; an explicit fresh review is needed. The coordination echo produces no instruction goal; real user prose still does.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_review_test.go"
+      ]
+    }
+  ],
+  "seal": "6c921da12a06ad4028626a84acd282c4cc5992f04d8441b3dfa348b96aa18eb5"
+}

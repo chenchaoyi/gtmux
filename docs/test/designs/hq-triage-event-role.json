@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-20",
+    "decision": "Implement the independent review correction",
+    "notes": "The two-stage test uses an actual private tmux server restart and the ordinary lifecycle hook. A reused numeric pane cannot identify a historical agent. Check the journal and workspace cursor after ingestion and confirm new actual HQ lifecycle evidence remains excluded. The verified HQ fixture establishes its own SessionStart binding before Stop, separate from the delayed worker reproduction."
+  },
+  "cases": [
+    {
+      "id": "HPT-004",
+      "layer": "L3",
+      "description": "A private tmux restart reuses the worker pane number for HQ without losing the historical Stop",
+      "setup": "One private HOME and socket, real terminal hooks before and after a private tmux restart, and distinct exact worker and HQ conversations assigned the same numeric pane.",
+      "action": "Capture the worker Stop with no matter, restart the private server, capture a genuine HQ Stop, and ingest both journal rows.",
+      "expected": "The old worker evidence survives under its exact source and sequence, the new HQ Stop does not add an obligation, and the cursor advances after persistence. The journal records distinct terminal roles and exact identities.",
+      "planned_files": [
+        "internal/app/hqworkspace_triage_role_test.go"
+      ]
+    }
+  ],
+  "seal": "b6d6914b2344a910b1ba17151bcc9f46d0010d11810133e66d08e693a5b63b23"
+}

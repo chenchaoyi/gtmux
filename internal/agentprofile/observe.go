@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +23,7 @@ type observation struct {
 	Facts                []Fact
 	Chain                []Process
 	ChainAt              int64
+	EffortResetAt        int64 `json:"effort_reset_at,omitempty"`
 }
 
 func observationPath(agent, session, home string) string {
@@ -47,8 +49,17 @@ func observationPath(agent, session, home string) string {
 }
 
 func loadObservation(agent, session, home string) observation {
+	legacy := observationPath(agent, session, home)
+	return loadObservations(legacy, versionedObservationPath(legacy), agent, session, home)
+}
+
+func versionedObservationPath(legacy string) string {
+	return filepath.Join(filepath.Dir(legacy), "v2", filepath.Base(legacy))
+}
+
+func readObservation(path, agent, session, home string) observation {
 	var v observation
-	f, e := os.Open(observationPath(agent, session, home))
+	f, e := os.Open(path)
 	if e != nil {
 		return v
 	}
@@ -63,32 +74,99 @@ func loadObservation(agent, session, home string) observation {
 	return v
 }
 
+func modelOption(key string) bool {
+	switch key {
+	case "effort", "variant", "thinking", "thinking_level", "thinking_budget", "context", "model_alias":
+		return true
+	}
+	return false
+}
+
+func observationFact(facts []Fact, key string) Fact {
+	for _, f := range facts {
+		if f.Key == key {
+			return f
+		}
+	}
+	return Fact{}
+}
+
+func loadObservations(legacyPath, currentPath, agent, session, home string) observation {
+	old := readObservation(legacyPath, agent, session, home)
+	current := readObservation(currentPath, agent, session, home)
+	if current.Session == "" {
+		return old
+	}
+	if old.Session == "" {
+		return current
+	}
+	// Model-dependent options belong to the selected model. Matching names
+	// alone do not rule out a switch away and back between observations.
+	oldModel, currentModel := observationFact(old.Facts, "model"), observationFact(current.Facts, "model")
+	sameModel := oldModel.Value == currentModel.Value
+	preferOldModel := oldModel.At > currentModel.At
+	selectedModelAt := max(oldModel.At, currentModel.At)
+	oldPermission := observationFact(old.Facts, "permission").At > observationFact(current.Facts, "permission").At
+	var merged Profile
+	for i, snapshot := range []observation{old, current} {
+		isOld := i == 0
+		for _, f := range snapshot.Facts {
+			fromSelectedModel := preferOldModel == isOld ||
+				(f.Key == "effort" && sameModel && f.At > selectedModelAt)
+			if modelOption(f.Key) && !fromSelectedModel || f.Key == "mode" && oldPermission != isOld {
+				continue
+			}
+			// A legacy model refresh can carry an older effort without observing it.
+			if isOld && f.Key == "effort" && current.EffortResetAt > 0 && f.At <= current.EffortResetAt {
+				continue
+			}
+			if f.At >= observationFact(merged.Facts, f.Key).At {
+				merged.put(f)
+			}
+		}
+	}
+	current.Facts = merged.Facts
+	if old.ChainAt > current.ChainAt {
+		current.Chain, current.ChainAt = old.Chain, old.ChainAt
+	}
+	return current
+}
+
 // Observe is called before hook detachment, so ancestry still describes the origin.
 // It is best-effort and never influences lifecycle, receipts, or permissions.
 func Observe(agent, session, home, event string, raw []byte, ancestry bool) {
 	if _, ok := agents.For(agent); !ok || session == "" || len(session) > 256 {
 		return
 	}
-	lease, err := state.TryLease("profile-" + filepath.Base(observationPath(agent, session, home)))
+	legacy := observationPath(agent, session, home)
+	path := versionedObservationPath(legacy)
+	// Do the potentially slow process inspection outside the shared lock.
+	probeAt := time.Now().UnixMilli()
+	var chain []Process
+	if ancestry && (event == "SessionStart" || event == "UserPromptSubmit" || event == "Resumed") {
+		if probeAt-loadObservations(legacy, path, agent, session, home).ChainAt > 60_000 {
+			chain = observeChain()
+		}
+	}
+	lease, err := state.TryLeaseIn(filepath.Join(filepath.Dir(path), "locks"), filepath.Base(path)[:2])
 	if err != nil {
 		return
 	}
 	defer lease.Close()
 	at := time.Now().UnixMilli()
 	facts := HookFacts(agent, raw, at)
-	v := loadObservation(agent, session, home)
+	v := loadObservations(legacy, path, agent, session, home)
 	p := New(agent, session, false)
 	p.Facts = v.Facts
 	for _, f := range facts {
 		if f.Key == "model" {
-			for _, old := range p.Facts {
-				if old.Key == "model" && old.Value != f.Value {
-					for _, k := range []string{"effort", "variant", "thinking", "thinking_level", "thinking_budget", "context", "model_alias"} {
-						p.put(Fact{Key: k})
-					}
-					break
-				}
+			if old := observationFact(p.Facts, "model"); old.Value != "" && old.Value != f.Value {
+				p.Facts = slices.DeleteFunc(p.Facts, func(option Fact) bool { return modelOption(option.Key) })
+				v.EffortResetAt = max(v.EffortResetAt, f.At)
 			}
+		}
+		if f.Key == "effort" && f.Value == "" {
+			v.EffortResetAt = max(v.EffortResetAt, f.At)
 		}
 		p.put(f)
 	}
@@ -99,22 +177,16 @@ func Observe(agent, session, home, event string, raw []byte, ancestry bool) {
 			}
 		}
 	}
-	if ancestry && (event == "SessionStart" || event == "UserPromptSubmit" || event == "Resumed") && at-v.ChainAt > 60_000 {
-		if chain := observeChain(); len(chain) > 0 {
-			v.Chain, v.ChainAt = chain, at
-			for _, f := range packageFacts(agent, chain, at) {
-				p.put(f)
-			}
+	if len(chain) > 0 && probeAt-v.ChainAt > 60_000 {
+		v.Chain, v.ChainAt = chain, probeAt
+		for _, f := range packageFacts(agent, chain, probeAt) {
+			p.put(f)
 		}
 	}
-	if len(p.Facts) == 0 && len(v.Chain) == 0 {
+	if len(p.Facts) == 0 && len(v.Chain) == 0 && v.EffortResetAt == 0 {
 		return
 	}
 	v.Agent, v.Session, v.Home, v.Facts = agent, session, home, p.Facts
-	path := observationPath(agent, session, home)
-	if state.MkdirAll(filepath.Dir(path), 0700) != nil {
-		return
-	}
 	b, err := json.Marshal(v)
 	if err != nil || len(b) > 64<<10 {
 		return
@@ -135,34 +207,15 @@ func Observe(agent, session, home, event string, raw []byte, ancestry bool) {
 
 func Current(p *Profile, home string) {
 	v := loadObservation(p.Agent, p.SessionID, home)
-	var loggedModel, hookModel Fact
-	for _, f := range p.Facts {
-		if f.Key == "model" {
-			loggedModel = f
-		}
-	}
-	for _, f := range v.Facts {
-		if f.Key == "model" {
-			hookModel = f
-		}
-	}
+	loggedModel := observationFact(p.Facts, "model")
+	hookModel := observationFact(v.Facts, "model")
 	for _, f := range v.Facts {
 		// A later native log record wins over an older hook snapshot. Dependent
 		// options from a different model cannot fill holes in its new defaults.
-		if loggedModel.Value != "" && hookModel.Value != loggedModel.Value && loggedModel.At > hookModel.At {
-			switch f.Key {
-			case "effort", "variant", "thinking", "thinking_level", "thinking_budget", "context", "model_alias":
-				continue
-			}
+		if loggedModel.Value != "" && hookModel.Value != loggedModel.Value && loggedModel.At > hookModel.At && modelOption(f.Key) {
+			continue
 		}
-		newer := false
-		for _, existing := range p.Facts {
-			if existing.Key == f.Key && existing.At > f.At {
-				newer = true
-				break
-			}
-		}
-		if !newer {
+		if f.At >= observationFact(p.Facts, f.Key).At {
 			p.put(f)
 		}
 	}

@@ -17,13 +17,21 @@ var ErrLeaseHeld = errors.New("another process holds the lease")
 type Lease struct{ file *os.File }
 
 func TryLease(name string) (*Lease, error) {
+	return TryLeaseIn(Dir(), name)
+}
+
+// TryLeaseIn keeps a fixed family of lease anchors with its managed data.
+func TryLeaseIn(dir, name string) (*Lease, error) {
 	if name == "" || filepath.Base(name) != name || strings.Contains(name, "..") {
 		return nil, fmt.Errorf("invalid lease name")
 	}
-	if err := MkdirAll(Dir(), 0700); err != nil {
+	if !IsManagedPath(dir) {
+		return nil, fmt.Errorf("lease directory is outside managed storage")
+	}
+	if err := MkdirAll(dir, 0700); err != nil {
 		return nil, err
 	}
-	f, err := OpenFile(filepath.Join(Dir(), "lease-"+name+".lock"), os.O_CREATE|os.O_RDWR, 0600)
+	f, err := OpenFile(filepath.Join(dir, "lease-"+name+".lock"), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, err
 	}

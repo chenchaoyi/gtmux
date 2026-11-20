@@ -1,0 +1,27 @@
+{
+  "id": "delivery-archive-destination-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-19",
+    "decision": "Add a read-only destination check to the existing retention tool",
+    "notes": "Review covers the configured project boundary, gtmux data and configuration roots, and path aliases. The tool previews a destination and optionally verifies the same boundary at closeout. Its decision is a snapshot, not filesystem enforcement or authority to migrate or delete. Existing read-only manifest inspection keeps its calling convention."
+  },
+  "cases": [
+    {
+      "id": "STOR-003",
+      "layer": "G",
+      "description": "Release and Store archive checks enforce the chosen project destination outside gtmux-managed roots",
+      "setup": "Use a disposable HOME and project root, with configuration, runtime and external directories plus synthetic aliases.",
+      "action": "Preview a new per-version path. Inspect a completed manifest with the project root. Attempt destinations under managed roots, outside the project, through an alias and at the project root itself.",
+      "expected": "A new in-project version path is accepted without creation. Escapes, aliases into either managed tree, managed project roots and missing project roots are rejected. Closeout enforces the same path boundary and the existing byte budget; read-only legacy inspection remains available.",
+      "planned_files": [
+        "scripts/check_delivery_retention_test.py"
+      ],
+      "surfaces": [
+        "Local release and Store handoff tooling"
+      ]
+    }
+  ],
+  "seal": "81d4500ff3dd1b38150bc1e136c6f59abc6ece8564f67b88bf1a174c530696c4"
+}

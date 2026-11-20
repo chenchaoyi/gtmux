@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Fence workspace-message authority against the complete relevant target journal",
+    "notes": "Independent review of 9a8b40e7 identified a pause before enrollment and same-second ambiguity. Exercise the ordinary verified resume and source preflight against retained events, a missing prefix, tail, corrupt/unreadable log and a verified subsequent resumption. Preserve enrollment filtering in the general ingestion stream."
+  },
+  "cases": [
+    {
+      "id": "HRC-009",
+      "layer": "L2",
+      "description": "Workspace message authority cannot skip a pause before enrollment, a same-second pause or an unreadable target-event interval.",
+      "setup": "Isolated journal and workspace, original user message, unrelated or unregistered exact target, saved request and reply.",
+      "action": "Consume events before membership, then review and attempt continuation. Vary target, sequence ordering, retention gaps, unreadable storage and a later explicit user resumption.",
+      "expected": "Only a covered instruction interval and current confirmed step can deliver. An unknown range remains a specific reconciliation blocker and valid new user confirmation preserves the original action ID.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_event_history_test.go"
+      ]
+    }
+  ],
+  "seal": "1a88b99053b2557698bf5b7e4e26bc8e6ca228880b0ea6759331c6bf29de6cb9"
+}

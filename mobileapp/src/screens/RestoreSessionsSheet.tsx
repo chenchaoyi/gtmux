@@ -123,7 +123,11 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
     finally {if (valid(n)) {action.current = false; setBusy(false);}}
   };
   const phase = (value: string) => ({queued: say('Waiting to start', '等待开始'), preparing: say('Checking the saved workspace', '核对存档工作区'), layout: say('Restoring sessions and panes', '恢复会话与窗格'), agents: say('Starting saved agent conversations', '启动存档中的助手对话'), completed: say('Restore finished', '恢复已完成'), partial: say('Restore finished · review the results', '恢复已结束，请核对结果'), failed: say('Restore did not finish', '恢复未完成'), interrupted: say('Restore was interrupted · check before retrying', '恢复已中断，请先核对会话')}[value] ?? value);
-  const resultText = (value: string) => ({confirmed: say('Startup confirmed', '已确认启动'), pending: say('Command sent · startup not confirmed', '命令已发送，尚未确认启动'), prefilled: say('Command prefilled · press Enter in the pane', '已填入命令，需在窗格按回车'), restored: say('Session available', '会话已可用'), missing: say('Not restored', '未恢复')}[value] ?? say(`Skipped or failed (${value})`, `已跳过或失败（${value}）`));
+  const resultText = (value: string, issue?: string) => {
+    const states: Record<string, string> = {confirmed: say('Startup confirmed', '已确认启动'), pending: say('Command sent · startup not confirmed', '命令已发送，尚未确认启动'), prefilled: say('Command prefilled · press Enter in the pane', '已填入命令，需在窗格按回车'), restored: say('Session available', '会话已可用'), missing: say('Not restored', '未恢复'), 'startup-timeout': say('Startup wait timed out · inspect the pane; no automatic replay', '启动等待已超时，请检查窗格；不会自动重发'), unknown: say('Send result unknown', '发送结果未知'), 'send-failed': say('Send failed', '发送失败'), cancelled: say('Startup queue cancelled', '启动队列已取消')};
+    const label = states[value] ?? say(`Skipped or failed (${value})`, `已跳过或失败（${value}）`);
+    return issue !== value && (issue === 'unknown' || issue === 'send-failed') ? `${states[issue]} · ${label}` : label;
+  };
   const errorText = error === 'unsupported' ? say('Update gtmux on this server to restore from the App.', '请先更新服务器上的 gtmux，才能从 App 恢复会话。')
     : error === 'owner_only' ? say('Restoring requires an owner pairing.', '只有服务器所有者可以恢复会话。')
     : error === 'plan_changed' ? say('The saved workspace changed. Refresh its preview before starting.', '存档工作区已变化，请刷新预览后再开始。')
@@ -144,7 +148,7 @@ export function RestoreSessionsSheet({mac, pal, lang, onClose, client: injected}
         <Text testID="restore-phase" style={[styles.subtitle, {color: pal.fg}]} accessibilityLiveRegion="polite">{phase(job.phase)}</Text>
         <Text style={[styles.note, {color: pal.fg2}]}>{say('You can close this page. The server keeps restoring; reopen it to check progress.', '可以关闭此页。服务器会继续恢复，重新打开即可查看进度。')}</Text>
         {job.sessions.map(s => <View key={s.name} style={[styles.row, {borderColor: pal.divider}]}><Text style={[styles.rowTitle, {color: pal.fg}]}>{s.name}</Text><Text style={{color: pal.fg2}}>{resultText(s.state)}</Text></View>)}
-        {job.agents?.map((a, i) => <View key={`${a.loc}-${i}`} style={styles.row}><Text style={{color: pal.fg}}>{a.loc}</Text><Text style={{color: pal.fg2}}>{resultText(a.state)}</Text></View>)}
+        {job.agents?.map((a, i) => <View key={`${a.loc}-${i}`} style={styles.row}><Text style={{color: pal.fg}}>{a.loc}</Text><Text style={{color: pal.fg2}}>{resultText(a.state, a.issue_state)}</Text></View>)}
         {control('restore-check', say('Check status', '核对状态'), check, busy)}
         {restoreTerminal(job.phase) && control('restore-new-preview', say('Preview remaining sessions', '预览仍未恢复的会话'), previewAgain, busy)}
       </> : plan && <>

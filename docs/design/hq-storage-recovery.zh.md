@@ -38,6 +38,20 @@ gtmux 项目也不例外。项目代码、脚本、文档和交付归项目自�
 
 编译中间产物、临时下载和一次性解包验包目录留在任务/构建存储，随任务收尾。可复现正式产物以发布渠道为主。跨任务保留属于例外：使用明确的交付归档位置，与应用运行数据分开，并用 `retention.json` 登记用途、源码/构建/渠道、字节预算、最短保留期、复核日期与责任人。复核到期不等于可删除。格式见 `delivery-retention.schema.json`，可用 `scripts/check_delivery_retention.py` 检查。
 
+复制正式交付前，选定项目已有的私有交付根。普通发行按版本建目录，商店提交按版本和构建号建目录。先检查目标路径，交付验收时再核归属和保留预算。
+
+```sh
+# PROJECT_DELIVERY_ROOT 指向项目已有的交付目录。
+delivery="$PROJECT_DELIVERY_ROOT/releases/vX.Y.Z"
+python3 scripts/check_delivery_retention.py --project-root "$PROJECT_DELIVERY_ROOT" --destination "$delivery"
+# 保存所选交付文件并写入 retention.json 后运行。
+python3 scripts/check_delivery_retention.py --project-root "$PROJECT_DELIVERY_ROOT" "$delivery/retention.json"
+```
+
+预检拒绝项目根之外的目录，也拒绝指向 gtmux 配置和数据目录的路径及别名。它只核验当前路径，不创建目录。复核历史档案时，仍可省略项目根参数，只读取已有清单。
+
+Mac 发版暂存、移动端加密交付下载、商店 IPA 验包回执和商店截图工具共用受管目录检查，在首次写入前核目标。临时产物使用私有任务目录。正式交付使用带项目根的预检。
+
 仅保留独有签名/恢复材料、必要符号和简明最终验收证据；不默认同时保留多份运输包和解包副本。清单不放凭据。当前和前一交付、有效Store/在飞分发以及独有恢复证据，在实际替代与恢复链核实前继续保护。旧材料须有精确退役计划；年龄、相似大小、即将过期的CI产物或新增副本都不能单独证明可删。
 
 放在工作树之外也不是永久保留。迁移到同盘另一个目录不会释放空间，本轮不迁移已有档案。已有正式交付、Store及重启证据沿用原保护规则。

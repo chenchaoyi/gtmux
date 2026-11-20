@@ -58,7 +58,7 @@ func currentScreenshotTarget(pane string) (screenshot.Target, error) {
 		t.Agent, t.SessionID, t.HomeID, t.Instance, t.ClientPID = "codex", f.SessionID, f.HomeID, f.Instance, f.PID
 		return t, nil
 	}
-	if a, ok := agentclient.ForPane(pane); ok && a.InputReady {
+	if a, ok := agentclient.ForPane(pane); ok && a.ReadyForInput() {
 		t.Agent, t.SessionID, t.HomeID, t.Instance, t.ClientPID = a.Agent, a.SessionID, a.HomeID, a.Instance, a.PID
 		return t, nil
 	}

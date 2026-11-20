@@ -323,7 +323,7 @@ The workspace SHALL persist a reconciliation queue independently of event consum
 - **THEN** ingestion retains its previous cursor and any gap notice, and the next read durably queues the retained event before advancing past it
 
 ### Requirement: Continuing goals retain next responsibility
-Every explicitly enrolled nonterminal goal SHALL retain either a verified current step drive, an unanswered concrete human request, a sourced hold, or durable HQ follow-up/verification debt. A step SHALL have a stable ID, intended action and citation to existing authority. Missing legacy fields SHALL require HQ verification and SHALL NOT authorize automatic resumption. Ordinary observation acknowledgement, read watermarks, quiet presentation, process restart and healthy rotation SHALL NOT discharge goal debt. The existing reconciliation pass SHALL scan a bounded number of goals with a durable cursor even without new events. Stop SHALL only request a lightweight check.
+Every explicitly enrolled nonterminal goal SHALL retain either a verified current step drive, an unanswered concrete human request, a sourced hold, or durable HQ follow-up/verification debt. A step SHALL have a stable ID, intended action and citation to existing authority. Missing legacy fields SHALL require HQ verification and SHALL NOT authorize automatic resumption. Ordinary observation acknowledgement, read watermarks, quiet presentation, process restart and healthy rotation SHALL NOT discharge goal debt. The existing reconciliation pass SHALL scan a bounded number of goals with a durable cursor even without new events. Stop and a newly saved HQ relay report SHALL request a lightweight check through the existing workspace marker.
 
 #### Scenario: All observations are noted but work remains
 - **WHEN** HQ notes the latest stage report and no new unread events arrive
@@ -334,6 +334,15 @@ Every explicitly enrolled nonterminal goal SHALL retain either a verified curren
 - **WHEN** presentation is quiet or HQ performs a healthy handoff
 - **THEN** the same durable next responsibility remains recoverable without blocking rotation
 - **AND** repeated reminders identify HQ's unfinished coordination rather than asking for already granted permission
+
+#### Scenario: A fresh participant conclusion arrives before an old recheck
+- **WHEN** a new Stop or HQ relay report is attributed to the exact participant and leaves HQ coordination outstanding
+- **THEN** the workspace reopens any older deferred goal check, and serve schedules a keyed wake independently of the standing reminder interval
+- **AND** the next reconciliation cycle can recover a missed wake while the evidence awaits a verified claim for that exact observation
+- **AND** other observations stay eligible even if their claim or receipt times match
+- **AND** urgent and standing wakes keep independent queue entries and schedules while a draft delays them
+- **AND** enqueue, transport and claim remain independently observable; assessment and verified resolution still govern the goal
+- **AND** sourced holds and independently verified continuing work prevent unnecessary wakes or execution
 
 ### Requirement: Step intent precedes guarded delivery
 HQ SHALL persist a stable action ID, exact agent/home/session and task/message/native reference before an explicit drive action. The drive action SHALL use the existing input, identity and draft gates and SHALL attempt a saved action at most once. Queued SHALL mean reliably waiting for reception, not started or completed. Submission uncertainty, refusal and absent probes SHALL require verification, never automatic replay or another channel. Receipt coverage SHALL match the same step, action, reference and unambiguous conversation interval. Existing reliable native/background coverage SHALL prevent duplicate drive.
@@ -359,3 +368,56 @@ A user pause/refusal SHALL NOT expire automatically; changing it SHALL require a
 - **WHEN** a backup contains a queued or received intent or native/background evidence
 - **THEN** restored evidence requires explicit review and cannot replay the saved action
 - **AND** a saved user pause/refusal remains effective
+
+### Requirement: Explicit continuation after an inbox reply
+The workspace SHALL project reply, active-turn notice, source fetch and execution evidence separately. Only a verified current HQ action binding one eligible receipt to an existing authorized intent MAY arm an idle continuation. The daemon SHALL recheck the original authorization, matter revision, execution membership, current native identity, idle state and composer through ordinary delivery gates before issuing at most one receipt-specific reminder. A submission with unknown outcome SHALL remain reserved for reconciliation.
+
+#### Scenario: Stop precedes a durable reply
+- **WHEN** an enrolled source stops after checking its inbox and a reply is saved later
+- **THEN** reconciliation records that receipt even if it previously ingested the request, and a later fetch leaves the next step outstanding until the source reports matching execution evidence
+
+#### Scenario: Restart with an explicit continuation
+- **WHEN** the daemon restarts with a reviewed reservation and the exact source becomes ready
+- **THEN** it may submit the bounded reminder once, preserves blockers and uncertain submissions, and keeps ordinary replies pull-only for idle or unsupported clients
+
+#### Scenario: Reviewed authority and receipt ordering
+- **WHEN** HQ claims the current responsibility and verifies a workspace user instruction, an answer to its cleared question, or an independently authenticated direct user assignment with its exact retained target event
+- **THEN** the reservation preserves its reviewed event boundary and a later instruction fences the old step even after ingestion
+- **AND** noting a fetch or observing a transport receipt before reservation preserves the specific reply and outstanding work; a matching prior attempt is reconciled without resubmission
+
+#### Scenario: Confirmation or membership becomes known after the original plan
+- **WHEN** HQ reviews later user confirmation for the same saved action, or verifies continuous unique membership covering a previously unassigned request and reply
+- **THEN** the binding records supplemental authority and attributed receipts without rewriting the original action or observations
+- **AND** a prior ordinary queued, landed or uncertain drive remains reserved for reconciliation and cannot become a fresh reminder
+
+#### Scenario: A target pauses before it is enrolled
+- **WHEN** an exact target's instruction follows a workspace user message but predates enrollment and the general observation cursor has already passed it
+- **THEN** the continuation checks the source journal from the original message before submission and holds for HQ when the target changed, the interval is unavailable, or a legacy same-second instruction is unordered
+- **AND** a verified later user resumption can cover the same saved action through its original gates
+
+#### Scenario: History coverage changes before dispatch
+- **WHEN** a legacy message is committed during an asynchronous scan, or recording is disabled after a direct user assignment
+- **THEN** a scan's start time cannot advance that message's lower bound, and the original direct assignment requires verified journal coverage through submission
+- **AND** an unrecorded instruction leaves a coverage gap in an already initialized journal counter without storing an event or its contents
+
+#### Scenario: A recording failure or final refusal interrupts a reserved action
+- **WHEN** an enabled journal cannot persist an instruction, or its authority source lacks a proven initial boundary
+- **THEN** the prior source requires reconciliation even after an unrelated event and a restart; a new verified instruction can authorize the original step
+- **AND** when the final local input gate proves zero submissions, the workspace preserves that refusal and may rearm the same action only after a later user instruction and a new HQ review
+- **AND** a prior claim, uncertain outcome, or accepted submission remains reserved for reconciliation under its original identifier
+
+#### Scenario: The original collector or refusal boundary cannot establish order
+- **WHEN** a direct source or a workspace instruction lacks evidence from the collection interval in which it was issued
+- **THEN** verification SHALL NOT initialize a new generation to vouch for the old source
+- **AND** rearming after a proven zero submission using a direct event SHALL require a verified journal boundary sampled at the refusal, a higher event sequence and a strictly later source time
+- **AND** a workspace user confirmation committed after the refusal can establish order through its durable revision
+
+### Requirement: HQ triages unassigned worker evidence
+
+For a managed terminal conversation or an explicitly followed native conversation at the event time, the prospective workspace event consumer SHALL retain eligible instruction-shaped prompts and worker completions without unique execution attribution as exact HQ triage observations. It SHALL commit the source reference and cursor together, preserve ambiguity, and retry on the existing workspace wake cycle. Supervisor echo SHALL be excluded using the event-time role and exact conversation; a currently reused pane number SHALL NOT discard historical worker evidence. Reading or claiming an observation SHALL NOT resolve it. Only current verified HQ MAY record a cited disposition or handoff to a current goal with verified execution association; a future check SHALL retain the obligation. Triage SHALL NOT infer authorship, create a goal, grant authority, or send input.
+
+#### Scenario: A worker stops after a direct assignment
+
+- **WHEN** HQ misses the first wake and the worker has no unique matter
+- **THEN** the exact evidence remains claimable after global event consumption and a retry uses the existing wake path
+- **AND** an explicit verified handoff records the target goal responsibility separately from transport or action evidence

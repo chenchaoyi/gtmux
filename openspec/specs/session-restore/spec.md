@@ -691,6 +691,14 @@ decision already accepts.
 ### Requirement: Restore fallback preserves conversation ownership
 Before resuming any shell pane, the system SHALL reserve conversation IDs bound to live non-shell panes. A cwd/position fallback SHALL NOT select a record whose original locator still exists in the saved layout or live topology. It SHALL accept only one distinct unreserved conversation and SHALL refuse multiple candidates rather than choosing by recency. A skipped fallback SHALL be reported to the user and diagnostics; the restore plan SHALL use the same locator and ambiguity rules. Exact and saved-command matches SHALL retain priority over guesses.
 
+#### Scenario: Ownership changes while an earlier pane starts
+- **WHEN** a queued fallback is no longer uniquely attributable to its original available record at dispatch
+- **THEN** neither native nor compatibility recovery writes to the queued target
+
+#### Scenario: A queued wrapper target changes foreground
+- **WHEN** the target pane cannot be verified at the same locator with a shell in the foreground just before a compatibility dispatch
+- **THEN** the attempt reports a changed target and sends neither text nor Enter
+
 #### Scenario: Another client already owns the conversation
 - **WHEN** a restored shell shares cwd and position with a running pane's recorded conversation
 - **THEN** no resume command for that conversation is typed into the shell
@@ -819,3 +827,70 @@ SHALL remain pending. Missing/invalid history and send failures SHALL be explici
 #### Scenario: Many windows restored into a narrow terminal
 - **WHEN** the pane receipt contains long names or IDs
 - **THEN** rows align and wrap within available columns without dropping identities or interpreting control characters
+
+### Requirement: Native restore retains selected evidence and uncertain occupation
+
+Automatic native Codex restore SHALL bind the exact saved-layout bytes and incumbent
+record used to select a target before waiting for earlier panes. It SHALL recheck
+that evidence before preparation and before sending. A changed archive or owner
+SHALL produce a skipped target rather than establish a newer validation baseline.
+A same-boot occupation for the exact Codex home and conversation SHALL also prevent
+an automatic compatibility send after a switch to a custom wrapper.
+
+#### Scenario: An uncertain native send is followed by a wrapper installation
+
+- **WHEN** the same home and conversation already have a same-boot restore attempt
+- **AND** the executable route later selects a compatibility wrapper
+- **THEN** automatic restore sends no additional command or Enter
+- **AND** a fresh conversation may still use its legitimate wrapper recipe
+
+#### Scenario: A queued target changes while an earlier pane starts
+
+- **WHEN** the selected layout bytes or incumbent for a later pane change
+- **THEN** that later pane receives no restore command
+
+#### Scenario: Startup confirmation arrives during the final polling interval
+
+- **WHEN** a pending attempt becomes ready during its last allowed pause
+- **THEN** a bounded confirmation runs before deciding timeout and starting the next pane
+- **AND** cancellation retains priority and the shared waiting budget is not extended
+
+### Requirement: Startup outcomes remain visible and preserve delivery uncertainty
+
+Local automatic restore SHALL write a pane-identified terminal result before the
+next eligible pane begins preparation. Remote job receipts SHALL persist the first
+issue fact separately from later startup timeout or cancellation. Clients SHALL
+show both timeout and unknown/failed delivery when both apply, without automatic
+replay. Older receipts without the optional issue-state field SHALL remain readable.
+
+#### Scenario: A startup timeout precedes another local preparation
+
+- **WHEN** the first attempt exhausts its startup observation allowance
+- **THEN** the local output identifies that pane and timeout before preparation of the next attempt
+
+#### Scenario: An uncertain send times out in a remote restore job
+
+- **WHEN** the first send result is unknown and startup later times out
+- **THEN** intermediate and final persisted receipts retain both facts
+- **AND** the client displays uncertainty and timeout in either supported language
+
+### Requirement: Revalidate historical ownership and preserve local archive compatibility
+
+Automatic recovery SHALL recheck the locator supplying a historical record and retain an uncertain write in the batch. Local inventory SHALL accept valid line-bounded saves above the remote preview size limit.
+
+#### Scenario: A historical locator changes owner during serial recovery
+
+- **GIVEN** a renamed pane was matched by directory and layout position
+- **WHEN** its source record changes before the command is written
+- **THEN** restore skips the pane and sends neither text nor Enter
+
+#### Scenario: A compatible launcher returns an uncertain write
+
+- **WHEN** the compatibility sender cannot confirm the literal write or Enter
+- **THEN** the first result records uncertainty and the same batch sends no further command for that conversation
+
+#### Scenario: A local layout exceeds the remote preview size budget
+
+- **WHEN** a valid local archive with individually bounded lines exceeds the remote byte cap
+- **THEN** local preview inventories its panes even above the remote byte cap
+- **AND** a read failure is distinguished from an empty archive

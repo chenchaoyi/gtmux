@@ -45,6 +45,20 @@ project delivery path: the protected configuration tree is not remotely readable
 
 Build intermediates, downloaded test copies and one-off unpacked validation directories belong to task/build storage and end with the task. A public release channel is the primary source for reproducible release assets. Cross-task retention is exceptional: use an explicit delivery archive, separate from application runtime state, with `retention.json` describing purpose, source/build/channel, byte budget, minimum retention, review date and responsible reviewer. A review date does not authorize deletion. The schema is `delivery-retention.schema.json`; validate it with `scripts/check_delivery_retention.py`.
 
+Choose the project's existing private delivery root before copying a permanent archive. Use one directory per release version or Store version/build. Check the destination first, then check the same project boundary and retention budget at handoff.
+
+```sh
+# Set PROJECT_DELIVERY_ROOT to the project's existing delivery directory.
+delivery="$PROJECT_DELIVERY_ROOT/releases/vX.Y.Z"
+python3 scripts/check_delivery_retention.py --project-root "$PROJECT_DELIVERY_ROOT" --destination "$delivery"
+# After retaining the selected files and writing retention.json:
+python3 scripts/check_delivery_retention.py --project-root "$PROJECT_DELIVERY_ROOT" "$delivery/retention.json"
+```
+
+The destination check rejects directories outside the project root and paths or aliases into either gtmux-managed tree. It checks the current path without creating it. An existing manifest can still be inspected without the project-root option when reviewing a legacy archive.
+
+Mac release staging, encrypted mobile delivery retrieval, Store package verification receipts and Store capture/render tooling apply the same managed-tree check before their first write. Outputs for temporary work can live in a private task directory. Use the project-root check for the permanent handoff.
+
 Retain unique signing/recovery material, required symbols and concise final acceptance evidence. Do not retain multiple package transports/unpacked validation copies by default. Do not copy private credentials into a manifest. Keep current/previous deliveries, active Store submissions/distributions and any uniquely required recovery evidence protected until their actual replacement and restore path have been verified. Older artifacts need an exact reviewed retirement plan; age, similar size, expiring CI artifacts or a new copy alone are insufficient.
 
 An archive outside a worktree is not automatically permanent, and moving it to another directory on the same disk does not release space. No existing archive is moved by this change. Existing release, Store and reboot recovery materials retain their original retention authority.

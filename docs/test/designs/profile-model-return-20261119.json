@@ -1,0 +1,27 @@
+{
+  "id": "profile-model-return-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-19",
+    "decision": "Require evidence newer than the selected model before sharing effort across snapshots",
+    "notes": "Independent review of e891f65a found a legacy-only A to B to A sequence between current observations. Exercise actual legacy change semantics and current reads in a disposable HOME. Preserve the existing reset and effort-only regressions."
+  },
+  "cases": [
+    {
+      "id": "STOR-010",
+      "layer": "L2",
+      "description": "Returning to a model does not restore effort from its previous selection",
+      "setup": "Use a disposable HOME with both profile generations initially observing A, and a recorded effort in the current generation.",
+      "action": "Only the legacy writer changes model from A to B and back to A without effort. Then it records a new effort without refreshing the model.",
+      "expected": "Both model changes leave effort empty even when the current generation still records the old A effort. The later effort is accepted under the latest A selection.",
+      "planned_files": [
+        "internal/agentprofile/model_return_test.go"
+      ],
+      "surfaces": [
+        "Current participant profile"
+      ]
+    }
+  ],
+  "seal": "86d649589e5c9a6b67ab9dccffa1ee93bec12ba1a1721fc7f9c408cda6875e1d"
+}

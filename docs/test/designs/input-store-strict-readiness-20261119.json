@@ -1,0 +1,38 @@
+{
+  "id": "input-store-strict-readiness-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Cover the first two P1 fixes in the independent input-store candidate.",
+    "notes": "The independent review identifies the defects and the author checked the planned assertions. No independent implementation approval, production cutover or live service evidence. The frozen candidate and its earlier tests are retained."
+  },
+  "cases": [
+    {
+      "id": "SPL-006",
+      "layer": "L2",
+      "description": "Go, the shipped DeepSeek receiver and Python preflight refuse damaged input metadata.",
+      "setup": "Temporary HOME and queue, synthetic active journal and marker, local Node/Python fixtures and a private tmux stub.",
+      "action": "Run the same layouts with raw or escaped duplicate keys, nested keys, trailing values, malformed UTF-8, wrong types and valid v1 or active records. Damage addressed input records before replay or claim.",
+      "expected": "Valid layouts and addressed v1 UTF-8 payloads remain readable. An invalid layout cannot create a lease or receipt. Damaged records retain their file, do not release addressed replay protection and never call the receiver.",
+      "planned_files": [
+        "internal/agentclient/input_store_gate_test.go",
+        "internal/agentclient/input_records_test.go",
+        "internal/app/dsh_terminal_test.go"
+      ]
+    },
+    {
+      "id": "SPL-007",
+      "layer": "L2",
+      "description": "DeepSeek terminal input readiness follows the current generation and the current host and input grant.",
+      "setup": "Verified attachments from synthetic process and terminal facts, private layouts and a synthetic DeepSeek plugin host.",
+      "action": "Check empty v1 generation, matching active generation, previous or missing generation and blocked layouts. Remove host, grant or current foreground after a successful heartbeat and change the generation before submission.",
+      "expected": "A verified attachment can stay readable while write readiness is false. Startup, screenshot target resolution and doctor use one read-only predicate. The old handler cannot claim or publish an outcome after readiness is lost.",
+      "planned_files": [
+        "internal/agentclient/input_store_gate_test.go",
+        "internal/dispatchbridge/terminal_ready_test.go"
+      ]
+    }
+  ],
+  "seal": "511358c04a9cdf41289c95e004d0953ee83759f6d47201886ae08d9cb6712aed"
+}

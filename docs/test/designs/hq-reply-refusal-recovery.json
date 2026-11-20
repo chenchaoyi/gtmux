@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Preserve failed instruction coverage and rearm only after a proven zero submission",
+    "notes": "The independent sixth review identified an enabled journal outage and a final pre-submit refusal. Exercise restart and a fresh authorization on the original action, retaining actual refusal evidence and preventing uncertain or prior transport replays."
+  },
+  "cases": [
+    {
+      "id": "HRC-012",
+      "layer": "L2",
+      "description": "An enabled journal admission failure durably invalidates old authority; only a proven unsent action can accept fresh authorization after refusal.",
+      "setup": "Isolated exact-target workspace, journal with unchanged enabled policy, saved action and real filesystem failure, synthetic native input.",
+      "action": "Lose a target prompt when the sequence is read-only, restore the counter and append an ordinary event. Refuse the last gate, reopen the workspace, re-review the same and fresh sources, and repeat the pump. Also return an unknown response or accepted transport.",
+      "expected": "Old direct and workspace authority cannot cross the enabled outage. A fresh explicit instruction can recover. A durable zero-submission receipt survives recovery and only a later authority can drive the original ID once. Unknown, prior, and submitted attempts remain reserved for reconciliation.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_recovery_test.go"
+      ]
+    }
+  ],
+  "seal": "3f13897d77920bf459ddc91dd8228dc3726914440131f7a86aa2a1fd435070b3"
+}

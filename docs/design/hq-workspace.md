@@ -315,6 +315,24 @@ identity; see [Clio and HQ topics](hq-topic-research.md).
 
 The App stacks Needs input and Following on phones and puts them side by side on wider iPad windows. Recent changes use the core's explicit overview; delivery uncertainty never reads as completion. Matter sheets show assessment, exact participant membership and a bounded page of saved messages, including correlated public replies. Ask HQ only prefills the existing global console; it does not submit a decision or create a scoped instruction. The existing console owns drafts, input, Trace/Diff, and resource readers. A list 404/501 keeps the legacy HQ UI; transient failures retain prior data and authorization failures clear it. `GET /api/hq/workspace` reuses the CLI list/detail builders and never drains, acknowledges or mutates.
 
+## Unassigned worker triage
+
+The workspace commits eligible instruction-shaped prompts and Stop evidence with the event
+checkpoint even when the source has no unique execution matter. Captured managed terminal
+sources qualify. The lifecycle event captures the supervisor or worker role for the exact
+conversation before that hook can change its binding. Unverified role keeps the evidence,
+including when a late hook arrives after the pane number was reused. Native sources require the exact configured home and a current HQ follow
+that covers the event time. `triage-unassigned:Stop` and `triage-ambiguous:Stop` retain
+the original event citation and identity. Instruction-shaped evidence does not prove
+authorship. Triage uses the existing exact wake retry and requires a verified HQ lease.
+
+A cited `review_ref` is required for `handoff`, `no-followup` or `deferred`. Handoff
+records `handoff_id` pointing to the current goal follow-up. HQ supplies its exact
+matter revision and execution association covering the source time. A verified goal can
+first be enrolled through `register` and `associate`. An older lease or deferred check
+cannot cover new handoff evidence. Reading and claiming leave the obligation outstanding.
+Neither disposition nor association grants authority or submits input.
+
 ## Continuing goals and next responsibility
 
 The candidate core protocol separates checking an observation from advancing its
@@ -328,7 +346,7 @@ Each explicit continuing goal can carry a stable `step_id`, `action` and `author
 The citation points to existing authority; no report text, owner name or scheduler creates
 permission. A missing proof remains unknown. The existing reconciliation pass scans at
 most 64 matters per tick using a persistent cursor, including when no new events arrived.
-Stop only touches an existing workspace's check marker. Handoff/rotation keeps the same
+Stop and a newly saved HQ relay report refresh the existing workspace check marker. Handoff/rotation keeps the same
 store; unfinished work does not prevent a healthy rotation.
 
 A `goal-followup` observation is keyed by canonical matter, stable step, action and authority.
@@ -339,6 +357,19 @@ explicitly identify HQ's unfinished coordination; they do not invent a missing u
 Quiet limits presentation, never responsibility. The reminder uses the existing keyed queue
 and rereads the current premise before delivery, including in hook processes. A stale reminder
 is dropped or rerendered; original instructions, source records and logs remain intact.
+
+New Stop evidence or a relay report attributed to an exact enrolled participant can
+reopen an uncovered HQ obligation before its previous deferred check. The daemon
+enqueues this wake independently of the standing reminder interval. An enqueue attempt,
+transport acceptance and an HQ claim are separate facts. The claim records the current
+HQ identity, generation and `claimed_at`. A live lease suppresses the wake for that
+exact observation. Other observations keep their own eligibility, even when their
+recorded times match. Urgent and standing wakes use separate keyed queue entries
+and schedules. Each entry can survive a shared draft and is revalidated on drain. Without a claim, the existing reconciliation cycle
+retries on its 30-second cadence, then backs off to five minutes after three attempts.
+The retry record points HQ to the outstanding receipt and the wake channel to inspect.
+Sourced holds still apply. The wake carries a receipt reference for review and leaves
+step selection, authorization and guarded source delivery to the existing workspace actions.
 
 HQ claims `goals[MATTER].followup_id` and assesses with `decision:responsibility`, the lease's
 generation, current nonzero matter revision, a reason and `responsibility`. This is an explicit

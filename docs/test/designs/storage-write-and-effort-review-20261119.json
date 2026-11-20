@@ -1,0 +1,41 @@
+{
+  "id": "storage-write-and-effort-review-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-19",
+    "decision": "Exercise actual output operations and the timestamp of effort-only legacy observations",
+    "notes": "Review follow-up for the 3547909c candidate. Use temporary roots only. The guarded writer must check the actual destination, anchor writes under the selected external root, preserve an existing valid archive if writing fails, and retain ordinary external output. The Go fixture changes only effort in the v1 record, with explicit before/after timestamps and no artificial model refresh."
+  },
+  "cases": [
+    {
+      "id": "STOR-008",
+      "layer": "L2",
+      "description": "Store archive, checkpoint and capture log writers stay within the selected external root",
+      "setup": "Use a disposable home with synthetic managed directories and an external project output root. No real build or simulator.",
+      "action": "Exercise pack-build, checkpoint and progress/WDA log writes with ordinary destinations, existing destination links, and linked checkpoint parents. Inject archive-write failure with an existing archive.",
+      "expected": "Protected files and links stay unchanged; normal archives and logs are written and checkpoints remain readable. A failed archive write leaves its previous bytes.",
+      "planned_files": [
+        "mobileapp/scripts/delivery_write_boundary_test.py"
+      ],
+      "surfaces": [
+        "Store artifact CLI and capture checkpoints and logs"
+      ]
+    },
+    {
+      "id": "STOR-009",
+      "layer": "L2",
+      "description": "A compatible legacy effort-only update after a reset remains visible",
+      "setup": "Use disposable profiles with matching, absent or differing models and independent legacy effort timestamps.",
+      "action": "Clear effort through the new observer. Read the unchanged legacy record, then apply a genuine effort-only observation through legacy semantics without rewriting model time.",
+      "expected": "An effort at or before the reset is not reused. A genuinely later effort is available for matching model identities, including two model-less records. Options from different models never fill the chosen model.",
+      "planned_files": [
+        "internal/agentprofile/mixed_effort_review_test.go"
+      ],
+      "surfaces": [
+        "Native hook participant profile reads"
+      ]
+    }
+  ],
+  "seal": "7e08289632672418cbd0ba9cfecc627af9ab7e8eca310a1e910c0f85529a5bf0"
+}

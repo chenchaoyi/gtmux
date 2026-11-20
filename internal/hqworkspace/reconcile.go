@@ -4,37 +4,43 @@ import (
 	"errors"
 	"reflect"
 	"sort"
+	"strings"
 )
 
 // Observation is immutable input, not permission to execute or change a goal.
 // ID is namespaced by its producer; Ref points to the original durable record.
 type Observation struct {
-	DriveProof     *DriveProof  `json:"drive_proof,omitempty"`
-	ID             string       `json:"id"`
-	Kind           string       `json:"kind"`
-	MatterID       string       `json:"matter_id,omitempty"`
-	MatterRevision uint64       `json:"matter_revision,omitempty"`
-	Body           string       `json:"body,omitempty"`
-	Ref            string       `json:"ref,omitempty"`
-	Conversation   Conversation `json:"conversation,omitempty"`
-	OccurredAt     int64        `json:"occurred_at"`
+	Continuation    bool         `json:"continuation,omitempty"`
+	RecordingPolicy string       `json:"recording_policy,omitempty"`
+	DriveProof      *DriveProof  `json:"drive_proof,omitempty"`
+	ID              string       `json:"id"`
+	Kind            string       `json:"kind"`
+	MatterID        string       `json:"matter_id,omitempty"`
+	MatterRevision  uint64       `json:"matter_revision,omitempty"`
+	Body            string       `json:"body,omitempty"`
+	Ref             string       `json:"ref,omitempty"`
+	Conversation    Conversation `json:"conversation,omitempty"`
+	OccurredAt      int64        `json:"occurred_at"`
 }
 
 type Reconciliation struct {
-	GoalPremise   string      `json:"goal_premise,omitempty"`
-	ReminderAt    int64       `json:"reminder_at,omitempty"`
-	ReminderCount uint64      `json:"reminder_count,omitempty"`
-	Observation   Observation `json:"observation"`
-	State         string      `json:"state"` // pending | leased | assessed | deferred | conflict | superseded
-	ReceivedAt    int64       `json:"received_at"`
-	Owner         string      `json:"owner,omitempty"`
-	Generation    uint64      `json:"generation"`
-	LeaseUntil    int64       `json:"lease_until,omitempty"`
-	NextCheck     int64       `json:"next_check,omitempty"`
-	ReceiptID     string      `json:"receipt_id,omitempty"`
+	ReviewedEventCursor *int64      `json:"reviewed_event_cursor,omitempty"`
+	GoalPremise         string      `json:"goal_premise,omitempty"`
+	ReminderAt          int64       `json:"reminder_at,omitempty"`
+	ReminderCount       uint64      `json:"reminder_count,omitempty"`
+	Observation         Observation `json:"observation"`
+	State               string      `json:"state"` // pending | recorded | leased | assessed | deferred | conflict | superseded
+	ClaimedAt           int64       `json:"claimed_at,omitempty"`
+	ReceivedAt          int64       `json:"received_at"`
+	Owner               string      `json:"owner,omitempty"`
+	Generation          uint64      `json:"generation"`
+	LeaseUntil          int64       `json:"lease_until,omitempty"`
+	NextCheck           int64       `json:"next_check,omitempty"`
+	ReceiptID           string      `json:"receipt_id,omitempty"`
 }
 
 type Assessment struct {
+	ReviewRef      string          `json:"review_ref,omitempty"`
 	Responsibility *Responsibility `json:"responsibility,omitempty"`
 	ResumeRef      string          `json:"resume_ref,omitempty"`
 	ID             string          `json:"id"`
@@ -43,18 +49,20 @@ type Assessment struct {
 	Generation     uint64          `json:"generation"`
 	MatterID       string          `json:"matter_id,omitempty"`
 	Revision       uint64          `json:"revision,omitempty"`
-	Decision       string          `json:"decision"` // noted | transition | deferred | conflict | responsibility
+	Decision       string          `json:"decision"` // noted | no-followup | transition | deferred | conflict | responsibility
 	State          string          `json:"state,omitempty"`
 	Reason         string          `json:"reason"`
 	NextCheck      int64           `json:"next_check,omitempty"`
 }
 
 type AssessmentReceipt struct {
-	Assessment     Assessment `json:"assessment"`
-	At             int64      `json:"at"`
-	BeforeRevision uint64     `json:"before_revision,omitempty"`
-	AfterRevision  uint64     `json:"after_revision,omitempty"`
-	QueueState     string     `json:"queue_state"`
+	HandoffID           string     `json:"handoff_id,omitempty"`
+	ReviewedEventCursor *int64     `json:"reviewed_event_cursor,omitempty"`
+	Assessment          Assessment `json:"assessment"`
+	At                  int64      `json:"at"`
+	BeforeRevision      uint64     `json:"before_revision,omitempty"`
+	AfterRevision       uint64     `json:"after_revision,omitempty"`
+	QueueState          string     `json:"queue_state"`
 }
 
 func recordObservation(d *Database, o Observation, at int64) error {
@@ -67,7 +75,11 @@ func recordObservation(d *Database, o Observation, at int64) error {
 		}
 		return nil
 	}
-	d.Reconciliations[o.ID] = Reconciliation{Observation: o, State: "pending", ReceivedAt: at}
+	status := "pending"
+	if o.Kind == "relay-attribution" || o.Kind == "relay-notice" || o.Kind == "relay-legacy-delivery" {
+		status = "recorded"
+	}
+	d.Reconciliations[o.ID] = Reconciliation{Observation: o, State: status, ReceivedAt: at}
 	changed(d, at, "observation", o.MatterID, o.ID, o.Kind)
 	return nil
 }
@@ -83,11 +95,25 @@ func (s *Store) Ingest(source string, expected, cursor int64, observations []Obs
 			return ErrConflict
 		}
 		for _, o := range observations {
+			_, seen := d.Reconciliations[o.ID]
 			if err := recordObservation(d, o, at); err != nil {
 				return err
 			}
+			if !seen && o.Continuation {
+				reopenDeferredGoal(d, o, at)
+			}
 		}
 		for _, o := range observations {
+			if o.Kind == "relay-fetched" {
+				key := "inbox:" + strings.TrimPrefix(o.Ref, "relay:")
+				if old, ok := d.Reconciliations[key]; ok && old.State != "superseded" {
+					old.State = "superseded"
+					old.LeaseUntil = 0
+					old.Generation++
+					d.Reconciliations[key] = old
+					changed(d, at, "inbox-fetched", o.MatterID, key, o.ID)
+				}
+			}
 			if o.DriveProof != nil {
 				attachDrive(d, o, at)
 			}
@@ -103,7 +129,7 @@ func (s *Store) Ingest(source string, expected, cursor int64, observations []Obs
 func ReconciliationQueue(d Database, now int64) []Reconciliation {
 	out := []Reconciliation{}
 	for _, q := range d.Reconciliations {
-		if q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > now {
+		if q.State == "recorded" || q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > now {
 			continue
 		}
 		out = append(out, q)
@@ -140,11 +166,19 @@ func (s *Store) ClaimObservation(id, owner string, at int64) (Reconciliation, er
 				return ErrConflict
 			}
 			q.GoalPremise = goalPremise(*d, m, at)
-		} else if q.State == "superseded" || q.State == "assessed" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > at {
+			cursor := d.ObservationCursors["events"]
+			q.ReviewedEventCursor = &cursor
+		} else if q.State == "assessed" {
+			receipt := q.Observation.Kind == "relay-inbox" || q.Observation.Kind == "relay-fetched"
+			if !receipt || replyDischarged(*d, strings.TrimPrefix(q.Observation.Ref, "relay:")) {
+				return ErrConflict
+			}
+		} else if q.State == "recorded" || q.State == "superseded" || q.State == "conflict" || q.State == "deferred" && q.NextCheck > at {
 			return ErrConflict
 		}
 		q.State = "leased"
 		q.Owner = owner
+		q.ClaimedAt = at
 		q.Generation++
 		q.LeaseUntil = at + 300
 		d.Reconciliations[id] = q
@@ -176,8 +210,16 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 	if q.State != "leased" || q.Owner != a.Owner || q.Generation != a.Generation || q.LeaseUntil <= at {
 		return receipt, ErrConflict
 	}
-	if q.Observation.MatterID != a.MatterID && CanonicalMatter(*d, q.Observation.MatterID) != a.MatterID {
+	triage := q.Observation.NeedsTriage()
+	if !triage && q.Observation.MatterID != a.MatterID && CanonicalMatter(*d, q.Observation.MatterID) != a.MatterID {
 		return receipt, ErrConflict
+	}
+	if triage {
+		if err := validateTriageAssessment(a); err != nil {
+			return receipt, err
+		}
+	} else if a.ReviewRef != "" || a.Decision == "handoff" {
+		return receipt, errors.New("review_ref and handoff require an HQ triage observation")
 	}
 	var m Matter
 	if a.MatterID != "" {
@@ -204,6 +246,13 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 	}
 	receipt = AssessmentReceipt{Assessment: a, At: at, BeforeRevision: m.Revision, AfterRevision: m.Revision}
 	switch a.Decision {
+	case "handoff":
+		var err error
+		receipt.HandoffID, err = handoffTriage(d, q.Observation, m, at)
+		if err != nil {
+			return receipt, err
+		}
+		q.State = "assessed"
 	case "responsibility":
 		if q.Observation.Kind != "goal-followup" || a.Responsibility == nil || a.Revision == 0 {
 			return receipt, ErrConflict
@@ -217,7 +266,22 @@ func assess(d *Database, a Assessment, at int64) (AssessmentReceipt, error) {
 			return receipt, e
 		}
 		m.Responsibility = a.Responsibility
+		receipt.ReviewedEventCursor = q.ReviewedEventCursor
 		q.State = "pending"
+	case "no-followup":
+		if triage {
+			q.State = "assessed"
+			break
+		}
+		if q.Observation.Kind != "relay-inbox" && q.Observation.Kind != "relay-fetched" {
+			return receipt, errors.New("no-followup requires a reviewed inbox receipt")
+		}
+		for _, attempt := range d.IntentAttempts {
+			if "relay:"+attempt.ReplyID == q.Observation.Ref {
+				return receipt, errors.New("reconcile the receipt's bound intent before closing its matter")
+			}
+		}
+		q.State = "assessed"
 	case "noted":
 		q.State = "assessed"
 	case "conflict":
@@ -302,8 +366,18 @@ func validateTransition(m Matter, state string, revision uint64) error {
 // MatchObservation never uses pane/title. Legacy inclusive interval endpoints
 // are intentionally ambiguous at a shared second, rather than guessed away.
 func MatchObservation(d Database, c Conversation, at int64) (string, uint64) {
+	ids := ObservationMatters(d, c, at)
+	if len(ids) == 1 {
+		return ids[0], d.Matters[ids[0]].Revision
+	}
+	return "", 0
+}
+
+// ObservationMatters returns the canonical execution matches at the source
+// event time. Overlapping associations cannot elect a matter by iteration order.
+func ObservationMatters(d Database, c Conversation, at int64) []string {
 	if c.Agent == "" || c.SessionID == "" {
-		return "", 0
+		return nil
 	}
 	ids := map[string]bool{}
 	for _, m := range d.Matters {
@@ -314,13 +388,12 @@ func MatchObservation(d Database, c Conversation, at int64) (string, uint64) {
 			ids[CanonicalMatter(d, m.ID)] = true
 		}
 	}
-	if len(ids) != 1 {
-		return "", 0
-	}
+	out := make([]string, 0, len(ids))
 	for id := range ids {
-		return id, d.Matters[id].Revision
+		out = append(out, id)
 	}
-	return "", 0
+	sort.Strings(out)
+	return out
 }
 
 // ActivateObservations establishes one prospective boundary for all producers.

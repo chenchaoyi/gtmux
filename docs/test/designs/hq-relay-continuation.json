@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Proceed with isolated store, relay and guarded dispatcher cases",
+    "notes": "Observe reply and fetch independently of request ingestion and Stop order. Ordinary reply is pull-only. A separate current-revision HQ workspace action binds an existing reviewed step, a sourced user instruction, exact execution member and a specific inbox reply. Reserve the original intent ID, including across crashes. Use only guarded native idle wake, never forward a body. An exact source progress receipt with evidence is required for execution. Design review by the author only."
+  },
+  "cases": [
+    {
+      "id": "HRC-001",
+      "layer": "L2",
+      "description": "Inbox lifecycle and worker proof survive races and restarts.",
+      "setup": "Isolated workspace, relay facts, exact execution member and saved intent.",
+      "action": "Ingest request before and after Stop, repeat scans, fetch and supply late structured source receipts.",
+      "expected": "Request, reply, hint, fetch and actual work are distinct. Both unfetched and fetched without execution remain visible. A queue or input receipt cannot prove work.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_test.go"
+      ]
+    },
+    {
+      "id": "HRC-002",
+      "layer": "L2",
+      "description": "An explicit workspace continuation reserves one current authorized step.",
+      "setup": "Isolated durable store and synthetic Codex candidates and native RPC adapter.",
+      "action": "Arm through the HQ action, restart, race or repeat scheduling and inject wrong authority, target changes, user question, busy, draft, refusal and uncertain submission.",
+      "expected": "Only one exact idle native transport can receive the bounded receipt-specific reminder. No implicit grant, fallback, stale replay or second submission; blockers and original attempt remain inspectable.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_test.go"
+      ]
+    }
+  ],
+  "seal": "7380d621990d0a096edb8af18545164f97923a6c2d6211d4afb7604f335172c8"
+}

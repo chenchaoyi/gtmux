@@ -1,6 +1,7 @@
 package app
 
 import (
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
@@ -45,14 +46,17 @@ func plainTermPane(driverKey, fgCmd string) bool {
 // confirm — there is no box; the shell's own echo is the confirmation the caller's
 // screen snapshot carries. The caller is responsible for exiting copy-mode first.
 func typePlain(id, text string) error {
+	var err error
 	if keystrokeText(text) {
-		if err := tmux.SendText(id, text, false); err != nil {
-			return err
-		}
+		err = tmux.SendText(id, text, false)
 	} else if text != "" {
-		if err := tmux.Paste(id, text); err != nil {
-			return err
-		}
+		err = tmux.Paste(id, text)
 	}
-	return tmux.SendKey(id, "Enter")
+	if err != nil {
+		return err
+	}
+	if err := tmux.SendKey(id, "Enter"); err != nil {
+		return &dispatch.InputError{Code: dispatch.InputOutcomeUnconfirmed, Submission: dispatch.SubmissionUnknown, Cause: err}
+	}
+	return nil
 }

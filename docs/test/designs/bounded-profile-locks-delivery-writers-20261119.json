@@ -1,0 +1,45 @@
+{
+  "id": "bounded-profile-locks-delivery-writers-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-19",
+    "decision": "Verify a bounded and mixed-version-safe profile writer and the actual local release and Store output guards",
+    "notes": "Use disposable files and mock release inputs only. Whole-session observations in the two generations have independent writers. On read, newest facts are combined while the newest model and permission snapshots own their dependent values. Do not edit or retire any real legacy files, cast a profile observation as authority, construct an archive, or call a release provider in these tests."
+  },
+  "cases": [
+    {
+      "id": "STOR-004",
+      "layer": "L2",
+      "description": "New observations reuse bounded profile lock shards while old observations remain readable and writable independently",
+      "setup": "Disposable HOME, explicit identities, v1-format profile and legacy lock held, multiple new session IDs covering shard collisions.",
+      "action": "Read a legacy observation, publish using the new hook, switch the observed model and permission, then simulate a late old writer. Hold the matching shard and confirm a new writer does not write while held.",
+      "expected": "At most 256 new lock files outside the data root top level. Old per-session lock and profile bytes are untouched by new writes. New observations stay isolated during contention, mixed reads retain independent facts, stale model options or cleared mode do not reappear, and a new identity is never attached to foreign data.",
+      "planned_files": [
+        "internal/agentprofile/observation_storage_test.go"
+      ],
+      "surfaces": [
+        "Native hook participant profiles"
+      ]
+    },
+    {
+      "id": "STOR-005",
+      "layer": "G",
+      "description": "Local macOS staging, mobile retrieval, and Store receipt writers enforce the managed storage boundary",
+      "setup": "Disposable HOME with private managed roots and aliases, fake Mac ZIP, fake release transport, mocked verification.",
+      "action": "Invoke actual configured output paths under the managed trees or through aliases.",
+      "expected": "Refuse before writing or verifying/downloading. Reuse existing successful task-owned staging tests and preserve old output on rejection.",
+      "planned_files": [
+        "scripts/macos_release_artifact_test.py",
+        "mobileapp/scripts/fetch_delivery_test.py",
+        "mobileapp/scripts/store_package_test.py"
+      ],
+      "surfaces": [
+        "Local Mac release staging",
+        "Mobile delivery retrieval",
+        "App Store receipt"
+      ]
+    }
+  ],
+  "seal": "82d3c0a2ff36cda72f41af092e82704c88abc5ff54853e9029347c6790660c56"
+}

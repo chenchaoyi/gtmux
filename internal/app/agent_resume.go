@@ -1,8 +1,14 @@
 package app
 
 import (
+	"context"
 	"fmt"
+	"maps"
+	"os"
+	"os/signal"
+	"sort"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/agentenv"
@@ -78,40 +84,38 @@ func autoResumeEnabled() bool {
 //
 // A conversation is used at most once (dedup by session id).
 func resumeAgents() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	resumeAgentsContext(ctx)
+}
+
+func resumeAgentsContext(parent context.Context) {
+	ctx, cancel := context.WithCancel(parent)
+	defer cancel()
 	mode := effectiveResumeMode()
 	if mode == resumeOff {
 		restoreLogf("restore.resume", "resumeAgents: mode=off — not touching panes")
 		return
 	}
-	type shellPane struct{ id, loc, cwd string }
-	var panes []shellPane
-	occupied := map[string]bool{}
-	used := map[string]bool{} // includes conversations in already-running panes
-	for _, line := range tmux.Lines("list-panes", "-a", "-F",
-		"#{pane_id}\t#{pane_current_command}\t#{session_name}:#{window_index}.#{pane_index}\t#{pane_current_path}") {
-		f := strings.SplitN(line, "\t", 4)
-		if len(f) != 4 {
-			continue
-		}
-		occupied[f[2]] = true
-		if !isShellCommand(f[1]) {
-			if rec, ok := resume.LoadLive(f[2]); ok && rec.SessionID != "" {
-				used[rec.SessionID] = true
-			}
-			continue // a program is running here — don't type over it
-		}
-		if remoteRestoreSessions != nil && !remoteRestoreSessions[locSession(f[2])] {
-			continue
-		}
-		panes = append(panes, shellPane{id: f[0], loc: f[2], cwd: f[3]})
-	}
 
 	// The liveness gate. With no parseable save there is no evidence to gate on, so
 	// behave exactly as before rather than refusing every resume — a missing save
 	// must degrade to the old behavior, not to silence.
-	layout := loadSavedLayout(resurrectLastSave())
-	for loc := range layout.ByLoc {
-		occupied[loc] = true
+	layout := loadResumeLayout(resurrectLastSave())
+	if layout.ReadError != nil {
+		i18n.Sae("Could not read the saved layout.", "无法读取布局存档。")
+		return
+	}
+	used := map[string]bool{} // issued in this batch, including uncertain writes
+	panes, occupied, initiallyUnavailable, ok := restoreFleet(layout, used)
+	if !ok {
+		restoreLogf("restore.resume", "cannot establish live pane inventory")
+		return
+	}
+	selections := map[string]*nativeRestoreSelection{}
+	for _, p := range panes {
+		incumbent, err := nativeRestoreReadIncumbent(p.loc)
+		selections[p.loc] = &nativeRestoreSelection{Path: layout.SavePath, Digest: layout.Digest, ReadError: layout.ReadError, Incumbent: incumbent, IncumbentError: err}
 	}
 	gated := len(layout.Panes) > 0
 	restoreLogf("restore.resume", "resumeAgents: mode=%d shellPanes=%d savedPanes=%d liveness-gate=%v",
@@ -138,15 +142,21 @@ func resumeAgents() {
 		panes = eligible
 	}
 
+	// Exact-owner pass still precedes guesses; tmux enumeration cannot change order.
+	sort.SliceStable(panes, func(i, j int) bool {
+		return restoreSerialLess(panes[i].loc, panes[i].id, panes[j].loc, panes[j].id)
+	})
+
+	nativeCapabilities := map[nativeRestoreBinary]nativeRestoreCapability{}
 	n := 0
 	var attempts []resumeAttempt
-	run := func(paneID string, rec resume.Record) bool {
-		if remoteRestoreError != nil {
-			return false
+	issue := func(paneID string, rec resume.Record) (resumeAttempt, bool) {
+		if ctx.Err() != nil || remoteRestoreError != nil {
+			return resumeAttempt{}, false
 		}
 		reportRemoteRestore("agents", attempts)
-		if remoteRestoreError != nil {
-			return false
+		if ctx.Err() != nil || remoteRestoreError != nil {
+			return resumeAttempt{}, false
 		}
 		loc := ""
 		for _, p := range panes {
@@ -155,8 +165,8 @@ func resumeAgents() {
 				break
 			}
 		}
-		if used[rec.SessionID] {
-			return false
+		if initiallyUnavailable[rec.SessionID] || used[rec.SessionID] {
+			return resumeAttempt{}, false
 		}
 		// Resume from where the conversation is actually FILED, not the cwd we last saw
 		// the pane in — an agent that `cd`s mid-session moves the latter, and resuming
@@ -169,40 +179,64 @@ func resumeAgents() {
 			if rec.Agent == "codex" {
 				status = resume.Recovery(rec).State
 			}
-			attempts = append(attempts, resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: status})
+			attempt := resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: status}
 			restoreLogf("restore.resume", "resume[skip] pane=%s session=%s — conversation not on disk (deleted/expired)", paneID, rec.SessionID)
-			return false
-		}
-		cmd, ok := resume.CommandWithBridge(rec, selfPath())
-		if !ok {
-			return false
+			return attempt, false
 		}
 		expected, allowed := remoteRestoreTargets[loc]
 		if (remoteRestoreSessions != nil && (!allowed || rec.Agent != expected.Agent || rec.SessionID != expected.SessionID || (expected.HomeID != "" && rec.HomeID != expected.HomeID))) || !remotePaneStillEligible(paneID, loc) {
-			attempts = append(attempts, resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: "target-changed"})
-			return false
+			return resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: "target-changed"}, false
 		}
-		before, _ := resume.Load(loc)
-		attempt := resumeAttempt{Pane: paneID, Loc: loc, Record: rec, Before: before, IssuedAt: time.Now().Unix(), State: "send-failed"}
-		if tmux.SendText(paneID, agentenv.Wrap(cmd), mode == resumeAuto) == nil {
-			attempt.State = "pending"
-			if mode == resumeType {
-				attempt.State = "prefilled"
-			}
-			attempts = append(attempts, attempt)
-			used[rec.SessionID] = true
-			return true
+		return routeRestoreCommand(ctx, paneID, loc, rec, nativeCapabilities, mode, used, selections[loc])
+	}
+
+	serial := newRestoreSerialGate(ctx, mode, len(panes))
+	serial.stop = func() bool {
+		reportRemoteRestore("agents", attempts)
+		if remoteRestoreError != nil {
+			cancel()
 		}
-		attempts = append(attempts, attempt)
-		return false
+		return ctx.Err() != nil
+	}
+	serial.publish = func(a resumeAttempt) {
+		if a.Pane == "" {
+			return
+		}
+		if len(attempts) > 0 && attempts[len(attempts)-1].Pane == a.Pane {
+			attempts[len(attempts)-1] = a
+		} else {
+			attempts = append(attempts, a)
+		}
+		restoreLogf("restore.resume", "resume[serial] pane=%s loc=%s state=%s issue=%s", a.Pane, a.Loc, a.State, a.IssueState)
+		if a.State == "confirmed" {
+			diag.For("restore").Act("act.resume.confirmed", diag.Caller(), a.Pane, diag.OK,
+				"confirmed the target conversation after its resume command", "conversation", a.Record.SessionID)
+		}
+		if remoteRestoreProgress == nil && a.State != "pending" {
+			fmt.Print(renderResumeProgress(a, termWidth()))
+		}
+		reportRemoteRestore("agents", attempts)
+	}
+	run := func(paneID string, rec resume.Record) bool {
+		_, sent := serial.run(func() (resumeAttempt, bool) { return issue(paneID, rec) })
+		return sent
 	}
 
 	// Pass 1 — the pane's own evidence: its exact-locator record (hook-fresh), else
 	// the conversation id the SAVE recorded this very pane resuming. Both are about
 	// THIS pane; the guess in pass 2 is not, so it must not run first and claim a
 	// conversation another pane can prove is its own.
+	type exactMatch struct {
+		pane   shellPane
+		rec    resume.Record
+		source string
+	}
+	var exact []exactMatch
 	var pending []shellPane
 	for _, p := range panes {
+		if serial.stopped {
+			break
+		}
 		rec, ok := resume.LoadLive(p.loc)
 		if gated {
 			rec, ok = layout.ByLoc[p.loc].restorableRecord()
@@ -217,6 +251,17 @@ func resumeAgents() {
 			pending = append(pending, p)
 			continue
 		}
+		exact = append(exact, exactMatch{p, rec, src})
+	}
+	var history []resume.Located
+	if len(pending) > 0 {
+		history = resume.AllLocated()
+	}
+	for _, match := range exact {
+		if serial.stopped {
+			break
+		}
+		p, rec, src := match.pane, match.rec, match.source
 		ran := run(p.id, rec)
 		restoreLogf("restore.resume", "resume[%s] pane=%s loc=%s cwd=%s → session=%s ran=%v", src, p.id, p.loc, p.cwd, rec.SessionID, ran)
 		if ran {
@@ -230,9 +275,11 @@ func resumeAgents() {
 	// pickCwdFallback). This pass is a GUESS — the record it finds belonged to some
 	// other locator — so on top of the liveness gate it also refuses records nobody
 	// has touched in weeks.
-	if len(pending) > 0 {
-		all := resume.AllLocated() // most-recent first, each with its original locator
+	if len(pending) > 0 && !serial.stopped {
 		for _, p := range pending {
+			if serial.stopped {
+				break
+			}
 			// Prefer the directory the SAVE recorded for this pane: it is the
 			// pre-reboot truth, while the live cwd is "/" whenever resurrect failed
 			// to restore the pane's directory (which the shifted-line bug causes).
@@ -240,19 +287,21 @@ func resumeAgents() {
 			if d := layout.ByLoc[p.loc].Dir; d != "" {
 				cwd = d
 			}
-			chosen, cands := pickCwdFallback(p.loc, cwd, all, used, layout.Ref, occupied)
+			maps.Copy(initiallyUnavailable, used)
+			chosen, cands := pickCwdFallback(p.loc, cwd, history, initiallyUnavailable, layout.Ref, occupied)
 			if chosen == nil {
 				restoreLogf("restore.resume", "resume[no-match] pane=%s loc=%s cwd=%s eligible-candidates=%d (ownership protected; ambiguous candidates refused)", p.id, p.loc, cwd, cands)
 				i18n.Sae(fmt.Sprintf("Skipped %s: no unique, unclaimed conversation could be identified.", p.loc),
 					fmt.Sprintf("未恢复 %s 的 agent：无法确定唯一且未被其他窗格占用的会话。", p.loc))
 				continue
 			}
-			ran := run(p.id, *chosen)
+			selections[p.loc].Fallback = &restoreFallback{source: *chosen, target: p.loc, cwd: cwd, layout: layout, previouslyIssued: maps.Clone(used)}
+			ran := run(p.id, chosen.Record)
 			restoreLogf("restore.resume", "resume[cwd-fallback] pane=%s loc=%s cwd=%s → session=%s ran=%v",
 				p.id, p.loc, cwd, chosen.SessionID, ran)
 			if ran {
 				n++
-				actResumed(p.id, *chosen, "cwd-fallback")
+				actResumed(p.id, chosen.Record, "cwd-fallback")
 			}
 		}
 	}
@@ -260,23 +309,59 @@ func resumeAgents() {
 	reportRemoteRestore("agents", attempts)
 	restoreLogf("restore.resume", "resumeAgents: done resumed=%d", n)
 	reportResume(mode, n)
-	if mode == resumeAuto && n > 0 {
-		// One bounded grace period for the whole fleet, never one wait per pane.
-		time.Sleep(1500 * time.Millisecond)
-	}
-	for i := range attempts {
-		if attempts[i].State != "pending" {
-			continue
-		}
-		current, live := resume.LoadLive(attempts[i].Loc)
-		if resumeAttemptConfirmed(attempts[i], current, live) {
-			attempts[i].State = "confirmed"
-			diag.For("restore").Act("act.resume.confirmed", diag.Caller(), attempts[i].Pane, diag.OK,
-				"confirmed the target conversation after its resume command", "conversation", current.SessionID)
-		}
-	}
 	reportRemoteRestore("agents", attempts)
 	fmt.Print(renderResumeAttempts(attempts, termWidth()))
+}
+
+type shellPane struct{ id, loc, cwd string }
+
+// The same inventory determines initial eligibility and final fallback ownership.
+func restoreFleet(layout savedLayout, issued map[string]bool) (shells []shellPane, occupied, unavailable map[string]bool, ok bool) {
+	raw, err := tmux.Run("list-panes", "-a", "-F", "#{pane_id}\t#{pane_current_command}\t#{session_name}:#{window_index}.#{pane_index}\t#{pane_current_path}")
+	if err != nil || raw == "" {
+		return nil, nil, nil, false
+	}
+	occupied = make(map[string]bool, len(layout.ByLoc))
+	for loc := range layout.ByLoc {
+		occupied[loc] = true
+	}
+	unavailable = maps.Clone(issued)
+	for _, line := range strings.Split(raw, "\n") {
+		f := strings.SplitN(line, "\t", 4)
+		if len(f) != 4 || f[0] == "" || f[2] == "" {
+			return nil, nil, nil, false
+		}
+		occupied[f[2]] = true
+		if !isShellCommand(f[1]) {
+			if rec, ok := resume.LoadLive(f[2]); ok && rec.SessionID != "" {
+				unavailable[rec.SessionID] = true
+			}
+		} else if remoteRestoreSessions == nil || remoteRestoreSessions[locSession(f[2])] {
+			shells = append(shells, shellPane{f[0], f[2], f[3]})
+		}
+	}
+	return shells, occupied, unavailable, true
+}
+
+type restoreFallback struct {
+	source           resume.Located
+	target, cwd      string
+	layout           savedLayout
+	previouslyIssued map[string]bool // excludes this item's own native reservation
+}
+
+func (f *restoreFallback) stillUnique() bool {
+	history := resume.AllLocated()
+	_, occupied, unavailable, ok := restoreFleet(f.layout, f.previouslyIssued)
+	if !ok {
+		return false
+	}
+	current, _ := pickCwdFallback(f.target, f.cwd, history, unavailable, f.layout.Ref, occupied)
+	if current == nil || *current != f.source {
+		return false
+	}
+	owner, err := nativeRestoreReadIncumbent(f.source.Loc)
+	return err == nil && owner.Exists && owner.Record == f.source.Record
 }
 
 // fallbackMaxAge bounds how old a record may be to be recovered by the CWD FALLBACK
@@ -298,7 +383,7 @@ const fallbackMaxAge = 14 * 24 * time.Hour
 //
 // ref is the save's timestamp; candidates older than fallbackMaxAge before it are
 // skipped. A zero ref disables that check (no dated evidence to compare against).
-func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool, ref time.Time, occupied map[string]bool) (rec *resume.Record, candidates int) {
+func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool, ref time.Time, occupied map[string]bool) (rec *resume.Located, candidates int) {
 	if cwd == "" {
 		return nil, 0
 	}
@@ -315,7 +400,7 @@ func pickCwdFallback(loc, cwd string, all []resume.Located, used map[string]bool
 		seen[r.SessionID] = true
 		candidates++
 		if rec == nil {
-			rec = &all[i].Record
+			rec = r
 		}
 	}
 	if candidates != 1 {
@@ -379,4 +464,56 @@ var isShellCommand = radar.IsShellCommand
 func actResumed(pane string, rec resume.Record, match string) {
 	diag.For("restore").Act("act.resume.command", diag.Caller(), pane, diag.OK,
 		"sent a conversation resume command; startup not yet confirmed", "agent", rec.Agent, "conversation", rec.SessionID, "match", match)
+}
+
+func issueCompatibleRestore(ctx context.Context, paneID, loc string, rec resume.Record, mode resumeMode, used map[string]bool, selection *nativeRestoreSelection) (resumeAttempt, bool) {
+	if rec.Agent == "codex" && mode == resumeAuto {
+		occupied, err := resume.NativeRestoreOccupied(rec)
+		if occupied || err != nil {
+			state := "already-attempted"
+			if err != nil {
+				state = "reservation-unavailable"
+			}
+			return resumeAttempt{Pane: paneID, Loc: loc, Record: rec, State: state}, false
+		}
+	}
+	cmd, ok := resume.CommandWithBridge(rec, selfPath())
+	if !ok {
+		return resumeAttempt{}, false
+	}
+	before, _ := resume.Load(loc)
+	attempt := resumeAttempt{Pane: paneID, Loc: loc, Record: rec, Before: before, IssuedAt: time.Now().Unix(), State: "send-failed"}
+	if ctx.Err() != nil {
+		attempt.State = "cancelled"
+		return attempt, false
+	}
+	cmd = agentenv.Wrap(cmd)
+	eligible := selection.sourceUnchanged() && restorePaneIsShell(paneID, loc)
+	if ctx.Err() != nil {
+		attempt.State = "cancelled"
+		return attempt, false
+	}
+	if !eligible {
+		attempt.State = "target-changed"
+		return attempt, false
+	}
+	// A lost tmux response can leave a draft or an executed command. Claim the
+	// identity before the first write so the next pane cannot submit it again.
+	used[rec.SessionID] = true
+	if tmux.SendText(paneID, cmd, mode == resumeAuto) == nil {
+		attempt.State = "pending"
+		if mode == resumeType {
+			attempt.State = "prefilled"
+		}
+		return attempt, true
+	}
+	attempt.State = "unknown"
+	return attempt, false
+}
+
+func routeRestoreCommand(ctx context.Context, pane, loc string, rec resume.Record, cache map[nativeRestoreBinary]nativeRestoreCapability, mode resumeMode, used map[string]bool, selection *nativeRestoreSelection) (resumeAttempt, bool) {
+	if attempt, handled, sent := tryNativeRestoreContext(ctx, pane, loc, rec, cache, mode, used, selection); handled {
+		return attempt, sent
+	}
+	return issueCompatibleRestore(ctx, pane, loc, rec, mode, used, selection)
 }

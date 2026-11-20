@@ -17,6 +17,8 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
+var sendDispatchIO = dispatchbridge.DispatchIO
+
 // cmdSend types into a tmux pane (a WRITE) — it backs the menu-bar / notification
 // in-place reply (A1/A2) and any scripted input. `gtmux send <pane> <text…>`
 // delivers the text then Enter and, by DEFAULT, VERIFIES it landed (the same
@@ -117,9 +119,8 @@ func cmdSend(args []string) int {
 		return code
 	}
 	enter, verify, force, asJSON, key, msgFile, attach, rest := sa.enter, sa.verify, sa.force, sa.asJSON, sa.key, sa.msgFile, sa.attach, sa.rest
-	// --json reports the VERIFIED delivery result (delivered/state/judged_by/
-	// evidence); the unverified and single-key paths have no verdict to report.
-	if asJSON && (!verify || !enter || key != "") {
+	// A text submission has a result even when post-submit verification is skipped.
+	if asJSON && (!enter || key != "") {
 		return sendUsage()
 	}
 	pane := rest[0]
@@ -151,6 +152,10 @@ func cmdSend(args []string) int {
 			m = ""
 		}
 		text = m
+	}
+
+	if asJSON && !verify && text == "" && len(attach) == 0 {
+		return sendUsage()
 	}
 
 	if len(attach) > 0 && key != "" {
@@ -212,9 +217,7 @@ func cmdSend(args []string) int {
 			// MarkAwaited — there is no agent whose completion could be awaited.
 			_ = tmux.ExitCopyMode(paneID)
 			if err := typePlain(paneID, text); err != nil {
-				events.AuditSend(paneID, "failed", text, time.Now().Unix())
-				i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
-				return 1
+				return reportSendFailure(paneID, text, dispatch.InputFailureResult(err, 0), attached, asJSON)
 			}
 			events.AuditSend(paneID, statePlainSent, text, time.Now().Unix())
 			if asJSON {
@@ -224,15 +227,15 @@ func cmdSend(args []string) int {
 			return 0
 		}
 		tune := dispatch.LoadTuning()
-		dio := dispatchbridge.DispatchIO(paneID, agentCmd)
+		dio := sendDispatchIO(paneID, agentCmd)
 		if len(attached) > 0 {
 			dio.Hold = func() string { return attachHold(paneID) }
 		}
 		opts := dispatchbridge.DeliverOpts(paneID, agentCmd, force, tune)
 		opts.ActiveImageInput = len(attached) > 0
 		res := dispatch.Deliver(dio, opts, text)
-		if res.State == dispatch.StateRefusedWaiting {
-			return refusedWaiting(paneID, text, res.Evidence, attached, asJSON)
+		if !res.Submitted() {
+			return reportSendFailure(paneID, text, res, attached, asJSON)
 		}
 		// The sender's side of the story (hq-action-journal): the target pane's hook
 		// event carries the prompt's head but cannot say who drove it, and the
@@ -252,37 +255,12 @@ func cmdSend(args []string) int {
 			dispatch.MarkDelivered(paneID, text, time.Now().Unix())
 		}
 		if asJSON {
-			b, _ := json.Marshal(sendJSON{
-				Delivered: res.Delivered, State: string(res.State),
-				JudgedBy: res.JudgedBy, Evidence: res.Evidence, Attachments: attached,
-			})
-			fmt.Println(string(b))
-			if res.Delivered || res.State == dispatch.StateQueued {
-				return 0
-			}
-			return 1
-		}
-		switch res.State {
-		case dispatch.StateLanded:
-			return 0
-		case dispatch.StateQueued:
+			printSendJSON(sendJSON{Delivered: res.Delivered, State: string(res.State),
+				JudgedBy: res.JudgedBy, Evidence: res.Evidence, Attachments: attached})
+		} else if res.State == dispatch.StateQueued {
 			i18n.Say("• queued; it will run after the current turn", "• 已排队，当前这轮结束后执行")
-			return 0
-		case dispatch.StateRefusedDup:
-			i18n.Sae("gtmux send: refused (identical payload re-sent within the window; use --force)",
-				"gtmux send: 已拒发（时间窗内重复相同内容，要重发用 --force）")
-			return 1
-		case dispatch.StateRefusedDraft:
-			i18n.Sae("gtmux send: refused. That pane has unsent text in its input box; sending would\n"+
-				"append to it and submit both. Clear it, or use --force.\n"+res.Evidence,
-				"gtmux send: 已拒发，该 pane 的输入框里有未提交的内容，发送会拼在它后面一起提交。\n"+
-					"请先清空，或用 --force。\n"+res.Evidence)
-			return 1
-		default:
-			i18n.Sae("gtmux send: not delivered. Evidence:\n"+res.Evidence,
-				"gtmux send: 未送达。证据：\n"+res.Evidence)
-			return 1
 		}
+		return 0
 	}
 	// Plain (unverified) path: --no-verify or --no-enter. It skips the post-submit
 	// LANDED verification, not the delivery mechanics — text still rides a paste buffer
@@ -299,11 +277,12 @@ func cmdSend(args []string) int {
 		agentCmd, plain := resolvePaneAgent(id)
 		if plain {
 			if err := typePlain(id, text); err != nil {
-				events.AuditSend(id, "failed", text, time.Now().Unix())
-				i18n.Sae("gtmux send: "+err.Error(), "gtmux send: "+err.Error())
-				return 1
+				return reportSendFailure(id, text, dispatch.InputFailureResult(err, 0), attached, asJSON)
 			}
 			events.AuditSend(id, statePlainSent, text, time.Now().Unix())
+			if asJSON {
+				printSendJSON(sendJSON{Delivered: true, State: statePlainSent, Attachments: attached})
+			}
 			return 0
 		}
 		// The unverified path still protects a draft — skipping VERIFICATION was never a
@@ -313,34 +292,19 @@ func cmdSend(args []string) int {
 		// would drift apart.
 		popts := dispatchbridge.DeliverOpts(id, agentCmd, force, dispatch.LoadTuning())
 		popts.PasteRetries = 2
-		pio := dispatchbridge.DispatchIO(id)
-		// PasteAndSubmit only says it held; whether the text went in first is what the user
-		// needs to know (it may be sitting in the agent's input box), so note it here, in the
-		// same words the verified path uses.
-		var why string
-		pasted := false
+		pio := sendDispatchIO(id, agentCmd)
 		if len(attached) > 0 {
-			paste := pio.Paste
-			pio.Paste = func(t string) error { pasted = true; return paste(t) }
-			pio.Hold = func() string { why = attachHold(id); return why }
+			pio.Hold = func() string { return attachHold(id) }
 		}
-		_, refused := dispatch.PasteAndSubmit(pio, popts, text)
-		if refused == dispatch.StateRefusedWaiting {
-			if why == "" {
-				why = strings.TrimSuffix(dispatch.EvidenceMenuOpen, ": ")
-			}
-			if pasted {
-				why = dispatch.EvidenceHeldBeforeEnter + why + "; the message may be in its input box, check it before sending again"
-			}
-			return refusedWaiting(id, text, why, attached, asJSON)
-		}
-		if refused == dispatch.StateRefusedDraft {
-			events.AuditSend(id, string(dispatch.StateRefusedDraft), text, time.Now().Unix())
-			i18n.Sae("gtmux send: refused. That pane has unsent text in its input box (use --force)",
-				"gtmux send: 已拒发，该 pane 的输入框里有未提交的内容（要覆盖请用 --force）")
-			return 1
+		result := dispatch.PasteAndSubmitResult(pio, popts, text)
+		if !result.Submitted() {
+			return reportSendFailure(id, text, result, attached, asJSON)
 		}
 		events.AuditSend(id, statePlainSent, text, time.Now().Unix())
+		if asJSON {
+			printSendJSON(sendJSON{Delivered: result.Delivered, State: string(result.State), JudgedBy: result.JudgedBy,
+				Evidence: result.Evidence, Attachments: attached})
+		}
 		return 0
 	}
 	if text != "" {
@@ -379,20 +343,73 @@ func paneID(pane string) string {
 	return pane
 }
 
-// statePlainSent is the `--json` state reported for a PLAIN-TERMINAL send: the keys
-// were delivered to the pane and Enter was sent, but there is no agent input box or
-// receipt to verify a landing against, so the verified states don't apply.
+// statePlainSent reports a completed terminal Enter without a native receipt.
+// It also preserves the plain-terminal audit state.
 const statePlainSent = "sent"
 
-// sendJSON is the `gtmux send --json` contract (verified sends, plus the
-// plain-terminal "sent" state — see statePlainSent).
+// sendJSON is the `gtmux send --json` text submission result.
 type sendJSON struct {
-	Delivered bool   `json:"delivered"`
-	State     string `json:"state"`
-	JudgedBy  string `json:"judged_by,omitempty"` // driver | screen — the layer that judged it
-	Evidence  string `json:"evidence,omitempty"`
+	Delivered  bool                      `json:"delivered"`
+	State      string                    `json:"state"`
+	JudgedBy   string                    `json:"judged_by,omitempty"` // driver | screen — the layer that judged it
+	Evidence   string                    `json:"evidence,omitempty"`
+	Code       dispatch.InputFailureCode `json:"code,omitempty"`
+	Submission dispatch.Submission       `json:"submission,omitempty"`
 	// Attachments are the uploads-dir paths `--attach` added to the message, in order.
 	Attachments []string `json:"attachments,omitempty"`
+}
+
+func printSendJSON(result sendJSON) {
+	b, _ := json.Marshal(result)
+	fmt.Println(string(b))
+}
+
+func reportSendFailure(pane, text string, result dispatch.Result, attached []string, asJSON bool) int {
+	var holdPrefix string
+	holdReason, _, _ := strings.Cut(result.Evidence, "\n")
+	for _, prefix := range []string{dispatch.EvidenceHeldBeforeEnter, dispatch.EvidenceHeldBeforeRetry, dispatch.EvidenceMenuOpen} {
+		if strings.HasPrefix(holdReason, prefix) {
+			holdPrefix = prefix
+			holdReason = strings.TrimPrefix(holdReason, prefix)
+			break
+		}
+	}
+	switch holdReason {
+	case "the agent is waiting on a decision (a permission prompt or a question)", "a choice menu is on the screen":
+		if result.State == dispatch.StateRefusedWaiting && result.Submission == dispatch.SubmissionNotSubmitted {
+			result.FailureCode = dispatch.InputQuestion
+		}
+	default:
+		holdReason = ""
+	}
+	code, en, zh := sendFailureForResult(result)
+	evidence := holdPrefix + string(code)
+	switch result.State {
+	case dispatch.StateRefusedDup:
+		code, evidence = "", result.Evidence
+		en, zh = "refused (identical payload re-sent within the window; use --force)", "已拒发（时间窗内重复相同内容，要重发用 --force）。"
+	case dispatch.StateRefusedDraft:
+		en, zh = "not sent: that pane has unsent text in its input box; clear it, or use --force", "未发送：终端输入框有草稿，请先清空，或用 --force。"
+	}
+	if holdPrefix == dispatch.EvidenceHeldBeforeEnter && result.Submission == dispatch.SubmissionNotSubmitted {
+		if holdReason == "" {
+			holdReason = en
+		}
+		en = holdPrefix + holdReason + "; the message may be in its input box, check it before sending again"
+		zh += "内容可能已停在输入框中，重发前请先检查。"
+	}
+	// Legacy screenshot callers read these native association labels.
+	if _, zh := associationRefusalMessage(result.Evidence); zh != "" ||
+		result.Evidence == "input-thread-not-loaded" && result.Submission == dispatch.SubmissionNotSubmitted {
+		evidence = result.Evidence
+	}
+	events.AuditSendFailure(pane, string(result.State), text, time.Now().Unix(), string(code), string(result.Submission))
+	if asJSON {
+		printSendJSON(sendJSON{State: string(result.State), JudgedBy: result.JudgedBy, Evidence: evidence,
+			Code: code, Submission: result.Submission, Attachments: attached})
+	}
+	i18n.Sae("gtmux send: "+en, "gtmux send: "+zh)
+	return 1
 }
 
 func sendUsage() int {

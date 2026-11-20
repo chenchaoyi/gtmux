@@ -1,0 +1,46 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-20",
+    "decision": "Ready for implementation and exact-head review",
+    "notes": "Use exact journal identity, role and follow boundaries. A captured instruction can be queued for verification without a sender or execution inference. Exercise the existing transport rather than mocking acceptance. Use the existing HQ claim and assessment endpoint, and verify durable handoff to an explicitly registered or existing goal, never treating acknowledgement as permission. No live account or service is part of the test. For legacy supervisor evidence, require the exact saved conversation, matching captured tmux session and a role record at or before the occurrence. New hook events carry the role as captured. Existing expected source and authorization boundaries remain. Count end-to-end wake intake from the private terminal itself. Assert the queue loss occurred before any such intake. Successful claim and assessment remain separate durable checks. The transport audit can be written independently of the observed terminal read."
+  },
+  "cases": [
+    {
+      "id": "HPT-001",
+      "layer": "L2",
+      "description": "HQ triage persists, deduplicates and applies only cited, exact dispositions",
+      "setup": "Workspace journal with unassigned and overlapping execution histories, leased evidence and a known goal.",
+      "action": "Reingest the same event, try a sibling/stale lease and ordinary acknowledgement, then explicitly hand off to the exact goal and record an independent no-follow-up or future check.",
+      "expected": "Source identity stays unchanged, unauthorized dispositions fail, and the target receipt retains the exact goal follow-up. Reassessment preserves user hold, unknown delivery and terminal state safeguards.",
+      "planned_files": [
+        "internal/hqworkspace/triage_test.go"
+      ]
+    },
+    {
+      "id": "HPT-002",
+      "layer": "L2",
+      "description": "Observe only existing terminal or explicitly followed native sources",
+      "setup": "Exact event rows for worker, HQ and native sources, including missing identity, prior consent and foreign home; two overlapping associations.",
+      "action": "Run the production event consumer twice, including an unattributed direct prompt and an ambiguous Stop, then inspect cursor, reason and exact evidence.",
+      "expected": "Eligible source rows become durable triage once, while wrong, suppressed and HQ rows create no triage. A uniquely matched Stop keeps the existing continuation path.",
+      "planned_files": [
+        "internal/app/hqworkspace_triage_test.go"
+      ]
+    },
+    {
+      "id": "HPT-003",
+      "layer": "L3",
+      "description": "A missed wake leaves exact direct-dispatch evidence for a verified HQ handoff",
+      "setup": "Private HOME and real tmux, real lifecycle hooks and workspace/serve CLI, terminal endpoints with fixed source data and an unsent draft. No matter or permission is preinstalled.",
+      "action": "Submit the instruction directly, retain Stop with no owner, deliberately lose the first workspace wake and wait for the existing cycle. Read through HQ, claim and reject a stale or generic disposition. Explicitly register the verified goal and association, then hand off using the current revision.",
+      "expected": "A one-time lost wake does not erase evidence or issue input. The exact CLI lease and handoff receipt point to durable, visible next responsibility with the worker untouched until separate authorization. Foreground handling and all synthetic terminal behavior are separately identified.",
+      "planned_files": [
+        "internal/app/hqworkspace_triage_cli_test.go"
+      ]
+    }
+  ],
+  "seal": "5278fd414d3dcbc8c788c4832acbd9f40e395445e7fd61c3a1e5f1375521dc03"
+}

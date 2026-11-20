@@ -60,13 +60,13 @@ func TestPhase1WorkspaceIngestionRecoveryAndReadIndependence(t *testing.T) {
 		t.Fatal(d, e)
 	}
 	next, e := notifyWorkspaceReconciliation(s, 104, 0)
-	if e != nil || len(wakes) != 1 || !strings.Contains(wakes[0], "workspace reconcile") {
+	if e != nil || len(wakes) != 2 || !strings.Contains(wakes[0], workspaceContinuationWake) || strings.Contains(wakes[1], workspaceContinuationWake) || !strings.Contains(wakes[1], "workspace reconcile") {
 		t.Fatal(wakes, e)
 	}
-	if _, e = notifyWorkspaceReconciliation(s, 105, next); e != nil || len(wakes) != 1 {
+	if _, e = notifyWorkspaceReconciliation(s, 105, next); e != nil || len(wakes) != 2 {
 		t.Fatal("wake did not debounce", e)
 	}
-	if _, e = notifyWorkspaceReconciliation(hqworkspace.New(home), 106, 0); e != nil || len(wakes) != 2 {
+	if _, e = notifyWorkspaceReconciliation(hqworkspace.New(home), 106, 0); e != nil || len(wakes) != 3 {
 		t.Fatal("restart forgot debt wake", e)
 	}
 	d, _ = s.Read() // The bounded goal sweep adds its own debt, independently of source ingestion.

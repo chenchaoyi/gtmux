@@ -163,8 +163,9 @@ future runner migration needs a separate unsigned/native and signing-chain
 validation against the official [runner inventory](https://github.com/actions/runner-images).
 
 Transport copies and build intermediates remain task-owned. Preserve only unique
-recovery material and concise evidence under the existing retention policy;
-configuration changes never authorize deletion of older protected archives.
+recovery material and concise evidence. Before writing the permanent release
+archive, run the [project destination and retention checks](design/hq-storage-recovery.md#delivery-material).
+Configuration changes never authorize deletion of older protected archives.
 
 For browser changes, run `node --test internal/server/web/*.test.cjs` before `npm test --prefix tests/web`. The VM logic harness must load the same generated shared models as the real page; rendered-browser success does not cover a missing harness dependency. `make check` is the core gate and does not run either separate browser layer.
 

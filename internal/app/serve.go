@@ -1099,13 +1099,20 @@ func sendToPane(id, text, key string, enter bool, sendID string) error {
 
 func sendToPaneWithReceipt(id, text, key string, enter bool, sendID string) (server.InputReceipt, error) {
 	receipt := server.InputReceipt{State: "submitted", SendID: sendID}
-	cacheKey := id + "\x00" + sendID
-	cached, known := readPhoneReceipt(cacheKey)
-	if known {
-		receipt = cached
+	cacheKey := ""
+	if sendID != "" && text != "" && enter && key == "" {
+		cacheKey = id + "\x00" + sendID
+		cached, known, busy := beginPhoneSend(cacheKey)
+		if known {
+			return cached, nil
+		}
+		if busy {
+			return server.InputReceipt{}, phoneSendFailure(dispatch.Result{Submission: dispatch.SubmissionUnknown})
+		}
+		defer endPhoneSend(cacheKey)
 	}
 	err := sendToPaneObserved(id, text, key, enter, sendID, func(result dispatch.Result) {
-		if known {
+		if result.State == dispatch.StateSubmitted {
 			return
 		}
 		receipt.State = "queued"
@@ -1113,10 +1120,13 @@ func sendToPaneWithReceipt(id, text, key string, enter bool, sendID string) (ser
 			receipt.State = "accepted"
 		}
 	})
-	if err == nil && sendID != "" && text != "" && enter {
+	if err != nil {
+		return server.InputReceipt{}, err
+	}
+	if cacheKey != "" {
 		rememberPhoneReceipt(cacheKey, receipt)
 	}
-	return receipt, err
+	return receipt, nil
 }
 
 type phoneReceipt struct {
@@ -1124,7 +1134,32 @@ type phoneReceipt struct {
 	at      int64
 }
 
-var phoneReceipts = map[string]phoneReceipt{}
+var (
+	sendCacheMu   sync.Mutex
+	phoneReceipts = map[string]phoneReceipt{}
+	phoneSending  = map[string]bool{}
+)
+
+const sendCacheTTLSec = 5 * 60
+
+func beginPhoneSend(key string) (receipt server.InputReceipt, known, busy bool) {
+	sendCacheMu.Lock()
+	defer sendCacheMu.Unlock()
+	if r, ok := phoneReceipts[key]; ok && time.Now().Unix()-r.at < sendCacheTTLSec {
+		return r.receipt, true, false
+	}
+	if phoneSending[key] {
+		return server.InputReceipt{}, false, true
+	}
+	phoneSending[key] = true
+	return server.InputReceipt{}, false, false
+}
+
+func endPhoneSend(key string) {
+	sendCacheMu.Lock()
+	defer sendCacheMu.Unlock()
+	delete(phoneSending, key)
+}
 
 func readPhoneReceipt(key string) (server.InputReceipt, bool) {
 	sendCacheMu.Lock()
@@ -1145,7 +1180,8 @@ func rememberPhoneReceipt(key string, receipt server.InputReceipt) {
 }
 
 func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe func(dispatch.Result)) error {
-	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
+	pane := tmux.Display(id, "#{pane_id}")
+	if pane == "" {
 		return fmt.Errorf("pane not found")
 	}
 	if key != "" && !terminalkeys.Legacy(key) {
@@ -1161,6 +1197,8 @@ func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe
 		return tmux.SendKey(id, key)
 	}
 	if text != "" && enter {
+		// Resolve an alias to the same pane ID used by the durable native index.
+		id = pane
 		// FAST ECHO. The phone send returns as soon as the keystrokes LAND
 		// (paste→confirm→submit via PasteAndSubmit); it does NOT block on the post-submit
 		// verify loop. Routing this through the verified `Deliver` regressed /api/send: the
@@ -1171,12 +1209,6 @@ func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe
 		// confirms the full draft reliably, and the agent's own submit still lands on the
 		// event stream for anyone who wants it. IDEMPOTENCY (A) is preserved — a retry with
 		// a sendID that already landed is a no-op — and MarkAwaited still arms the done-wake.
-		if sendID != "" && sendCacheSucceeded(id+"\x00"+sendID) {
-			if observe != nil {
-				observe(dispatch.Result{Delivery: "active-turn"})
-			} // known accepted, not proof of execution
-			return nil // already accepted under this id; never submit again
-		}
 		// Resolve the agent from the pane's PROCESS SUBTREE, not pane_current_command
 		// (Claude renames its process to its version, so the foreground command misses
 		// "claude" — see radar.AgentDriverKey); the paste guard uses it to select the
@@ -1189,34 +1221,23 @@ func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe
 			// in the pane's scrollback (see plainsend.go). Type + Enter directly; the
 			// shell's echo in the response snapshot is the confirmation. No MarkAwaited
 			// — there is no agent whose completion could be awaited.
-			if err := typePlain(id, text); err != nil {
-				return err
+			if err := agentclient.TerminalFallbackError(id, sendID); err != nil {
+				return phoneSendFailure(dispatch.InputFailureResult(err, 0))
 			}
-			if sendID != "" {
-				sendCacheRecord(id + "\x00" + sendID)
+			if err := typePlain(id, text); err != nil {
+				return phoneSendFailure(dispatch.InputFailureResult(err, 0))
 			}
 			return nil
 		}
 		opts := phoneDeliverOpts(id, agentCmd, sendID, dispatch.LoadTuning())
-		var nativeResult *dispatch.Result
-		dio := dispatchbridge.DispatchIO(id)
-		if native := dio.SubmitNative; native != nil {
-			dio.SubmitNative = func(o dispatch.Opts, text string, hold func() string) dispatch.Result {
-				result := native(o, text, hold)
-				nativeResult = &result
-				if observe != nil && (result.Delivered || result.State == dispatch.StateQueued) {
-					observe(result)
-				}
-				return result
-			}
+		result := dispatch.PasteAndSubmitResult(sendDispatchIO(id, agentCmd), opts, text)
+		if !result.Submitted() {
+			return phoneSendFailure(result)
 		}
-		if ok, refused := dispatch.PasteAndSubmit(dio, opts, text); !ok {
-			return phoneSendRefusal(refused, nativeResult)
+		if observe != nil {
+			observe(result)
 		}
 		dispatch.MarkAwaited(id)
-		if sendID != "" {
-			sendCacheRecord(id + "\x00" + sendID)
-		}
 		return nil
 	}
 	if text != "" {
@@ -1247,36 +1268,6 @@ func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe
 // newlines don't reach the TUI as bare Returns that submit each line separately.
 func keystrokeText(text string) bool {
 	return text != "" && !strings.Contains(text, "\n")
-}
-
-// sendCache remembers which client send-ids already LANDED (send-idempotent-receipt), so a
-// phone RETRY after an ambiguous network failure returns success WITHOUT re-injecting the
-// message. Only successes are cached — a failed id stays retryable — and it is TTL-pruned so
-// it can't grow unbounded.
-var (
-	sendCacheMu  sync.Mutex
-	sendCacheMap = map[string]int64{} // sendID → unix seconds it landed
-)
-
-const sendCacheTTLSec = 5 * 60
-
-func sendCacheSucceeded(id string) bool {
-	sendCacheMu.Lock()
-	defer sendCacheMu.Unlock()
-	ts, ok := sendCacheMap[id]
-	return ok && time.Now().Unix()-ts < sendCacheTTLSec
-}
-
-func sendCacheRecord(id string) {
-	now := time.Now().Unix()
-	sendCacheMu.Lock()
-	defer sendCacheMu.Unlock()
-	sendCacheMap[id] = now
-	for k, ts := range sendCacheMap { // opportunistic prune
-		if now-ts >= sendCacheTTLSec {
-			delete(sendCacheMap, k)
-		}
-	}
 }
 
 // saveUpload writes an uploaded file under ~/.local/share/gtmux/uploads with a

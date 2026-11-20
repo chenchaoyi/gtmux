@@ -130,7 +130,11 @@ func TestPhase1CursorEmptyScanConcurrentAppend(t *testing.T) {
 			}
 			d = phase1CursorDatabase(t, hqworkspace.New(home))
 			queued, ok := d.Reconciliations["event-11"]
-			want := hqworkspace.Observation{ID: "event-11", Kind: kind, MatterID: "cursor-goal", Body: event.Summary, Ref: "events:11", Conversation: c, OccurredAt: event.Ts}
+			want := hqworkspace.Observation{
+				Continuation: kind == "Stop" || kind == "StopFailure",
+				ID:           "event-11", Kind: kind, MatterID: "cursor-goal", Body: event.Summary,
+				Ref: "events:11", Conversation: c, OccurredAt: event.Ts,
+			}
 			if !ok || !reflect.DeepEqual(queued.Observation, want) || d.ObservationCursors["events"] != 11 {
 				t.Fatalf("retained event was not durably queued with its cursor: queue=%+v cursor=%d", queued, d.ObservationCursors["events"])
 			}
@@ -201,6 +205,9 @@ func TestPhase1CursorEmptyRetentionGap(t *testing.T) {
 }
 
 func TestPhase1CursorFilteredPageBoundary(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
 	source := &phase1CursorSource{latest: 10}
 	s, home, c := phase1CursorStore(t, source, true)
 	for seq := int64(11); seq <= 511; seq++ {

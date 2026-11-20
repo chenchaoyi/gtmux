@@ -187,6 +187,7 @@ func TestRestoreExecutionLeaseIsProcessOwnedAndFailsClosed(t *testing.T) {
 }
 
 func TestRemoteAgentProducerKeepsApprovedIdentityAndSkipsOtherSessions(t *testing.T) {
+	rrbCompatibleExecutable(t)
 	for _, changed := range []bool{false, true} {
 		t.Run(fmt.Sprint(changed), func(t *testing.T) {
 			remoteFixture(t)

@@ -1,0 +1,24 @@
+{
+  "id": "input-spool-reply-combination-20261119",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-19",
+    "decision": "Verify the early workspace reply hold against the same durable submission ID.",
+    "notes": "Use a synthetic exact Codex target, a private spool and injected dispatch IO. Check two early hold causes without opening any live session."
+  },
+  "cases": [
+    {
+      "id": "SPL-018",
+      "layer": "L2",
+      "description": "A reply with prior native submission evidence cannot be recovered as unsubmitted.",
+      "setup": "Build fresh, unclaimed, claimed, accepted and refused records under a private HOME.",
+      "action": "Present stale-premise and unavailable-native-route holds before dispatch for each ID.",
+      "expected": "Claimed or accepted IDs are not authorized for resend. Fresh, unclaimed and explicitly refused IDs retain the early hold behavior. No submit or terminal mutation occurs.",
+      "planned_files": [
+        "internal/app/hqworkspace_input_replay_test.go"
+      ]
+    }
+  ],
+  "seal": "f685db6d82bee705c7031849f872d2457976e7a3f3ec8490a421fe869ac66873"
+}

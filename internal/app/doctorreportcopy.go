@@ -48,6 +48,7 @@ var doctorPurposes = []doctorPurpose{
 	{"lock-screen card", "锁屏卡片", "Live Activity updates", "实时活动更新", "Checks whether the running server still has the tokens needed to update the phone's Live Activity.", "检查运行中的服务是否仍持有更新手机实时活动所需的 token。"},
 	{"HQ records", "HQ 档案", "HQ archive storage", "HQ 档案存储", "Reports HQ archive size, local snapshots and export status.", "检查 HQ 档案占用、本地快照及导出情况。"},
 	{"gtmux disk usage", "gtmux 磁盘占用", "gtmux storage", "gtmux 存储占用", "Measures the main gtmux data directories and identifies large consumers.", "统计 gtmux 主要数据目录的占用，定位较大的数据来源。"},
+	{"input replay archive", "终端发送防重档案", "Terminal input replay archive", "终端发送防重档案", "Checks committed archive pages, remaining space and recovery checkpoints.", "检查已提交的防重档案、剩余空间和回收检查点。"},
 	{"phone uploads", "手机上传", "Uploaded files", "上传文件", "Measures files uploaded to this server from the phone or send commands.", "统计手机及发送命令上传到此服务器 的文件数量和占用。"},
 	{"log store", "日志库", "Log retention", "日志保留", "Checks the diagnostic log store against its age and size retention rules.", "检查诊断日志是否符合按时间和体积保留的规则。"},
 	{"recording", "记录写入", "Log writes", "日志写入", "Checks whether diagnostics, events, sequence counters and the existing knowledge ledger are writable.", "检查诊断日志、事件流、序号计数器及现有知识台账是否可写入。"},

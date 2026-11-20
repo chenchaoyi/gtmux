@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-19",
+    "decision": "Keep missing recording baselines and failed counter writes unprovable until fresh authorization",
+    "notes": "R5 independently identified two indistinguishable empty intervals. Test recovery after the first ordinary event, and a temporarily unwritable counter with retained old bytes. Keep stopped recording content-free and verify a genuinely fresh same-action authorization."
+  },
+  "cases": [
+    {
+      "id": "HRC-011",
+      "layer": "L2",
+      "description": "An uninitialized authority baseline and a failed recording-gap write cannot authorize a stale continuation after recovery.",
+      "setup": "Isolated real workspace, journal, config and sequence files with original user authority and an exact target.",
+      "action": "Save an instruction before journal initialization; suppress a target pause and then record an unrelated Stop. Disable recording with a previously initialized counter that cannot be advanced, restore it, and try the old direct source and an explicit new source.",
+      "expected": "Neither later availability nor an ordinary Stop revives the old authority. Failed counter persistence is observable and the old reference remains unsafe; an explicit newer confirmed step can use the same action once. No disabled event or private input is recorded.",
+      "planned_files": [
+        "internal/app/hqworkspace_reply_baseline_test.go"
+      ]
+    }
+  ],
+  "seal": "823e85e756f44e76a53d8c92b64f53470124fd55ac9b5b5e28b347bcff412a4a"
+}

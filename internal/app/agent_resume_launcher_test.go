@@ -26,6 +26,8 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 		t.Fatal(err)
 	}
 	home := t.TempDir()
+	t.Setenv("CODEX_HOME", filepath.Join(home, ".codex"))
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "xdg"))
 	t.Setenv("HOME", home) // state.Dir() keys off $HOME, and only $HOME
 	t.Setenv("TMUX_TMPDIR", sock)
 	t.Setenv("TMUX", "")
@@ -56,6 +58,7 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 		t.Fatalf("not isolated — refusing to type into %d pane(s): %v", len(panes), panes)
 	}
 	loc := strings.SplitN(panes[0], "\t", 2)[1]
+	rrbWaitShell(t, loc)
 
 	if err := resume.Save(loc, resume.Record{
 		Agent: "codex", SessionID: "sess-wrapper-1", Cwd: home,
@@ -97,6 +100,7 @@ func TestRestoreResumesThroughTheRecordedLauncher(t *testing.T) {
 }
 
 func TestRestoreManagedCodexBridge(t *testing.T) {
+	rrbCompatibleExecutable(t)
 	if _, err := exec.LookPath("tmux"); err != nil {
 		t.Skip("tmux not installed")
 	}
@@ -163,6 +167,9 @@ func TestRestoreManagedCodexBridge(t *testing.T) {
 	}
 	if plan := buildRestorePlanFrom(save); plan.agentCount() != 2 {
 		t.Fatalf("preview must match the two interactive resumes: %+v", plan.Sessions)
+	}
+	for _, name := range names {
+		rrbWaitShell(t, name+":0.0")
 	}
 	resumeAgents() // type only: no Codex process or model is launched
 	for _, name := range names {

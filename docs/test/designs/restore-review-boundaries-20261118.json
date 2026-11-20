@@ -1,0 +1,109 @@
+{
+  "id": "restore-review-boundaries-20261118",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex delivery implementation owner; author self-review, not independent approval",
+    "date": "2026-11-18",
+    "decision": "APPROVE reviewed regression design before any test edits",
+    "notes": "Derived from fixed full-review R1-R6 and six actual CI failures. Preserve previous assertions and original failure evidence; fake clock and synthetic subprocess tests do not prove actual Codex/device acceptance. Full gate and necessary independent candidate review remain required. Root-home/hold require diagnosis before deciding scope; no skip or weakened production boundary."
+  },
+  "cases": [
+    {
+      "id": "RRB-R1",
+      "layer": "L2",
+      "description": "Cross-route durable occupation",
+      "setup": "Native unknown followed by same SID/Home wrapper route and fresh used map",
+      "action": "Call actual restore route twice with a counted sender, and a fresh wrapper control",
+      "expected": "One cumulative send after unknown; first legal wrapper still sends",
+      "planned_files": [
+        "internal/app/restore_review_boundary_test.go",
+        "internal/app/agent_resume_launcher_test.go",
+        "internal/app/agent_resume_ownership_test.go",
+        "internal/app/restore_remote_test.go",
+        "internal/app/newsession_test.go",
+        "internal/app/sendhold_test.go"
+      ]
+    },
+    {
+      "id": "RRB-R2",
+      "layer": "L2",
+      "description": "Selection snapshot consistency",
+      "setup": "Two selected panes, archive and ownership captured before queue starts",
+      "action": "While first waits replace second archive or incumbent; prepare and issue second",
+      "expected": "Second sends zero; unchanged sources still send",
+      "planned_files": [
+        "internal/app/restore_review_boundary_test.go",
+        "internal/app/agent_resume_launcher_test.go",
+        "internal/app/agent_resume_ownership_test.go",
+        "internal/app/restore_remote_test.go",
+        "internal/app/newsession_test.go",
+        "internal/app/sendhold_test.go"
+      ]
+    },
+    {
+      "id": "RRB-R3",
+      "layer": "L2",
+      "description": "Deadline edge confirmation",
+      "setup": "30-slot fake-clock gate; ready appears during final pause",
+      "action": "Confirm A at deadline then attempt B; also cancel during pause",
+      "expected": "A confirmed before B starts; no extra sleep; cancellation wins",
+      "planned_files": [
+        "internal/app/restore_review_boundary_test.go",
+        "internal/app/agent_resume_launcher_test.go",
+        "internal/app/agent_resume_ownership_test.go",
+        "internal/app/restore_remote_test.go",
+        "internal/app/newsession_test.go",
+        "internal/app/sendhold_test.go"
+      ]
+    },
+    {
+      "id": "RRB-R6",
+      "layer": "L2",
+      "description": "Deterministic entry fixtures and six CI failures",
+      "setup": "Private tmux/HOME, explicit compatible executable classification; native evidence separately fixed",
+      "action": "Run wrapper/bridge/ownership/remote/root-home/hold entries; retain target, no-send and Enter assertions",
+      "expected": "Host installation cannot choose route; native path asserts exact command and pane identity; diagnose unrelated failures without weakening assertions",
+      "planned_files": [
+        "internal/app/restore_review_boundary_test.go",
+        "internal/app/agent_resume_launcher_test.go",
+        "internal/app/agent_resume_ownership_test.go",
+        "internal/app/restore_remote_test.go",
+        "internal/app/newsession_test.go",
+        "internal/app/sendhold_test.go"
+      ]
+    },
+    {
+      "id": "RRB-R4",
+      "layer": "L2",
+      "description": "Immediate local terminal output",
+      "setup": "Two-item real publish path and captured stdout",
+      "action": "Expire A, inspect output before B preparation",
+      "expected": "Pane and timeout visible before B; final summary remains",
+      "planned_files": [
+        "internal/app/restore_review_boundary_test.go",
+        "internal/app/agent_resume_launcher_test.go",
+        "internal/app/agent_resume_ownership_test.go",
+        "internal/app/restore_remote_test.go",
+        "internal/app/newsession_test.go",
+        "internal/app/sendhold_test.go"
+      ]
+    },
+    {
+      "id": "RRB-R5",
+      "layer": "L2",
+      "description": "Remote uncertainty preserved",
+      "setup": "Persist two identical timeouts with unknown versus pending first issue",
+      "action": "Read real final job snapshot",
+      "expected": "Both timeout and first delivery uncertainty remain distinct in existing result/client states",
+      "planned_files": [
+        "internal/app/restore_review_boundary_test.go",
+        "internal/app/agent_resume_launcher_test.go",
+        "internal/app/agent_resume_ownership_test.go",
+        "internal/app/restore_remote_test.go",
+        "internal/app/newsession_test.go",
+        "internal/app/sendhold_test.go"
+      ]
+    }
+  ],
+  "seal": "178f20f607af3da71c7fd10994eee5fe8bbe93d797c2e79b5d950de14f35770f"
+}

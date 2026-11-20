@@ -1,0 +1,58 @@
+{
+  "id": "restore-source-and-dispatch-20261118",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-18",
+    "decision": "Approve the regression design before changing tests",
+    "notes": "Exercise the real batch and local preview with private HOME, Codex history and a log-only tmux sender. Preserve both source and destination evidence. The prior RRB-R6 design continues to require actual private-pane hold assertions; diagnose launch and capture separately on Linux."
+  },
+  "cases": [
+    {
+      "id": "RSD-001",
+      "layer": "L2",
+      "description": "Renamed pane recovery rechecks the historical source",
+      "setup": "Two saved targets match historical locators by directory and position, with distinct recoverable conversations.",
+      "action": "During the first dispatch change the second historical record, or leave it stable; drive the real second-pass queue.",
+      "expected": "The unchanged source is sent exactly once to its target. A replaced source prevents every literal and Enter for that target.",
+      "planned_files": [
+        "internal/app/restore_dispatch_boundary_test.go"
+      ]
+    },
+    {
+      "id": "RSD-002",
+      "layer": "L2",
+      "description": "An uncertain compatibility write occupies its conversation in the batch",
+      "setup": "Two restored shell targets select the same recoverable wrapper record. Every tmux invocation uses the private log-only executable.",
+      "action": "Return an error on the first Enter after recording its literal, then let the batch consider the other pane. Compare with an independent conversation.",
+      "expected": "The first receipt retains uncertainty. The duplicate gets neither a literal nor Enter; a distinct identity still dispatches.",
+      "planned_files": [
+        "internal/app/restore_dispatch_boundary_test.go"
+      ]
+    },
+    {
+      "id": "RSD-003",
+      "layer": "L2",
+      "description": "Local preview streams valid saves beyond the remote size cap",
+      "setup": "Create a valid local save just above 8 MiB with bounded lines, a malformed oversized line, and an empty save.",
+      "action": "Build and render local plans, verify the complete save fingerprint responds to a tail change and invoke the remote bounded reader.",
+      "expected": "The valid local pane stays visible and the changed file invalidates its fingerprint. A local read error is distinguishable from an empty save. The remote reader retains its cap.",
+      "planned_files": [
+        "internal/app/restore_dispatch_boundary_test.go"
+      ]
+    },
+    {
+      "id": "RSD-004",
+      "layer": "L2",
+      "description": "The private Codex-shaped hold fixture remains a named terminal reader",
+      "setup": "Create a private tmux socket and launch a test-owned terminal reader under the Codex name, independent of whether the host cat executable dispatches by basename.",
+      "action": "Drive the existing real-pane hold suite through creation, exact menu capture, radar classification, hold and ordinary send controls; diagnose tmux errors separately from an empty screen.",
+      "expected": "Every original hold and send assertion remains. The fake process is resident before observation. A launch or capture error reports its own failure within the existing wait.",
+      "planned_files": [
+        "internal/app/hold_reader_test.go",
+        "internal/app/sendhold_test.go"
+      ]
+    }
+  ],
+  "seal": "556ab31ffa42cc9a7109918853454a0eaf8b783633416354839572972493d8e9"
+}

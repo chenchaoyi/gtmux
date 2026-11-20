@@ -1,0 +1,71 @@
+{
+  "id": "codex-native-serial-integration-20261118",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex original implementation owner; focused author self-review, not independent approval",
+    "date": "2026-11-18",
+    "decision": "APPROVE design for fresh isolated Git integration of exact B + frozen PRODUCT4733 and required formatting only",
+    "notes": "Fresh review before first test edit in this new Git branch. Existing frozen drafts and 106379/74bad/36563 failure/pass evidence predate this integration and remain preserved; no retrospective claim original drafts were authored after this record. Self-review read exact command/owner/queue tests and real 10PASS plus real native-target mutation FAIL. HQ focused independent assertion review pending; not merge/install approval. CNR103 full resumeAgents, CNR104 real literal/Enter/store/dispatch, CNR108 integrated uncertain/draft/permission and real help/remote/races/device/restore/performance remain unverified. A fake clock pass is not a wall-time/platform guarantee. Do not weaken old ownership, compatibility, queue or input protections. Scope is CLI/core restore; App/Mac/Web input authority and UX unchanged. Full make check/CI remain distinct gates."
+  },
+  "cases": [
+    {
+      "id": "CNRV4-001",
+      "layer": "L2",
+      "description": "Native executable and exact command contract",
+      "setup": "Private HOME and exact executable/pane/capability seams; supported, unsupported, unknown and failures",
+      "action": "Build/send native recipes, vary capability/binary/target/proxy and explicit custom launcher",
+      "expected": "Default target is exact physical Codex; preserve cwd/Home/quoted proxy and capability-bound --no-daemon; unknown or preparation errors refuse without compatibility send",
+      "planned_files": [
+        "internal/app/codex_restore_native_test.go",
+        "internal/resume/native_restore_test.go"
+      ]
+    },
+    {
+      "id": "CNRV4-002",
+      "layer": "L2",
+      "description": "Protected same-session former frontend migration and ready ownership",
+      "setup": "Synthetic same SID/Home old frontend with positive stopped receipt, fresh process and private records",
+      "action": "Vary frontend liveness, Home/SID, pane/root birth, stale record and late CAS",
+      "expected": "Only exact stopped-owner migration may publish; ready requires fresh native owner and exact CAS; unknown/conflicting evidence never grants input authority",
+      "planned_files": [
+        "internal/resume/native_restore_test.go"
+      ]
+    },
+    {
+      "id": "CNRV4-003",
+      "layer": "L2",
+      "description": "Durable reserve, failure, cancellation and lease behavior",
+      "setup": "Private attempt store/process fixtures and injected sender/result writes",
+      "action": "Concurrent reservations, uncertain sends, result errors, corrupt incumbent and cancellation before/after reserve",
+      "expected": "Persist occupation before send; unknown never replayed; errors observable, no false absence/fallback; cancellation retains occupation without sending; private helper roles are not ordinary runtime passes",
+      "planned_files": [
+        "internal/app/codex_restore_native_test.go",
+        "internal/resume/native_restore_test.go",
+        "internal/app/restore_serial_test.go"
+      ]
+    },
+    {
+      "id": "CNRV4-004",
+      "layer": "L2",
+      "description": "Serial readiness and bounded timeout queue",
+      "setup": "Production shared gate, fake clock/observe/publish, cancellation context and two starts",
+      "action": "Keep A unready, confirm A, expire A, cancel or use type/unavailable/uncertain state",
+      "expected": "B starts only after A ready/visible timeout; cancel stops starts; original shared1500ms observation allowance and stable locator order; uncertain delivery never claims ready or replays",
+      "planned_files": [
+        "internal/app/restore_serial_test.go"
+      ]
+    },
+    {
+      "id": "CNRV4-005",
+      "layer": "L2",
+      "description": "Native argv regression assertions tolerate path names",
+      "setup": "Explicit cwd/Home containing gtmux frontend bridge and physical Codex directory containing gtmux",
+      "action": "Accept exact native recipe and reject actual gtmux/frontend/bridge targets plus extra routing; mutate production target in private overlay",
+      "expected": "Path words remain data; actual native executable/argv/cwd/Home/Enter/reserve contract stays strict; native target regression makes focused test fail",
+      "planned_files": [
+        "internal/app/restore_serial_test.go"
+      ]
+    }
+  ],
+  "seal": "82f6c8b4d01551b98b7d086b014875a1ddc16151cd64d557ee34bf7883bfc50a"
+}

@@ -114,6 +114,21 @@ class FetchTests(unittest.TestCase):
         (self.folder / "artifact.zip").symlink_to("outside")
         with self.assertRaises(DeliveryError): self.fetch()
 
+    def test_managed_output_refused_before_transport(self):
+        from unittest.mock import patch
+
+        managed = self.folder / ".local/share/gtmux/releases"
+        managed.mkdir(parents=True, mode=0o700)
+        alias = self.folder / "alias"
+        alias.symlink_to(managed.parent, target_is_directory=True)
+        transport = Mock(spec=FakeTransport)
+        with patch.dict(os.environ, {"HOME": str(self.folder)}):
+            for target in (managed, alias / "releases"):
+                with self.subTest(target=target), self.assertRaisesRegex(DeliveryError, "outside gtmux"):
+                    fetcher.fetch("ios", SOURCE, 100, 2, 200, target, transport)
+        self.assertEqual(transport.mock_calls, [])
+        self.assertEqual(list(managed.iterdir()), [])
+
 
 class TransportTests(unittest.TestCase):
     def test_get_retry_bound_and_safe_diagnostics(self):

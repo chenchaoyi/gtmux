@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Validate one explicit delivery archive's policy and logical-byte budget.
+"""Check a project delivery destination or a completed archive's retention policy.
 
-Read only: never migrate, delete, open payloads, follow links, or infer that an
-expired review/hold date authorizes removal. Errors name fields, never values.
+Read only: resolve destination aliases for boundary checks, but never follow
+links when measuring an archive, open payloads, or authorize removal.
 """
 import argparse
 import datetime as dt
@@ -11,6 +11,8 @@ import os
 from pathlib import Path
 import re
 import stat
+
+from delivery_storage import at_or_under, require_external_path
 
 
 def validate_policy(value):
@@ -59,10 +61,36 @@ def measure(root):
     return total
 
 
+def validate_destination(destination, project_root):
+    project = require_external_path(project_root)
+    if not project.is_dir():
+        raise ValueError("project root must be an existing directory")
+    actual = require_external_path(destination)
+    if destination.is_symlink() or (actual.exists() and not actual.is_dir()):
+        raise ValueError("destination must be a directory path, not a file or link")
+    if not at_or_under(actual.parent, project):
+        raise ValueError("destination must be a subdirectory of the project root")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("manifest", type=Path)
+    parser.add_argument("manifest", nargs="?", type=Path, help="existing retention.json")
+    parser.add_argument("--project-root", type=Path, help="existing project-owned archive root")
+    parser.add_argument("--destination", type=Path, help="check a proposed archive directory before creating it")
     args = parser.parse_args(argv)
+    if (args.manifest is None) == (args.destination is None):
+        parser.error("provide either a manifest or --destination")
+    if args.destination is not None and args.project_root is None:
+        parser.error("--destination requires --project-root")
+    if args.project_root is not None:
+        try:
+            validate_destination(args.destination or args.manifest.parent, args.project_root)
+        except (ValueError, OSError, RuntimeError):
+            print("delivery retention: use a subdirectory of an existing project-owned root outside gtmux data and configuration")
+            return 1
+    if args.destination is not None:
+        print("delivery retention: project destination checked; no files changed")
+        return 0
     try:
         if args.manifest.is_symlink() or args.manifest.stat().st_size > 16 * 1024:
             raise ValueError("manifest must be a small regular file")

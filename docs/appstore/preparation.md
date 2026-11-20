@@ -44,6 +44,9 @@ from signatures or Apple's VALID processing result.
 
 Keep the canonical archive and dSYMs in encrypted off-machine backup. Their UUIDs
 must match the package ([Apple's guidance](https://developer.apple.com/documentation/xcode/adding-identifiable-symbol-names-to-a-crash-report)).
+Use the [project destination and retention checks](../design/hq-storage-recovery.md#delivery-material)
+before writing a durable Store handoff. Group the exact IPA and final receipts
+under the project's Store version/build directory.
 The existing hosted test-delivery recovery now includes archive Products, Info and
 dSYMs, excludes embedded profiles/signing setup/symlinks, and is encrypted to the
 existing operator-held recipient. Download/decrypt and verify before its **14-day**

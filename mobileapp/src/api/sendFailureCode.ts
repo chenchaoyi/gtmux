@@ -1,7 +1,7 @@
 const codes = [
   'input-awaiting-confirmation', 'input-state-unavailable', 'draft-present',
   'conversation-unavailable', 'target-changed', 'session-not-loaded',
-  'outcome-unconfirmed', 'input-unconfirmed',
+  'input-spool-full', 'outcome-unconfirmed', 'input-unconfirmed',
 ] as const;
 
 export type SendFailureCode = typeof codes[number];

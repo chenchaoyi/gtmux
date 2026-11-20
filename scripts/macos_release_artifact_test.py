@@ -88,6 +88,19 @@ class ArtifactTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             artifact.seal(self.directory, self.archive, self.expected)
 
+    def test_staging_refuses_managed_state_alias(self):
+        from unittest.mock import patch
+
+        state = self.root / '.local/share/gtmux'
+        state.mkdir(parents=True)
+        alias = self.root / 'output-alias'
+        alias.symlink_to(state, target_is_directory=True)
+        with patch.dict(os.environ, {'HOME': str(self.root)}):
+            for target in (state / 'releases/new', alias / 'releases/new'):
+                with self.subTest(target=target), self.assertRaisesRegex(ValueError, 'outside gtmux'):
+                    artifact.seal(target, self.archive, self.expected)
+        self.assertEqual(list(state.iterdir()), [])
+
 
 class WorkflowTests(unittest.TestCase):
     def test_builds_overlap_but_publication_and_mirror_wait_for_all_successes(self):

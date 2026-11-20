@@ -1,6 +1,6 @@
 import type {SendFailureCode} from '../api/sendFailureCode';
 
-export type FailureKind = 'draft' | 'asking' | 'unavailable' | 'gone' | 'key' | 'unconfirmed' | 'refused' | 'not-shared' | 'unknown';
+export type FailureKind = 'draft' | 'asking' | 'storage-full' | 'unavailable' | 'gone' | 'key' | 'unconfirmed' | 'refused' | 'not-shared' | 'unknown';
 export type FailureAction = 'send-anyway' | 'back-to-radar' | 'retry' | 'pair-again' | 'none';
 export interface FailureCopy {title: string; action: FailureAction; actionLabel: string; show: boolean}
 
@@ -10,6 +10,7 @@ export function classifySendFailure(reason: string, status?: number, code?: Send
   if (status === 403) return 'not-shared';
   switch (code) {
     case 'input-awaiting-confirmation': return 'asking';
+    case 'input-spool-full': return 'storage-full';
     case 'draft-present': return 'draft';
     case 'outcome-unconfirmed':
     case 'input-unconfirmed': return 'unconfirmed';
@@ -31,6 +32,7 @@ export function classifySendFailure(reason: string, status?: number, code?: Send
 export function failureCopy(kind: FailureKind, zh: boolean): FailureCopy {
   const retry = (title: string): FailureCopy => ({title, action: 'retry', actionLabel: zh ? '重试' : 'Retry', show: true});
   switch (kind) {
+    case 'storage-full': return retry(zh ? '未发送。Mac 上的输入记录已达上限，待记录处理后可重试。' : 'Not sent. The Mac has reached its input record limit. Retry after records have been processed.');
     case 'draft': return retry(zh ? 'Mac 上有未提交草稿，处理后重试。' : 'Unsent draft on Mac. Resolve it and try again.');
     case 'asking': return retry(zh ? '上次发送时有问题待回答，请处理后重试。' : 'The last send needed a reply. Answer, then retry.');
     case 'unavailable': return retry(zh ? '未发送，请查看会话后重试。' : 'Not sent. Check the session, then retry.');

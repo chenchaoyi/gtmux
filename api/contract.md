@@ -284,8 +284,8 @@ against a shell false-failed whenever stale box-drawing sat in the pane's scroll
 pane that used to run an agent): "not confirmed" for a send that would have worked.
 `send_id` makes a retry idempotent: a token that already LANDED returns `200` WITHOUT
 re-injecting, so an ambiguous network timeout (the send may have landed on the Mac while the
-response was lost) can be retried without double-sending. A `400` "not confirmed" leaves the
-id retryable. An old client that omits `send_id` falls back to the payload-hash re-send
+response was lost) can be retried without double-sending. An unknown submission has no successful receipt. Keep its original `send_id`
+and inspect the conversation before deciding whether to retry. An old client that omits `send_id` falls back to the payload-hash re-send
 interlock.
 
 ```
@@ -299,12 +299,17 @@ A send callback refusal may add an optional `code` beside the existing `error` s
 HTTP status and legacy error wrapping are unchanged. Known values are
 `input-awaiting-confirmation`, `input-state-unavailable`, `draft-present`,
 `conversation-unavailable`, `target-changed`, `session-not-loaded`,
-`outcome-unconfirmed` and `input-unconfirmed`. Unknown codes are omitted by the
+`input-spool-full`, `outcome-unconfirmed` and `input-unconfirmed`. A full input spool refuses a new request before native submission. Unknown codes are omitted by the
 server and ignored by clients. Only explicit native `input-awaiting-confirmation`
 evidence identifies a question; a generic waiting/unavailable verdict does not.
 These codes describe the failed attempt, not current agent state or permission to
 replay it. Authorization remains authoritative: 401/403 are never overridden by
-a body code. No target repair, automatic retry or input-policy override is added.
+a body code. A typed text-send failure can also return `submission: "not-submitted"` when zero
+submission is established, or `submission: "unknown"` when acceptance is unresolved.
+It echoes the original `send_id` if supplied and omits a success receipt.
+A draft may remain on screen after a hold before Enter. A current refusal leaves
+a same-ID outcome unknown if earlier submission cannot be ruled out. Success
+reuses the original acknowledgement grade (`submitted`, `queued` or `accepted`).
 
 The successful response includes the post-send pane snapshot when it can be read.
 `cols` and `cursor` are optional, with the same meanings as `GET /api/pane`.
@@ -1700,7 +1705,7 @@ Owner reads of `/api/transcript` may explicitly include `observation=1`. Only af
 
 `POST /api/restore` accepts only `{request_id,revision}` in at most1024bytes. The ID is `<server_time>-<16..64 ASCII letters/digits/hyphens>`. A new ID must be within24h of server time (at most60s future skew). Persist before dispatch; repeated identical IDs return the original job, including failed/interrupted jobs, without relaunch. A changed revision on the same ID is409 `request_changed`. A stale preview is409 `plan_changed`; another active job is409 `restore_busy`. Storage/launch failure is not evidence of a successful restoration. No request accepts a command, path, arbitrary session name, home or worker options. HTTP202 means the durable job was reserved/observed, not that sessions started.
 
-Jobs include `id, revision, created_at, updated_at, phase, code?, sessions[], agents?[]`. Phases are `queued|preparing|layout|agents|completed|partial|failed|interrupted`. Session states distinguish `missing|restored`; agent receipts retain `confirmed|pending|prefilled` and explicit skipped/failed reasons. `completed` is a completed worker with available sessions, not a device/UI acceptance claim. Sent commands without fresh matching identity remain pending and make the result partial.
+Jobs include `id, revision, created_at, updated_at, phase, code?, sessions[], agents?[]`. Phases are `queued|preparing|layout|agents|completed|partial|failed|interrupted`. Session states distinguish `missing|restored`; agent receipts retain `confirmed|pending|prefilled` and explicit skipped/failed reasons. Agent rows have `loc, pane, state` and optional `issue_state`, which preserves the original `pending|unknown|send-failed` delivery fact when `state` advances to `startup-timeout` or cancellation. Clients show both uncertainty and timeout; absence of the optional field remains compatible with older receipts. This is a result receipt, not input authority. `completed` is a completed worker with available sessions, not a device/UI acceptance claim. When observation expires without fresh matching identity, the agent state is `startup-timeout` and the job is partial. A successful initial send remains recorded as `issue_state: pending`.
 
 A detached worker owns a once-only claim and the shared process-owned CLI/menu/remote execution lease. HTTP disconnect never cancels or retries it. Dead workers become interrupted on a later read after a60s startup grace; no automatic reclaim/launch. Worker process budget30min. Keep up to128receipts, at least48h for terminal receipts; unexpired receipts are not evicted to admit another job. Expired NEW IDs are refused, so removal of old receipts cannot replay them. Plans/results cap256sessions/2048agent rows, private receipt database4MiB; capacity/IO failure refuses rather than dropping unknown work. The App stores its ID before POST and reads it on reopening.
 
