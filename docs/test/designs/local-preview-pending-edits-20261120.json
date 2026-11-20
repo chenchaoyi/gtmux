@@ -1,0 +1,35 @@
+{
+  "id": "local-preview-pending-edits-20261120",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner following independent review",
+    "date": "2026-11-20",
+    "decision": "Cover a refused early save before an authorized switch and the page-only bookmark fallback.",
+    "notes": "Use a synthetic browser identity and controlled notification order. Render ordinary bookmark controls when persistent storage cannot accept new entries."
+  },
+  "cases": [
+    {
+      "id": "LAP-012",
+      "layer": "L4",
+      "description": "A late pairing notification preserves unsaved edits on an authorized switch",
+      "setup": "An active draft and two synthetic credentials on the same workspace.",
+      "action": "Replace the stored pairing and run a timer or page-hide callback before delivering the change to the old view.",
+      "expected": "The pending change is saved in the old profile when the switch is processed, never in the new profile.",
+      "planned_files": [
+        "tests/web/artifact-pending-edits.test.cjs"
+      ]
+    },
+    {
+      "id": "LAP-013",
+      "layer": "L4",
+      "description": "A paired browser without writable storage can bookmark for this page",
+      "setup": "A synthetic paired conversation with stable turn IDs and unavailable persistent storage.",
+      "action": "Mark a turn, redraw the transcript and remove the mark.",
+      "expected": "The mark and page-only feedback survive the redraw, removal works, and no bookmark is persisted.",
+      "planned_files": [
+        "tests/web/artifact-pending-edits.test.cjs"
+      ]
+    }
+  ],
+  "seal": "8a3f6b392072e35dc88c71f85b6666692fa798b12db137cc32cf3f7f624189e4"
+}
