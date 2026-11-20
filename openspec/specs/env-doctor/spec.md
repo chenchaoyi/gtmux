@@ -74,6 +74,25 @@ the currently running hook, chat-binding, or hook-traffic probe.
 - **WHEN** a chat-binding or hook-traffic probe takes a long time
 - **THEN** stderr identifies that probe without changing the report on stdout
 
+### Requirement: Legacy participant profile lock maintenance
+
+The storage check SHALL count eligible empty legacy participant profile lock
+files in the state root without acquiring or modifying them. The doctor SHALL
+offer a dedicated `--prune-profile-locks` operation outside the general repair
+pass. Removal SHALL require interactive confirmation that all legacy writers
+have been upgraded or stopped and in-flight legacy hooks have exited.
+
+#### Scenario: Retired per-session lock files remain on disk
+
+- **WHEN** the operator runs `gtmux doctor` or `gtmux doctor --json`
+- **THEN** the storage check shows their count and gives cleanup guidance when the count is positive
+
+#### Scenario: Confirmed cleanup encounters a held lock
+
+- **WHEN** the operator explicitly confirms the dedicated cleanup
+- **THEN** cleanup removes only eligible idle legacy locks, keeps held locks,
+  profile snapshots and current shard locks, and reports the outcome
+
 ### Requirement: Locale / UTF-8 health check and fix
 
 The system SHALL check that the tmux server's locale is UTF-8 — resolving the

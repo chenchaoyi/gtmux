@@ -67933,6 +67933,65 @@
       ],
       "sha256": "8eebe019d2efc175eaebd42c274b1917a0a02019adff6c05c650222fa18f7413"
     },
+    "internal/app/doctor_profile_locks_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f167ee401a33",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "TestSTOR011DoctorReportsLegacyProfileLocksWithoutChanges",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-011,STOR-012"
+        },
+        {
+          "id": "MAP-e5e0b1ca236e",
+          "line": 86,
+          "kind": "reviewed-selector",
+          "name": "TestSTOR012DoctorPrunesOnlyConfirmedIdleLegacyProfileLocks",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "STOR-011,STOR-012"
+        }
+      ],
+      "sha256": "abd5dc992f54f28243d8962e9fe51d3e1a067e585f97bdabf32cfabbe50857ea"
+    },
+    "internal/app/artifact_endpoint_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9d9c69aa8fd5",
+          "line": 43,
+          "kind": "reviewed-selector",
+          "name": "TestLAP007OnlyCurrentWorkspaceOffersALocalPreview",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LAP-007"
+        },
+        {
+          "id": "MAP-db260902bb5a",
+          "line": 86,
+          "kind": "reviewed-selector",
+          "name": "TestLAP007LoopbackAddressesUseRecordedPort",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LAP-007"
+        },
+        {
+          "id": "MAP-66f016a34c89",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "TestLAP007UnexpectedHealthNeverProvidesAnAddress",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LAP-007"
+        }
+      ],
+      "sha256": "fd83013b2bda26968a310f230de6993ea9f2666662b9efa6e408fa9c4b355d50"
+    },
     "internal/app/artifact_preview_test.go": {
       "layer": "L2",
       "stack": "reviewed implementation",
@@ -68034,6 +68093,40 @@
         }
       ],
       "sha256": "33ed9facacfa53649e00610f63164598ecca1a4562c36b37078e2c05816f82ae"
+    },
+    "tests/web/artifact-lifetime.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ef5264e03fa7",
+          "line": 29,
+          "kind": "reviewed-selector",
+          "name": "LAP-008 another tab switches to a guest and signs out",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LAP-008,LAP-009"
+        },
+        {
+          "id": "MAP-f9189f690459",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "LAP-008 resizing retires a pending reader",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LAP-008,LAP-009"
+        },
+        {
+          "id": "MAP-ff125c9f699b",
+          "line": 73,
+          "kind": "reviewed-selector",
+          "name": "LAP-009 oversized related image leaves the rest of the report readable",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LAP-008,LAP-009"
+        }
+      ],
+      "sha256": "ea824c1327e9e228362f2e24eebee5034f52dc1a598bba52ccbaf67d79ade759"
     },
     "tests/web/artifact-open.test.cjs": {
       "layer": "L4",
@@ -68158,74 +68251,6 @@
         }
       ],
       "sha256": "453c9f1f366640525dd437223f009bc96670e4ce300ff76cbed77629c8073e3e"
-    },
-    "internal/app/artifact_endpoint_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-9d9c69aa8fd5",
-          "line": 43,
-          "kind": "reviewed-selector",
-          "name": "TestLAP007OnlyCurrentWorkspaceOffersALocalPreview",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "LAP-007"
-        },
-        {
-          "id": "MAP-db260902bb5a",
-          "line": 86,
-          "kind": "reviewed-selector",
-          "name": "TestLAP007LoopbackAddressesUseRecordedPort",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "LAP-007"
-        },
-        {
-          "id": "MAP-66f016a34c89",
-          "line": 95,
-          "kind": "reviewed-selector",
-          "name": "TestLAP007UnexpectedHealthNeverProvidesAnAddress",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "LAP-007"
-        }
-      ],
-      "sha256": "fd83013b2bda26968a310f230de6993ea9f2666662b9efa6e408fa9c4b355d50"
-    },
-    "tests/web/artifact-lifetime.test.cjs": {
-      "layer": "L4",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-ef5264e03fa7",
-          "line": 29,
-          "kind": "reviewed-selector",
-          "name": "LAP-008 another tab switches to a guest and signs out",
-          "dynamic": false,
-          "layer": "L4",
-          "design": "LAP-008,LAP-009"
-        },
-        {
-          "id": "MAP-f9189f690459",
-          "line": 60,
-          "kind": "reviewed-selector",
-          "name": "LAP-008 resizing retires a pending reader",
-          "dynamic": false,
-          "layer": "L4",
-          "design": "LAP-008,LAP-009"
-        },
-        {
-          "id": "MAP-ff125c9f699b",
-          "line": 73,
-          "kind": "reviewed-selector",
-          "name": "LAP-009 oversized related image leaves the rest of the report readable",
-          "dynamic": false,
-          "layer": "L4",
-          "design": "LAP-008,LAP-009"
-        }
-      ],
-      "sha256": "ea824c1327e9e228362f2e24eebee5034f52dc1a598bba52ccbaf67d79ade759"
     },
     "tests/web/artifact-pairing-storage.test.cjs": {
       "layer": "L4",

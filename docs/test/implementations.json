@@ -4147,6 +4147,16 @@
       "TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair"
     ]
   },
+  "internal/app/doctor_profile_locks_test.go": {
+    "cases": [
+      "STOR-011",
+      "STOR-012"
+    ],
+    "selectors": [
+      "TestSTOR011DoctorReportsLegacyProfileLocksWithoutChanges",
+      "TestSTOR012DoctorPrunesOnlyConfirmedIdleLegacyProfileLocks"
+    ]
+  },
   "internal/agentclient/input_archive_bootstrap_test.go": {
     "cases": [
       "SPL-026"

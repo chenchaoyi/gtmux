@@ -1,0 +1,42 @@
+{
+  "id": "doctor-profile-lock-cleanup-20261120",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-20",
+    "decision": "Verify the scope, explicit retirement confirmation, and outcome of legacy lock maintenance",
+    "notes": "Use disposable state. The retirement confirmation is required because even a successful flock cannot exclude an old writer that has opened the old inode but has yet to lock it. A held-lock fixture covers defensive skipping. Tests do not claim to detect every legacy writer."
+  },
+  "cases": [
+    {
+      "id": "STOR-011",
+      "layer": "L2",
+      "description": "Doctor reports legacy participant profile locks without modifying them",
+      "setup": "Disposable HOME with matching empty locks, a held lock, profile data, shard locks, and lookalike files and links.",
+      "action": "Collect the doctor row and render it in the structured report. Reject combinations of the dedicated maintenance flag with other modes.",
+      "expected": "The recommendation counts only matching owned empty regular files with one link. The report remains read-only and incompatible modes exit before making any changes.",
+      "planned_files": [
+        "internal/app/doctor_profile_locks_test.go"
+      ],
+      "surfaces": [
+        "gtmux doctor",
+        "gtmux doctor --json"
+      ]
+    },
+    {
+      "id": "STOR-012",
+      "layer": "L2",
+      "description": "Dedicated doctor maintenance cleans eligible legacy profile locks after explicit confirmation",
+      "setup": "Disposable HOME with eligible fixtures, one held lock, a matching old JSON, active shard storage, and unrelated files. Use simulated confirmation inputs and keep the real home outside the test.",
+      "action": "Decline retirement, then confirm it. Check the remaining lock, release it and retry until the report is clear.",
+      "expected": "Declining changes nothing. Confirming removes eligible idle legacy locks, reports the held lock as remaining and returns a nonzero result for partial cleanup. After release the retry succeeds and a further run is a no-op. Old and current profile data, shard locks and lookalike entries are preserved.",
+      "planned_files": [
+        "internal/app/doctor_profile_locks_test.go"
+      ],
+      "surfaces": [
+        "gtmux doctor --prune-profile-locks"
+      ]
+    }
+  ],
+  "seal": "f9675f9083ec97c829ae5a6a8868dc79d57d8b7496cbbb7205dfbf38a9785159"
+}

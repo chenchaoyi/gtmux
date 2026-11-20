@@ -2072,7 +2072,7 @@ code, and open the same access.
 
 | Command | Purpose |
 |---|---|
-| `gtmux doctor [--fix [--yes] \| --bundle]` | check this Mac, then set up what is missing |
+| `gtmux doctor [--fix [--yes] \| --bundle \| --prune-profile-locks]` | check this host and review available repairs |
 | `gtmux install [hooks\|app\|cloudflared]` | install agent hooks or the menu-bar app |
 | `gtmux uninstall [hooks\|app]` | take back out what gtmux installed |
 | `gtmux update [--check]` | update gtmux, the CLI and the menu-bar app |
@@ -2124,6 +2124,11 @@ details. JSON labels are human-readable and are not stable machine identifiers. 
 exist. `--json` and `--no-prompt` reject repair/bundle flags. `doctor --fix --terminal`
 opens the interactive fixer and cannot be combined with `--yes`; opening it is not
 confirmation that repairs succeeded.
+
+The Storage section counts empty legacy participant profile locks. After all old
+hook writers have been upgraded or stopped and in-flight legacy hooks have exited,
+run `gtmux doctor --prune-profile-locks` in a terminal and confirm. The command
+keeps profile snapshots and current shard locks and reports any old lock still held.
 
 Check completion is separate from the four result classes:
 
