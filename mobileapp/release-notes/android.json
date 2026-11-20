@@ -1,5 +1,20 @@
 [
   {
+    "version": "1.0.188",
+    "en": [
+      "Resume saved sessions on the connected server and follow restore progress. In the terminal, new output keeps your reading position while you review older lines.",
+      "Appearance settings are grouped together, with clearer labels and more room to tap reply, settings and session controls.",
+      "Select several photos, edit them and follow uploads individually. Retries keep the caption and attachments.",
+      "Conversation files explain why they are unavailable and when you need a new link. Chat now tells you when a full server input queue has prevented a message from being sent."
+    ],
+    "zh": [
+      "可恢复已连接服务端上的会话并查看恢复进度。在终端回看旧输出时，新内容到达会保留当前阅读位置。",
+      "统一外观设置入口，回复、设置和会话控件的标签更清楚，触控范围更宽。",
+      "支持选择和编辑多张照片，逐张查看上传进度。重试时保留消息文字和附件。",
+      "对话文件暂时不可用时会说明原因，以及何时需要新链接。服务端发送队列已满时，明确提示消息未发送。"
+    ]
+  },
+  {
     "version": "1.0.179",
     "en": [
       "Restore sessions on your connected server from the App, with a selectable list and progress.",
