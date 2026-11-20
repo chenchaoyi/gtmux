@@ -68,7 +68,7 @@ every screen. Native layouts and available permissions remain surface-specific.
 
 | Interaction | Common meaning and order | Evidence / result |
 |---|---|---|
-| Agent detail modes | Chat → Terminal; Web adds Trace between them; default Terminal; plain panes have no Chat or Trace | `web/index.html`, `web/app.js` focus/tile, `mobileapp/src/screens/DetailScreen.tsx`; Web order and plain-pane preference fixed |
+| Agent detail modes | Chat / Terminal modes; Trace / Diff are separate tools; default Terminal; plain panes have no agent Chat or Trace | `web/index.html`, `web/app.js` focus/tile, `mobileapp/src/screens/DetailScreen.tsx`; Web order and plain-pane preference fixed |
 | Waiting / working / idle / plain process | Needs you / Working / Idle / Running, same core states and status palette | `MenuView.swift`, `CommandPalette.swift`, mobile i18n, Web LABEL; Mac waiting heading and Web status accessible name fixed |
 | Group folding | Collapse all / Expand all | `web/app.js`, mobile `PaneBrowserView` and `ChatView`; Web terminology fixed |
 | Knowledge and route destinations | Book for knowledge, globe for route | `HQResourcePage.symbol`, mobile `SIcon`, `HQDisc`; already aligned, no icon change |
@@ -113,3 +113,23 @@ shared component, name the Terminal/attach counterpart or its absence, and compa
 actual rendered phases in both themes and compact/wide layouts. Source checks or
 a passing build alone do not establish visual parity; accessibility labels do not
 claim spoken screen-reader acceptance.
+
+## Component verification
+
+The [current DESIGN rules](DESIGN.md#current-shared-rules-2026-11-17) are the single
+shared definition. Each change records actual results, evidence paths and untested
+boundaries against this matrix. Listing platform names is not acceptance. Include normal,
+loading, empty, failure/retry and disabled states; add queued/saving and waiting/working/idle
+where applicable. Check light/dark and Reduce Motion. This table assigns coverage; it does
+not claim checks have already run.
+
+| Component / rule | Phone / iPad | Web fine/coarse pointer | Mac | Terminal |
+| --- | --- | --- | --- | --- |
+| Secondary text TEXT-READ | theme/SettingsRow/AgentRow; contrast, components and native large type | Actual CSS/screenshots, both themes and selection | Theme plus real vibrancy/wallpaper | Terminal-owned palette; no App token assumption |
+| Input/attachment TOUCH-44, UPLOAD-PHASE | Composer; independent edit/remove and real byte stages | composer; desktop/390px, XHR stages and retry | Native screenshot-send flow separately | Text/real-byte CLI progress |
+| Loading MOTION-LOAD | LoadingMark shared by phone/tablet; lifecycle and Reduce Motion | brandload page/inline/send, Reduce Motion | GtmuxLoadingMark; stop after close; OS exceptions | Text state; no animated logo |
+| HQ/session ROLE-HQ, A11Y-CONTEXT | Separate HQ; switches/same-named rows; spoken device check separate | Both layouts retain HQ role; keyboard and labels | Lower-pane status symbol in grayscale; actual material separate | Semantic status/location |
+| Documents FILE-SCOPE | Exact scope; unavailable/permission/network; new-link recovery | Generated validation/copy contract | Local document/system preview boundary | Registration followed by recipient-scope read verification |
+
+Project delivery reports use these rule IDs for source binding, actual checks, screenshots,
+and remaining device/spoken acceptance gaps.

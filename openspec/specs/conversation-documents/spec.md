@@ -119,3 +119,18 @@ The iOS HTML preview SHALL display declared local image sources and responsive i
 - **WHEN** a verified local HTML report declares an image inside its directory tree
 - **THEN** the paired iOS preview loads and decodes it without enabling document scripts or exposing an application bridge
 - **AND** undeclared, remote, cross-session and escaping references are refused
+
+### Requirement: Honest unavailable feedback and scoped delivery verification
+An unavailable attachment SHALL be described as unavailable to the current conversation,
+not as proof that a server file was deleted. Recovery SHALL request a new correctly
+scoped link, while network and permission failures remain distinct. Exact session/home
+binding SHALL remain enforced. Registration success SHALL NOT by itself be reported
+as App-open verification; delivery verification SHALL read metadata and content using
+the recipient's actual identity and verify byte count/SHA, including referenced private
+images. A tmux conversation without a home_id SHALL NOT be replaced with another home.
+
+#### Scenario: An existing copy belongs to a different home
+- **WHEN** an App resolves that copy with its actual conversation/home
+- **THEN** the existing strict scope check refuses it without exposing another conversation
+- **AND** the UI explains current-conversation unavailability and new-link recovery
+- **AND** a corrected independently registered link can be verified with the recipient scope

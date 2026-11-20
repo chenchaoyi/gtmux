@@ -145,3 +145,18 @@ The native permission/fullscreen policy follows Apple's public
 [WKUIDelegate](https://developer.apple.com/documentation/webkit/wkuidelegate) and
 [WKPreferences](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)
 interfaces; no private WebKit preferences are used.
+
+## Private delivery verification (FILE-SCOPE)
+
+A successful `artifact add` proves registration, not that the current App can open it.
+Read the actual owning transcript session_id and the recipient's home_id. If a tmux
+conversation has no home_id, omit `--home-id`; never substitute another machine home/hash
+for an empty identity. Verify resolve metadata and content byte count/SHA using exactly
+the recipient's parameters. Verify private image links inside a report individually before
+claiming availability.
+
+Unavailable may mean no registration for this conversation or an unavailable source; it
+does not prove deletion. Provide a new link bound to the correct scope. Never remove server
+scope checks, change identity or share across conversations to rescue an old link. Network
+failures may retry; permission and scope errors remain distinct. Record user-confirmed
+opening separately from server-side read verification.

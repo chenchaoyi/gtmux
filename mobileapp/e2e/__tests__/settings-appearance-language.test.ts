@@ -13,7 +13,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await launch().catch(() => {});
   await openSettings().catch(() => {});
-  await pick(['Appearance', '外观'], 'system').catch(() => {});
+  await pickAppearance('system').catch(() => {});
   await pick(['Language', '语言'], 'system').catch(() => {});
   await fake?.close();
 });
@@ -28,6 +28,23 @@ async function launch() {
 async function openSettings() {
   await getDriver().$(`~${TestIds.radar.settings}`).click();
   await settle(1500);
+}
+
+async function pickAppearance(key: string) {
+  const driver = getDriver();
+  const row = driver.$(`~${TestIds.settings.appearance}`);
+  for (let i = 0; i < 4; i++) {
+    if (await row.isDisplayed()) {
+      await row.click();
+      await settle(1000);
+      await driver.$(`~${TestIds.settings.pickerOption}-${key}`).click();
+      await settle(1500);
+      return;
+    }
+    await driver.execute('mobile: swipe', {direction: 'up'});
+    await settle(700);
+  }
+  throw new Error('global color scheme control is not visible');
 }
 
 // On Settings: bring the row into view (its label starts with the title), open its picker,
@@ -55,16 +72,16 @@ const shows = async (pattern: string) => getDriver().$(`-ios predicate string:la
 it('Dark and 中文 apply at once and survive a relaunch', async () => {
   await launch();
   await openSettings();
-  await pick(['Appearance', '外观'], 'dark');
+  await pickAppearance('dark');
   await pick(['Language', '语言'], 'zh');
   await screenshot('settings-dark-zh');
   // At once: the page speaks Chinese, and the Appearance row says Dark in it.
   expect(await shows('外观')).toBe(true);
-  expect(await shows('深色')).toBe(true);
+  expect(await getDriver().$(`~${TestIds.settings.appearance}`).getAttribute('label')).toBe('配色模式, 深色');
 
   await launch();
   await openSettings();
   await screenshot('settings-after-relaunch');
   expect(await shows('外观')).toBe(true);
-  expect(await shows('深色')).toBe(true);
+  expect(await getDriver().$(`~${TestIds.settings.appearance}`).getAttribute('label')).toBe('配色模式, 深色');
 });

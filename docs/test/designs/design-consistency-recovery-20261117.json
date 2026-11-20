@@ -1,0 +1,47 @@
+{
+  "id": "design-consistency-recovery-20261117",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-17",
+    "decision": "Reviewed before editing these recovery and native flow tests; final independent recheck required",
+    "notes": "Responds to independent R1 upload receipt leakage, R2 bilingual drift, and exact CI44008892966 Android phone/tablet flow24 failure after moving global appearance. No gate bypass, real-session send, installation, dependencies, or device acceptance claim. Original DFC002 already covers the separately strengthened thumbnail geometry case."
+  },
+  "cases": [
+    {
+      "id": "DFR-001",
+      "layer": "L2",
+      "description": "Editing a previously uploaded image invalidates its receipt while cancel/no-change preserves the original",
+      "setup": "Execute the real annotation handlers for a complete uploaded attachment retained after failure, alongside a queued attachment; isolate canvas, image loading and transport boundaries only.",
+      "action": "Draw and save a replacement, then retry; separately cancel or export without new marks and reject export.",
+      "expected": "Saved replacement loses old path, progress and complete/failed phase before redraw and requires upload; unrelated files and caption retain identity. Cancel/no-change/export failure retain the valid original.",
+      "planned_files": [
+        "internal/server/web/design-recovery.test.cjs"
+      ]
+    },
+    {
+      "id": "DFR-002",
+      "layer": "L4",
+      "description": "Appearance flows reach the actual global color-scheme control using stable identity",
+      "setup": "Existing synthetic Android phone/tablet flows and iOS appearance/language persistence test with the separate Appearance group and Color scheme row.",
+      "action": "Open the exact settings-appearance control, select dark/light/system, verify actual selected row value, and exercise existing language/relaunch assertions.",
+      "expected": "The actionable control, not the uppercase group heading, opens the existing shared theme picker. Each Android choice changes the actual control value; iOS existing persistence assertions remain. Flow errors still fail normally.",
+      "planned_files": [
+        "mobileapp/e2e/android/run.cjs",
+        "mobileapp/e2e/__tests__/settings-appearance-language.test.ts"
+      ]
+    },
+    {
+      "id": "DFR-003",
+      "layer": "L4",
+      "description": "Rendered composer recovers from message-send or later-file upload failure before editing an uploaded image",
+      "setup": "Existing local synthetic HTTP fixture and isolated headless browser; stage two images through the actual file chooser and retain uploaded attachments after an intentional failure.",
+      "action": "Edit the previously uploaded image, save, retry with upload acknowledgment held, then release acknowledgment; also cancel a second edit.",
+      "expected": "Replacement thumbnail immediately loses Uploaded, shows real uploading/saving until a fresh path is acknowledged, and final send includes the edited path. Caption and unrelated attachment survive. Cancel keeps the prior receipt. Only synthetic sends occur.",
+      "planned_files": [
+        "tests/web/design-recovery.test.cjs"
+      ]
+    }
+  ],
+  "seal": "201ea4f325ed00876d0e6f6990eccaf01ac828cefd83fa5b1a1e612fc6f95596"
+}

@@ -40242,13 +40242,13 @@
       ]
     },
     "mobileapp/e2e/__tests__/settings-appearance-language.test.ts": {
-      "sha256": "0ebefa10ee737a303af6712940d55d3043c5df536e745bb288e21a4bcd9f9e0f",
+      "sha256": "d59bcee96d77cc8d617c493e86abfdbd955ffd41af7d2fe8fe59bdbec7e47ccc",
       "layer": "L4",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-398163bb0c32",
-          "line": 55,
+          "line": 72,
           "kind": "it",
           "name": "Dark and 中文 apply at once and survive a relaunch",
           "dynamic": false,
@@ -40774,13 +40774,13 @@
       "sha256": "36d69a913e5c4703cbb329d3948d521de3d35273227029bb7527ddf6bf48f9be"
     },
     "mobileapp/e2e/android/run.cjs": {
-      "sha256": "015627183410097e1c8f6986d3b678b4f55c5e637c300d55e9de030be0d5ecca",
+      "sha256": "db27cf4f27ef6ec9e78ba39460a3d3d7f690e844eee559ef7d7e7bb9dcace955",
       "layer": "L4",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-5aa4a01b8dbf",
-          "line": 168,
+          "line": 169,
           "kind": "check",
           "name": "01-radar-owner",
           "dynamic": false,
@@ -40788,7 +40788,7 @@
         },
         {
           "id": "LEG-1b8288a84b0e",
-          "line": 169,
+          "line": 170,
           "kind": "check",
           "name": "02-section-collapse",
           "dynamic": false,
@@ -40796,7 +40796,7 @@
         },
         {
           "id": "LEG-9c90c5870a40",
-          "line": 170,
+          "line": 171,
           "kind": "check",
           "name": "03-chat-terminal",
           "dynamic": false,
@@ -40804,7 +40804,7 @@
         },
         {
           "id": "LEG-9d8c31dba1cc",
-          "line": 171,
+          "line": 172,
           "kind": "check",
           "name": "04-real-composer-send",
           "dynamic": false,
@@ -40812,7 +40812,7 @@
         },
         {
           "id": "LEG-a483badd098f",
-          "line": 172,
+          "line": 173,
           "kind": "check",
           "name": "05-display-size",
           "dynamic": false,
@@ -40820,7 +40820,7 @@
         },
         {
           "id": "LEG-f48f9d418dd0",
-          "line": 173,
+          "line": 174,
           "kind": "check",
           "name": "06-trace-session-and-turns",
           "dynamic": false,
@@ -40828,7 +40828,7 @@
         },
         {
           "id": "LEG-08efe37f8bec",
-          "line": 174,
+          "line": 175,
           "kind": "check",
           "name": "07-trace-expand-collapse",
           "dynamic": false,
@@ -40836,7 +40836,7 @@
         },
         {
           "id": "LEG-f43ef9fc0de4",
-          "line": 181,
+          "line": 182,
           "kind": "check",
           "name": "08-trace-earlier",
           "dynamic": false,
@@ -40844,7 +40844,7 @@
         },
         {
           "id": "LEG-6236f9538633",
-          "line": 182,
+          "line": 183,
           "kind": "check",
           "name": "09-trace-search",
           "dynamic": false,
@@ -40852,7 +40852,7 @@
         },
         {
           "id": "LEG-c0726a329e04",
-          "line": 183,
+          "line": 184,
           "kind": "check",
           "name": "10-diff-wrap-and-back",
           "dynamic": false,
@@ -40860,7 +40860,7 @@
         },
         {
           "id": "LEG-121d1daa04df",
-          "line": 184,
+          "line": 185,
           "kind": "check",
           "name": "11-fullscreen-tools",
           "dynamic": false,
@@ -40868,7 +40868,7 @@
         },
         {
           "id": "LEG-7dcd48a83338",
-          "line": 185,
+          "line": 186,
           "kind": "check",
           "name": "12-offline-reconnect",
           "dynamic": false,
@@ -40876,7 +40876,7 @@
         },
         {
           "id": "LEG-37bf442adb03",
-          "line": 186,
+          "line": 187,
           "kind": "check",
           "name": "13-guest-scope",
           "dynamic": false,
@@ -40884,7 +40884,7 @@
         },
         {
           "id": "LEG-75efedb5a994",
-          "line": 187,
+          "line": 188,
           "kind": "check",
           "name": "14-owner-reconnect-persisted",
           "dynamic": false,
@@ -40892,7 +40892,7 @@
         },
         {
           "id": "LEG-f5c656156930",
-          "line": 188,
+          "line": 189,
           "kind": "check",
           "name": "15-settings-and-honest-push",
           "dynamic": false,
@@ -40900,7 +40900,7 @@
         },
         {
           "id": "LEG-94f757a96cc8",
-          "line": 189,
+          "line": 190,
           "kind": "check",
           "name": "16-html-native-local-image-and-consent",
           "dynamic": false,
@@ -40908,7 +40908,7 @@
         },
         {
           "id": "LEG-591b3f60f92c",
-          "line": 199,
+          "line": 200,
           "kind": "check",
           "name": "17-markdown-native-share-and-back",
           "dynamic": false,
@@ -40916,7 +40916,7 @@
         },
         {
           "id": "LEG-a98a53dfe8d6",
-          "line": 206,
+          "line": 207,
           "kind": "check",
           "name": "18-image-native-zoom-and-back",
           "dynamic": false,
@@ -40924,7 +40924,7 @@
         },
         {
           "id": "LEG-b6fd80008736",
-          "line": 212,
+          "line": 213,
           "kind": "check",
           "name": "19-trace-nested-code",
           "dynamic": false,
@@ -40932,7 +40932,7 @@
         },
         {
           "id": "LEG-4899bd3fa44a",
-          "line": 220,
+          "line": 221,
           "kind": "check",
           "name": "20-file-picker-and-cancel",
           "dynamic": false,
@@ -40940,7 +40940,7 @@
         },
         {
           "id": "LEG-cee1718f3aee",
-          "line": 225,
+          "line": 226,
           "kind": "check",
           "name": "21-camera-permission-denial",
           "dynamic": false,
@@ -40948,7 +40948,7 @@
         },
         {
           "id": "LEG-be0d4167aa8c",
-          "line": 232,
+          "line": 233,
           "kind": "check",
           "name": "22-rotation-and-large-text",
           "dynamic": false,
@@ -40956,7 +40956,7 @@
         },
         {
           "id": "LEG-f19d42fea98d",
-          "line": 239,
+          "line": 240,
           "kind": "check",
           "name": "23-create-session-and-open",
           "dynamic": false,
@@ -40964,7 +40964,7 @@
         },
         {
           "id": "LEG-c9afceeeeb2e",
-          "line": 244,
+          "line": 245,
           "kind": "check",
           "name": "24-appearance-light-dark-system",
           "dynamic": false,
@@ -40972,7 +40972,7 @@
         },
         {
           "id": "LEG-afc3b4e79446",
-          "line": 250,
+          "line": 254,
           "kind": "check",
           "name": "25-hq-chat-and-routing",
           "dynamic": false,
@@ -40980,7 +40980,7 @@
         },
         {
           "id": "LEG-598d11c4ae0c",
-          "line": 257,
+          "line": 261,
           "kind": "check",
           "name": "26-emulated-hardware-keys",
           "dynamic": false,
@@ -40988,7 +40988,7 @@
         },
         {
           "id": "LEG-f78442eb1f72",
-          "line": 262,
+          "line": 266,
           "kind": "check",
           "name": "27-authenticated-agent-icons",
           "dynamic": false,
@@ -40996,7 +40996,7 @@
         },
         {
           "id": "LEG-33aeea4a70db",
-          "line": 269,
+          "line": 273,
           "kind": "check",
           "name": "28-file-upload-and-send",
           "dynamic": false,
@@ -41004,7 +41004,7 @@
         },
         {
           "id": "LEG-8ef64b955024",
-          "line": 283,
+          "line": 287,
           "kind": "check",
           "name": "29-clipboard-image-markup-and-upload",
           "dynamic": false,
@@ -41012,7 +41012,7 @@
         },
         {
           "id": "LEG-8a1dd3780a1b",
-          "line": 305,
+          "line": 309,
           "kind": "check",
           "name": "30-native-pdf-pages-and-scroll",
           "dynamic": false,
@@ -41020,7 +41020,7 @@
         },
         {
           "id": "LEG-ee0968c7d8ff",
-          "line": 310,
+          "line": 314,
           "kind": "check",
           "name": "31-native-file-trace",
           "dynamic": false,
@@ -41028,7 +41028,7 @@
         },
         {
           "id": "MAP-d4637161f816",
-          "line": 98,
+          "line": 99,
           "kind": "reviewed-selector",
           "name": "async function check",
           "dynamic": false,
@@ -41037,7 +41037,7 @@
         },
         {
           "id": "MAP-c6dfe48e744e",
-          "line": 104,
+          "line": 105,
           "kind": "reviewed-selector",
           "name": "async function run",
           "dynamic": false,
@@ -41046,7 +41046,7 @@
         },
         {
           "id": "MAP-24f51091f511",
-          "line": 225,
+          "line": 226,
           "kind": "reviewed-selector",
           "name": "await check('21-camera-permission-denial'",
           "dynamic": false,
@@ -67608,6 +67608,217 @@
         }
       ],
       "sha256": "4f81ecd2e6356bfc0622c635eaeb2d561ac81d95f0a26c2489e899b6908f5c8e"
+    },
+    "internal/server/web/design-consistency.test.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-82ccdde7a852",
+          "line": 114,
+          "kind": "reviewed-selector",
+          "name": "actual XHR byte stages stay on the thumbnail",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-cd745e41cb20",
+          "line": 136,
+          "kind": "reviewed-selector",
+          "name": "unknown-length body completion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-1dab495821e2",
+          "line": 142,
+          "kind": "reviewed-selector",
+          "name": "upload ${failure} preserves",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-a2be25f26b18",
+          "line": 150,
+          "kind": "reviewed-selector",
+          "name": "retired scope cannot accept",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-bcfc2c1a7874",
+          "line": 157,
+          "kind": "reviewed-selector",
+          "name": "HQ remains a distinct role",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-700b6c8e3834",
+          "line": 167,
+          "kind": "reviewed-selector",
+          "name": "own compact loading retains",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        },
+        {
+          "id": "MAP-5b5110a4affc",
+          "line": 173,
+          "kind": "reviewed-selector",
+          "name": "generated document contract offers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+        }
+      ],
+      "sha256": "cfdff96c07f2a4806c259518d0fefe28d57f5fa1a6d34f9a3e864406c8fa4362"
+    },
+    "internal/server/web/design-recovery.test.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-92676feada09",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "DFR-001",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFR-001"
+        }
+      ],
+      "sha256": "7e4208d4e46ad090baa139e3385c382bd2eee01ea2753e4c0cb32dd94f3f54c9"
+    },
+    "macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-65d132bc45c7",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "testKeyStatesHaveDifferentGeometryWithoutUsingColor",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DFC-008"
+        },
+        {
+          "id": "MAP-a1c39b6f044d",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "testAwakeModifierDoesNotEraseTheStatusDifference",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "DFC-008"
+        }
+      ],
+      "sha256": "5547484d5d4d78fd4df8e7a043e9894b929840ce85af0797d9b46aeccfc9a232"
+    },
+    "mobileapp/src/documents/availability.test.ts": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5cee3909c2b1",
+          "line": 3,
+          "kind": "reviewed-selector",
+          "name": "unavailable attachment explains scope",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-009"
+        },
+        {
+          "id": "MAP-2a69d818015d",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "clearer recovery text preserves strict session",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-009"
+        }
+      ],
+      "sha256": "6893a75ad4ccc2f4edf4a7f196cb204a240497aeec633ce075e4a27ef2cb8775"
+    },
+    "mobileapp/src/screens/SettingsAppearance.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7d053fa3bb5b",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "global color scheme lives in Appearance",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-006"
+        }
+      ],
+      "sha256": "b058175392c776107ab7785f56ca9f6a80fa73926bf9de0a46c5c23e9b8f9885"
+    },
+    "mobileapp/src/ui/DesignConsistency.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9ea098f5ca75",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "secondary reading text meets contrast",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-001,DFC-002,DFC-005"
+        },
+        {
+          "id": "MAP-756a87d09ccf",
+          "line": 46,
+          "kind": "reviewed-selector",
+          "name": "a settings switch has its own identity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-001,DFC-002,DFC-005"
+        },
+        {
+          "id": "MAP-4fc440f47a5b",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "same-named sessions expose distinct location",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-001,DFC-002,DFC-005"
+        },
+        {
+          "id": "MAP-fe2a0843fb5e",
+          "line": 75,
+          "kind": "reviewed-selector",
+          "name": "composer actions and independent thumbnail",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DFC-001,DFC-002,DFC-005"
+        }
+      ],
+      "sha256": "879008329449a6bc1889cf6cfa281198eb41e191b02c114b235d9e4354f9616b"
+    },
+    "tests/web/design-recovery.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-44f608a7c4fa",
+          "line": 7,
+          "kind": "reviewed-selector",
+          "name": "DFR-003",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "DFR-003"
+        }
+      ],
+      "sha256": "09f6f02c50019fafaa592d9c3cd0c442dff3f9141a274076141ce5cce985fc0a"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

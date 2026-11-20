@@ -78,6 +78,7 @@ export const TestIds = {
     shareDeliveryDone: 'manage-share-delivery-done',
   },
   settings: {
+    appearance: 'settings-appearance',
     // one per PickerSheet option; suffixed with the option key →
     // `${settings.pickerOption}-<key>` (e.g. `picker-option-en`)
     pickerOption: 'picker-option',

@@ -3259,6 +3259,14 @@ LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1313,test,radar key
 MAP-e2feefc515a3,L3,Browser,internal/server/web/app.test.cjs,1324,reviewed-selector,CAS004 focused and tile chats disclose association failures and recover without losing messages,False,CAS-004
 MAP-328002d4dfc3,L3,Browser,internal/server/web/app.test.cjs,1351,reviewed-selector,CAS004 stale tile association failure cannot repaint a changed target,False,CAS-004
 MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
+MAP-82ccdde7a852,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,114,reviewed-selector,actual XHR byte stages stay on the thumbnail,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-cd745e41cb20,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,136,reviewed-selector,unknown-length body completion,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-1dab495821e2,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,142,reviewed-selector,upload ${failure} preserves,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-a2be25f26b18,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,150,reviewed-selector,retired scope cannot accept,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-bcfc2c1a7874,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,157,reviewed-selector,HQ remains a distinct role,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-700b6c8e3834,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,167,reviewed-selector,own compact loading retains,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-5b5110a4affc,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,173,reviewed-selector,generated document contract offers,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
+MAP-92676feada09,L2,reviewed implementation,internal/server/web/design-recovery.test.cjs,46,reviewed-selector,DFR-001,False,DFR-001
 LEG-a24ee8487c6a,G,Browser,internal/server/web/documents.test.cjs,7,test,browser document references and validation are generated from the App contract,False,legacy-not-retrospectively-reviewed
 MAP-e63e89176901,L2,reviewed implementation,internal/server/web/execution-chain.test.cjs,8,reviewed-selector,"CRX-005 adjacent equal process presentations retain count, order and distinct arguments",False,CRX-005
 MAP-452a61a1d04e,L3,reviewed implementation,internal/server/web/maximize-layout.test.cjs,25,reviewed-selector,AOP004 Restore layout occupies the actual header before the title,False,AOP-004
@@ -4258,6 +4266,8 @@ LEG-4fc739001e62,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ShareStoreT
 LEG-03a076584cab,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ShareStoreTests.swift,150,XCTest,testAnOlderCLIStillGivesALink,False,legacy-not-retrospectively-reviewed
 LEG-e0dc65359e21,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ShareStoreTests.swift,156,XCTest,testNothingUsableIsNoLink,False,legacy-not-retrospectively-reviewed
 MAP-47650912eb8d,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/StateDurationTests.swift,6,reviewed-selector,testCSR004DecodedUncertainDurationDoesNotUseEitherClock,False,CSR-004
+MAP-65d132bc45c7,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift,18,reviewed-selector,testKeyStatesHaveDifferentGeometryWithoutUsingColor,False,DFC-008
+MAP-a1c39b6f044d,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift,26,reviewed-selector,testAwakeModifierDoesNotEraseTheStatusDifference,False,DFC-008
 LEG-5761910660c9,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,28,XCTest,testVisibilityIsOffUntilASurfaceOpens,False,legacy-not-retrospectively-reviewed
 LEG-3dd66bcf03b4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,33,XCTest,testItTracksOpenAndClose,False,legacy-not-retrospectively-reviewed
 LEG-ff08152b6882,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,46,XCTest,testTheWindowAndItsContentSurviveAClose,False,legacy-not-retrospectively-reviewed
@@ -4369,7 +4379,7 @@ LEG-9d2138d1a1e7,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.te
 LEG-90d6e9b0fcce,L4,RN / mobile harness,mobileapp/e2e/__tests__/send-feedback.test.ts,61,it,"a send into a running session says it went, and that the agent may finish first",False,legacy-not-retrospectively-reviewed
 LEG-5511fce16704,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,57,run,a launch from a notification does not pull a later server switch back,False,legacy-not-retrospectively-reviewed
 LEG-91512a46ffa3,L4,RN / mobile harness,mobileapp/e2e/__tests__/server-switch.test.ts,94,run,"without a launch notification, a switch goes where it is pointed",False,legacy-not-retrospectively-reviewed
-LEG-398163bb0c32,L4,RN / mobile harness,mobileapp/e2e/__tests__/settings-appearance-language.test.ts,55,it,Dark and 中文 apply at once and survive a relaunch,False,legacy-not-retrospectively-reviewed
+LEG-398163bb0c32,L4,RN / mobile harness,mobileapp/e2e/__tests__/settings-appearance-language.test.ts,72,it,Dark and 中文 apply at once and survive a relaunch,False,legacy-not-retrospectively-reviewed
 LEG-88587d9a0028,L4,RN / mobile harness,mobileapp/e2e/__tests__/share-delivery-shot.test.ts,84,it,"shows the link and the command, in English",False,legacy-not-retrospectively-reviewed
 LEG-c80d14946a66,L4,RN / mobile harness,mobileapp/e2e/__tests__/share-delivery-shot.test.ts,101,it,still fits when the link is a long one,False,legacy-not-retrospectively-reviewed
 LEG-e84922a05923,L4,RN / mobile harness,mobileapp/e2e/__tests__/share-delivery-shot.test.ts,117,it,shows them in Chinese too,False,legacy-not-retrospectively-reviewed
@@ -4414,40 +4424,40 @@ MAP-255b356248a5,L2,reviewed implementation,mobileapp/e2e/android/permissionJour
 MAP-04ea0e0d7ec3,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,76,reviewed-selector,ACP-002 registered journey cannot pass,False,ACP-002
 MAP-5c6662fed7bd,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,80,reviewed-selector,ACP-002 registered journey cannot click,False,ACP-002
 MAP-2ba0c888b1bb,L2,reviewed implementation,mobileapp/e2e/android/permissionJourney.test.ts,85,reviewed-selector,ACP-002 registered journey preserves,False,ACP-002
-LEG-5aa4a01b8dbf,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,168,check,01-radar-owner,False,legacy-not-retrospectively-reviewed
-LEG-1b8288a84b0e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,169,check,02-section-collapse,False,legacy-not-retrospectively-reviewed
-LEG-9c90c5870a40,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,170,check,03-chat-terminal,False,legacy-not-retrospectively-reviewed
-LEG-9d8c31dba1cc,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,171,check,04-real-composer-send,False,legacy-not-retrospectively-reviewed
-LEG-a483badd098f,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,172,check,05-display-size,False,legacy-not-retrospectively-reviewed
-LEG-f48f9d418dd0,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,173,check,06-trace-session-and-turns,False,legacy-not-retrospectively-reviewed
-LEG-08efe37f8bec,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,174,check,07-trace-expand-collapse,False,legacy-not-retrospectively-reviewed
-LEG-f43ef9fc0de4,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,181,check,08-trace-earlier,False,legacy-not-retrospectively-reviewed
-LEG-6236f9538633,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,182,check,09-trace-search,False,legacy-not-retrospectively-reviewed
-LEG-c0726a329e04,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,183,check,10-diff-wrap-and-back,False,legacy-not-retrospectively-reviewed
-LEG-121d1daa04df,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,184,check,11-fullscreen-tools,False,legacy-not-retrospectively-reviewed
-LEG-7dcd48a83338,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,185,check,12-offline-reconnect,False,legacy-not-retrospectively-reviewed
-LEG-37bf442adb03,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,186,check,13-guest-scope,False,legacy-not-retrospectively-reviewed
-LEG-75efedb5a994,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,187,check,14-owner-reconnect-persisted,False,legacy-not-retrospectively-reviewed
-LEG-f5c656156930,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,188,check,15-settings-and-honest-push,False,legacy-not-retrospectively-reviewed
-LEG-94f757a96cc8,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,189,check,16-html-native-local-image-and-consent,False,legacy-not-retrospectively-reviewed
-LEG-591b3f60f92c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,199,check,17-markdown-native-share-and-back,False,legacy-not-retrospectively-reviewed
-LEG-a98a53dfe8d6,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,206,check,18-image-native-zoom-and-back,False,legacy-not-retrospectively-reviewed
-LEG-b6fd80008736,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,212,check,19-trace-nested-code,False,legacy-not-retrospectively-reviewed
-LEG-4899bd3fa44a,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,220,check,20-file-picker-and-cancel,False,legacy-not-retrospectively-reviewed
-LEG-cee1718f3aee,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,225,check,21-camera-permission-denial,False,legacy-not-retrospectively-reviewed
-LEG-be0d4167aa8c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,232,check,22-rotation-and-large-text,False,legacy-not-retrospectively-reviewed
-LEG-f19d42fea98d,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,239,check,23-create-session-and-open,False,legacy-not-retrospectively-reviewed
-LEG-c9afceeeeb2e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,244,check,24-appearance-light-dark-system,False,legacy-not-retrospectively-reviewed
-LEG-afc3b4e79446,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,250,check,25-hq-chat-and-routing,False,legacy-not-retrospectively-reviewed
-LEG-598d11c4ae0c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,257,check,26-emulated-hardware-keys,False,legacy-not-retrospectively-reviewed
-LEG-f78442eb1f72,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,262,check,27-authenticated-agent-icons,False,legacy-not-retrospectively-reviewed
-LEG-33aeea4a70db,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,269,check,28-file-upload-and-send,False,legacy-not-retrospectively-reviewed
-LEG-8ef64b955024,G,RN / mobile harness,mobileapp/e2e/android/run.cjs,283,check,29-clipboard-image-markup-and-upload,False,legacy-not-retrospectively-reviewed
-LEG-8a1dd3780a1b,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,305,check,30-native-pdf-pages-and-scroll,False,legacy-not-retrospectively-reviewed
-LEG-ee0968c7d8ff,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,310,check,31-native-file-trace,False,legacy-not-retrospectively-reviewed
-MAP-d4637161f816,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,98,reviewed-selector,async function check,False,"CT-ANDROID,CT-TIMING"
-MAP-c6dfe48e744e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,104,reviewed-selector,async function run,False,"CT-ANDROID,CT-TIMING"
-MAP-24f51091f511,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,225,reviewed-selector,await check('21-camera-permission-denial',False,"CT-ANDROID,CT-TIMING,ACP-003"
+LEG-5aa4a01b8dbf,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,169,check,01-radar-owner,False,legacy-not-retrospectively-reviewed
+LEG-1b8288a84b0e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,170,check,02-section-collapse,False,legacy-not-retrospectively-reviewed
+LEG-9c90c5870a40,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,171,check,03-chat-terminal,False,legacy-not-retrospectively-reviewed
+LEG-9d8c31dba1cc,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,172,check,04-real-composer-send,False,legacy-not-retrospectively-reviewed
+LEG-a483badd098f,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,173,check,05-display-size,False,legacy-not-retrospectively-reviewed
+LEG-f48f9d418dd0,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,174,check,06-trace-session-and-turns,False,legacy-not-retrospectively-reviewed
+LEG-08efe37f8bec,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,175,check,07-trace-expand-collapse,False,legacy-not-retrospectively-reviewed
+LEG-f43ef9fc0de4,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,182,check,08-trace-earlier,False,legacy-not-retrospectively-reviewed
+LEG-6236f9538633,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,183,check,09-trace-search,False,legacy-not-retrospectively-reviewed
+LEG-c0726a329e04,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,184,check,10-diff-wrap-and-back,False,legacy-not-retrospectively-reviewed
+LEG-121d1daa04df,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,185,check,11-fullscreen-tools,False,legacy-not-retrospectively-reviewed
+LEG-7dcd48a83338,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,186,check,12-offline-reconnect,False,legacy-not-retrospectively-reviewed
+LEG-37bf442adb03,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,187,check,13-guest-scope,False,legacy-not-retrospectively-reviewed
+LEG-75efedb5a994,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,188,check,14-owner-reconnect-persisted,False,legacy-not-retrospectively-reviewed
+LEG-f5c656156930,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,189,check,15-settings-and-honest-push,False,legacy-not-retrospectively-reviewed
+LEG-94f757a96cc8,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,190,check,16-html-native-local-image-and-consent,False,legacy-not-retrospectively-reviewed
+LEG-591b3f60f92c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,200,check,17-markdown-native-share-and-back,False,legacy-not-retrospectively-reviewed
+LEG-a98a53dfe8d6,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,207,check,18-image-native-zoom-and-back,False,legacy-not-retrospectively-reviewed
+LEG-b6fd80008736,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,213,check,19-trace-nested-code,False,legacy-not-retrospectively-reviewed
+LEG-4899bd3fa44a,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,221,check,20-file-picker-and-cancel,False,legacy-not-retrospectively-reviewed
+LEG-cee1718f3aee,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,226,check,21-camera-permission-denial,False,legacy-not-retrospectively-reviewed
+LEG-be0d4167aa8c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,233,check,22-rotation-and-large-text,False,legacy-not-retrospectively-reviewed
+LEG-f19d42fea98d,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,240,check,23-create-session-and-open,False,legacy-not-retrospectively-reviewed
+LEG-c9afceeeeb2e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,245,check,24-appearance-light-dark-system,False,legacy-not-retrospectively-reviewed
+LEG-afc3b4e79446,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,254,check,25-hq-chat-and-routing,False,legacy-not-retrospectively-reviewed
+LEG-598d11c4ae0c,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,261,check,26-emulated-hardware-keys,False,legacy-not-retrospectively-reviewed
+LEG-f78442eb1f72,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,266,check,27-authenticated-agent-icons,False,legacy-not-retrospectively-reviewed
+LEG-33aeea4a70db,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,273,check,28-file-upload-and-send,False,legacy-not-retrospectively-reviewed
+LEG-8ef64b955024,G,RN / mobile harness,mobileapp/e2e/android/run.cjs,287,check,29-clipboard-image-markup-and-upload,False,legacy-not-retrospectively-reviewed
+LEG-8a1dd3780a1b,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,309,check,30-native-pdf-pages-and-scroll,False,legacy-not-retrospectively-reviewed
+LEG-ee0968c7d8ff,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,314,check,31-native-file-trace,False,legacy-not-retrospectively-reviewed
+MAP-d4637161f816,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,99,reviewed-selector,async function check,False,"CT-ANDROID,CT-TIMING"
+MAP-c6dfe48e744e,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,105,reviewed-selector,async function run,False,"CT-ANDROID,CT-TIMING"
+MAP-24f51091f511,L4,RN / mobile harness,mobileapp/e2e/android/run.cjs,226,reviewed-selector,await check('21-camera-permission-denial',False,"CT-ANDROID,CT-TIMING,ACP-003"
 LEG-95b0bcda12ce,M,RN / mobile harness,mobileapp/e2e/capture/hq-header-shot.test.ts,15,it,opens the disclosure,False,legacy-not-retrospectively-reviewed
 LEG-490318c4a70a,M,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,14,it,opens from the header and drills into an entry,False,legacy-not-retrospectively-reviewed
 MAP-38c67a93a00d,G,RN / mobile harness,mobileapp/e2e/capture/knowledge-shot.test.ts,13,reviewed-selector,gated(,False,DG-001
@@ -4902,6 +4912,8 @@ LEG-957cb13d5609,L1,RN / mobile harness,mobileapp/src/diag/lines.test.ts,155,tes
 LEG-d60e39c11b12,L1,RN / mobile harness,mobileapp/src/diag/lines.test.ts,162,test,a delayed callback does not turn elapsed wall time into a configured timeout,False,legacy-not-retrospectively-reviewed
 LEG-77f04b7fd089,L1,RN / mobile harness,mobileapp/src/diag/lines.test.ts,171,test.each(),request and push descriptions identify their server without inventing legacy origins (zh=%s),True,legacy-not-retrospectively-reviewed
 LEG-c3096f48dbc0,L1,RN / mobile harness,mobileapp/src/diag/lines.test.ts,186,test.each(),gateway errors describe the connection and recovery keeps failure counts (zh=%s),True,legacy-not-retrospectively-reviewed
+MAP-5cee3909c2b1,L2,reviewed implementation,mobileapp/src/documents/availability.test.ts,3,reviewed-selector,unavailable attachment explains scope,False,DFC-009
+MAP-2a69d818015d,L2,reviewed implementation,mobileapp/src/documents/availability.test.ts,10,reviewed-selector,clearer recovery text preserves strict session,False,DFC-009
 LEG-ca6b3a4df0d0,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,3,test,local report destinations remain data instead of launchable OS URLs,False,legacy-not-retrospectively-reviewed
 LEG-cca6fc710d75,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,13,test,download metadata must match conversation identity and a bounded content hash,False,legacy-not-retrospectively-reviewed
 LEG-bc4c3f256c44,L1,RN / mobile harness,mobileapp/src/i18n/index.test.ts,16,it,reads AppleLocale on iOS and maps zh* -> zh,False,legacy-not-retrospectively-reviewed
@@ -5386,6 +5398,7 @@ LEG-dab2495366f0,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test
 LEG-cd35d5d9def5,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,462,test,"a server-mode change on the server is read at once, not on the next poll",False,legacy-not-retrospectively-reviewed
 MAP-f0b391956193,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,111,reviewed-selector,PFR-002 genuine notification syncing stays in the existing two-line row,False,"RSR-009,PFR-002"
 MAP-0be071c6814e,L2,RN / mobile harness,mobileapp/src/screens/ServersScreen.test.tsx,123,reviewed-selector,"PFR-002 a pending owner retries its own notification settings from More, with no guest action",False,"RSR-009,PFR-002"
+MAP-7d053fa3bb5b,L2,reviewed implementation,mobileapp/src/screens/SettingsAppearance.test.tsx,18,reviewed-selector,global color scheme lives in Appearance,False,DFC-006
 MAP-8524f471c8a2,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,47,reviewed-selector,regular main respects loading and timeout in ${lang} ${theme},False,RDRC-001
 MAP-7c742f998d7d,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,62,reviewed-selector,hidden sidebar does not turn an unfinished main read into an empty fleet,False,RDRC-001
 MAP-6f2c71730f2c,L2,reviewed implementation,mobileapp/src/screens/SplitShell.readState.test.tsx,70,reviewed-selector,unselected access and expired guest states retain shared guidance and no owner creation,False,RDRC-001
@@ -6054,6 +6067,10 @@ LEG-06c2d30c28c9,L2,RN / mobile harness,mobileapp/src/ui/CopyableText.test.tsx,5
 CP-001-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,24,parameter-template,CP-001 %s renders,True,CP-001
 CP-002-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,46,test,CP-002 HQ request,False,CP-002
 CP-003-8fc86a,L2,RN / mobile harness,mobileapp/src/ui/CrossClientContract.test.tsx,57,test,CP-003 document actions,False,CP-003
+MAP-9ea098f5ca75,L2,reviewed implementation,mobileapp/src/ui/DesignConsistency.test.tsx,35,reviewed-selector,secondary reading text meets contrast,False,"DFC-001,DFC-002,DFC-005"
+MAP-756a87d09ccf,L2,reviewed implementation,mobileapp/src/ui/DesignConsistency.test.tsx,46,reviewed-selector,a settings switch has its own identity,False,"DFC-001,DFC-002,DFC-005"
+MAP-4fc440f47a5b,L2,reviewed implementation,mobileapp/src/ui/DesignConsistency.test.tsx,60,reviewed-selector,same-named sessions expose distinct location,False,"DFC-001,DFC-002,DFC-005"
+MAP-fe2a0843fb5e,L2,reviewed implementation,mobileapp/src/ui/DesignConsistency.test.tsx,75,reviewed-selector,composer actions and independent thumbnail,False,"DFC-001,DFC-002,DFC-005"
 LEG-d8b24286f7cc,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,28,test,large diffs mount only a window of native rows and retain the final line,False,legacy-not-retrospectively-reviewed
 LEG-6e9e4223d32d,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,46,test,"a failed read is an error with retry, not an empty repository",False,legacy-not-retrospectively-reviewed
 LEG-8bdd11a1e0bf,L2,RN / mobile harness,mobileapp/src/ui/DiffModal.test.tsx,68,test,changing a pane retires an earlier read,False,legacy-not-retrospectively-reviewed
@@ -6995,6 +7012,7 @@ LEG-cb54ae23ca64,L3,Browser,tests/web/conversation-map.test.cjs,48,scenario,`Ove
 LEG-4ea9a2309839,L3,Browser,tests/web/conversation-map.test.cjs,96,scenario,"Overview bookmarks retain unsampled turns, isolate homes and handle cleared storage",False,legacy-not-retrospectively-reviewed
 LEG-821ed12da1b2,L3,Browser,tests/web/conversation-map.test.cjs,125,scenario,Legacy clockless repeated prompts keep separate call disclosures,False,legacy-not-retrospectively-reviewed
 LEG-d361c87ff22e,L3,Browser,tests/web/conversation-map.test.cjs,136,scenario,`Overview keeps page-only bookmarks through refresh (read denied ${denyRead})`,True,legacy-not-retrospectively-reviewed
+MAP-44f608a7c4fa,L4,reviewed implementation,tests/web/design-recovery.test.cjs,7,reviewed-selector,DFR-003,False,DFR-003
 MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,32,reviewed-selector,async function start,False,CT-HTTP
 LEG-c27b6d5dee1f,L3,Browser,tests/web/full-input.test.cjs,4,scenario,'Full tool input and compact formatting at '+width,True,legacy-not-retrospectively-reviewed
 LEG-e24c4d62b6eb,L3,Browser,tests/web/full-input.test.cjs,35,scenario,'Diff file cards and independent hunks at '+width,True,legacy-not-retrospectively-reviewed

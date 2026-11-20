@@ -334,7 +334,10 @@ body:has(#gate:not([hidden])) #gear { margin-left: auto; }
 .brandload-mark { --brandload-size: 38px; position: relative; width: var(--brandload-size); height: var(--brandload-size); flex: 0 0 auto; }
 .brandload-mark > i { position: absolute; top: 8%; width: 40%; height: 40%; border-radius: calc(var(--brandload-size) * .09); overflow: hidden; }
 .brandload-mark > i::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--fg3); opacity: .5; }
-.brandload-mark > i::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--working); opacity: 0; animation: brandload-focus 1.8s linear infinite; }
+.brandload-mark > i::after { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--loader-color, var(--working)); opacity: 0; animation: brandload-focus 1.8s linear infinite; }
+.brandload-compact { position: relative; inset: auto; z-index: auto; display: inline-flex; padding: 0; margin: 0; gap: 0; background: transparent; }
+.brandload-compact .brandload-mark { --brandload-size: 20px; }
+.cx-send .brandload-compact { --loader-color: currentColor; --fg3: currentColor; }
 .brandload-mark > i:first-child { left: 8%; }
 .brandload-mark > i.lit { left: 52%; }
 .brandload-mark > i.wide { left: 8%; top: 52%; width: 84%; }
@@ -415,7 +418,7 @@ body:has(#gate:not([hidden])) #gear { margin-left: auto; }
 .step-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--fg2); font-size: 11px; }
 .step-input { box-sizing: border-box; margin: 4px 0 0; padding: 10px; max-width: 100%; max-height: 260px; overflow: auto; overscroll-behavior: contain; background: var(--bg); border-radius: 6px; color: var(--fg); font: 12px/1.6 Menlo, monospace; white-space: pre; }
 .step-truncated { margin: 8px 0 0; font-size: 11px; color: var(--fg2); }
-.chat-collapse { margin-left: auto; border: 0; padding: 10px 0 10px 12px; background: none; color: var(--working); font: inherit; font-size: 12px; cursor: pointer; }
+.chat-collapse { min-height: var(--control-size); margin-left: auto; border: 0; padding: 10px 0 10px 12px; background: none; color: var(--working); font: inherit; font-size: 12px; cursor: pointer; }
 .arow { display: flex; gap: 10px; align-items: flex-start; }
 .arow .avatar { width: 26px; height: 26px; margin-top: 2px; }
 .abubble {
@@ -1107,7 +1110,6 @@ body { height: var(--viewport-height, 100dvh); }
 .composer :is(.cx-attach, .cx-send, .cx-expand) { display: inline-flex; align-items: center; justify-content: center; width: var(--compose-target); height: var(--compose-target); min-width: var(--compose-target); padding: 7px; flex: none; border: 1px solid var(--divider); border-radius: 50%; background: var(--surface); color: var(--fg2); cursor: pointer; }
 .composer .cx-send .ui-icon { width: 24px; height: 24px; }
 .composer .cx-send.ready, .composer .cx-send.sending { background: var(--accent-ink); color: var(--bg); border-color: var(--accent-ink); }
-.cx-send.sending .ui-icon { animation: composer-spin .8s linear infinite; }
 .cx-send:disabled { cursor: default; }
 .cx-input, .composer-sm .cx-input { min-height: var(--compose-target); padding: 10px 12px; font-size: 14px; line-height: 1.45; border-radius: 12px; background: var(--surface); }
 .cx-input:focus { border-color: var(--accent-ink); outline: 1px solid var(--accent-ink); }
@@ -1118,12 +1120,17 @@ body { height: var(--viewport-height, 100dvh); }
 .cx-recover { display: inline-flex; align-items: center; min-height: var(--control-size); margin-left: 10px; border: none; background: transparent; color: var(--accent-ink); font: inherit; cursor: pointer; }
 .composer.dragging-file { outline: 2px dashed var(--accent-ink); outline-offset: -4px; background: var(--surface); }
 .cx-attachments { display: flex; gap: 10px; overflow-x: auto; padding: 2px 0; }
-.cx-attachment { position: relative; display: flex; flex-direction: column; width: 116px; flex: none; padding: 6px; background: var(--surface); border: 1px solid var(--divider); border-radius: 12px; }
-.cx-preview { display: flex; align-items: center; justify-content: center; width: 100%; height: 66px; border: 0; border-radius: 7px; background: var(--control); color: var(--fg2); padding: 0; overflow: hidden; cursor: pointer; }
+.cx-attachment { position: relative; display: flex; flex-wrap: wrap; align-items: center; width: 116px; flex: none; }
+.cx-preview-wrap { position: relative; width: 72px; height: 72px; flex: none; border-radius: 10px; overflow: hidden; }
+.cx-preview { display: flex; align-items: center; justify-content: center; width: 72px; height: 72px; border: 1px solid var(--divider); border-radius: 10px; background: var(--control); color: var(--fg2); padding: 0; overflow: hidden; cursor: pointer; }
 .cx-preview img { width: 100%; height: 100%; object-fit: contain; }
-.cx-file-name { display: block; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 0 0; }
-.cx-file-progress { font-size: 11px; color: var(--fg2); padding-top: 3px; }
-.cx-remove-file { position: absolute; top: 0; right: 0; display: flex; align-items: center; justify-content: center; width: var(--control-size); height: var(--control-size); border: 1px solid var(--divider); border-radius: 9px; padding: 7px; color: var(--fg); background: var(--bg); cursor: pointer; }
+.cx-file-name { display: block; flex: 0 0 100%; font-size: 11px; color: var(--fg2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 4px 0 0; }
+.cx-remove-file { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none; border: 0; border-radius: 50%; padding: 12px; color: var(--fg2); background: transparent; cursor: pointer; }
+.cx-remove-file:hover { background: var(--control); }
+.cx-upload-status { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 4px; border-radius: 10px; background: rgba(0,0,0,.76); color: #fff; font-size: 11px; text-align: center; pointer-events: none; --loader-color: #fff; --fg3: #fff; }
+.cx-upload-status[data-phase="complete"] { background: rgba(0,0,0,.64); }
+.cx-upload-ring { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(#fff var(--upload-progress), rgba(255,255,255,.3) 0); }
+.cx-upload-ring > span { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; background: #252528; font-size: 11px; font-variant-numeric: tabular-nums; }
 .attachment-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .attachment-action { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 88px; border: 1px solid var(--divider); border-radius: 12px; background: var(--surface); color: var(--fg); font: inherit; cursor: pointer; }
 .attachment-action .ui-icon { width: 26px; height: 26px; }
@@ -1146,7 +1153,6 @@ body { height: var(--viewport-height, 100dvh); }
 .markup-tools input[type="color"] { width: var(--control-size); height: var(--control-size); border: 1px solid var(--divider); background: var(--surface); border-radius: 8px; padding: 4px; }
 .markup-canvas { display: block; max-width: 100%; max-height: 56dvh; width: auto; height: auto; margin: 0 auto; touch-action: none; border-radius: 8px; background: var(--surface); cursor: crosshair; }
 .markup-note { margin: 12px 0 0; color: var(--fg2); font-size: 12px; line-height: 1.5; }
-@keyframes composer-spin { to { transform: rotate(360deg); } }
 @media (pointer: coarse) {
   :root { --compose-target: 44px; }
   .cx-input, .composer-sm .cx-input { font-size: 16px; }
@@ -1255,7 +1261,7 @@ button.trace-turn { margin: 5px 0; padding: 10px 12px; border: 1px solid var(--d
   #bar:has(#back:not([hidden])) #gear { grid-column: 4; grid-row: 1 / 3; min-width: 40px; min-height: 44px; margin: 0; }
   #bar:has(#back:not([hidden])) :is(#identity, #focus-nav, #cap) { display: none; }
   #bar:has(#back:not([hidden])) #mode { grid-column: 1 / -1; grid-row: 3; justify-self: stretch; margin-top: 6px; display: flex; }
-  #bar:has(#back:not([hidden])) #mode button { flex: 1; min-height: 40px; }
+  #bar:has(#back:not([hidden])) #mode button { flex: 1; min-height: 44px; }
   #bar:has(#back:not([hidden])) #focus-ctl { grid-column: 1 / -1; grid-row: 4; justify-self: end; }
 }
 .trace-list[hidden], .trace-inspector[hidden], .trace-detail-modes[hidden], .trace-session[hidden] { display: none; }

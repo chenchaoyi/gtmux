@@ -115,7 +115,7 @@ class DocumentActivity : Activity() {
   private fun failure(code: String?) = when (code) {
     "permission" -> tr("This connection cannot open this file.", "当前连接无权打开此文件。")
     "tooLarge" -> tr("This file exceeds the preview limit.", "此文件超过预览大小限制。")
-    "unavailable" -> tr("The file is no longer available on the server.", "服务器上的文件已不可用。")
+    "unavailable" -> tr("This attachment is not available to this conversation. Ask the sender for a new attachment link.", "当前对话无法读取此附件。请让发送者重新提供附件链接。")
     "unsupported" -> tr("Update the server to preview this file.", "请更新服务器后预览此文件。")
     else -> tr("Could not load this file. Check the connection and try again.", "文件未能加载，请检查连接后重试。")
   }

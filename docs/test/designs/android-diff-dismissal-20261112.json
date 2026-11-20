@@ -2,10 +2,10 @@
   "id": "android-diff-dismissal-20261112",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner; self-review, not independent approval",
-    "date": "2026-11-12",
+    "reviewer": "Codex implementation owner (fresh self-review, not independent approval)",
+    "date": "2026-11-17",
     "decision": "Wait for actual Diff dismissal before the existing false assertion",
-    "notes": "Evidence: exact e16 tablet case10 failure; Back returns203ms, immediate lookup/displayed returns true; failure screenshot/XML after1s already show Chat and no diff-wrap. React Native Modal uses slide animation. Product/runtime bytes do not change. Only the existing Android case10 awaits reverse visibility with10s upper bound after one Back; no extra taps/back/relaunch/retry, no change to other assertions/31-case selection or CI policy. Test the actual registered callback parsed by TypeScript AST. Old source must fail delayed/stuck controls; direct transport error and final false oracle remain. Synthetic controls do not replace exact new-head phone/tablet cloud journeys."
+    "notes": "Evidence: exact e16 tablet case10 failure; Back returns203ms, immediate lookup/displayed returns true; failure screenshot/XML after1s already show Chat and no diff-wrap. React Native Modal uses slide animation. Product/runtime bytes do not change. Only the existing Android case10 awaits reverse visibility with10s upper bound after one Back; no extra taps/back/relaunch/retry, no change to other assertions/31-case selection or CI policy. Test the actual registered callback parsed by TypeScript AST. Old source must fail delayed/stuck controls; direct transport error and final false oracle remain. Synthetic controls do not replace exact new-head phone/tablet cloud journeys. Fresh prospective review before reapplying the design-recovery delta on the reviewed successor branch: retain every legacy assertion and all 31 journeys, camera denial identities/budgets, Diff dismissal wait, blocked/disconnect/timing semantics, and CI selection. Only appearance flow24 targets the actual Color scheme control and verifies its selected value under DFR-002. Earlier f84 candidate failed chronology because these legacy seals were not refreshed before its first script edit; preserve that failure and candidate, do not force rewrite or claim this review preceded it. This review applies only to the successor whose implementation is not yet applied."
   },
   "cases": [
     {
@@ -21,5 +21,5 @@
       ]
     }
   ],
-  "seal": "55b177071a25f9ac104d860ac225cb0d51b56e6f68006aab24bab099637595ce"
+  "seal": "071d1a8b8f919c7e55893a0bca61f2e8e8c90bfcebc9c33d3ac5f0e56ae0f2b0"
 }

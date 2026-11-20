@@ -2032,12 +2032,14 @@
       "CT-ANDROID",
       "CT-TIMING",
       "ACP-003",
-      "DTV-006"
+      "DTV-006",
+      "DFR-002"
     ],
     "selectors": [
       "async function check",
       "async function run",
-      "await check('21-camera-permission-denial'"
+      "await check('21-camera-permission-denial'",
+      "24-appearance-light-dark-system"
     ]
   },
   "mobileapp/e2e/capture/hq-header-shot.test.ts": {
@@ -4353,6 +4355,87 @@
     ],
     "selectors": [
       "TestInputSpoolDoctorShowsWeightedSaturation"
+    ]
+  },
+  "mobileapp/src/ui/DesignConsistency.test.tsx": {
+    "cases": [
+      "DFC-001",
+      "DFC-002",
+      "DFC-005"
+    ],
+    "selectors": [
+      "secondary reading text meets contrast",
+      "a settings switch has its own identity",
+      "same-named sessions expose distinct location",
+      "composer actions and independent thumbnail"
+    ]
+  },
+  "mobileapp/src/screens/SettingsAppearance.test.tsx": {
+    "cases": [
+      "DFC-006"
+    ],
+    "selectors": [
+      "global color scheme lives in Appearance"
+    ]
+  },
+  "mobileapp/src/documents/availability.test.ts": {
+    "cases": [
+      "DFC-009"
+    ],
+    "selectors": [
+      "unavailable attachment explains scope",
+      "clearer recovery text preserves strict session"
+    ]
+  },
+  "internal/server/web/design-consistency.test.cjs": {
+    "cases": [
+      "DFC-002",
+      "DFC-003",
+      "DFC-004",
+      "DFC-007",
+      "DFC-009"
+    ],
+    "selectors": [
+      "actual XHR byte stages stay on the thumbnail",
+      "unknown-length body completion",
+      "upload ${failure} preserves",
+      "retired scope cannot accept",
+      "HQ remains a distinct role",
+      "own compact loading retains",
+      "generated document contract offers"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift": {
+    "cases": [
+      "DFC-008"
+    ],
+    "selectors": [
+      "testKeyStatesHaveDifferentGeometryWithoutUsingColor",
+      "testAwakeModifierDoesNotEraseTheStatusDifference"
+    ]
+  },
+  "internal/server/web/design-recovery.test.cjs": {
+    "cases": [
+      "DFR-001"
+    ],
+    "selectors": [
+      "DFR-001"
+    ]
+  },
+  "tests/web/design-recovery.test.cjs": {
+    "cases": [
+      "DFR-003"
+    ],
+    "selectors": [
+      "DFR-003"
+    ]
+  },
+  "mobileapp/e2e/__tests__/settings-appearance-language.test.ts": {
+    "cases": [
+      "DFR-002"
+    ],
+    "selectors": [
+      "Dark and 中文 apply at once and survive a relaunch"
     ]
   }
 }

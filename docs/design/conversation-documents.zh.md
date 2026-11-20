@@ -112,3 +112,14 @@ Go 测试覆盖发布身份、篡改、配额、撤回与权限；Jest 覆盖链
 [WKUIDelegate](https://developer.apple.com/documentation/webkit/wkuidelegate) 和
 [WKPreferences](https://developer.apple.com/documentation/webkit/wkpreferences/iselementfullscreenenabled)，
 未使用 WebKit 私有配置。
+
+## 私有附件交付核验（FILE-SCOPE）
+
+`artifact add` 成功只证明快照已登记，不证明当前 App 能打开。先读取拥有该回复的真实
+transcript session_id 和接收端实际 home_id；tmux 没有 home_id 时省略 `--home-id`，
+不能用机器上的其他 home/hash 代替空值。使用接收端同一组参数，验证 resolve 元数据和
+content 的字节数/SHA；报告内的私有图片链接也逐个核验后再声称可读。
+
+不可用可能是当前会话无对应登记或源文件不可取，并不等于服务器文件已删除。重新提供
+绑定准确范围的新链接；不能为了让旧链接可用而省略服务端范围校验、改身份或共享给其他会话。
+网络失败可重试，权限失败与范围不符分别说明。用户确认打开与服务端读取验证分开记录。

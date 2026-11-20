@@ -7,20 +7,9 @@ enum DisplayMode: String, CaseIterable {
     case hideWhenIdle  // hidden unless something is waiting on you
 }
 
-/// StatusItemGlyph renders the menu-bar **brand** status item (ITERATIONS D1 /
-/// mockup §02): the status item is ALWAYS the gtmux pane grid, so it reads as
-/// gtmux in the bar. The WHOLE mark is tinted with the most-urgent state color
-/// (waiting=red / working=cyan / idle=green) and the count is drawn next to it
-/// (by AppDelegate, as the button title). When nothing needs you — empty, or
-/// only background "running" tasks — the mark stays neutral and adapts to the bar.
-///
-/// Why the whole mark and not one cell: at ~16pt a single lit pane is too easy to
-/// miss; tinting the entire mark makes the state unmistakable at a glance while
-/// the grid silhouette keeps it on-brand. This trades away the per-state micro-
-/// glyph (shape coding) on the status item specifically — the full triple-encoded
-/// language (color + shape + glyph) still lives in the popover list and
-/// notifications, where there's room for it. (Supersedes the older lone shape-
-/// shift glyph and the one-lit-cell D1 draft.)
+/// The three-pane brand stays recognizable, with a transparent status symbol in
+/// the lower pane: pause / ring / check. Geometry carries state in grayscale too.
+/// The neutral grid means no confirmed actionable state; count policy is unchanged.
 enum StatusItemGlyph {
     static let size: CGFloat = 18
 
@@ -36,14 +25,15 @@ enum StatusItemGlyph {
         let lit: Status? = (empty || mostUrgent == .running) ? nil : mostUrgent
         return draw { _, full in
             grid(full, dark: dark, lit: lit)
+            if let lit { statusSymbol(lit, in: full) }
             if awake { awakeDot(full, dark: dark, phase: phase) }
         }
     }
 
     /// The awake dot — a deliberate, documented exception to two design rules.
     ///
-    /// DESIGN §9 reserves colour for agent state and §10 allows exactly one animation
-    /// in the whole product. A red breathing dot breaks both. It is allowed here
+    /// DESIGN §9 reserves colour for agent state. This independent server-mode
+    /// modifier is a bounded exception documented by MOTION-LOAD. It is allowed here
     /// because the recording indicator is the one visual language every user already
     /// reads as "this is still running, you left it on", and server mode's whole risk
     /// is being forgotten. The exception is bounded so it cannot be mistaken for a
@@ -57,7 +47,7 @@ enum StatusItemGlyph {
     ///   * a hairline halo keeps it legible when the mark underneath is itself red.
     private static func awakeDot(_ full: CGRect, dark: Bool, phase: CGFloat) {
         let d: CGFloat = 5.5
-        let r = CGRect(x: full.midX - d / 2, y: full.midY - d / 2 + 1, width: d, height: d)
+        let r = CGRect(x: full.maxX - d, y: full.maxY - d, width: d, height: d)
         // Ring first: separates the dot from whatever colour the mark is.
         let halo = NSBezierPath(ovalIn: r.insetBy(dx: -1, dy: -1))
         (dark ? NSColor.black : NSColor.white).withAlphaComponent(0.75).setFill()
@@ -85,6 +75,32 @@ enum StatusItemGlyph {
         for r in [topLeft, topRight, bottom] {
             NSBezierPath(roundedRect: r, xRadius: radius, yRadius: radius).fill()
         }
+    }
+
+    // A cutout is independent of tint and menu-bar background. Keep it inside the
+    // lower pane; the awake modifier occupies the upper-right pane instead.
+    private static func statusSymbol(_ status: Status, in full: CGRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        context.saveGState()
+        context.setBlendMode(.clear)
+        let cx = full.midX, cy = full.minY + 3.5
+        switch status {
+        case .waiting:
+            context.fill(CGRect(x: cx - 3, y: cy - 2, width: 2, height: 4))
+            context.fill(CGRect(x: cx + 1, y: cy - 2, width: 2, height: 4))
+        case .working:
+            context.setLineWidth(1.5)
+            context.strokeEllipse(in: CGRect(x: cx - 2, y: cy - 2, width: 4, height: 4))
+        case .idle:
+            context.setLineWidth(1.5)
+            context.setLineCap(.round); context.setLineJoin(.round)
+            context.move(to: CGPoint(x: cx - 3, y: cy))
+            context.addLine(to: CGPoint(x: cx - 1, y: cy - 1.5))
+            context.addLine(to: CGPoint(x: cx + 3, y: cy + 2))
+            context.strokePath()
+        case .running: break
+        }
+        context.restoreGState()
     }
 
     // MARK: draw helper
