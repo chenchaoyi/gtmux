@@ -2,6 +2,8 @@
 
 Automatic recovery and full export have different scopes. Neither is evidence of an off-machine backup. This change does not migrate or delete existing archives.
 
+See [state storage lifecycle](state-storage-lifecycle.md) for writer ownership, lock cleanup and migration checks.
+
 ## Automatic recovery
 
 `gtmux config snapshots` shows only backup settings. `on|off`, `--keep`, `--max-mb` and `--interval-minutes` update that narrow setting without displaying the rest of the configuration. The default is on, three changed-content recovery points, a 64 MiB total managed budget and at least fifteen minutes between attempts. These are points, not a promise of three days. Closing automatic recovery preserves existing files.
