@@ -4571,5 +4571,15 @@
       "LAP-011 clearing site data retires a scheduled save",
       "LAP-011 server revocation wins before the other tab retires"
     ]
+  },
+  "tests/web/artifact-pending-edits.test.cjs": {
+    "cases": [
+      "LAP-012",
+      "LAP-013"
+    ],
+    "selectors": [
+      "LAP-012 pending draft survives an early",
+      "LAP-013 bookmarks remain usable without persistent"
+    ]
   }
 }

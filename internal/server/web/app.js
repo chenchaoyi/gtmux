@@ -1708,7 +1708,7 @@
     if (composeCache && composeCache.key === key && !composeCache.revoked) return composeCache;
     var saved = {}; try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
     if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
-    var data = {key: key, credential: token, generation: composeGeneration(), drafts: Object.create(null), history: Object.create(null), recent: [], snippets: [], urls: new Set(), requests: new Set(), timer: null, revoked: false};
+    var data = {key: key, credential: token, generation: composeGeneration(), drafts: Object.create(null), history: Object.create(null), recent: [], snippets: [], urls: new Set(), requests: new Set(), timer: null, dirty: false, revoked: false};
     Object.keys(saved.drafts || {}).forEach(function (id) { var d = saved.drafts[id]; if (d && typeof d.text === 'string') data.drafts[id] = {text: d.text, files: [], version: 0, lastAttempt: d.attempt && typeof d.attempt.id === 'string' && typeof d.attempt.payload === 'string' ? d.attempt : null, error: [typeof d.error === 'string' ? d.error : '', d.fileCount ? T('Attachments need to be selected again after reloading.', '页面已重新加载，请重新选择附件。') : ''].filter(Boolean).join(' ')}; });
     Object.keys(saved.history || {}).forEach(function (scope) { if (Array.isArray(saved.history[scope])) data.history[scope] = saved.history[scope].filter(function (s) { return typeof s === 'string'; }).slice(0, 50); });
     data.recent = Array.isArray(saved.recent) ? saved.recent.filter(function (s) { return typeof s === 'string'; }).slice(0, 30) : [];
@@ -1721,15 +1721,27 @@
         localStorage.getItem(COMPOSE_GENERATION_KEY) === generation;
     } catch (e) { return false; }
   }
-  function saveCompose(data, immediate, replacement) {
-    if (!data || data.revoked) return; clearTimeout(data.timer);
-    function write() {
-      data.timer = null;
-      if (data.revoked || !canWriteCompose(replacement || data.credential, data.generation)) return;
-      var drafts = Object.create(null); Object.keys(data.drafts).slice(-50).forEach(function (id) { var d = data.drafts[id]; if (d.text || d.files.length) drafts[id] = {text: d.text, fileCount: d.files.length, attempt: d.lastAttempt, error: d.error}; });
-      try { localStorage.setItem(data.key, JSON.stringify({drafts: drafts, history: data.history, recent: data.recent, snippets: data.snippets})); } catch (e) {}
-    }
-    if (immediate) write(); else data.timer = setTimeout(write, 400);
+  function saveCompose(data, immediate) {
+    if (!data || data.revoked) return;
+    data.dirty = true;
+    clearTimeout(data.timer);
+    if (immediate) flushCompose(data);
+    else data.timer = setTimeout(function () { flushCompose(data); }, 400);
+  }
+  function flushCompose(data, replacement) {
+    if (!data || data.revoked || !data.dirty) return;
+    clearTimeout(data.timer);
+    data.timer = null;
+    if (!canWriteCompose(replacement || data.credential, data.generation)) return;
+    var drafts = Object.create(null);
+    Object.keys(data.drafts).slice(-50).forEach(function (id) {
+      var draft = data.drafts[id];
+      if (draft.text || draft.files.length) drafts[id] = {text: draft.text, fileCount: draft.files.length, attempt: draft.lastAttempt, error: draft.error};
+    });
+    try {
+      localStorage.setItem(data.key, JSON.stringify({drafts: drafts, history: data.history, recent: data.recent, snippets: data.snippets}));
+      data.dirty = false;
+    } catch (e) {}
   }
   function retireComposeData() {
     var data = composeCache;
@@ -4321,7 +4333,7 @@
   function home() { if (isWide()) startWorkbench(); else startRadar(); }
 
   function boot() {
-    window.addEventListener('pagehide', function () { saveCompose(composeCache, true); });
+    window.addEventListener('pagehide', function () { flushCompose(composeCache); });
     if (window.visualViewport) {
       var viewport = window.visualViewport;
       var resizeComposerViewport = function () { if (viewport.scale === 1) { document.documentElement.style.setProperty('--viewport-height', Math.round(viewport.height) + 'px'); document.documentElement.style.setProperty('--visual-bottom', Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop) + 'px'); } document.documentElement.classList.toggle('keyboard-open', window.innerHeight - viewport.height > 120); };
@@ -4364,8 +4376,8 @@
       // Finish a pending edit in its original namespace on a live switch.
       // A removal can follow an explicit clear and must never restore data.
       if (token && current && event.oldValue === token && event.newValue === current &&
-          composeCache && composeCache.credential === token && composeCache.timer) {
-        saveCompose(composeCache, true, current);
+          composeCache && composeCache.credential === token) {
+        flushCompose(composeCache, current);
       }
       if (token) pendingDocument = null;
       token = current;

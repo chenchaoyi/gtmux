@@ -2,14 +2,14 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1391 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1392 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3816 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2581 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 128 | [L4.csv](cases/L4.csv) |
+| L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 507 | [G.csv](cases/G.csv) |
 
@@ -371,6 +371,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | LAP-008 | The previous viewer closes and late bytes cannot render. New requests use the current identity or prompt for pairing. A layout transition leaves no stranded pending reader. |
 | LAP-009 | The over-budget body is never requested. Verified text and the other image render. Permission refusal still fails the whole reader. |
 | LAP-010 | The prior view retires. Each identity restores its own draft and marked turn. The unpaired view offers pairing and cannot show private data. |
+| LAP-012 | The pending change is saved in the old profile when the switch is processed, never in the new profile. |
+| LAP-013 | The mark and page-only feedback survive the redraw, removal works, and no bookmark is persisted. |
 | LAP-011 | No private composer data or bookmarks are restored. Normal credential changes still save drafts only for their original identity. |
 | AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
 | BLP-001 | All three distinct fixed panes become highlighted in cyclic order, with smooth crossfade, constant mark footprint and no whole-logo opacity flashing or physical rotation. Repeated cycle boundary is continuous. Old whole-mark breathing fails a rendered-pane assertion semantically. |
