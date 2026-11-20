@@ -359,6 +359,7 @@
 | LPV-001 | Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and remains bounded14lines/220pt. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain. |
 | LPV-002 | Old capture is absent immediately in the new Live scope; late A cannot replace B. Current B capture appears only after its read settles. Historical Chat send/keys/uploads remain disabled and no send is made. No additional poller is introduced. |
 | LPV-003 | Existing disclosure works and displays only the bounded current-pane tail, with explicit pane/association caption. Closing hides output. No send or authority promotion and no page/console errors. |
+| LAP-007 | Only a verified local service yields an HTTP address. The published App reference survives unavailable service and the CLI reports how to retry. An explicit port cannot send a credential or select a foreign host. |
 | LAP-001 | Exact registered metadata and original scope are returned after byte/hash checks; source changes do not replace the snapshot. Missing/revoked/corrupt fail without source fallback or scanning. |
 | LAP-002 | Both App reference and local HTTP link name the registered bytes. The link contains only the original document/session/home and the browser must pair independently. |
 | LAP-003 | Only bounded canonical requests reach the reader; fragment parsing grants no access and no arbitrary filesystem route. |
