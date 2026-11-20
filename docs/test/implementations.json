@@ -4544,5 +4544,13 @@
       "LAP-008 resizing retires a pending reader",
       "LAP-009 oversized related image leaves the rest of the report readable"
     ]
+  },
+  "tests/web/artifact-pairing-storage.test.cjs": {
+    "cases": [
+      "LAP-010"
+    ],
+    "selectors": [
+      "LAP-010 switching pairing in another tab restores both profiles"
+    ]
   }
 }

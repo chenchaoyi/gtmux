@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1388 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1389 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3816 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2579 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 125 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 126 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 507 | [G.csv](cases/G.csv) |
 
@@ -368,6 +368,7 @@
 | LAP-006 | No automatic new window or external fetch occurs. The ready action uses only verified PDF bytes and noreferrer/noopener; malformed PDF never exposes the action. Closing cancels viewer resources. |
 | LAP-008 | The previous viewer closes and late bytes cannot render. New requests use the current identity or prompt for pairing. A layout transition leaves no stranded pending reader. |
 | LAP-009 | The over-budget body is never requested. Verified text and the other image render. Permission refusal still fails the whole reader. |
+| LAP-010 | The prior view retires. Each identity restores its own draft and marked turn. The unpaired view offers pairing and cannot show private data. |
 | AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
 | BLP-001 | All three distinct fixed panes become highlighted in cyclic order, with smooth crossfade, constant mark footprint and no whole-logo opacity flashing or physical rotation. Repeated cycle boundary is continuous. Old whole-mark breathing fails a rendered-pane assertion semantically. |
 | BLP-002 | Static brand state until motion is known to be allowed. Reduced Motion, background/inactive and hidden/unmounted indicators have no running loop. Live preference wins over stale query; listeners and loops clean up, foreground may resume only when allowed. No frame-by-frame spoken announcements. |

@@ -316,7 +316,8 @@
   // showed up as literal ` characters.
   function gate(which) {
     if (fullInputCache) fullInputCache.clear();
-    clearComposeData();
+    retireComposeData();
+    if (which === 'expired') clearSavedComposeData();
     document.querySelectorAll('.browser-dialog').forEach(function (dialog) { if (dialog.retire) dialog.retire(); else { dialog.close(); dialog.remove(); } });
     var g = GATE[which] || GATE.unpaired;
     var state = $('gate-state'), steps = $('gate-steps');
@@ -1701,21 +1702,30 @@
   function saveCompose(data, immediate) {
     if (!data || data.revoked) return; clearTimeout(data.timer);
     function write() {
+      data.timer = null;
       if (data.revoked) return;
       var drafts = Object.create(null); Object.keys(data.drafts).slice(-50).forEach(function (id) { var d = data.drafts[id]; if (d.text || d.files.length) drafts[id] = {text: d.text, fileCount: d.files.length, attempt: d.lastAttempt, error: d.error}; });
       try { localStorage.setItem(data.key, JSON.stringify({drafts: drafts, history: data.history, recent: data.recent, snippets: data.snippets})); } catch (e) {}
     }
     if (immediate) write(); else data.timer = setTimeout(write, 400);
   }
-  function clearComposeData() {
+  function retireComposeData() {
     var data = composeCache;
     if (data) {
       data.revoked = true; clearTimeout(data.timer); data.requests.forEach(function (r) { r.abort(); }); data.urls.forEach(function (url) { URL.revokeObjectURL(url); }); data.urls.clear();
       Object.keys(data.drafts).forEach(function (id) { var draft = data.drafts[id]; draft.text = ''; draft.files = []; draft.recovery = null; });
     }
-    try { var prefix = 'gtmux.compose:' + BASE + ':'; for (var i = localStorage.length - 1; i >= 0; i--) { var key = localStorage.key(i); if (key && (key.indexOf(prefix) === 0 || key.indexOf('gtmux.bookmarks:' + BASE + ':') === 0)) localStorage.removeItem(key); } } catch (e) {}
     if (window.GtmuxConversationMap && window.GtmuxConversationMap.clearBookmarks) window.GtmuxConversationMap.clearBookmarks('gtmux.bookmarks:' + BASE + ':');
     composeCache = null;
+  }
+  function clearSavedComposeData() {
+    var composePrefix = 'gtmux.compose:' + BASE + ':', bookmarkPrefix = 'gtmux.bookmarks:' + BASE + ':';
+    try {
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var key = localStorage.key(i);
+        if (key && (key.startsWith(composePrefix) || key.startsWith(bookmarkPrefix))) localStorage.removeItem(key);
+      }
+    } catch (e) {}
   }
 
   function composeScope(id) { var a = byId(lastAgents, id) || (curAgent && curAgent.pane_id === id ? curAgent : {}); return a.project || a.session || (a.loc || '').split(':')[0] || id || 'default'; }
@@ -4328,6 +4338,11 @@
       if (event.storageArea !== localStorage || (event.key !== TOKEN_KEY && event.key !== null)) return;
       const current = localStorage.getItem(TOKEN_KEY);
       if (current === token) return;
+      // Finish a pending edit in its original namespace on a live switch.
+      // A removal can follow an explicit clear and must never restore data.
+      if (token && current && event.oldValue === token && event.newValue === current && composeCache && composeCache.timer) {
+        saveCompose(composeCache, true);
+      }
       if (token) pendingDocument = null;
       token = current;
       gate('unpaired');

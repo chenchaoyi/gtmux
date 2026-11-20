@@ -68226,6 +68226,22 @@
         }
       ],
       "sha256": "ea824c1327e9e228362f2e24eebee5034f52dc1a598bba52ccbaf67d79ade759"
+    },
+    "tests/web/artifact-pairing-storage.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-086a28a29fa2",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "LAP-010 switching pairing in another tab restores both profiles",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LAP-010"
+        }
+      ],
+      "sha256": "34c9207c1aee906e0e8c3cd4d4ef1b845772bdb0a8dcfc2309f45469b2f0731d"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",
