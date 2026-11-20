@@ -1,0 +1,35 @@
+{
+  "id": "local-artifact-view-lifetime-20261120",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (self-review following independent review)",
+    "date": "2026-11-20",
+    "decision": "Cover storage changes across tabs, responsive layout changes and image-specific resource refusal.",
+    "notes": "Use ordinary paired, guest and signed-out browser states. Hold a synthetic content read to observe cleanup. Supply normal small image bytes and over-budget metadata. Authentication or content integrity errors still retire or fail the document."
+  },
+  "cases": [
+    {
+      "id": "LAP-008",
+      "layer": "L4",
+      "description": "Private previews follow browser credential and view lifetimes",
+      "setup": "Two pages on the same synthetic workspace origin and a delayed registered document response.",
+      "action": "Switch the stored credential to a guest and then sign out. Reopen the document each time. Separately cross the responsive breakpoint during a pending read.",
+      "expected": "The previous viewer closes and late bytes cannot render. New requests use the current identity or prompt for pairing. A layout transition leaves no stranded pending reader.",
+      "planned_files": [
+        "tests/web/artifact-lifetime.test.cjs"
+      ]
+    },
+    {
+      "id": "LAP-009",
+      "layer": "L4",
+      "description": "The reader skips a local image outside the remaining budget",
+      "setup": "Synthetic HTML with two declared PNG sources. One related image reports a length above the per-image budget.",
+      "action": "Open the HTML and observe image requests and the rendered document. Separately refuse related image access.",
+      "expected": "The over-budget body is never requested. Verified text and the other image render. Permission refusal still fails the whole reader.",
+      "planned_files": [
+        "tests/web/artifact-lifetime.test.cjs"
+      ]
+    }
+  ],
+  "seal": "a60636b8bfae69fae337f8be33057cc496105ba0bde54ab8b12dadc07d500682"
+}
