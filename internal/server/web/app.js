@@ -139,7 +139,7 @@
         // code is not left sitting on screen.
         input.value = '';
         go.disabled = false; go.textContent = T('Open', '打开');
-        fetchTheme(); fetchShare(); setupSettings(); home();
+        fetchTheme(); fetchShare(); setupSettings(); home(); openPendingDocument();
       }).catch(function () {
         go.disabled = false;
         go.textContent = T('Open', '打开');
@@ -3251,13 +3251,38 @@
     return card;
   }
 
-  function showConversationDocument(reference, scope) {
+  var pendingDocument = null;
+  function takeDocumentAddress() {
+    const hash = location.hash;
+    if (!new URLSearchParams(hash.slice(1)).has('document')) return false;
+    pendingDocument = window.GtmuxArtifactOpen.startupDocument(hash);
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    return true;
+  }
+  function openPendingDocument() {
+    if (!pendingDocument) return;
+    document.querySelectorAll('.conversation-document').forEach(dialog => dialog.retire());
+    var request = pendingDocument;
+    pendingDocument = null;
+    showConversationDocument(request.reference, request, true);
+  }
+
+  function showConversationDocument(reference, scope, verifyAccess) {
     var model = window.GtmuxDocuments, target = model && model.documentReference(reference);
     if (!target || !scope.session_id) return;
     var sheet = browserDialog(target.name || T('File', '文件')), credential = token, epoch = viewEpoch;
     sheet.el.classList.add('conversation-document');
     var controller = new AbortController(), objectURL = '', closed = false;
-    sheet.onClose = function () { closed = true; controller.abort(); if (objectURL) URL.revokeObjectURL(objectURL); };
+    function credentialChanged(event) {
+      if (event.storageArea === localStorage && (event.key === TOKEN_KEY || event.key === null)) sheet.el.retire();
+    }
+    window.addEventListener('storage', credentialChanged);
+    sheet.onClose = function () {
+      closed = true;
+      window.removeEventListener('storage', credentialChanged);
+      controller.abort();
+      if (objectURL) URL.revokeObjectURL(objectURL);
+    };
     function valid() { return !closed && credential === token && epoch === viewEpoch; }
     function unavailable(reason) {
       if (!valid()) return;
@@ -3265,40 +3290,103 @@
       sheet.body.appendChild(clipboardAction(T('Copy path', '复制路径'), '', reference, 'document-path'));
     }
     sheet.body.appendChild(el('p', '', T('Opening file…', '正在打开文件…')));
-    if (!SHARE.all) { unavailable('forbidden'); return; }
-    api('/api/artifacts/resolve', {method: 'POST', redirect: 'error', signal: controller.signal, headers: {'Content-Type': 'application/json'}, body: JSON.stringify({reference: target.reference, session_id: scope.session_id, home_id: scope.home_id || ''})})
-      .then(function (r) { if (r.status === 401 || r.status === 403) throw new Error('forbidden'); if (!r.ok) throw new Error('unpublished'); return r.json(); })
-      .then(async function (value) {
+    async function readFile(reference, parentID, limit) {
+      if (!valid()) throw new Error('retired');
+      const body = {reference, session_id: scope.session_id, home_id: scope.home_id || ''};
+      if (parentID) body.parent_id = parentID;
+      const options = {redirect: 'error', signal: controller.signal};
+      const metadata = await api('/api/artifacts/resolve', Object.assign({}, options, {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)
+      }));
+      function requireOK(response) {
+        if (response.status === 401 || response.status === 403) throw new Error('forbidden');
+        if (response.status === 404) throw new Error('unpublished');
+        if (!response.ok) throw new Error('failed');
+      }
+      requireOK(metadata);
+      const file = model.parseDocument(await metadata.json(), body.session_id, body.home_id);
+      if (!file || (!parentID && reference.startsWith('gtmux-file:') && reference !== 'gtmux-file:' + file.id)) throw new Error('failed');
+      if (parentID && file.kind !== 'image') throw new Error('failed');
+      if (file.kind === 'image') limit = Math.min(limit, window.GtmuxArtifactOpen.maxImageBytes);
+      if (file.bytes > limit || !valid()) throw new Error('failed');
+      const query = new URLSearchParams({id: file.id, session_id: body.session_id, home_id: body.home_id});
+      const response = await api('/api/artifacts/content?' + query, options);
+      requireOK(response);
+      if (!response.body || !valid()) throw new Error('failed');
+      const reader = response.body.getReader(), bytes = new Uint8Array(file.bytes);
+      let offset = 0;
+      try {
+        while (true) {
+          const part = await reader.read();
+          if (part.done) break;
+          if (!valid() || part.value.length > bytes.length - offset) {
+            await reader.cancel();
+            throw new Error('failed');
+          }
+          bytes.set(part.value, offset);
+          offset += part.value.length;
+        }
+      } finally { reader.releaseLock(); }
+      if (offset !== file.bytes || !valid()) throw new Error('failed');
+      const hash = await crypto.subtle.digest('SHA-256', bytes);
+      const digest = Array.from(new Uint8Array(hash), b => b.toString(16).padStart(2, '0')).join('');
+      if (digest !== file.sha256 || !valid()) throw new Error('failed');
+      return {file, bytes};
+    }
+    async function preview() {
+      if (verifyAccess) {
+        const permission = await api('/api/share', {redirect: 'error', signal: controller.signal});
+        if (!permission.ok || (await permission.json()).all !== true) throw new Error('forbidden');
+      } else if (!SHARE.all) throw new Error('forbidden');
+      const {file, bytes} = await readFile(target.reference, '', model.MAX_DOCUMENT_BYTES);
+      if (!valid()) return;
+      sheet.el.querySelector('h2').textContent = file.name; sheet.body.replaceChildren();
+      if (file.kind === 'image' && rasterType(bytes) === file.media_type) {
+        var type = file.media_type;
+        objectURL = URL.createObjectURL(new Blob([bytes], {type: type}));
+        var image = el('img', 'document-image'); image.alt = file.name; image.src = objectURL;
+        image.onerror = function () { unavailable('failed'); }; sheet.body.appendChild(image);
+      } else if (file.kind === 'html' && window.GtmuxArtifactOpen) {
+        var rendered = await window.GtmuxArtifactOpen.htmlDocument(new TextDecoder().decode(bytes), rasterType, async function (src, limit) {
+          try {
+            const child = await readFile(src, file.id, limit);
+            return {bytes: child.bytes, type: child.file.media_type};
+          } catch (error) {
+            if (error.message === 'unpublished') return null;
+            throw error;
+          }
+        }, controller.signal);
         if (!valid()) return;
-        var file = model.parseDocument(value, scope.session_id, scope.home_id || ''); if (!file) throw new Error('failed');
-        var response = await api('/api/artifacts/content?id=' + encodeURIComponent(file.id) + '&session_id=' + encodeURIComponent(scope.session_id) + '&home_id=' + encodeURIComponent(scope.home_id || ''), {redirect: 'error', signal: controller.signal});
-        if (!response.ok) throw new Error(response.status === 401 || response.status === 403 ? 'forbidden' : 'unpublished');
-        var limit = file.kind === 'image' ? Math.min(model.MAX_DOCUMENT_BYTES, 8 * 1024 * 1024) : model.MAX_DOCUMENT_BYTES;
-        if (file.bytes > limit || !response.body) throw new Error('failed');
-        var reader = response.body.getReader(), chunks = [], length = 0;
-        try { while (true) { var part = await reader.read(); if (part.done) break; length += part.value.length; if (length > limit || length > file.bytes || !valid()) { await reader.cancel(); throw new Error('failed'); } chunks.push(part.value); } } finally { reader.releaseLock(); }
-        if (!valid()) return;
-        var bytes = new Uint8Array(length), offset = 0; chunks.forEach(function (chunk) { bytes.set(chunk, offset); offset += chunk.length; });
-        var hash = await crypto.subtle.digest('SHA-256', bytes), digest = Array.from(new Uint8Array(hash)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
-        if (!valid()) return;
-        if (length !== file.bytes || digest !== file.sha256) throw new Error('failed');
-        sheet.el.querySelector('h2').textContent = file.name; sheet.body.replaceChildren();
-        if (file.kind === 'image' && imageWithinBudget(bytes)) {
-          var type = bytes[0] === 137 ? 'image/png' : 'image/jpeg';
-          objectURL = URL.createObjectURL(new Blob([bytes], {type: type}));
-          var image = el('img', 'document-image'); image.alt = file.name; image.src = objectURL;
-          image.onerror = function () { unavailable('failed'); }; sheet.body.appendChild(image);
-        } else if (file.kind === 'markdown' || file.kind === 'text') {
-          var text = new TextDecoder().decode(bytes.slice(0, 512 * 1024));
-          sheet.body.appendChild(file.kind === 'markdown' ? mdRender(text) : el('pre', 'document-text', text));
-        } else { unavailable('unsupported'); }
-      }).catch(function (error) { unavailable(['forbidden', 'unpublished', 'unsupported'].includes(error.message) ? error.message : 'failed'); });
+        var frame = el('iframe', 'document-html'); frame.title = file.name; frame.setAttribute('sandbox', ''); frame.referrerPolicy = 'no-referrer'; frame.srcdoc = rendered; sheet.body.appendChild(frame);
+        sheet.body.appendChild(el('p', 'document-preview-note', T('Static preview. Scripts, external resources and links are disabled.', '静态预览：脚本、外部资源和链接已停用。')));
+      } else if (file.kind === 'pdf' && new TextDecoder().decode(bytes.slice(0, 5)) === '%PDF-') {
+        objectURL = URL.createObjectURL(new Blob([bytes], {type: 'application/pdf'}));
+        var pdf = el('a', 'document-pdf', T('Preview PDF in browser', '在浏览器中预览 PDF')); pdf.href = objectURL; pdf.target = '_blank'; pdf.rel = 'noopener noreferrer'; sheet.body.appendChild(pdf);
+      } else if (file.kind === 'markdown' || file.kind === 'text') {
+        var text = new TextDecoder().decode(bytes.slice(0, 512 * 1024));
+        sheet.body.appendChild(file.kind === 'markdown' ? mdRender(text) : el('pre', 'document-text', text));
+      } else { unavailable('unsupported'); }
+    }
+    preview().catch(function (error) { unavailable(['forbidden', 'unpublished', 'unsupported'].includes(error.message) ? error.message : 'failed'); });
   }
   // Inspect PNG/JPEG dimensions before allowing a decoder to allocate the bitmap.
-  function imageWithinBudget(bytes) {
+  function rasterType(bytes) {
     var view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength), width = 0, height = 0;
-    if (bytes.length >= 24 && view.getUint32(0) === 0x89504e47 && view.getUint32(4) === 0x0d0a1a0a && view.getUint32(12) === 0x49484452) { width = view.getUint32(16); height = view.getUint32(20); }
-    else if (bytes.length >= 4 && bytes[0] === 255 && bytes[1] === 216) {
+    if (bytes.length >= 45 && view.getUint32(0) === 0x89504e47 && view.getUint32(4) === 0x0d0a1a0a) {
+      if (view.getUint32(8) !== 13 || view.getUint32(12) !== 0x49484452) return null;
+      width = view.getUint32(16); height = view.getUint32(20);
+      // Require a complete static PNG container before handing bytes to a decoder.
+      let offset = 33, data = false, ended = false;
+      while (offset + 12 <= bytes.length) {
+        const length = view.getUint32(offset), kind = view.getUint32(offset + 4);
+        offset += 12 + length;
+        if (offset > bytes.length || kind === 0x6163544c) return null; // acTL is animated
+        if (kind === 0x49444154 && length) data = true;
+        if (kind === 0x49454e44) { ended = length === 0 && offset === bytes.length; break; }
+      }
+      if (!data || !ended) return null;
+    } else if (bytes.length >= 4 && bytes[0] === 255 && bytes[1] === 216 &&
+               bytes[bytes.length - 2] === 255 && bytes[bytes.length - 1] === 217) {
       var i = 2;
       while (i + 9 < bytes.length) {
         if (bytes[i++] !== 255) break; while (bytes[i] === 255) i++;
@@ -3308,7 +3396,8 @@
         if ([0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf].includes(marker) && size >= 8) { height = view.getUint16(i + 3); width = view.getUint16(i + 5); break; } i += size;
       }
     }
-    return width > 0 && height > 0 && width <= 16384 && height <= 16384 && width * height <= 24000000;
+    if (!width || !height || width > 16384 || height > 16384 || width * height > 24000000) return null;
+    return bytes[0] === 137 ? 'image/png' : 'image/jpeg';
   }
 
   // ---- markdown (vanilla → DOM) -----------------------------------------
@@ -4232,14 +4321,18 @@
       if (!$('panes').hidden) return;
       home();
     });
+    var authHash = takeDocumentAddress() ? '' : location.hash;
+    window.addEventListener('hashchange', function () {
+      if (takeDocumentAddress() && token) openPendingDocument();
+    });
     try { token = localStorage.getItem(TOKEN_KEY); } catch (e) {}
     // A share link arrives as `#code=<code>`: the same eight characters someone would
     // read out, redeemed here for the link's own token. Links handed out before that
     // carried the token itself (#g=, legacy #t=) and still work, so both are read.
-    var mc = /(?:^|[#&])code=([0-9a-z][0-9a-z-]{3,})/i.exec(location.hash || '');
-    var mt = /(?:^|[#&])[gt]=([a-f0-9]{16,})/i.exec(location.hash || '');
+    var mc = /(?:^|[#&])code=([0-9a-z][0-9a-z-]{3,})/i.exec(authHash);
+    var mt = /(?:^|[#&])[gt]=([a-f0-9]{16,})/i.exec(authHash);
     if (mt && mt[1]) { token = mt[1]; try { localStorage.setItem(TOKEN_KEY, token); } catch (e) {} try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
-    var m = /(?:^|[#&])c=([a-f0-9]+)/i.exec(location.hash || '');
+    var m = /(?:^|[#&])c=([a-f0-9]+)/i.exec(authHash);
     // A share code redeems the same way a pairing code does; whichever is in the URL.
     var code = (mc && mc[1]) || (m && m[1]);
     if (code) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
@@ -4249,6 +4342,7 @@
       fetchTheme(); // match the user's real terminal (async; the pane picks it up)
       fetchShare(); // learn which panes (if any) this caller may type into
       home();
+      openPendingDocument();
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

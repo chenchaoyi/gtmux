@@ -4471,5 +4471,57 @@
       "no booted device is not permission to pick and drive a random stored device",
       "unavailable or duplicate device records never become an ambiguous target"
     ]
+  },
+  "internal/app/artifact_preview_test.go": {
+    "cases": [
+      "LAP-001",
+      "LAP-002"
+    ],
+    "selectors": [
+      "TestLAP001LocalShowReadsSnapshotAfterOriginalChanges",
+      "TestLAP001LocalShowRejectsBadRemovedAndCorruptFiles",
+      "TestLAP002RegistrationAndOpenUseSameLocalURL"
+    ]
+  },
+  "internal/server/web/artifact-open.test.cjs": {
+    "cases": [
+      "LAP-003"
+    ],
+    "selectors": [
+      "LAP-003 canonical startup keeps the original scope and pairing stays separate",
+      "LAP-003 rejects ambiguous or malformed "
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift": {
+    "cases": [
+      "LAP-005"
+    ],
+    "selectors": [
+      "testLAP005CanonicalFileLinkUsesSeparateArguments",
+      "testLAP005RejectsOtherRoutesAndCommandText",
+      "testLAP005BundleDeclaresFileSchemeAndPreservesUsage",
+      "testLAP005PackagedHostOpensRegisteredArtifact"
+    ]
+  },
+  "tests/web/artifact-open.test.cjs": {
+    "cases": [
+      "LAP-004",
+      "LAP-006"
+    ],
+    "selectors": [
+      "static HTML and immutable identity ",
+      "restricted owner remains forbidden",
+      "wrong home stays unavailable",
+      "revoked credentials retire the delayed document",
+      "corrupt bytes cannot enter HTML renderer",
+      "existing credentials retain original scope without enrollment",
+      "LAP-006 PDF waits for a user action and releases its blob on close",
+      "LAP-006 invalid PDF never exposes the preview action",
+      "first pairing resumes the requested snapshot",
+      "local image uses verified parent and layout stays resource-free",
+      "different registered ID is refused before reading bytes",
+      "short document body stays unavailable",
+      "inline raster type and count are checked before display"
+    ]
   }
 }

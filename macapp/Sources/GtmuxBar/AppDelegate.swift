@@ -38,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // reopen focus; reopen skips when a jump just happened, else defers as a fallback.
     private var pendingReopenFocus: DispatchWorkItem?
     private var lastNotificationJumpAt: Date?
-    private var lastWidgetOpenAt: Date?
+    private var lastURLOpenAt: Date?
     private let usageWidgetPublisher = UsageWidgetPublisher()
 
     private var displayMode: DisplayMode { settings.displayMode }
@@ -753,15 +753,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        guard urls.contains(where: MacUsageWidgetContainer.opensUsage) else { return }
-        lastWidgetOpenAt = Date()
+        let fileCommands = urls.compactMap(LocalArtifactPreview.arguments(for:))
+        let opensUsage = urls.contains(where: MacUsageWidgetContainer.opensUsage)
+        guard opensUsage || !fileCommands.isEmpty else { return }
+        lastURLOpenAt = Date()
         pendingReopenFocus?.cancel()
         pendingReopenFocus = nil
-        HQWorkspaceController.shared.show(l10n: l10n, selection: .resource(.usage))
+        for arguments in fileCommands {
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                let result = GtmuxCLI.captureBounded(arguments, timeout: 16, outputLimit: 32_768)
+                guard result.status != 0 else { return }
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    let alert = NSAlert()
+                    alert.messageText = self.l10n.tr("Could not open this file", "无法打开此文件")
+                    alert.informativeText = self.l10n.tr("Check that the local workspace is running and the attachment is still available, then try again.", "请确认本机工作台正在运行，且附件仍可读取，然后重试。")
+                    alert.runModal()
+                }
+            }
+        }
+        if opensUsage {
+            HQWorkspaceController.shared.show(l10n: l10n, selection: .resource(.usage))
+        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if let t = lastWidgetOpenAt, Date().timeIntervalSince(t) < 1.0 { return true }
+        if let t = lastURLOpenAt, Date().timeIntervalSince(t) < 1.0 { return true }
         // Accessory app (no Dock icon) → reopen only fires from a notification click,
         // which also calls didReceive with the specific pane. If that jump just ran,
         // do nothing. Otherwise (reopen arrived first) defer `focus --last` briefly as

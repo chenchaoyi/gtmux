@@ -48,6 +48,9 @@ MAP-f477967708d8,L2,reviewed implementation,internal/agentprofile/observation_st
 MAP-fab36ee0bfb3,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,40,reviewed-selector,TestProfileObservationIsolatesMixedWriters,False,STOR-004
 MAP-f6200d4fe8c9,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,9,reviewed-selector,TestSID001PresentationConfigKeepsManagedIdentity,False,SID-001
 MAP-410b581f2c06,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,35,reviewed-selector,TestSID001HelpStillRecognizesCommandsAfterDisplayConfig,False,SID-001
+MAP-61ca47d1d1d3,L2,reviewed implementation,internal/app/artifact_preview_test.go,29,reviewed-selector,TestLAP001LocalShowReadsSnapshotAfterOriginalChanges,False,"LAP-001,LAP-002"
+MAP-5ca59e22715c,L2,reviewed implementation,internal/app/artifact_preview_test.go,51,reviewed-selector,TestLAP001LocalShowRejectsBadRemovedAndCorruptFiles,False,"LAP-001,LAP-002"
+MAP-99f641958692,L2,reviewed implementation,internal/app/artifact_preview_test.go,71,reviewed-selector,TestLAP002RegistrationAndOpenUseSameLocalURL,False,"LAP-001,LAP-002"
 MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go,30,reviewed-selector,TestClientHTTPContracts,False,CT-HTTP
 LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,40,Test,TestCloudflaredMetricsTransportRefusesRedirectsAndOversizedBodies,False,legacy-not-retrospectively-reviewed
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
@@ -800,6 +803,8 @@ LEG-4fd9f327715a,L2,Browser,internal/server/web/app.test.cjs,1276,test,Return se
 LEG-3eddecec9a49,L2,Browser,internal/server/web/app.test.cjs,1289,test,"pending prompts require a newly recorded occurrence, including identical messages without clocks",False,legacy-not-retrospectively-reviewed
 LEG-46dcc46b1b27,L2,Browser,internal/server/web/app.test.cjs,1299,test,an unchanged retry keeps its send id while a new acknowledged message gets a new id,False,legacy-not-retrospectively-reviewed
 LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1313,test,radar keyboard selection skips rows inside a collapsed section,False,legacy-not-retrospectively-reviewed
+MAP-837adcf0e185,L2,reviewed implementation,internal/server/web/artifact-open.test.cjs,5,reviewed-selector,LAP-003 canonical startup keeps the original scope and pairing stays separate,False,LAP-003
+MAP-e4b832555966,L2,reviewed implementation,internal/server/web/artifact-open.test.cjs,10,reviewed-selector,LAP-003 rejects ambiguous or malformed ,False,LAP-003
 MAP-82ccdde7a852,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,114,reviewed-selector,actual XHR byte stages stay on the thumbnail,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
 MAP-cd745e41cb20,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,136,reviewed-selector,unknown-length body completion,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
 MAP-1dab495821e2,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,142,reviewed-selector,upload ${failure} preserves,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
@@ -851,6 +856,10 @@ MAP-b135d4ac2897,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceR
 MAP-e8bd09658f70,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQKnowledgeActionsTests.swift,50,reviewed-selector,testLandingCarriesTheViewedRevision,False,KBCARRIER-REVISION
 MAP-b4f647d0a506,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,44,reviewed-selector,testCanonicalGroupsAndHiddenCountIgnoreEndedMergedStaleAndDuplicateRows,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
 MAP-67fdd9c30f6e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQOverviewClarityTests.swift,63,reviewed-selector,testCurrentAssessmentTakesPriorityWithoutBorrowingReceiptOrMetadataTime,False,"MC-HQ-OVERVIEW-STATE,MC-HQ-OVERVIEW-BRIEF"
+MAP-c4231cd4ede9,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift,6,reviewed-selector,testLAP005CanonicalFileLinkUsesSeparateArguments,False,LAP-005
+MAP-51e8de4c5d0c,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift,10,reviewed-selector,testLAP005RejectsOtherRoutesAndCommandText,False,LAP-005
+MAP-1598cc2e00ce,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift,16,reviewed-selector,testLAP005BundleDeclaresFileSchemeAndPreservesUsage,False,LAP-005
+MAP-5597fcb37489,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift,30,reviewed-selector,testLAP005PackagedHostOpensRegisteredArtifact,False,LAP-005
 MAP-9a1f99f206ec,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/RestoreMenuActionTests.swift,5,reviewed-selector,testRestoreDispatchPolicyKeepsActualProgressPopoverVisible,False,RSR-008
 MAP-fffefe900850,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/RotationAttentionTests.swift,29,reviewed-selector,testHRW011AttentionUsesActualConsumerWithoutWaitingAndRespectsGuards,False,HRW-011
 MAP-a968227ee19e,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/ScreenshotActiveInputTests.swift,7,reviewed-selector,testSSI003ActiveQueueAndDeliveryReceiptsStayDistinct,False,SSI-003

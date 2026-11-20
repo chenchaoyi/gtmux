@@ -24,7 +24,9 @@ An owner/full-scope paired viewer can open a verified public conversation link d
 the server checks its exact session/home and snapshots the source on click. Code examples
 and unlinked paths do not grant access. `gtmux artifact add FILE --session-id SESSION_ID
 [--home-id HOME_ID]` remains available for fixed revisions or files outside transcript links,
-and for compatibility with older servers. Verify resolution before claiming delivery works;
+and for compatibility with older servers. For a registered revision, include both links from
+`artifact add` in your reply: the App file reference and the credential-free HTTP preview
+for Codex terminals on the host computer. Verify resolution before claiming delivery works;
 users should not need to register an attachment. See
 [conversation documents](docs/design/conversation-documents.md).
 

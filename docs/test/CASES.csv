@@ -171,6 +171,9 @@ LEG-20305837d3db,L1,Go core / CLI / server,internal/app/agents_notmux_test.go,17
 LEG-773456cf9f65,L1,Go core / CLI / server,internal/app/agents_scope_test.go,5,Test,TestAgentsPaneFilterRejectsInvalidOrNonJSONRequests,False,legacy-not-retrospectively-reviewed
 LEG-b6d125f9ee95,L1,Go core / CLI / server,internal/app/agents_test.go,14,Test,TestAgentsSummary,False,legacy-not-retrospectively-reviewed
 LEG-a1963f676696,G,Go core / CLI / server,internal/app/agents_test.go,56,Test,TestREADMEAgentsSampleIsReal,False,legacy-not-retrospectively-reviewed
+MAP-61ca47d1d1d3,L2,reviewed implementation,internal/app/artifact_preview_test.go,29,reviewed-selector,TestLAP001LocalShowReadsSnapshotAfterOriginalChanges,False,"LAP-001,LAP-002"
+MAP-5ca59e22715c,L2,reviewed implementation,internal/app/artifact_preview_test.go,51,reviewed-selector,TestLAP001LocalShowRejectsBadRemovedAndCorruptFiles,False,"LAP-001,LAP-002"
+MAP-99f641958692,L2,reviewed implementation,internal/app/artifact_preview_test.go,71,reviewed-selector,TestLAP002RegistrationAndOpenUseSameLocalURL,False,"LAP-001,LAP-002"
 LEG-ed07e6c8ae5c,G,Go core / CLI / server,internal/app/artifact_test.go,13,Test,TestArtifactCommandRequiresIdentityAndPreservesOriginal,False,legacy-not-retrospectively-reviewed
 LEG-d007adef63bd,L1,Go core / CLI / server,internal/app/backstopsave_test.go,19,Test,TestBackstopSaveRunsTheScriptQuietly,False,legacy-not-retrospectively-reviewed
 LEG-7e5e6d916e9f,L1,Go core / CLI / server,internal/app/backstopsave_test.go,36,Test,TestBackstopFiresWhenAnArmedAutosaveIsNotActuallySaving,False,legacy-not-retrospectively-reviewed
@@ -3259,6 +3262,8 @@ LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1313,test,radar key
 MAP-e2feefc515a3,L3,Browser,internal/server/web/app.test.cjs,1324,reviewed-selector,CAS004 focused and tile chats disclose association failures and recover without losing messages,False,CAS-004
 MAP-328002d4dfc3,L3,Browser,internal/server/web/app.test.cjs,1351,reviewed-selector,CAS004 stale tile association failure cannot repaint a changed target,False,CAS-004
 MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
+MAP-837adcf0e185,L2,reviewed implementation,internal/server/web/artifact-open.test.cjs,5,reviewed-selector,LAP-003 canonical startup keeps the original scope and pairing stays separate,False,LAP-003
+MAP-e4b832555966,L2,reviewed implementation,internal/server/web/artifact-open.test.cjs,10,reviewed-selector,LAP-003 rejects ambiguous or malformed ,False,LAP-003
 MAP-82ccdde7a852,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,114,reviewed-selector,actual XHR byte stages stay on the thumbnail,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
 MAP-cd745e41cb20,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,136,reviewed-selector,unknown-length body completion,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
 MAP-1dab495821e2,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,142,reviewed-selector,upload ${failure} preserves,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
@@ -3965,6 +3970,10 @@ LEG-ab8a8638444d,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/LangAndSele
 LEG-75a3f3e11437,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/LangAndSelectionTests.swift,85,XCTest,testAPaneEqualsOnlyItsOwnEntry,False,legacy-not-retrospectively-reviewed
 LEG-857cef07b5fc,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/LangAndSelectionTests.swift,94,XCTest,testTheSelectedRowRendersDifferently,False,legacy-not-retrospectively-reviewed
 LEG-fc1682585913,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/LaunchHostPresentationTests.swift,5,XCTest,testHostLabelPreservesAgentAndUnconfirmedInput,False,legacy-not-retrospectively-reviewed
+MAP-c4231cd4ede9,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift,6,reviewed-selector,testLAP005CanonicalFileLinkUsesSeparateArguments,False,LAP-005
+MAP-51e8de4c5d0c,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift,10,reviewed-selector,testLAP005RejectsOtherRoutesAndCommandText,False,LAP-005
+MAP-1598cc2e00ce,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift,16,reviewed-selector,testLAP005BundleDeclaresFileSchemeAndPreservesUsage,False,LAP-005
+MAP-5597fcb37489,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/LocalArtifactPreviewTests.swift,30,reviewed-selector,testLAP005PackagedHostOpensRegisteredArtifact,False,LAP-005
 LEG-fd4fa6d507ca,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/LocalWorkspaceTests.swift,5,XCTest,testBrowserEntryAlwaysUsesAuthenticatedLoopback,False,legacy-not-retrospectively-reviewed
 LEG-c261f41a51c7,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/LocalWorkspaceTests.swift,14,XCTest,testLocalStartupCannotEnableRemoteService,False,legacy-not-retrospectively-reviewed
 LEG-bc6040fc10f2,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/LocalWorkspaceTests.swift,18,XCTest,testRemoteHandoffWaitsForOwnedChildToExit,False,legacy-not-retrospectively-reviewed
@@ -7001,6 +7010,19 @@ LEG-d5140dc35e4a,L3,Browser,tests/web/alignment.test.cjs,26,scenario,"`Settings 
 LEG-630bd7aac308,G,Browser,tests/web/alignment.test.cjs,59,scenario,Human profiles share App identity and quote without irrelevant browser permissions,False,legacy-not-retrospectively-reviewed
 LEG-5eb3da408f2c,L3,Browser,tests/web/alignment.test.cjs,70,scenario,`Touch input tools follow input device at ${width} touch=${touch}`,True,legacy-not-retrospectively-reviewed
 LEG-ff43142292fd,L3,Browser,tests/web/alignment.test.cjs,82,scenario,Chat retains recorded code and wait calls in compact summaries and expanded detail,False,legacy-not-retrospectively-reviewed
+MAP-9a7f2aab5da8,L4,reviewed implementation,tests/web/artifact-open.test.cjs,57,reviewed-selector,static HTML and immutable identity ,False,"LAP-004,LAP-006"
+MAP-cc25f4911385,L4,reviewed implementation,tests/web/artifact-open.test.cjs,78,reviewed-selector,restricted owner remains forbidden,False,"LAP-004,LAP-006"
+MAP-9565991f5715,L4,reviewed implementation,tests/web/artifact-open.test.cjs,85,reviewed-selector,wrong home stays unavailable,False,"LAP-004,LAP-006"
+MAP-2e82555927c4,L4,reviewed implementation,tests/web/artifact-open.test.cjs,90,reviewed-selector,revoked credentials retire the delayed document,False,"LAP-004,LAP-006"
+MAP-0e617a1fc9ab,L4,reviewed implementation,tests/web/artifact-open.test.cjs,101,reviewed-selector,corrupt bytes cannot enter HTML renderer,False,"LAP-004,LAP-006"
+MAP-bfb8f256385c,L4,reviewed implementation,tests/web/artifact-open.test.cjs,109,reviewed-selector,existing credentials retain original scope without enrollment,False,"LAP-004,LAP-006"
+MAP-9619f18de952,L4,reviewed implementation,tests/web/artifact-open.test.cjs,125,reviewed-selector,LAP-006 PDF waits for a user action and releases its blob on close,False,"LAP-004,LAP-006"
+MAP-b677734d392a,L4,reviewed implementation,tests/web/artifact-open.test.cjs,145,reviewed-selector,LAP-006 invalid PDF never exposes the preview action,False,"LAP-004,LAP-006"
+MAP-fb7c969e0888,L4,reviewed implementation,tests/web/artifact-open.test.cjs,153,reviewed-selector,first pairing resumes the requested snapshot,False,"LAP-004,LAP-006"
+MAP-36907fd16000,L4,reviewed implementation,tests/web/artifact-open.test.cjs,165,reviewed-selector,local image uses verified parent and layout stays resource-free,False,"LAP-004,LAP-006"
+MAP-635d70afc09c,L4,reviewed implementation,tests/web/artifact-open.test.cjs,180,reviewed-selector,different registered ID is refused before reading bytes,False,"LAP-004,LAP-006"
+MAP-d30f439538bd,L4,reviewed implementation,tests/web/artifact-open.test.cjs,189,reviewed-selector,short document body stays unavailable,False,"LAP-004,LAP-006"
+MAP-3e9e7cfd2b21,L4,reviewed implementation,tests/web/artifact-open.test.cjs,195,reviewed-selector,inline raster type and count are checked before display,False,"LAP-004,LAP-006"
 MAP-184f052913f1,L2,reviewed implementation,tests/web/backend-contract.test.cjs,34,reviewed-selector,Web fake / Go contract:,False,CT-HTTP
 CP-001-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,13,test,CP-001 shared rendered Trace,True,CP-001
 CP-002-f8c339,L3,Browser,tests/web/behavior-contract.test.cjs,30,test,CP-002 CP-003 CP-004 shared HQ,True,CP-002

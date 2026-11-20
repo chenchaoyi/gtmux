@@ -12,6 +12,9 @@ import (
 )
 
 func cmdArtifact(args []string) int {
+	if len(args) > 0 && (args[0] == "show" || args[0] == "open") {
+		return cmdArtifactView(args)
+	}
 	if len(args) == 1 && args[0] == "list" {
 		files, err := artifact.List()
 		if err != nil {
@@ -34,7 +37,7 @@ func cmdArtifact(args []string) int {
 		return 0
 	}
 	if len(args) == 0 || args[0] != "add" {
-		i18n.Sae("Usage: gtmux artifact add FILE --session-id ID [--home-id ID] [--json]\nAlso: gtmux artifact list | gtmux artifact remove ID\nPublishes one private, immutable document for your paired devices; guests cannot read it. The original file is unchanged.", "用法：gtmux artifact add 文件 --session-id 会话ID [--home-id 目录身份] [--json]\n其他操作：gtmux artifact list | gtmux artifact remove ID\n发布一个私有文件快照，供本人已配对设备查看；访客不能读取。原文件不变。")
+		i18n.Sae("Usage: gtmux artifact add FILE --session-id ID [--home-id ID] [--json]\nAlso: gtmux artifact list | gtmux artifact remove ID | gtmux artifact show REF [--json] | gtmux artifact open REF [--print-url] [--port PORT]\nPublishes one private, immutable document for your paired devices; guests cannot read it. The original file is unchanged.", "用法：gtmux artifact add 文件 --session-id 会话ID [--home-id 目录身份] [--json]\n其他操作：gtmux artifact list | gtmux artifact remove ID | gtmux artifact show REF [--json] | gtmux artifact open REF [--print-url] [--port PORT]\n发布一个私有文件快照，供本人已配对设备查看；访客不能读取。原文件不变。")
 		if len(args) > 0 && (args[0] == "--help" || args[0] == "-h") {
 			return 0
 		}
@@ -78,10 +81,12 @@ func cmdArtifact(args []string) int {
 	if structured {
 		_ = json.NewEncoder(os.Stdout).Encode(struct {
 			artifact.File
-			Reference string `json:"reference"`
-		}{file, file.Reference()})
+			Reference       string `json:"reference"`
+			LocalPreviewURL string `json:"local_preview_url"`
+		}{file, file.Reference(), localArtifactPreviewURL(file, defaultServePort)})
 	} else {
 		fmt.Printf("[%s](%s)\n", strings.NewReplacer("[", "", "]", "").Replace(file.Name), file.Reference())
+		fmt.Printf("[Open on this computer](%s)\n", localArtifactPreviewURL(file, defaultServePort))
 	}
 	return 0
 }
