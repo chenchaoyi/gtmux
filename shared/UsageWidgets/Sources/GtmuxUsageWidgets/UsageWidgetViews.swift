@@ -375,10 +375,28 @@ public struct UsageWidgetBrand: View {
 
 private func usageWidgetImage(_ name: String) -> Image? {
     #if SWIFT_PACKAGE
-    let bundle = Bundle.module
+    #if os(macOS)
+    // SwiftPM's generated Bundle.module accessor points at the package build
+    // directory and assumes the resource bundle sits next to the executable.
+    // A packaged Mac app instead places it under Contents/Resources. Keep
+    // Bundle.module for tests and other non-app hosts, but never make the
+    // installed app depend on a developer's .build directory.
+    let mainExtension = Bundle.main.bundleURL.pathExtension.lowercased()
+    let bundle: Bundle?
+    if mainExtension == "app" || mainExtension == "appex" {
+        bundle = Bundle.main.resourceURL.flatMap {
+            Bundle(url: $0.appendingPathComponent("GtmuxUsageWidgets_GtmuxUsageWidgets.bundle", isDirectory: true))
+        }
+    } else {
+        bundle = Bundle.module
+    }
     #else
-    let bundle = Bundle.main
+    let bundle: Bundle? = Bundle.module
     #endif
+    #else
+    let bundle: Bundle? = Bundle.main
+    #endif
+    guard let bundle else { return nil }
     #if os(macOS)
     let icon = bundle.url(forResource: name, withExtension: "png").flatMap { NSImage(contentsOf: $0) }
         ?? bundle.image(forResource: NSImage.Name(name))
