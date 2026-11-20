@@ -51,17 +51,21 @@ func TestSPL020StableReceiptsAllowLongRunningAdmission(t *testing.T) {
 			}
 		}
 	}
-	for n := 0; ; n++ {
-		err := admitInput(dir)
-		if errors.Is(err, ErrInputFull) {
-			break
-		}
-		if err != nil || n > 60 {
-			t.Fatalf("fixture did not approach capacity: %d %v", n, err)
-		}
+	usage, err := InspectInputSpool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	missing := usage.SlotLimit - usage.UsedSlots - usage.Reservation + 1
+	if missing <= 0 || usage.Entries+missing > usage.ScanLimit {
+		t.Fatalf("cannot isolate weighted saturation: %+v", usage)
+	}
+	for n := range missing {
 		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("foreign-%d", n)), nil, 0600); err != nil {
 			t.Fatal(err)
 		}
+	}
+	if err := admitInput(dir); !errors.Is(err, ErrInputFull) {
+		t.Fatalf("fixture did not approach capacity: %v", err)
 	}
 	if err := ClaimNative(pending); err != nil {
 		t.Fatal("could not claim the reserved in-flight operation", err)

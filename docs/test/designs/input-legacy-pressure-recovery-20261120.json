@@ -1,0 +1,27 @@
+{
+  "id": "input-legacy-pressure-recovery-20261120",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-20",
+    "decision": "Exercise new sends and original replay evidence under version 1.0.186 legacy reservation pressure",
+    "notes": "Use a temporary HOME. Model a legacy active queue whose present directory names are under 4096 but whose effective reservation count is larger. The admitted request must settle, the original pending request must stay untouched, and an accepted stable input must reuse its old receipt."
+  },
+  "cases": [
+    {
+      "id": "SPL-INCIDENT-001",
+      "layer": "L2",
+      "description": "Legacy backlog leaves room for new input without discarding pending and accepted records",
+      "setup": "Create pairwise-valid legacy pending and index files in a private HOME, plus a known accepted durable send.",
+      "action": "Admit and settle one independent send. Re-read a held legacy body and request the accepted stable ID again.",
+      "expected": "The new request is accepted, original pending bytes remain identical, and the accepted stable ID still resolves to its original receipt. Directory enumeration keeps the independent 8192-name bound.",
+      "planned_files": [
+        "internal/agentclient/input_legacy_pressure_test.go"
+      ],
+      "surfaces": [
+        "Native terminal input admission and settlement"
+      ]
+    }
+  ],
+  "seal": "831c614422ac955f18cc3f7d92cb0b979bdc98e808570d33c30fcc9cb934f634"
+}

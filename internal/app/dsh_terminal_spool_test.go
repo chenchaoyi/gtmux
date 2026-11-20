@@ -44,8 +44,16 @@ func TestDSHTerminalReceiverSharesSpoolWithGo(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := agentclient.InputDir()
-	// Two in-flight records each reserve four names during receipt publication.
-	for n := 0; n < 4088; n++ {
+	usage, err := agentclient.InspectInputSpool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Leave one reservation for the Go send while the legacy receiver settles.
+	missing := usage.SlotLimit - usage.UsedSlots - usage.Reservation
+	if missing <= 0 || usage.Entries+missing >= usage.ScanLimit {
+		t.Fatalf("cannot reserve the last operation: %+v", usage)
+	}
+	for n := range missing {
 		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("foreign-%d", n)), nil, 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -153,7 +161,9 @@ assert.equal(submissions, 1);
 	if again, err := agentclient.Prepare(target, dsh.Text, "dsh-action", false, now.Add(2*time.Second)); err != nil || again.ID != dsh.ID {
 		t.Fatalf("legacy receipt did not preserve request identity: %+v, %v", again, err)
 	}
-	if entries, err := os.ReadDir(dir); err != nil || len(entries) != 4093 {
-		t.Fatalf("unexpected completed spool occupancy: %d entries, %v", len(entries), err)
+	// Two names for each settled request, plus the legacy DSH claim.
+	completed, err := agentclient.InspectInputSpool()
+	if err != nil || completed.Entries != missing+5 || completed.UsedSlots != completed.Entries {
+		t.Fatalf("unexpected completed spool occupancy: %+v, %v", completed, err)
 	}
 }

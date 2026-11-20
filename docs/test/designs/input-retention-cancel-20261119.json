@@ -2,10 +2,10 @@
   "id": "input-retention-cancel-20261119",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner, self-review",
-    "date": "2026-11-19",
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-20",
     "decision": "Bound full receipts, keep exact retired acceptance evidence, and handle cancellation on both sides of the persistence boundary.",
-    "notes": "Use only private HOME, synthetic clock jumps, bounded fixture slots, injected sync/unlink failure and a fake Codex RPC peer. Check original replay and compatible new admissions as well as zero mutation. Rechecked 2026-11-19 for sealed pooled archive pages and scoped integrity failures. The original fault and cancellation assertions remain. Final-head CI review verified the injected error sentinel rename preserves all existing fault assertions."
+    "notes": "Use only private HOME, synthetic clock jumps, bounded fixture slots, injected sync/unlink failure and a fake Codex RPC peer. Check original replay and compatible new admissions as well as zero mutation. Rechecked 2026-11-19 for sealed pooled archive pages and scoped integrity failures. The original fault and cancellation assertions remain. Final-head CI review verified the injected error sentinel rename preserves all existing fault assertions. Capacity fixture re-review: derive the nearly full queue from the production active slots and reservation. Retain existing refusal, settlement, replay, corruption and cancellation assertions."
   },
   "cases": [
     {
@@ -44,5 +44,5 @@
       ]
     }
   ],
-  "seal": "5eff9d6472a8df1e6986e8706013870ef4f736f1597d2868f75695e8d2eb479d"
+  "seal": "a155a2d08fc8ebf70dec0eeb329ab515251f68b04d06c4a2b10735937830898f"
 }

@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1370 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1373 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3805 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2547 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2550 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 108 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -278,6 +278,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | SPL-008 | Before-submit refusal does not make an Enter call. A potentially attempted send is unknown with its original attempt count. Draft holds retain their evidence prefixes. Success, native precedence and the legacy bool wrapper are retained. |
 | SPL-009 | Failures exit nonzero or fail the HTTP request. Stable codes identify the failure and optional submission status; the HTTP error carries the caller ID and no draft, payload, capture or success receipt. Unknown is not success-cached. Successful requests keep their receipt and caching. A native question is reported only with evidence. |
 | SPL-010 | Only the matching length is accepted. Invalid length and over-limit documents never select the active layout or a legacy fallback. |
+| SPL-INCIDENT-001 | The new request is accepted, original pending bytes remain identical, and the accepted stable ID still resolves to its original receipt. Directory enumeration keeps the independent 8192-name bound. |
 | SPL-014 | No new paste, Enter or RPC. Existing or unverifiable prior outcome reports unknown while the current refusal remains distinguishable from a transport attempt; a verified fresh refusal stays not-submitted. |
 | SPL-015 | Generic success is submitted without claiming delivery, bare shell sent remains delivered, only proven native question emits the HTTP question code, and cached success keeps its original grade without duplicate input. |
 | SPL-016 | Drafts and gates create no durable slot, and the final authorizer publishes only its staged ID. Failed contenders do not replace a previous index. Aged unresolved requests cannot be replaced by force or timeout. A durable accepted ID remains idempotent. |
@@ -288,11 +289,14 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | SPL-020 | Full receipts are reusable within retention; expired terminal metadata frees room, a retired acceptance blocks native and fallback replay, and unknown evidence is preserved. |
 | SPL-021 | Committed accepted evidence is never converted into new authority; exact tail is recoverable even when its index is absent; unrelated orphan and unknown remain. |
 | SPL-022 | Pre-publication cancellation leaves no durable request; post-publication zero mutation records a reclaimable refusal; actual or ambiguous attempts remain unknown and non-retryable. |
+| SPL-INCIDENT-002 | The report distinguishes names from reserved slots, agrees with admission before and after saturation and leaves queue contents intact. On scan overflow it reports only the observed lower bound. |
+| SPL-INCIDENT-003 | Users can see active slots and the raw name count. Missing measurements are not represented as zero usage and the notes preserve unresolved and replay records. |
 | SPL-001 | Only a fitting new request is admitted. Existing completion and same-ID lookup remain possible. |
 | SPL-002 | A terminal receipt stays immutable, unconfirmed state cannot replay, bounded cleanup keeps valid evidence through the retention window. |
 | SPL-003 | Admission reports capacity before submission. Uncertainty and explicit refusal remain distinct, with no automatic resend. |
 | SPL-004 | The unconfirmed claim prevents replay. The admissible Go request and the existing DSH request both settle; the over-capacity request is refused. Repeated legacy receive and Go retry reuse one accepted receipt and do not deliver the message again. |
 | SPL-018 | Claimed or accepted IDs are not authorized for resend. Fresh, unclaimed and explicitly refused IDs retain the early hold behavior. No submit or terminal mutation occurs. |
+| SPL-INCIDENT-004 | Input spool full is returned, the attempt remains not submitted, and native RPC is never invoked. |
 | SPL-005 | Both consumers agree on the selected directory. Valid legacy input and accepted receipts survive. Active generations retain pending and unknown authority. Unverified layout and stale operations refuse without creating a new request or changing a receipt. |
 | SPL-006 | Valid layouts and addressed v1 UTF-8 payloads remain readable. An invalid layout cannot create a lease or receipt. Damaged records retain their file, do not release addressed replay protection and never call the receiver. |
 | SPL-007 | A verified attachment can stay readable while write readiness is false. Startup, screenshot target resolution and doctor use one read-only predicate. The old handler cannot claim or publish an outcome after readiness is lost. |

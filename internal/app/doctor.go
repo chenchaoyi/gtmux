@@ -314,7 +314,7 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks},
 		{i18n.Tr("Remote access", "远程访问"), remoteChecks},
 		{i18n.Tr("Storage", "存储"), func() []dcheck {
-			return []dcheck{rowHQMemory(), rowHQProcessMaterials(), rowDiskUsage(), rowUploads(), rowInputArchive()}
+			return []dcheck{rowHQMemory(), rowHQProcessMaterials(), rowDiskUsage(), rowUploads(), rowInputSpool(), rowInputArchive()}
 		}},
 		{i18n.Tr("Logs", "日志"), func() []dcheck { return logsChecks(time.Unix(now, 0)) }},
 	}

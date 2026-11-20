@@ -3,27 +3,40 @@ package dispatchbridge
 import (
 	"context"
 	"fmt"
-	"github.com/chenchaoyi/gtmux/internal/agentclient"
-	"github.com/chenchaoyi/gtmux/internal/codexrpc"
-	"github.com/chenchaoyi/gtmux/internal/dispatch"
-	"github.com/chenchaoyi/gtmux/internal/resume"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/chenchaoyi/gtmux/internal/agentclient"
+	"github.com/chenchaoyi/gtmux/internal/codexrpc"
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 )
 
 func TestSPL003CapacityRefusesBeforeRPC(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	old := codexInputTarget
-	defer func() { codexInputTarget = old }()
+	target, queue := codexInputTarget, codexQueueInputs
+	t.Cleanup(func() { codexInputTarget, codexQueueInputs = target, queue })
 	codexInputTarget = func(string) (resume.CodexFrontend, bool) { return resume.CodexFrontend{}, true }
+	codexQueueInputs = func(context.Context, codexrpc.Target, string, []codexrpc.Input, func() bool) codexrpc.Outcome {
+		t.Fatal("a capacity refusal called native RPC")
+		return codexrpc.Outcome{}
+	}
+	usage, err := agentclient.InspectInputSpool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries := usage.SlotLimit - usage.Reservation + 1
+	if entries <= 0 || entries > usage.ScanLimit {
+		t.Fatalf("cannot isolate weighted saturation with unrelated names: %+v", usage)
+	}
 	dir := agentclient.InputDir()
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		t.Fatal(err)
 	}
-	for i := 0; i < 4096; i++ {
+	for i := 0; i < entries; i++ {
 		if err := os.WriteFile(filepath.Join(dir, fmt.Sprint(i)), nil, 0600); err != nil {
 			t.Fatal(err)
 		}

@@ -1225,7 +1225,8 @@ func deliverHQBriefing(pane, agentCmd string) {
 	res := deliverHQBriefingInput(dispatchbridge.DispatchIO(pane),
 		dispatchbridge.DeliverOpts(pane, agentCmd, false, tune), hqBriefingPrompt())
 	diag.Did("act.hq.brief", pane, briefOutcome(res), "delivered HQ's startup briefing",
-		"state", string(res.State), "judgedBy", res.JudgedBy, "how", "inline")
+		"state", string(res.State), "judgedBy", res.JudgedBy, "how", "inline",
+		"failureCode", string(res.FailureCode), "submission", string(res.Submission))
 	switch {
 	case res.State == dispatch.StateQueued:
 		i18n.Say("  the startup briefing is queued; HQ runs it after the turn it is in",
