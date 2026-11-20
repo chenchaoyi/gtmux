@@ -1,0 +1,41 @@
+{
+  "id": "input-spool-health-20261120",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-20",
+    "decision": "Expose the weighted admission limit through the read-only doctor",
+    "notes": "Use private queue fixtures and share the production slot calculation. Keep the scan bound and replay integrity unchanged."
+  },
+  "cases": [
+    {
+      "id": "SPL-INCIDENT-002",
+      "layer": "L2",
+      "description": "Read-only usage tracks weighted admission and distinguishes the directory enumeration limit",
+      "setup": "Create a private queue with unresolved request and payload pairs plus unrelated names.",
+      "action": "Inspect an absent queue, a queue with one admission left, a saturated queue and a directory larger than the scan bound.",
+      "expected": "The report distinguishes names from reserved slots, agrees with admission before and after saturation and leaves queue contents intact. On scan overflow it reports only the observed lower bound.",
+      "planned_files": [
+        "internal/agentclient/input_spool_health_test.go"
+      ],
+      "surfaces": [
+        "Terminal input admission"
+      ]
+    },
+    {
+      "id": "SPL-INCIDENT-003",
+      "layer": "L2",
+      "description": "Doctor explains weighted saturation without suggesting deletion",
+      "setup": "Construct active spool usage snapshots in English and Chinese.",
+      "action": "Render healthy, low headroom, slot exhaustion, scan overflow and unavailable diagnostics.",
+      "expected": "Users can see active slots and the raw name count. Missing measurements are not represented as zero usage and the notes preserve unresolved and replay records.",
+      "planned_files": [
+        "internal/app/input_spool_doctor_test.go"
+      ],
+      "surfaces": [
+        "Doctor"
+      ]
+    }
+  ],
+  "seal": "863df836854ab552ec6ed0cf8f533f6003d899d1caa79dbc0a9bc24d4cb30fdc"
+}
