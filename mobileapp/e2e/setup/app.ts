@@ -5,10 +5,10 @@ import {getDriver} from './driver';
 import {TestIds} from '../../src/constants/testIds';
 
 export const BUNDLE = 'com.gtmux.app';
-const TARGET = process.env.GTMUX_E2E_UDID || 'booted';
 
 function dataContainer(): string {
-  return execFileSync('xcrun', ['simctl', 'get_app_container', TARGET, BUNDLE, 'data'], {
+  const udid = process.env.GTMUX_E2E_RESOLVED_UDID || process.env.GTMUX_E2E_UDID || 'booted';
+  return execFileSync('xcrun', ['simctl', 'get_app_container', udid, BUNDLE, 'data'], {
     encoding: 'utf8',
   }).trim();
 }
@@ -147,9 +147,7 @@ export async function relaunch(): Promise<void> {
 export function readDebugLog(): Array<Record<string, unknown>> {
   let container: string;
   try {
-    container = execFileSync('xcrun', ['simctl', 'get_app_container', TARGET, BUNDLE, 'data'], {
-      encoding: 'utf8',
-    }).trim();
+    container = dataContainer();
   } catch {
     return [];
   }

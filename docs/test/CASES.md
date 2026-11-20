@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1380 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1382 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3807 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2565 | [L2.csv](cases/L2.csv) |
+| L1 · Unit / pure logic | 3816 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 2567 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 109 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -313,6 +313,17 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | SPL-006 | Valid layouts and addressed v1 UTF-8 payloads remain readable. An invalid layout cannot create a lease or receipt. Damaged records retain their file, do not release addressed replay protection and never call the receiver. |
 | SPL-007 | A verified attachment can stay readable while write readiness is false. Startup, screenshot target resolution and doctor use one read-only predicate. The old handler cannot claim or publish an outcome after readiness is lost. |
 | SPL-019 | Each old ID returns outcome-unconfirmed with the same ID and no success or cached receipt. No raw text or Enter reaches tmux and the old claim is unchanged. Fresh IDs still submit through the selected compatible route exactly once. |
+| SIM272-001 | Return the actual Duo UDID/name/27.2, never historical defaults |
+| SIM272-002 | Pin requested real device; preserve compatible explicit OS/name values |
+| SIM272-003 | Use26.5 when genuinely available; migration is not a global support-policy change |
+| SIM272-004 | Throw before Appium; no substitute runtime |
+| SIM272-005 | Reject false Duo attribution |
+| SIM272-006 | Reject; container helpers and driver cannot receive inconsistent UDIDs |
+| SIM272-007 | Default rejects ambiguity globally; exact UDID succeeds |
+| SIM272-008 | Reject with explicit boot/UDID guidance; no device creation |
+| SIM272-009 | Reject nonunique/unavailable records |
+| SIM272-010 | The same exact UDID is used by the simctl container lookup and WebDriver; runtime and name match the inventory, noReset is true, and implicit discovery leaves the explicit override unset |
+| SIM272-011 | Reject before reclaimBefore, writeDebugFlags, Appium spawn or remote connection |
 | KBCARRIER-COMPAT | Manual landing succeeds with the exact read token. Everyone remains manual-only; other audiences keep their own exit. Generated manual instructions name the required revision; legacy receipts still fold. |
 | KBCARRIER-REVISION | Stale/missing new receipts append nothing and leave R1 pending; old publication cannot overwrite an already landed R1. Carry publication and settlement share the existing ledger lock. Review following successful R0 carry leaves R1 pending. Current manual ref succeeds; clients propagate the read version and do not silently fetch a new version for an old confirmation. |
 | KBCARRIER-ATOMIC | Successful publication yields complete new content and 0600 private mode while pinned readers retain complete original content. Failure before publish leaves original bytes/mode intact and cannot settle landing. File fsync precedes publication and parent sync follows it; errors propagate. Existing manually changed or duplicate sections stay conflicts. No claim of real power-loss simulation. |
