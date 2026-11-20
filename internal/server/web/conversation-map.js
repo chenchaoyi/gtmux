@@ -164,7 +164,7 @@
       }
       bookmark.onclick = function () {
         var key = outline[selected].bookmarkKey;
-        if (!storageKey || !key) return;
+        if (!storageKey || !key || (options.canSave && !options.canSave())) return;
         if (!saved.has(key) && saved.size >= 2000) {
           feedback.textContent = T(
             'Bookmark limit reached. Remove one to add another.',

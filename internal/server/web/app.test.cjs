@@ -83,7 +83,7 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     var realFetchShare = fetchShare, realPollChat = pollChat;
     globalThis.__test = {enableChatPolling: () => {pollChat = realPollChat;}, fetchShare, enableShare: () => {fetchShare = realFetchShare;}, share: () => SHARE, pollWB, paneCanInput, copyText, clipboardAction, toolStepsEl, updateInputBar, setupFocus,
       setupKeyboard, openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost, setExternalSettings: s => {externalSettings=s;},
-      promptObservations, pendingPromptRecorded, setCredential: value => {token = value;}, flushComposer: () => saveCompose(composeCache, true), drawChat, renderTileChat, liveTail, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
+      promptObservations, pendingPromptRecorded, setCredential: value => {token = value; localStorage.setItem(TOKEN_KEY, value);}, flushComposer: () => saveCompose(composeCache, true), drawChat, renderTileChat, liveTail, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
       show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
       setWorkbenchAgents: rows => {WB.agents = rows;},

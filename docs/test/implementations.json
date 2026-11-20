@@ -4562,5 +4562,14 @@
     "selectors": [
       "LAP-010 switching pairing in another tab restores both profiles"
     ]
+  },
+  "tests/web/artifact-storage-clear.test.cjs": {
+    "cases": [
+      "LAP-011"
+    ],
+    "selectors": [
+      "LAP-011 clearing site data retires a scheduled save",
+      "LAP-011 server revocation wins before the other tab retires"
+    ]
   }
 }

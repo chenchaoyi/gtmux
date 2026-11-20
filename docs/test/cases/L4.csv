@@ -113,6 +113,8 @@ MAP-635d70afc09c,L4,reviewed implementation,tests/web/artifact-open.test.cjs,144
 MAP-d30f439538bd,L4,reviewed implementation,tests/web/artifact-open.test.cjs,153,reviewed-selector,short document body stays unavailable,False,"LAP-004,LAP-006"
 MAP-3e9e7cfd2b21,L4,reviewed implementation,tests/web/artifact-open.test.cjs,159,reviewed-selector,inline raster type and count are checked before display,False,"LAP-004,LAP-006"
 MAP-086a28a29fa2,L4,reviewed implementation,tests/web/artifact-pairing-storage.test.cjs,4,reviewed-selector,LAP-010 switching pairing in another tab restores both profiles,False,LAP-010
+MAP-143d521b0ce1,L4,reviewed implementation,tests/web/artifact-storage-clear.test.cjs,16,reviewed-selector,LAP-011 clearing site data retires a scheduled save,False,LAP-011
+MAP-f57d9dffcb66,L4,reviewed implementation,tests/web/artifact-storage-clear.test.cjs,30,reviewed-selector,LAP-011 server revocation wins before the other tab retires,False,LAP-011
 MAP-44f608a7c4fa,L4,reviewed implementation,tests/web/design-recovery.test.cjs,7,reviewed-selector,DFR-003,False,DFR-003
 MAP-60e68185ef5d,L4,Browser,tests/web/full-input.test.cjs,35,reviewed-selector,Diff file cards and independent hunks at ,False,DTV-003
 MAP-e9c53ab15ef5,L4,reviewed implementation,tests/web/live-pending.test.cjs,4,reviewed-selector,LPV003,False,LPV-003

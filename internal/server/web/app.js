@@ -98,6 +98,7 @@
   var BASE = typeof window !== 'undefined' && typeof window.GTMUX_WEB_BASE === 'string'
     ? window.GTMUX_WEB_BASE
     : (location.pathname || '/').replace(/\/index\.html$/, '').replace(/\/+$/, '');
+  var COMPOSE_GENERATION_KEY = 'gtmux.compose-generation:' + BASE;
   function authHeaders() { return token ? {Authorization: 'Bearer ' + token} : {}; }
   function api(path, opts) {
     if (/^\/api\/(?:session\/)?transcript\?/.test(path)) path += '&context=1';
@@ -1679,31 +1680,52 @@
   }
 
   var composeCache = null, composeAttachmentSeq = 0;
+  // An explicit workspace purge (including a site clear) ends all old writers,
+  // even if the browser subsequently pairs again with the same credential.
+  function composeGeneration() {
+    try {
+      if (!token || localStorage.getItem(TOKEN_KEY) !== token) return null;
+      var generation = localStorage.getItem(COMPOSE_GENERATION_KEY);
+      if (!generation) {
+        generation = newSendId();
+        localStorage.setItem(COMPOSE_GENERATION_KEY, generation);
+      }
+      return generation;
+    } catch (e) { return null; }
+  }
   function composeNamespace() {
     var one = 2166136261, two = 5381, value = token || 'anonymous';
     for (var i = 0; i < value.length; i++) { one = Math.imul(one ^ value.charCodeAt(i), 16777619); two = Math.imul(two, 33) ^ value.charCodeAt(i); }
     return 'gtmux.compose:' + BASE + ':' + (one >>> 0).toString(36) + (two >>> 0).toString(36);
   }
   function mapOptions(agent,state) {
-    return {state:state,storageKey:composeNamespace().replace('gtmux.compose:','gtmux.bookmarks:'),bookmarkIcon:uiIcon('bookmark'),context:agent||{}};
+    var credential = token, generation = composeGeneration();
+    return {state:state,storageKey:composeNamespace().replace('gtmux.compose:','gtmux.bookmarks:'),bookmarkIcon:uiIcon('bookmark'),context:agent||{},
+      canSave: function () { return canWriteCompose(credential, generation); }};
   }
   function composeData() {
     var key = composeNamespace();
     if (composeCache && composeCache.key === key && !composeCache.revoked) return composeCache;
     var saved = {}; try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) {}
     if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
-    var data = {key: key, credential: token, drafts: Object.create(null), history: Object.create(null), recent: [], snippets: [], urls: new Set(), requests: new Set(), timer: null, revoked: false};
+    var data = {key: key, credential: token, generation: composeGeneration(), drafts: Object.create(null), history: Object.create(null), recent: [], snippets: [], urls: new Set(), requests: new Set(), timer: null, revoked: false};
     Object.keys(saved.drafts || {}).forEach(function (id) { var d = saved.drafts[id]; if (d && typeof d.text === 'string') data.drafts[id] = {text: d.text, files: [], version: 0, lastAttempt: d.attempt && typeof d.attempt.id === 'string' && typeof d.attempt.payload === 'string' ? d.attempt : null, error: [typeof d.error === 'string' ? d.error : '', d.fileCount ? T('Attachments need to be selected again after reloading.', '页面已重新加载，请重新选择附件。') : ''].filter(Boolean).join(' ')}; });
     Object.keys(saved.history || {}).forEach(function (scope) { if (Array.isArray(saved.history[scope])) data.history[scope] = saved.history[scope].filter(function (s) { return typeof s === 'string'; }).slice(0, 50); });
     data.recent = Array.isArray(saved.recent) ? saved.recent.filter(function (s) { return typeof s === 'string'; }).slice(0, 30) : [];
     data.snippets = Array.isArray(saved.snippets) ? saved.snippets.filter(function (s) { return typeof s === 'string'; }).slice(0, 30) : [];
     composeCache = data; return data;
   }
-  function saveCompose(data, immediate) {
+  function canWriteCompose(credential, generation) {
+    try {
+      return !!credential && !!generation && localStorage.getItem(TOKEN_KEY) === credential &&
+        localStorage.getItem(COMPOSE_GENERATION_KEY) === generation;
+    } catch (e) { return false; }
+  }
+  function saveCompose(data, immediate, replacement) {
     if (!data || data.revoked) return; clearTimeout(data.timer);
     function write() {
       data.timer = null;
-      if (data.revoked) return;
+      if (data.revoked || !canWriteCompose(replacement || data.credential, data.generation)) return;
       var drafts = Object.create(null); Object.keys(data.drafts).slice(-50).forEach(function (id) { var d = data.drafts[id]; if (d.text || d.files.length) drafts[id] = {text: d.text, fileCount: d.files.length, attempt: d.lastAttempt, error: d.error}; });
       try { localStorage.setItem(data.key, JSON.stringify({drafts: drafts, history: data.history, recent: data.recent, snippets: data.snippets})); } catch (e) {}
     }
@@ -1721,6 +1743,7 @@
   function clearSavedComposeData() {
     var composePrefix = 'gtmux.compose:' + BASE + ':', bookmarkPrefix = 'gtmux.bookmarks:' + BASE + ':';
     try {
+      localStorage.removeItem(COMPOSE_GENERATION_KEY);
       for (var i = localStorage.length - 1; i >= 0; i--) {
         var key = localStorage.key(i);
         if (key && (key.startsWith(composePrefix) || key.startsWith(bookmarkPrefix))) localStorage.removeItem(key);
@@ -4337,11 +4360,12 @@
     window.addEventListener('storage', function (event) {
       if (event.storageArea !== localStorage || (event.key !== TOKEN_KEY && event.key !== null)) return;
       const current = localStorage.getItem(TOKEN_KEY);
-      if (current === token) return;
+      if (current === token && (event.key !== null || !token)) return;
       // Finish a pending edit in its original namespace on a live switch.
       // A removal can follow an explicit clear and must never restore data.
-      if (token && current && event.oldValue === token && event.newValue === current && composeCache && composeCache.timer) {
-        saveCompose(composeCache, true);
+      if (token && current && event.oldValue === token && event.newValue === current &&
+          composeCache && composeCache.credential === token && composeCache.timer) {
+        saveCompose(composeCache, true, current);
       }
       if (token) pendingDocument = null;
       token = current;
