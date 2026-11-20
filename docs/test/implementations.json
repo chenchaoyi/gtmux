@@ -4061,7 +4061,8 @@
     "cases": [
       "SPL-003",
       "SPL-008",
-      "SPL-014"
+      "SPL-014",
+      "SPL-INCIDENT-004"
     ],
     "selectors": [
       "TestSPL003CapacityRefusesBeforeRPC",

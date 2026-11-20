@@ -296,6 +296,7 @@
 | SPL-003 | Admission reports capacity before submission. Uncertainty and explicit refusal remain distinct, with no automatic resend. |
 | SPL-004 | The unconfirmed claim prevents replay. The admissible Go request and the existing DSH request both settle; the over-capacity request is refused. Repeated legacy receive and Go retry reuse one accepted receipt and do not deliver the message again. |
 | SPL-018 | Claimed or accepted IDs are not authorized for resend. Fresh, unclaimed and explicitly refused IDs retain the early hold behavior. No submit or terminal mutation occurs. |
+| SPL-INCIDENT-004 | Input spool full is returned, the attempt remains not submitted, and native RPC is never invoked. |
 | SPL-005 | Both consumers agree on the selected directory. Valid legacy input and accepted receipts survive. Active generations retain pending and unknown authority. Unverified layout and stale operations refuse without creating a new request or changing a receipt. |
 | SPL-006 | Valid layouts and addressed v1 UTF-8 payloads remain readable. An invalid layout cannot create a lease or receipt. Damaged records retain their file, do not release addressed replay protection and never call the receiver. |
 | SPL-007 | A verified attachment can stay readable while write readiness is false. Startup, screenshot target resolution and doctor use one read-only predicate. The old handler cannot claim or publish an outcome after readiness is lost. |

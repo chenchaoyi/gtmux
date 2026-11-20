@@ -66913,7 +66913,7 @@
           "design": "SPL-004,SPL-012"
         }
       ],
-      "sha256": "50e693b4f22d43036ad77d97bb7fb915c66f93de9bc2d8b0e015c029df438c9d"
+      "sha256": "24b09228201fb1f4c718aeb394f7b92eed859a9d0002ce4f03e30d57a603a18a"
     },
     "internal/app/hqworkspace_input_replay_test.go": {
       "layer": "L2",
@@ -67037,7 +67037,7 @@
       "cases": [
         {
           "id": "MAP-ad8a60de1ec5",
-          "line": 17,
+          "line": 18,
           "kind": "reviewed-selector",
           "name": "TestSPL003CapacityRefusesBeforeRPC",
           "dynamic": false,
@@ -67046,7 +67046,7 @@
         },
         {
           "id": "MAP-ef188f69cbff",
-          "line": 37,
+          "line": 50,
           "kind": "reviewed-selector",
           "name": "TestSPL008CodexSeparatesRefusalFromUnresolvedSubmission",
           "dynamic": false,
@@ -67055,7 +67055,7 @@
         },
         {
           "id": "MAP-2139dd816fa1",
-          "line": 86,
+          "line": 99,
           "kind": "reviewed-selector",
           "name": "TestSPL014MissingCodexFrontendKeepsPriorOutcomeUnknown",
           "dynamic": false,
@@ -67063,7 +67063,7 @@
           "design": "SPL-003,SPL-008,SPL-014"
         }
       ],
-      "sha256": "945436fc426060cbca424046c134050a7c4f95167986095c3be433f53d2e814b"
+      "sha256": "7cd31e40e088f8630b1e5fc8db684fbdf12112f89906b79dca384d87757a2279"
     },
     "internal/app/send_transport_fallback_test.go": {
       "layer": "L2",
@@ -67096,7 +67096,7 @@
         },
         {
           "id": "MAP-5f88c87fb0f4",
-          "line": 127,
+          "line": 131,
           "kind": "reviewed-selector",
           "name": "TestSPL021InterruptedRetirementReconcilesExactTail",
           "dynamic": false,
@@ -67105,7 +67105,7 @@
         },
         {
           "id": "MAP-dc573b29470b",
-          "line": 215,
+          "line": 219,
           "kind": "reviewed-selector",
           "name": "TestSPL022CancelDuringParentSyncDoesNotPublish",
           "dynamic": false,
@@ -67114,7 +67114,7 @@
         },
         {
           "id": "MAP-c7858b7eb2d4",
-          "line": 192,
+          "line": 196,
           "kind": "reviewed-selector",
           "name": "TestSPL021FullArchiveShardRetainsAcceptance",
           "dynamic": false,
@@ -67122,7 +67122,7 @@
           "design": "SPL-020,SPL-021,SPL-022"
         }
       ],
-      "sha256": "f0fd4b6b945a10aa145cab4e90b548ae2565fcf06282c2cb8822007cace8a100"
+      "sha256": "b277210ff5fdb5a7265e5f8b6d51d26a5b75107d0d1ae000a779f3e8b6fc8ed5"
     },
     "internal/codexrpc/input_cancel_test.go": {
       "layer": "L2",

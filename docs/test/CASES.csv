@@ -70,9 +70,9 @@ MAP-c73e0f22dcfc,L2,reviewed implementation,internal/agentclient/input_layout_si
 MAP-e96c50c754e8,L2,reviewed implementation,internal/agentclient/input_legacy_pressure_test.go,11,reviewed-selector,TestLegacyInputPressurePreservesPriorDeliveries,False,SPL-INCIDENT-001
 MAP-12f9a5ee88fc,L2,reviewed implementation,internal/agentclient/input_records_test.go,13,reviewed-selector,TestSPL006DamagedRecordsRetainTheirReplayProtection,False,"SPL-006,SPL-012"
 MAP-8c806990051d,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,15,reviewed-selector,TestSPL020StableReceiptsAllowLongRunningAdmission,False,"SPL-020,SPL-021,SPL-022"
-MAP-5f88c87fb0f4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,127,reviewed-selector,TestSPL021InterruptedRetirementReconcilesExactTail,False,"SPL-020,SPL-021,SPL-022"
-MAP-dc573b29470b,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,215,reviewed-selector,TestSPL022CancelDuringParentSyncDoesNotPublish,False,"SPL-020,SPL-021,SPL-022"
-MAP-c7858b7eb2d4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,192,reviewed-selector,TestSPL021FullArchiveShardRetainsAcceptance,False,"SPL-020,SPL-021,SPL-022"
+MAP-5f88c87fb0f4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,131,reviewed-selector,TestSPL021InterruptedRetirementReconcilesExactTail,False,"SPL-020,SPL-021,SPL-022"
+MAP-dc573b29470b,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,219,reviewed-selector,TestSPL022CancelDuringParentSyncDoesNotPublish,False,"SPL-020,SPL-021,SPL-022"
+MAP-c7858b7eb2d4,L2,reviewed implementation,internal/agentclient/input_retirement_test.go,196,reviewed-selector,TestSPL021FullArchiveShardRetainsAcceptance,False,"SPL-020,SPL-021,SPL-022"
 MAP-84076d0f2108,L2,reviewed implementation,internal/agentclient/input_spool_health_test.go,11,reviewed-selector,TestInputSpoolHealthAgreesWithAdmission,False,SPL-INCIDENT-002
 MAP-98170c4a2ad3,L2,reviewed implementation,internal/agentclient/input_store_gate_test.go,18,reviewed-selector,TestSPL005TerminalInputStoreGate,False,"SPL-005,SPL-006,SPL-007,SPL-017"
 MAP-bb463252599b,L2,reviewed implementation,internal/agentclient/input_store_gate_test.go,423,reviewed-selector,TestSPL007VerifiedAttachmentChecksCurrentInputGeneration,False,"SPL-005,SPL-006,SPL-007,SPL-017"
@@ -1346,9 +1346,9 @@ MAP-cdced80f8629,L2,reviewed implementation,internal/dispatchbridge/pending_retr
 MAP-d7bcff6e0143,L2,reviewed implementation,internal/dispatchbridge/pending_retry_target_test.go,14,reviewed-selector,TestMSD006PendingRetryCannotRetarget,False,MSD-006
 MAP-95475cf33bca,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,19,reviewed-selector,TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity,False,SSI-002
 MAP-8691ea4c02c8,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,103,reviewed-selector,TestSSI002OrdinaryTextKeepsExistingQueueSemantics,False,SSI-002
-MAP-ad8a60de1ec5,L2,reviewed implementation,internal/dispatchbridge/spool_capacity_test.go,17,reviewed-selector,TestSPL003CapacityRefusesBeforeRPC,False,"SPL-003,SPL-008,SPL-014"
-MAP-ef188f69cbff,L2,reviewed implementation,internal/dispatchbridge/spool_capacity_test.go,37,reviewed-selector,TestSPL008CodexSeparatesRefusalFromUnresolvedSubmission,False,"SPL-003,SPL-008,SPL-014"
-MAP-2139dd816fa1,L2,reviewed implementation,internal/dispatchbridge/spool_capacity_test.go,86,reviewed-selector,TestSPL014MissingCodexFrontendKeepsPriorOutcomeUnknown,False,"SPL-003,SPL-008,SPL-014"
+MAP-ad8a60de1ec5,L2,reviewed implementation,internal/dispatchbridge/spool_capacity_test.go,18,reviewed-selector,TestSPL003CapacityRefusesBeforeRPC,False,"SPL-003,SPL-008,SPL-014"
+MAP-ef188f69cbff,L2,reviewed implementation,internal/dispatchbridge/spool_capacity_test.go,50,reviewed-selector,TestSPL008CodexSeparatesRefusalFromUnresolvedSubmission,False,"SPL-003,SPL-008,SPL-014"
+MAP-2139dd816fa1,L2,reviewed implementation,internal/dispatchbridge/spool_capacity_test.go,99,reviewed-selector,TestSPL014MissingCodexFrontendKeepsPriorOutcomeUnknown,False,"SPL-003,SPL-008,SPL-014"
 LEG-aa275da099d8,L1,Go core / CLI / server,internal/dispatchbridge/terminal_ready_test.go,12,Test,TestTerminalReadinessWaitsForItsNativeReceiverAndGrant,False,legacy-not-retrospectively-reviewed
 MAP-3f6433329ad1,L2,reviewed implementation,internal/dispatchbridge/trust_gate_test.go,10,reviewed-selector,TestWTR004VisibleTrustNamesBlockerBeforePostStartTransport,False,WTR-004
 MAP-cdcf768bbc4e,L2,reviewed implementation,internal/dispatchbridge/trust_gate_test.go,19,reviewed-selector,TestWTR004NormalTransportStillRequiredAndHistoricalTrustIgnored,False,WTR-004

@@ -44,8 +44,16 @@ func TestDSHTerminalReceiverSharesSpoolWithGo(t *testing.T) {
 		t.Fatal(err)
 	}
 	dir := agentclient.InputDir()
-	// Two in-flight records each reserve four names during receipt publication.
-	for n := 0; n < 4088; n++ {
+	usage, err := agentclient.InspectInputSpool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Leave one reservation for the Go send while the legacy receiver settles.
+	missing := usage.SlotLimit - usage.UsedSlots - usage.Reservation
+	if missing <= 0 || usage.Entries+missing >= usage.ScanLimit {
+		t.Fatalf("cannot reserve the last operation: %+v", usage)
+	}
+	for n := range missing {
 		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("foreign-%d", n)), nil, 0600); err != nil {
 			t.Fatal(err)
 		}
