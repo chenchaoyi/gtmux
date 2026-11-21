@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, self-review",
     "date": "2026-11-21",
     "decision": "Protect managed ownership without granting input from an expired heartbeat; recover only when independent receipts prove the legacy index belongs to another pane.",
-    "notes": "Reviewed the installed incident shape and the shared publication lease. Use the real store, fake process and terminal probes, and a synthetic HOME. Cover missing and unverified evidence plus recovery after a partial write. The definite writer of the historical incident remains unknown. These cases do not certify deployed UI or production changes."
+    "notes": "Reviewed the installed incident shape and the shared publication lease. Use the real store, fake process and terminal probes, and a synthetic HOME. Cover missing and unverified evidence plus recovery after a partial write. The definite writer of the historical incident remains unknown. These cases do not certify deployed UI or production changes. Checked the existing relocation behavior before adding CPI-004. A historical pointer at a vacated location must not reserve it after the original instance has published a strictly verified replacement location. A partial relocation is insufficient."
   },
   "cases": [
     {
@@ -40,7 +40,18 @@
       "planned_files": [
         "internal/resume/frontend_cross_pane_index_test.go"
       ]
+    },
+    {
+      "id": "CPI-004",
+      "layer": "L2",
+      "description": "Legacy admission can reuse a positively vacated Codex layout address",
+      "setup": "Synthetic managed frontend with the existing tmux relocation fixture, and a new legacy thread attempting to write at the old address.",
+      "action": "Move the original frontend, inject a failure before the destination index write, then complete relocation and retry the legacy writer.",
+      "expected": "The old address remains guarded during partial relocation. The new thread can use it after the managed frontend is strictly verified at the new address with a matching committed index. The original frontend keeps live identity at its new address.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_index_test.go"
+      ]
     }
   ],
-  "seal": "5f11934b08f2cd34f06d6365b46076a606006f40f81f76ba058c3898a338cb9a"
+  "seal": "018054f33a9f22072d3dc0488ad8295693df2884bc8676a0f0f77df382ce929f"
 }
