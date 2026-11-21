@@ -1,0 +1,25 @@
+{
+  "id": "hq-wake-positive-refusal-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; design self-review",
+    "date": "2026-11-21",
+    "decision": "Test the explicit attempt refusal contract in the existing producer fixtures",
+    "notes": "Older fixtures used a state enum alone. The driver now must positively attest that input was never submitted to permit safe retirement or retry."
+  },
+  "cases": [
+    {
+      "id": "HWA-011",
+      "layer": "L2",
+      "description": "A positively unsent claimed generation yields to an unclaimed new keyed update",
+      "setup": "Reuse the early deadline and producer update fixtures with the transport's explicit not-submitted report and known transient reason.",
+      "action": "Update a keyed value during a refused attempt over the shared input lock.",
+      "expected": "The newer unclaimed generation retains its original deadline and remains eligible; a stale generation never overwrites or replays into it.",
+      "planned_files": [
+        "internal/hqnudge/autorecovery_test.go",
+        "internal/hqnudge/native_recovery_test.go"
+      ]
+    }
+  ],
+  "seal": "e99bc1dd29a907749ecf78f5c2babfe47c8aff40516252e3b57712bd50ee95b1"
+}
