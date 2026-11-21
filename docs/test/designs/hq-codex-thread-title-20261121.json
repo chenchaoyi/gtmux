@@ -25,7 +25,7 @@
       "description": "Only the authoritative stamped HQ pane can seed a missing title using the Codex protocol",
       "setup": "Use a pane snapshot with an exact pane ID, root PID, TTY and scoped HQ stamp. Use a synthetic verified control connection for thread metadata and name responses.",
       "action": "Recheck role and current target, initialize the connection, read the exact thread without turns, and request its default title if still unnamed.",
-      "expected": "The supported name request contains the exact ID and the title gtmux HQ. The acknowledgement precedes publication. A current user name is returned intact. Changed pane identity, foreign home or backend, wrong thread, a lost guard, and RPC failure grant no successful default name. No prompt or resume request is issued.",
+      "expected": "The supported name request contains the exact ID and title. The acknowledgement precedes publication. A current user name is returned intact. Changed pane identity, foreign home or backend, wrong thread, a lost guard, and RPC failure grant no successful default name. No prompt or resume request is issued.",
       "planned_files": [
         "internal/codexbridge/hq_title_test.go",
         "internal/codexrpc/thread_name_test.go"
@@ -43,5 +43,5 @@
       ]
     }
   ],
-  "seal": "04b8c818187eb0121a1fa1d4df9305a35a32a3c8ed76998c02463f61a681dbf5"
+  "seal": "f290e8de2e6fff3733b364a856dcdafeaf6599484b0f6aa293064e80687617b7"
 }
