@@ -1,0 +1,47 @@
+{
+  "id": "hq-wake-attempt-boundaries-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; design self-review",
+    "date": "2026-11-21",
+    "decision": "Require positive proof before automatic retry and exercise rotation identity drift",
+    "notes": "Fake time and transport, isolated HOME, no service restart or live tmux/socket. Actual receiver acknowledgement is weaker than an independent new-turn or delivery event."
+  },
+  "cases": [
+    {
+      "id": "HWA-006",
+      "layer": "L2",
+      "description": "Positively refused transient input gets a durable bounded retry",
+      "setup": "Use a fake clock and native driver. Return explicit not-submitted transport evidence twice, then hit the refusal budget; include a terminal ambiguous response and stale/mismatched identity.",
+      "action": "Drain repeatedly before and after each backoff deadline, reconstruct the drainer over the same disk state, and count submissions for the same generation.",
+      "expected": "The generation ID stays stable while only a positively unsent attempt can use a fresh transport-attempt ID. No early dispatch, at most three known-unsent attempts, final exhaustion is retained and visible. Unknown and identity failures never submit again.",
+      "planned_files": [
+        "internal/hqnudge/wake_retry_test.go"
+      ]
+    },
+    {
+      "id": "HWA-007",
+      "layer": "L2",
+      "description": "A legacy wake with uncertain submission is retained without repaste",
+      "setup": "Synthetic HOME and fake legacy pane spanning an initially clean composer, a real or concurrently added draft, copy mode, unreadable and unknown identity. Model a missing acknowledgement, a late exact receipt, and restart after a mutation boundary.",
+      "action": "Drain, supply exact proof or ambiguous state, then drain again with independent pending work.",
+      "expected": "The uncertain original is never pasted twice. An exact matching receipt can settle without typing. Safe Enter-only behavior is limited to a positively matching own draft, with bounded retries and recheck. Real drafts, unready or unidentifiable targets receive no input.",
+      "planned_files": [
+        "internal/hqnudge/hqnudge_test.go",
+        "internal/hqnudge/wake_retry_test.go"
+      ]
+    },
+    {
+      "id": "HWA-008",
+      "layer": "L2",
+      "description": "A changed rotation successor ends in an independent failure without another reset",
+      "setup": "An exact fake HQ target with a sent reservation and two successive differing successor IDs across quota/turn-boundary checks.",
+      "action": "Advance the first observed successor, then supply the second and replay the old request predicate.",
+      "expected": "A receiver/start observation does not confirm durable handoff. Changed successor is reported independently, one reset at most, stale retry is inert.",
+      "planned_files": [
+        "internal/hq/wake_rotation_regression_test.go"
+      ]
+    }
+  ],
+  "seal": "bb47da1f9158daf430abcf36a2550d4a0d19e0008d7d8748b4babf0c42b7d320"
+}

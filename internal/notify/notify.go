@@ -48,24 +48,27 @@ type request struct {
 // any error (no HOME, unwritable dir) is swallowed — a hook must never fail a turn.
 var desktopNotifications = func() bool { return hostplatform.Current().DesktopNotifications }
 
-func Send(o Options) {
+func Send(o Options) { TrySend(o) }
+
+// TrySend reports admission to the desktop queue; presentation is external.
+func TrySend(o Options) bool {
 	if !desktopNotifications() {
-		return
+		return false
 	}
 	if state.Home() == "" {
-		return
+		return false
 	}
 	lease := queueLease()
 	if lease == nil {
-		return
+		return false
 	} // bounded contention; a hook never waits for the app
 	defer lease.Close()
 	dir := state.NotifyDir()
 	if err := state.MkdirAll(dir, 0700); err != nil {
-		return
+		return false
 	}
 	if !pruneQueue(dir, time.Now()) {
-		return
+		return false
 	}
 	data, err := json.Marshal(request{
 		Kind:     o.Kind,
@@ -78,17 +81,19 @@ func Send(o Options) {
 		TS:       time.Now().Unix(),
 	})
 	if err != nil {
-		return
+		return false
 	}
 	name := fmt.Sprintf("%d-%s.json", time.Now().UnixNano(), sanitize(o.Pane))
 	final := filepath.Join(dir, name)
 	tmp := filepath.Join(dir, "."+name+".tmp")
 	if err := state.WriteFile(tmp, data, 0o600); err != nil {
-		return
+		return false
 	}
 	if err := os.Rename(tmp, final); err != nil { // atomic publish into the watched dir
 		_ = os.Remove(tmp)
+		return false
 	}
+	return true
 }
 
 // sanitize makes a pane id (e.g. "%12") safe for a filename.

@@ -19,7 +19,10 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
-const triageFixtureSession = "f11ef000-dad0-4f01-9000-000000000016"
+const (
+	triageFixtureSession = "f11ef000-dad0-4f01-9000-000000000016"
+	triageHQConversation = "triage-hq-conversation"
+)
 
 func TestWorkspaceTriageCLI(t *testing.T) {
 	switch os.Getenv("GTMUX_TRIAGE_FIXTURE") {
@@ -46,10 +49,8 @@ func TestWorkspaceTriageCLI(t *testing.T) {
 		t.Fatal(pane, err)
 	}
 	hqpane.Stamp(pane)
-	if err := state.WriteMarker(state.ActivePath(pane), "triage-hq-conversation"); err != nil {
-		t.Fatal(err)
-	}
 	waitWorkspaceFixture(t, pane, func() bool { return strings.Contains(tmux.CapturePane(pane), "❯") })
+	bindIdleWorkspaceFixture(t, pane, triageHQConversation)
 	worker, err := tmux.Run("new-session", "-d", "-s", "triage-worker", "-c", r.home, "-P", "-F", "#{pane_id}", "sleep 180")
 	if err != nil {
 		t.Fatal(worker, err)
@@ -163,7 +164,7 @@ func TestWorkspaceTriageCLI(t *testing.T) {
 	}
 	var q hqworkspace.Reconciliation
 	r.action(t, pane, workspaceAction{Op: "claim", ObservationID: stop.ID}, true, &q)
-	if q.Owner != "::triage-hq-conversation" || read().Reconciliations[stop.ID].State != "leased" || len(read().Matters) != 0 {
+	if q.Owner != "::"+triageHQConversation || read().Reconciliations[stop.ID].State != "leased" || len(read().Matters) != 0 {
 		t.Fatal("claim is not the exact verified HQ pickup", q)
 	}
 	r.action(t, pane, workspaceAction{Op: "assess", ID: "generic", ObservationID: stop.ID, Generation: q.Generation, Decision: "noted", ReviewRef: stop.Ref, Body: "Read"}, false, nil)
@@ -194,43 +195,45 @@ func runTriageFixtureHQ(t *testing.T) {
 			return
 		}
 		line := scan.Text()
-		if strings.HasPrefix(line, "{") {
-			var command workspaceFixtureCommand
-			if err := json.Unmarshal([]byte(line), &command); err != nil {
-				t.Fatal(err)
+		workspaceFixtureTurn(t, triageHQConversation, func() {
+			if strings.HasPrefix(line, "{") {
+				var command workspaceFixtureCommand
+				if err := json.Unmarshal([]byte(line), &command); err != nil {
+					t.Fatal(err)
+				}
+				body, err := json.Marshal(command.Action)
+				if err != nil {
+					t.Fatal(err)
+				}
+				code, raw := goalCLI(t, string(body), "hq", "workspace", "act", "--stdin", "--json")
+				output, err := json.Marshal(workspaceFixtureResult{Code: code, Output: raw})
+				if err != nil {
+					t.Fatal(err)
+				}
+				workspaceReplayWrite(t, "cli-result-"+strconv.Itoa(command.ID), output)
+			} else if strings.Contains(line, workspaceContinuationWake) {
+				code, delta := goalCLI(t, "", "events", "--since-seq", "0", "--json")
+				if code != 0 {
+					t.Fatal(code, delta)
+				}
+				workspaceReplayWrite(t, "triage-cli-event-delta", []byte(delta))
+				code, raw := goalCLI(t, "", "hq", "workspace", "reconcile", "--json")
+				if code != 0 {
+					t.Fatal(code, raw)
+				}
+				// The terminal's completed read is independent of a transport audit
+				// arriving after the terminal has started handling the wake.
+				f, err := os.OpenFile(filepath.Join(state.Home(), "triage-terminal-wakes"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, err = fmt.Fprintln(f, line)
+				closeErr := f.Close()
+				if err != nil || closeErr != nil {
+					t.Fatal(err, closeErr)
+				}
+				workspaceReplayWrite(t, "triage-cli-read", []byte(raw))
 			}
-			body, err := json.Marshal(command.Action)
-			if err != nil {
-				t.Fatal(err)
-			}
-			code, raw := goalCLI(t, string(body), "hq", "workspace", "act", "--stdin", "--json")
-			output, err := json.Marshal(workspaceFixtureResult{Code: code, Output: raw})
-			if err != nil {
-				t.Fatal(err)
-			}
-			workspaceReplayWrite(t, "cli-result-"+strconv.Itoa(command.ID), output)
-		} else if strings.Contains(line, workspaceContinuationWake) {
-			code, delta := goalCLI(t, "", "events", "--since-seq", "0", "--json")
-			if code != 0 {
-				t.Fatal(code, delta)
-			}
-			workspaceReplayWrite(t, "triage-cli-event-delta", []byte(delta))
-			code, raw := goalCLI(t, "", "hq", "workspace", "reconcile", "--json")
-			if code != 0 {
-				t.Fatal(code, raw)
-			}
-			// The terminal's completed read is independent of a transport audit
-			// arriving after the terminal has started handling the wake.
-			f, err := os.OpenFile(filepath.Join(state.Home(), "triage-terminal-wakes"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-			if err != nil {
-				t.Fatal(err)
-			}
-			_, err = fmt.Fprintln(f, line)
-			closeErr := f.Close()
-			if err != nil || closeErr != nil {
-				t.Fatal(err, closeErr)
-			}
-			workspaceReplayWrite(t, "triage-cli-read", []byte(raw))
-		}
+		})
 	}
 }

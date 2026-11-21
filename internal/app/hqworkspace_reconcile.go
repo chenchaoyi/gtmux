@@ -280,6 +280,11 @@ func scheduleWorkspaceReconciliation() {
 	workspaceGoalCheckStamp = stamp
 	workspaceReconciliationRunner.start(func() {
 		s := workspaceStore()
+		if snapshot, err := s.Read(); err == nil {
+			workspaceWakeDeadlines(snapshot, now)
+		} else {
+			diag.ReportStoreFailure("hq-wake-deadline", err)
+		}
 		if err := ingestWorkspaceObservations(s, now); err != nil {
 			diag.ReportStoreFailure("hq-reconciliation", err)
 			return

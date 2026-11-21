@@ -67,9 +67,6 @@ func TestWorkspaceContinuationIncidentReplay(t *testing.T) {
 				t.Fatal("private tmux", err, paneOut)
 			}
 			pane := strings.TrimSpace(paneOut)
-			if err := state.WriteMarker(state.ActivePath(pane), "hq-fixture"); err != nil {
-				t.Fatal(err)
-			}
 			wait := func(limit time.Duration, ready func() bool) {
 				t.Helper()
 				deadline := time.Now().Add(limit)
@@ -81,6 +78,7 @@ func TestWorkspaceContinuationIncidentReplay(t *testing.T) {
 				}
 			}
 			wait(3*time.Second, func() bool { return strings.Contains(tmux.CapturePane(pane), "❯") })
+			bindIdleWorkspaceFixture(t, pane, "hq-fixture")
 			if mode == "quiet" {
 				if code, out := goalCLI(t, "", "quiet", "on"); code != 0 {
 					t.Fatal(code, out)
@@ -264,10 +262,12 @@ func workspaceContinuationFixture(t *testing.T) {
 			fmt.Println("First wake received without a claim")
 			continue
 		}
-		for _, id := range []string{fmt.Sprintf("event-%d", replayStopSequence), "relay-formal-review"} {
-			var claim hqworkspace.Reconciliation
-			workspaceFixtureAction(t, workspaceAction{Op: "claim", ObservationID: id}, &claim)
-			fmt.Printf("Claimed %s at generation %d\n", id, claim.Generation)
-		}
+		workspaceFixtureTurn(t, "hq-fixture", func() {
+			for _, id := range []string{fmt.Sprintf("event-%d", replayStopSequence), "relay-formal-review"} {
+				var claim hqworkspace.Reconciliation
+				workspaceFixtureAction(t, workspaceAction{Op: "claim", ObservationID: id}, &claim)
+				fmt.Printf("Claimed %s at generation %d\n", id, claim.Generation)
+			}
+		})
 	}
 }

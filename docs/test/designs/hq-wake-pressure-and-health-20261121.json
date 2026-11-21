@@ -1,0 +1,47 @@
+{
+  "id": "hq-wake-pressure-and-health-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; design self-review",
+    "date": "2026-11-21",
+    "decision": "Make pressure and blocked delivery independently observable and keep workbench completion separate",
+    "notes": "Use private temporary state and injected time. An accepted native call or a paste is weaker than a confirmed conversation delivery. The desktop proof is a request in the existing independent notification channel, not OS presentation."
+  },
+  "cases": [
+    {
+      "id": "HWA-003",
+      "layer": "L2",
+      "description": "A lower-priority newcomer cannot evict a full queue of decisions",
+      "setup": "Fill 200 synthetic decision-priority entries with a fake clock. Capture the exact queued names and occurrence of pressure.",
+      "action": "Enqueue a standing warning, then an equally ranked new decision.",
+      "expected": "The warning is explicitly rejected and all prior decision entries survive. An equal-priority new entry may replace the oldest of its rank with a truthful eviction audit. Both pressure outcomes have distinct stages.",
+      "planned_files": [
+        "internal/hqnudge/pressure_health_test.go"
+      ]
+    },
+    {
+      "id": "HWA-004",
+      "layer": "L2",
+      "description": "Wake health reports independently and only clears after recovery evidence",
+      "setup": "Use isolated HOME and a fake clock with an old down marker, exact staged conflict, no HQ or healthy pane states, and a later independently confirmed delivery.",
+      "action": "Evaluate duplicate, changed, overdue and recovered states, and inspect important journal and desktop request boundary.",
+      "expected": "First, changed and continuing reasons alert at bounded cadence even with old down marker. Historical uncertainty remains separate. Pending work, quiet mode or absence of HQ cannot suppress the independent deadline alarm. Recovery requires an exact positive receipt or the tracked condition being conclusively settled.",
+      "planned_files": [
+        "internal/hq/wake_autorecovery_test.go",
+        "internal/hqnudge/pressure_health_test.go"
+      ]
+    },
+    {
+      "id": "HWA-005",
+      "layer": "L2",
+      "description": "An overdue workbench goal remains a durable obligation independent of wake admission",
+      "setup": "An isolated workbench and scheduler with a fake time and an existing scheduled goal due without confirmed handling.",
+      "action": "Evaluate the overdue goal repeated times with no wake/delivery and after the ordinary workbench resolution.",
+      "expected": "Deadline and out-of-band report share the goal follow-up ID. Quiet/inactive HQ does not stop that report. Request handling stays open until workbench outcome exists and recovery emits no duplicate alert.",
+      "planned_files": [
+        "internal/app/hq_wake_deadline_test.go"
+      ]
+    }
+  ],
+  "seal": "57c2c67a45b4d084156e65782fa94449b4112888b172ca1eb9710ce8b89e1c18"
+}

@@ -207,95 +207,46 @@ wake lines themselves remain payload-rich (self-contained) in all cases.
 - **THEN** the wake line is still injected and carries a pull-overdue hint with
   the catch-up command
 
-### Requirement: Wake delivery is acknowledged, retried, and never silently dropped
+### Requirement: Wake delivery records positive evidence and protects uncertain input
 
-A wake SHALL be removed from the delivery queue ONLY after its delivery is confirmed.
-Delivery SHALL paste the line and submit it as separate steps (a paste buffer, then a
-named Enter key). Confirmation SHALL be layered: when the HQ pane hosts a
-hook-equipped agent, a prompt-submit event on that pane containing the batch's
-identifier SHALL confirm the delivery deterministically (the driver receipt), with
-the screen read retained as the fallback — reading the pane's capture (including
-scrollback margin) for the batch's identifier. Any error from the paste or the
-submit, and any unconfirmed read, SHALL return the batch to the queue for a later
-attempt. Each unconfirmed attempt SHALL be recorded with the identifier and line that
-reached the pane and the entries it carried, for 15 minutes. Before claiming a new batch,
-the drain SHALL ask about each recorded attempt's OWN identifier — its receipt since that
-attempt, then the screen — and SHALL close as delivered, without pasting, the entries of an
-attempt either shows arrived, and only those: a busy agent submits queued input at its
-next tool boundary, after the ack has looked, and the entry's next batch may carry a
-different identifier (a new wake joined it, a line was revalidated, the held count moved).
-An entry no evidence confirms SHALL be pasted again, with whatever joined it. A queue entry
-claimed by a drainer that never completed (a claim older
-than 60 seconds) SHALL be reclaimed by the next drain.
+Wake producers SHALL queue a generation before attempting to submit it. A native
+receiver may acknowledge acceptance before evidence of a new turn or prompt ingestion.
+A Codex acknowledgement with a bound receipt SHALL be observed independently. Only
+the exact prompt tied to the expected new turn in the original transcript confirms
+start and delivery. Unconfirmed receipts raise an independent notice. Full or expired
+observation windows SHALL archive exact receiver evidence without blocking new wakes.
+The private archive uses two bounded segments. Recovering a retained receipt SHALL
+reuse any exact delivery audit already in the journal. A confirmed
+wake SHALL NOT update workspace completion without the workspace's own evidence.
+The terminal route SHALL confirm the current HQ identity and safe composer before
+Paste, verify its exact draft over two frames, and issue Enter separately. A live user
+draft, busy turn, copy mode, unreadable composer, or unverified target SHALL hold
+automatic terminal input.
 
-A delivery whose paste landed but whose submit did not — the driver receipt reports
-the payload unsubmitted, or the screen shows the batch identifier in the DRAFT
-region — SHALL be handled as a distinct state: the next drain SHALL re-send ONLY the
-Enter for that claim, after confirming the draft still holds that batch's text, and
-SHALL NOT re-paste the payload or mint a new identifier. This bounds the
-swallowed-Enter failure to one fast-drain interval instead of blocking the channel
-behind its own stranded paste until the stale-queue degradation fires.
+A restart, transport error, or absent confirmation SHALL preserve the original intake
+evidence without re-pasting or classifying the result as delivery or discard. A late
+driver or screen receipt can confirm only the original batch. The legacy receipt
+path SHALL honor native protected slots and shall never replace an occupied claim.
 
-Every terminal outcome SHALL be journaled: a confirmed delivery as
-`gtmux:audit:wake-delivered` (batch id + payload), and every drop — eviction, an
-exhausted ack budget, a revalidation whose premise died — as
-`gtmux:audit:wake-dropped` with its reason. "Never silently dropped" is thereby a
-journal property, not only a queue property: the bounded, ANNOUNCED loss the ack
-budget permits is announced in the stream, not merely by the degradation counter.
+Only a positive not-submitted proof, a retryable condition and the same verified
+target authorize automatic native retry. A persisted pre-upgrade refusal with
+no verified original target remains held with its original evidence. The original
+generation identity is stable.
+After 5 and 15 seconds of backoff, the third known refusal exhausts the budget and
+retains the payload with a distinct reason. A deliberate refusal and an unknown
+submission each remain visible to independent diagnostics.
 
-Delivery SHALL NOT begin while the HQ pane's foreground is a bare shell: a shell
-prompt has no input box, so the draft guard reads it as empty, and a queue drained
-there lands on the shell, unconfirmable, before the agent has started. A drain that
-finds a shell in the pane SHALL leave every entry queued and try again on the next
-tick; an unknown foreground SHALL proceed as before.
+#### Scenario: Restart after uncertain input
 
-#### Scenario: HQ was just started in a fresh pane
+- **WHEN** a drainer stopped after taking a claim and a verified outcome is unavailable
+- **THEN** recovery keeps the claim for confirmation and refuses automatic replay.
+  An independent generation can proceed once storage and target guards are satisfied.
 
-- **WHEN** `gtmux hq` stamps a pane and types the agent command, and a backlog of
-  wakes is queued
-- **THEN** no wake is typed until the agent (not the shell) holds the pane; the
-  backlog lands after the agent's first frame, and nothing is dropped as unconfirmed
-  (measured 2026-09-16 19:56: four batches pasted into bash eight seconds before the
-  agent's SessionStart, all four dropped)
+#### Scenario: A batch that arrived late is settled without input
 
-#### Scenario: A failed send keeps the nudge
-
-- **WHEN** the paste or the Enter of a wake batch returns an error
-- **THEN** the batch is returned to the queue and delivered by a later drain, and no
-  queue entry is deleted
-
-#### Scenario: An unconfirmed delivery is retried
-
-- **WHEN** a wake batch is pasted and submitted but its identifier does not appear in the
-  pane capture
-- **THEN** the batch is returned to the queue and re-attempted on the next drain
-
-#### Scenario: A batch that arrived late is not pasted again
-
-- **WHEN** a requeued batch's receipt arrives, or its identifier shows in the history,
-  before the next drain
-- **THEN** that drain closes it as delivered and pastes nothing
-
-#### Scenario: A new wake joins between attempts
-
-- **WHEN** wake A's attempt was unconfirmed, wake B is queued, and then A's late receipt
-  (or A's identifier in the history) shows A arrived
-- **THEN** the next drain closes A without pasting it and pastes B alone
-
-#### Scenario: An entry that can never be confirmed does not loop forever
-
-- **WHEN** a batch is pasted and submitted successfully but its delivery is never
-  confirmed, drain after drain
-- **THEN** it is re-sent at most 3 times in total (each carrying the same identifier)
-  and then dropped, with the degradation raised and a `gtmux:audit:wake-dropped`
-  record written — a send that ERRORS instead (nothing reached the pane) keeps
-  retrying without limit, since it risks no duplicate
-
-#### Scenario: A crashed drainer's batch is reclaimed
-
-- **WHEN** a drainer claims a queue entry and dies before delivering it
-- **THEN** a later drain reclaims the claim once it is older than 60 seconds and delivers
-  the entry
+- **WHEN** a retained batch's exact receipt arrives and its identities still match
+- **THEN** the receipt settles only the original generation. A newer unrelated entry
+  may be delivered on its own.
 
 #### Scenario: The HQ session's own submit event acks the wake
 
@@ -308,9 +259,10 @@ tick; an unknown foreground SHALL proceed as before.
 
 - **WHEN** a wake batch's paste landed in the HQ composer but its Enter was swallowed
   (no submit event; the identifier sits in the draft region)
-- **THEN** the next fast drain re-sends only Enter after confirming the draft holds
-  exactly that batch, the identifier is unchanged, and the payload is never pasted a
-  second time — the channel is not blocked until the stale-queue degradation
+- **THEN** after backoff the drain can send Enter alone if the same target and exact
+  draft still match in two frames. The intent is persisted before Enter. Up to two
+  repair Enters are allowed for a demonstrably intact draft. A changed draft, target,
+  or unknown submission is preserved for receipt and never pasted again.
 
 #### Scenario: An unedited stranded batch is repaired at any width
 
@@ -359,27 +311,29 @@ recognizable, a loss is not acceptable.
 
 ### Requirement: A broken wake channel escalates out of band
 
-Consecutive unconfirmed deliveries SHALL be counted, and reaching the failure limit
-(3) SHALL raise a CRITICAL `wake-degraded` degradation exactly once per transition into
-the degraded state: a control record at important severity appended to the session
-JOURNAL (so the pull side actually carries it — a record written only to the feed spool
-reaches no reader, the measured #647 failure shape), a best-effort HQ wake line, and a
-desktop notification — the last because the alarm for a broken wake channel MUST NOT
-depend on that channel. A confirmed delivery SHALL reset the counter, and recovery
-SHALL NOT re-alert.
+A sustained stall, known recovery conflict, capacity refusal, storage error or
+repeated unconfirmed delivery SHALL be visible in a durable diagnostic and through
+the existing independent owner desktop notice channel when available. A notice
+does not depend on a running HQ, a working wake transport or the quiet setting.
+Alert state SHALL be scoped by reason and repeated on a bounded cadence. Verified
+recovery evidence clears the applicable condition. Historical uncertain batches
+remain visible separately. The workspace SHALL retain overdue matters until
+its own evidence settles them; its first overdue notice is independent of wake
+admission.
 
 #### Scenario: The wake channel breaks
 
 - **WHEN** three consecutive wake deliveries fail to confirm
 - **THEN** a `wake-degraded` control record at important severity is appended to the
   journal — visible to `gtmux events` and counted toward the consumption debt — and a
-  desktop notification is posted, once
+  desktop notification is attempted with per-reason rate limiting
 
-#### Scenario: Recovery is silent
+#### Scenario: Only verified recovery clears its condition
 
-- **WHEN** a delivery confirms after a degradation was raised
-- **THEN** the failure counter resets and no further degradation alert is emitted until
-  the limit is reached again
+- **WHEN** the applicable storage or input check succeeds and independent evidence
+  confirms progress beyond the affected observation
+- **THEN** the corresponding notice clears. Unrelated outstanding evidence or an
+  unresolved workspace deadline keeps its own notice.
 
 ### Requirement: The HQ pane is resolved robustly, and a miss queues rather than drops
 
@@ -426,9 +380,11 @@ delivery by BOTH a line count (8) and a payload size (~800 chars — large enoug
 useful, small enough that an agent TUI renders it rather than folding it into a
 paste placeholder the ack could not read), and SHALL indicate that entries were held
 back. The queue SHALL
-be bounded (200 entries), evicting the lowest-priority oldest entry when full — a
-standing warning that will re-fire is preferred over a decision-dense wake that will not.
-Entries written by an earlier version SHALL remain drainable.
+be bounded (200 pending entries). At capacity, a newcomer ranked below every
+existing entry SHALL be refused and audited as queue-full. Other admissions may
+evict the oldest entry in the lowest occupied priority. Record a successful
+eviction only after removing the victim. Entries written by an earlier version
+SHALL remain drainable.
 
 #### Scenario: A decision-dense wake overtakes standing warnings
 
@@ -1144,6 +1100,14 @@ A queued unsent rotation SHALL persist one request-owned identity warning attemp
 - **AND** stale ticks, reason changes and reloads do not repeat the warning/reset or extend the original deadline
 
 ### Requirement: Persistent native claim incarnation evidence
+
+New keyed entries SHALL have a distinct physical incarnation. Producers may
+coalesce text in the still-pending generation while holding the queue write
+lock, preserving its due position and identity. A proven collision between
+the original claim and a privately owned parked leaf SHALL preserve both
+files, pin and intent evidence, and exclude that claim from recovery and new
+selection. Other due entries can proceed. Unreadable or unscoped evidence
+SHALL hold admission.
 Before publishing a native intent or attempting native input, the drainer SHALL create and verify a private same-inode hard-link anchor for each claim and synchronize the anchor directory. The durable intent SHALL retain exact anchor names, payload, delivery identity and observed generation metadata. A naturally unlinked and recreated claim cannot reuse the still-live original inode, independently of timestamp precision. Missing, foreign or unobservable anchors SHALL NOT authorize cleanup or input. Prepared/uncertain outcomes SHALL retain original evidence; known terminal cleanup SHALL retire only verified own references after its claim transition and remove the journal last. Pin admission SHALL stop at 1,600 retained references; recovery SHALL scan at most 200 intents and hold on overflow, with 128 KiB per evidence read. An unknown pre-intent orphan SHALL be retained rather than automatically replayed or removed. These checks apply under the cooperating-writer lease, not as atomic compare-and-unlink against arbitrary same-user replacement of every anchor and journal.
 
 #### Scenario: An uncertain parked batch loses its anchor
@@ -1151,3 +1115,13 @@ Before publishing a native intent or attempting native input, the drainer SHALL 
 - **WHEN** its retained anchor is missing or belongs to a different file
 - **THEN** recovery protects that exact claim slot without replaying or deleting original evidence
 - **AND** valid conflicting batches do not prevent genuinely independent entries from obtaining their own strict admission; malformed or unreadable intent holds the whole channel
+
+### Requirement: Attributable recovery conflicts preserve progress for independent wakes
+
+Recovery SHALL preserve old intent and pin evidence and protect the exact affected queue location. Recovery errors that cannot identify a safe scope SHALL hold new submissions. The producer SHALL give each new physical entry a unique incarnation while coalescing only an eligible unclaimed entry of the same key.
+
+#### Scenario: Two old incarnations collide during parking
+
+- **WHEN** two owned regular files with different identities occupy the known claim and its parked destination
+- **THEN** both remain and an independent due wake may be admitted
+- **AND** neither conflicting entry is replayed

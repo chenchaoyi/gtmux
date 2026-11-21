@@ -784,28 +784,121 @@
       "TestHRW015UncertainRestartRequiresItsRetainedAnchor"
     ]
   },
-  "internal/hqnudge/native_recovery_test.go": {
+  "internal/hqnudge/autorecovery_test.go": {
     "cases": [
-      "HRW-009",
-      "HRW-010"
+      "HWA-011"
     ],
     "selectors": [
-      "TestHRW009NativeOutcomeCrashCannotRebatchOldInput",
-      "TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer",
-      "TestHRW009JournalFailuresAndForeignReplacementHoldWithoutMutation",
-      "TestHRW010ClaimReturnPreservesForeignConflictAndInterruptedPublication",
-      "TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate"
+      "TestHWA002KeyedMergePreservesOnlyCurrentPendingIncarnation"
+    ]
+  },
+  "internal/hqnudge/autorecovery_review_test.go": {
+    "cases": [
+      "HWA-009",
+      "HWA-010"
+    ],
+    "selectors": [
+      "TestHWA009LateReceiptRespectsProtectedClaim",
+      "TestHWA010MixedRecoveryFaultHoldsAdmission"
+    ]
+  },
+  "internal/hqnudge/native_recovery_test.go": {
+    "cases": [
+      "HWA-011"
+    ],
+    "selectors": [
+      "TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer"
+    ]
+  },
+  "internal/hqnudge/pressure_health_test.go": {
+    "cases": [
+      "HWA-003",
+      "HWA-004"
+    ],
+    "selectors": [
+      "TestHWA003IncomingStandingWakeCannotEvictDecisions",
+      "TestHWA004ConflictNeedsCleanScanAndPositiveReceipt"
+    ]
+  },
+  "internal/hqnudge/hqnudge_test.go": {
+    "cases": [
+      "HWA-007"
+    ],
+    "selectors": [
+      "TestDrain_PasteErrorRetainsUnknownWithoutReplay",
+      "TestDrain_EnterErrorKeepsExactDraftForRepair",
+      "TestDrain_UnconfirmedAckNeverRepastes",
+      "TestDrain_UnconfirmedEntryPreservesItsHealthEvidence",
+      "TestDrain_SendErrorDoesNotBlockUnrelatedWork",
+      "TestReclaim_StrandedClaimHoldsWithoutReplaying",
+      "TestUnackableClaimIsRetainedWithoutFalseAudit",
+      "TestDrain_NewWakeDoesNotReplayUnconfirmedOldEntry",
+      "TestRepair_ExhaustedHandsBack",
+      "TestRepair_ExactBatch_IsSubmitted"
+    ]
+  },
+  "internal/hqnudge/wake_retry_test.go": {
+    "cases": [
+      "HWA-006",
+      "HWA-007"
+    ],
+    "selectors": [
+      "TestHWA006NativePositiveRefusalUsesDurableBoundedBackoff",
+      "TestHWA006UnknownAndChangedTargetNeverResubmit",
+      "TestHWA007GuardsPermitNoClientInput",
+      "TestHWA007CrashAfterLegacyEnterRetainsOriginal"
+    ]
+  },
+  "internal/hq/wake_rotation_regression_test.go": {
+    "cases": [
+      "HWA-008"
+    ],
+    "selectors": [
+      "TestHWA008ChangedSuccessorFailsIndependentlyWithoutSecondReset"
+    ]
+  },
+  "internal/hqnudge/wake_evidence_review_test.go": {
+    "cases": [
+      "HWA-014",
+      "HWA-015"
+    ],
+    "selectors": [
+      "TestHWA014AcceptedProofBudgetDoesNotFreezeAdmission",
+      "TestHWA015AcceptedProofCrashRetryKeepsOneDeliveryAudit"
+    ]
+  },
+  "internal/hqnudge/wake_storage_review_test.go": {
+    "cases": [
+      "HWA-017",
+      "HWA-018"
+    ],
+    "selectors": [
+      "TestHWA017UnboundLegacyRefusalDoesNotEnterNewTarget",
+      "TestHWA018QueueIOHealthSurvivesUntilVerifiedProgress"
+    ]
+  },
+  "internal/hqnudge/wake_evidence_test.go": {
+    "cases": [
+      "HWA-012"
+    ],
+    "selectors": [
+      "TestHWA012AcceptanceWaitsForIndependentProof"
+    ]
+  },
+  "internal/transcript/wake_evidence_test.go": {
+    "cases": [
+      "HWA-013"
+    ],
+    "selectors": [
+      "TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt"
     ]
   },
   "internal/hqnudge/rotation_priority_test.go": {
     "cases": [
-      "HRW-004",
-      "HRW-005",
-      "HRW-008"
+      "HWA-012"
     ],
     "selectors": [
       "TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority",
-      "TestHRW004RotationDoesNotSubmitOrRepairUserDraft",
       "TestHRW004ExactOwnStrandedRepairPrecedesReservation",
       "TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity",
       "TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource"
@@ -4176,16 +4269,23 @@
   },
   "internal/app/hqworkspace_continuation_test.go": {
     "cases": [
-      "HPC-002"
+      "HWA-016"
     ],
     "selectors": [
       "TestWorkspaceContinuationIncidentReplay"
     ]
   },
+  "internal/app/hq_wake_deadline_test.go": {
+    "cases": [
+      "HWA-005"
+    ],
+    "selectors": [
+      "TestHWA005DeadlineIsOwedUntilOriginalMatterSettles"
+    ]
+  },
   "internal/app/hqworkspace_continuation_cli_test.go": {
     "cases": [
-      "HPC-004",
-      "HPC-005"
+      "HWA-016"
     ],
     "selectors": [
       "TestWorkspaceDraftKeepsBothWakeQueues",
@@ -4320,7 +4420,7 @@
   },
   "internal/app/hqworkspace_triage_cli_test.go": {
     "cases": [
-      "HPT-003"
+      "HWA-019"
     ],
     "selectors": [
       "TestWorkspaceTriageCLI"
@@ -4579,6 +4679,14 @@
     "selectors": [
       "LAP-012 pending draft survives an early",
       "LAP-013 bookmarks remain usable without persistent"
+    ]
+  },
+  "internal/hq/wake_autorecovery_test.go": {
+    "cases": [
+      "HWA-004"
+    ],
+    "selectors": [
+      "TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter"
     ]
   },
   "internal/hq/board_shape_test.go": {

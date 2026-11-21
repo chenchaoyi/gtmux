@@ -1,0 +1,24 @@
+{
+  "id": "hq-wake-triage-fixture-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; exact PR CI failure review",
+    "date": "2026-11-21",
+    "decision": "Model the isolated triage supervisor's identity and lifecycle through the shared terminal fixture helpers",
+    "notes": "The failed exact PR CI passed the core wake and the other workspace suites. Preserve the triage test's private serve, copy-mode, simulated loss, draft, exact pickup and eventual handoff assertions."
+  },
+  "cases": [
+    {
+      "id": "HWA-019",
+      "layer": "L3",
+      "description": "Private triage supervisor receives the retried wake after copy mode and a real draft clear",
+      "setup": "Bind the private tmux supervisor's resume identity. Give it active lifecycle evidence only while an actual fixture turn is processing. Keep the isolated CLI service and its simulated wake loss.",
+      "action": "Run the existing triage flow through a worker hook, copy mode, a user draft, the actual workspace CLI read, and a verified handoff.",
+      "expected": "The initial held wake and the draft are protected. One terminal wake reaches the verified idle fixture after its deadline, exact ownership is retained, and no workspace authority is invented.",
+      "planned_files": [
+        "internal/app/hqworkspace_triage_cli_test.go"
+      ]
+    }
+  ],
+  "seal": "2fc264913ba007a18f9a5234b0feee97ab097dd9434c005c669b78850b1395a0"
+}

@@ -442,10 +442,11 @@ LEG-5641587aed04,L1,Go core / CLI / server,internal/app/hooksilence_test.go,26,T
 LEG-b54c9bdc958c,L1,Go core / CLI / server,internal/app/hooksilence_test.go,35,Test,TestAQuietPaneIsNotReported,False,legacy-not-retrospectively-reviewed
 LEG-19d6ceb43769,L1,Go core / CLI / server,internal/app/hooksilence_test.go,44,Test,TestARecentEventIsEnough,False,legacy-not-retrospectively-reviewed
 LEG-b4c53a66c7ba,L1,Go core / CLI / server,internal/app/hooksilence_test.go,56,Test,TestEventsReadGivesThePaneItsNewest,False,legacy-not-retrospectively-reviewed
+MAP-19a5906d1fd5,L2,reviewed implementation,internal/app/hq_wake_deadline_test.go,10,reviewed-selector,TestHWA005DeadlineIsOwedUntilOriginalMatterSettles,False,HWA-005
 LEG-22c10bb33192,L1,Go core / CLI / server,internal/app/hqmemory_row_test.go,30,Test,TestHQMemoryRowReadsItsThreeStates,False,legacy-not-retrospectively-reviewed
 LEG-7d78fb6a41eb,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,15,Test,TestStitchEarlierKeepsEachHQAgentsIdentity,False,legacy-not-retrospectively-reviewed
 LEG-150db10da0b7,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,45,Test,TestTranscriptOnlyStitchesSupervisorHistory,False,legacy-not-retrospectively-reviewed
-MAP-6c44c0313e74,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,305,reviewed-selector,TestWorkspaceDraftKeepsBothWakeQueues,False,"HPC-004,HPC-005"
+MAP-6c44c0313e74,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,334,reviewed-selector,TestWorkspaceDraftKeepsBothWakeQueues,False,"HPC-004,HPC-005"
 MAP-69d66d9f9a98,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,97,reviewed-selector,TestWorkspaceContinuationCLI,False,"HPC-004,HPC-005"
 MAP-0e82e0de8675,L3,reviewed implementation,internal/app/hqworkspace_continuation_test.go,23,reviewed-selector,TestWorkspaceContinuationIncidentReplay,False,HPC-002
 MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
@@ -486,7 +487,7 @@ LEG-a59c31c5a07b,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,186,
 LEG-b12010762948,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,194,Test,TestStructuredProgressDoesNotHideLaterPublicCommentary,False,legacy-not-retrospectively-reviewed
 LEG-ecada2e2e335,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,206,Test,TestWorkspaceDispatchCannotAdoptLaterOccupantOfItsOldPane,False,legacy-not-retrospectively-reviewed
 LEG-618dafffee1a,L1,Go core / CLI / server,internal/app/hqworkspace_test.go,226,Test,TestWorkspaceDeliveryDoesNotBlockFeedTickOrStartConcurrentWorkers,False,legacy-not-retrospectively-reviewed
-MAP-4472b7512a0d,L3,reviewed implementation,internal/app/hqworkspace_triage_cli_test.go,24,reviewed-selector,TestWorkspaceTriageCLI,False,HPT-003
+MAP-4472b7512a0d,L3,reviewed implementation,internal/app/hqworkspace_triage_cli_test.go,27,reviewed-selector,TestWorkspaceTriageCLI,False,HPT-003
 MAP-6ef74dd1c8b6,L3,reviewed implementation,internal/app/hqworkspace_triage_late_role_test.go,14,reviewed-selector,TestWorkspaceTriageLateWorkerCannotClaimSupervisorRole,False,HPT-005
 MAP-1fb5ea2421ed,L3,reviewed implementation,internal/app/hqworkspace_triage_role_test.go,18,reviewed-selector,TestWorkspaceTriageRoleAfterPaneReuse,False,HPT-004
 MAP-73814841a1bf,L2,reviewed implementation,internal/app/hqworkspace_triage_test.go,19,reviewed-selector,TestWorkspaceTriageIngestion,False,HPT-002
@@ -1968,6 +1969,8 @@ LEG-790dd88e839e,L1,Go core / CLI / server,internal/hq/unread_test.go,359,Test,T
 LEG-205875935d1a,L1,Go core / CLI / server,internal/hq/unread_test.go,380,Test,TestUnreadSensorNoOpWithoutASupervisor,False,legacy-not-retrospectively-reviewed
 LEG-a6531e827f1d,L1,Go core / CLI / server,internal/hq/unread_test.go,403,Test,TestConsumptionStatus,False,legacy-not-retrospectively-reviewed
 LEG-c5ecbd9a3fe3,L1,Go core / CLI / server,internal/hq/unread_test.go,451,Test,TestUnreadExcludesAuditTrailButCountsTriggers,False,legacy-not-retrospectively-reviewed
+MAP-d3fb86c5d55c,L2,reviewed implementation,internal/hq/wake_autorecovery_test.go,14,reviewed-selector,TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter,False,HWA-004
+MAP-d03b4abfe4f2,L2,reviewed implementation,internal/hq/wake_rotation_regression_test.go,12,reviewed-selector,TestHWA008ChangedSuccessorFailsIndependentlyWithoutSecondReset,False,HWA-008
 LEG-9eb4f55233e6,L1,Go core / CLI / server,internal/hq/wakecause_test.go,12,Test,TestWakeNotifyMessageSaysWhatToDo,False,legacy-not-retrospectively-reviewed
 LEG-45b57c95ef7b,L1,Go core / CLI / server,internal/hq/watchdog_test.go,10,Test,TestShouldEscalate,False,legacy-not-retrospectively-reviewed
 LEG-4e5f8c43a6a8,L1,Go core / CLI / server,internal/hq/watchdog_test.go,42,Test,TestShouldEscalate_PremiseIsProvenanceNotAskText,False,legacy-not-retrospectively-reviewed
@@ -1976,64 +1979,76 @@ LEG-b69f5d669218,L1,Go core / CLI / server,internal/hq/workspace_playbook_test.g
 LEG-e3fbf38a42ec,L1,Go core / CLI / server,internal/hqinput/lease_test.go,9,Test,TestCompetingChannelsHoldRatherThanOverwriteAndResumeAfterRelease,False,legacy-not-retrospectively-reviewed
 LEG-fdd84b1b101f,L1,Go core / CLI / server,internal/hqinput/lease_test.go,29,Test,TestInputLeaseFailureIsExplicit,False,legacy-not-retrospectively-reviewed
 MAP-e4cfa47e623e,L2,reviewed implementation,internal/hqinput/rotation_test.go,13,reviewed-selector,TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize,False,HRW-003
+MAP-23d161981468,L2,reviewed implementation,internal/hqnudge/autorecovery_review_test.go,35,reviewed-selector,TestHWA009LateReceiptRespectsProtectedClaim,False,"HWA-009,HWA-010"
+MAP-f684d0fb5b52,L2,reviewed implementation,internal/hqnudge/autorecovery_review_test.go,99,reviewed-selector,TestHWA010MixedRecoveryFaultHoldsAdmission,False,"HWA-009,HWA-010"
+MAP-73f59a730485,L2,reviewed implementation,internal/hqnudge/autorecovery_test.go,14,reviewed-selector,TestHWA001AttributableParkCollisionKeepsIndependentDelivery,False,"HWA-001,HWA-002"
+MAP-160c471f4831,L2,reviewed implementation,internal/hqnudge/autorecovery_test.go,98,reviewed-selector,TestHWA002KeyedMergePreservesOnlyCurrentPendingIncarnation,False,"HWA-001,HWA-002"
 LEG-091421d02382,L1,Go core / CLI / server,internal/hqnudge/hqinput_test.go,10,Test,TestPublicWakeChannelsKeepQueueWhileWorkspaceOwnsInput,False,legacy-not-retrospectively-reviewed
-LEG-1143100107a6,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,159,Test,TestDeliver_DraftPresent_QueuesNoSend,False,legacy-not-retrospectively-reviewed
-LEG-5feea82043db,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,174,Test,TestDeliver_EmptyBox_DeliversOnce,False,legacy-not-retrospectively-reviewed
-LEG-c71671c4ba48,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,189,Test,TestDeliver_Coalesce,False,legacy-not-retrospectively-reviewed
-LEG-4543daeb8fe5,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,209,Test,TestDrain_DraftedBox_NeverEnters,False,legacy-not-retrospectively-reviewed
-LEG-9e9e5060a7d3,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,223,Test,TestBoxEmpty_TwoFrameRace,False,legacy-not-retrospectively-reviewed
-LEG-f5db8d368978,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,244,Test,TestDeliver_CopyMode_Queues,False,legacy-not-retrospectively-reviewed
-LEG-47db2887da50,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,262,Test,TestBoxEmpty_UnstructuredIsNotEmpty,False,legacy-not-retrospectively-reviewed
-LEG-ca8e8593d91b,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,276,Test,TestDeliverKeyed_ReplacesInsteadOfAdding,False,legacy-not-retrospectively-reviewed
-LEG-25eaf6120948,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,294,Test,TestDrain_HoldsUndueKeyedEntry,False,legacy-not-retrospectively-reviewed
-LEG-ce9a44c61603,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,317,Test,TestDeliverKeyed_DueImmediatelyFlushes,False,legacy-not-retrospectively-reviewed
+LEG-1143100107a6,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,175,Test,TestDeliver_DraftPresent_QueuesNoSend,False,legacy-not-retrospectively-reviewed
+LEG-5feea82043db,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,190,Test,TestDeliver_EmptyBox_DeliversOnce,False,legacy-not-retrospectively-reviewed
+LEG-c71671c4ba48,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,205,Test,TestDeliver_Coalesce,False,legacy-not-retrospectively-reviewed
+LEG-4543daeb8fe5,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,225,Test,TestDrain_DraftedBox_NeverEnters,False,legacy-not-retrospectively-reviewed
+LEG-9e9e5060a7d3,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,239,Test,TestBoxEmpty_TwoFrameRace,False,legacy-not-retrospectively-reviewed
+LEG-f5db8d368978,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,260,Test,TestDeliver_CopyMode_Queues,False,legacy-not-retrospectively-reviewed
+LEG-47db2887da50,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,278,Test,TestBoxEmpty_UnstructuredIsNotEmpty,False,legacy-not-retrospectively-reviewed
+LEG-ca8e8593d91b,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,292,Test,TestDeliverKeyed_ReplacesInsteadOfAdding,False,legacy-not-retrospectively-reviewed
+LEG-25eaf6120948,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,310,Test,TestDrain_HoldsUndueKeyedEntry,False,legacy-not-retrospectively-reviewed
+LEG-ce9a44c61603,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,333,Test,TestDeliverKeyed_DueImmediatelyFlushes,False,legacy-not-retrospectively-reviewed
 LEG-7d3babf243ae,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,328,Test,TestDrain_PasteError_Requeues,False,legacy-not-retrospectively-reviewed
 LEG-05fcf73b9996,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,350,Test,TestDrain_EnterError_Requeues,False,legacy-not-retrospectively-reviewed
-LEG-06f0ff2c800e,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,366,Test,TestDrain_SwallowedEnter_ParksForEnterRepair,False,legacy-not-retrospectively-reviewed
+LEG-06f0ff2c800e,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,372,Test,TestDrain_SwallowedEnter_ParksForEnterRepair,False,legacy-not-retrospectively-reviewed
 LEG-a855670c355d,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,390,Test,TestDrain_UnconfirmedAck_RetriesWithTheSameID,False,legacy-not-retrospectively-reviewed
 LEG-fa273c21ad5e,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,415,Test,TestDrain_UnackableEntryStopsAfterMaxAttempts,False,legacy-not-retrospectively-reviewed
 LEG-77fd897161bf,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,444,Test,TestDrain_SendErrorRetriesUnbounded,False,legacy-not-retrospectively-reviewed
-LEG-6600b2e0c097,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,464,Test,TestDrain_BatchCapsOnPayloadSize,False,legacy-not-retrospectively-reviewed
-LEG-f7826436e92c,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,488,Test,TestAck_MatchesAWrappedSubmittedLine,False,legacy-not-retrospectively-reviewed
-LEG-7aac2648275e,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,523,Test,TestBatchID_DiffersForANewBatchWithTheSameText,False,legacy-not-retrospectively-reviewed
+LEG-6600b2e0c097,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,436,Test,TestDrain_BatchCapsOnPayloadSize,False,legacy-not-retrospectively-reviewed
+LEG-f7826436e92c,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,460,Test,TestAck_MatchesAWrappedSubmittedLine,False,legacy-not-retrospectively-reviewed
+LEG-7aac2648275e,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,494,Test,TestBatchID_DiffersForANewBatchWithTheSameText,False,legacy-not-retrospectively-reviewed
 LEG-de8f4ceb1c81,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,558,Test,TestReclaim_StrandedClaimIsDelivered,False,legacy-not-retrospectively-reviewed
-LEG-39c41102061d,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,572,Test,TestReclaim_FreshClaimIsLeftToItsDrainer,False,legacy-not-retrospectively-reviewed
-LEG-0105c0aa0cfb,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,587,Test,TestDrain_DecisionWakeOvertakesStandingWarnings,False,legacy-not-retrospectively-reviewed
-LEG-e897c7cc6775,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,604,Test,TestDrain_BatchCapHoldsTheRemainder,False,legacy-not-retrospectively-reviewed
-LEG-61c3664adc23,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,642,Test,TestEvict_DropsTheLowestPriorityOldest,False,legacy-not-retrospectively-reviewed
-LEG-c962a68914d5,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,669,Test,TestLegacyQueueEntry_StillDrains,False,legacy-not-retrospectively-reviewed
-LEG-4b5493a93420,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,681,Test,TestDegraded_AfterConsecutiveFailures,False,legacy-not-retrospectively-reviewed
-LEG-913e40354995,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,704,Test,TestDegraded_OnAStuckQueue,False,legacy-not-retrospectively-reviewed
-LEG-1bde8325a416,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,713,Test,TestDegraded_UndueEntryIsNotStuck,False,legacy-not-retrospectively-reviewed
-LEG-b031a06c33e5,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,726,Test,TestEnqueue_QueuesWithoutTyping,False,legacy-not-retrospectively-reviewed
-LEG-c8999c1ba57e,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,745,Test,TestDeliver_FaintGhostDoesNotHoldNudge,False,legacy-not-retrospectively-reviewed
-LEG-58b084121bae,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,781,Test,TestDrain_SwallowedEnter_RepairedOnNextTick,False,legacy-not-retrospectively-reviewed
-LEG-17cfb14fd8fc,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,811,Test,TestRepair_EditedDraft_NeverEnters,False,legacy-not-retrospectively-reviewed
-LEG-0b407a5ed28f,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,835,Test,TestRepair_UserSubmittedTheBatch_Confirms,False,legacy-not-retrospectively-reviewed
-LEG-eac8e60c4686,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,857,Test,TestRepair_ExhaustedHandsBack,False,legacy-not-retrospectively-reviewed
-LEG-b90b17a93785,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,881,Test,TestDeliver_ReceiptConfirms_ScreenBlind,False,legacy-not-retrospectively-reviewed
-LEG-c13f4fe1731e,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,905,Test,TestDeliver_ReceiptNoEvidence_ScreenStillJudges,False,legacy-not-retrospectively-reviewed
-LEG-0a0dafe15dff,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,932,Test,TestDeliveredBatchJournalsPayloadOncePerBatch,False,legacy-not-retrospectively-reviewed
+LEG-39c41102061d,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,542,Test,TestReclaim_FreshClaimIsLeftToItsDrainer,False,legacy-not-retrospectively-reviewed
+LEG-0105c0aa0cfb,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,557,Test,TestDrain_DecisionWakeOvertakesStandingWarnings,False,legacy-not-retrospectively-reviewed
+LEG-e897c7cc6775,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,574,Test,TestDrain_BatchCapHoldsTheRemainder,False,legacy-not-retrospectively-reviewed
+LEG-61c3664adc23,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,612,Test,TestEvict_DropsTheLowestPriorityOldest,False,legacy-not-retrospectively-reviewed
+LEG-c962a68914d5,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,639,Test,TestLegacyQueueEntry_StillDrains,False,legacy-not-retrospectively-reviewed
+LEG-4b5493a93420,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,651,Test,TestDegraded_AfterConsecutiveFailures,False,legacy-not-retrospectively-reviewed
+LEG-913e40354995,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,674,Test,TestDegraded_OnAStuckQueue,False,legacy-not-retrospectively-reviewed
+LEG-1bde8325a416,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,683,Test,TestDegraded_UndueEntryIsNotStuck,False,legacy-not-retrospectively-reviewed
+LEG-b031a06c33e5,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,696,Test,TestEnqueue_QueuesWithoutTyping,False,legacy-not-retrospectively-reviewed
+LEG-c8999c1ba57e,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,715,Test,TestDeliver_FaintGhostDoesNotHoldNudge,False,legacy-not-retrospectively-reviewed
+LEG-58b084121bae,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,751,Test,TestDrain_SwallowedEnter_RepairedOnNextTick,False,legacy-not-retrospectively-reviewed
+LEG-17cfb14fd8fc,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,782,Test,TestRepair_EditedDraft_NeverEnters,False,legacy-not-retrospectively-reviewed
+LEG-0b407a5ed28f,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,806,Test,TestRepair_UserSubmittedTheBatch_Confirms,False,legacy-not-retrospectively-reviewed
+LEG-eac8e60c4686,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,828,Test,TestRepair_ExhaustedHandsBack,False,legacy-not-retrospectively-reviewed
+LEG-b90b17a93785,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,853,Test,TestDeliver_ReceiptConfirms_ScreenBlind,False,legacy-not-retrospectively-reviewed
+LEG-c13f4fe1731e,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,877,Test,TestDeliver_ReceiptNoEvidence_ScreenStillJudges,False,legacy-not-retrospectively-reviewed
+LEG-0a0dafe15dff,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,904,Test,TestDeliveredBatchJournalsPayloadOncePerBatch,False,legacy-not-retrospectively-reviewed
 LEG-cd1af268c461,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,962,Test,TestUnackableDropIsJournaled,False,legacy-not-retrospectively-reviewed
-LEG-ffca777f71ee,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,983,Test,TestEvictionIsJournaled,False,legacy-not-retrospectively-reviewed
-LEG-9053551924df,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1003,Test,TestSupersededDropIsJournaled,False,legacy-not-retrospectively-reviewed
-LEG-beb8ef28339f,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1039,Test,TestRepairConfirmedDeliveryIsJournaled,False,legacy-not-retrospectively-reviewed
-LEG-cd2e2f4c9bd9,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1062,Test,TestDeliver_ShellForeground_HoldsUntilTheAgentIsUp,False,legacy-not-retrospectively-reviewed
-LEG-cf63e67ddc3a,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1083,Test,TestIsShellFg,False,legacy-not-retrospectively-reviewed
-LEG-a80757268560,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1101,Test,TestDrain_LateReceiptStopsTheRepaste,False,legacy-not-retrospectively-reviewed
-LEG-adde28d90676,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1125,Test,TestDrain_IdInHistoryStopsTheRepaste,False,legacy-not-retrospectively-reviewed
-LEG-c560160c7a07,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1150,Test,TestDrain_NewWakeBetweenAttempts_OldReceiptClosesOnlyTheOldEntry,False,legacy-not-retrospectively-reviewed
-LEG-1ac7f0b674ad,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1166,Test,TestDrain_NewWakeBetweenAttempts_OldIdInHistoryClosesOnlyTheOldEntry,False,legacy-not-retrospectively-reviewed
-LEG-d09cbc93ed40,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1182,Test,TestDrain_RewrittenLineBetweenAttempts_IsNotPastedAgain,False,legacy-not-retrospectively-reviewed
+LEG-ffca777f71ee,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,944,Test,TestEvictionIsJournaled,False,legacy-not-retrospectively-reviewed
+LEG-9053551924df,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,964,Test,TestSupersededDropIsJournaled,False,legacy-not-retrospectively-reviewed
+LEG-beb8ef28339f,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1000,Test,TestRepairConfirmedDeliveryIsJournaled,False,legacy-not-retrospectively-reviewed
+LEG-cd2e2f4c9bd9,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1024,Test,TestDeliver_ShellForeground_HoldsUntilTheAgentIsUp,False,legacy-not-retrospectively-reviewed
+LEG-cf63e67ddc3a,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1045,Test,TestIsShellFg,False,legacy-not-retrospectively-reviewed
+LEG-a80757268560,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1063,Test,TestDrain_LateReceiptStopsTheRepaste,False,legacy-not-retrospectively-reviewed
+LEG-adde28d90676,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1087,Test,TestDrain_IdInHistoryStopsTheRepaste,False,legacy-not-retrospectively-reviewed
+LEG-c560160c7a07,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1112,Test,TestDrain_NewWakeBetweenAttempts_OldReceiptClosesOnlyTheOldEntry,False,legacy-not-retrospectively-reviewed
+LEG-1ac7f0b674ad,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1128,Test,TestDrain_NewWakeBetweenAttempts_OldIdInHistoryClosesOnlyTheOldEntry,False,legacy-not-retrospectively-reviewed
+LEG-d09cbc93ed40,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1144,Test,TestDrain_RewrittenLineBetweenAttempts_IsNotPastedAgain,False,legacy-not-retrospectively-reviewed
 LEG-bc2fc20ca59d,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1201,Test,TestDrain_NewWakeBetweenAttempts_UnconfirmedOldEntryGoesAgain,False,legacy-not-retrospectively-reviewed
-LEG-3ca7d3a365f6,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1214,Test,TestRepair_ExhaustedHandBack_LateReceiptIsNotPastedAgain,False,legacy-not-retrospectively-reviewed
-LEG-27c3c2b2ffb7,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1236,Test,TestRepair_EditedDraftHandBack_LateReceiptIsNotPastedAgain,False,legacy-not-retrospectively-reviewed
-LEG-5da98a32fbef,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1263,Test,TestRepair_TextAroundTheBatch_IsNeverSubmitted,False,legacy-not-retrospectively-reviewed
+LEG-3ca7d3a365f6,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1177,Test,TestRepair_ExhaustedHandBack_LateReceiptIsNotPastedAgain,False,legacy-not-retrospectively-reviewed
+LEG-27c3c2b2ffb7,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1201,Test,TestRepair_EditedDraftHandBack_LateReceiptIsNotPastedAgain,False,legacy-not-retrospectively-reviewed
+LEG-5da98a32fbef,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1228,Test,TestRepair_TextAroundTheBatch_IsNeverSubmitted,False,legacy-not-retrospectively-reviewed
 LEG-cda65c087377,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1269,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-5bf683206f0a,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1299,Test,TestRepair_ExactBatch_IsSubmitted,False,legacy-not-retrospectively-reviewed
-LEG-3d3b90b863d9,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1315,Test,TestRepair_UserClearsAfterHandBack_LateReceiptCloses,False,legacy-not-retrospectively-reviewed
-LEG-5bf7aa693c7c,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1409,Test,TestRepair_UneditedBatch_IsSubmittedAtEveryWidth,False,legacy-not-retrospectively-reviewed
-LEG-0fe4e8035179,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1425,Test,TestRepair_EditedBatch_IsNeverSubmittedAtAnyWidth,False,legacy-not-retrospectively-reviewed
+LEG-5bf683206f0a,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1264,Test,TestRepair_ExactBatch_IsSubmitted,False,legacy-not-retrospectively-reviewed
+LEG-3d3b90b863d9,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1281,Test,TestRepair_UserClearsAfterHandBack_LateReceiptCloses,False,legacy-not-retrospectively-reviewed
+LEG-5bf7aa693c7c,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1375,Test,TestRepair_UneditedBatch_IsSubmittedAtEveryWidth,False,legacy-not-retrospectively-reviewed
+LEG-0fe4e8035179,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1392,Test,TestRepair_EditedBatch_IsNeverSubmittedAtAnyWidth,False,legacy-not-retrospectively-reviewed
+MAP-c04e11139e42,L2,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,344,reviewed-selector,TestDrain_PasteErrorRetainsUnknownWithoutReplay,False,HWA-007
+MAP-fa9443bacf5a,L2,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,355,reviewed-selector,TestDrain_EnterErrorKeepsExactDraftForRepair,False,HWA-007
+MAP-975da3db68ae,L2,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,396,reviewed-selector,TestDrain_UnconfirmedAckNeverRepastes,False,HWA-007
+MAP-e7ca4c936963,L2,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,409,reviewed-selector,TestDrain_UnconfirmedEntryPreservesItsHealthEvidence,False,HWA-007
+MAP-3176df767224,L2,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,422,reviewed-selector,TestDrain_SendErrorDoesNotBlockUnrelatedWork,False,HWA-007
+MAP-db9ce206f907,L2,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,529,reviewed-selector,TestReclaim_StrandedClaimHoldsWithoutReplaying,False,HWA-007
+MAP-71a6c19d9a3d,L2,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,933,reviewed-selector,TestUnackableClaimIsRetainedWithoutFalseAudit,False,HWA-007
+MAP-ac4800759c12,L2,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1163,reviewed-selector,TestDrain_NewWakeDoesNotReplayUnconfirmedOldEntry,False,HWA-007
 MAP-e935b38f669b,L2,reviewed implementation,internal/hqnudge/native_generation_test.go,12,reviewed-selector,TestHRW014GenerationChangeWithSameInodeBodyAndMtimeCannotBeDeleted,False,HRW-014
 MAP-19d11525d239,L2,reviewed implementation,internal/hqnudge/native_generation_test.go,85,reviewed-selector,TestHRW014UncertainPublicationOnlyRetiresItsExactOwnedLink,False,HRW-014
 MAP-2cb4bfc00acc,L2,reviewed implementation,internal/hqnudge/native_pin_test.go,36,reviewed-selector,TestHRW015NativeIntentKeepsOriginalIncarnationAlive,False,HRW-015
@@ -2048,11 +2063,22 @@ MAP-62be7306061f,L2,reviewed implementation,internal/hqnudge/native_recovery_tes
 MAP-cbf26a49e444,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,317,reviewed-selector,TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate,False,"HRW-009,HRW-010"
 LEG-9bd5cd8afd4f,G,Go core / CLI / server,internal/hqnudge/native_test.go,10,Test,TestNativeWakeAcceptanceAndUncertaintyNeverPasteOrReplay,False,legacy-not-retrospectively-reviewed
 LEG-096a5372e6f5,L1,Go core / CLI / server,internal/hqnudge/native_test.go,12,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-MAP-2f393b4dfbb1,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,28,reviewed-selector,TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority,False,"HRW-004,HRW-005,HRW-008"
-MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,88,reviewed-selector,TestHRW004RotationDoesNotSubmitOrRepairUserDraft,False,"HRW-004,HRW-005,HRW-008"
-MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,102,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"
-MAP-62d7c36b98c4,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,119,reviewed-selector,TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity,False,"HRW-004,HRW-005,HRW-008"
-MAP-f6f7a40c985c,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,149,reviewed-selector,TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource,False,"HRW-004,HRW-005,HRW-008"
+MAP-ac1ffa61f5b2,L2,reviewed implementation,internal/hqnudge/pressure_health_test.go,13,reviewed-selector,TestHWA003IncomingStandingWakeCannotEvictDecisions,False,"HWA-003,HWA-004"
+MAP-392ca77cfaeb,L2,reviewed implementation,internal/hqnudge/pressure_health_test.go,38,reviewed-selector,TestHWA004ConflictNeedsCleanScanAndPositiveReceipt,False,"HWA-003,HWA-004"
+MAP-2f393b4dfbb1,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,29,reviewed-selector,TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority,False,"HRW-004,HRW-005,HRW-008"
+MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,89,reviewed-selector,TestHRW004RotationDoesNotSubmitOrRepairUserDraft,False,"HRW-004,HRW-005,HRW-008"
+MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,103,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"
+MAP-62d7c36b98c4,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,121,reviewed-selector,TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity,False,"HRW-004,HRW-005,HRW-008"
+MAP-f6f7a40c985c,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,152,reviewed-selector,TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource,False,"HRW-004,HRW-005,HRW-008"
+MAP-809457712075,L2,reviewed implementation,internal/hqnudge/wake_evidence_review_test.go,18,reviewed-selector,TestHWA014AcceptedProofBudgetDoesNotFreezeAdmission,False,"HWA-014,HWA-015"
+MAP-d8bc2e7c48ba,L2,reviewed implementation,internal/hqnudge/wake_evidence_review_test.go,87,reviewed-selector,TestHWA015AcceptedProofCrashRetryKeepsOneDeliveryAudit,False,"HWA-014,HWA-015"
+MAP-60d41c147213,L2,reviewed implementation,internal/hqnudge/wake_evidence_test.go,13,reviewed-selector,TestHWA012AcceptanceWaitsForIndependentProof,False,HWA-012
+MAP-a8b272ecc334,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,12,reviewed-selector,TestHWA006NativePositiveRefusalUsesDurableBoundedBackoff,False,"HWA-006,HWA-007"
+MAP-6d6b23733fd9,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,57,reviewed-selector,TestHWA006UnknownAndChangedTargetNeverResubmit,False,"HWA-006,HWA-007"
+MAP-63c494f35db1,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,94,reviewed-selector,TestHWA007GuardsPermitNoClientInput,False,"HWA-006,HWA-007"
+MAP-730731030887,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,114,reviewed-selector,TestHWA007CrashAfterLegacyEnterRetainsOriginal,False,"HWA-006,HWA-007"
+MAP-b05639455d46,L2,reviewed implementation,internal/hqnudge/wake_storage_review_test.go,14,reviewed-selector,TestHWA017UnboundLegacyRefusalDoesNotEnterNewTarget,False,"HWA-017,HWA-018"
+MAP-5a37fd2ce65b,L2,reviewed implementation,internal/hqnudge/wake_storage_review_test.go,67,reviewed-selector,TestHWA018QueueIOHealthSurvivesUntilVerifiedProgress,False,"HWA-017,HWA-018"
 LEG-2a0fc9ba851d,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,49,Test,TestFind_ByCurrentPath,False,legacy-not-retrospectively-reviewed
 LEG-5978d4c88e2f,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,60,Test,TestFind_SymlinkedHomeStillResolves,False,legacy-not-retrospectively-reviewed
 LEG-612d23c91cb2,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,82,Test,TestFind_ByStampAfterACd,False,legacy-not-retrospectively-reviewed
@@ -3622,6 +3648,7 @@ LEG-3ca210748b6d,L1,Go core / CLI / server,internal/transcript/transcript_test.g
 LEG-547d809fb2ad,L1,Go core / CLI / server,internal/transcript/transcript_test.go,1059,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-547a3ed583fc,L1,Go core / CLI / server,internal/transcript/transcript_test.go,1078,Test,TestSessionOriginMakesNoClaimForOtherAgents,False,legacy-not-retrospectively-reviewed
 LEG-06d56e453427,L1,Go core / CLI / server,internal/transcript/transcript_test.go,1102,Test,TestLoadClaudeSkipsTheCompactionSummary,False,legacy-not-retrospectively-reviewed
+MAP-bb3df0aabb7c,L2,reviewed implementation,internal/transcript/wake_evidence_test.go,11,reviewed-selector,TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt,False,HWA-013
 LEG-b07dbc7e1482,L1,Go core / CLI / server,internal/usage/daily_test.go,17,Test,TestDailyLedgerAttributesByMessageDay,False,legacy-not-retrospectively-reviewed
 LEG-08a274b89036,L1,Go core / CLI / server,internal/usage/daily_test.go,97,Test,TestDailyLedgerWindowAndPrune,False,legacy-not-retrospectively-reviewed
 LEG-74c697d86d55,L1,Go core / CLI / server,internal/usage/daily_test.go,128,Test,TestActivityReadsTheWholeLedger,False,legacy-not-retrospectively-reviewed

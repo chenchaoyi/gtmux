@@ -10,7 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"golang.org/x/sys/unix"
@@ -20,12 +22,16 @@ import (
 // composition grants permission to repeat a possibly accepted automatic input.
 // This is recovery evidence only: it is never used to authorize a new submission.
 type nativeIntent struct {
-	Version int           `json:"version"`
-	Pane    string        `json:"pane"`
-	ID      string        `json:"id"`
-	Payload string        `json:"payload"`
-	Outcome string        `json:"outcome"`
-	Entries []nativeEntry `json:"entries"`
+	Version     int                   `json:"version"`
+	Pane        string                `json:"pane"`
+	ID          string                `json:"id"`
+	Payload     string                `json:"payload"`
+	Outcome     string                `json:"outcome"`
+	Retry       retryState            `json:"retry,omitempty"`
+	Reason      string                `json:"reason,omitempty"`
+	WakeReceipt *dispatch.WakeReceipt `json:"wake_receipt,omitempty"`
+	SubmittedAt int64                 `json:"submitted_at,omitempty"`
+	Entries     []nativeEntry         `json:"entries"`
 }
 type nativeEntry struct {
 	Name      string `json:"name"`
@@ -134,8 +140,15 @@ func validNativeIntent(r nativeIntent) bool {
 		return false
 	}
 	switch r.Outcome {
-	case "prepared", "uncertain", "accepted", "delivered", "refused":
+	case "prepared", "uncertain", "accepted", "delivered", "refused", "held":
 	default:
+		return false
+	}
+	if r.Retry != (retryState{}) && (r.Outcome != "refused" || r.Retry.Number < 1 ||
+		r.Retry.Number >= nativeAttemptLimit || r.Retry.At <= 0 || !validWakeTarget(r.Retry.Target)) {
+		return false
+	}
+	if r.WakeReceipt != nil && (r.Outcome != "accepted" || r.SubmittedAt <= 0 || !validWakeReceipt(*r.WakeReceipt)) {
 		return false
 	}
 	seen := map[string]bool{}
@@ -185,7 +198,7 @@ func recoverNativeIntentsWithProtection() (map[string]bool, error) {
 		if json.Unmarshal(b, &r) != nil || !validNativeIntent(r) || nativeIntentPath(r) != p {
 			return nil, errors.New("native wake recovery evidence invalid")
 		}
-		if err := settleNativeIntent(r); err != nil {
+		if err := recoverNativeIntent(r); err != nil {
 			if !errors.Is(err, errNativeClaimConflict) {
 				return nil, err
 			}
@@ -195,57 +208,63 @@ func recoverNativeIntentsWithProtection() (map[string]bool, error) {
 				protected[entry.Name] = true
 			}
 			conflicts = append(conflicts, err)
+		} else if r.Outcome == "prepared" {
+			r.Outcome = "uncertain"
+			r.Reason = "interrupted-attempt"
+			recordWakeOutcome(r, time.Now().UnixNano())
 		}
 	}
 	return protected, errors.Join(conflicts...)
 }
+
+// A v2 refusal predates both the positive submission boundary and the saved
+// target. A matching pane number alone cannot authorize a post-upgrade attempt.
+func recoverNativeIntent(r nativeIntent) error {
+	if r.Outcome != "refused" || r.Retry.Number != 0 {
+		return settleNativeIntent(r)
+	}
+	for _, entry := range r.Entries {
+		if err := validateNativeClaim(r, entry); err != nil && !errors.Is(err, errNativeClaimConflict) {
+			return err
+		}
+		// An interrupted old handoff may have a pending name too. Check its
+		// storage before returning a local hold for the entire known slot.
+		_, err := nativeFingerprint(claimBase(filepath.Join(queueDir(), entry.Name)))
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+	}
+	return fmt.Errorf("%w: legacy refusal lacks verified submission and original target evidence", errNativeClaimConflict)
+}
+
 func settleNativeIntent(r nativeIntent) error {
-	// Validate every extant claim first. A replaced/corrupted leaf is not ours to
-	// delete or overwrite, even when other members already reached a terminal state.
+	if r.Outcome == "accepted" && r.WakeReceipt != nil {
+		if err := retainAcceptedWake(r); err != nil {
+			return err
+		}
+	}
+	// A local conflict may protect an exact slot, but all members must still
+	// be checked for unsafe storage before any new submission can proceed.
+	var conflicts []error
 	for _, e := range r.Entries {
-		// An uncertain claim may already be parked (no .sending leaf). Its pin
-		// is still required evidence; losing it must protect this original slot,
-		// not silently classify the record as successfully recovered.
-		if r.Outcome == "prepared" || r.Outcome == "uncertain" {
-			pin, err := nativeAnchor(e)
-			if err != nil {
+		if err := validateNativeClaim(r, e); err != nil {
+			if !errors.Is(err, errNativeClaimConflict) {
 				return err
 			}
-			if pin.SHA256 != e.SHA256 {
-				return fmt.Errorf("%w: uncertain anchor payload changed", errNativeClaimConflict)
+			conflicts = append(conflicts, err)
+		}
+		if r.Outcome == "prepared" || r.Outcome == "uncertain" || r.Outcome == "held" {
+			p := filepath.Join(queueDir(), e.Name)
+			if err := checkNativeParkDestination(p, finalClaimPath(r, p)); err != nil {
+				if !errors.Is(err, errNativeClaimConflict) {
+					return err
+				}
+				conflicts = append(conflicts, err)
 			}
 		}
-		p := filepath.Join(queueDir(), e.Name)
-		observed, err := nativeFingerprint(p)
-		if errors.Is(err, os.ErrNotExist) {
-			continue
-		}
-		if err != nil {
-			return err
-		}
-		if observed.FileID != e.FileID {
-			return fmt.Errorf("%w: identity no longer matches saved evidence", errNativeClaimConflict)
-		}
-		pin, err := nativeAnchor(e)
-		if err != nil {
-			return err
-		}
-		if pin.SHA256 != observed.SHA256 {
-			return fmt.Errorf("%w: anchor and claim payload differ", errNativeClaimConflict)
-		}
-		if observed.SHA256 != e.SHA256 || observed.ChangedAt != e.ChangedAt || pin.ChangedAt != observed.ChangedAt {
-			// Publication changes ctime. Only a recognized shared-inode handoff
-			// may account for it; accepted cleanup has no such exception.
-			claim, claimErr := os.Lstat(p)
-			queued, queueErr := os.Lstat(claimBase(p))
-			refused := r.Outcome == "refused" && claimErr == nil && queueErr == nil && os.SameFile(claim, queued)
-			parked, parkErr := os.Lstat(claimBase(p) + nativeUncertainSuffix)
-			uncertain := (r.Outcome == "prepared" || r.Outcome == "uncertain") && observed.SHA256 == e.SHA256 && claimErr == nil && parkErr == nil && os.SameFile(claim, parked)
-			if !refused && !uncertain {
-				return fmt.Errorf("%w: saved generation or payload changed", errNativeClaimConflict)
-			}
-
-		}
+	}
+	if len(conflicts) > 0 {
+		return errors.Join(conflicts...)
 	}
 	for _, e := range r.Entries {
 		p := filepath.Join(queueDir(), e.Name)
@@ -255,14 +274,20 @@ func settleNativeIntent(r nativeIntent) error {
 				return err
 			}
 		case "refused":
-			if err := returnClaim(p); err != nil {
+			if err := returnClaimAt(p, finalClaimPath(r, p)); err != nil {
 				return err
 			}
 		default:
-			if err := parkNativeClaim(p); err != nil {
-				return err
+			if err := parkNativeClaimAt(p, finalClaimPath(r, p)); err != nil {
+				if !errors.Is(err, errNativeClaimConflict) {
+					return err
+				}
+				conflicts = append(conflicts, err)
 			}
 		}
+	}
+	if len(conflicts) > 0 {
+		return errors.Join(conflicts...)
 	}
 	if r.Outcome == "prepared" {
 		r.Outcome = "uncertain"
@@ -281,6 +306,58 @@ func settleNativeIntent(r nativeIntent) error {
 	}
 	return ignoreNativeMissing(os.Remove(nativeIntentPath(r)))
 }
+func validateNativeClaim(r nativeIntent, e nativeEntry) error {
+	p := filepath.Join(queueDir(), e.Name)
+	observed, claimErr := nativeFingerprint(p)
+	if claimErr != nil && !errors.Is(claimErr, os.ErrNotExist) {
+		return claimErr
+	}
+	pin, pinErr := nativeAnchor(e)
+	if pinErr != nil && !errors.Is(pinErr, errNativeClaimConflict) {
+		return pinErr
+	}
+	uncertain := r.Outcome == "prepared" || r.Outcome == "uncertain"
+	if claimErr != nil && !uncertain {
+		// Terminal recovery may have already retired the pin. The terminal
+		// cleanup below verifies any extant anchor before removing it.
+		return nil
+	}
+	if pinErr != nil {
+		return pinErr
+	}
+	if uncertain && pin.SHA256 != e.SHA256 {
+		return fmt.Errorf("%w: uncertain anchor payload changed", errNativeClaimConflict)
+	}
+	if claimErr != nil {
+		return nil // the uncertain claim is already parked, with its anchor intact
+	}
+	if observed.FileID != e.FileID {
+		return fmt.Errorf("%w: identity no longer matches saved evidence", errNativeClaimConflict)
+	}
+	if pin.SHA256 != observed.SHA256 {
+		return fmt.Errorf("%w: anchor and claim payload differ", errNativeClaimConflict)
+	}
+	if observed.SHA256 == e.SHA256 && observed.ChangedAt == e.ChangedAt && pin.ChangedAt == observed.ChangedAt {
+		return nil
+	}
+	// Publication changes ctime. Only a recognized shared-inode handoff
+	// may account for it; accepted cleanup has no such exception.
+	var published string
+	if r.Outcome == "refused" || ((uncertain || r.Outcome == "held") && observed.SHA256 == e.SHA256) {
+		published = finalClaimPath(r, p)
+	}
+	if published != "" {
+		dst, err := nativeFingerprint(published)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+		if err == nil && dst.FileID == observed.FileID {
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: saved generation or payload changed", errNativeClaimConflict)
+}
+
 func ignoreNativeMissing(err error) error {
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -290,8 +367,59 @@ func ignoreNativeMissing(err error) error {
 
 // A hard-link publication is atomic and never replaces another producer's leaf.
 // The original claim is removed only after the queue path safely owns its inode.
-func returnClaim(src string) error {
-	dst := claimBase(src)
+func finalClaimPath(r nativeIntent, src string) string {
+	base := claimBase(src)
+	switch r.Outcome {
+	case "refused":
+		if r.Retry.Number == 0 {
+			return base // positively refused v2 intent written before backoff existed
+		}
+		return filepath.Join(filepath.Dir(src), retryName(filepath.Base(base), r.Retry))
+	case "held":
+		return base + wakeRefusedSuffix
+	default:
+		return base + nativeUncertainSuffix
+	}
+}
+
+func returnClaim(src string) error { return returnClaimAt(src, claimBase(src)) }
+
+func returnClaimAt(src, dst string) error {
+	release, err := lockQueue()
+	if err != nil {
+		return err
+	}
+	defer release()
+	field := queuedKey(dst)
+	if field != "" {
+		if current := pendingKey(field); current != "" && current != filepath.Base(dst) {
+			source, err := nativeFingerprint(src)
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+			if dst != claimBase(src) {
+				// Recovery may find the retry link published just before a crash.
+				// A newer producer supersedes that exact link as well as the claim.
+				published, err := nativeFingerprint(dst)
+				if err != nil && !errors.Is(err, os.ErrNotExist) {
+					return err
+				}
+				if err == nil {
+					if published.FileID != source.FileID {
+						return errors.New("wake retry publication now refers to different evidence")
+					}
+					if err := os.Remove(dst); err != nil {
+						return err
+					}
+				}
+			}
+			auditDroppedFile(events.DropSuperseded, src)
+			return os.Remove(src)
+		}
+	}
 	if err := os.Link(src, dst); err == nil {
 		return os.Remove(src)
 	} else if errors.Is(err, os.ErrNotExist) {
@@ -314,14 +442,20 @@ func returnClaim(src string) error {
 		return os.Remove(src)
 	} // recovery after publication, before unlink
 	name := filepath.Base(dst)
-	if strings.Contains(name, ".k-") && b.Mode().IsRegular() {
+	if dst == claimBase(src) && strings.Contains(name, ".k-") && b.Mode().IsRegular() {
 		auditDroppedFile(events.DropSuperseded, src) // existing latest-keyed contract
 		return os.Remove(src)
 	}
 	return fmt.Errorf("wake return destination already exists: %s", filepath.Base(dst))
 }
 func parkNativeClaim(src string) error {
-	dst := claimBase(src) + nativeUncertainSuffix
+	return parkNativeClaimAt(src, claimBase(src)+nativeUncertainSuffix)
+}
+
+func parkNativeClaimAt(src, dst string) error {
+	if _, err := nativeFingerprint(src); err != nil {
+		return ignoreNativeMissing(err)
+	}
 	if err := os.Link(src, dst); err == nil {
 		return os.Remove(src)
 	} else if errors.Is(err, os.ErrNotExist) {
@@ -341,7 +475,38 @@ func parkNativeClaim(src string) error {
 		return eb
 	}
 	if !os.SameFile(a, b) {
-		return errors.New("native uncertain destination was replaced")
+		// Only managed regular files identify an exact conflicting slot. An
+		// untrusted or unreadable path is a channel error, even at this location.
+		if _, err := nativeFingerprint(src); err != nil {
+			return err
+		}
+		if _, err := nativeFingerprint(dst); err != nil {
+			return err
+		}
+		return fmt.Errorf("%w: native uncertain destination was replaced", errNativeClaimConflict)
 	}
 	return os.Remove(src)
+}
+
+// A recognized occupied slot is local. Any other failure to verify the
+// destination prevents admission, including after a preceding local conflict.
+func checkNativeParkDestination(src, dst string) error {
+	source, err := nativeFingerprint(src)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	destination, err := nativeFingerprint(dst)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if source.FileID != destination.FileID {
+		return fmt.Errorf("%w: native uncertain destination was replaced", errNativeClaimConflict)
+	}
+	return nil
 }
