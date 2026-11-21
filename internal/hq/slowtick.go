@@ -17,11 +17,9 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
-	"github.com/chenchaoyi/gtmux/internal/hqsurface"
 	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/limits"
-	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
 	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resource"
@@ -151,6 +149,7 @@ func hqSummaryTick(now int64) {
 // resource-sampling cadence. Cheap-gated on Pending() — a dir scan — so a quiet queue
 // costs no tmux at all.
 func DrainHQNudges() {
+	hqnudge.ObserveWakeEvidence(time.Now())
 	ProcessPendingHQRotation() // reserve a ready window before any new automatic wake
 	if hqnudge.Pending() {
 		hqnudge.Drain(hqpane.Find())
@@ -172,45 +171,9 @@ func journalDegradation(event, summary string, now int64) {
 	})
 }
 
-// wakeWatchdog surfaces a wake channel that is failing to reach a LIVE HQ (no HQ is
-// not a degradation — there is simply nothing to wake). It runs from the single-writer
-// slow tick and escalates once per transition into degraded.
-//
-// The alarm cannot ride the channel it is about, so it takes three carriers: a journal
-// control record at important severity (the pull side sees it), a best-effort HQ line
-// (free, and it lands whenever only the ACK was flaky), and a desktop notification —
-// the one carrier that does not depend on the broken thing. A perception outage must
-// never stay silent.
+// wakeWatchdog uses the independent notice channel even when HQ is absent.
 func wakeWatchdog(now int64) {
-	key := ""
-	if hqpane.Find() != "" && hqnudge.Degraded(now) {
-		key = "down"
-	}
-	if !markerChanged("hqwakedegraded", key) {
-		return // unchanged (or recovered — which clears the marker and stays quiet)
-	}
-	// Name the cause where gtmux can see it. On 2026-09-02 this alarm fired four times
-	// over a pane that was simply scrolled into copy-mode: correct in every particular,
-	// and it sent the reader looking for a stuck draft that was not there. The channel
-	// held 22 knocks for 1h40m and one keypress released all of them.
-	summary := "⚠ HQ wake channel not landing — knocks are queued but unconfirmed; " +
-		"reconcile by pull: gtmux events --since-seq <n>"
-	cause := wakeHeldCause()
-	if cause != "" {
-		summary = "⚠ HQ wake channel not landing — " + cause +
-			"; knocks are queued. reconcile by pull: gtmux events --since-seq <n>"
-	}
-	journalDegradation(hqsurface.ControlWakeDegraded, summary, now)
-	if pane := hqpane.Find(); pane != "" {
-		hqnudge.Deliver(pane, hqwake.Line(hqwake.ClassWakeDegraded, "",
-			"⚠ wake deliveries unconfirmed", "reconcile: gtmux digest --json"))
-	}
-	notify.Send(notify.Options{
-		Kind:     "input",
-		Title:    i18n.Tr("gtmux HQ is not being woken", "gtmux HQ 唤醒失效"),
-		Subtitle: "gtmux",
-		Message:  wakeNotifyMessage(cause),
-	})
+	watchWakeHealth(now, hqnudge.ReadHealth(now))
 }
 
 // wakeHeldCause names why gtmux cannot type into the HQ pane, in the words the journal
@@ -220,6 +183,12 @@ func wakeHeldCause() string {
 	pane := hqpane.Find()
 	if pane == "" {
 		return ""
+	}
+	if state.Exists(state.WaitingPath(pane)) {
+		return "the HQ agent is waiting for user input"
+	}
+	if state.Exists(state.ActivePath(pane)) {
+		return "the HQ pane is busy or its active marker has not cleared"
 	}
 	why, ok := dispatch.Reach(dispatchbridge.DispatchIO(pane))
 	if ok {

@@ -1,0 +1,35 @@
+{
+  "id": "hq-wake-legacy-and-queue-health-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; independent failure evidence from pane %80",
+    "date": "2026-11-21",
+    "decision": "Preserve v2 refusals without target evidence and surface unsafe queue directory state independently",
+    "notes": "Synthetic HOME, fake clock and fake driver. Preserve old inode, pin and intent and verify health from a broken queue."
+  },
+  "cases": [
+    {
+      "id": "HWA-017",
+      "layer": "L2",
+      "description": "An old refused v2 intent cannot authorize input to an unverified new target",
+      "setup": "Generate a legacy v2 refused intent without a retry target, a same-slot claim with its anchor, and unrelated pending work.",
+      "action": "Drain on a new pane with a fake driver, repeat, and inspect original evidence.",
+      "expected": "Original old-target evidence remains and is never submitted. Independent work proceeds exactly once, with no Paste or Enter.",
+      "planned_files": [
+        "internal/hqnudge/wake_storage_review_test.go"
+      ]
+    },
+    {
+      "id": "HWA-018",
+      "layer": "L2",
+      "description": "Unreadable queue storage retains a recoverable independent health reason",
+      "setup": "Make the queue directory path a non-directory in a synthetic HOME; observe health before and after producer failure and then after safe repair.",
+      "action": "Attempt keyed and ordinary enqueue, restore a readable directory, and provide a separately confirmed delivery with a fake clock.",
+      "expected": "Direct inspection and failed producers expose a queue I/O reason even without a drain or HQ. Healthy directory alone cannot erase the observed issue before confirmed progress.",
+      "planned_files": [
+        "internal/hqnudge/wake_storage_review_test.go"
+      ]
+    }
+  ],
+  "seal": "323ed1d3999b0d5861f01134caa2b10822e39c0a0cff3900bbbd678b908735a8"
+}

@@ -50,7 +50,17 @@ type Result struct {
 	JudgedBy       string // JudgedByDriver | JudgedByScreen ("" when refused before judging)
 	FailureCode    InputFailureCode
 	Submission     Submission
-	NativeQuestion bool // explicit refusal from a native receiver
+	NativeQuestion bool         // explicit refusal from a native receiver
+	WakeReceipt    *WakeReceipt // receiver acknowledgement, independent evidence still required
+}
+
+// WakeReceipt is an exact native receiver acknowledgement. A returned turn
+// alone does not prove the request started the turn or appeared in history.
+type WakeReceipt struct {
+	Request string `json:"request"`
+	Session string `json:"session"`
+	Home    string `json:"home"`
+	Turn    string `json:"turn"`
 }
 
 // Event kinds carried by IO.Events (mapped from the session-events stream).

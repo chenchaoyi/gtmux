@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -34,7 +35,7 @@ func TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority(t *testing.T)
 	calls := 0
 	prod.nativeSubmit = func(string, string, string) (dispatch.Result, bool) {
 		calls++
-		return dispatch.Result{State: dispatch.StateRefusedWaiting}, true
+		return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "wake-loaded-idle-required", Submission: dispatch.SubmissionNotSubmitted}, true
 	}
 	p := reservationFixture(t, 0)
 	before, err := os.ReadFile(p)
@@ -73,7 +74,7 @@ func TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority(t *testing.T)
 	prod.nativeSubmit = func(_ string, s, _ string) (dispatch.Result, bool) {
 		calls++
 		payload = s
-		return dispatch.Result{State: dispatch.StateRefusedWaiting}, true
+		return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "wake-loaded-idle-required", Submission: dispatch.SubmissionNotSubmitted}, true
 	}
 	reservationFixture(t, 1700000001)
 	Drain("%isolated")
@@ -110,6 +111,7 @@ func TestHRW004ExactOwnStrandedRepairPrecedesReservation(t *testing.T) {
 	reservationFixture(t, 0)
 	enqueue(x, "» gtmux·tick later retained")
 	f.swallow = false
+	f.nano += int64(enterRepairBackoff)
 	drain(x, "%isolated")
 	if f.pastes != 1 || len(f.sent) != 1 || queuedCount(t) != 1 || !strings.Contains(f.sent[0], "own stranded") || strings.Contains(f.sent[0], "later retained") {
 		t.Fatal("maintenance blocked exact own repair or sent new batch", f)
@@ -117,8 +119,9 @@ func TestHRW004ExactOwnStrandedRepairPrecedesReservation(t *testing.T) {
 }
 
 func TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity(t *testing.T) {
-	oldIO, oldTarget := nativeWakeIO, nativeWakeTarget
-	defer func() { nativeWakeIO, nativeWakeTarget = oldIO, oldTarget }()
+	oldIO, oldTarget, oldIdentity := nativeWakeIO, nativeWakeTarget, nativeWakeIdentity
+	defer func() { nativeWakeIO, nativeWakeTarget, nativeWakeIdentity = oldIO, oldTarget, oldIdentity }()
+	nativeWakeIdentity = func(string) string { return strings.Repeat("a", 32) }
 	current := "%isolated"
 	calls := 0
 	nativeWakeTarget = func() string { return current }
@@ -156,7 +159,7 @@ func TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource(t *tes
 	x.nativeSubmit = func(string, string, string) (dispatch.Result, bool) {
 		calls++
 		if busy {
-			return dispatch.Result{State: dispatch.StateRefusedWaiting}, true
+			return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "wake-loaded-idle-required", Submission: dispatch.SubmissionNotSubmitted}, true
 		}
 		return dispatch.Result{State: dispatch.StateQueued, Delivery: "wake-accepted"}, true
 	}
@@ -171,6 +174,7 @@ func TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource(t *tes
 		t.Fatal("busy wake claimed accepted", got)
 	}
 	busy = false
+	f.nano += int64(5 * time.Second)
 	drain(x, "%isolated")
 	if calls != 2 || Pending() || len(f.sent) != 0 {
 		t.Fatal("idle acceptance did not close exact local batch", calls, f)

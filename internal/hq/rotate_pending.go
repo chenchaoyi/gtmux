@@ -425,11 +425,13 @@ func failRotation(r rotationRequest, reason string, now int64) {
 		return
 	}
 	events.AuditRotateFailed(r.Agent, r.Retiring, reason, now)
-	notify.Send(notify.Options{
+	queued := wakeDesktopNotice(notify.Options{
 		Kind: "attention", Title: i18n.Tr("HQ handoff did not complete", "HQ 轮换未完成"),
 		Subtitle: "gtmux", Message: reason, Pane: r.Pane, Session: "gtmux HQ",
 	})
-	_ = os.Remove(rotationPendingPath())
+	diag.For("hq").Info("hq.rotation.failure_notice", "HQ handoff failure journaled",
+		"desktop_queued", queued, "reset_attempted", r.SentAt != 0)
+	diag.ReportStoreFailure("hq-rotation", os.Remove(rotationPendingPath()))
 }
 
 // Only known, value-free observation codes enter persisted diagnostics or logs.

@@ -17938,13 +17938,13 @@
       ]
     },
     "internal/hqnudge/hqnudge_test.go": {
-      "sha256": "d419314b9891ec1c89c6a134b2c2909e5380143dbf0cef8af762121f68da8410",
+      "sha256": "1a1d7476e208860fc2649ac64fc77a06c73edc3256e65f9fa0510f37e05e7944",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-1143100107a6",
-          "line": 159,
+          "line": 175,
           "kind": "Test",
           "name": "TestDeliver_DraftPresent_QueuesNoSend",
           "dynamic": false,
@@ -17952,7 +17952,7 @@
         },
         {
           "id": "LEG-5feea82043db",
-          "line": 174,
+          "line": 190,
           "kind": "Test",
           "name": "TestDeliver_EmptyBox_DeliversOnce",
           "dynamic": false,
@@ -17960,7 +17960,7 @@
         },
         {
           "id": "LEG-c71671c4ba48",
-          "line": 189,
+          "line": 205,
           "kind": "Test",
           "name": "TestDeliver_Coalesce",
           "dynamic": false,
@@ -17968,7 +17968,7 @@
         },
         {
           "id": "LEG-4543daeb8fe5",
-          "line": 209,
+          "line": 225,
           "kind": "Test",
           "name": "TestDrain_DraftedBox_NeverEnters",
           "dynamic": false,
@@ -17976,7 +17976,7 @@
         },
         {
           "id": "LEG-9e9e5060a7d3",
-          "line": 223,
+          "line": 239,
           "kind": "Test",
           "name": "TestBoxEmpty_TwoFrameRace",
           "dynamic": false,
@@ -17984,7 +17984,7 @@
         },
         {
           "id": "LEG-f5db8d368978",
-          "line": 244,
+          "line": 260,
           "kind": "Test",
           "name": "TestDeliver_CopyMode_Queues",
           "dynamic": false,
@@ -17992,7 +17992,7 @@
         },
         {
           "id": "LEG-47db2887da50",
-          "line": 262,
+          "line": 278,
           "kind": "Test",
           "name": "TestBoxEmpty_UnstructuredIsNotEmpty",
           "dynamic": false,
@@ -18000,7 +18000,7 @@
         },
         {
           "id": "LEG-ca8e8593d91b",
-          "line": 276,
+          "line": 292,
           "kind": "Test",
           "name": "TestDeliverKeyed_ReplacesInsteadOfAdding",
           "dynamic": false,
@@ -18008,7 +18008,7 @@
         },
         {
           "id": "LEG-25eaf6120948",
-          "line": 294,
+          "line": 310,
           "kind": "Test",
           "name": "TestDrain_HoldsUndueKeyedEntry",
           "dynamic": false,
@@ -18016,7 +18016,7 @@
         },
         {
           "id": "LEG-ce9a44c61603",
-          "line": 317,
+          "line": 333,
           "kind": "Test",
           "name": "TestDeliverKeyed_DueImmediatelyFlushes",
           "dynamic": false,
@@ -18040,7 +18040,7 @@
         },
         {
           "id": "LEG-06f0ff2c800e",
-          "line": 366,
+          "line": 372,
           "kind": "Test",
           "name": "TestDrain_SwallowedEnter_ParksForEnterRepair",
           "dynamic": false,
@@ -18072,7 +18072,7 @@
         },
         {
           "id": "LEG-6600b2e0c097",
-          "line": 464,
+          "line": 436,
           "kind": "Test",
           "name": "TestDrain_BatchCapsOnPayloadSize",
           "dynamic": false,
@@ -18080,7 +18080,7 @@
         },
         {
           "id": "LEG-f7826436e92c",
-          "line": 488,
+          "line": 460,
           "kind": "Test",
           "name": "TestAck_MatchesAWrappedSubmittedLine",
           "dynamic": false,
@@ -18088,7 +18088,7 @@
         },
         {
           "id": "LEG-7aac2648275e",
-          "line": 523,
+          "line": 494,
           "kind": "Test",
           "name": "TestBatchID_DiffersForANewBatchWithTheSameText",
           "dynamic": false,
@@ -18104,7 +18104,7 @@
         },
         {
           "id": "LEG-39c41102061d",
-          "line": 572,
+          "line": 542,
           "kind": "Test",
           "name": "TestReclaim_FreshClaimIsLeftToItsDrainer",
           "dynamic": false,
@@ -18112,7 +18112,7 @@
         },
         {
           "id": "LEG-0105c0aa0cfb",
-          "line": 587,
+          "line": 557,
           "kind": "Test",
           "name": "TestDrain_DecisionWakeOvertakesStandingWarnings",
           "dynamic": false,
@@ -18120,7 +18120,7 @@
         },
         {
           "id": "LEG-e897c7cc6775",
-          "line": 604,
+          "line": 574,
           "kind": "Test",
           "name": "TestDrain_BatchCapHoldsTheRemainder",
           "dynamic": false,
@@ -18128,7 +18128,7 @@
         },
         {
           "id": "LEG-61c3664adc23",
-          "line": 642,
+          "line": 612,
           "kind": "Test",
           "name": "TestEvict_DropsTheLowestPriorityOldest",
           "dynamic": false,
@@ -18136,7 +18136,7 @@
         },
         {
           "id": "LEG-c962a68914d5",
-          "line": 669,
+          "line": 639,
           "kind": "Test",
           "name": "TestLegacyQueueEntry_StillDrains",
           "dynamic": false,
@@ -18144,7 +18144,7 @@
         },
         {
           "id": "LEG-4b5493a93420",
-          "line": 681,
+          "line": 651,
           "kind": "Test",
           "name": "TestDegraded_AfterConsecutiveFailures",
           "dynamic": false,
@@ -18152,7 +18152,7 @@
         },
         {
           "id": "LEG-913e40354995",
-          "line": 704,
+          "line": 674,
           "kind": "Test",
           "name": "TestDegraded_OnAStuckQueue",
           "dynamic": false,
@@ -18160,7 +18160,7 @@
         },
         {
           "id": "LEG-1bde8325a416",
-          "line": 713,
+          "line": 683,
           "kind": "Test",
           "name": "TestDegraded_UndueEntryIsNotStuck",
           "dynamic": false,
@@ -18168,7 +18168,7 @@
         },
         {
           "id": "LEG-b031a06c33e5",
-          "line": 726,
+          "line": 696,
           "kind": "Test",
           "name": "TestEnqueue_QueuesWithoutTyping",
           "dynamic": false,
@@ -18176,7 +18176,7 @@
         },
         {
           "id": "LEG-c8999c1ba57e",
-          "line": 745,
+          "line": 715,
           "kind": "Test",
           "name": "TestDeliver_FaintGhostDoesNotHoldNudge",
           "dynamic": false,
@@ -18184,7 +18184,7 @@
         },
         {
           "id": "LEG-58b084121bae",
-          "line": 781,
+          "line": 751,
           "kind": "Test",
           "name": "TestDrain_SwallowedEnter_RepairedOnNextTick",
           "dynamic": false,
@@ -18192,7 +18192,7 @@
         },
         {
           "id": "LEG-17cfb14fd8fc",
-          "line": 811,
+          "line": 782,
           "kind": "Test",
           "name": "TestRepair_EditedDraft_NeverEnters",
           "dynamic": false,
@@ -18200,7 +18200,7 @@
         },
         {
           "id": "LEG-0b407a5ed28f",
-          "line": 835,
+          "line": 806,
           "kind": "Test",
           "name": "TestRepair_UserSubmittedTheBatch_Confirms",
           "dynamic": false,
@@ -18208,7 +18208,7 @@
         },
         {
           "id": "LEG-eac8e60c4686",
-          "line": 857,
+          "line": 828,
           "kind": "Test",
           "name": "TestRepair_ExhaustedHandsBack",
           "dynamic": false,
@@ -18216,7 +18216,7 @@
         },
         {
           "id": "LEG-b90b17a93785",
-          "line": 881,
+          "line": 853,
           "kind": "Test",
           "name": "TestDeliver_ReceiptConfirms_ScreenBlind",
           "dynamic": false,
@@ -18224,7 +18224,7 @@
         },
         {
           "id": "LEG-c13f4fe1731e",
-          "line": 905,
+          "line": 877,
           "kind": "Test",
           "name": "TestDeliver_ReceiptNoEvidence_ScreenStillJudges",
           "dynamic": false,
@@ -18232,7 +18232,7 @@
         },
         {
           "id": "LEG-0a0dafe15dff",
-          "line": 932,
+          "line": 904,
           "kind": "Test",
           "name": "TestDeliveredBatchJournalsPayloadOncePerBatch",
           "dynamic": false,
@@ -18248,7 +18248,7 @@
         },
         {
           "id": "LEG-ffca777f71ee",
-          "line": 983,
+          "line": 944,
           "kind": "Test",
           "name": "TestEvictionIsJournaled",
           "dynamic": false,
@@ -18256,7 +18256,7 @@
         },
         {
           "id": "LEG-9053551924df",
-          "line": 1003,
+          "line": 964,
           "kind": "Test",
           "name": "TestSupersededDropIsJournaled",
           "dynamic": false,
@@ -18264,7 +18264,7 @@
         },
         {
           "id": "LEG-beb8ef28339f",
-          "line": 1039,
+          "line": 1000,
           "kind": "Test",
           "name": "TestRepairConfirmedDeliveryIsJournaled",
           "dynamic": false,
@@ -18272,7 +18272,7 @@
         },
         {
           "id": "LEG-cd2e2f4c9bd9",
-          "line": 1062,
+          "line": 1024,
           "kind": "Test",
           "name": "TestDeliver_ShellForeground_HoldsUntilTheAgentIsUp",
           "dynamic": false,
@@ -18280,7 +18280,7 @@
         },
         {
           "id": "LEG-cf63e67ddc3a",
-          "line": 1083,
+          "line": 1045,
           "kind": "Test",
           "name": "TestIsShellFg",
           "dynamic": false,
@@ -18288,7 +18288,7 @@
         },
         {
           "id": "LEG-a80757268560",
-          "line": 1101,
+          "line": 1063,
           "kind": "Test",
           "name": "TestDrain_LateReceiptStopsTheRepaste",
           "dynamic": false,
@@ -18296,7 +18296,7 @@
         },
         {
           "id": "LEG-adde28d90676",
-          "line": 1125,
+          "line": 1087,
           "kind": "Test",
           "name": "TestDrain_IdInHistoryStopsTheRepaste",
           "dynamic": false,
@@ -18304,7 +18304,7 @@
         },
         {
           "id": "LEG-c560160c7a07",
-          "line": 1150,
+          "line": 1112,
           "kind": "Test",
           "name": "TestDrain_NewWakeBetweenAttempts_OldReceiptClosesOnlyTheOldEntry",
           "dynamic": false,
@@ -18312,7 +18312,7 @@
         },
         {
           "id": "LEG-1ac7f0b674ad",
-          "line": 1166,
+          "line": 1128,
           "kind": "Test",
           "name": "TestDrain_NewWakeBetweenAttempts_OldIdInHistoryClosesOnlyTheOldEntry",
           "dynamic": false,
@@ -18320,7 +18320,7 @@
         },
         {
           "id": "LEG-d09cbc93ed40",
-          "line": 1182,
+          "line": 1144,
           "kind": "Test",
           "name": "TestDrain_RewrittenLineBetweenAttempts_IsNotPastedAgain",
           "dynamic": false,
@@ -18336,7 +18336,7 @@
         },
         {
           "id": "LEG-3ca7d3a365f6",
-          "line": 1214,
+          "line": 1177,
           "kind": "Test",
           "name": "TestRepair_ExhaustedHandBack_LateReceiptIsNotPastedAgain",
           "dynamic": false,
@@ -18344,7 +18344,7 @@
         },
         {
           "id": "LEG-27c3c2b2ffb7",
-          "line": 1236,
+          "line": 1201,
           "kind": "Test",
           "name": "TestRepair_EditedDraftHandBack_LateReceiptIsNotPastedAgain",
           "dynamic": false,
@@ -18352,7 +18352,7 @@
         },
         {
           "id": "LEG-5da98a32fbef",
-          "line": 1263,
+          "line": 1228,
           "kind": "Test",
           "name": "TestRepair_TextAroundTheBatch_IsNeverSubmitted",
           "dynamic": false,
@@ -18368,7 +18368,7 @@
         },
         {
           "id": "LEG-5bf683206f0a",
-          "line": 1299,
+          "line": 1264,
           "kind": "Test",
           "name": "TestRepair_ExactBatch_IsSubmitted",
           "dynamic": false,
@@ -18376,7 +18376,7 @@
         },
         {
           "id": "LEG-3d3b90b863d9",
-          "line": 1315,
+          "line": 1281,
           "kind": "Test",
           "name": "TestRepair_UserClearsAfterHandBack_LateReceiptCloses",
           "dynamic": false,
@@ -18384,7 +18384,7 @@
         },
         {
           "id": "LEG-5bf7aa693c7c",
-          "line": 1409,
+          "line": 1375,
           "kind": "Test",
           "name": "TestRepair_UneditedBatch_IsSubmittedAtEveryWidth",
           "dynamic": false,
@@ -18392,11 +18392,83 @@
         },
         {
           "id": "LEG-0fe4e8035179",
-          "line": 1425,
+          "line": 1392,
           "kind": "Test",
           "name": "TestRepair_EditedBatch_IsNeverSubmittedAtAnyWidth",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-c04e11139e42",
+          "line": 344,
+          "kind": "reviewed-selector",
+          "name": "TestDrain_PasteErrorRetainsUnknownWithoutReplay",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-007"
+        },
+        {
+          "id": "MAP-fa9443bacf5a",
+          "line": 355,
+          "kind": "reviewed-selector",
+          "name": "TestDrain_EnterErrorKeepsExactDraftForRepair",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-007"
+        },
+        {
+          "id": "MAP-975da3db68ae",
+          "line": 396,
+          "kind": "reviewed-selector",
+          "name": "TestDrain_UnconfirmedAckNeverRepastes",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-007"
+        },
+        {
+          "id": "MAP-e7ca4c936963",
+          "line": 409,
+          "kind": "reviewed-selector",
+          "name": "TestDrain_UnconfirmedEntryPreservesItsHealthEvidence",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-007"
+        },
+        {
+          "id": "MAP-3176df767224",
+          "line": 422,
+          "kind": "reviewed-selector",
+          "name": "TestDrain_SendErrorDoesNotBlockUnrelatedWork",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-007"
+        },
+        {
+          "id": "MAP-db9ce206f907",
+          "line": 529,
+          "kind": "reviewed-selector",
+          "name": "TestReclaim_StrandedClaimHoldsWithoutReplaying",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-007"
+        },
+        {
+          "id": "MAP-71a6c19d9a3d",
+          "line": 933,
+          "kind": "reviewed-selector",
+          "name": "TestUnackableClaimIsRetainedWithoutFalseAudit",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-007"
+        },
+        {
+          "id": "MAP-ac4800759c12",
+          "line": 1163,
+          "kind": "reviewed-selector",
+          "name": "TestDrain_NewWakeDoesNotReplayUnconfirmedOldEntry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-007"
         }
       ]
     },
@@ -18527,7 +18599,7 @@
           "design": "HRW-009,HRW-010"
         }
       ],
-      "sha256": "a87017024da3b291a0e624cecd08f313854396b2e0022ef02880a442a1ba422d"
+      "sha256": "e6a91ca5e233ab943705a95f949300b1b9025a5078228cbb2108451c46587e5e"
     },
     "internal/hqnudge/native_test.go": {
       "sha256": "8491d9bacf0d6e65202a0378f9d5f2504670b00fc8a0a3fe94a8e8b603e79040",
@@ -18558,7 +18630,7 @@
       "cases": [
         {
           "id": "MAP-2f393b4dfbb1",
-          "line": 28,
+          "line": 29,
           "kind": "reviewed-selector",
           "name": "TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority",
           "dynamic": false,
@@ -18567,7 +18639,7 @@
         },
         {
           "id": "MAP-89ffb5925672",
-          "line": 88,
+          "line": 89,
           "kind": "reviewed-selector",
           "name": "TestHRW004RotationDoesNotSubmitOrRepairUserDraft",
           "dynamic": false,
@@ -18576,7 +18648,7 @@
         },
         {
           "id": "MAP-ad61e9898864",
-          "line": 102,
+          "line": 103,
           "kind": "reviewed-selector",
           "name": "TestHRW004ExactOwnStrandedRepairPrecedesReservation",
           "dynamic": false,
@@ -18585,7 +18657,7 @@
         },
         {
           "id": "MAP-62d7c36b98c4",
-          "line": 119,
+          "line": 121,
           "kind": "reviewed-selector",
           "name": "TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity",
           "dynamic": false,
@@ -18594,7 +18666,7 @@
         },
         {
           "id": "MAP-f6f7a40c985c",
-          "line": 149,
+          "line": 152,
           "kind": "reviewed-selector",
           "name": "TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource",
           "dynamic": false,
@@ -18602,7 +18674,7 @@
           "design": "HRW-004,HRW-005,HRW-008"
         }
       ],
-      "sha256": "6b456f3fe3c4fcdb38af6bb02ddaa4a2139aeca32a9c517eb79e933e2047d772"
+      "sha256": "c9457e159480d543b9c2dc605f6e2e0cbabc72cf42f43e70d28bdef7b511d90c"
     },
     "internal/hqpane/hqpane_test.go": {
       "sha256": "c610c7ddad1ea80ece6b6383365048949c93222b3d3e8734de6103fac6459974",
@@ -67264,7 +67336,7 @@
       "cases": [
         {
           "id": "MAP-6c44c0313e74",
-          "line": 305,
+          "line": 334,
           "kind": "reviewed-selector",
           "name": "TestWorkspaceDraftKeepsBothWakeQueues",
           "dynamic": false,
@@ -67281,7 +67353,7 @@
           "design": "HPC-004,HPC-005"
         }
       ],
-      "sha256": "557badb0af889d5ae2030ece293090204ebb279e00bc3c4e308b2c47984ab69b"
+      "sha256": "e813464fd362d238261f91ecd7b4767729d4191ae6a033f68a481c4e82d5b442"
     },
     "internal/app/hqworkspace_continuation_test.go": {
       "layer": "L3",
@@ -67297,7 +67369,7 @@
           "design": "HPC-002"
         }
       ],
-      "sha256": "4ed1b30c2d42c1dd074c5ad5a7f401ebc4807ba791171239ffaa1c82163ccb4f"
+      "sha256": "55cdca8493f5442af4736bac693e8699f943b6821bace59f956db97c2dc00871"
     },
     "internal/hqworkspace/continuation_claim_test.go": {
       "layer": "L2",
@@ -67487,7 +67559,7 @@
       "cases": [
         {
           "id": "MAP-4472b7512a0d",
-          "line": 24,
+          "line": 27,
           "kind": "reviewed-selector",
           "name": "TestWorkspaceTriageCLI",
           "dynamic": false,
@@ -67495,7 +67567,7 @@
           "design": "HPT-003"
         }
       ],
-      "sha256": "a47f579b66586c67a7d260d9e346944fcd55944d6cd2eabc35442004affc3301"
+      "sha256": "028a13dd25f6d34ec2c8aa8f70715c5fa39a61073021a39d9b3076002349b41a"
     },
     "internal/app/hqworkspace_triage_test.go": {
       "layer": "L2",
@@ -68341,7 +68413,7 @@
           "design": "HWA-001,HWA-002"
         }
       ],
-      "sha256": "1732d559dd139e9477de0e1daecbbcf1cdef03e237924d40669a2a3c67c8dff7"
+      "sha256": "04eb469d303d5e272143119ae1f50edc9673004207b0a9a48db54be834054563"
     },
     "internal/hqnudge/autorecovery_review_test.go": {
       "layer": "L2",
@@ -68367,6 +68439,204 @@
         }
       ],
       "sha256": "4e4172c009e6eee23dc36effba59ba50f0d5fee5d0617bcab99c1253b75d923b"
+    },
+    "internal/app/hq_wake_deadline_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-19a5906d1fd5",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestHWA005DeadlineIsOwedUntilOriginalMatterSettles",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-005"
+        }
+      ],
+      "sha256": "54abc36823ff65de5fd250c54671dfa755ea760cb79e11a4294e3167555c5d2c"
+    },
+    "internal/hq/wake_autorecovery_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d3fb86c5d55c",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-004"
+        }
+      ],
+      "sha256": "5c899b578da6f0ad8c3a043e3ba095ad1793f58dada82538ec1649dca2f3ad72"
+    },
+    "internal/hqnudge/pressure_health_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ac1ffa61f5b2",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestHWA003IncomingStandingWakeCannotEvictDecisions",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-003,HWA-004"
+        },
+        {
+          "id": "MAP-392ca77cfaeb",
+          "line": 38,
+          "kind": "reviewed-selector",
+          "name": "TestHWA004ConflictNeedsCleanScanAndPositiveReceipt",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-003,HWA-004"
+        }
+      ],
+      "sha256": "5bef4af966d663183387bb25338034c9cf1cc6681ee2cf18d0812472966c48f8"
+    },
+    "internal/hq/wake_rotation_regression_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d03b4abfe4f2",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestHWA008ChangedSuccessorFailsIndependentlyWithoutSecondReset",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-008"
+        }
+      ],
+      "sha256": "6e59596cbd951a44be0937be01270577b1bbfdd9703b9f0e6d2f8a357261667d"
+    },
+    "internal/hqnudge/wake_evidence_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-60d41c147213",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestHWA012AcceptanceWaitsForIndependentProof",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-012"
+        }
+      ],
+      "sha256": "1e0a3929b5c51290f17cb0e305e73f7b1c5b9a7c8b96106caf671ae7a9420cfa"
+    },
+    "internal/hqnudge/wake_retry_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a8b272ecc334",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestHWA006NativePositiveRefusalUsesDurableBoundedBackoff",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-006,HWA-007"
+        },
+        {
+          "id": "MAP-6d6b23733fd9",
+          "line": 57,
+          "kind": "reviewed-selector",
+          "name": "TestHWA006UnknownAndChangedTargetNeverResubmit",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-006,HWA-007"
+        },
+        {
+          "id": "MAP-63c494f35db1",
+          "line": 94,
+          "kind": "reviewed-selector",
+          "name": "TestHWA007GuardsPermitNoClientInput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-006,HWA-007"
+        },
+        {
+          "id": "MAP-730731030887",
+          "line": 114,
+          "kind": "reviewed-selector",
+          "name": "TestHWA007CrashAfterLegacyEnterRetainsOriginal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-006,HWA-007"
+        }
+      ],
+      "sha256": "00407fb7e6fcfdc73a132929e4ab2585c2db48992438d7b1736771a7a187efb8"
+    },
+    "internal/transcript/wake_evidence_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-bb3df0aabb7c",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-013"
+        }
+      ],
+      "sha256": "44d8fb5a34c054ca3f531095efda85ba8335b5adc8090bf9c66b2c5071d3747a"
+    },
+    "internal/hqnudge/wake_evidence_review_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-809457712075",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "TestHWA014AcceptedProofBudgetDoesNotFreezeAdmission",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-014,HWA-015"
+        },
+        {
+          "id": "MAP-d8bc2e7c48ba",
+          "line": 87,
+          "kind": "reviewed-selector",
+          "name": "TestHWA015AcceptedProofCrashRetryKeepsOneDeliveryAudit",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-014,HWA-015"
+        }
+      ],
+      "sha256": "c4368e2904a23fc9892f79bf4d986c1c9cf04eaba66fc781afa606348aa0508e"
+    },
+    "internal/hqnudge/wake_storage_review_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b05639455d46",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestHWA017UnboundLegacyRefusalDoesNotEnterNewTarget",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-017,HWA-018"
+        },
+        {
+          "id": "MAP-5a37fd2ce65b",
+          "line": 67,
+          "kind": "reviewed-selector",
+          "name": "TestHWA018QueueIOHealthSurvivesUntilVerifiedProgress",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-017,HWA-018"
+        }
+      ],
+      "sha256": "798e59c5b217f14220ad41d557c4f01e9275849581e1654756c1e579aa1a8090"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

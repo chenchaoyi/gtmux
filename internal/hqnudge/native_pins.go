@@ -98,7 +98,7 @@ func retireNativePin(r nativeIntent, e nativeEntry) error {
 		// A completed refused publication transfers this inode to the queue and
 		// permits that producer to replace its text before our extra link is retired.
 		p, pe := os.Lstat(nativePinPath(e))
-		q, qe := os.Lstat(claimBase(filepath.Join(queueDir(), e.Name)))
+		q, qe := os.Lstat(finalClaimPath(r, filepath.Join(queueDir(), e.Name)))
 		if r.Outcome != "refused" || pe != nil || qe != nil || !os.SameFile(p, q) {
 			return fmt.Errorf("%w: anchor payload changed", errNativeClaimConflict)
 		}

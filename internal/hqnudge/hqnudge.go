@@ -23,28 +23,15 @@
 // one-file-per-nudge under state.Dir()), not in-memory. Draining claims each file with
 // an atomic rename so two concurrent hooks can't double-deliver one nudge.
 //
-// Delivery is ACKED (hq-wake-reliability), three layers deep (agent-drivers P2):
-// the DRIVER RECEIPT first — the HQ session's own UserPromptSubmit event carrying
-// the batch id (the hook records it; deterministic, immune to the history scrolling
-// out of capture reach) — then the screen read (id in history and not in the draft).
-// An id still sitting in the DRAFT is the third, precise verdict: the paste landed
-// but the Enter was swallowed. That batch is NOT requeued (our own paste would block
-// every later drain at the draft-guard — the failure mode that once stranded the
-// channel until the 10-minute stale escalation): its claims are parked as `.stuck`
-// and the next drain (the 3s serve fast tick) re-sends ONLY Enter, after confirming
-// the draft still holds the batch intact — never a re-paste, never a new id. A
-// paste/Enter error or a missing ack renames the claim back and a later drain
-// retries it. A claim whose drainer died is reclaimed after orphanClaimAge. Because
-// a screen is not a transactional sink, retries can duplicate a delivered batch; they
-// do not guarantee delivery (see maxAckAttempts). Every batch carries a short `#<id>`
-// that is STABLE across a re-send, so HQ can recognize (and the playbook tells it to
-// ignore) a duplicate.
+// The journal records a submission boundary before input mutation. An unknown
+// outcome keeps the original generation for late evidence and cannot authorize
+// a replay. A positively refused native attempt may be scheduled with a bounded
+// backoff. A terminal repair can press Enter only on an exact owned draft.
 package hqnudge
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -101,21 +88,6 @@ const (
 	staleQueueSecs = 10 * 60
 )
 
-// maxAckAttempts bounds how many times an entry may be PASTED without its delivery
-// being confirmed. It exists because the two failure modes are not alike:
-//
-//   - a paste/Enter ERROR means nothing landed, so an unbounded retry is free and
-//     correct — it costs no duplicate and recovers the moment tmux does;
-//   - a missed ACK means the batch may well have landed and only the confirmation was
-//     lost. Retrying forever would then re-paste a line HQ can already see, once per
-//     drain, for as long as the queue lives.
-//
-// So an unconfirmed entry is re-sent at most twice more (carrying the same id, which
-// the playbook tells HQ to read as a re-send) and then dropped — with wake-degraded
-// already raised. A bounded, ANNOUNCED loss beats an unbounded spam loop, and beats
-// the silent loss this whole change exists to end.
-const maxAckAttempts = 3
-
 // sendingSuffix marks a queue entry claimed by a drainer.
 const sendingSuffix = ".sending"
 
@@ -123,12 +95,6 @@ const sendingSuffix = ".sending"
 // landed, Enter swallowed — the id proves it). Parked, not requeued: the Enter-only
 // repair owns it until the delivery is confirmed or the repair is abandoned.
 const stuckSuffix = ".stuck"
-
-// enterRepairMaxAttempts bounds how many times the repair may re-send Enter without
-// the delivery being confirmed. Past it the batch is handed back to the normal
-// unacked path (bounded re-send with the SAME id, degraded counting) — a TUI that
-// eats three Enters is not going to take the fourth.
-const enterRepairMaxAttempts = 3
 
 // queueDir holds one file per pending HQ nudge (`<due>-<pid>.p<prio>.txt`).
 func queueDir() string { return filepath.Join(state.Dir(), "hq-nudges") }
@@ -156,18 +122,29 @@ type io struct {
 	nativePrepare func(pane string) func(payload, id string) (dispatch.Result, bool)
 	nativeSubmit  func(pane, payload, id string) (dispatch.Result, bool) // isolated legacy transport seam
 	foreground    func(pane string) string
+	identity      func(pane string) string
+	busy          func(pane string) bool
 }
 
 var prod = io{
 	nativePrepare: prepareNativeWake,
-	capture:       tmux.CapturePane,
-	captureColor:  tmux.CaptureFullColor,
-	captureFull:   tmux.CaptureFull,
-	paste:         tmux.Paste,
-	enter:         func(pane string) error { return tmux.SendKey(pane, "Enter") },
-	sleep:         func() { time.Sleep(twoFrameGap) },
-	nowNano:       func() int64 { return time.Now().UnixNano() },
-	inMode:        tmux.InMode,
+	identity:      liveWakeIdentity,
+	busy: func(pane string) bool {
+		for _, path := range []string{state.ActivePath(pane), state.WaitingPath(pane)} {
+			if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
+				return true
+			}
+		}
+		return false
+	},
+	capture:      tmux.CapturePane,
+	captureColor: tmux.CaptureFullColor,
+	captureFull:  tmux.CaptureFull,
+	paste:        tmux.Paste,
+	enter:        func(pane string) error { return tmux.SendKey(pane, "Enter") },
+	sleep:        func() { time.Sleep(twoFrameGap) },
+	nowNano:      func() int64 { return time.Now().UnixNano() },
+	inMode:       tmux.InMode,
 	receipt: func(pane, needle string, since int64) driver.Verdict {
 		d := driver.For(strings.TrimSpace(tmux.Display(pane, "#{pane_current_command}")))
 		if d.Receipt == nil {
@@ -299,6 +276,7 @@ func withHQInput(work func()) {
 	release, acquired, err := hqinput.Acquire()
 	if err != nil {
 		diag.ReportStoreFailure("hq-input", err)
+		recordIssue(issueRecoveryUnsafe, time.Now().UnixNano())
 		return
 	}
 	if !acquired {
@@ -330,6 +308,7 @@ func Pending() bool { return hasPending() }
 func hasPending() bool {
 	for _, e := range readQueue() {
 		if strings.HasSuffix(e.Name(), ".txt") || strings.HasSuffix(e.Name(), stuckSuffix) ||
+			strings.HasSuffix(e.Name(), legacyUncertainSuffix) ||
 			isOrphanClaim(e) {
 			return true
 		}
@@ -366,9 +345,25 @@ func Degraded(now int64) bool {
 	return oldest > 0 && now-oldest > staleQueueSecs
 }
 
-// readQueue lists the queue dir (empty on any error — an absent dir is an empty queue).
+// readQueue is used by the active producers and drainer. Health inspection
+// calls inspectQueue directly so merely inspecting the queue is read-only.
 func readQueue() []os.DirEntry {
-	entries, _ := os.ReadDir(queueDir())
+	entries, err := inspectQueue()
+	if err != nil {
+		queueFailure(time.Now().UnixNano(), err)
+	}
+	return entries
+}
+
+func inspectQueue() ([]os.DirEntry, error) {
+	dir := queueDir()
+	if err := state.CheckPrivateDirectory(dir); err != nil {
+		return nil, ignoreNativeMissing(err)
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, ignoreNativeMissing(err)
+	}
 	out := entries[:0]
 	for _, e := range entries {
 		if !e.IsDir() && e.Name() != filepath.Base(failCountPath()) &&
@@ -376,7 +371,7 @@ func readQueue() []os.DirEntry {
 			out = append(out, e)
 		}
 	}
-	return out
+	return out, nil
 }
 
 // isOrphanClaim reports whether e is a claim old enough that its owner must be
@@ -394,20 +389,6 @@ func isOrphanClaim(e os.DirEntry) bool {
 	}
 	info, err := e.Info()
 	return err == nil && time.Since(info.ModTime()) > orphanClaimAge
-}
-
-// reclaimOrphans returns stranded claims to the queue. Run at the head of every drain.
-// A reclaim can race a live-but-slow drainer, in which case the batch delivers twice —
-// with the SAME batch id, which is the documented (and recognizable) duplicate. The
-// alternative it replaces was a permanent silent loss.
-func reclaimOrphansExcept(protected map[string]bool) {
-	for _, e := range readQueue() {
-		if protected[e.Name()] || !isOrphanClaim(e) {
-			continue
-		}
-		src := filepath.Join(queueDir(), e.Name())
-		_ = os.Rename(src, claimBase(src))
-	}
 }
 
 // claimBase strips a claim suffix (`.sending` / `.stuck`), returning the entry's
@@ -437,13 +418,14 @@ func boxEmpty(x io, pane string) bool {
 func enqueue(x io, msg string) {
 	release, err := lockQueue()
 	if err != nil {
-		diag.ReportStoreFailure("hq-wake-queue", err)
+		queueFailure(x.nowNano(), err)
 		return
 	}
 	defer release()
-	evictOverflow()
-	name := fmt.Sprintf("%019d-%d-%s.p%d.txt", x.nowNano(), os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg))
-	diag.ReportStoreFailure("hq-wake-queue", state.WritePrivateFile(filepath.Join(queueDir(), name), []byte(msg)))
+	now := x.nowNano()
+	name := fmt.Sprintf("%019d-%d-%s.p%d.txt", now, os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg))
+	wakeStage("act.wake.scheduled", name, "", diag.OK, "immediate")
+	admitQueued(name, msg, now)
 }
 
 // enqueueKeyed replaces the still-queued generation in place to keep its due
@@ -452,35 +434,26 @@ func enqueue(x io, msg string) {
 func enqueueKeyed(x io, key, msg string, dueNano int64) {
 	release, err := lockQueue()
 	if err != nil {
-		diag.ReportStoreFailure("hq-wake-queue", err)
+		queueFailure(x.nowNano(), err)
 		return
 	}
 	defer release()
 	field := keyField(key)
+	now := x.nowNano()
 	if name := pendingKey(field); name != "" {
-		diag.ReportStoreFailure("hq-wake-queue", state.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0600))
+		wakeStage("act.wake.scheduled", name, "", diag.OK, "updated")
+		if err := state.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0600); err != nil {
+			queueFailure(now, err)
+		} else {
+			wakeStage("act.wake.merged", name, "", diag.OK, "pending-key")
+			retireObsoleteRetries(field, now)
+		}
 		return
 	}
-	evictOverflow()
 	name := fmt.Sprintf("%019d-%d-%s.p%d%s.txt", dueNano, os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg), field)
-	diag.ReportStoreFailure("hq-wake-queue", state.WritePrivateFile(filepath.Join(queueDir(), name), []byte(msg)))
-}
-
-// evictOverflow keeps the queue under maxQueueEntries by dropping the LOWEST-priority
-// OLDEST entry (never a claim in flight). Deliberate priority inversion: a standing
-// resource warning re-fires on the next tick, a goal-changed never does — and the
-// oldest standing warning is also the most stale reading of the two. The eviction is
-// journaled: a dropped line HQ never saw must at least be findable afterwards.
-func evictOverflow() {
-	names := queuedNames(func(string) bool { return true })
-	for len(names) >= maxQueueEntries {
-		i := len(names) - 1
-		for lowest := prioOf(names[i]); i > 0 && prioOf(names[i-1]) == lowest; i-- {
-		}
-		victim := filepath.Join(queueDir(), names[i])
-		auditDroppedFile(events.DropEvicted, victim)
-		_ = os.Remove(victim)
-		names = append(names[:i], names[i+1:]...)
+	wakeStage("act.wake.scheduled", name, "", diag.OK, "keyed")
+	if admitQueued(name, msg, now) {
+		retireObsoleteRetries(field, now)
 	}
 }
 
@@ -503,7 +476,7 @@ func auditDroppedFile(reason, path string) {
 func queuedNames(keep func(name string) bool) []string {
 	var names []string
 	for _, e := range readQueue() {
-		if strings.HasSuffix(e.Name(), ".txt") && keep(e.Name()) {
+		if strings.HasSuffix(e.Name(), ".txt") && attemptsOf(e.Name()) == 0 && keep(e.Name()) {
 			names = append(names, e.Name())
 		}
 	}
@@ -559,7 +532,8 @@ func prioOf(name string) int {
 	if i < 0 || i+2 >= len(name) {
 		return hqwake.PriorityDefault
 	}
-	n, err := strconv.Atoi(string(name[i+2]))
+	field, _, _ := strings.Cut(name[i+2:], ".")
+	n, err := strconv.Atoi(field)
 	if err != nil {
 		return hqwake.PriorityDefault
 	}
@@ -570,11 +544,12 @@ func prioOf(name string) int {
 // without its delivery being confirmed. A key can never be confused for it —
 // sanitizeKey strips dots.
 func attemptsOf(name string) int {
-	base := identityOf(name)
-	if base == strings.TrimSuffix(name, ".txt") {
+	base := strings.TrimSuffix(name, ".txt")
+	i := strings.LastIndex(base, ".a")
+	if i < 0 {
 		return 0
 	}
-	n, err := strconv.Atoi(strings.TrimSuffix(name, ".txt")[len(base)+2:])
+	n, err := strconv.Atoi(base[i+2:])
 	if err != nil {
 		return 0
 	}
@@ -586,6 +561,9 @@ func attemptsOf(name string) int {
 // the same id no matter how many attempts it took.
 func identityOf(name string) string {
 	base := strings.TrimSuffix(name, ".txt")
+	if retry, valid := parseRetry(name); valid && retry.Number > 0 {
+		return base[:strings.LastIndex(base, ".r")]
+	}
 	i := strings.LastIndex(base, ".a")
 	if i < 0 {
 		return base
@@ -594,11 +572,6 @@ func identityOf(name string) string {
 		return base
 	}
 	return base[:i]
-}
-
-// withAttempt renames an entry to carry attempt n.
-func withAttempt(name string, n int) string {
-	return fmt.Sprintf("%s.a%d.txt", identityOf(name), n)
 }
 
 // batchID is the batch's short identity: 6 hex of the claimed entries' identities
@@ -624,8 +597,13 @@ func batchID(claims []string, payload string) string {
 // A claim is REMOVED only once the delivery is acked; otherwise it is returned to the
 // queue for a later attempt.
 func drainInto(x io, pane string) {
-	if pending, err := hqinput.RotationPending(pane); err != nil || pending {
-		return // own stranded repair ran first; do not claim a NEW batch
+	pending, err := hqinput.RotationPending(pane)
+	if err != nil {
+		recordIssue(issueRecoveryUnsafe, x.nowNano())
+		return
+	}
+	if pending {
+		return // an unsent maintenance request reserves a safe input window
 	}
 	// Recover possible native submissions before ordinary orphan handling, even
 	// if the current pane now selects a legacy route. A restart is not a retry.
@@ -633,8 +611,10 @@ func drainInto(x io, pane string) {
 	if err != nil {
 		diag.ReportStoreFailure("hq-native-wake", err)
 		if protected == nil {
+			recordIssue(issueRecoveryUnsafe, x.nowNano())
 			return
-		} // unreadable/malformed intent holds the whole channel
+		}
+		recordIssue(issueClaimConflict, x.nowNano())
 	}
 	var submit func(string, string) (dispatch.Result, bool)
 	if x.nativePrepare != nil {
@@ -642,29 +622,50 @@ func drainInto(x io, pane string) {
 	} else if x.nativeSubmit != nil {
 		submit = func(payload, id string) (dispatch.Result, bool) { return x.nativeSubmit(pane, payload, id) }
 	}
-	if submit != nil {
-		for _, e := range readQueue() {
-			if !protected[e.Name()] && strings.HasSuffix(e.Name(), sendingSuffix) && isOrphanClaim(e) {
-				// Pre-journal native runtimes cannot prove these old claims unsent.
-				if err := parkNativeClaim(filepath.Join(queueDir(), e.Name())); err != nil {
-					diag.ReportStoreFailure("hq-native-wake", err)
-					if !errors.Is(err, errNativeClaimConflict) {
-						return
-					}
-					protected[e.Name()] = true
-				}
-			}
+	if _, err := os.Lstat(repairPath()); !errors.Is(err, os.ErrNotExist) {
+		if _, valid := readRepair(); !valid {
+			recordIssue(issueRecoveryUnsafe, x.nowNano())
+			return
 		}
 	}
-	reclaimOrphansExcept(protected)
-	settleEarlierAttempts(x, pane, protected)
+	if !holdOrphanClaims(x, protected) {
+		return
+	}
+	if len(protected) == 0 {
+		noteCleanRecovery(x.nowNano())
+	}
+	if !settleEarlierAttempts(x, pane, protected) {
+		return
+	}
+	if wakeBusy(x, pane) {
+		return
+	}
+	if submit == nil && !validWakeTarget(wakeIdentity(x, pane)) {
+		recordIssue(issueTargetUnavailable, x.nowNano())
+		return
+	}
 	// Never rename a queued replacement onto a held foreign/changed claim.
-	due := queuedNames(func(n string) bool { return !protected[n+sendingSuffix] && dueOf(n) <= x.nowNano() })
-	claimed, msgs, held := claimBatch(due)
-	if len(msgs) == 0 {
-		for _, c := range claimed {
-			_ = os.Remove(c) // empty/unreadable — there is nothing to deliver or keep
+	for _, n := range queuedNames(func(string) bool { return true }) {
+		if _, valid := parseRetry(n); !valid {
+			recordIssue(issueRecoveryUnsafe, x.nowNano())
+			return
 		}
+	}
+	now := x.nowNano()
+	due := queuedNames(func(n string) bool { return !protected[n+sendingSuffix] && dueForAttempt(n) <= now })
+	if len(due) == 0 {
+		return
+	}
+	retry, _ := parseRetry(due[0])
+	group := make([]string, 0, len(due))
+	for _, n := range due {
+		candidate, _ := parseRetry(n)
+		if sameRetryGroup(retry, candidate) {
+			group = append(group, n)
+		}
+	}
+	claimed, msgs, held := claimBatch(group)
+	if len(msgs) == 0 {
 		return
 	}
 
@@ -674,31 +675,42 @@ func drainInto(x io, pane string) {
 	}
 	id := "#" + batchID(claimed, payload)
 	payload += " · " + id
+	for _, path := range claimed {
+		wakeStage("act.wake.claimed", claimBase(path), id, diag.OK, "batch")
+	}
 
-	if submit != nil {
+	if submit != nil || retry.Number > 0 {
 		intent, err := prepareNativeIntent(pane, id, payload, claimed)
 		if err != nil {
 			diag.ReportStoreFailure("hq-native-wake", err)
+			recordIssue(issueRecoveryUnsafe, x.nowNano())
 			return
 		}
-		result, managed := submit(payload, id)
-		if managed {
-			switch result.State {
-			case dispatch.StateQueued:
-				intent.Outcome = "accepted"
-			case dispatch.StateLanded:
-				intent.Outcome = "delivered"
-			case dispatch.StateRefusedDraft, dispatch.StateRefusedWaiting:
-				intent.Outcome = "refused"
-			default:
-				intent.Outcome = "uncertain"
+		target := wakeIdentity(x, pane)
+		intent.SubmittedAt = x.nowNano()
+		var result dispatch.Result
+		managed := true
+		switch {
+		case retry.Number > 0 && (submit == nil || target != retry.Target):
+			result = dispatch.Result{State: dispatch.StateRefusedWaiting, Submission: dispatch.SubmissionNotSubmitted}
+		default:
+			result, managed = submit(payload, nativeAttemptID(id, retry))
+			if !managed && retry.Number > 0 {
+				managed = true
+				result = dispatch.Result{State: dispatch.StateRefusedWaiting, Submission: dispatch.SubmissionNotSubmitted}
 			}
+		}
+		if managed {
+			setNativeWakeOutcome(&intent, result, retry, target, x.nowNano())
 			if err := writeNativeIntent(intent); err != nil {
 				diag.ReportStoreFailure("hq-native-wake", err)
+				recordIssue(issueRecoveryUnsafe, x.nowNano())
 				return
 			}
+			recordWakeOutcome(intent, x.nowNano())
 			if err := settleNativeIntent(intent); err != nil {
 				diag.ReportStoreFailure("hq-native-wake", err)
+				recordIssue(issueRecoveryUnsafe, x.nowNano())
 				return
 			}
 			switch intent.Outcome {
@@ -706,12 +718,12 @@ func drainInto(x io, pane string) {
 				finishAccepted(pane, payload, nil)
 			case "delivered":
 				finishDelivered(pane, payload, nil)
-			case "uncertain":
+			case "uncertain", "held":
 				writeFailCount(readFailCount() + 1)
-				events.AuditWakeDropped(events.DropUnconfirmed, payload, time.Now().Unix())
 			}
 			return
 		}
+
 		// Only an isolated legacy seam can decline after preparation; no native
 		// attempt has occurred. Production selects the route before journaling.
 		intent.Outcome = "refused"
@@ -725,139 +737,14 @@ func drainInto(x io, pane string) {
 		}
 	}
 
-	since := x.nowNano()/int64(time.Second) - 1 // receipt window opens just before the paste
-	switch deliverPayload(x, pane, payload, id, since) {
-	case delivered:
-		finishDelivered(pane, payload, claimed)
-	case sendFailed:
-		// Nothing reached the pane — return the batch untouched (no attempt spent,
-		// no duplicate risk) and let a later drain retry it as often as it likes.
-		for _, c := range claimed {
-			_ = os.Rename(c, claimBase(c))
-		}
-		writeFailCount(readFailCount() + 1)
-	case unsubmitted:
-		// The precise swallowed-Enter: the paste (its id proves it) sits in the box.
-		// Requeuing would strand the whole channel — our own paste blocks every later
-		// drain at the draft-guard, and only the 10-minute stale check would escalate
-		// (the real incident). Park the claims for the Enter-only repair instead: the
-		// next drain (3s fast tick) finishes the delivery. Not a fail-count event yet
-		// — an ABANDONED repair counts it.
-		markStuck(claimed, payload, id, since)
-	case unacked:
-		recordAttempt(claimed, payload, id, since)
-		requeueUnacked(claimed)
-		writeFailCount(readFailCount() + 1)
-	}
-}
-
-// retryLookbackSec is how long an unconfirmed attempt is still asked about: its retries
-// fall within a few drains of it.
-const retryLookbackSec = 15 * 60
-
-// --- unconfirmed attempts ---
-
-// attemptRecord is a batch that was pasted and submitted but not confirmed: the exact id
-// and line that reached the pane, when, and which entries it carried.
-//
-// A requeued entry's next attempt is usually a DIFFERENT batch: a wake queued in between
-// joins it, a revalidated line changes its text, the "+N more queued" count moves. Each
-// of those changes the batch id, and a busy Codex HQ's late receipt carries the OLD id —
-// so checking the new batch's id found nothing and the entry that had arrived went again
-// (#1292 review: %14 confirmed under 8173e8, re-sent inside 166f29 with %15). The record
-// keeps the id that was actually pasted, and the next drain asks about that one.
-type attemptRecord struct {
-	ID      string   `json:"id"`
-	Payload string   `json:"payload"`
-	Since   int64    `json:"since"`
-	Entries []string `json:"entries"` // identityOf each entry it carried
-}
-
-func attemptsDir() string { return filepath.Join(state.Dir(), "hq-nudge-attempts") }
-
-// recordAttempt remembers an unconfirmed batch, keyed by its id.
-func recordAttempt(claimed []string, payload, id string, since int64) {
-	r := attemptRecord{ID: id, Payload: payload, Since: since}
-	for _, c := range claimed {
-		r.Entries = append(r.Entries, identityOf(claimBase(filepath.Base(c))))
-	}
-	b, _ := json.Marshal(r)
-	if state.MkdirAll(attemptsDir(), 0o755) == nil {
-		_ = state.WriteFile(filepath.Join(attemptsDir(), strings.TrimPrefix(id, "#")+".json"), b, 0o644)
-	}
-}
-
-// settleEarlierAttempts closes what an earlier unconfirmed attempt delivered after all.
-// For each record still in its lookback window, it asks the receipt (since that attempt)
-// and then the screen about THAT attempt's id; when either shows it arrived, it claims
-// the entries of that attempt still queued and closes them as delivered — only those.
-// It runs before a new batch is claimed, so a delivered entry is never coalesced into a
-// new batch and pasted again. Reads only: nothing is typed. A record whose entries are
-// all gone (delivered or dropped another way) or that is past the window is removed.
-func settleEarlierAttempts(x io, pane string, protected map[string]bool) {
-	files, _ := os.ReadDir(attemptsDir())
-	now := x.nowNano() / int64(time.Second)
-	for _, f := range files {
-		p := filepath.Join(attemptsDir(), f.Name())
-		var r attemptRecord
-		b, err := os.ReadFile(p)
-		if err != nil || json.Unmarshal(b, &r) != nil || r.ID == "" {
-			_ = os.Remove(p)
-			continue
-		}
-		queued := queuedEntries(r.Entries)
-		if len(queued) == 0 {
-			_ = os.Remove(p)
-			continue
-		}
-		if now-r.Since > retryLookbackSec {
-			held := false
-			for _, src := range queued {
-				held = held || protected[filepath.Base(src)+sendingSuffix]
-			}
-			if !held {
-				_ = os.Remove(p)
-			}
-			continue
-		}
-		if !ackConfirmed(x, pane, r.ID, r.Since) {
-			continue
-		}
-		var claimed []string
-		for _, src := range queued {
-			dst := src + sendingSuffix
-			if !protected[filepath.Base(dst)] && takeQueued(src, dst) {
-				claimed = append(claimed, dst)
-			}
-		}
-		if len(claimed) > 0 {
-			finishDelivered(pane, r.Payload, claimed)
-		}
-		if len(claimed) == len(queued) {
-			_ = os.Remove(p)
-		}
-	}
-}
-
-// queuedEntries lists the queued (unclaimed) files whose identity is one of ids.
-func queuedEntries(ids []string) []string {
-	want := map[string]bool{}
-	for _, id := range ids {
-		want[id] = true
-	}
-	var out []string
-	for _, e := range readQueue() {
-		if strings.HasSuffix(e.Name(), ".txt") && want[identityOf(e.Name())] {
-			out = append(out, filepath.Join(queueDir(), e.Name()))
-		}
-	}
-	return out
+	attemptLegacyWake(x, pane, payload, id, claimed)
 }
 
 // finishDelivered closes a confirmed batch. One audit record per BATCH (never per entry):
 // the journal is where "what did gtmux tell HQ at 14:02" becomes answerable — the hook's
 // own receipt records only the six-hex id.
 func finishDelivered(pane, payload string, claimed []string) {
+	noteConfirmedDelivery(time.Now().Unix())
 	events.AuditWakeDelivered(pane, payload, time.Now().Unix())
 	for _, c := range claimed {
 		_ = os.Remove(c)
@@ -897,15 +784,21 @@ func claimBatch(due []string) (claimed, msgs []string, held int) {
 		if !takeQueued(src, dst) {
 			continue // no longer pending, or its claim location is protected
 		}
-		claimed = append(claimed, dst)
-		b, err := os.ReadFile(dst)
-		if err != nil {
-			continue
+		b, err := readNativeBytes(dst)
+		if err != nil || strings.TrimSpace(string(b)) == "" {
+			if err == nil {
+				err = errors.New("empty wake claim")
+			}
+			diag.ReportStoreFailure("hq-wake-queue", err)
+			recordIssue(issueRecoveryUnsafe, time.Now().UnixNano())
+			for _, c := range claimed {
+				// The receiver has not been called. Restore other claims, leaving
+				// the unreadable original held for diagnosis.
+				diag.ReportStoreFailure("hq-wake-queue", returnClaim(c))
+			}
+			return nil, nil, 0
 		}
 		s := strings.TrimSpace(string(b))
-		if s == "" {
-			continue
-		}
 		// Delivery-side revalidation (standing-wake-backoff §2.1). A queued line was
 		// decided when it was enqueued, which is NOT when it is typed: it can sit behind
 		// a half-written draft, behind an earlier batch, or behind the fast tick. The
@@ -925,75 +818,11 @@ func claimBatch(due []string) (claimed, msgs []string, held int) {
 			dropped = append(dropped, dst)
 			continue
 		}
+		claimed = append(claimed, dst)
 		msgs = append(msgs, replaced)
 		chars += len(replaced)
 	}
 	return claimed, msgs, 0
-}
-
-// requeueUnacked returns each claim for one more attempt, or drops it once it has
-// been pasted maxAckAttempts times without a confirmation. See maxAckAttempts: by
-// then the line has very probably been on HQ's screen three times over, and the
-// wake-degraded escalation has already announced the doubt.
-func requeueUnacked(claimed []string) {
-	for _, c := range claimed {
-		orig := claimBase(filepath.Base(c))
-		if n := attemptsOf(orig) + 1; n < maxAckAttempts {
-			_ = os.Rename(c, filepath.Join(queueDir(), withAttempt(orig, n)))
-		} else {
-			// The bounded, ANNOUNCED loss — announced in the journal too, so the
-			// dropped line itself (not just the degradation counter) survives.
-			auditDroppedFile(events.DropUnconfirmed, c)
-			_ = os.Remove(c)
-		}
-	}
-}
-
-// outcome is what one delivery attempt achieved. The distinctions drive the retry
-// policy: sendFailed (nothing reached the pane) retries freely, unacked (it may
-// have landed) retries bounded, and unsubmitted (it demonstrably did NOT submit —
-// the paste sits in the box) is repaired with Enter only, never re-sent.
-type outcome int
-
-const (
-	delivered   outcome = iota // confirmed (driver receipt or HQ's screen)
-	sendFailed                 // tmux refused the paste or the submit — nothing landed
-	unacked                    // pasted and submitted, but not confirmed
-	unsubmitted                // pasted, but the Enter was swallowed: the id sits in the draft
-)
-
-// deliverPayload types ONE batch and confirms it landed, three layers deep. Paste
-// and submit are separate steps (`send-keys -l` of a long string mid-TUI errors
-// "not in a mode" — the failure tmux.Paste exists to avoid). The ack: the DRIVER
-// RECEIPT first — the HQ session's own prompt-submit event carrying the batch id,
-// deterministic and immune to the history scrolling out of the capture's reach the
-// moment HQ starts its turn — then the screen. On screen, an id still in the DRAFT
-// is the precise swallowed-Enter verdict (unsubmitted → Enter-only repair); in the
-// history and not the draft is delivered; neither is an unconfirmed send.
-func deliverPayload(x io, pane, payload, id string, since int64) outcome {
-	if err := x.paste(pane, payload); err != nil {
-		return sendFailed
-	}
-	if err := x.enter(pane); err != nil {
-		// One retry: a swallowed submit leaves our paste sitting in HQ's box, which
-		// blocks every later drain at the draft guard.
-		if err = x.enter(pane); err != nil {
-			return sendFailed
-		}
-	}
-	x.sleep()
-	if receiptConfirmed(x, pane, id, since) {
-		return delivered
-	}
-	history, draft, _ := dispatch.SplitInputRegion(x.captureFull(pane))
-	switch {
-	case dispatch.ContainsHead(draft, id):
-		return unsubmitted
-	case dispatch.ContainsHead(history, id):
-		return delivered
-	default:
-		return unacked
-	}
 }
 
 // receiptConfirmed asks the HQ agent's driver receipt whether the batch id was
@@ -1010,123 +839,6 @@ func ackConfirmed(x io, pane, id string, since int64) bool {
 	}
 	history, draft, _ := dispatch.SplitInputRegion(x.captureFull(pane))
 	return dispatch.ContainsHead(history, id) && !dispatch.ContainsHead(draft, id)
-}
-
-// --- Enter-only repair (agent-drivers P2) ---
-
-// repairState is the on-disk record of a stranded batch awaiting its Enter-only
-// repair: the batch id (the ack needle), the full payload (to confirm the draft
-// still holds the batch INTACT before any Enter), the receipt window origin, and
-// how many repair Enters have gone unconfirmed.
-type repairState struct {
-	ID       string `json:"id"`
-	Payload  string `json:"payload"`
-	Since    int64  `json:"since"` // unix secs: the original delivery's receipt window
-	Attempts int    `json:"attempts"`
-}
-
-// repairPath holds the single pending repair (one delivery is in flight at a time —
-// a stranded batch blocks the channel until repaired or handed back).
-func repairPath() string { return filepath.Join(queueDir(), "enter-repair") }
-
-func readRepair() (repairState, bool) {
-	var m repairState
-	b, err := os.ReadFile(repairPath())
-	if err != nil || json.Unmarshal(b, &m) != nil || m.ID == "" {
-		return repairState{}, false
-	}
-	return m, true
-}
-
-func writeRepair(m repairState) {
-	b, _ := json.Marshal(m)
-	_ = state.WriteFile(repairPath(), b, 0o644)
-}
-
-// markStuck parks a batch's claims for the Enter-only repair and records the
-// repair state. The claims keep their identity (same files, same batch id).
-func markStuck(claimed []string, payload, id string, since int64) {
-	for _, c := range claimed {
-		_ = os.Rename(c, claimBase(c)+stuckSuffix)
-	}
-	writeRepair(repairState{ID: id, Payload: payload, Since: since})
-}
-
-// stuckClaims lists the parked claims' paths.
-func stuckClaims() []string {
-	var out []string
-	for _, e := range readQueue() {
-		if strings.HasSuffix(e.Name(), stuckSuffix) {
-			out = append(out, filepath.Join(queueDir(), e.Name()))
-		}
-	}
-	return out
-}
-
-// finishRepair clears a completed repair: the delivery is confirmed, so the claims
-// and the repair record go, and the channel is healthy again. A repair-confirmed
-// delivery is a delivery — it is journaled exactly like the drain path's.
-func finishRepair(pane string, m repairState) {
-	events.AuditWakeDelivered(pane, m.Payload, time.Now().Unix())
-	for _, c := range stuckClaims() {
-		_ = os.Remove(c)
-	}
-	_ = os.Remove(repairPath())
-	writeFailCount(0)
-}
-
-// repairStranded finishes a delivery whose Enter was swallowed: the batch (with its
-// id) is sitting intact in the HQ box, so the ONLY correct repair is a bare Enter —
-// never a re-paste (it would duplicate the text into the box) and never a new id.
-// It runs at the head of every deliver/drain, so the serve fast tick (3s) repairs a
-// stranded batch on its next beat instead of the channel jamming behind our own
-// paste until the 10-minute stale escalation (the real incident).
-//
-// The Enter is sent ONLY when the draft is the batch and nothing else (draftIsExactly);
-// a draft the user has edited, typed into, or cleared is never submitted. Checking the
-// payload's head and trailing id was not enough: text typed before or after the
-// stranded batch kept both, and the Enter submitted it with ours (#1294 review, R3). In that case — or once
-// the repair budget is exhausted — the batch is handed back to the normal unacked
-// path (bounded re-send with the SAME id) and the miss is counted toward
-// wake-degraded, exactly the pre-repair discipline.
-func repairStranded(x io, pane string) {
-	m, ok := readRepair()
-	if !ok {
-		return
-	}
-	cap := x.captureColor
-	if cap == nil {
-		cap = x.capture
-	}
-	draft, structured := dispatch.DraftOfColored(cap(pane))
-	if structured && dispatch.DraftIsExactly(draft, m.Payload) {
-		if x.enter(pane) != nil {
-			return // tmux refused — nothing changed; the next tick retries freely
-		}
-		x.sleep()
-		if ackConfirmed(x, pane, m.ID, m.Since) {
-			finishRepair(pane, m)
-			return
-		}
-		if m.Attempts++; m.Attempts < enterRepairMaxAttempts {
-			writeRepair(m)
-			return
-		}
-		// budget exhausted — fall through to the hand-back below.
-	} else if ackConfirmed(x, pane, m.ID, m.Since) {
-		// The batch left the box and is confirmed (the user pressed Enter for us, or
-		// an earlier repair's ack read raced the TUI's redraw): done.
-		finishRepair(pane, m)
-		return
-	}
-	// Hand back with the attempt recorded, like the drain path's unacked case: the
-	// receipt for THIS id may still arrive (a busy Codex HQ submits at its next tool
-	// boundary), and the next drain must ask about it rather than paste the batch again.
-	claims := stuckClaims()
-	recordAttempt(claims, m.Payload, m.ID, m.Since)
-	requeueUnacked(claims)
-	_ = os.Remove(repairPath())
-	writeFailCount(readFailCount() + 1)
 }
 
 func readFailCount() int {

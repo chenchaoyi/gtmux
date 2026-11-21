@@ -1,0 +1,25 @@
+{
+  "id": "hq-wake-workspace-fixture-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; GitHub CI failure review",
+    "date": "2026-11-21",
+    "decision": "Model an identified idle terminal and publish an active marker only during an accepted fixture prompt",
+    "notes": "Keep private tmux and synthetic HOME, the workspace's real authorization and CLI paths, and all prior assertions. The fixture uses actual synthetic process and resume state. Production guards remain intact."
+  },
+  "cases": [
+    {
+      "id": "HWA-016",
+      "layer": "L3",
+      "description": "An identified idle HQ fixture drains existing workspace obligations while real drafts hold",
+      "setup": "Bind the already private fixture pane's observed command and conversation to its resume record. Model activity after input acceptance through the existing active marker for the duration of its work.",
+      "action": "Run the existing draft, continuation CLI and end-to-end replay scenarios with the actual scheduler, guard and fixture pane.",
+      "expected": "Pending work is preserved until an eligible idle composer. Exact terminal input reaches the identified fixture; the same authorized actions, ownership, durable continuation and no-replay checks still pass.",
+      "planned_files": [
+        "internal/app/hqworkspace_continuation_cli_test.go",
+        "internal/app/hqworkspace_continuation_test.go"
+      ]
+    }
+  ],
+  "seal": "39db12afaf7704f0329f209f3a07027cf70cefc43e6e88bf87b28cee39791d53"
+}

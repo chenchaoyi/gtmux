@@ -36,6 +36,7 @@ type fake struct {
 	history   []string // submitted lines, oldest first
 	sent      []string // payloads that actually reached history — the deliveries
 	pastes    int      // paste invocations (the never-re-paste asserts)
+	enters    int
 	slept     int
 	base      int64 // clock origin (0 → a fixed fake epoch)
 	nano      int64
@@ -73,15 +74,20 @@ func (f *fake) io() io {
 		capture:     f.capture,
 		captureFull: f.captureFull,
 		foreground:  func(string) string { return f.fg },
+		identity:    func(string) string { return "0123456789abcdef0123456789abcdef" },
 		paste: func(_, t string) error {
 			f.pastes++
 			if f.pasteErr != nil {
 				return f.pasteErr
 			}
+			if draft, _ := dispatch.DraftOfColored(boxWith(f.draft)); draft == "" {
+				f.draft = "" // accepting new input dismisses the idle ghost
+			}
 			f.draft += t
 			return nil
 		},
 		enter: func(string) error {
+			f.enters++
 			if f.enterErr != nil {
 				return f.enterErr
 			}
@@ -106,6 +112,16 @@ func queuedCount(t *testing.T) int {
 	n := 0
 	for _, e := range entries {
 		if filepath.Ext(e.Name()) == ".txt" {
+			n++
+		}
+	}
+	return n
+}
+
+func legacyUncertainCount() int {
+	n := 0
+	for _, e := range readQueue() {
+		if strings.HasSuffix(e.Name(), legacyUncertainSuffix) {
 			n++
 		}
 	}
@@ -325,37 +341,27 @@ func TestDeliverKeyed_DueImmediatelyFlushes(t *testing.T) {
 
 // ── ack + retry (hq-wake-reliability): a wake is removed only once CONFIRMED ──
 
-func TestDrain_PasteError_Requeues(t *testing.T) {
+func TestDrain_PasteErrorRetainsUnknownWithoutReplay(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{pasteErr: errors.New("not in a mode")}
 	deliver(f.io(), "%hq", "must-not-vanish")
-	if queuedCount(t) != 1 || claimCount(t) != 0 {
-		t.Fatalf("a failed paste must return the entry to the queue; queued=%d claimed=%d",
-			queuedCount(t), claimCount(t))
-	}
-	if readFailCount() != 1 {
-		t.Fatalf("a failed delivery should count; fails=%d", readFailCount())
-	}
-	// tmux recovers → the next drain delivers the SAME nudge.
 	f.pasteErr = nil
 	drain(f.io(), "%hq")
-	if len(f.sent) != 1 || body(t, f.sent[0]) != "must-not-vanish" {
-		t.Fatalf("the retried nudge should land; sent=%v", f.sent)
-	}
-	if readFailCount() != 0 {
-		t.Fatalf("a confirmed delivery must reset the failure count; fails=%d", readFailCount())
+	if queuedCount(t) != 0 || legacyUncertainCount() != 1 || f.pastes != 1 || f.enters != 0 {
+		t.Fatal("unverified paste must stay held and never submit")
 	}
 }
 
-func TestDrain_EnterError_Requeues(t *testing.T) {
+func TestDrain_EnterErrorKeepsExactDraftForRepair(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	f := &fake{enterErr: errors.New("no such pane")}
+	f := &fake{enterErr: errors.New("input outcome unknown")}
 	deliver(f.io(), "%hq", "enter-failed")
-	if queuedCount(t) != 1 {
-		t.Fatalf("a failed submit must keep the nudge queued; queued=%d", queuedCount(t))
+	if f.pastes != 1 || f.enters != 1 || stuckCount(t) != 1 || queuedCount(t) != 0 {
+		t.Fatal("Enter error may only retain the exact draft")
 	}
-	if len(f.sent) != 0 {
-		t.Fatalf("nothing was submitted; sent=%v", f.sent)
+	drain(f.io(), "%hq")
+	if f.enters != 1 {
+		t.Fatal("early repair sent a second Enter")
 	}
 }
 
@@ -385,76 +391,42 @@ func TestDrain_SwallowedEnter_ParksForEnterRepair(t *testing.T) {
 	}
 }
 
-// The ack can also fail falsely —HQ's reply scrolled the line out of the capture.
-// The batch is retried, and BOTH attempts carry the same id so HQ can spot the dup.
-func TestDrain_UnconfirmedAck_RetriesWithTheSameID(t *testing.T) {
-	t.Setenv("HOME", t.TempDir())
-	f := &fake{ackBlind: true}
-	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
-	if len(f.sent) != 1 {
-		t.Fatalf("the line WAS submitted; sent=%v", f.sent)
-	}
-	if queuedCount(t) != 1 {
-		t.Fatalf("an unconfirmed batch is requeued; queued=%d", queuedCount(t))
-	}
-	// Still nothing confirms it (no receipt, history out of reach), so it is re-sent. A
-	// batch that HAS arrived by now is not: TestDrain_IdInHistoryStopsTheRepaste.
-	drain(f.io(), "%hq")
-	if len(f.sent) != 2 {
-		t.Fatalf("the batch should be re-sent; sent=%v", f.sent)
-	}
-	if a, b := idOf(t, f.sent[0]), idOf(t, f.sent[1]); a != b {
-		t.Fatalf("a re-send must carry the SAME batch id (HQ dedups on it); %q vs %q", a, b)
-	}
-}
+// A lost acknowledgement leaves the generation held for evidence.
 
-// An ack that NEVER succeeds (an agent TUI that renders submissions in a way the read
-// can't confirm) must not become a re-paste loop: the entry is re-sent a bounded
-// number of times — each carrying the same id, so HQ ignores the repeats — and then
-// dropped, with the degradation already raised. Bounded and announced beats unbounded.
-func TestDrain_UnackableEntryStopsAfterMaxAttempts(t *testing.T) {
+func TestDrain_UnconfirmedAckNeverRepastes(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{ackBlind: true}
 	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
-	for i := 1; i < maxAckAttempts+2; i++ {
+	for tick := 0; tick < 4; tick++ {
 		drain(f.io(), "%hq")
 	}
-	if len(f.sent) != maxAckAttempts {
-		t.Fatalf("an unackable entry must be pasted exactly %d times; got %d",
-			maxAckAttempts, len(f.sent))
-	}
-	ids := map[string]bool{}
-	for _, s := range f.sent {
-		ids[idOf(t, s)] = true
-	}
-	if len(ids) != 1 {
-		t.Fatalf("every re-send of one batch carries the SAME id (HQ dedups on it); got %v", ids)
-	}
-	if queuedCount(t) != 0 || claimCount(t) != 0 {
-		t.Fatalf("the entry is dropped after the last attempt; queued=%d claimed=%d",
-			queuedCount(t), claimCount(t))
-	}
-	if !Degraded(time.Now().Unix()) {
-		t.Fatal("…and the channel reads degraded — the loss must never be silent")
+	if f.pastes != 1 || f.enters != 1 || len(f.sent) != 1 || legacyUncertainCount() != 1 || queuedCount(t) != 0 {
+		t.Fatal("the original attempt was replayed or lost")
 	}
 }
 
-// A send that ERRORS is a different animal: nothing landed, so there is no duplicate
-// to fear and no reason to give up. It retries as long as it takes.
-func TestDrain_SendErrorRetriesUnbounded(t *testing.T) {
+// A permanently missing acknowledgement remains visible.
+func TestDrain_UnconfirmedEntryPreservesItsHealthEvidence(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	f := &fake{ackBlind: true}
+	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
+	if _, err := readIssue(issueUnknownLegacyInput); err != nil {
+		t.Fatal("unknown delivery is not discoverable", err)
+	}
+	if legacyUncertainCount() != 1 {
+		t.Fatal("uncertain payload was lost")
+	}
+}
+
+// Failure to verify a paste does not block an independent generation.
+func TestDrain_SendErrorDoesNotBlockUnrelatedWork(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{pasteErr: errors.New("tmux is down")}
-	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14")
-	for i := 0; i < maxAckAttempts+3; i++ {
-		drain(f.io(), "%hq")
-	}
-	if queuedCount(t) != 1 {
-		t.Fatalf("a wake nothing could deliver must still be queued; queued=%d", queuedCount(t))
-	}
+	deliver(f.io(), "%hq", "first")
 	f.pasteErr = nil
-	drain(f.io(), "%hq")
-	if len(f.sent) != 1 || body(t, f.sent[0]) != "» ◆ gtmux·waiting  %14" {
-		t.Fatalf("…and lands when tmux comes back; sent=%v", f.sent)
+	deliver(f.io(), "%hq", "unrelated")
+	if len(f.sent) != 1 || body(t, f.sent[0]) != "unrelated" || legacyUncertainCount() != 1 {
+		t.Fatal("the unknown batch blocked independent work or replayed", f.sent)
 	}
 }
 
@@ -487,7 +459,7 @@ func TestDrain_BatchCapsOnPayloadSize(t *testing.T) {
 // whitespace, so a wrap landing between the sigil and the trailing id must not hide it.
 func TestAck_MatchesAWrappedSubmittedLine(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	var submitted string
+	submitted := `» ▸ gtmux·done  gtmux:0.0 (%14) │ 3m │ goal:"ship the wake fix" · #a3f1c2`
 	x := io{
 		capture: func(string) string { return boxWith("") },
 		captureFull: func(string) string {
@@ -501,9 +473,8 @@ func TestAck_MatchesAWrappedSubmittedLine(t *testing.T) {
 		enter: func(string) error { return nil },
 		sleep: func() {},
 	}
-	payload := `» ▸ gtmux·done  gtmux:0.0 (%14) │ 3m │ goal:"ship the wake fix" · #a3f1c2`
-	if got := deliverPayload(x, "%hq", payload, "#a3f1c2", 0); got != delivered {
-		t.Fatalf("a wrapped submitted line must still ack; got %v", got)
+	if !ackConfirmed(x, "%hq", "#a3f1c2", 0) {
+		t.Fatal("a wrapped submitted line must still ack")
 	}
 }
 
@@ -555,17 +526,16 @@ func writeClaim(t *testing.T, name, msg string, age time.Duration) {
 	stampAge(t, name, age)
 }
 
-func TestReclaim_StrandedClaimIsDelivered(t *testing.T) {
+func TestReclaim_StrandedClaimHoldsWithoutReplaying(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	// A drainer claimed this entry and died before delivering it.
 	writeClaim(t, "1700000000000000001-9.p1.txt"+sendingSuffix, "stranded-nudge", 2*time.Minute)
 	if !Pending() {
-		t.Fatal("a stranded claim must read as pending — else no drain ever rescues it")
+		t.Fatal("the orphan must be discoverable on the next drain")
 	}
 	f := &fake{}
 	drain(f.io(), "%hq")
-	if len(f.sent) != 1 || body(t, f.sent[0]) != "stranded-nudge" {
-		t.Fatalf("the stranded nudge should be reclaimed and delivered; sent=%v", f.sent)
+	if f.pastes != 0 || f.enters != 0 || legacyUncertainCount() != 1 {
+		t.Fatal("orphan age cannot prove the input was never submitted")
 	}
 }
 
@@ -692,7 +662,7 @@ func TestDegraded_AfterConsecutiveFailures(t *testing.T) {
 		t.Fatalf("%d consecutive unconfirmed deliveries is a degraded channel", wakeFailLimit)
 	}
 	f.pasteErr = nil
-	drain(f.io(), "%hq")
+	deliver(f.io(), "%hq", "a new independently verified delivery")
 	if Degraded(now) {
 		t.Fatal("a confirmed delivery must clear the degradation")
 	}
@@ -786,6 +756,7 @@ func TestDrain_SwallowedEnter_RepairedOnNextTick(t *testing.T) {
 		t.Fatalf("swallowed Enter must park the batch; stuck=%d sent=%v", stuckCount(t), f.sent)
 	}
 	f.swallow = false // the TUI accepts the next Enter
+	f.nano += int64(enterRepairBackoff)
 	drain(f.io(), "%hq")
 	if len(f.sent) != 1 || body(t, f.sent[0]) != "» ◆ gtmux·crash  gtmux:0.2 (%31)" {
 		t.Fatalf("the repair must SUBMIT the stranded batch; sent=%v", f.sent)
@@ -818,7 +789,7 @@ func TestRepair_EditedDraft_NeverEnters(t *testing.T) {
 	if len(f.sent) != 0 || f.draft != "user took over the box" {
 		t.Fatalf("a user draft must never be submitted; sent=%v draft=%q", f.sent, f.draft)
 	}
-	if queuedCount(t) != 1 || stuckCount(t) != 0 {
+	if legacyUncertainCount() != 1 || stuckCount(t) != 0 {
 		t.Fatalf("the batch is handed back to the queue; queued=%d stuck=%d",
 			queuedCount(t), stuckCount(t))
 	}
@@ -859,12 +830,13 @@ func TestRepair_ExhaustedHandsBack(t *testing.T) {
 	f := &fake{swallow: true}
 	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
 	for i := 0; i < enterRepairMaxAttempts; i++ {
+		f.nano += int64(enterRepairBackoff)
 		drain(f.io(), "%hq")
 	}
 	if _, ok := readRepair(); ok {
 		t.Fatal("the repair must give up after its budget")
 	}
-	if queuedCount(t) != 1 || stuckCount(t) != 0 {
+	if legacyUncertainCount() != 1 || stuckCount(t) != 0 {
 		t.Fatalf("the batch is handed back for the normal retry path; queued=%d stuck=%d",
 			queuedCount(t), stuckCount(t))
 	}
@@ -957,25 +929,14 @@ func TestDeliveredBatchJournalsPayloadOncePerBatch(t *testing.T) {
 	}
 }
 
-// The ack-budget drop now announces itself in the stream, not only through the
-// degradation counter — and the retries before it journal nothing.
-func TestUnackableDropIsJournaled(t *testing.T) {
+// The audit must distinguish an unknown outcome from both delivery and discard.
+func TestUnackableClaimIsRetainedWithoutFalseAudit(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{ackBlind: true}
 	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
-	for i := 1; i < maxAckAttempts+2; i++ {
-		drain(f.io(), "%hq")
-	}
-	if got := auditRecords(t, events.AuditEventWakeDelivered); len(got) != 0 {
-		t.Fatalf("an unconfirmed delivery must not journal as delivered, got %d", len(got))
-	}
-	drops := auditRecords(t, events.AuditEventWakeDropped)
-	if len(drops) != 1 {
-		t.Fatalf("the final drop must journal exactly once, got %d", len(drops))
-	}
-	if !strings.HasPrefix(drops[0].Summary, events.DropUnconfirmed+": ") ||
-		!strings.Contains(drops[0].Summary, "%14") {
-		t.Errorf("drop record = %q, want reason %q and the dropped line", drops[0].Summary, events.DropUnconfirmed)
+	if len(auditRecords(t, events.AuditEventWakeDelivered)) != 0 ||
+		len(auditRecords(t, events.AuditEventWakeDropped)) != 0 || legacyUncertainCount() != 1 {
+		t.Fatal("the result is unknown and the original must remain available")
 	}
 }
 
@@ -1048,6 +1009,7 @@ func TestRepairConfirmedDeliveryIsJournaled(t *testing.T) {
 		t.Fatalf("a stranded batch is not delivered, got %d records", len(got))
 	}
 	f.swallow = false
+	f.nano += int64(enterRepairBackoff)
 	drain(x, "%hq") // the repair sends Enter; the draft submits; the ack confirms
 	got := auditRecords(t, events.AuditEventWakeDelivered)
 	if len(got) != 1 || !strings.Contains(got[0].Summary, "%14") {
@@ -1102,7 +1064,7 @@ func TestDrain_LateReceiptStopsTheRepaste(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{ackBlind: true} // the first ack cannot see it land
 	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
-	if f.pastes != 1 || queuedCount(t) != 1 {
+	if f.pastes != 1 || legacyUncertainCount() != 1 {
 		t.Fatalf("first attempt: pastes=%d queued=%d", f.pastes, queuedCount(t))
 	}
 	id := strings.TrimSpace(idOf(t, f.sent[0]))
@@ -1197,14 +1159,15 @@ func TestDrain_RewrittenLineBetweenAttempts_IsNotPastedAgain(t *testing.T) {
 	}
 }
 
-// Nothing confirms the earlier attempt: its entry goes again, with the new one, as before.
-func TestDrain_NewWakeBetweenAttempts_UnconfirmedOldEntryGoesAgain(t *testing.T) {
+// An unconfirmed earlier entry stays out of any later batch.
+func TestDrain_NewWakeDoesNotReplayUnconfirmedOldEntry(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	f := &fake{ackBlind: true}
 	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
 	deliver(f.io(), "%hq", "» ▸ gtmux·done  %15")
-	if last := f.sent[len(f.sent)-1]; !strings.Contains(last, "%14") || !strings.Contains(last, "%15") {
-		t.Fatalf("an entry nobody confirmed is never lost: %q", last)
+	if len(f.sent) != 2 || legacyUncertainCount() != 2 ||
+		strings.Contains(f.sent[1], "%14") || !strings.Contains(f.sent[1], "%15") {
+		t.Fatal("independent second wake carried an uncertain earlier batch", f.sent)
 	}
 }
 
@@ -1216,15 +1179,17 @@ func TestRepair_ExhaustedHandBack_LateReceiptIsNotPastedAgain(t *testing.T) {
 	f := &fake{swallow: true}
 	deliver(f.io(), "%hq", "» ▸ gtmux·done  %14")
 	for i := 0; i < enterRepairMaxAttempts; i++ {
+		f.nano += int64(enterRepairBackoff)
 		drain(f.io(), "%hq")
 	}
-	if _, ok := readRepair(); ok || queuedCount(t) != 1 {
+	if _, ok := readRepair(); ok || legacyUncertainCount() != 1 {
 		t.Fatalf("precondition: the repair gave up and handed back; queued=%d", queuedCount(t))
 	}
 	id := strings.TrimSpace(idOf(t, f.draft))
 	f.swallow = false
 	f.draft = ""                // the stranded paste is gone from the box
 	f.receipt = confirmOnly(id) // and its receipt arrives late
+	f.nano += int64(enterRepairBackoff)
 	drain(f.io(), "%hq")
 	if f.pastes != 1 || queuedCount(t) != 0 || claimCount(t) != 0 {
 		t.Fatalf("pastes=%d queued=%d claimed=%d", f.pastes, queuedCount(t), claimCount(t))
@@ -1284,7 +1249,7 @@ func TestRepair_TextAroundTheBatch_IsNeverSubmitted(t *testing.T) {
 			if len(f.sent) != 0 || f.draft != typed || f.pastes != 1 {
 				t.Fatalf("the user's text was submitted or changed: sent=%v draft=%q pastes=%d", f.sent, f.draft, f.pastes)
 			}
-			if _, ok := readRepair(); ok || stuckCount(t) != 0 || queuedCount(t) != 1 {
+			if _, ok := readRepair(); ok || stuckCount(t) != 0 || legacyUncertainCount() != 1 {
 				t.Fatalf("the batch is handed back; stuck=%d queued=%d", stuckCount(t), queuedCount(t))
 			}
 			drain(f.io(), "%hq") // the box still holds their text: nothing is typed
@@ -1301,6 +1266,7 @@ func TestRepair_ExactBatch_IsSubmitted(t *testing.T) {
 	f := &fake{swallow: true}
 	deliver(f.io(), "%hq", "» ◆ gtmux·waiting  %14 needs a decision on the release")
 	f.swallow = false
+	f.nano += int64(enterRepairBackoff)
 	drain(f.io(), "%hq")
 	if len(f.sent) != 1 || f.pastes != 1 || f.draft != "" {
 		t.Fatalf("sent=%v pastes=%d draft=%q", f.sent, f.pastes, f.draft)
@@ -1410,6 +1376,7 @@ func TestRepair_UneditedBatch_IsSubmittedAtEveryWidth(t *testing.T) {
 	for w := 40; w <= 160; w++ {
 		f := strandAt(t, w)
 		batch := f.draft
+		f.nano += int64(enterRepairBackoff)
 		drain(f.io(), "%hq")
 		if len(f.sent) != 1 || f.sent[0] != batch || f.pastes != 1 {
 			t.Fatalf("width %d: the stranded batch was not repaired: sent=%d pastes=%d\n%s", w, len(f.sent), f.pastes, codexComposer(w)(batch))
@@ -1442,7 +1409,7 @@ func TestRepair_EditedBatch_IsNeverSubmittedAtAnyWidth(t *testing.T) {
 			if len(f.sent) != 0 || f.draft != typed || f.pastes != 1 {
 				t.Fatalf("width %d, %s: the edited box was submitted or changed: sent=%v pastes=%d", w, name, f.sent, f.pastes)
 			}
-			if _, ok := readRepair(); ok || stuckCount(t) != 0 || queuedCount(t) != 2 {
+			if _, ok := readRepair(); ok || stuckCount(t) != 0 || legacyUncertainCount() != 2 {
 				t.Fatalf("width %d, %s: not handed back; stuck=%d queued=%d", w, name, stuckCount(t), queuedCount(t))
 			}
 			f.draft = ""
