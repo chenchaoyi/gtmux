@@ -68552,6 +68552,113 @@
       ],
       "sha256": "574fcda082d0eaf43fa17f9b8e4008b9f6068f1115644dd5f9dd1cc345c99242"
     },
+    "internal/app/hq_relay_attention_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2205ade7faa7",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestHRA003ProspectiveRelayAttentionUsesExactSourceAndRealClaim",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRA-002,HRA-003,HRA-004"
+        },
+        {
+          "id": "MAP-70f381b3e425",
+          "line": 119,
+          "kind": "reviewed-selector",
+          "name": "TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRA-002,HRA-003,HRA-004"
+        }
+      ],
+      "sha256": "136ef0a9af8febd6ff9ebc03234c3ce0487627bc4207834a88f1c5d2169ee0b3"
+    },
+    "internal/hqnudge/relay_attention_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d0379fef758d",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestHRA001ReservedRelaySharesFullDecisionBatch",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRA-001,HRA-002"
+        },
+        {
+          "id": "MAP-50abbb3e7060",
+          "line": 57,
+          "kind": "reviewed-selector",
+          "name": "TestHRA002ProtectedRelayRequiresGuardedNativeWindow",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRA-001,HRA-002"
+        }
+      ],
+      "sha256": "0c68b56528d9d43409f036f930cea93e0e0f38ccb27649b37c965e425ee3eaea"
+    },
+    "internal/hq/relay_attention_review_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5580d0a3574a",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestHRF001UnsurfacedRelayReferencesGetIndependentNotice",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRF-001"
+        }
+      ],
+      "sha256": "e2ec9ef54f77bd5810b1db933be8efa8fd6ed391ee19050cd392da992ead5333"
+    },
+    "internal/hqworkspace/relay_attention_review_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-13073625e63f",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestHRF002DueDeferredReportKeepsItsConsumedReservation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRF-002,HRF-003"
+        },
+        {
+          "id": "MAP-f939c98ca273",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestHRF003PairedRelayRetainsEarlierMatchingStop",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRF-002,HRF-003"
+        }
+      ],
+      "sha256": "05bbe102b65f7e59030a0419618386f33844fec1e9d867b593fcce07b17a35f5"
+    },
+    "internal/hook/codex_cross_pane_stop_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7e65dd794cb9",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestCPR005DetachedCodexStopUsesOnlyCurrentPaneBinding",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPR-005"
+        }
+      ],
+      "sha256": "d58e87aa195306d0ec529cccc6d80c4a4799f285af18f964e5768e89d95e2974"
+    },
     "internal/resume/frontend_cross_pane_index_test.go": {
       "layer": "L2",
       "stack": "reviewed implementation",
@@ -68595,21 +68702,39 @@
       ],
       "sha256": "a4863597e2d06589e1d100e3897dc85e1b1ec38b55195c857180256fa8af9911"
     },
-    "internal/hook/codex_cross_pane_stop_test.go": {
+    "internal/resume/frontend_cross_pane_rereview_test.go": {
       "layer": "L2",
       "stack": "reviewed implementation",
       "cases": [
         {
-          "id": "MAP-7e65dd794cb9",
-          "line": 20,
+          "id": "MAP-685196835c44",
+          "line": 14,
           "kind": "reviewed-selector",
-          "name": "TestCPR005DetachedCodexStopUsesOnlyCurrentPaneBinding",
+          "name": "TestCXW001SameThreadRepairKeepsContinuousPublicationLease",
           "dynamic": false,
           "layer": "L2",
-          "design": "CPR-005"
+          "design": "CXW-001,CXW-002,CXW-003"
+        },
+        {
+          "id": "MAP-1aa52090b199",
+          "line": 78,
+          "kind": "reviewed-selector",
+          "name": "TestCXW002ClosureReleasesExactLayoutAliasesAndRetainsFailureProof",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CXW-001,CXW-002,CXW-003"
+        },
+        {
+          "id": "MAP-03e1bd96f94b",
+          "line": 135,
+          "kind": "reviewed-selector",
+          "name": "TestCXW003LegacyUnlinkNeedsPositiveExactNativeExit",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CXW-001,CXW-002,CXW-003"
         }
       ],
-      "sha256": "d58e87aa195306d0ec529cccc6d80c4a4799f285af18f964e5768e89d95e2974"
+      "sha256": "b8fc9ea5f1f7e2b93a5752d35109d7b1ccade90bb245877e3c30368a9d6bb1d6"
     },
     "internal/resume/frontend_cross_pane_review_test.go": {
       "layer": "L2",
@@ -68653,40 +68778,6 @@
         }
       ],
       "sha256": "afcc77a49d2af7c3868789fbc8db4ec08f2df7f808645cb92289607e1fb5961b"
-    },
-    "internal/resume/frontend_cross_pane_rereview_test.go": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-685196835c44",
-          "line": 14,
-          "kind": "reviewed-selector",
-          "name": "TestCXW001SameThreadRepairKeepsContinuousPublicationLease",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CXW-001,CXW-002,CXW-003"
-        },
-        {
-          "id": "MAP-1aa52090b199",
-          "line": 78,
-          "kind": "reviewed-selector",
-          "name": "TestCXW002ClosureReleasesExactLayoutAliasesAndRetainsFailureProof",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CXW-001,CXW-002,CXW-003"
-        },
-        {
-          "id": "MAP-03e1bd96f94b",
-          "line": 135,
-          "kind": "reviewed-selector",
-          "name": "TestCXW003LegacyUnlinkNeedsPositiveExactNativeExit",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "CXW-001,CXW-002,CXW-003"
-        }
-      ],
-      "sha256": "b8fc9ea5f1f7e2b93a5752d35109d7b1ccade90bb245877e3c30368a9d6bb1d6"
     },
     "internal/resume/release_review_followup_test.go": {
       "layer": "L2",

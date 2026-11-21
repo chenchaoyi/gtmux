@@ -26,7 +26,7 @@ type retryState struct {
 }
 
 func parseRetry(name string) (retryState, bool) {
-	base := strings.TrimSuffix(filepath.Base(name), ".txt")
+	base := wakeFileStem(filepath.Base(name))
 	idx := strings.LastIndex(base, ".r")
 	if idx < 0 {
 		return retryState{}, true
@@ -48,7 +48,11 @@ func validWakeTarget(target string) bool {
 }
 
 func retryName(name string, retry retryState) string {
-	return fmt.Sprintf("%s.r%d-%d-%s.txt", identityOf(name), retry.Number, retry.At, retry.Target)
+	suffix := ".txt"
+	if isRelayAttention(name) {
+		suffix = relayAttentionSuffix
+	}
+	return fmt.Sprintf("%s.r%d-%d-%s%s", identityOf(name), retry.Number, retry.At, retry.Target, suffix)
 }
 
 func dueForAttempt(name string) int64 {

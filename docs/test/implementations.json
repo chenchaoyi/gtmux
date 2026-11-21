@@ -1,10 +1,20 @@
 {
-  "internal/resume/release_review_followup_test.go": {
-    "cases": ["CRF-001", "CRF-002", "CRF-003"],
+  "internal/hq/relay_attention_review_test.go": {
+    "cases": [
+      "HRF-001"
+    ],
     "selectors": [
-      "TestCRF001MovedFrontendRefreshesRetainedNativeReceipt",
-      "TestCRF002ExactClosedReceiptReleasesRelocationDestination",
-      "TestCRF003ObservedSaveRetriesTemporaryPublicationContention"
+      "TestHRF001UnsurfacedRelayReferencesGetIndependentNotice"
+    ]
+  },
+  "internal/hqworkspace/relay_attention_review_test.go": {
+    "cases": [
+      "HRF-002",
+      "HRF-003"
+    ],
+    "selectors": [
+      "TestHRF002DueDeferredReportKeepsItsConsumedReservation",
+      "TestHRF003PairedRelayRetainsEarlierMatchingStop"
     ]
   },
   "internal/agentclient/expected_target_test.go": {
@@ -42,12 +52,15 @@
       "TestSID001HelpStillRecognizesCommandsAfterDisplayConfig"
     ]
   },
-  "internal/app/restoresave_test.go": {
+  "internal/app/hq_relay_attention_test.go": {
     "cases": [
-      "CXW-004"
+      "HRA-002",
+      "HRA-003",
+      "HRA-004"
     ],
     "selectors": [
-      "TestSavedCodexRestoreRecordIsNotLiveAuthority"
+      "TestHRA003ProspectiveRelayAttentionUsesExactSourceAndRealClaim",
+      "TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim"
     ]
   },
   "internal/app/client_contract_test.go": {
@@ -610,14 +623,6 @@
       "TestSessionTabPrefersLiteralIdentity"
     ]
   },
-  "internal/hook/codex_cross_pane_stop_test.go": {
-    "cases": [
-      "CPR-005"
-    ],
-    "selectors": [
-      "TestCPR005DetachedCodexStopUsesOnlyCurrentPaneBinding"
-    ]
-  },
   "internal/hook/codex_completed_turn_test.go": {
     "cases": [
       "CET-004",
@@ -785,6 +790,16 @@
     ],
     "selectors": [
       "TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize"
+    ]
+  },
+  "internal/hqnudge/relay_attention_test.go": {
+    "cases": [
+      "HRA-001",
+      "HRA-002"
+    ],
+    "selectors": [
+      "TestHRA001ReservedRelaySharesFullDecisionBatch",
+      "TestHRA002ProtectedRelayRequiresGuardedNativeWindow"
     ]
   },
   "internal/hqnudge/native_generation_test.go": {
@@ -1408,46 +1423,6 @@
       "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
       "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
       "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
-    ]
-  },
-  "internal/resume/frontend_cross_pane_rereview_test.go": {
-    "cases": [
-      "CXW-001",
-      "CXW-002",
-      "CXW-003"
-    ],
-    "selectors": [
-      "TestCXW001SameThreadRepairKeepsContinuousPublicationLease",
-      "TestCXW002ClosureReleasesExactLayoutAliasesAndRetainsFailureProof",
-      "TestCXW003LegacyUnlinkNeedsPositiveExactNativeExit"
-    ]
-  },
-  "internal/resume/frontend_cross_pane_review_test.go": {
-    "cases": [
-      "CPR-001",
-      "CPR-002",
-      "CPR-003",
-      "CPR-004"
-    ],
-    "selectors": [
-      "TestCPR001CrossPaneRecoveryCannotEraseAnotherPublisher",
-      "TestCPR002LegacyReleaseRequiresPositiveIncumbentEvidence",
-      "TestCPR003OnlyRelevantStructurallyValidReceiptsCompete",
-      "TestCPR004VisibleArchiveMustPassDurabilityOnRetry"
-    ]
-  },
-  "internal/resume/frontend_cross_pane_index_test.go": {
-    "cases": [
-      "CPI-001",
-      "CPI-002",
-      "CPI-003",
-      "CPI-004"
-    ],
-    "selectors": [
-      "TestCPI001LegacyWritersPreserveExpiredManagedOwner",
-      "TestCPI002CurrentHeartbeatRestoresProvenCrossPaneIndex",
-      "TestCPI003CurrentHeartbeatRefusesUnprovenConflict",
-      "TestCPI004LegacyWriterCanReuseVerifiedVacatedLocation"
     ]
   },
   "internal/resume/frontend_index_recovery_test.go": {
@@ -4822,6 +4797,74 @@
     ],
     "selectors": [
       "reads the shipped $lang legacy board example"
+    ]
+  },
+  "internal/resume/release_review_followup_test.go": {
+    "cases": [
+      "CRF-001",
+      "CRF-002",
+      "CRF-003"
+    ],
+    "selectors": [
+      "TestCRF001MovedFrontendRefreshesRetainedNativeReceipt",
+      "TestCRF002ExactClosedReceiptReleasesRelocationDestination",
+      "TestCRF003ObservedSaveRetriesTemporaryPublicationContention"
+    ]
+  },
+  "internal/app/restoresave_test.go": {
+    "cases": [
+      "CXW-004"
+    ],
+    "selectors": [
+      "TestSavedCodexRestoreRecordIsNotLiveAuthority"
+    ]
+  },
+  "internal/hook/codex_cross_pane_stop_test.go": {
+    "cases": [
+      "CPR-005"
+    ],
+    "selectors": [
+      "TestCPR005DetachedCodexStopUsesOnlyCurrentPaneBinding"
+    ]
+  },
+  "internal/resume/frontend_cross_pane_rereview_test.go": {
+    "cases": [
+      "CXW-001",
+      "CXW-002",
+      "CXW-003"
+    ],
+    "selectors": [
+      "TestCXW001SameThreadRepairKeepsContinuousPublicationLease",
+      "TestCXW002ClosureReleasesExactLayoutAliasesAndRetainsFailureProof",
+      "TestCXW003LegacyUnlinkNeedsPositiveExactNativeExit"
+    ]
+  },
+  "internal/resume/frontend_cross_pane_review_test.go": {
+    "cases": [
+      "CPR-001",
+      "CPR-002",
+      "CPR-003",
+      "CPR-004"
+    ],
+    "selectors": [
+      "TestCPR001CrossPaneRecoveryCannotEraseAnotherPublisher",
+      "TestCPR002LegacyReleaseRequiresPositiveIncumbentEvidence",
+      "TestCPR003OnlyRelevantStructurallyValidReceiptsCompete",
+      "TestCPR004VisibleArchiveMustPassDurabilityOnRetry"
+    ]
+  },
+  "internal/resume/frontend_cross_pane_index_test.go": {
+    "cases": [
+      "CPI-001",
+      "CPI-002",
+      "CPI-003",
+      "CPI-004"
+    ],
+    "selectors": [
+      "TestCPI001LegacyWritersPreserveExpiredManagedOwner",
+      "TestCPI002CurrentHeartbeatRestoresProvenCrossPaneIndex",
+      "TestCPI003CurrentHeartbeatRefusesUnprovenConflict",
+      "TestCPI004LegacyWriterCanReuseVerifiedVacatedLocation"
     ]
   }
 }

@@ -410,3 +410,24 @@ automatic expiry; changing it needs `resume_ref` citing an actual user resumptio
 hold also needs a future `next_check`; reaching it asks HQ to verify the condition, never
 executes work. Backup restore suspends old drive evidence and preserves pauses/refusals.
 No generic native-goal probe, model loop, production replay or authority inference is added.
+
+## Protected delivery for worker reports
+
+New, nonblocking Codex reports with an exact managed task and source pane identity
+remain in the relay ledger. After an independently observed end from the same
+thread, they can take one protected native wake slot. Other eligible reports wait
+two minutes for a claim before competing. The slot can join an ordinary batch
+without removing any decision entry. Earlier ledger rows keep their existing
+reconciliation path.
+
+The workspace records a scheduling opportunity separately from transport
+acceptance, turn start, delivery and HQ claim. The native bridge must verify its
+target and an empty composer. Unreadable input or identity stays untouched.
+Unknown submission retains its journal and cannot schedule the same exact report
+again. If the report remains unclaimed, the independent wake notice identifies
+the original relay reference. Only an observed claim or resolution clears it.
+
+The protected entries and their retries are invisible to v1.0.188's ordinary
+pending-file scan. Existing `.rN-<due>-<target>.txt` entries remain incompatible
+with the v1.0.188 retry policy. Before rollback, verify ordinary retries and native
+claims have settled and preserve their original receipts.

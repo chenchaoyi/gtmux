@@ -1,0 +1,58 @@
+{
+  "id": "hq-relay-protected-attention-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-21",
+    "decision": "Add bounded native opportunity for prospective exact managed-task reports; keep affirmative claim and independent alerts separate from submission.",
+    "notes": "Reviewed real incident refs 6dab55c89b86095c1b511cbeb0a67fbc and events:109573. Both are unassigned in workspace; classification must not require matter ID or inspect untrusted report prose. Keep all production state untouched. Fixtures use isolated storage, synthetic timing and native I/O. Device acceptance and transition from v188 remain separate."
+  },
+  "cases": [
+    {
+      "id": "HRA-001",
+      "layer": "L2",
+      "description": "One protected relay slot coalesces with a full decision batch",
+      "setup": "Isolated queue with 200 p0 entries, controlled time and fake native receiver.",
+      "action": "Admit two candidates, then drain and observe the same batch and every original decision reference. Exercise old-reader suffix visibility.",
+      "expected": "One pending slot; second producer remains eligible. No decision evicted or trimmed. One original exact report ID and a full existing decision batch submit together. The old .txt queue reader ignores the protected slot.",
+      "planned_files": [
+        "internal/hqnudge/relay_attention_test.go"
+      ]
+    },
+    {
+      "id": "HRA-002",
+      "layer": "L2",
+      "description": "Unsafe input and unknown protected submissions are not replayed",
+      "setup": "Fake drafted, busy, copy-mode, unreadable and unverifiable panes; stable original target and durable native journal.",
+      "action": "Run drain for unsafe views, then simulate unknown result and revisit the same report across scheduler passes; additionally check safe refusal timing.",
+      "expected": "Zero terminal input while unsafe. Unknown retains original evidence and cannot trigger a second scheduler publication of that report. Only proven refusals can use bounded retry at the exact target.",
+      "planned_files": [
+        "internal/hqnudge/relay_attention_test.go",
+        "internal/app/hq_relay_attention_test.go"
+      ]
+    },
+    {
+      "id": "HRA-003",
+      "layer": "L2",
+      "description": "Scoped report and Stop evidence select a durable prospective opportunity",
+      "setup": "Synthetic relay and workspace with an old report, ordinary/unmanaged controls, different-home Stop, and an unassigned managed report with exact source Stop.",
+      "action": "Ingest, select, admit through the real scheduler, then add independent state changes before drain.",
+      "expected": "No old backlog is enrolled. Exact paired report wins, retains original source and claim state, and is dropped before submission after a genuine claim or closure. No report body is put in the wake.",
+      "planned_files": [
+        "internal/app/hq_relay_attention_test.go"
+      ]
+    },
+    {
+      "id": "HRA-004",
+      "layer": "L2",
+      "description": "Independent report alert names the actual reference and stops after verified claim",
+      "setup": "Unclaimed enrolled report, no delivery evidence, fake clock, independent notification path with stale other-scope notice.",
+      "action": "Pass the lateness threshold and rescan; then claim or close the source and rescan.",
+      "expected": "One exact reference alert, independent of the queue or HQ presence. Limits apply to the reference, distinguish scheduling from acceptance, and clear on verified source or workspace claim.",
+      "planned_files": [
+        "internal/app/hq_relay_attention_test.go"
+      ]
+    }
+  ],
+  "seal": "40fc00a860db2a1c45bc560e7af565ff96c498279013bb59b1ff8697210015fe"
+}

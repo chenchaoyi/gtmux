@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1409 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1413 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2633 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2640 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -251,9 +251,16 @@
 | HPC-002 | Fresh evidence bypasses generic wake backoff; the next reconciliation cycle recovers one missing wake. Draft remains intact while the durable obligation waits. Enqueue alone creates no claim or intent; exact accepted/claimed work is distinct. After lease expiry a successor can claim; the old generation cannot assess. No scenario issues unauthorised source input. A delivered but unclaimed wake creates no ownership. Its bounded recheck has a different transport batch ID and leaves exactly one durable claim. |
 | HRC-001 | Request, reply, hint, fetch and actual work are distinct. Both unfetched and fetched without execution remain visible. A queue or input receipt cannot prove work. |
 | HRC-002 | Only one exact idle native transport can receive the bounded receipt-specific reminder. No implicit grant, fallback, stale replay or second submission; blockers and original attempt remain inspectable. |
+| HRA-001 | One pending slot; second producer remains eligible. No decision evicted or trimmed. One original exact report ID and a full existing decision batch submit together. The old .txt queue reader ignores the protected slot. |
+| HRA-002 | Zero terminal input while unsafe. Unknown retains original evidence and cannot trigger a second scheduler publication of that report. Only proven refusals can use bounded retry at the exact target. |
+| HRA-003 | No old backlog is enrolled. Exact paired report wins, retains original source and claim state, and is dropped before submission after a genuine claim or closure. No report body is put in the wake. |
+| HRA-004 | One exact reference alert, independent of the queue or HQ presence. Limits apply to the reference, distinguish scheduling from acceptance, and clear on verified source or workspace claim. |
 | HRS-001 | Only first exact prompt after lower bound matches. First record remains stable across append; rewrite/replacement/continuation changes invalidate. Complete lines only; no result bodies retained. Cancelled/error reads do not grant attribution. |
 | HRS-002 | Only accepted exact canonical HQ reply in correct Codex home/thread at its first source record gets from.kind=hq. Wrong identity, receipt state, body, missing clock/record or later human copy remains unattributed; existing sender preserved; no new sends or ledger writes. |
 | HRS-003 | App/Web API turn JSON exposes identical HQ sender; new receipt invalidates prior human snapshot, unchanged snapshot is cacheable; old pages keep correct first-only attribution; policy/ledger/source unchanged by reads; CLI-origin and desktop-origin both work. |
+| HRF-001 | At most eight first notices per scan; ninth announced without waiting for earlier claims; prior history stays intact and no duplicate alerts. |
+| HRF-002 | No early wake; at due it is ordinarily visible and its original native opportunity remains consumed. |
+| HRF-003 | An earlier matching end in the five-minute window still prioritizes the report. Unrelated or outside-window ends confer no priority. |
 | HRC-006 | Only a reviewed exact current authority permits the original unused action to submit once. Submitted or uncertain work remains reserved. |
 | HRC-007 | Only a unique continuous exact source joins. Original observations remain immutable and a durable attribution identifies the same receipt. |
 | HRC-008 | Reconciliation identifies the original delivery, reports zero fresh reminders, and still requires source execution evidence. |

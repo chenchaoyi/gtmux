@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
@@ -39,7 +40,7 @@ func watchWakeHealth(now int64, view hqnudge.Health) {
 		alerts[issue.Reason] = fmt.Sprintf("%s. %d queued, %d uncertain, %d retained refusals. First observed %s. %s",
 			why, view.Queued, view.Uncertain, view.Refused, wakeObservedAt(issue.FirstAt), action)
 	}
-	publishWakeNotices("channel", "HQ wake delivery needs attention", alerts, now)
+	publishWakeNotices("channel", "HQ wake delivery needs attention", alerts, now, len(alerts))
 }
 
 // WatchWakeDeadlines is independent of the pane, wake transport and quiet mode.
@@ -54,7 +55,7 @@ func WatchWakeDeadlines(now int64, due []WakeDeadline) {
 	if extra := len(due) - detailedLimit; extra > 0 {
 		alerts["other-overdue"] = fmt.Sprintf("%d additional workspace deadlines remain overdue. Review the overdue matters in the workspace.", extra)
 	}
-	publishWakeNotices("deadline", "HQ workspace deadline overdue", alerts, now)
+	publishWakeNotices("deadline", "HQ workspace deadline overdue", alerts, now, len(alerts))
 }
 
 func wakeObservedAt(at int64) string {
@@ -91,7 +92,7 @@ func wakeIssueAdvice(reason string) (string, string) {
 	}
 }
 
-func publishWakeNotices(scope, title string, alerts map[string]string, now int64) {
+func publishWakeNotices(scope, title string, alerts map[string]string, now int64, maxNew int) {
 	path := filepath.Join(state.Dir(), "hqwake", "notices-"+scope+".json")
 	previous, err := readWakeNotices(path)
 	if err != nil {
@@ -99,22 +100,36 @@ func publishWakeNotices(scope, title string, alerts map[string]string, now int64
 		// Continue through the durable diagnostic and desktop channel.
 	}
 	next := make(map[string]int64, len(alerts))
-	changed := len(previous) != len(alerts)
-	for key, message := range alerts {
-		last := previous[key]
-		if last == 0 || now < last || now-last >= wakeNoticeInterval {
-			journalDegradation(hqsurface.ControlWakeDegraded, message, now)
-			queued := wakeDesktopNotice(notify.Options{Kind: "attention", Title: title, Subtitle: "gtmux", Message: message})
-			outcome := diag.OK
-			if !queued {
-				outcome = diag.Refused
-			}
-			diag.For("hq").Act("act.wake.notice", "system", scope, outcome, "HQ independent notice",
-				"reason", key, "desktop_queued", queued)
-			last = now
-			changed = true
+	var ready []string
+	for key := range alerts {
+		last, shown := previous[key]
+		if shown {
+			next[key] = last
 		}
-		next[key] = last
+		if !shown || now < last || now-last >= wakeNoticeInterval {
+			ready = append(ready, key)
+		}
+	}
+	sort.Slice(ready, func(i, j int) bool {
+		a, b := ready[i], ready[j]
+		if previous[a] == previous[b] {
+			return a < b
+		}
+		return previous[a] < previous[b]
+	})
+	changed := len(next) != len(previous)
+	for _, key := range ready[:min(maxNew, len(ready))] {
+		message := alerts[key]
+		journalDegradation(hqsurface.ControlWakeDegraded, message, now)
+		queued := wakeDesktopNotice(notify.Options{Kind: "attention", Title: title, Subtitle: "gtmux", Message: message})
+		outcome := diag.OK
+		if !queued {
+			outcome = diag.Refused
+		}
+		diag.For("hq").Act("act.wake.notice", "system", scope, outcome, "HQ independent notice",
+			"reason", key, "desktop_queued", queued)
+		next[key] = now
+		changed = true
 	}
 	if !changed {
 		return
@@ -146,4 +161,31 @@ func readWakeNotices(path string) (map[string]int64, error) {
 	var previous map[string]int64
 	err = json.Unmarshal(data, &previous)
 	return previous, err
+}
+
+// RelayAttention identifies a durable source waiting for an HQ claim. A
+// reservation records eligibility and says nothing about delivery.
+type RelayAttention struct {
+	ID         string
+	Since      int64
+	ReservedAt int64
+	Unverified bool
+}
+
+func WatchRelayAttention(now int64, rows []RelayAttention) {
+	alerts := make(map[string]string, len(rows))
+	for _, row := range rows {
+		attempt := "The scheduler has not reserved a native delivery opportunity."
+		if row.ReservedAt > 0 {
+			attempt = "The scheduler reserved a native delivery opportunity. An HQ claim is still absent."
+		}
+		status := "HQ has not claimed"
+		if row.Unverified {
+			status = "The relay store could not verify the claim for"
+		}
+		alerts[fmt.Sprintf("%s@%d", row.ID, row.Since)] = fmt.Sprintf(
+			"%s relay report %s from %s. %s Open the original report with gtmux relay show %s and verify who should act.",
+			status, row.ID, wakeObservedAt(row.Since), attempt, row.ID)
+	}
+	publishWakeNotices("relay-continuation", "HQ report still needs attention", alerts, now, 8)
 }
