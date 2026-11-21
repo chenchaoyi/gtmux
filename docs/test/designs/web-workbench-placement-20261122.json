@@ -12,9 +12,9 @@
       "id": "WWP-001",
       "layer": "L2",
       "description": "New workbench tiles use available visible space",
-      "setup": "Pair isolated desktop Chromium with a synthetic server at 1280 and 1440 pixels. Two authorized panes have distinct transcript responses.",
+      "setup": "Pair isolated desktop Chromium with a synthetic server at 1280 and 1440 pixels, and at 1024 pixels with extra vertical space. Two authorized panes have distinct transcript responses.",
       "action": "Open both panes from the session rail. Open each Chat with a normal pointer click, enter independent drafts, switch one tile to Terminal and back, and send one synthetic message.",
-      "expected": "Both panels remain visible and separate without moving the first. Chat histories and drafts stay with their own pane. The fixture receives exactly one request for the selected pane.",
+      "expected": "Both panels remain visible and separate without moving the first. The 1024-pixel layout uses the room below. Chat histories and drafts stay with their own pane. The fixture receives exactly one request for the selected pane.",
       "planned_files": [
         "tests/web/workbench-placement.test.cjs"
       ]
@@ -31,5 +31,5 @@
       ]
     }
   ],
-  "seal": "a01336ae53d324afa5d6c1152e7cef528525e9a1f311d65eeb76b70110614387"
+  "seal": "769fdb5032db1f3cdc943e76fd80fa0c665d1309eadcbfc849cef6102f8b9d74"
 }
