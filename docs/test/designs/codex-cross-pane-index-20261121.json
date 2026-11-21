@@ -1,0 +1,46 @@
+{
+  "id": "codex-cross-pane-index-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-21",
+    "decision": "Protect managed ownership without granting input from an expired heartbeat; recover only when independent receipts prove the legacy index belongs to another pane.",
+    "notes": "Reviewed the installed incident shape and the shared publication lease. Use the real store, fake process and terminal probes, and a synthetic HOME. Cover missing and unverified evidence plus recovery after a partial write. The definite writer of the historical incident remains unknown. These cases do not certify deployed UI or production changes."
+  },
+  "cases": [
+    {
+      "id": "CPI-001",
+      "layer": "L2",
+      "description": "Legacy publishers preserve an expired but potentially owned frontend index",
+      "setup": "Synthetic private state with an expired managed incumbent and controlled process status.",
+      "action": "Attempt a foreign-thread hook Save and the publication entry shared by process fallback and bootstrap, then exercise same-owner update and confirmed retirement.",
+      "expected": "An expired receipt confers no live authority. Foreign and unknown producer attempts leave the exact incumbent in place, same-owner update retains its frontend identity, and a positively gone or retired owner permits normal legacy publication.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_index_test.go"
+      ]
+    },
+    {
+      "id": "CPI-002",
+      "layer": "L2",
+      "description": "Current bridge restores a known cross-pane conflict with original bytes preserved",
+      "setup": "Strict current frontend and independent native receipts for two distinct panes sharing the same backend; the incumbent is a legacy index containing extra forward-compatible fields.",
+      "action": "Run the real heartbeat and inspect the recovered live index, native receipt, foreign pane record and private archive; inject an index publish failure and retry.",
+      "expected": "Only the exact original thread regains live identity. The other pane is unchanged. The archive preserves the exact displaced bytes and is reused on retry; a failed index write does not lose the original or prevent a verified retry.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_index_test.go"
+      ]
+    },
+    {
+      "id": "CPI-003",
+      "layer": "L2",
+      "description": "Unproven conflicts remain unchanged with a typed diagnostic",
+      "setup": "Synthetic cases vary independent receipts, same pane, managed conflicting index, unsafe file or archive, and newer publisher.",
+      "action": "Attempt recovery from the original bridge and inspect the index and frontend receipt.",
+      "expected": "No recovery or input authority; a stable typed reason distinguishes conflict from unavailable preservation. Exact existing bytes and the producer receipt are preserved.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_index_test.go"
+      ]
+    }
+  ],
+  "seal": "5f11934b08f2cd34f06d6365b46076a606006f40f81f76ba058c3898a338cb9a"
+}
