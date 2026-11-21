@@ -1144,6 +1144,14 @@ A queued unsent rotation SHALL persist one request-owned identity warning attemp
 - **AND** stale ticks, reason changes and reloads do not repeat the warning/reset or extend the original deadline
 
 ### Requirement: Persistent native claim incarnation evidence
+
+New keyed entries SHALL have a distinct physical incarnation. Producers may
+coalesce text in the still-pending generation while holding the queue write
+lock, preserving its due position and identity. A proven collision between
+the original claim and a privately owned parked leaf SHALL preserve both
+files, pin and intent evidence, and exclude that claim from recovery and new
+selection. Other due entries can proceed. Unreadable or unscoped evidence
+SHALL hold admission.
 Before publishing a native intent or attempting native input, the drainer SHALL create and verify a private same-inode hard-link anchor for each claim and synchronize the anchor directory. The durable intent SHALL retain exact anchor names, payload, delivery identity and observed generation metadata. A naturally unlinked and recreated claim cannot reuse the still-live original inode, independently of timestamp precision. Missing, foreign or unobservable anchors SHALL NOT authorize cleanup or input. Prepared/uncertain outcomes SHALL retain original evidence; known terminal cleanup SHALL retire only verified own references after its claim transition and remove the journal last. Pin admission SHALL stop at 1,600 retained references; recovery SHALL scan at most 200 intents and hold on overflow, with 128 KiB per evidence read. An unknown pre-intent orphan SHALL be retained rather than automatically replayed or removed. These checks apply under the cooperating-writer lease, not as atomic compare-and-unlink against arbitrary same-user replacement of every anchor and journal.
 
 #### Scenario: An uncertain parked batch loses its anchor

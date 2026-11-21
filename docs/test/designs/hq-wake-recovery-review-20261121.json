@@ -1,0 +1,35 @@
+{
+  "id": "hq-wake-recovery-review-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; independent failure evidence from pane %80",
+    "date": "2026-11-21",
+    "decision": "Preserve the legacy receipt plus both native generations and refuse admission on a mixed hard fault",
+    "notes": "Independent reviewer reproduced both failures at the previous PR head using synthetic HOME and a fake driver. Those regressions define the boundaries here."
+  },
+  "cases": [
+    {
+      "id": "HWA-009",
+      "layer": "L2",
+      "description": "A legacy late receipt cannot consume a native held slot or its pending replacement",
+      "setup": "Seed uncertain parked and sending generations, a legacy pending replacement, a valid attempt record with a confirmed late receipt, and an independent wake.",
+      "action": "Run the native recovery and a drain from a synthetic HOME with a matching receipt.",
+      "expected": "The two native inodes and pending replacement survive, and the previous receipt stays recoverable. Only the independent wake submits.",
+      "planned_files": [
+        "internal/hqnudge/autorecovery_review_test.go"
+      ]
+    },
+    {
+      "id": "HWA-010",
+      "layer": "L2",
+      "description": "A soft slot collision cannot hide a hard recovery failure later in the same intent",
+      "setup": "Seed a valid multi-claim v2 intent with a privately owned conflicting parked generation first, a nonregular park destination in a later member, and a distinct pending wake.",
+      "action": "Drain with a fake native driver.",
+      "expected": "The mixed intent retains its evidence, the hard recovery failure prevents all new input, and the independent pending entry remains available after the storage issue is resolved.",
+      "planned_files": [
+        "internal/hqnudge/autorecovery_review_test.go"
+      ]
+    }
+  ],
+  "seal": "fa8648e8282930ec29351e2ddbddac9aba4ee703871dc2e717aba965a0a5b559"
+}

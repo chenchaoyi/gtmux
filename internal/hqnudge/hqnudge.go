@@ -45,6 +45,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -434,35 +435,35 @@ func boxEmpty(x io, pane string) bool {
 // so a lexical sort on drain is oldest-first; the pid suffix avoids collisions between
 // concurrent hook processes, and the `.p<n>` field carries the wake class's priority.
 func enqueue(x io, msg string) {
-	if err := state.MkdirAll(queueDir(), 0o755); err != nil {
+	release, err := lockQueue()
+	if err != nil {
+		diag.ReportStoreFailure("hq-wake-queue", err)
 		return
 	}
+	defer release()
 	evictOverflow()
-	name := fmt.Sprintf("%019d-%d.p%d.txt", x.nowNano(), os.Getpid(), hqwake.PriorityOf(msg))
-	_ = state.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0o644)
+	name := fmt.Sprintf("%019d-%d-%s.p%d.txt", x.nowNano(), os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg))
+	diag.ReportStoreFailure("hq-wake-queue", state.WritePrivateFile(filepath.Join(queueDir(), name), []byte(msg)))
 }
 
-// enqueueKeyed writes/REPLACES the pending entry for key. The name embeds the due
-// time in the same fixed-width-nanos prefix (so lexical order stays time order and
-// drain's due check can read it back); a replacement keeps the ORIGINAL due (window
-// position) and only swaps the payload for the newest one.
+// enqueueKeyed replaces the still-queued generation in place to keep its due
+// position. A newly queued generation needs its own physical name even when a
+// previous generation of the same key is still held or was parked.
 func enqueueKeyed(x io, key, msg string, dueNano int64) {
-	if err := state.MkdirAll(queueDir(), 0o755); err != nil {
+	release, err := lockQueue()
+	if err != nil {
+		diag.ReportStoreFailure("hq-wake-queue", err)
 		return
 	}
-	// The field is matched with its trailing dot rather than `.txt`, so an entry that
-	// has been re-sent (`.k-<key>.a1.txt`) is still this key's slot.
-	field := keyField(key) + "."
-	for _, e := range readQueue() {
-		if strings.Contains(e.Name(), field) && strings.HasSuffix(e.Name(), ".txt") {
-			// Replace in place: newest payload, original due position.
-			_ = state.WriteFile(filepath.Join(queueDir(), e.Name()), []byte(msg), 0o644)
-			return
-		}
+	defer release()
+	field := keyField(key)
+	if name := pendingKey(field); name != "" {
+		diag.ReportStoreFailure("hq-wake-queue", state.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0600))
+		return
 	}
 	evictOverflow()
-	name := fmt.Sprintf("%019d-0.p%d%s.txt", dueNano, hqwake.PriorityOf(msg), keyField(key))
-	_ = state.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0o644)
+	name := fmt.Sprintf("%019d-%d-%s.p%d%s.txt", dueNano, os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg), field)
+	diag.ReportStoreFailure("hq-wake-queue", state.WritePrivateFile(filepath.Join(queueDir(), name), []byte(msg)))
 }
 
 // evictOverflow keeps the queue under maxQueueEntries by dropping the LOWEST-priority
@@ -647,13 +648,16 @@ func drainInto(x io, pane string) {
 				// Pre-journal native runtimes cannot prove these old claims unsent.
 				if err := parkNativeClaim(filepath.Join(queueDir(), e.Name())); err != nil {
 					diag.ReportStoreFailure("hq-native-wake", err)
-					return
+					if !errors.Is(err, errNativeClaimConflict) {
+						return
+					}
+					protected[e.Name()] = true
 				}
 			}
 		}
 	}
 	reclaimOrphansExcept(protected)
-	settleEarlierAttempts(x, pane)
+	settleEarlierAttempts(x, pane, protected)
 	// Never rename a queued replacement onto a held foreign/changed claim.
 	due := queuedNames(func(n string) bool { return !protected[n+sendingSuffix] && dueOf(n) <= x.nowNano() })
 	claimed, msgs, held := claimBatch(due)
@@ -790,7 +794,7 @@ func recordAttempt(claimed []string, payload, id string, since int64) {
 // It runs before a new batch is claimed, so a delivered entry is never coalesced into a
 // new batch and pasted again. Reads only: nothing is typed. A record whose entries are
 // all gone (delivered or dropped another way) or that is past the window is removed.
-func settleEarlierAttempts(x io, pane string) {
+func settleEarlierAttempts(x io, pane string, protected map[string]bool) {
 	files, _ := os.ReadDir(attemptsDir())
 	now := x.nowNano() / int64(time.Second)
 	for _, f := range files {
@@ -802,8 +806,18 @@ func settleEarlierAttempts(x io, pane string) {
 			continue
 		}
 		queued := queuedEntries(r.Entries)
-		if len(queued) == 0 || now-r.Since > retryLookbackSec {
+		if len(queued) == 0 {
 			_ = os.Remove(p)
+			continue
+		}
+		if now-r.Since > retryLookbackSec {
+			held := false
+			for _, src := range queued {
+				held = held || protected[filepath.Base(src)+sendingSuffix]
+			}
+			if !held {
+				_ = os.Remove(p)
+			}
 			continue
 		}
 		if !ackConfirmed(x, pane, r.ID, r.Since) {
@@ -811,14 +825,17 @@ func settleEarlierAttempts(x io, pane string) {
 		}
 		var claimed []string
 		for _, src := range queued {
-			if os.Rename(src, src+sendingSuffix) == nil { // a concurrent drainer may have it
-				claimed = append(claimed, src+sendingSuffix)
+			dst := src + sendingSuffix
+			if !protected[filepath.Base(dst)] && takeQueued(src, dst) {
+				claimed = append(claimed, dst)
 			}
 		}
 		if len(claimed) > 0 {
 			finishDelivered(pane, r.Payload, claimed)
 		}
-		_ = os.Remove(p)
+		if len(claimed) == len(queued) {
+			_ = os.Remove(p)
+		}
 	}
 }
 
@@ -877,8 +894,8 @@ func claimBatch(due []string) (claimed, msgs []string, held int) {
 		}
 		src := filepath.Join(queueDir(), n)
 		dst := src + sendingSuffix
-		if os.Rename(src, dst) != nil {
-			continue // lost the claim to another drainer
+		if !takeQueued(src, dst) {
+			continue // no longer pending, or its claim location is protected
 		}
 		claimed = append(claimed, dst)
 		b, err := os.ReadFile(dst)

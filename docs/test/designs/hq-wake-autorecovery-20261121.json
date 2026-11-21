@@ -1,0 +1,35 @@
+{
+  "id": "hq-wake-autorecovery-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; design self-review",
+    "date": "2026-11-21",
+    "decision": "Exercise the observed collision and independent recovery before broader monitoring changes",
+    "notes": "Synthetic HOME, fake clock, fake pane and fake native driver only. The resident and original queue remain outside the test boundary. Independent review takes place on the exact candidate."
+  },
+  "cases": [
+    {
+      "id": "HWA-001",
+      "layer": "L2",
+      "description": "Exact legacy collision isolates only the affected wake",
+      "setup": "Make two distinct, privately owned legacy incarnations under the same keyed physical name. Persist authentic v2 intent and pin evidence for both; park the first and leave the second sending. Add an unrelated due wake. Include a malformed recovery record as a separately checked whole-channel failure.",
+      "action": "Drain twice with an isolated native fake after the persisted state is created.",
+      "expected": "Both original inodes, bytes, pins and journal records remain. The independent wake submits exactly once without paste or replay. Unreadable or unidentifiable intent still prevents all admission.",
+      "planned_files": [
+        "internal/hqnudge/autorecovery_test.go"
+      ]
+    },
+    {
+      "id": "HWA-002",
+      "layer": "L2",
+      "description": "Keyed merge preserves pending identity and new incarnations never reuse it",
+      "setup": "Fake fixed clock with the same due time over several attempts, an existing pre-upgrade keyed entry, and a positive native busy refusal while a producer posts an update.",
+      "action": "Replace the queued legacy payload, claim it, and enqueue two further payloads, including a same-key update during the refusal seam.",
+      "expected": "An unclaimed merge keeps its due time and identity. A new generation has a distinct name even at identical due time. It cannot overwrite an existing sending or parked entry. A provably refused obsolete generation yields to a newer pending one while uncertain records remain frozen. Neither operation pastes into the pane.",
+      "planned_files": [
+        "internal/hqnudge/autorecovery_test.go"
+      ]
+    }
+  ],
+  "seal": "b3a42bcd636fd63834441571e2548d50072fc26de25310eed788d8bdf754b1e9"
+}
