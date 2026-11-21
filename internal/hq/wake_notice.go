@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
@@ -27,8 +28,13 @@ type WakeDeadline struct {
 
 var wakeDesktopNotice = notify.TrySend
 
+type wakeNotice struct {
+	message    string
+	observedAt int64 // zero keeps the periodic reminder for a live condition
+}
+
 func watchWakeHealth(now int64, view hqnudge.Health) {
-	alerts := make(map[string]string)
+	alerts := make(map[string]wakeNotice)
 	for _, issue := range view.Issues {
 		why, action := wakeIssueAdvice(issue.Reason)
 		if issue.Reason == "stalled" {
@@ -37,25 +43,42 @@ func watchWakeHealth(now int64, view hqnudge.Health) {
 				action = wakeNotifyMessage(cause)
 			}
 		}
-		alerts[issue.Reason] = fmt.Sprintf("%s. %d queued, %d uncertain, %d retained refusals. First observed %s. %s",
-			why, view.Queued, view.Uncertain, view.Refused, wakeObservedAt(issue.FirstAt), action)
+		alerts[issue.Reason] = wakeNotice{
+			message:    fmt.Sprintf("%s. First observed %s. %s", why, wakeObservedAt(issue.FirstAt), action),
+			observedAt: wakeNoticeOccurrence(issue),
+		}
 	}
-	publishWakeNotices("channel", "HQ wake delivery needs attention", alerts, now, len(alerts))
+	summary := fmt.Sprintf("%d queued, %d uncertain, %d retained refusals.", view.Queued, view.Uncertain, view.Refused)
+	publishWakeNotices("channel", "HQ wake delivery needs attention", alerts, now, len(alerts), summary)
+}
+
+func wakeNoticeOccurrence(issue hqnudge.WakeIssue) int64 {
+	switch issue.Reason {
+	case "claim-conflict", "accepted-unverified":
+		// A rescan can keep seeing the same conflict or unverified receipt.
+		return issue.FirstAt
+	case "queue-pressure", "input-refused", "retry-exhausted", "observation-archived",
+		"submission-unknown", "terminal-submission-unknown":
+		// These timestamps advance for recorded incidents, not retained file counts.
+		return issue.LastAt
+	default:
+		return 0
+	}
 }
 
 // WatchWakeDeadlines is independent of the pane, wake transport and quiet mode.
 // The workspace owns the due obligation and supplies only currently owed cases.
 func WatchWakeDeadlines(now int64, due []WakeDeadline) {
 	const detailedLimit = 32
-	alerts := make(map[string]string, min(len(due), detailedLimit)+1)
+	alerts := make(map[string]wakeNotice, min(len(due), detailedLimit)+1)
 	for _, d := range due[:min(len(due), detailedLimit)] {
-		alerts[fmt.Sprintf("%s@%d", d.FollowupID, d.Due)] = fmt.Sprintf("Workspace deadline %s for %s is overdue (follow-up %s). The scheduler keeps checking the original matter. Open it to verify the result or decide on a new deadline.",
-			wakeObservedAt(d.Due), d.MatterID, d.FollowupID)
+		alerts[fmt.Sprintf("%s@%d", d.FollowupID, d.Due)] = wakeNotice{message: fmt.Sprintf("Workspace deadline %s for %s is overdue (follow-up %s). The scheduler keeps checking the original matter. Open it to verify the result or decide on a new deadline.",
+			wakeObservedAt(d.Due), d.MatterID, d.FollowupID)}
 	}
 	if extra := len(due) - detailedLimit; extra > 0 {
-		alerts["other-overdue"] = fmt.Sprintf("%d additional workspace deadlines remain overdue. Review the overdue matters in the workspace.", extra)
+		alerts["other-overdue"] = wakeNotice{message: fmt.Sprintf("%d additional workspace deadlines remain overdue. Review the overdue matters in the workspace.", extra)}
 	}
-	publishWakeNotices("deadline", "HQ workspace deadline overdue", alerts, now, len(alerts))
+	publishWakeNotices("deadline", "HQ workspace deadline overdue", alerts, now, len(alerts), "")
 }
 
 func wakeObservedAt(at int64) string {
@@ -92,7 +115,7 @@ func wakeIssueAdvice(reason string) (string, string) {
 	}
 }
 
-func publishWakeNotices(scope, title string, alerts map[string]string, now int64, maxNew int) {
+func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now int64, maxNew int, summary string) {
 	path := filepath.Join(state.Dir(), "hqwake", "notices-"+scope+".json")
 	previous, err := readWakeNotices(path)
 	if err != nil {
@@ -101,10 +124,13 @@ func publishWakeNotices(scope, title string, alerts map[string]string, now int64
 	}
 	next := make(map[string]int64, len(alerts))
 	var ready []string
-	for key := range alerts {
+	for key, notice := range alerts {
 		last, shown := previous[key]
 		if shown {
 			next[key] = last
+			if notice.observedAt > 0 && notice.observedAt <= last && now >= last {
+				continue
+			}
 		}
 		if !shown || now < last || now-last >= wakeNoticeInterval {
 			ready = append(ready, key)
@@ -118,10 +144,19 @@ func publishWakeNotices(scope, title string, alerts map[string]string, now int64
 		return previous[a] < previous[b]
 	})
 	changed := len(next) != len(previous)
-	for _, key := range ready[:min(maxNew, len(ready))] {
-		message := alerts[key]
-		journalDegradation(hqsurface.ControlWakeDegraded, message, now)
-		queued := wakeDesktopNotice(notify.Options{Kind: "attention", Title: title, Subtitle: "gtmux", Message: message})
+	selected := ready[:min(maxNew, len(ready))]
+	queued := false
+	if summary != "" && len(selected) > 0 {
+		lines := []string{summary}
+		for _, key := range selected {
+			lines = append(lines, alerts[key].message)
+		}
+		queued = sendWakeNotice(title, strings.Join(lines, "\n"), now)
+	}
+	for _, key := range selected {
+		if summary == "" {
+			queued = sendWakeNotice(title, alerts[key].message, now)
+		}
 		outcome := diag.OK
 		if !queued {
 			outcome = diag.Refused
@@ -139,6 +174,11 @@ func publishWakeNotices(scope, title string, alerts map[string]string, now int64
 		err = state.WritePrivateFile(path, data)
 	}
 	diag.ReportStoreFailure("hq-wake-notices", err)
+}
+
+func sendWakeNotice(title, message string, now int64) bool {
+	journalDegradation(hqsurface.ControlWakeDegraded, message, now)
+	return wakeDesktopNotice(notify.Options{Kind: "attention", Title: title, Subtitle: "gtmux", Message: message})
 }
 
 func readWakeNotices(path string) (map[string]int64, error) {
@@ -173,7 +213,7 @@ type RelayAttention struct {
 }
 
 func WatchRelayAttention(now int64, rows []RelayAttention) {
-	alerts := make(map[string]string, len(rows))
+	alerts := make(map[string]wakeNotice, len(rows))
 	for _, row := range rows {
 		attempt := "The scheduler has not reserved a native delivery opportunity."
 		if row.ReservedAt > 0 {
@@ -183,9 +223,9 @@ func WatchRelayAttention(now int64, rows []RelayAttention) {
 		if row.Unverified {
 			status = "The relay store could not verify the claim for"
 		}
-		alerts[fmt.Sprintf("%s@%d", row.ID, row.Since)] = fmt.Sprintf(
+		alerts[fmt.Sprintf("%s@%d", row.ID, row.Since)] = wakeNotice{message: fmt.Sprintf(
 			"%s relay report %s from %s. %s Open the original report with gtmux relay show %s and verify who should act.",
-			status, row.ID, wakeObservedAt(row.Since), attempt, row.ID)
+			status, row.ID, wakeObservedAt(row.Since), attempt, row.ID)}
 	}
-	publishWakeNotices("relay-continuation", "HQ report still needs attention", alerts, now, 8)
+	publishWakeNotices("relay-continuation", "HQ report still needs attention", alerts, now, 8, "")
 }

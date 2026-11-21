@@ -68357,9 +68357,18 @@
           "dynamic": false,
           "layer": "L2",
           "design": "HWA-004"
+        },
+        {
+          "id": "MAP-fb32a730b2aa",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "TestWNR003WakeNoticeCoalescesNewCausesAndSkipsHistoricalInventory",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-004,WNR-003"
         }
       ],
-      "sha256": "5c899b578da6f0ad8c3a043e3ba095ad1793f58dada82538ec1649dca2f3ad72"
+      "sha256": "7579b1fc719071a10fe8b18cbce72c8b8f247c8eaffbd45b02b783f73f17f3c0"
     },
     "internal/hqnudge/pressure_health_test.go": {
       "layer": "L2",
@@ -68896,6 +68905,31 @@
         }
       ],
       "sha256": "0f7afa32b7f11afdd78e4a27995bfe9b5de2cc02d642c425d2084be9c6ec1194"
+    },
+    "internal/hqnudge/wake_restart_recovery_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-67dcf50f97c3",
+          "line": 65,
+          "kind": "reviewed-selector",
+          "name": "TestWNR001DeviceChangeKeepsParkedUnknownIntact",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WNR-001,WNR-002"
+        },
+        {
+          "id": "MAP-ca51caefaa67",
+          "line": 84,
+          "kind": "reviewed-selector",
+          "name": "TestWNR002DeviceChangeStillProtectsAmbiguousClaims",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WNR-001,WNR-002"
+        }
+      ],
+      "sha256": "a70ed7cf9489d89af6c0946534320553f3c210070c49ffe8b045a9a8caec3779"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

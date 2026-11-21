@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1416 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1417 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2647 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2650 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -328,10 +328,13 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HWA-018 | Direct inspection and failed producers expose a queue I/O reason even without a drain or HQ. Healthy directory alone cannot erase the observed issue before confirmed progress. |
 | HWA-011 | The newer unclaimed generation retains its original deadline and remains eligible; a stale generation never overwrites or replays into it. |
 | HWA-003 | The warning is explicitly rejected and all prior decision entries survive. An equal-priority new entry may replace the oldest of its rank with a truthful eviction audit. Both pressure outcomes have distinct stages. |
-| HWA-004 | First, changed and continuing reasons alert at bounded cadence even with old down marker. Historical uncertainty remains separate. Pending work, quiet mode or absence of HQ cannot suppress the independent deadline alarm. Recovery requires an exact positive receipt or the tracked condition being conclusively settled. |
+| HWA-004 | First and changed reasons alert even with the old down marker. A retained conflict and a recorded pressure event do not cause periodic reannouncement. Historical uncertainty remains separate. Pending work, quiet mode or absence of HQ cannot suppress the independent deadline alarm. Recovery requires an exact positive receipt or the tracked condition being conclusively settled. |
 | HWA-005 | Deadline and out-of-band report share the goal follow-up ID. Quiet/inactive HQ does not stop that report. Request handling stays open until workbench outcome exists and recovery emits no duplicate alert. |
 | HWA-009 | The two native inodes and pending replacement survive, and the previous receipt stays recoverable. Only the independent wake submits. |
 | HWA-010 | The mixed intent retains its evidence, the hard recovery failure prevents all new input, and the independent pending entry remains available after the storage issue is resolved. |
+| WNR-001 | There is no conflict for that parked claim. The journal, pin and parked bytes remain identical and no pending or sending file is created. |
+| WNR-002 | Every ambiguous original remains protected. Neither replacement nor submission is performed. A separately verified parked claim is still recognized. |
+| WNR-003 | Retained archives and refusals remain diagnosable without repeated desktop alerts. A new occurrence and newly active cause remain visible. Simultaneous channel reasons produce one desktop notice and one journal event. Active stalls and workspace deadlines keep their own rate-limited reminders. |
 | HWA-014 | One submission per fresh batch, no replays or lost acknowledgement. Full or expired active proofs are retained with exact receipt provenance in a bounded private archive and independently discoverable. |
 | HWA-015 | One durable delivery audit for this batch, with no input mutation. Clean up the retained receipt only after observing the matching audit. |
 | HWA-019 | The initial held wake and the draft are protected. One terminal wake reaches the verified idle fixture after its deadline, exact ownership is retained, and no workspace authority is invented. |

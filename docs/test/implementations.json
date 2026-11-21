@@ -1,4 +1,11 @@
 {
+  "internal/hqnudge/wake_restart_recovery_test.go": {
+    "cases": ["WNR-001", "WNR-002"],
+    "selectors": [
+      "TestWNR001DeviceChangeKeepsParkedUnknownIntact",
+      "TestWNR002DeviceChangeStillProtectsAmbiguousClaims"
+    ]
+  },
   "internal/hqnudge/waiting_relay_retry_test.go": {"cases": ["HWW-004"], "selectors": ["TestHWW004ProtectedRelayUsesFirstWindowWithDueWaitingRetry"]},
   "internal/hook/nudge_test.go": {"cases": ["HWW-001"], "selectors": ["TestNudgeSupervisorNoop"]},
   "internal/hqnudge/waiting_test.go": {"cases": ["HWW-001", "HWW-002"], "selectors": ["TestHWW001FreshWaitingRevalidationWithProtectedRelay", "TestHWW002PreviouslyAttemptedWaitingKeepsRecoveryRules"]},
@@ -4742,10 +4749,11 @@
   },
   "internal/hq/wake_autorecovery_test.go": {
     "cases": [
-      "HWA-004"
+      "HWA-004", "WNR-003"
     ],
     "selectors": [
-      "TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter"
+      "TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter",
+      "TestWNR003WakeNoticeCoalescesNewCausesAndSkipsHistoricalInventory"
     ]
   },
   "internal/hq/board_shape_test.go": {
