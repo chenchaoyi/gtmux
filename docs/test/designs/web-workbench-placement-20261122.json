@@ -1,0 +1,35 @@
+{
+  "id": "web-workbench-placement-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-22",
+    "decision": "Approve isolated browser test design before implementation",
+    "notes": "Exploratory Chrome reproduced a second automatically placed tile intercepting the first tile's Chat control. Test real pointer actions rather than forced clicks. The server fixture stores requests locally and never contacts an active installation."
+  },
+  "cases": [
+    {
+      "id": "WWP-001",
+      "layer": "L2",
+      "description": "New workbench tiles use available visible space",
+      "setup": "Pair isolated desktop Chromium with a synthetic server at 1280 and 1440 pixels, and at 1024 pixels with extra vertical space. Two authorized panes have distinct transcript responses.",
+      "action": "Open both panes from the session rail. Open each Chat with a normal pointer click, enter independent drafts, switch one tile to Terminal and back, and send one synthetic message.",
+      "expected": "Both panels remain visible and separate without moving the first. The 1024-pixel layout uses the room below. Chat histories and drafts stay with their own pane. The fixture receives exactly one request for the selected pane.",
+      "planned_files": [
+        "tests/web/workbench-placement.test.cjs"
+      ]
+    },
+    {
+      "id": "WWP-002",
+      "layer": "L2",
+      "description": "The workbench restores the user's explicit saved layout",
+      "setup": "Use a 1440-pixel browser and seed its local workbench with a hand-positioned overlapping layout.",
+      "action": "Open the normal paired workspace with the saved layout, then open a third pane where horizontal space is available.",
+      "expected": "The two saved geometries stay exact while a third tile chooses open space. The fixture receives no message.",
+      "planned_files": [
+        "tests/web/workbench-placement.test.cjs"
+      ]
+    }
+  ],
+  "seal": "769fdb5032db1f3cdc943e76fd80fa0c665d1309eadcbfc849cef6102f8b9d74"
+}

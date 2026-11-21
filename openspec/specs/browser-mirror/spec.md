@@ -174,6 +174,13 @@ the same authenticated `/api/pane` + `/api/transcript` data as the single-pane m
 - **THEN** each pane renders live and can be dragged/resized/arranged, with the
   arrangement applied via presets or manual placement; authorized panes may accept input
 
+#### Scenario: Automatically opened panes use visible space
+
+- **WHEN** the user opens another pane without specifying its position
+- **AND** the workbench has room to place it beside or below the existing panes
+- **THEN** the new pane uses that space and keeps the earlier controls reachable
+- **AND** saved layout coordinates and explicit placements remain authoritative
+
 ### Requirement: Radar parity with the native surfaces
 
 The browser radar SHALL reflect the same status vocabulary as the CLI/menu-bar: it

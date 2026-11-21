@@ -123,7 +123,7 @@ On iPhone and iPad, **Copy reply** below a reply copies the whole turn's text, i
 
 ### Browser controls
 
-On a wide screen, double-click a session or drag it from the sidebar onto the board. Each panel can be moved, resized and viewed beside other sessions. Readable external conversations use the same layout with read-only Chat and Trace; they do not gain Terminal, Diff or input. Entries without a readable conversation remain **Status only**. On phones, tap a readable session to open it. The narrow toolbar keeps controls within the screen.
+On a wide screen, double-click a session or drag it from the sidebar onto the board. Each panel can be moved, resized and viewed beside other sessions. New panels opened from the session list use available room beside or below the panels already open. Readable external conversations use the same layout with read-only Chat and Trace; they do not gain Terminal, Diff or input. Entries without a readable conversation remain **Status only**. On phones, tap a readable session to open it. The narrow toolbar keeps controls within the screen.
 
 In the Chat and Terminal composers, Enter starts a new line and Ctrl/Cmd+Enter sends. You can enable Return-to-send in Settings. When an input method is composing text, Enter confirms the word without sending. Chat refreshes intermediate reply text and tool details as they arrive.
 
