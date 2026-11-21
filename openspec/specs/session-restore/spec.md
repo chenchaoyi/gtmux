@@ -761,13 +761,24 @@ The system SHALL recognize a saved interactive `gtmux codex` frontend using the
 same argv admission policy as managed launch. It SHALL preserve the original
 conversation identity through the existing exact-location record or explicit
 saved resume argument, and apply the same evidence in preview and execution.
-Native Codex command compatibility and live-input ownership checks SHALL remain.
+A record with a previous managed frontend SHALL resume through a required
+managed bridge using the verified Codex executable. If that bridge cannot
+start, recovery SHALL surface the failure without falling back to standalone
+Codex. Native Codex command compatibility and live-input ownership checks SHALL
+remain.
 
 #### Scenario: A managed frontend survives the reboot liveness gate
 
 - **WHEN** the saved process is an interactive `gtmux codex --` frontend
 - **THEN** the preview includes its original conversation and restore continues that same conversation in the restored shell
 - **AND** quoted executable paths and the standard forwarding delimiter do not hide the agent
+
+#### Scenario: A saved managed thread reconnects its App session
+
+- **WHEN** restore selects a conversation with a previous managed frontend
+- **THEN** automatic restore reserves the same home and thread before writing to the pane
+- **AND** a new live attachment for the exact thread, pane root and terminal confirms recovery
+- **AND** tmux accepting a command, a standalone client or an expired receipt cannot confirm managed recovery
 
 #### Scenario: Saved infrastructure must not revive stale conversations
 

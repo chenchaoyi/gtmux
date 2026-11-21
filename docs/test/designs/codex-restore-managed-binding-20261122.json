@@ -1,0 +1,46 @@
+{
+  "id": "codex-restore-managed-binding-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-22",
+    "decision": "Approve test design before implementation",
+    "notes": "Match the confirmed incident using a saved frontend record and the exact selected conversation. Review the existing CLI executable search as well so standard non-standalone installations retain managed restore. Exercise the real restore dispatch and a real CLI process without a TTY. Receipt tests inject evidence at the existing live frontend verification boundary. Use private state and fake senders. App behavior against a newly installed binary is a separate device check."
+  },
+  "cases": [
+    {
+      "id": "CRMB-001",
+      "layer": "L2",
+      "description": "Restoring a saved managed Codex thread preserves its terminal bridge",
+      "setup": "A private restore fixture records an exact Codex conversation, with or without a managed frontend. The pane, selected binary and tmux sender are controlled.",
+      "action": "Dispatch the managed restore with a standalone package and with a verified CLI symlink outside the standalone layout. Attempt them again in the same boot and compare with standalone Codex and managed records whose binary or route cannot be verified.",
+      "expected": "Managed dispatch reserves the attempt before sending the exact same thread through gtmux codex with the verified binary and home. A verified non-standalone executable still uses the managed route. Unavailable routes send zero input. A same-boot rerun sends zero input. Standalone Codex keeps its original command.",
+      "planned_files": [
+        "internal/app/codex_managed_restore_test.go"
+      ]
+    },
+    {
+      "id": "CRMB-002",
+      "layer": "L2",
+      "description": "A managed restore launch without a usable terminal bridge reports failure",
+      "setup": "Start a subprocess with a private home and a stub executable named codex that would leave a marker if run. Use the actual Codex CLI command handler with no TTY.",
+      "action": "Invoke the generated managed route through the handler, then invoke ordinary gtmux codex using the same stub.",
+      "expected": "The managed route reports that the bridge is unavailable and never invokes the stub. Ordinary launch still executes the stub.",
+      "planned_files": [
+        "internal/app/codex_managed_restore_test.go"
+      ]
+    },
+    {
+      "id": "CRMB-003",
+      "layer": "L2",
+      "description": "Managed startup confirmation requires a fresh exact live attachment",
+      "setup": "Create a real pending restore reservation in a private home. Feed verified frontend evidence through an isolated lookup and model native, stale, retired, mismatching and unverified attachments.",
+      "action": "Poll confirmation using the exact live result and each mismatching receipt.",
+      "expected": "Only a new attachment for the same thread, home, pane and physical terminal records confirmation. Pending state survives all mismatches. An already off-path attempt cannot be confirmed.",
+      "planned_files": [
+        "internal/resume/managed_restore_test.go"
+      ]
+    }
+  ],
+  "seal": "89d03f209ca3ba043c0d4d6e95c1b96ba60d27cbff00bb2d837c00147fe6f8c3"
+}

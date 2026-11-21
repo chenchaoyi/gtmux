@@ -57,6 +57,7 @@ var nativeRestoreReadProcess = launchhost.ReadAgent
 var nativeRestoreFindBinary = nativeCodexBinary
 var nativeRestoreReadPane = readNativeRestorePane
 var nativeRestoreInspectBinary = inspectNativeRestoreBinary
+var managedRestoreInspectBinary = inspectManagedRestoreBinary
 var nativeRestoreProbe = probeNativeRestoreCapabilityContext
 var nativeRestoreHelp = runNativeRestoreHelp
 var nativeRestoreBoot = resume.NativeRestoreBootID
@@ -178,6 +179,23 @@ func probeNativeRestoreCapabilityWithHelp(binary nativeRestoreBinary, helpFn fun
 // Only the existing standalone-package layout is classified here. A same-name
 // wrapper/script or explicit launcher retains the old command contract.
 func inspectNativeRestoreBinary(lookup string) (nativeRestoreBinary, bool, error) {
+	return inspectRestoreBinary(lookup, false)
+}
+
+// Managed restore uses the normal bridge executable search, which can resolve
+// standard non-standalone installs (such as a codex symlink to a JS entrypoint).
+func inspectManagedRestoreBinary(lookup string) (nativeRestoreBinary, bool, error) {
+	return inspectRestoreBinary(lookup, true)
+}
+
+func inspectRestoreBinaryForRecord(lookup string, rec resume.Record) (nativeRestoreBinary, bool, error) {
+	if rec.Frontend != "" {
+		return managedRestoreInspectBinary(lookup)
+	}
+	return nativeRestoreInspectBinary(lookup)
+}
+
+func inspectRestoreBinary(lookup string, allowOtherLayouts bool) (nativeRestoreBinary, bool, error) {
 	var result nativeRestoreBinary
 	if lookup == "" {
 		return result, true, errors.New("native executable lookup unavailable")
@@ -198,33 +216,17 @@ func inspectNativeRestoreBinary(lookup string) (nativeRestoreBinary, bool, error
 		return result, true, errors.New("resolved executable is not executable regular file")
 	}
 	packageRoot := filepath.Dir(filepath.Dir(physical))
-	if filepath.Base(physical) != "codex" || filepath.Base(filepath.Dir(physical)) != "bin" ||
-		!strings.Contains(filepath.ToSlash(packageRoot), "/packages/standalone/releases/") {
+	standalone := filepath.Base(physical) == "codex" && filepath.Base(filepath.Dir(physical)) == "bin" &&
+		strings.Contains(filepath.ToSlash(packageRoot), "/packages/standalone/releases/")
+	if !standalone && (!allowOtherLayouts || filepath.Base(absolute) != "codex") {
 		return result, false, nil
 	}
-	metaPath := filepath.Join(packageRoot, "codex-package.json")
-	metaFile, err := os.Open(metaPath)
-	if err != nil {
-		return result, true, errors.New("native package metadata unavailable")
-	}
-	meta, readErr := io.ReadAll(io.LimitReader(metaFile, 4097))
-	_ = metaFile.Close()
-	if readErr != nil || len(meta) > 4096 {
-		return result, true, errors.New("native package metadata unavailable")
-	}
-	var pkg struct {
-		LayoutVersion                        int
-		Version, Target, Variant, Entrypoint string
-	}
-	if json.Unmarshal(meta, &pkg) != nil || pkg.LayoutVersion != 1 || pkg.Version == "" ||
-		pkg.Variant != "codex" || pkg.Entrypoint != "bin/codex" {
-		return result, true, errors.New("native package metadata invalid")
-	}
-	wantArch := map[string]string{"arm64": "aarch64", "amd64": "x86_64"}[runtime.GOARCH]
-	if wantArch == "" || !strings.HasPrefix(pkg.Target, wantArch+"-") ||
-		(runtime.GOOS == "darwin" && !strings.HasSuffix(pkg.Target, "-apple-darwin")) ||
-		(runtime.GOOS == "linux" && !strings.Contains(pkg.Target, "-linux-")) {
-		return result, true, errors.New("native package target unavailable")
+	var meta []byte
+	if standalone {
+		meta, err = nativeRestorePackageMeta(packageRoot)
+		if err != nil {
+			return result, true, err
+		}
 	}
 	f, err := os.Open(physical)
 	if err != nil {
@@ -240,17 +242,19 @@ func inspectNativeRestoreBinary(lookup string) (nativeRestoreBinary, bool, error
 		before.Size() < 4 || before.Size() > 512<<20 {
 		return result, true, errors.New("native executable attributes unavailable")
 	}
-	var header [4]byte
-	if _, err := io.ReadFull(f, header[:]); err != nil {
-		return result, true, err
-	}
-	macho := header == [4]byte{0xcf, 0xfa, 0xed, 0xfe} || header == [4]byte{0xce, 0xfa, 0xed, 0xfe}
-	elf := header == [4]byte{0x7f, 'E', 'L', 'F'}
-	if (runtime.GOOS == "darwin" && !macho) || (runtime.GOOS == "linux" && !elf) {
-		return result, false, nil
-	}
-	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		return result, true, err
+	if standalone {
+		var header [4]byte
+		if _, err := io.ReadFull(f, header[:]); err != nil {
+			return result, true, err
+		}
+		macho := header == [4]byte{0xcf, 0xfa, 0xed, 0xfe} || header == [4]byte{0xce, 0xfa, 0xed, 0xfe}
+		elf := header == [4]byte{0x7f, 'E', 'L', 'F'}
+		if (runtime.GOOS == "darwin" && !macho) || (runtime.GOOS == "linux" && !elf) {
+			return result, false, nil
+		}
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			return result, true, err
+		}
 	}
 	digest := sha256.New()
 	n, err := io.Copy(digest, io.LimitReader(f, (512<<20)+1))
@@ -276,6 +280,34 @@ func inspectNativeRestoreBinary(lookup string) (nativeRestoreBinary, bool, error
 		Inode: st.Ino, Mode: uint32(before.Mode()), UID: st.Uid, Size: n, MTime: before.ModTime().UnixNano(), SHA: hex.EncodeToString(digest.Sum(nil)),
 		PackageSHA: hex.EncodeToString(pkgSum[:])}
 	return result, true, nil
+}
+
+func nativeRestorePackageMeta(packageRoot string) ([]byte, error) {
+	metaPath := filepath.Join(packageRoot, "codex-package.json")
+	metaFile, err := os.Open(metaPath)
+	if err != nil {
+		return nil, errors.New("native package metadata unavailable")
+	}
+	meta, readErr := io.ReadAll(io.LimitReader(metaFile, 4097))
+	_ = metaFile.Close()
+	if readErr != nil || len(meta) > 4096 {
+		return nil, errors.New("native package metadata unavailable")
+	}
+	var pkg struct {
+		LayoutVersion                        int
+		Version, Target, Variant, Entrypoint string
+	}
+	if json.Unmarshal(meta, &pkg) != nil || pkg.LayoutVersion != 1 || pkg.Version == "" ||
+		pkg.Variant != "codex" || pkg.Entrypoint != "bin/codex" {
+		return nil, errors.New("native package metadata invalid")
+	}
+	wantArch := map[string]string{"arm64": "aarch64", "amd64": "x86_64"}[runtime.GOARCH]
+	if wantArch == "" || !strings.HasPrefix(pkg.Target, wantArch+"-") ||
+		(runtime.GOOS == "darwin" && !strings.HasSuffix(pkg.Target, "-apple-darwin")) ||
+		(runtime.GOOS == "linux" && !strings.Contains(pkg.Target, "-linux-")) {
+		return nil, errors.New("native package target unavailable")
+	}
+	return meta, nil
 }
 
 type nativeRestoreSelection struct {
@@ -332,16 +364,26 @@ func prepareNativeRestoreContext(ctx context.Context, pane, loc string, rec resu
 	if ctx.Err() != nil {
 		return nil, true, "cancelled"
 	}
-	if rec.Agent != "codex" || rec.Launcher != "" || os.Getenv("CODEX_EXEC_SERVER_URL") != "" {
+	if rec.Agent != "codex" {
 		return nil, false, ""
 	}
-	binary, handled, err := nativeRestoreInspectBinary(nativeRestoreFindBinary())
+	managed := rec.Frontend != ""
+	if rec.Launcher != "" || os.Getenv("CODEX_EXEC_SERVER_URL") != "" {
+		if managed {
+			return nil, true, "managed-frontend-unavailable"
+		}
+		return nil, false, ""
+	}
+	binary, handled, err := inspectRestoreBinaryForRecord(nativeRestoreFindBinary(), rec)
 	// Errors must win over the classifier's handled bit: only (false,nil) is compatibility.
 	if err != nil {
 		restoreLogf("restore.resume", "native prepare deferred pane=%s loc=%s executable: %v", pane, loc, err)
 		return nil, true, "executable-unavailable"
 	}
 	if !handled {
+		if managed {
+			return nil, true, "managed-frontend-unavailable"
+		}
 		return nil, false, ""
 	}
 	p, ok := nativeRestoreReadPane(pane, loc)
@@ -366,16 +408,20 @@ func prepareNativeRestoreContext(ctx context.Context, pane, loc string, rec resu
 	if err != nil {
 		return nil, true, "capability-unknown"
 	}
-	capability, exists := cache[binary]
-	if !exists {
-		capability = nativeRestoreProbe(ctx, binary)
-		cache[binary] = capability
-	}
-	if ctx.Err() != nil {
-		return nil, true, "cancelled"
-	}
-	if capability == nativeCapabilityUnknown {
-		return nil, true, "capability-unknown"
+	var capability nativeRestoreCapability
+	if !managed {
+		var exists bool
+		capability, exists = cache[binary]
+		if !exists {
+			capability = nativeRestoreProbe(ctx, binary)
+			cache[binary] = capability
+		}
+		if ctx.Err() != nil {
+			return nil, true, "cancelled"
+		}
+		if capability == nativeCapabilityUnknown {
+			return nil, true, "capability-unknown"
+		}
 	}
 	cwd, err := filepath.EvalSymlinks(rec.Cwd)
 	if err != nil {
@@ -387,7 +433,15 @@ func prepareNativeRestoreContext(ctx context.Context, pane, loc string, rec resu
 	}
 	commandRecord := rec
 	commandRecord.Cwd = cwd
-	_, command, err := resume.NativeRestoreCommand(commandRecord, binary.Physical, home, capability == nativeCapabilitySupported, agentenv.Active())
+	var command string
+	if managed {
+		command, err = resume.ManagedCodexRestoreCommand(commandRecord, selfPath(), binary.Physical, home, agentenv.Active())
+		if err != nil {
+			return nil, true, "managed-frontend-unavailable"
+		}
+	} else {
+		_, command, err = resume.NativeRestoreCommand(commandRecord, binary.Physical, home, capability == nativeCapabilitySupported, agentenv.Active())
+	}
 	if err != nil {
 		return nil, true, "target-changed"
 	}
@@ -408,7 +462,7 @@ func nativeRestorePlanState(p *nativeRestorePlan) string {
 	if !p.Selection.unchanged(p.Pane.Loc) {
 		return "target-changed"
 	}
-	binary, handled, err := nativeRestoreInspectBinary(p.Binary.Lookup)
+	binary, handled, err := inspectRestoreBinaryForRecord(p.Binary.Lookup, p.Record)
 	if err != nil {
 		restoreLogf("restore.resume", "native write deferred pane=%s loc=%s executable: %v", p.Pane.Pane, p.Pane.Loc, err)
 		return "executable-unavailable"

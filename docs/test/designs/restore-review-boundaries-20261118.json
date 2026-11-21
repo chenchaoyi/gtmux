@@ -3,7 +3,7 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex delivery implementation owner; author self-review, not independent approval",
-    "date": "2026-11-18",
+    "date": "2026-11-22",
     "decision": "APPROVE reviewed regression design before any test edits",
     "notes": "Derived from fixed full-review R1-R6 and six actual CI failures. Preserve previous assertions and original failure evidence; fake clock and synthetic subprocess tests do not prove actual Codex/device acceptance. Full gate and necessary independent candidate review remain required. Root-home/hold require diagnosis before deciding scope; no skip or weakened production boundary."
   },
@@ -60,9 +60,9 @@
       "id": "RRB-R6",
       "layer": "L2",
       "description": "Deterministic entry fixtures and six CI failures",
-      "setup": "Private tmux/HOME, explicit compatible executable classification; native evidence separately fixed",
+      "setup": "Private tmux and HOME. Supply a synthetic executable for the managed bridge and retain deterministic compatibility classification elsewhere.",
       "action": "Run wrapper/bridge/ownership/remote/root-home/hold entries; retain target, no-send and Enter assertions",
-      "expected": "Host installation cannot choose route; native path asserts exact command and pane identity; diagnose unrelated failures without weakening assertions",
+      "expected": "The actual type-only tmux entry renders the required managed command, verified executable and saved thread. The record-free fallback, explicit custom launcher and no-input assertions for ineligible panes remain covered. Native entry asserts exact command and pane identity.",
       "planned_files": [
         "internal/app/restore_review_boundary_test.go",
         "internal/app/agent_resume_launcher_test.go",
@@ -105,5 +105,5 @@
       ]
     }
   ],
-  "seal": "178f20f607af3da71c7fd10994eee5fe8bbe93d797c2e79b5d950de14f35770f"
+  "seal": "9d94993c1767dd51fb70507d956a1ab0c96b74f5dc7dc195424ffbe627e13e77"
 }

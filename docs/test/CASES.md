@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1419 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1421 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2656 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2659 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -150,6 +150,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CRF-001 | The same identity is witnessed at its new address. The old record is not fabricated and the old line remains history. |
 | CRF-002 | The closed receipt releases the destination without acquiring live authority. The new owner's verified identity is published. |
 | CRF-003 | The observed update waits through the first short contention interval and publishes independently under the same lease. |
+| CRMB-001 | Managed dispatch reserves the attempt before sending the exact same thread through gtmux codex with the verified binary and home. A verified non-standalone executable still uses the managed route. Unavailable routes send zero input. A same-boot rerun sends zero input. Standalone Codex keeps its original command. |
+| CRMB-002 | The managed route reports that the bridge is unavailable and never invokes the stub. Ordinary launch still executes the stub. |
+| CRMB-003 | Only a new attachment for the same thread, home, pane and physical terminal records confirmation. Pending state survives all mismatches. An already off-path attempt cannot be confirmed. |
 | CSR-001 | Only the narrow ready stale-active/newer-finished display becomes idle, keeps the existing finished time, and never mints Latest/Confirmed/CompletionID or clears/rewrites any lifecycle or binding marker. Real visible work, CPU, queues and waits win; fresh start and missing/older/future finished evidence remain conservative. Existing exact-session/home/turn guards are unchanged. Accurate baseline production must fail the false-working target assertion. |
 | CSR-002 | Current work remains working. A superseded start is replaced by bounded recognized TUI elapsed time, or since=0 with since_uncertain=true when not known, never the old multi-hour start/window activity. Original valid marker behavior and wire defaults remain compatible. No lifecycle proof/state mutation or work-start fabrication. |
 | CSR-003 | Old descriptor retains complete original JSON and new path contains complete new JSON. Busy lease returns existing ErrLeaseHeld without overwrite or heartbeat publication; released lease allows normal same-owner operation. Refresh legacy-field recovery releases before Bind reacquires. Foreign/newer/reused identities, symlink destinations, write failures and cancellation remain conservative. Exact old Save fails atomic pinned-reader/lease assertions. No unbounded waiting, real config or unique recovery deletion. |
@@ -519,7 +522,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | RRB-R1 | One cumulative send after unknown; first legal wrapper still sends |
 | RRB-R2 | Second sends zero; unchanged sources still send |
 | RRB-R3 | A confirmed before B starts; no extra sleep; cancellation wins |
-| RRB-R6 | Host installation cannot choose route; native path asserts exact command and pane identity; diagnose unrelated failures without weakening assertions |
+| RRB-R6 | The actual type-only tmux entry renders the required managed command, verified executable and saved thread. The record-free fallback, explicit custom launcher and no-input assertions for ineligible panes remain covered. Native entry asserts exact command and pane identity. |
 | RRB-R4 | Pane and timeout visible before B; final summary remains |
 | RRB-R5 | Both timeout and first delivery uncertainty remain distinct in existing result/client states |
 | RSD-001 | The unchanged source is sent exactly once to its target. A replaced source prevents every literal and Enter for that target. |

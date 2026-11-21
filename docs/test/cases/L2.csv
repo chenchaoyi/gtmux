@@ -57,6 +57,8 @@ MAP-99f641958692,L2,reviewed implementation,internal/app/artifact_preview_test.g
 MAP-bf28343fb4c1,L2,reviewed implementation,internal/app/client_contract_test.go,30,reviewed-selector,TestClientHTTPContracts,False,CT-HTTP
 LEG-4c8a67259028,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,40,Test,TestCloudflaredMetricsTransportRefusesRedirectsAndOversizedBodies,False,legacy-not-retrospectively-reviewed
 LEG-ff081e20fac0,L2,Go core / CLI / server,internal/app/cloudflared_security_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-645e4b6f5574,L2,reviewed implementation,internal/app/codex_managed_restore_test.go,15,reviewed-selector,TestManagedRestorePreservesBridge,False,"CRMB-001,CRMB-002"
+MAP-ee76e5eeea4f,L2,reviewed implementation,internal/app/codex_managed_restore_test.go,117,reviewed-selector,TestManagedRestoreNoStandaloneFallback,False,"CRMB-001,CRMB-002"
 MAP-8a4106253ad4,L2,reviewed implementation,internal/app/codex_restore_native_test.go,36,reviewed-selector,TestCNR101CapabilityBoundToNativeBinary,False,"CNRV4-001,CNRV4-003"
 MAP-d60f0dd41b6e,L2,reviewed implementation,internal/app/codex_restore_native_test.go,140,reviewed-selector,TestCNR102RestoreTargetRecheckedBeforeWrite,False,"CNRV4-001,CNRV4-003"
 MAP-57f1588cdf35,L2,reviewed implementation,internal/app/codex_restore_native_test.go,174,reviewed-selector,TestCNR103ReservePrecedesProductionSend,False,"CNRV4-001,CNRV4-003"
@@ -493,6 +495,7 @@ MAP-27e3343f9bf5,L2,reviewed implementation,internal/resume/frontend_location_te
 MAP-2803d4ff4366,L2,reviewed implementation,internal/resume/frontend_location_test.go,424,reviewed-selector,TestCFL003HistoryWriteFailureRefusesMigrationBeforeLivePublication,False,"CFL-001,CFL-002,CFL-003"
 MAP-79d8babbf0d2,L2,reviewed implementation,internal/resume/frontend_location_test.go,465,reviewed-selector,TestCFL003ObservedNewRootRetriesItsOwnPartialMovedPublication,False,"CFL-001,CFL-002,CFL-003"
 MAP-e2be0f7a7658,L2,reviewed implementation,internal/resume/frontend_recovery_diagnostic_test.go,12,reviewed-selector,TestDPC003RecoveryEvidenceNeverGrantsRetryAuthority,False,DPC-003
+MAP-deafe0a9d89d,L2,reviewed implementation,internal/resume/managed_restore_test.go,9,reviewed-selector,TestManagedRestoreConfirmationRequiresNewLiveFrontend,False,CRMB-003
 MAP-79c40622d1d5,L2,reviewed implementation,internal/resume/native_restore_test.go,20,reviewed-selector,TestCNR001NativeRestoreCommandRoundTrip,False,"CNRV4-001,CNRV4-002,CNRV4-003"
 MAP-0b1e0aa3f9cb,L2,reviewed implementation,internal/resume/native_restore_test.go,139,reviewed-selector,TestCNR002StoppedFrontendMigratesSameSession,False,"CNRV4-001,CNRV4-002,CNRV4-003"
 MAP-ec0ee648e4d9,L2,reviewed implementation,internal/resume/native_restore_test.go,163,reviewed-selector,TestCNR003FrontendMigrationRejectsUnknownAndRaces,False,"CNRV4-001,CNRV4-002,CNRV4-003"

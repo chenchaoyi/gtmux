@@ -24,6 +24,7 @@ import (
 var ErrNativeRestoreReserved = errors.New("native restore already attempted in this boot")
 var nativeRestoreBootProbe = platformNativeRestoreBoot
 var nativeRestoreRootRead = launchhost.ReadAgent
+var restoreFrontendForPane = CodexFrontendForPane
 var nativeRestoreNow = time.Now
 
 func NativeRestoreBootID() (string, error) { return nativeRestoreBootProbe() }
@@ -254,9 +255,7 @@ func UpdateNativeRestoreAttempt(expected NativeRestoreAttempt, next string) (Nat
 // fresh native hook/process evidence to this exact issued attempt and pane root.
 func ConfirmNativeRestoreAttempt(a NativeRestoreAttempt, current Record) bool {
 	id := a.Identity
-	if a.State != "pending" || !validNativeRestoreAttempt(a) || current.Agent != "codex" ||
-		current.Frontend != "" || current.SessionID != id.SessionID || current.HomeID != id.HomeID ||
-		!hqpane.SameDir(current.Cwd, id.Cwd) || current.UpdatedAt < a.IssuedAt/int64(time.Second) {
+	if current.Frontend != "" || !restoreAttemptMatches(a, current) {
 		return false
 	}
 	r, ok := native.Load(id.SessionID, id.HomeID)
@@ -282,4 +281,30 @@ func ConfirmNativeRestoreAttempt(a NativeRestoreAttempt, current Record) bool {
 	}
 	_, err := UpdateNativeRestoreAttempt(a, "confirmed")
 	return err == nil
+}
+
+// ConfirmManagedRestoreAttempt joins a pending send to a verified frontend
+// that started on the exact target terminal after the attempt was reserved.
+func ConfirmManagedRestoreAttempt(a NativeRestoreAttempt, current Record) bool {
+	if current.Frontend == "" || current.FrontendRetired || !restoreAttemptMatches(a, current) {
+		return false
+	}
+	id := a.Identity
+	f, ok := restoreFrontendForPane(id.Pane)
+	if !ok || f.Retired || f.Instance != current.Frontend || f.StartedAt <= a.IssuedAt/int64(time.Millisecond) ||
+		f.HomeID != id.HomeID || f.SessionID != id.SessionID || f.Pane != id.Pane || f.Loc != id.Loc ||
+		f.PanePID != id.RootPID || f.RootStart != id.RootBirth ||
+		strings.TrimPrefix(f.TTY, "/dev/") != strings.TrimPrefix(id.TTY, "/dev/") ||
+		!hqpane.SameDir(f.Cwd, id.Cwd) || !hqpane.SameDir(f.ThreadCwd, id.Cwd) {
+		return false
+	}
+	_, err := UpdateNativeRestoreAttempt(a, "confirmed")
+	return err == nil
+}
+
+func restoreAttemptMatches(a NativeRestoreAttempt, current Record) bool {
+	id := a.Identity
+	return a.State == "pending" && validNativeRestoreAttempt(a) && current.Agent == "codex" &&
+		current.SessionID == id.SessionID && current.HomeID == id.HomeID &&
+		hqpane.SameDir(current.Cwd, id.Cwd) && current.UpdatedAt >= a.IssuedAt/int64(time.Second)
 }
