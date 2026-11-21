@@ -16,7 +16,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
-const hqThreadTitle = "gtmux HQ · 舰队中控"
+const hqThreadTitle = "gtmux HQ"
 
 func seedHQThreadName(ctx context.Context, epoch *connectionEpoch, a resume.CodexFrontend, thread string) string {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)

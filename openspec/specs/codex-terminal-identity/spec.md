@@ -74,7 +74,7 @@ The system SHALL use the executing Codex thread and canonical home instead of a 
 ### Requirement: Managed Codex HQ receives a stable conversation name
 When an admitted Codex frontend on the authoritative stamped HQ pane selects an
 unnamed persistent root, gtmux SHALL attempt to set its default name to
-`gtmux HQ · 舰队中控` through Codex's `thread/name/set` protocol. It SHALL wait for
+`gtmux HQ` through Codex's `thread/name/set` protocol. It SHALL wait for
 Codex's acknowledgement before returning the confirmed name to the frontend
 and publishing the root binding. The operation SHALL preserve any existing name,
 use a bounded deadline, and leave the original root response usable if naming

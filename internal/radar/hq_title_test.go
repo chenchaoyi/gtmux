@@ -27,7 +27,7 @@ func TestHQAgentTaskUsesCurrentCodexName(t *testing.T) {
 		return a, live
 	}
 	for _, tc := range []struct{ label, home, id, name, want string }{
-		{"default", homeID, "hq-thread", "gtmux HQ · 舰队中控", "gtmux HQ · 舰队中控"},
+		{"default", homeID, "hq-thread", "gtmux HQ", "gtmux HQ"},
 		{"rename", homeID, "hq-thread", "My HQ notes", "My HQ notes"},
 		{"wrong home", "foreign", "hq-thread", "Same ID in another home", "screen fallback"},
 		{"wrong thread", homeID, "another-root", "Stale label", "screen fallback"},

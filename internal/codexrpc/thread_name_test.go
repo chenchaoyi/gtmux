@@ -13,7 +13,7 @@ import (
 )
 
 func TestSeedThreadNameRequiresExactCodexAcknowledgement(t *testing.T) {
-	const title = "gtmux HQ · 舰队中控"
+	const title = "gtmux HQ"
 	home := t.TempDir()
 	t.Setenv("CODEX_HOME", home)
 	target := Target{HomeID: transcript.CodexHomeID(), ThreadID: "hq-root", BackendPID: 123, BackendStart: "daemon-birth"}
