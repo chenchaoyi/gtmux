@@ -57,6 +57,13 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 	if err != nil {
 		return err
 	}
+	attentionStart := d.ObservationCursors[workspaceRelayAttentionCursor]
+	if attentionStart == 0 {
+		if err := s.Ingest(workspaceRelayAttentionCursor, 0, now, nil, now); err != nil {
+			return err
+		}
+		attentionStart = now
+	}
 	cursor, initialized := d.ObservationCursors["events"]
 	if !initialized {
 		// Prospective activation: no historical bulk reconciliation on upgrade.
@@ -154,6 +161,7 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 			if r.Kind == "report" && r.For != "user" {
 				o.DriveProof = workspaceRelayDriveProof(r.Body, matter)
 				o.Continuation = matter != "" && o.DriveProof == nil
+				o.RelayAttention = r.CreatedAt > attentionStart && o.DriveProof == nil && workspaceManagedRelayAttention(r)
 			}
 			facts = append(facts, o)
 		}
@@ -321,6 +329,7 @@ func notifyWorkspaceReconciliation(s *hqworkspace.Store, now, next int64) (int64
 	if err != nil {
 		return next, err
 	}
+	serviceWorkspaceRelayAttention(s, d, now)
 	signals, err := s.RemindContinuations(d, now)
 	if err != nil {
 		return next, err
@@ -386,6 +395,9 @@ func workspaceRelayDriveProof(body, matter string) *hqworkspace.DriveProof {
 }
 
 func workspaceReconciliationProbe(line string) (bool, string) {
+	if id, ok := workspaceAttentionLineID(line); ok {
+		return revalidateWorkspaceRelayAttention(workspaceStore(), time.Now().Unix(), id, line)
+	}
 	if !strings.Contains(line, "workspace reconciliation") {
 		return true, line
 	}

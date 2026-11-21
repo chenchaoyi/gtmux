@@ -153,7 +153,7 @@ func validNativeIntent(r nativeIntent) bool {
 	}
 	seen := map[string]bool{}
 	for _, e := range r.Entries {
-		if filepath.Base(e.Name) != e.Name || !strings.HasSuffix(e.Name, ".txt"+sendingSuffix) || len(e.SHA256) != 64 || strings.Trim(e.SHA256, "0123456789abcdef") != "" || e.FileID == "" || e.ChangedAt == "" || len(e.Pin) != 68 || !strings.HasSuffix(e.Pin, ".pin") || strings.Trim(strings.TrimSuffix(e.Pin, ".pin"), "0123456789abcdef") != "" || seen[e.Name] {
+		if filepath.Base(e.Name) != e.Name || !strings.HasSuffix(e.Name, sendingSuffix) || !isPendingWake(claimBase(e.Name)) || len(e.SHA256) != 64 || strings.Trim(e.SHA256, "0123456789abcdef") != "" || e.FileID == "" || e.ChangedAt == "" || len(e.Pin) != 68 || !strings.HasSuffix(e.Pin, ".pin") || strings.Trim(strings.TrimSuffix(e.Pin, ".pin"), "0123456789abcdef") != "" || seen[e.Name] {
 			return false
 		}
 		seen[e.Name] = true

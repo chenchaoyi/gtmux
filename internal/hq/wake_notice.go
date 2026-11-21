@@ -147,3 +147,30 @@ func readWakeNotices(path string) (map[string]int64, error) {
 	err = json.Unmarshal(data, &previous)
 	return previous, err
 }
+
+// RelayAttention identifies a durable source waiting for an HQ claim. A
+// reservation records eligibility and says nothing about delivery.
+type RelayAttention struct {
+	ID         string
+	Since      int64
+	ReservedAt int64
+	Unverified bool
+}
+
+func WatchRelayAttention(now int64, rows []RelayAttention) {
+	alerts := make(map[string]string, len(rows))
+	for _, row := range rows {
+		attempt := "The scheduler has not reserved a native delivery opportunity."
+		if row.ReservedAt > 0 {
+			attempt = "The scheduler reserved a native delivery opportunity. An HQ claim is still absent."
+		}
+		status := "HQ has not claimed"
+		if row.Unverified {
+			status = "The relay store could not verify the claim for"
+		}
+		alerts[fmt.Sprintf("%s@%d", row.ID, row.Since)] = fmt.Sprintf(
+			"%s relay report %s from %s. %s Open the original report with gtmux relay show %s and verify who should act.",
+			status, row.ID, wakeObservedAt(row.Since), attempt, row.ID)
+	}
+	publishWakeNotices("relay-continuation", "HQ report still needs attention", alerts, now)
+}

@@ -59,7 +59,7 @@ func ContinuationWakeQueue(d Database, now int64) []Reconciliation {
 	var out []Reconciliation
 	for _, q := range ReconciliationQueue(d, now) {
 		o := q.Observation
-		if o.OccurredAt > now || hasLiveClaim(q, now) {
+		if o.RelayAttention || o.OccurredAt > now || hasLiveClaim(q, now) {
 			continue
 		}
 		matter := CanonicalMatter(d, o.MatterID)
@@ -75,7 +75,7 @@ func ContinuationWakeQueue(d Database, now int64) []Reconciliation {
 func ReconciliationWakeQueue(d Database, now int64) []Reconciliation {
 	var out []Reconciliation
 	for _, q := range ReconciliationQueue(d, now) {
-		if q.Observation.Continuation || q.Observation.NeedsTriage() || hasLiveClaim(q, now) {
+		if q.Observation.RelayAttention || q.Observation.Continuation || q.Observation.NeedsTriage() || hasLiveClaim(q, now) {
 			continue
 		}
 		out = append(out, q)

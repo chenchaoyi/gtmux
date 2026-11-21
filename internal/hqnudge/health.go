@@ -129,7 +129,7 @@ func ReadHealth(now int64) Health {
 		if strings.HasSuffix(name, wakeRefusedSuffix) {
 			out.Refused++
 		}
-		if !strings.HasSuffix(name, ".txt") {
+		if !isPendingWake(name) {
 			continue
 		}
 		out.Queued++

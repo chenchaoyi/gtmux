@@ -34,6 +34,17 @@
       "TestSID001HelpStillRecognizesCommandsAfterDisplayConfig"
     ]
   },
+  "internal/app/hq_relay_attention_test.go": {
+    "cases": [
+      "HRA-002",
+      "HRA-003",
+      "HRA-004"
+    ],
+    "selectors": [
+      "TestHRA003ProspectiveRelayAttentionUsesExactSourceAndRealClaim",
+      "TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim"
+    ]
+  },
   "internal/app/client_contract_test.go": {
     "cases": [
       "CT-HTTP"
@@ -761,6 +772,16 @@
     ],
     "selectors": [
       "TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize"
+    ]
+  },
+  "internal/hqnudge/relay_attention_test.go": {
+    "cases": [
+      "HRA-001",
+      "HRA-002"
+    ],
+    "selectors": [
+      "TestHRA001ReservedRelaySharesFullDecisionBatch",
+      "TestHRA002ProtectedRelayRequiresGuardedNativeWindow"
     ]
   },
   "internal/hqnudge/native_generation_test.go": {

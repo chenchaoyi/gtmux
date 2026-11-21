@@ -83,6 +83,8 @@ MAP-c7f093bf6da7,L2,reviewed implementation,internal/app/dsh_terminal_spool_test
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
 MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
 MAP-8667d3e135cb,L2,reviewed implementation,internal/app/hold_reader_test.go,12,reviewed-selector,TestHoldReaderChild,False,RSD-004
+MAP-2205ade7faa7,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,17,reviewed-selector,TestHRA003ProspectiveRelayAttentionUsesExactSourceAndRealClaim,False,"HRA-002,HRA-003,HRA-004"
+MAP-70f381b3e425,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,119,reviewed-selector,TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim,False,"HRA-002,HRA-003,HRA-004"
 MAP-19a5906d1fd5,L2,reviewed implementation,internal/app/hq_wake_deadline_test.go,10,reviewed-selector,TestHWA005DeadlineIsOwedUntilOriginalMatterSettles,False,HWA-005
 MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,146,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
@@ -308,6 +310,8 @@ MAP-62be7306061f,L2,reviewed implementation,internal/hqnudge/native_recovery_tes
 MAP-cbf26a49e444,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,317,reviewed-selector,TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate,False,"HRW-009,HRW-010"
 MAP-ac1ffa61f5b2,L2,reviewed implementation,internal/hqnudge/pressure_health_test.go,13,reviewed-selector,TestHWA003IncomingStandingWakeCannotEvictDecisions,False,"HWA-003,HWA-004"
 MAP-392ca77cfaeb,L2,reviewed implementation,internal/hqnudge/pressure_health_test.go,38,reviewed-selector,TestHWA004ConflictNeedsCleanScanAndPositiveReceipt,False,"HWA-003,HWA-004"
+MAP-d0379fef758d,L2,reviewed implementation,internal/hqnudge/relay_attention_test.go,13,reviewed-selector,TestHRA001ReservedRelaySharesFullDecisionBatch,False,"HRA-001,HRA-002"
+MAP-50abbb3e7060,L2,reviewed implementation,internal/hqnudge/relay_attention_test.go,57,reviewed-selector,TestHRA002ProtectedRelayRequiresGuardedNativeWindow,False,"HRA-001,HRA-002"
 MAP-2f393b4dfbb1,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,29,reviewed-selector,TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority,False,"HRW-004,HRW-005,HRW-008"
 MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,89,reviewed-selector,TestHRW004RotationDoesNotSubmitOrRepairUserDraft,False,"HRW-004,HRW-005,HRW-008"
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,103,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"

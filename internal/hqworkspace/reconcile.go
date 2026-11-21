@@ -10,6 +10,7 @@ import (
 // Observation is immutable input, not permission to execute or change a goal.
 // ID is namespaced by its producer; Ref points to the original durable record.
 type Observation struct {
+	RelayAttention  bool         `json:"relay_attention,omitempty"`
 	Continuation    bool         `json:"continuation,omitempty"`
 	RecordingPolicy string       `json:"recording_policy,omitempty"`
 	DriveProof      *DriveProof  `json:"drive_proof,omitempty"`
@@ -24,6 +25,7 @@ type Observation struct {
 }
 
 type Reconciliation struct {
+	RelayAttentionAt    int64       `json:"relay_attention_at,omitempty"`
 	ReviewedEventCursor *int64      `json:"reviewed_event_cursor,omitempty"`
 	GoalPremise         string      `json:"goal_premise,omitempty"`
 	ReminderAt          int64       `json:"reminder_at,omitempty"`
