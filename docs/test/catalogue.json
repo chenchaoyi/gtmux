@@ -68687,6 +68687,40 @@
         }
       ],
       "sha256": "b8fc9ea5f1f7e2b93a5752d35109d7b1ccade90bb245877e3c30368a9d6bb1d6"
+    },
+    "internal/resume/release_review_followup_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f4f6e48da5ac",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestCRF001MovedFrontendRefreshesRetainedNativeReceipt",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CRF-001,CRF-002,CRF-003"
+        },
+        {
+          "id": "MAP-232e89d16661",
+          "line": 32,
+          "kind": "reviewed-selector",
+          "name": "TestCRF002ExactClosedReceiptReleasesRelocationDestination",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CRF-001,CRF-002,CRF-003"
+        },
+        {
+          "id": "MAP-7f6fb4786814",
+          "line": 56,
+          "kind": "reviewed-selector",
+          "name": "TestCRF003ObservedSaveRetriesTemporaryPublicationContention",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CRF-001,CRF-002,CRF-003"
+        }
+      ],
+      "sha256": "02dffb06fc3c140d41602d70fd58bcab1fb0f5a240419a2fa77c5efb53e932c6"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

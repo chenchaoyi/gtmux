@@ -2880,6 +2880,9 @@ MAP-205fbc7b2a25,L2,reviewed implementation,internal/resume/native_restore_test.
 MAP-56aadbd19e58,L2,reviewed implementation,internal/resume/observed_conversation_test.go,35,reviewed-selector,TestSID003LastKnownHistoryHasNoLiveAuthority,False,SID-003
 MAP-64bbe883d24c,L2,reviewed implementation,internal/resume/observed_conversation_test.go,68,reviewed-selector,TestSID003UnknownConflictingAndUnsafeHistoryStaysUnassociated,False,SID-003
 LEG-cfd5daadb019,L1,Go core / CLI / server,internal/resume/registry_test.go,12,Test,TestEveryRegistryResumableIsResumable,False,legacy-not-retrospectively-reviewed
+MAP-f4f6e48da5ac,L2,reviewed implementation,internal/resume/release_review_followup_test.go,12,reviewed-selector,TestCRF001MovedFrontendRefreshesRetainedNativeReceipt,False,"CRF-001,CRF-002,CRF-003"
+MAP-232e89d16661,L2,reviewed implementation,internal/resume/release_review_followup_test.go,32,reviewed-selector,TestCRF002ExactClosedReceiptReleasesRelocationDestination,False,"CRF-001,CRF-002,CRF-003"
+MAP-7f6fb4786814,L2,reviewed implementation,internal/resume/release_review_followup_test.go,56,reviewed-selector,TestCRF003ObservedSaveRetriesTemporaryPublicationContention,False,"CRF-001,CRF-002,CRF-003"
 LEG-072ded3e34a1,L1,Go core / CLI / server,internal/resume/resolve_test.go,29,Test,TestResolveUsesTheDirTheConversationIsFiledUnder,False,legacy-not-retrospectively-reviewed
 LEG-5cacfa389ca3,L1,Go core / CLI / server,internal/resume/resolve_test.go,46,Test,TestResolveReportsAMissingConversationDead,False,legacy-not-retrospectively-reviewed
 LEG-400757ebd811,L1,Go core / CLI / server,internal/resume/resolve_test.go,56,Test,TestResolveLeavesOtherAgentsAlone,False,legacy-not-retrospectively-reviewed

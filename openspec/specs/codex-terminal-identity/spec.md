@@ -135,6 +135,10 @@ Every publisher of a resume location index SHALL hold the shared publication lea
 - **WHEN** the existing producer observes an older same-thread index and proves its exact incarnation
 - **THEN** it retains the lease from observation through publication and refuses an observed change of the incumbent bytes
 
+#### Scenario: The verified publisher moves after startup observation retirement
+- **WHEN** a frontend moves while its exact native binding receipt still exists
+- **THEN** the committed move updates that receipt even after the provisional observation has retired, and an exact closed destination receipt permits reuse
+
 #### Scenario: A moved or older frontend shuts down
 - **WHEN** a known frontend retires
 - **THEN** its exact layout aliases release, and a partial index update preserves a closed receipt or the available process evidence

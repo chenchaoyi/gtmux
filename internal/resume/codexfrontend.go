@@ -212,7 +212,7 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 	if err := canceled(); err != nil {
 		return f, err
 	}
-	receiptErr := confirmFrontendStartup(f)
+	receiptErr := confirmFrontendStartup(f, moved)
 	if err := canceled(); err != nil {
 		return f, err
 	}
@@ -222,10 +222,21 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 	return f, nil
 }
 
-func confirmFrontendStartup(f CodexFrontend) error {
+func confirmFrontendStartup(f CodexFrontend, moved bool) error {
 	observation, exists := native.Load(f.SessionID, f.HomeID)
 	if !exists {
-		return nil
+		if !moved {
+			return nil
+		}
+		// A committed move can occur after the original startup observation
+		// was retired. Relocate only an existing receipt for this incarnation.
+		bound, ok := native.BindingFor(f.SessionID, f.HomeID)
+		if !ok || bound.Kind != "frontend" || bound.ID != f.Instance || bound.Pane != f.Pane ||
+			bound.PID != f.PID || bound.PanePID != f.PanePID || bound.BackendPID != f.BackendPID ||
+			bound.BackendStart != f.BackendStart || bound.Loc == f.Loc {
+			return nil
+		}
+		observation = bound.Observation
 	}
 	return native.ConfirmBinding(native.Binding{Kind: "frontend", BackendPID: f.BackendPID, BackendStart: f.BackendStart,
 		HomeID: f.HomeID, ID: f.Instance, SessionID: f.SessionID, Pane: f.Pane, Loc: f.Loc, Cwd: f.ThreadCwd,
@@ -385,7 +396,7 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 			return f, err
 		}
 	}
-	receiptErr := confirmFrontendStartup(f)
+	receiptErr := confirmFrontendStartup(f, f.Loc != previous.Loc)
 	if err := canceled(); err != nil {
 		return f, err
 	}

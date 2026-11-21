@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1408 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1409 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2630 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2633 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -145,6 +145,9 @@
 | CNRV4-003 | Persist occupation before send; unknown never replayed; errors observable, no false absence/fallback; cancellation retains occupation without sending; private helper roles are not ordinary runtime passes |
 | CNRV4-004 | B starts only after A ready/visible timeout; cancel stops starts; original shared1500ms observation allowance and stable locator order; uncertain delivery never claims ready or replays |
 | CNRV4-005 | Path words remain data; actual native executable/argv/cwd/Home/Enter/reserve contract stays strict; native target regression makes focused test fail |
+| CRF-001 | The same identity is witnessed at its new address. The old record is not fabricated and the old line remains history. |
+| CRF-002 | The closed receipt releases the destination without acquiring live authority. The new owner's verified identity is published. |
+| CRF-003 | The observed update waits through the first short contention interval and publishes independently under the same lease. |
 | CSR-001 | Only the narrow ready stale-active/newer-finished display becomes idle, keeps the existing finished time, and never mints Latest/Confirmed/CompletionID or clears/rewrites any lifecycle or binding marker. Real visible work, CPU, queues and waits win; fresh start and missing/older/future finished evidence remain conservative. Existing exact-session/home/turn guards are unchanged. Accurate baseline production must fail the false-working target assertion. |
 | CSR-002 | Current work remains working. A superseded start is replaced by bounded recognized TUI elapsed time, or since=0 with since_uncertain=true when not known, never the old multi-hour start/window activity. Original valid marker behavior and wire defaults remain compatible. No lifecycle proof/state mutation or work-start fabrication. |
 | CSR-003 | Old descriptor retains complete original JSON and new path contains complete new JSON. Busy lease returns existing ErrLeaseHeld without overwrite or heartbeat publication; released lease allows normal same-owner operation. Refresh legacy-field recovery releases before Bind reacquires. Foreign/newer/reused identities, symlink destinations, write failures and cancellation remain conservative. Exact old Save fails atomic pinned-reader/lease assertions. No unbounded waiting, real config or unique recovery deletion. |

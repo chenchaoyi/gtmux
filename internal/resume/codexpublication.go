@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -99,4 +100,21 @@ func legacyUnlinkedFrontendStopped(current Record) bool {
 	bound, ok := native.BindingFor(current.SessionID, current.HomeID)
 	return ok && bound.Kind == "frontend" && bound.ID == current.Frontend && bound.PID > 1 &&
 		bound.BackendPID > 1 && bound.BackendStart != "" && frontendRecoveryGone(bound.PID)
+}
+
+// SaveObserved is the detached hook/one-shot entry. A short lease collision
+// must not discard another agent's observed resume update without retrying.
+func SaveObserved(loc string, r Record) error {
+	if r.Agent == "codex" {
+		return Save(loc, r)
+	}
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		err := Save(loc, r)
+		if !errors.Is(err, state.ErrLeaseHeld) || !time.Now().Before(deadline) {
+			diag.ReportStoreFailure("observed-resume", err)
+			return err
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
 }

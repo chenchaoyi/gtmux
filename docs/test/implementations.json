@@ -1,4 +1,12 @@
 {
+  "internal/resume/release_review_followup_test.go": {
+    "cases": ["CRF-001", "CRF-002", "CRF-003"],
+    "selectors": [
+      "TestCRF001MovedFrontendRefreshesRetainedNativeReceipt",
+      "TestCRF002ExactClosedReceiptReleasesRelocationDestination",
+      "TestCRF003ObservedSaveRetriesTemporaryPublicationContention"
+    ]
+  },
   "internal/agentclient/expected_target_test.go": {
     "cases": [
       "ASC-004"

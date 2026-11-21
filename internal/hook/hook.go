@@ -988,7 +988,7 @@ func Run(stdin io.Reader, args []string) int {
 			// letting one of those claim the record pointed restore at a command stub
 			// instead of the work session. See resumeowner.go.
 			if sid != "" && (terminalAttachment.Client != "" || ownsPane(loc, agentKey, sid)) {
-				_ = resume.Save(loc, resume.Record{
+				_ = resume.SaveObserved(loc, resume.Record{
 					HomeID:         homeID,
 					TerminalClient: terminalAttachment.Client,
 					Agent:          agentKey, SessionID: sid, Cwd: cwd,
