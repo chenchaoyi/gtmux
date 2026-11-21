@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/codexterminal"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/launchhost"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -24,6 +25,7 @@ import (
 // connection. A backend PID, inherited environment or saved locator is not this
 // evidence. The resume record remains history when this attachment expires.
 type CodexFrontend struct {
+	Retired      bool   `json:"retired,omitempty"`
 	ThreadCwd    string `json:"thread_cwd,omitempty"`
 	Instance     string `json:"instance"`
 	HomeID       string `json:"home_id"`
@@ -86,7 +88,14 @@ func BeginCodexFrontend(pane, instance string, peerPID, backendPID int, sequence
 }
 
 func validFrontend(f CodexFrontend) bool {
-	return frontendPath(f.Instance) != "" && f.HomeID == transcript.CodexHomeID() && f.SessionID != "" &&
+	return !f.Retired && f.HomeID == transcript.CodexHomeID() && validStoredFrontend(f)
+}
+
+// Structural validation allows cross-home competition and exit checks only.
+// A receipt acquires live authority through the separate scoped reader.
+func validStoredFrontend(f CodexFrontend) bool {
+	return frontendPath(f.Instance) != "" && len(f.HomeID) == 32 && strings.Trim(f.HomeID, "0123456789abcdef") == "" &&
+		f.SessionID != "" &&
 		len(f.SessionID) <= 256 && !strings.ContainsAny(f.SessionID, "\r\n\x00") &&
 		f.Pane != "" && f.Loc != "" && f.PID > 1 && f.PanePID > 1 && f.BridgePID > 1 &&
 		f.BridgeStart != "" && f.ClientStart != "" && f.RootStart != "" && f.TTY != "" &&
@@ -149,8 +158,8 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 			// Preserve committed history, but retire only this exact publication's
 			// live proof. Never remove a replaced owner or roll its index back.
 			if saved, ok := readFrontend(f.Instance); ok && saved == f {
-				if removeErr := os.Remove(frontendPath(f.Instance)); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
-					return errors.Join(err, errors.New("frontend retirement failed"))
+				if retireErr := retireFrontendLocked(f, previousAttachment.Loc); retireErr != nil {
+					return errors.Join(err, retireErr)
 				}
 			}
 		}
@@ -158,7 +167,7 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 	}
 	previous, _ := Load(f.Loc)
 	if !moved && previous.Frontend != "" && previous.Frontend != f.Instance {
-		old, ok := readFrontend(previous.Frontend)
+		old, ok := readStoredFrontend(previous.Frontend)
 		if ok && (old.StartedAt > f.StartedAt || old.BridgePID == f.BridgePID && old.BridgeStart == f.BridgeStart && old.Sequence > f.Sequence) {
 			return f, errors.New("a newer frontend owns this location")
 		}
@@ -203,7 +212,7 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 	if err := canceled(); err != nil {
 		return f, err
 	}
-	receiptErr := confirmFrontendStartup(f)
+	receiptErr := confirmFrontendStartup(f, moved)
 	if err := canceled(); err != nil {
 		return f, err
 	}
@@ -213,10 +222,21 @@ func BindCodexFrontendContext(ctx context.Context, f CodexFrontend, sid string, 
 	return f, nil
 }
 
-func confirmFrontendStartup(f CodexFrontend) error {
+func confirmFrontendStartup(f CodexFrontend, moved bool) error {
 	observation, exists := native.Load(f.SessionID, f.HomeID)
 	if !exists {
-		return nil
+		if !moved {
+			return nil
+		}
+		// A committed move can occur after the original startup observation
+		// was retired. Relocate only an existing receipt for this incarnation.
+		bound, ok := native.BindingFor(f.SessionID, f.HomeID)
+		if !ok || bound.Kind != "frontend" || bound.ID != f.Instance || bound.Pane != f.Pane ||
+			bound.PID != f.PID || bound.PanePID != f.PanePID || bound.BackendPID != f.BackendPID ||
+			bound.BackendStart != f.BackendStart || bound.Loc == f.Loc {
+			return nil
+		}
+		observation = bound.Observation
 	}
 	return native.ConfirmBinding(native.Binding{Kind: "frontend", BackendPID: f.BackendPID, BackendStart: f.BackendStart,
 		HomeID: f.HomeID, ID: f.Instance, SessionID: f.SessionID, Pane: f.Pane, Loc: f.Loc, Cwd: f.ThreadCwd,
@@ -224,7 +244,7 @@ func confirmFrontendStartup(f CodexFrontend) error {
 }
 
 // RefreshCodexFrontend is a bounded liveness heartbeat from the bridge process.
-// It does not promote a different thread or reclaim an incumbent's location.
+// It never promotes a different thread or displaces a competing publisher.
 func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
 	return RefreshCodexFrontendContext(context.Background(), f)
 }
@@ -257,6 +277,8 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 	}
 	defer lease.Close()
 	publishIndex, wroteReceipt := false, false
+	var expectedIndex []byte
+	recoveredConflict := false
 	canceled := func() error {
 		err := ctx.Err()
 		if err == nil {
@@ -264,8 +286,8 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 		}
 		if wroteReceipt {
 			if saved, ok := readFrontend(f.Instance); ok && saved == f {
-				if removeErr := os.Remove(frontendPath(f.Instance)); removeErr != nil && !errors.Is(removeErr, os.ErrNotExist) {
-					return errors.Join(err, errors.New("frontend retirement failed"))
+				if retireErr := retireFrontendLocked(f, previous.Loc); retireErr != nil {
+					return errors.Join(err, retireErr)
 				}
 			}
 		}
@@ -306,16 +328,31 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 		}
 		r = frontendRecord(f)
 		publishIndex = true
-		ok = true
 	}
-	if !ok || r.Agent != "codex" || r.SessionID != f.SessionID || r.HomeID != f.HomeID || r.Frontend != "" && r.Frontend != f.Instance {
-		return f, errors.New("frontend binding replaced")
+	if r.FrontendRetired {
+		return f, &FrontendBindingError{Code: "frontend-index-retired"}
+	}
+	if r.Agent != "codex" || r.SessionID != f.SessionID || r.HomeID != f.HomeID || r.Frontend != "" && r.Frontend != f.Instance {
+		expectedIndex, err = preserveCrossPaneIndex(ctx, previous, f, r)
+		if err != nil {
+			return f, err
+		}
+		r = frontendRecord(f)
+		publishIndex, recoveredConflict = true, true
 	}
 	if r.Frontend == "" {
-		// Older hook binaries omit the additive field when publishing the SAME
-		// thread. Recover only from our own still-verified connection evidence.
-		lease.Close() // Bind reacquires and revalidates; never recursively hold it.
-		return BindCodexFrontendContext(ctx, f, f.SessionID, f.ThreadCwd)
+		// An older same-thread write can omit the frontend reference. Keep the
+		// lease from validation through repair so it cannot become a rebind
+		// over an intervening publisher.
+		if !producerHasCommittedIndexOwner(previous, f) {
+			return f, &FrontendBindingError{Code: "frontend-owner-changed"}
+		}
+		expectedIndex, err = snapshotResumeIndex(f.Loc, r)
+		if err != nil {
+			return f, err
+		}
+		r.Frontend, r.Cwd = f.Instance, f.ThreadCwd
+		publishIndex = true
 	}
 	// New threads may acquire history after thread/start. Once promoted, normal
 	// heartbeats never enumerate history; empty threads are checked at most /10s.
@@ -347,6 +384,11 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 		return f, err
 	}
 	if publishIndex {
+		if expectedIndex != nil {
+			if err := verifyResumeIndexBytes(f.Loc, expectedIndex); err != nil {
+				return f, err
+			}
+		}
 		if err := frontendBindingWrite(fileFor(f.Loc), r); err != nil {
 			return f, err
 		}
@@ -354,9 +396,12 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 			return f, err
 		}
 	}
-	receiptErr := confirmFrontendStartup(f)
+	receiptErr := confirmFrontendStartup(f, f.Loc != previous.Loc)
 	if err := canceled(); err != nil {
 		return f, err
+	}
+	if recoveredConflict && receiptErr == nil {
+		diag.For("resume").Info("codex.binding.index.recovered", "managed Codex index restored after a verified cross-pane conflict", "pane", f.Pane)
 	}
 	return f, receiptErr
 }
@@ -365,21 +410,64 @@ func EndCodexFrontend(f CodexFrontend) {
 	if f.BridgePID != os.Getpid() {
 		return
 	}
-	if saved, ok := readFrontend(f.Instance); ok && saved.BridgePID == f.BridgePID && saved.BridgeStart == f.BridgeStart {
-		// Keep the history explicitly non-live even if an older same-thread hook
-		// rewrote its additive frontend field just before disconnect.
-		if lease, err := state.TryLease("codex-frontend-binding"); err == nil {
-			if r, exists := Load(f.Loc); exists && r.Agent == "codex" && r.SessionID == f.SessionID && r.HomeID == f.HomeID && r.Frontend == "" {
-				r.Frontend = f.Instance
-				_ = writeBindingJSON(fileFor(f.Loc), r)
-			}
-			lease.Close()
+	lease, err := tryResumePublication()
+	if err != nil {
+		return
+	}
+	defer lease.Close()
+	saved, ok := readFrontend(f.Instance)
+	if ok && saved.BridgePID == f.BridgePID && saved.BridgeStart == f.BridgeStart &&
+		saved.StartedAt == f.StartedAt && saved.Sequence == f.Sequence {
+		if err := retireFrontendLocked(saved, f.Loc); err != nil {
+			diag.For("resume").Warn("codex.binding.retirement.failed", "could not record Codex frontend retirement", "pane", f.Pane)
 		}
-		_ = os.Remove(frontendPath(f.Instance))
 	}
 }
 
+var frontendRetirementWrite = writeBindingJSON
+
+// Retire known addresses and exact historical aliases. If a write fails,
+// retain a closed receipt as positive release evidence for the old index.
+func retireFrontendLocked(f CodexFrontend, previousLoc string) error {
+	locations := map[string]bool{f.Loc: true}
+	if previousLoc != "" {
+		locations[previousLoc] = true
+	}
+	for _, saved := range AllLocated() {
+		if saved.Agent == "codex" && saved.HomeID == f.HomeID && saved.Frontend == f.Instance {
+			locations[saved.Loc] = true
+		}
+	}
+	var retirementErr error
+	for loc := range locations {
+		r, ok := Load(loc)
+		if !ok || r.Agent != "codex" || r.HomeID != f.HomeID || r.FrontendRetired {
+			continue
+		}
+		if r.Frontend == f.Instance || r.Frontend == "" && r.SessionID == f.SessionID {
+			r.Frontend, r.FrontendRetired = f.Instance, true
+			retirementErr = errors.Join(retirementErr, frontendRetirementWrite(fileFor(loc), r))
+		}
+	}
+	path := frontendPath(f.Instance)
+	if retirementErr == nil {
+		if err := os.Remove(path); err == nil || errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+	}
+	f.Retired = true
+	// Never unlink the sole bridge witness after a partial retirement. If
+	// both writes fail, the untouched receipt can still prove process exit.
+	_ = frontendRetirementWrite(path, f)
+	return errors.New("frontend retirement failed")
+}
+
 func readFrontend(instance string) (CodexFrontend, bool) {
+	f, ok := readStoredFrontend(instance)
+	return f, ok && !f.Retired && f.HomeID == transcript.CodexHomeID()
+}
+
+func readStoredFrontend(instance string) (CodexFrontend, bool) {
 	var f CodexFrontend
 	path := frontendPath(instance)
 	if path == "" {
@@ -405,7 +493,7 @@ func readFrontend(instance string) (CodexFrontend, bool) {
 	if err != nil || len(b) > 8192 || json.Unmarshal(b, &f) != nil {
 		return f, false
 	}
-	return f, f.Instance == instance && validFrontend(f)
+	return f, f.Instance == instance && validStoredFrontend(f)
 }
 
 func freshFrontend(f CodexFrontend, strict bool) bool { return frontendProof(f, strict) == nil }
@@ -422,7 +510,7 @@ func LoadLive(loc string) (Record, bool) {
 func CodexFrontendForThread(home, sid string) (CodexFrontend, bool) {
 	var found CodexFrontend
 	for _, r := range AllLocated() {
-		if r.Agent != "codex" || r.HomeID != home || r.SessionID != sid || r.Frontend == "" {
+		if r.Agent != "codex" || r.HomeID != home || r.SessionID != sid || r.Frontend == "" || r.FrontendRetired {
 			continue
 		}
 		f, ok := readFrontend(r.Frontend)

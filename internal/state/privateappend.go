@@ -122,3 +122,14 @@ func CheckPrivateDirectory(path string) error {
 	}
 	return unix.Close(fd)
 }
+
+// SyncPrivateDirectory makes changes to entries in an existing owned directory
+// durable without following a symlink or altering its mode.
+func SyncPrivateDirectory(path string) error {
+	fd, err := privateDirectory(path, false)
+	if err != nil {
+		return err
+	}
+	defer unix.Close(fd)
+	return unix.Fsync(fd)
+}

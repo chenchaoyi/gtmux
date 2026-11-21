@@ -88,3 +88,28 @@ reported as unavailable conversation identity, rather than a permission question
 Existing approvals, drafts, uncertain delivery and retry guards remain in force.
 Updating CLI/serve does not replace an already running older frontend producer;
 that frontend needs a normal new-version launch before it can use this behavior.
+
+## Resume index conflicts
+
+An expired heartbeat revokes live input but cannot give a legacy writer ownership
+over a different thread while the managed publisher is still alive or its exit
+cannot be determined. The original publisher may repair an older, unowned index
+only after verifying its full terminal identity and two independent receipts
+that place the threads in separate panes. It retains the displaced bytes under
+`resume/codex-index-conflicts/` as private diagnostic history. A retry reuses
+the same backup name and repeats the durability checks. All resume-index
+writers share the publication lease, and the repair compares the preserved
+bytes again before replacement. A missing receipt does not retire its owner.
+Explicit retirement is recorded in the index. A verified exit can release the
+index across Codex homes or after an incomplete move. Valid receipts at other
+locations do not compete. Foreign receipts confer no live authority. Ambiguous
+ownership or failed preservation leaves the existing index in place with a
+specific heartbeat diagnostic.
+
+Same-thread index repair holds the same lease from verification through
+publication and checks the captured bytes again before replacement. A clean
+close retires every recorded alias for that attachment. If writing an alias
+fails, the bridge retains a closed receipt. For an older missing receipt, a
+separately recorded exact native client that the kernel confirms has exited
+can release its former index. Missing or ambiguous evidence keeps the index
+protected.

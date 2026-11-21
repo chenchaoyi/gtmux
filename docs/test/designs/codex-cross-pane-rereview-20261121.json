@@ -1,0 +1,57 @@
+{
+  "id": "codex-cross-pane-rereview-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review of the rereview regression design",
+    "date": "2026-11-21",
+    "decision": "Keep same-thread recovery under the publication lease, retain positive retirement/exit proof at relocated aliases, and isolate independent historical fixtures.",
+    "notes": "Based on the user's direct independent review of ce9d4a2b / bcd7d82f and official failing run 44870380228. The GitHub Go failure was in restore fixture setup. All tests use isolated roots and do not touch current processes or production metadata."
+  },
+  "cases": [
+    {
+      "id": "CXW-001",
+      "layer": "L2",
+      "description": "An older same-thread index is repaired under a continuous publication lease",
+      "setup": "Actual heartbeat and a legacy same-thread index with an intact exact private receipt; inject a competing Save during strict re-observation.",
+      "action": "Attempt the competing write in the historical release/reacquire window, and separately model a visible old-binary update before the final comparison.",
+      "expected": "An upgraded writer receives contention or proves its write occurs before or after repair. A visible changed version survives. A serialized successful repair retains same-thread historical fields.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_rereview_test.go"
+      ]
+    },
+    {
+      "id": "CXW-002",
+      "layer": "L2",
+      "description": "Normal closure retires all exact moved aliases, retaining evidence on metadata write failure",
+      "setup": "Real verified frontend across multiple relocations, and a closure with injected private index write failure.",
+      "action": "Close the original bridge while testing legacy admission and live reads in the current and old locations.",
+      "expected": "Committed aliases explicitly release without becoming live. The error path preserves an exact closed receipt rather than deleting the only process witness; it never grants live input and permits subsequent legitimate publication.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_rereview_test.go"
+      ]
+    },
+    {
+      "id": "CXW-003",
+      "layer": "L2",
+      "description": "Older receipt unlink requires positive exact native terminal exit proof",
+      "setup": "Legacy managed index without frontend receipt, with an independent exact native binding record or identity-mismatched control.",
+      "action": "Try publication with an alive or unknown foreground PID, then prove the exact recorded terminal process is gone.",
+      "expected": "Absent, unreadable, unrelated or alive proof cannot release. A matching private native receipt with positive process absence can release the legacy index without granting live authority.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_rereview_test.go"
+      ]
+    },
+    {
+      "id": "CXW-004",
+      "layer": "L2",
+      "description": "Same and foreign home restore checks start from independently captured history",
+      "setup": "Existing saved Codex restore subtests use independent location keys and retain their original home, launcher, link and expected authority.",
+      "action": "Seed each history independently and run the actual restore eligibility and live ownership checks.",
+      "expected": "Fixture setup never asks the stricter publisher to overwrite an unrelated previous case's managed index. All original restore and home-scope assertions remain unchanged.",
+      "planned_files": [
+        "internal/app/restoresave_test.go"
+      ]
+    }
+  ],
+  "seal": "b3367550b2cf96dc0d335bb6c1737f0817aebba507a263f6b6d57247b13a5758"
+}

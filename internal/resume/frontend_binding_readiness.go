@@ -15,6 +15,9 @@ type FrontendBindingError struct {
 func (e *FrontendBindingError) Error() string { return "frontend binding: " + e.Code }
 func frontendProof(f CodexFrontend, strict bool) error {
 	fail := func(code string, retry bool) error { return &FrontendBindingError{code, retry} }
+	if f.Retired {
+		return fail("frontend-retired", false)
+	}
 	age := time.Now().UnixMilli() - f.UpdatedAt
 	if age < -1000 || age > 5000 {
 		return fail("proof-expired", true)

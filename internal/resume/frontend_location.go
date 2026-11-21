@@ -100,13 +100,20 @@ func validateFrontendRelocation(previous, next CodexFrontend) error {
 	if destination.Frontend == "" {
 		return nil // historical layout metadata; the current producer is proven above
 	}
-	other, exists := readFrontend(destination.Frontend)
+	other, exists := readStoredFrontend(destination.Frontend)
 	if !exists {
 		if path := frontendPath(destination.Frontend); path != "" {
 			if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
 				return nil // exact missing old proof, not a malformed/unreadable one
 			}
 		}
+		return fail("frontend-destination-unavailable", true)
+	}
+	if other.Retired && destination.Agent == "codex" && other.HomeID == destination.HomeID &&
+		other.SessionID == destination.SessionID {
+		return nil
+	}
+	if other.HomeID != next.HomeID || other.Retired {
 		return fail("frontend-destination-unavailable", true)
 	}
 	if other.Pane == next.Pane && (other.StartedAt > next.StartedAt ||

@@ -1,0 +1,46 @@
+{
+  "id": "codex-release-review-followup-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review of regression design",
+    "date": "2026-11-21",
+    "decision": "Address the independently reproduced release review findings before closing the candidate",
+    "notes": "Reviewed the exact preceding PR head, the standalone read-only Codex review, and the actual call paths. Synthetic fixtures only. Review findings are independently obtained; this design record is authored here."
+  },
+  "cases": [
+    {
+      "id": "CRF-001",
+      "layer": "L2",
+      "description": "Moved binding receipt tracks exact verified frontend after provisional observation is gone",
+      "setup": "Verified synthetic frontend and its private native binding, with no remaining native observation.",
+      "action": "Move using real heartbeat and inspect the committed native binding.",
+      "expected": "The same identity is witnessed at its new address. The old record is not fabricated and the old line remains history.",
+      "planned_files": [
+        "internal/resume/release_review_followup_test.go"
+      ]
+    },
+    {
+      "id": "CRF-002",
+      "layer": "L2",
+      "description": "A verified move can reuse a destination with exact closed evidence",
+      "setup": "Synthetic closed receipt for the indexed destination owner and an independently live frontend.",
+      "action": "Move into the closed address through the real heartbeat.",
+      "expected": "The closed receipt releases the destination without acquiring live authority. The new owner's verified identity is published.",
+      "planned_files": [
+        "internal/resume/release_review_followup_test.go"
+      ]
+    },
+    {
+      "id": "CRF-003",
+      "layer": "L2",
+      "description": "Detached observed publishes retry temporary global lease contention",
+      "setup": "Real temporary state lease and a Claude resume publication on another address.",
+      "action": "Start the observed publish under contention, release the lease and inspect retained state.",
+      "expected": "The observed update waits through the first short contention interval and publishes independently under the same lease.",
+      "planned_files": [
+        "internal/resume/release_review_followup_test.go"
+      ]
+    }
+  ],
+  "seal": "ac0ec9051fb790663c30f816cc3c01f9a24a6fc32c45e7d4e5a0afac8099a4c3"
+}

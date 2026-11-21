@@ -1,11 +1,21 @@
 {
   "internal/hq/relay_attention_review_test.go": {
-    "cases": ["HRF-001"],
-    "selectors": ["TestHRF001UnsurfacedRelayReferencesGetIndependentNotice"]
+    "cases": [
+      "HRF-001"
+    ],
+    "selectors": [
+      "TestHRF001UnsurfacedRelayReferencesGetIndependentNotice"
+    ]
   },
   "internal/hqworkspace/relay_attention_review_test.go": {
-    "cases": ["HRF-002", "HRF-003"],
-    "selectors": ["TestHRF002DueDeferredReportKeepsItsConsumedReservation", "TestHRF003PairedRelayRetainsEarlierMatchingStop"]
+    "cases": [
+      "HRF-002",
+      "HRF-003"
+    ],
+    "selectors": [
+      "TestHRF002DueDeferredReportKeepsItsConsumedReservation",
+      "TestHRF003PairedRelayRetainsEarlierMatchingStop"
+    ]
   },
   "internal/agentclient/expected_target_test.go": {
     "cases": [
@@ -4787,6 +4797,74 @@
     ],
     "selectors": [
       "reads the shipped $lang legacy board example"
+    ]
+  },
+  "internal/resume/release_review_followup_test.go": {
+    "cases": [
+      "CRF-001",
+      "CRF-002",
+      "CRF-003"
+    ],
+    "selectors": [
+      "TestCRF001MovedFrontendRefreshesRetainedNativeReceipt",
+      "TestCRF002ExactClosedReceiptReleasesRelocationDestination",
+      "TestCRF003ObservedSaveRetriesTemporaryPublicationContention"
+    ]
+  },
+  "internal/app/restoresave_test.go": {
+    "cases": [
+      "CXW-004"
+    ],
+    "selectors": [
+      "TestSavedCodexRestoreRecordIsNotLiveAuthority"
+    ]
+  },
+  "internal/hook/codex_cross_pane_stop_test.go": {
+    "cases": [
+      "CPR-005"
+    ],
+    "selectors": [
+      "TestCPR005DetachedCodexStopUsesOnlyCurrentPaneBinding"
+    ]
+  },
+  "internal/resume/frontend_cross_pane_rereview_test.go": {
+    "cases": [
+      "CXW-001",
+      "CXW-002",
+      "CXW-003"
+    ],
+    "selectors": [
+      "TestCXW001SameThreadRepairKeepsContinuousPublicationLease",
+      "TestCXW002ClosureReleasesExactLayoutAliasesAndRetainsFailureProof",
+      "TestCXW003LegacyUnlinkNeedsPositiveExactNativeExit"
+    ]
+  },
+  "internal/resume/frontend_cross_pane_review_test.go": {
+    "cases": [
+      "CPR-001",
+      "CPR-002",
+      "CPR-003",
+      "CPR-004"
+    ],
+    "selectors": [
+      "TestCPR001CrossPaneRecoveryCannotEraseAnotherPublisher",
+      "TestCPR002LegacyReleaseRequiresPositiveIncumbentEvidence",
+      "TestCPR003OnlyRelevantStructurallyValidReceiptsCompete",
+      "TestCPR004VisibleArchiveMustPassDurabilityOnRetry"
+    ]
+  },
+  "internal/resume/frontend_cross_pane_index_test.go": {
+    "cases": [
+      "CPI-001",
+      "CPI-002",
+      "CPI-003",
+      "CPI-004"
+    ],
+    "selectors": [
+      "TestCPI001LegacyWritersPreserveExpiredManagedOwner",
+      "TestCPI002CurrentHeartbeatRestoresProvenCrossPaneIndex",
+      "TestCPI003CurrentHeartbeatRefusesUnprovenConflict",
+      "TestCPI004LegacyWriterCanReuseVerifiedVacatedLocation"
     ]
   }
 }

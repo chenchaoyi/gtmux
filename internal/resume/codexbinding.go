@@ -310,12 +310,12 @@ func completeCodexBinding(scope *transcript.CodexPathScope, intent CodexBindingI
 	if observation.SessionID != "" {
 		receiptHome = observation.HomeID
 	}
-	frontend := ""
+	frontend, retired := "", false
 	if current.Agent == "codex" && current.HomeID == transcript.CodexHomeID() && current.SessionID == sid {
-		frontend = current.Frontend
+		frontend, retired = current.Frontend, current.FrontendRetired
 	}
-	record := codexBindingCheckpoint(Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now, Launcher: live.Launcher, Frontend: frontend}, current)
-	lease, err := lockCodexPublication(live.Loc, current)
+	record := codexBindingCheckpoint(Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now, Launcher: live.Launcher, Frontend: frontend, FrontendRetired: retired}, current)
+	lease, err := lockCodexPublication(live.Loc, current, record)
 	if err != nil {
 		return err
 	}

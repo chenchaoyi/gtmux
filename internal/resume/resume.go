@@ -12,7 +12,6 @@ package resume
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -27,6 +26,7 @@ type Record struct {
 	RecoveryCwd       string `json:"recovery_cwd,omitempty"`
 	RecoveryAt        int64  `json:"recovery_at,omitempty"`
 	Frontend          string `json:"codex_frontend,omitempty"`
+	FrontendRetired   bool   `json:"codex_frontend_retired,omitempty"`
 	TerminalClient    string `json:"terminal_client,omitempty"`
 	HomeID            string `json:"home_id,omitempty"`
 	Agent             string `json:"agent"`     // the agent key (claude/codex/cursor/…)
@@ -59,19 +59,17 @@ func fileFor(key string) string {
 
 // Save writes (overwriting) the record for a location key.
 func Save(key string, r Record) error {
-	if r.Agent == "codex" {
-		lease, err := state.TryLease("codex-frontend-binding")
-		if err != nil {
-			return err
-		}
-		defer lease.Close()
+	lease, err := tryResumePublication()
+	if err != nil {
+		return err
 	}
+	defer lease.Close()
 	previous, _ := Load(key)
 	if previous.Frontend != "" && r.Agent == "codex" {
 		if previous.Agent == r.Agent && previous.SessionID == r.SessionID && previous.HomeID == r.HomeID {
-			r.Frontend = previous.Frontend
-		} else if f, ok := readFrontend(previous.Frontend); ok && freshFrontend(f, false) {
-			return errors.New("live Codex frontend owns this location")
+			r.Frontend, r.FrontendRetired = previous.Frontend, previous.FrontendRetired
+		} else if err := guardLegacyCodexPublication(key, previous, r); err != nil {
+			return err
 		}
 	}
 	r = withRecoveryCheckpoint(r, previous)
@@ -99,7 +97,14 @@ func Load(key string) (Record, bool) {
 }
 
 // Remove drops the record for a location key (best-effort).
-func Remove(key string) { _ = os.Remove(fileFor(key)) }
+func Remove(key string) {
+	lease, err := tryResumePublication()
+	if err != nil {
+		return
+	}
+	defer lease.Close()
+	_ = os.Remove(fileFor(key))
+}
 
 // Located pairs a record with the location key it was saved under (decoded from the
 // filename). Restore's cwd fallback needs the ORIGINAL locator — specifically the

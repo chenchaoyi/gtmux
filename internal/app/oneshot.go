@@ -126,7 +126,7 @@ func cmdOneshotRun(args []string) int {
 func finishOneshot(pane, agent, goal string, o driver.HeadlessOutcome, failed bool, start int64) {
 	if pane != "" && o.Session != "" {
 		if loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"); loc != "" {
-			_ = resume.Save(loc, resume.Record{
+			_ = resume.SaveObserved(loc, resume.Record{
 				Agent: agent, SessionID: o.Session,
 				Cwd: cwdOf(pane), UpdatedAt: time.Now().Unix(),
 			})

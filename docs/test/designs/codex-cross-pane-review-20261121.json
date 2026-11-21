@@ -1,0 +1,68 @@
+{
+  "id": "codex-cross-pane-review-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review of regression design informed by independently reproduced findings",
+    "date": "2026-11-21",
+    "decision": "Exercise each review blocker through the actual publication, legacy admission, receipt scan and hook entry points.",
+    "notes": "Read independent review 6dab55c89b86095c1b511cbeb0a67fbc for dc978303 on bcd7d82f and inspected the retained five reprobes, writer paths, state post-rename sync contract and Codex Stop resolver. Cases are isolated; no service restart, live test input or actual data crash. Existing CPI-001 through CPI-004 stay intact."
+  },
+  "cases": [
+    {
+      "id": "CPR-001",
+      "layer": "L2",
+      "description": "A verified cross-pane repair serializes normal incumbent writes and retains newer raw bytes",
+      "setup": "Real Save and refresh in temporary state. Pause the repair after it archives the old bytes and before final index publication.",
+      "action": "Attempt non-Codex Save and removal under the lease, then retry once the repair releases it. Separately model an old writer changing the index outside the lease before the final check.",
+      "expected": "Normal writers cannot report a successful write in the protected window and can publish after the lease. The raw comparison refuses a visible uncoordinated update and preserves the exact newer index.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_review_test.go"
+      ]
+    },
+    {
+      "id": "CPR-002",
+      "layer": "L2",
+      "description": "Legacy admission distinguishes missing proof, explicit retirement and cross-home process exit",
+      "setup": "Managed fixture with missing or intact receipt, an incomplete relocation, explicit End, and independent Codex home scopes. Use controlled process observations.",
+      "action": "Save a different thread with unknown, live, and positively stopped incumbent evidence, while exercising same-home and cross-home publication and live-reader isolation.",
+      "expected": "Missing or uncertain evidence and another home's live receipt cannot release the old index. Explicit retirement preserves history but revokes live authority. Exit permits publication after a partial relocation and from another home. Foreign-home receipts never grant live input.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_review_test.go"
+      ]
+    },
+    {
+      "id": "CPR-003",
+      "layer": "L2",
+      "description": "A structurally valid other-home receipt competes at its own location only",
+      "setup": "Private receipts for an independent cross-pane conflict and another Codex home.",
+      "action": "Add an unrelated other-home receipt, then vary its location to match the repair destination and change private evidence to malformed.",
+      "expected": "A valid other-home receipt elsewhere does not interfere. A viable competitor at the same location or unreadable record prevents recovery without changing either index.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_review_test.go"
+      ]
+    },
+    {
+      "id": "CPR-004",
+      "layer": "L2",
+      "description": "Equal archived bytes after post-rename sync failure are not a persistence receipt",
+      "setup": "Real private archive creation with controlled failures after visible rename and in the containing resume directory sync.",
+      "action": "Attempt refresh repeatedly through the visible-but-unconfirmed archive, then allow both durability operations to succeed.",
+      "expected": "Each failure preserves the incumbent and no receipt upgrade occurs. The retry executes durability work despite visible equal bytes, then recovers the current thread with one exact private archive.",
+      "planned_files": [
+        "internal/resume/frontend_cross_pane_review_test.go"
+      ]
+    },
+    {
+      "id": "CPR-005",
+      "layer": "L2",
+      "description": "Actual detached Codex Stop entry protects both pane markers under wrong or expired binding",
+      "setup": "Real hook Run, two mocked tmux pane views, private real resume files and initial native/pane state. The payload provides the root session ID and omits the pane and working directory.",
+      "action": "Invoke with an empty or wrong inherited pane while the primary index is wrong or expired. Repeat with the now-current managed index and independent production freshness checks.",
+      "expected": "Unassociated Stop stays pane-less, updates only its native thread, and changes neither pane. The recovered owner gets exactly its own completion and event even with a wrong inherited pane. The peer stays active.",
+      "planned_files": [
+        "internal/hook/codex_cross_pane_stop_test.go"
+      ]
+    }
+  ],
+  "seal": "0dd060e86d4d581a5c747acfb9e9e44f0b16857f8d73e00b0e3f67bc68fb2f07"
+}
