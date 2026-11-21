@@ -11,7 +11,8 @@ A conflict between two incarnations of one keyed reminder can prevent unrelated 
 
 ## Surfaces
 
-- CLI and resident service share the wake queue, diagnostics and workspace records.
-- The macOS menu bar presents the existing owner notification channel.
-- iOS and Android continue to consume workspace state through the existing protocol.
-- The browser reads the existing workspace state and keeps the same authorized access.
+- The terminal CLI and resident service share queue admission, diagnostics and workspace records.
+- The macOS menubar presents independent owner notifications through its existing queue.
+- The phone app reads the existing workspace state and can show owed matters.
+- The iPad app uses the same workspace contract and access policy.
+- The Web workbench reads the existing workspace records under its existing access rules.
