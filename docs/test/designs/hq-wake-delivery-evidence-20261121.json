@@ -1,0 +1,36 @@
+{
+  "id": "hq-wake-delivery-evidence-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; design self-review",
+    "date": "2026-11-21",
+    "decision": "Require independent exact evidence after acceptance and preserve maintenance reservations",
+    "notes": "Synthetic receipts and transcript fixtures. A live transport result or same pane cannot imply an accepted wake's start, exact prompt ingestion, or workspace completion."
+  },
+  "cases": [
+    {
+      "id": "HWA-012",
+      "layer": "L2",
+      "description": "Accepted native wakes need exact independent turn and prompt evidence",
+      "setup": "Inject a native receiver acknowledgement after a maintenance reservation and, separately, a fake transcript observation ordered around expected attempt time. Include a different prompt in an existing active turn.",
+      "action": "Accept a batch, run observation without evidence, then supply its exact turn and prompt transcript evidence. Run again across a simulated reboot.",
+      "expected": "Acceptance alone neither starts nor confirms delivery. An exact prompt in the acknowledged newly-started turn records both independent observations once. An unrelated turn, an unproven prompt, and authorizing an automatic replay remain excluded.",
+      "planned_files": [
+        "internal/hqnudge/wake_evidence_test.go",
+        "internal/hqnudge/rotation_priority_test.go"
+      ]
+    },
+    {
+      "id": "HWA-013",
+      "layer": "L2",
+      "description": "Codex wake witness pairs an exact prompt with its turn after the request",
+      "setup": "Synthetic transcript tails with exact and mismatched batch text, a different turn ID, and an older active turn before an input attempt.",
+      "action": "Read the bounded transcript evidence for an expected turn and saved wake payload.",
+      "expected": "An old or unrelated turn cannot establish wake delivery or new start. The exact matching composite yields timestamps without waiving a pending workspace obligation.",
+      "planned_files": [
+        "internal/transcript/wake_evidence_test.go"
+      ]
+    }
+  ],
+  "seal": "9a4fd49272f80ec1218f766148557d54f481c6497186ab3968cee21833a1eb58"
+}
