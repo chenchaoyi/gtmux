@@ -1,0 +1,24 @@
+{
+  "id": "hq-waiting-relay-retry-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-21",
+    "decision": "Keep the protected relay's first eligible window when an ordinary waiting retry has a different retry group.",
+    "notes": "The independent review of PR #1915 reproduced the competition. The regression models verified native windows and checks durable queue membership and submission IDs. A known refusal remains fenced to its original target and backoff."
+  },
+  "cases": [
+    {
+      "id": "HWW-004",
+      "layer": "L2",
+      "description": "A due ordinary waiting retry leaves the first eligible native window to the protected relay",
+      "setup": "A queued ordinary waiting notice gets a retryable, positively proven refusal. A protected new report becomes due after that retry's backoff. Exercise both the original target and a different verified target for the relay window.",
+      "action": "Try a drafted window, then the first empty window, then a later window at the ordinary retry's original target. Drain again after both submissions.",
+      "expected": "The draft is untouched. The first safe submission contains the relay once and excludes the incompatible waiting retry. The ordinary queue generation is unchanged and uses the original target, backoff and next attempt ID on the later window. Neither line is submitted again.",
+      "planned_files": [
+        "internal/hqnudge/waiting_relay_retry_test.go"
+      ]
+    }
+  ],
+  "seal": "92f37364d08b4c9e6766e2b9b7aa1fb1bebae7f7eacae0b98637ba33c76dc7b6"
+}
