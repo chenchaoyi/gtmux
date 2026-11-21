@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1413 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1416 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2643 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2647 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -313,6 +313,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HPT-001 | Source identity stays unchanged, unauthorized dispositions fail, and the target receipt retains the exact goal follow-up. Reassessment preserves user hold, unknown delivery and terminal state safeguards. |
 | HPT-002 | Eligible source rows become durable triage once, while wrong, suppressed and HQ rows create no triage. A uniquely matched Stop keeps the existing continuation path. |
 | HPT-003 | A one-time lost wake does not erase evidence or issue input. The exact CLI lease and handoff receipt point to durable, visible next responsibility with the worker untouched until separate authorization. Foreground handling and all synthetic terminal behavior are separately identified. |
+| HWW-004 | The draft is untouched. The first safe submission contains the relay once and excludes the incompatible waiting retry. The ordinary queue generation is unchanged and uses the original target, backoff and next attempt ID on the later window. Neither line is submitted again. |
+| HWW-001 | The draft receives no input. Each proved obsolete fresh wait produces a drop audit while live, unknown and legacy lines follow normal routing. The relay appears exactly once in the first batch and stays accepted. |
+| HWW-002 | A scoped known refusal uses its existing retry budget, an uncertain generation is not submitted again or discarded, and source evidence does not alter accepted receipts. |
+| HWW-003 | Only the exact positive pair produces one delivery audit. Mismatches leave evidence protected, and ordinary user rendering continues to filter wake echoes while accepting ordinary prompts. |
 | HWA-006 | The generation ID stays stable while only a positively unsent attempt can use a fresh transport-attempt ID. No early dispatch, at most three known-unsent attempts, final exhaustion is retained and visible. Unknown and identity failures never submit again. |
 | HWA-007 | The uncertain original is never pasted twice. An exact matching receipt can settle without typing. Safe Enter-only behavior is limited to a positively matching own draft, with bounded retries and recheck. Real drafts, unready or unidentifiable targets receive no input. |
 | HWA-008 | A receiver/start observation does not confirm durable handoff. Changed successor is reported independently, one reset at most, stale retry is inert. |

@@ -23,7 +23,7 @@ func CodexWakeWitness(session, turn, prompt string, since time.Time) WakeWitness
 	}
 	var result WakeWitness
 	for _, path := range historyPaths("codex", session) {
-		w := wakeWitnessIn(path, turn, prompt, since)
+		w := wakeWitnessInSession(path, session, turn, prompt, since)
 		if w.Delivered.IsZero() {
 			continue
 		}
@@ -36,6 +36,10 @@ func CodexWakeWitness(session, turn, prompt string, since time.Time) WakeWitness
 }
 
 func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {
+	return wakeWitnessInSession(path, "", turn, prompt, since)
+}
+
+func wakeWitnessInSession(path, session, turn, prompt string, since time.Time) WakeWitness {
 	f, err := os.Open(path)
 	if err != nil {
 		return WakeWitness{}
@@ -44,6 +48,17 @@ func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {
 	info, err := f.Stat()
 	if err != nil || !info.Mode().IsRegular() {
 		return WakeWitness{}
+	}
+	expectWake := strings.HasPrefix(prompt, Sigil+" ")
+	if expectWake {
+		meta := scanCodexSessionMeta(f)
+		id := meta.ID
+		if id == "" {
+			id = meta.SessionID
+		}
+		if session == "" || id != session {
+			return WakeWitness{}
+		}
 	}
 	const budget int64 = 256 << 10
 	offset := max(0, info.Size()-budget)
@@ -60,6 +75,7 @@ func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {
 	}
 	rows := bytes.Split(buf, []byte{'\n'})
 	var start time.Time
+	seenTurn := false
 	// A partial final append is not evidence until its newline is durable.
 	for _, row := range rows[:len(rows)-1] {
 		var line codexLine
@@ -81,7 +97,11 @@ func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {
 			switch boundary.Type {
 			case "task_started":
 				start = time.Time{}
-				if boundary.Turn == turn && !at.Before(since) {
+				if boundary.Turn == turn {
+					if at.Before(since) || seenTurn {
+						return WakeWitness{}
+					}
+					seenTurn = true
 					start = at
 				}
 				continue
@@ -93,11 +113,11 @@ func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {
 		if start.IsZero() || at.Before(start) {
 			continue
 		}
-		raw, isPrompt := wakePrompt(line)
+		raw, isPrompt, complete := wakePrompt(line, expectWake)
 		if !isPrompt {
 			continue
 		}
-		if raw == prompt {
+		if raw == prompt && (!expectWake || complete) {
 			return WakeWitness{Started: start, Delivered: at}
 		}
 		// The first human-origin input establishes causation. A later copy
@@ -107,26 +127,42 @@ func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {
 	return WakeWitness{}
 }
 
-func wakePrompt(line codexLine) (string, bool) {
+func wakePrompt(line codexLine, expectWake bool) (text string, candidate, complete bool) {
 	var payload codexPayload
 	if json.Unmarshal(line.Payload, &payload) != nil {
-		return "", false
+		return "", false, false
 	}
-	var text string
+	hasMedia := false
 	switch {
 	case line.Type == "event_msg" && payload.Type == "user_message":
 		text = payload.Message
+		var extras struct {
+			Images      []json.RawMessage `json:"images"`
+			LocalImages []json.RawMessage `json:"local_images"`
+			Elements    []json.RawMessage `json:"text_elements"`
+		}
+		parsed := json.Unmarshal(line.Payload, &extras) == nil
+		hasMedia = len(extras.Images)+len(extras.LocalImages) > 0
+		complete = parsed && !hasMedia && len(extras.Elements) == 0
 	case line.Type == "response_item" && payload.Type == "message" && payload.Role == "user":
 		var parts []string
 		for _, item := range payload.Content {
 			if item.Type == "input_text" && strings.TrimSpace(item.Text) != "" {
 				parts = append(parts, item.Text)
 			}
+			hasMedia = hasMedia || item.Type == "input_image"
 		}
 		text = strings.Join(parts, "\n")
+		complete = len(payload.Content) == 1 && payload.Content[0].Type == "input_text"
 	default:
-		return "", false
+		return "", false, false
+	}
+	// This observer already has a bound receiver receipt and expects exact raw
+	// text. The chat filter intentionally strips wake echoes. A different wake
+	// as the first input still invalidates this turn as proof of ours.
+	if expectWake && (hasMedia || strings.HasPrefix(strings.TrimSpace(text), Sigil+" ")) {
+		return text, true, complete
 	}
 	_, real := codexUserPrompt(text)
-	return text, real
+	return text, real, complete
 }

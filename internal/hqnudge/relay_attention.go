@@ -21,14 +21,20 @@ func isRelayAttention(name string) bool {
 }
 
 func isPendingWake(name string) bool {
-	return strings.HasSuffix(name, ".txt") || isRelayAttention(name)
+	return wakeFileSuffix(name) != ""
+}
+
+func wakeFileSuffix(name string) string {
+	for _, suffix := range []string{".txt", waitingWakeSuffix, relayAttentionSuffix} {
+		if strings.HasSuffix(name, suffix) {
+			return suffix
+		}
+	}
+	return ""
 }
 
 func wakeFileStem(name string) string {
-	if isRelayAttention(name) {
-		return strings.TrimSuffix(name, relayAttentionSuffix)
-	}
-	return strings.TrimSuffix(name, ".txt")
+	return strings.TrimSuffix(name, wakeFileSuffix(name))
 }
 
 // ReserveRelayAttention prepares one native attention opportunity. The caller

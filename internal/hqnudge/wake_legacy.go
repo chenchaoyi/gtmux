@@ -354,7 +354,7 @@ func legacyAttemptMembers(r attemptRecord, queue []os.DirEntry) []string {
 	for _, entry := range queue {
 		name := entry.Name()
 		base, parked := strings.CutSuffix(name, legacyUncertainSuffix)
-		if !strings.HasSuffix(base, ".txt") || parked != (r.Target != "") {
+		if !isPendingWake(base) || isRelayAttention(base) || parked != (r.Target != "") {
 			continue
 		}
 		if !parked && attemptsOf(base) == 0 {

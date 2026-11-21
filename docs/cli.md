@@ -1269,6 +1269,19 @@ playbook says to ignore it. Every outcome is journaled (`gtmux:audit:wake-delive
 the full batch, `gtmux:audit:wake-dropped` with the reason: evicted / unconfirmed /
 superseded) and readable with `gtmux events --all`.
 
+Before the first attempt of an ordinary waiting reminder, gtmux rechecks any
+verified task, conversation, terminal and waiting episode recorded when it queued
+the line. A confirmed terminal retirement or released wait drops only that
+reminder and records `wait-source-retired` or `wait-resolved`. An unreadable
+source, a changed pane identity or an older line without provenance follows the
+normal delivery rules. In-flight batches and retained receipts use their original
+recovery rules.
+
+For a native Codex wake, `wake-accepted` records receiver acceptance.
+`wake-delivered` records independent observation of the full `»` batch as the
+first input of the expected new turn in the receipt's Codex home and conversation.
+Wake echoes remain hidden from ordinary user prompt history.
+
 ### Self-rotation: when HQ's own session is the problem
 
 `self-rotate` is about HQ itself: in a long, near-full session HQ starts to read its own

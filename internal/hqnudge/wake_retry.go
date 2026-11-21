@@ -48,11 +48,7 @@ func validWakeTarget(target string) bool {
 }
 
 func retryName(name string, retry retryState) string {
-	suffix := ".txt"
-	if isRelayAttention(name) {
-		suffix = relayAttentionSuffix
-	}
-	return fmt.Sprintf("%s.r%d-%d-%s%s", identityOf(name), retry.Number, retry.At, retry.Target, suffix)
+	return fmt.Sprintf("%s.r%d-%d-%s%s", identityOf(name), retry.Number, retry.At, retry.Target, wakeFileSuffix(name))
 }
 
 func dueForAttempt(name string) int64 {

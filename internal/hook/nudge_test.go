@@ -54,7 +54,7 @@ func TestHQNudgeEnabled(t *testing.T) {
 // never fail an agent's turn over it.
 func TestNudgeSupervisorNoop(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	nudgeSupervisor("%1", "permission") // must not panic, whatever the tmux state
+	nudgeSupervisor("%1", "permission", "codex", "", "", "") // must not panic, whatever the tmux state
 	if pane := findSupervisorPane("%1"); pane != "" {
 		t.Errorf("no hq session → findSupervisorPane = %q, want empty", pane)
 	}

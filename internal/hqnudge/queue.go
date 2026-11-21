@@ -106,6 +106,10 @@ func takeQueued(src, dst string) bool {
 // admitQueued runs under the queue lease. Rank the newcomer before changing
 // existing entries and publish it completely before removing a verified victim.
 func admitQueued(name, message string, now int64) bool {
+	return admitQueuedContent(name, message, message, now)
+}
+
+func admitQueuedContent(name, message, content string, now int64) bool {
 	names := queuedNames(func(name string) bool { return !isRelayAttention(name) })
 	path := filepath.Join(queueDir(), name)
 	if len(names) >= maxQueueEntries {
@@ -122,7 +126,7 @@ func admitQueued(name, message string, now int64) bool {
 			return false
 		}
 	}
-	if err := state.WritePrivateFile(path, []byte(message)); err != nil {
+	if err := state.WritePrivateFile(path, []byte(content)); err != nil {
 		queueFailure(now, err)
 		return false
 	}
@@ -147,11 +151,15 @@ func evictQueued(names *[]string) error {
 	if err != nil {
 		return err
 	}
+	wake, err := readWakeLine(victim, body)
+	if err != nil {
+		return err
+	}
 	if err := os.Remove(victim); err != nil {
 		return err
 	}
 	*names = append(queued[:i], queued[i+1:]...)
-	events.AuditWakeDropped(events.DropEvicted, string(body), time.Now().Unix())
+	events.AuditWakeDropped(events.DropEvicted, wake.Line, time.Now().Unix())
 	wakeStage("act.wake.evicted", victim, "", diag.Refused, events.DropEvicted)
 	return nil
 }

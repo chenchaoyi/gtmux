@@ -39,6 +39,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
@@ -416,6 +417,10 @@ func boxEmpty(x io, pane string) bool {
 // so a lexical sort on drain is oldest-first; the pid suffix avoids collisions between
 // concurrent hook processes, and the `.p<n>` field carries the wake class's priority.
 func enqueue(x io, msg string) {
+	enqueueWithSuffix(x, msg, msg, ".txt")
+}
+
+func enqueueWithSuffix(x io, line, content, suffix string) {
 	release, err := lockQueue()
 	if err != nil {
 		queueFailure(x.nowNano(), err)
@@ -423,9 +428,9 @@ func enqueue(x io, msg string) {
 	}
 	defer release()
 	now := x.nowNano()
-	name := fmt.Sprintf("%019d-%d-%s.p%d.txt", now, os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg))
+	name := fmt.Sprintf("%019d-%d-%s.p%d%s", now, os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(line), suffix)
 	wakeStage("act.wake.scheduled", name, "", diag.OK, "immediate")
-	admitQueued(name, msg, now)
+	admitQueuedContent(name, line, content, now)
 }
 
 // enqueueKeyed replaces the still-queued generation in place to keep its due
@@ -463,7 +468,9 @@ func enqueueKeyed(x io, key, msg string, dueNano int64) {
 func auditDroppedFile(reason, path string) {
 	line := ""
 	if b, err := os.ReadFile(path); err == nil {
-		line = strings.TrimSpace(string(b))
+		if wake, err := readWakeLine(path, b); err == nil {
+			line = strings.TrimSpace(wake.Line)
+		}
 	}
 	if line == "" {
 		line = "(unreadable: " + filepath.Base(path) + ")"
@@ -661,14 +668,11 @@ func drainInto(x io, pane string) {
 	if !validWakeTarget(reservedTarget) {
 		reserved = ""
 	}
+	// The protected relay gets this window. Ordinary entries can share it
+	// when their retry group matches, or keep their original pending slot.
 	first := reserved
-	if len(regular) > 0 {
+	if first == "" && len(regular) > 0 {
 		first = regular[0]
-		// A due protected retry stays fenced to its original target. Give
-		// that bounded retry a turn without dropping fresh decision lines.
-		if reserveRetry, _ := parseRetry(reserved); reserveRetry.Number > 0 {
-			first = reserved
-		}
 	}
 	if first == "" {
 		return
@@ -794,6 +798,7 @@ func finishAccepted(pane, payload string, claimed []string) {
 // how many due entries were held back for the next drain.
 func claimBatch(due []string) (claimed, msgs []string, held int) {
 	chars := 0
+	roster := sync.OnceValue(readWaitingInventory)
 	var dropped []string
 	defer func() {
 		// A line whose premise died is finished business: remove the claim so no later
@@ -812,7 +817,8 @@ func claimBatch(due []string) (claimed, msgs []string, held int) {
 			continue // no longer pending, or its claim location is protected
 		}
 		b, err := readNativeBytes(dst)
-		if err != nil || strings.TrimSpace(string(b)) == "" {
+		w, decodeErr := readWakeLine(dst, b)
+		if err = errors.Join(err, decodeErr); err != nil || strings.TrimSpace(w.Line) == "" {
 			if err == nil {
 				err = errors.New("empty wake claim")
 			}
@@ -825,7 +831,20 @@ func claimBatch(due []string) (claimed, msgs []string, held int) {
 			}
 			return nil, nil, 0
 		}
-		s := strings.TrimSpace(string(b))
+		s := strings.TrimSpace(w.Line)
+		if retry, _ := parseRetry(n); retry.Number == 0 && strings.HasSuffix(n, waitingWakeSuffix) {
+			if reason := revalidateWaiting(w, roster); reason != "" {
+				err := events.AuditWaitingWakeDropped(reason, s, w.Source.Origin.Pane, w.Source.Origin.Loc,
+					w.Source.Task, w.Source.Owner.Session, w.Source.Owner.Home, time.Now().Unix())
+				if err == nil {
+					wakeStage("act.wake.dropped", n, "", diag.Refused, reason)
+					dropped = append(dropped, dst)
+					continue
+				}
+				// Preserve the notice when its suppression cannot be journaled.
+				diag.ReportStoreFailure("hq-wake-queue", err)
+			}
+		}
 		// Delivery-side revalidation (standing-wake-backoff §2.1). A queued line was
 		// decided when it was enqueued, which is NOT when it is typed: it can sit behind
 		// a half-written draft, behind an earlier batch, or behind the fast tick. The

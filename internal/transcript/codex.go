@@ -305,7 +305,11 @@ func readCodexSessionMeta(path string) codexPayload {
 		return codexPayload{}
 	}
 	defer f.Close()
-	sc := bufio.NewScanner(f)
+	return scanCodexSessionMeta(f)
+}
+
+func scanCodexSessionMeta(r io.Reader) codexPayload {
+	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 64*1024), 1<<20) // session_meta can be large (base_instructions)
 	if !sc.Scan() {
 		return codexPayload{}
