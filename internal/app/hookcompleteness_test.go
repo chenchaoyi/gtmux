@@ -11,6 +11,7 @@ import (
 // named — the shape an older gtmux would have left behind.
 func writeCodexHooks(t *testing.T, home string, events []string) {
 	t.Helper()
+	bin := executableHookFixture(t)
 	dir := filepath.Join(home, ".codex")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
@@ -18,7 +19,7 @@ func writeCodexHooks(t *testing.T, home string, events []string) {
 	hooks := map[string]any{}
 	for _, e := range events {
 		hooks[e] = []any{map[string]any{
-			"hooks": []any{map[string]any{"type": "command", "command": "/usr/local/bin/gtmux hook --agent codex " + e}},
+			"hooks": []any{map[string]any{"type": "command", "command": bin + " hook --agent codex " + e}},
 		}}
 	}
 	b, _ := json.Marshal(map[string]any{"hooks": hooks})

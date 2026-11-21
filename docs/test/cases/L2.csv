@@ -70,6 +70,8 @@ MAP-c525550a2589,L2,reviewed implementation,internal/app/codex_restore_native_te
 MAP-3d87c76df13d,L2,reviewed implementation,internal/app/codex_restore_native_test.go,570,reviewed-selector,TestCNR102ConfiguredProxyTargetsNativeCommand,False,"CNRV4-001,CNRV4-003"
 MAP-f767974bfca8,L2,reviewed implementation,internal/app/conversation_read_test.go,14,reviewed-selector,TestCAS003PaneAssociationIsNotAnEmptyConversation,False,CAS-003
 LEG-ba12d8af1486,L2,Go core / CLI / server,internal/app/devices_push_test.go,16,Test,TestListPush_ShowsEveryPausedToken,False,legacy-not-retrospectively-reviewed
+MAP-0f1a3a4682ef,L2,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,69,reviewed-selector,TestAppHookFixturesIgnoreInheritedCodexHome,False,"CHI-001,CHI-002"
+MAP-3d8c62b101e2,L2,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,95,reviewed-selector,TestDoctorRepairsUnusableCodexHookExecutable,False,"CHI-001,CHI-002"
 MAP-69939dd4afa9,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,48,reviewed-selector,TestDCA001DoctorReportsFailedManagedAssociation,False,"DCA-001,DCA-002,DCA-003"
 MAP-bf49b210b7cf,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,79,reviewed-selector,TestDCA002DoctorDistinguishesMissingUnsupportedAndVerified,False,"DCA-001,DCA-002,DCA-003"
 MAP-37c101d9ff65,L2,reviewed implementation,internal/app/doctor_conversation_health_test.go,105,reviewed-selector,TestDCA003DoctorJSONKeepsFailureAndRecoveryBoundary,False,"DCA-001,DCA-002,DCA-003"
@@ -161,6 +163,7 @@ MAP-59b391120a04,L2,reviewed implementation,internal/app/serve_energy_snapshot_t
 LEG-0a1e3b761625,L2,Go core / CLI / server,internal/app/serve_startup_test.go,94,Test,TestExistingRadarRequiresIdentityAndSavedCredential,False,legacy-not-retrospectively-reviewed
 LEG-13803c4faffb,L2,Go core / CLI / server,internal/app/servememory_test.go,80,Test,TestMemoryDiagnosticsAbsentFromApplicationRoutes,False,legacy-not-retrospectively-reviewed
 MAP-c282c98b7ee6,L2,reviewed implementation,internal/app/spool_failure_test.go,10,reviewed-selector,TestSPL003PhoneClassifiesCapacityAndUnknown,False,"SPL-003,SPL-009"
+MAP-9a6a3a611b56,L2,Go core / CLI / server,internal/app/testmain_test.go,8,reviewed-selector,func TestMain,False,CHI-001
 LEG-05c78436c10b,L2,Go core / CLI / server,internal/app/tunnel_pairing_test.go,19,Test,TestPairingBlockSaysItGrantsControl,False,legacy-not-retrospectively-reviewed
 LEG-8b4d37b679c5,L2,Go core / CLI / server,internal/app/tunnelaccount_test.go,357,Test,TestRedeemStoresTheAssignedPortAndAFullCodeWritesNothing,False,legacy-not-retrospectively-reviewed
 LEG-50d85edb1c2d,L2,Go core / CLI / server,internal/app/tunnelforce_test.go,15,Test,TestProvisionForceRequiresRepairReceipt,False,legacy-not-retrospectively-reviewed

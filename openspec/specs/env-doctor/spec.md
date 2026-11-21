@@ -201,6 +201,12 @@ can't safely automate: installing tmux.
 - **THEN** `gtmux doctor` marks the Codex-hook row as a recommended improvement (not
   a neutral note), so it counts toward "to improve" and the fix flow offers it
 
+#### Scenario: A configured Codex hook cannot run its executable
+
+- **WHEN** an expected gtmux Codex hook names a missing or non-executable command
+- **THEN** `gtmux doctor` reports the affected events as needing repair without running the commands
+- **AND** the consented repair reinstalls the managed hooks with the current gtmux executable and preserves foreign hooks
+
 #### Scenario: Installs the app, guides for tmux
 
 - **WHEN** the menu-bar app is missing and the user consents

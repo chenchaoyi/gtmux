@@ -7,7 +7,7 @@ The catalogue covers 1413 test/harness source files. Each CSV row lists stable I
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2640 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2643 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -140,6 +140,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CFR-009 | Canceled upgrade records admission-cancelled; exhausted budget records admission-deadline; live completion continues. A rejected completion does not activate the epoch and no HTTP reply is fabricated after upgrade. Existing epoch and identity checks are unchanged. |
 | CFR-010 | Visible outside/cyclic ancestry is always a hard client-unverified refusal with no PID/authority and no retry. Missing required rows cannot mask that conflict. An actually incomplete peer path remains retryable process-unavailable, and complete valid later evidence may succeed. Existing TTY, foreground, ambiguity and birth checks unchanged. |
 | CBA-006 | Canceled proof causes zero not-yet-started receipt/index writes and no new live authority before close. Factory callback returns the actual cancellation cause. Partial IO only retires its own exact written live proof, retains committed history and a replacement owner. Valid uncanceled legacy/missing-index recovery and original guards remain; no recursive lease or new lock cycle. |
+| CHI-001 | The child test passes. The caller sentinel's bytes and directory entries are unchanged. A test may still set its own override explicitly after TestMain. |
+| CHI-002 | Each bad target marks Stop as needing repair. The checks never run the hook. The repaired configuration validates and preserves the foreign hook. Available bare and absolute commands keep their existing behavior. |
 | CNRV4-001 | Default target is exact physical Codex; preserve cwd/Home/quoted proxy and capability-bound --no-daemon; unknown or preparation errors refuse without compatibility send |
 | CNRV4-002 | Only exact stopped-owner migration may publish; ready requires fresh native owner and exact CAS; unknown/conflicting evidence never grants input authority |
 | CNRV4-003 | Persist occupation before send; unknown never replayed; errors observable, no false absence/fallback; cancellation retains occupation without sending; private helper roles are not ordinary runtime passes |

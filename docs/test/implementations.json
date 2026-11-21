@@ -1,4 +1,20 @@
 {
+  "internal/app/testmain_test.go": {
+    "cases": ["CHI-001"],
+    "selectors": ["func TestMain"]
+  },
+  "internal/app/doctor_agent_hooks_test.go": {
+    "cases": ["CHI-001", "CHI-002"],
+    "selectors": [
+      "TestDoctorRejectsWrongDisabledAndScopedBindings",
+      "TestAppHookFixturesIgnoreInheritedCodexHome",
+      "TestDoctorRepairsUnusableCodexHookExecutable"
+    ]
+  },
+  "internal/app/hookcompleteness_test.go": {
+    "cases": ["CHI-002"],
+    "selectors": ["TestMissingAgentHookEvents", "TestCompleteHooksReportNothingMissing"]
+  },
   "internal/hq/relay_attention_review_test.go": {
     "cases": [
       "HRF-001"

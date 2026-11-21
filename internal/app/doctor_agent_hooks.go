@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/agents"
@@ -126,9 +127,18 @@ func installedAgentBindings(inst agentInstaller) map[string]bool {
 			if inst.format == formatNested || inst.format == formatCodex {
 				for _, rawHandler := range asArray(h["hooks"]) {
 					handler := asObject(rawHandler)
-					if handler["enabled"] != false && asString(handler["type"]) == "command" && hookCommandMatches(asString(handler["command"]), inst.key, b.event) {
-						have[b.key] = true
+					command := asString(handler["command"])
+					if handler["enabled"] == false || asString(handler["type"]) != "command" || !hookCommandMatches(command, inst.key, b.event) {
+						continue
 					}
+					if inst.format == formatCodex {
+						// Codex runs this command through a shell. A syntactically
+						// valid registration still fails if its binary is gone.
+						if _, err := exec.LookPath(strings.Fields(command)[0]); err != nil {
+							continue
+						}
+					}
+					have[b.key] = true
 				}
 			} else {
 				command := asString(h["command"])

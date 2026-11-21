@@ -1984,13 +1984,13 @@
       ]
     },
     "internal/app/doctor_agent_hooks_test.go": {
-      "sha256": "bf057ffe107d60bfe555d44cabc3512e16ff6fbd90d818a9c7ed54f47d503542",
+      "sha256": "7fcff48a5b3d76e461ad4f139ec9d3281a148c3b7ea96489c88bfa5b82177494",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-a018663902fc",
-          "line": 9,
+          "line": 22,
           "kind": "Test",
           "name": "TestDoctorRejectsWrongDisabledAndScopedBindings",
           "dynamic": false,
@@ -2006,7 +2006,7 @@
         },
         {
           "id": "LEG-a88d6e65f0a6",
-          "line": 55,
+          "line": 170,
           "kind": "Test",
           "name": "TestKiroV3MigrationPreservesForeignHooksAndRemovesDuplicateProfile",
           "dynamic": false,
@@ -2014,7 +2014,7 @@
         },
         {
           "id": "LEG-35ef9e5c385c",
-          "line": 95,
+          "line": 210,
           "kind": "Test",
           "name": "TestOpencodePluginMigrationAndDoctorFreshness",
           "dynamic": false,
@@ -2022,7 +2022,7 @@
         },
         {
           "id": "LEG-7c630285eaf3",
-          "line": 123,
+          "line": 238,
           "kind": "Test",
           "name": "TestDoctorPreservesGlobalDisablePolicyAndMalformedHookShapes",
           "dynamic": false,
@@ -2030,11 +2030,29 @@
         },
         {
           "id": "LEG-557a69970f28",
-          "line": 159,
+          "line": 274,
           "kind": "Test",
           "name": "TestKiroMigratedArrayForeignProfileSurvivesGlobalInstall",
           "dynamic": false,
           "layer": "G"
+        },
+        {
+          "id": "MAP-0f1a3a4682ef",
+          "line": 69,
+          "kind": "reviewed-selector",
+          "name": "TestAppHookFixturesIgnoreInheritedCodexHome",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHI-001,CHI-002"
+        },
+        {
+          "id": "MAP-3d8c62b101e2",
+          "line": 95,
+          "kind": "reviewed-selector",
+          "name": "TestDoctorRepairsUnusableCodexHookExecutable",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHI-001,CHI-002"
         }
       ]
     },
@@ -3519,13 +3537,13 @@
       ]
     },
     "internal/app/hookcompleteness_test.go": {
-      "sha256": "9697f40b16ce7a83fb35f56cfd68be11210de6a69c70dfa965d9e7bd46a46e12",
+      "sha256": "a47fb797624258ea2d48c9b0fcdb2269db3ac35ff50f60ccefe5ba2232ade02f",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-cda060207e23",
-          "line": 35,
+          "line": 36,
           "kind": "Test",
           "name": "TestMissingAgentHookEvents",
           "dynamic": false,
@@ -3533,7 +3551,7 @@
         },
         {
           "id": "LEG-92ed7645c202",
-          "line": 60,
+          "line": 61,
           "kind": "Test",
           "name": "TestCompleteHooksReportNothingMissing",
           "dynamic": false,
@@ -3541,7 +3559,7 @@
         },
         {
           "id": "LEG-46c25c3d4d57",
-          "line": 77,
+          "line": 78,
           "kind": "Test",
           "name": "TestNoHooksFileIsNotIncomplete",
           "dynamic": false,
@@ -3549,7 +3567,7 @@
         },
         {
           "id": "LEG-cdd8d835c53f",
-          "line": 121,
+          "line": 122,
           "kind": "Test",
           "name": "TestMissingClaudeHookEvents",
           "dynamic": false,
@@ -3557,7 +3575,7 @@
         },
         {
           "id": "LEG-8b3c5a13c7e4",
-          "line": 164,
+          "line": 165,
           "kind": "Test",
           "name": "TestAMisScopedHookCountsAsOutOfDate",
           "dynamic": false,
@@ -7398,7 +7416,7 @@
       ]
     },
     "internal/app/testmain_test.go": {
-      "sha256": "bba9c7f29a895ebf6f4f1920e2dc576beb2cd2df0871087cd926b8312adba672",
+      "sha256": "a6ec3a6e0b78e343212a02fec781c18842b3539bdf576bd9d98989aeb9956644",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -7409,6 +7427,15 @@
           "name": "TestMain",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-9a6a3a611b56",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "func TestMain",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHI-001"
         }
       ]
     },

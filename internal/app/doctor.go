@@ -1101,9 +1101,9 @@ func rowCodexHook() dcheck {
 		// file on update; that is `install hooks`, and nobody re-runs it unprompted.
 		if missing := missingAgentHookEvents("codex"); len(missing) > 0 {
 			return dcheck{stRec, label,
-				fmt.Sprintf(i18n.Tr("%d events missing", "缺 %d 个事件"), len(missing)),
-				i18n.Tr("this hooks file predates events gtmux now uses ("+strings.Join(missing, ", ")+"). `gtmux doctor --fix` adds them (restart the sessions to load it)",
-					"这份 hook 配置早于 gtmux 现在用的事件（"+strings.Join(missing, "、")+"）。`gtmux doctor --fix` 可以补上（补完要重启会话才加载）")}
+				fmt.Sprintf(i18n.Tr("%d hook events need repair", "%d 个 hook 事件需要修复"), len(missing)),
+				i18n.Tr("missing or non-executable gtmux hooks for "+strings.Join(missing, ", ")+". Run `gtmux doctor --fix` to repair them, then review the hooks in Codex",
+					strings.Join(missing, "、")+" 缺少可执行的 gtmux hook。运行 `gtmux doctor --fix` 修复，再到 Codex 检查 hook")}
 		}
 		return dcheck{stOK, label, i18n.Tr("configured", "已配置"), i18n.Tr("precise state + notifications", "状态精准 + 通知")}
 	}

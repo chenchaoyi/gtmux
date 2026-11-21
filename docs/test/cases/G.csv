@@ -13,10 +13,10 @@ LEG-b8de1c0ac00b,G,Go core / CLI / server,internal/app/codexterminal_setup_test.
 LEG-5f94fa4bf3a9,G,Go core / CLI / server,internal/app/codexterminal_setup_test.go,134,Test,TestCodexNativeFallbackPreservesOriginalArgv,False,legacy-not-retrospectively-reviewed
 LEG-1a179303cb74,G,Go core / CLI / server,internal/app/config_snapshots_test.go,11,Test,TestSnapshotSettingsPreserveOtherConfiguration,False,legacy-not-retrospectively-reviewed
 LEG-a2878da734c1,G,Go core / CLI / server,internal/app/desktoptranscript_test.go,95,Test,TestCodexReaderScopeAndForkDoNotAlias,False,legacy-not-retrospectively-reviewed
-LEG-a88d6e65f0a6,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,55,Test,TestKiroV3MigrationPreservesForeignHooksAndRemovesDuplicateProfile,False,legacy-not-retrospectively-reviewed
-LEG-35ef9e5c385c,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,95,Test,TestOpencodePluginMigrationAndDoctorFreshness,False,legacy-not-retrospectively-reviewed
-LEG-7c630285eaf3,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,123,Test,TestDoctorPreservesGlobalDisablePolicyAndMalformedHookShapes,False,legacy-not-retrospectively-reviewed
-LEG-557a69970f28,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,159,Test,TestKiroMigratedArrayForeignProfileSurvivesGlobalInstall,False,legacy-not-retrospectively-reviewed
+LEG-a88d6e65f0a6,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,170,Test,TestKiroV3MigrationPreservesForeignHooksAndRemovesDuplicateProfile,False,legacy-not-retrospectively-reviewed
+LEG-35ef9e5c385c,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,210,Test,TestOpencodePluginMigrationAndDoctorFreshness,False,legacy-not-retrospectively-reviewed
+LEG-7c630285eaf3,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,238,Test,TestDoctorPreservesGlobalDisablePolicyAndMalformedHookShapes,False,legacy-not-retrospectively-reviewed
+LEG-557a69970f28,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,274,Test,TestKiroMigratedArrayForeignProfileSurvivesGlobalInstall,False,legacy-not-retrospectively-reviewed
 LEG-cdf7538cce1d,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,108,Test,TestFixPinsClassicRendererKeepingEverythingElse,False,legacy-not-retrospectively-reviewed
 LEG-53fd228c28b1,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,141,Test,TestFixLeavesTheFileAloneWithoutEvidenceOrAgainstAnExplicitChoice,False,legacy-not-retrospectively-reviewed
 LEG-3ff6c40b8fcc,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,212,Test,TestFixLeavesAnExplicitEnvChoiceAlone,False,legacy-not-retrospectively-reviewed

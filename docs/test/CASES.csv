@@ -254,12 +254,14 @@ LEG-43539f89e3dd,L1,Go core / CLI / server,internal/app/digest_test.go,112,Test,
 LEG-fc72fc41119b,L1,Go core / CLI / server,internal/app/digest_test.go,134,Test,TestDigestInModeContract,False,legacy-not-retrospectively-reviewed
 LEG-b422f974910d,L1,Go core / CLI / server,internal/app/digestwidth_test.go,17,Test,TestDigestTableFitsTheTerminal,False,legacy-not-retrospectively-reviewed
 LEG-a9a69f8edb48,L1,Go core / CLI / server,internal/app/digestwidth_test.go,43,Test,TestDigestLayoutGivesWayInOrder,False,legacy-not-retrospectively-reviewed
-LEG-a018663902fc,L1,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,9,Test,TestDoctorRejectsWrongDisabledAndScopedBindings,False,legacy-not-retrospectively-reviewed
+LEG-a018663902fc,L1,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,22,Test,TestDoctorRejectsWrongDisabledAndScopedBindings,False,legacy-not-retrospectively-reviewed
 LEG-27cedb4bffb2,L1,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,12,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-a88d6e65f0a6,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,55,Test,TestKiroV3MigrationPreservesForeignHooksAndRemovesDuplicateProfile,False,legacy-not-retrospectively-reviewed
-LEG-35ef9e5c385c,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,95,Test,TestOpencodePluginMigrationAndDoctorFreshness,False,legacy-not-retrospectively-reviewed
-LEG-7c630285eaf3,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,123,Test,TestDoctorPreservesGlobalDisablePolicyAndMalformedHookShapes,False,legacy-not-retrospectively-reviewed
-LEG-557a69970f28,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,159,Test,TestKiroMigratedArrayForeignProfileSurvivesGlobalInstall,False,legacy-not-retrospectively-reviewed
+LEG-a88d6e65f0a6,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,170,Test,TestKiroV3MigrationPreservesForeignHooksAndRemovesDuplicateProfile,False,legacy-not-retrospectively-reviewed
+LEG-35ef9e5c385c,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,210,Test,TestOpencodePluginMigrationAndDoctorFreshness,False,legacy-not-retrospectively-reviewed
+LEG-7c630285eaf3,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,238,Test,TestDoctorPreservesGlobalDisablePolicyAndMalformedHookShapes,False,legacy-not-retrospectively-reviewed
+LEG-557a69970f28,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,274,Test,TestKiroMigratedArrayForeignProfileSurvivesGlobalInstall,False,legacy-not-retrospectively-reviewed
+MAP-0f1a3a4682ef,L2,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,69,reviewed-selector,TestAppHookFixturesIgnoreInheritedCodexHome,False,"CHI-001,CHI-002"
+MAP-3d8c62b101e2,L2,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,95,reviewed-selector,TestDoctorRepairsUnusableCodexHookExecutable,False,"CHI-001,CHI-002"
 LEG-28bec547a2b0,L1,Go core / CLI / server,internal/app/doctor_claudetui_test.go,12,Test,TestClaudeTUIRow,False,legacy-not-retrospectively-reviewed
 LEG-8f15b04a541d,L1,Go core / CLI / server,internal/app/doctor_claudetui_test.go,36,Test,TestClaudeTUIPinnableOnlyWithEvidenceAndNoExplicitChoice,False,legacy-not-retrospectively-reviewed
 LEG-577ebdc57c6d,L1,Go core / CLI / server,internal/app/doctor_claudetui_test.go,92,Test,TestReadClaudeTUIFactsFromSettingsAndEnv,False,legacy-not-retrospectively-reviewed
@@ -427,11 +429,11 @@ LEG-458ab344984a,L1,Go core / CLI / server,internal/app/hook_presence_test.go,71
 LEG-c7127d072da7,L1,Go core / CLI / server,internal/app/hook_presence_test.go,120,Test,TestHookPresenceUsesRegistryExecutableProbes,False,legacy-not-retrospectively-reviewed
 LEG-5de4952de93e,L1,Go core / CLI / server,internal/app/hook_presence_test.go,142,Test,TestDetectedCLIWithoutHomeCanConfigureHooks,False,legacy-not-retrospectively-reviewed
 LEG-03ff1b3ab31d,G,Go core / CLI / server,internal/app/hook_presence_test.go,163,Test,TestExplicitHookSelectionStillAllowsPreconfiguration,False,legacy-not-retrospectively-reviewed
-LEG-cda060207e23,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,35,Test,TestMissingAgentHookEvents,False,legacy-not-retrospectively-reviewed
-LEG-92ed7645c202,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,60,Test,TestCompleteHooksReportNothingMissing,False,legacy-not-retrospectively-reviewed
-LEG-46c25c3d4d57,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,77,Test,TestNoHooksFileIsNotIncomplete,False,legacy-not-retrospectively-reviewed
-LEG-cdd8d835c53f,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,121,Test,TestMissingClaudeHookEvents,False,legacy-not-retrospectively-reviewed
-LEG-8b3c5a13c7e4,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,164,Test,TestAMisScopedHookCountsAsOutOfDate,False,legacy-not-retrospectively-reviewed
+LEG-cda060207e23,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,36,Test,TestMissingAgentHookEvents,False,legacy-not-retrospectively-reviewed
+LEG-92ed7645c202,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,61,Test,TestCompleteHooksReportNothingMissing,False,legacy-not-retrospectively-reviewed
+LEG-46c25c3d4d57,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,78,Test,TestNoHooksFileIsNotIncomplete,False,legacy-not-retrospectively-reviewed
+LEG-cdd8d835c53f,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,122,Test,TestMissingClaudeHookEvents,False,legacy-not-retrospectively-reviewed
+LEG-8b3c5a13c7e4,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,165,Test,TestAMisScopedHookCountsAsOutOfDate,False,legacy-not-retrospectively-reviewed
 LEG-a7785864b379,L1,Go core / CLI / server,internal/app/hookcoverage_test.go,19,Test,TestEveryRegisteredEventClassifies,False,legacy-not-retrospectively-reviewed
 LEG-00cbca4f2810,L1,Go core / CLI / server,internal/app/hookcoverage_test.go,55,Test,TestPostToolUseIsRegisteredForEveryTool,False,legacy-not-retrospectively-reviewed
 LEG-2782a5c94c22,G,Go core / CLI / server,internal/app/hooks_test.go,43,Test,TestUpdateSettingsInstallIsIdempotent,False,legacy-not-retrospectively-reviewed
@@ -878,6 +880,7 @@ LEG-b605372cd9c1,L1,Go core / CLI / server,internal/app/taborder_test.go,97,Test
 LEG-0445212abf14,G,Go core / CLI / server,internal/app/terminalkeys_pty_test.go,19,Test,TestTerminalKeyRawPTY,False,legacy-not-retrospectively-reviewed
 LEG-60debd862971,G,Go core / CLI / server,internal/app/terminalkeys_test.go,14,Test,TestTerminalKeyTransportValidation,False,legacy-not-retrospectively-reviewed
 LEG-1650c09f7cb7,L1,Go core / CLI / server,internal/app/testmain_test.go,8,TestMain harness,TestMain,False,legacy-not-retrospectively-reviewed
+MAP-9a6a3a611b56,L2,Go core / CLI / server,internal/app/testmain_test.go,8,reviewed-selector,func TestMain,False,CHI-001
 LEG-05038c19db15,L1,Go core / CLI / server,internal/app/transcriptbounds_test.go,31,Test,TestTurnsWithinBudgetKeepsTheNewestTail,False,legacy-not-retrospectively-reviewed
 LEG-ceddc6ac27f8,L1,Go core / CLI / server,internal/app/transcriptbounds_test.go,51,Test,TestTurnsWithinBudgetLeavesAShortHistoryWhole,False,legacy-not-retrospectively-reviewed
 LEG-950bbd759bc8,L1,Go core / CLI / server,internal/app/transcriptbounds_test.go,60,Test,TestTurnsWithinBudgetAlwaysKeepsTheNewestTurn,False,legacy-not-retrospectively-reviewed
