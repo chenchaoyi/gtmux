@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, regression design self-review",
     "date": "2026-11-21",
     "decision": "Verify the persisted Codex title before a managed HQ root is published",
-    "notes": "Reviewed the matched-root observer, the stamped tmux role, the Codex 0.171.0 protocol, and the shared radar task field. The tests exercise private fixtures and protocol ordering. Acceptance with an isolated Codex binary is separate from changing a running HQ or installing a release."
+    "notes": "Reviewed the matched-root observer, the stamped tmux role, the Codex 0.171.0 protocol, and the shared radar task field. Re-reviewed the default value after the user-facing naming gate rejected the role suffix. The exact default is gtmux HQ, the product's name in both languages. The tests exercise private fixtures and protocol ordering. Acceptance with an isolated Codex binary is separate from changing a running HQ or installing a release."
   },
   "cases": [
     {
@@ -25,7 +25,7 @@
       "description": "Only the authoritative stamped HQ pane can seed a missing title using the Codex protocol",
       "setup": "Use a pane snapshot with an exact pane ID, root PID, TTY and scoped HQ stamp. Use a synthetic verified control connection for thread metadata and name responses.",
       "action": "Recheck role and current target, initialize the connection, read the exact thread without turns, and request its default title if still unnamed.",
-      "expected": "The supported name request contains the exact ID and title. The acknowledgement precedes publication. A current user name is returned intact. Changed pane identity, foreign home or backend, wrong thread, a lost guard, and RPC failure grant no successful default name. No prompt or resume request is issued.",
+      "expected": "The supported name request contains the exact ID and the title gtmux HQ. The acknowledgement precedes publication. A current user name is returned intact. Changed pane identity, foreign home or backend, wrong thread, a lost guard, and RPC failure grant no successful default name. No prompt or resume request is issued.",
       "planned_files": [
         "internal/codexbridge/hq_title_test.go",
         "internal/codexrpc/thread_name_test.go"
@@ -43,5 +43,5 @@
       ]
     }
   ],
-  "seal": "b19ba57f946a0afb08e4fd3210e1f0f231bf8ab390632dea196f61210f127d45"
+  "seal": "04b8c818187eb0121a1fa1d4df9305a35a32a3c8ed76998c02463f61a681dbf5"
 }
