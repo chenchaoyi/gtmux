@@ -12,6 +12,7 @@ const nativeUncertainSuffix = ".native-uncertain"
 
 var nativeWakeIO = dispatchbridge.DispatchIO
 var nativeWakeTarget = hqpane.Find
+var nativeWakeIdentity = liveWakeIdentity
 
 // Preparation performs no input mutation; journal admission happens before submit.
 func prepareNativeWake(pane string) func(payload, id string) (dispatch.Result, bool) {
@@ -19,8 +20,9 @@ func prepareNativeWake(pane string) func(payload, id string) (dispatch.Result, b
 	if io.SubmitNative == nil {
 		return nil
 	}
+	expected := nativeWakeIdentity(pane)
 	io.Hold = func() string {
-		if nativeWakeTarget() != pane {
+		if nativeWakeTarget() != pane || (expected != "" && nativeWakeIdentity(pane) != expected) {
 			return "hq-target-changed"
 		}
 		return ""

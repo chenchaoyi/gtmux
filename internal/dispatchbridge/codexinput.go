@@ -131,7 +131,11 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 			if err := agentclient.FinishNativeDelivery(r, "accepted", outcome.AcknowledgedTurnID, delivery); err != nil {
 				return codexInputUnknown("codex-input-receipt-unconfirmed", true)
 			}
-			return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: delivery, Evidence: evidence, Attempts: 1}
+			result := dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: delivery, Evidence: evidence, Attempts: 1}
+			if delivery == "wake-accepted" {
+				result.WakeReceipt = &dispatch.WakeReceipt{Request: r.ID, Session: r.SessionID, Home: r.HomeID, Turn: outcome.AcknowledgedTurnID}
+			}
+			return result
 		}
 		if claimed {
 			verdict := "uncertain"
@@ -211,7 +215,11 @@ func codexRecordedResult(receipt agentclient.Receipt) dispatch.Result {
 		case "active-turn":
 			kind = "active"
 		}
-		return dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: receipt.Delivery, Evidence: "codex-" + kind + "-already-accepted"}
+		result := dispatch.Result{State: dispatch.StateQueued, JudgedBy: dispatch.JudgedByDriver, Delivery: receipt.Delivery, Evidence: "codex-" + kind + "-already-accepted"}
+		if receipt.Delivery == "wake-accepted" {
+			result.WakeReceipt = &dispatch.WakeReceipt{Request: receipt.ID, Session: receipt.SessionID, Home: receipt.HomeID, Turn: receipt.Error}
+		}
+		return result
 	case "refused":
 		return codexPreparationFailure(&agentclient.InputRefused{Reason: receipt.Error})
 	default:

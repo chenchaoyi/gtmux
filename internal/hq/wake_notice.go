@@ -36,8 +36,8 @@ func watchWakeHealth(now int64, view hqnudge.Health) {
 				action = wakeNotifyMessage(cause)
 			}
 		}
-		alerts[issue.Reason] = fmt.Sprintf("%s. %d queued, %d historical uncertain. First observed %s. %s",
-			why, view.Queued, view.Uncertain, wakeObservedAt(issue.FirstAt), action)
+		alerts[issue.Reason] = fmt.Sprintf("%s. %d queued, %d uncertain, %d retained refusals. First observed %s. %s",
+			why, view.Queued, view.Uncertain, view.Refused, wakeObservedAt(issue.FirstAt), action)
 	}
 	publishWakeNotices("channel", "HQ wake delivery needs attention", alerts, now)
 }
@@ -74,7 +74,15 @@ func wakeIssueAdvice(reason string) (string, string) {
 		return "Wake queue I/O failed", "Check the reported state path or available space. Use the original workspace matter for urgent work."
 	case "queue-pressure":
 		return "Wake queue capacity was exceeded", "The scheduler keeps higher-priority work. Open the workspace to inspect due matters and verify which still need a report."
-	case "submission-unknown":
+	case "retry-exhausted":
+		return "A wake reached its safe retry limit", "The original is retained. Check whether the workspace matter still needs action before deciding on a new attempt."
+	case "target-unavailable":
+		return "The HQ pane identity could not be verified", "Automatic input remains queued. Reopen the original HQ conversation or verify the current attachment."
+	case "input-refused":
+		return "A wake could not be safely submitted to its original target", "Verify the HQ identity and check the original workspace matter before requesting another attempt."
+	case "accepted-unverified":
+		return "The receiver accepted a wake without independent start or delivery evidence", "An automatic replay would risk duplication. Check the original matter and the exact receiver receipt."
+	case "submission-unknown", "terminal-submission-unknown":
 		return "A submitted wake has no confirmed outcome", "The original attempt is retained. Verify its receipt before deciding whether any manual action is needed."
 	default:
 		return "HQ wake delivery has not progressed", "Automatic drains continue to respect input guards. Verify the HQ pane and check the workspace for urgent work."

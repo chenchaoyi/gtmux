@@ -13,15 +13,20 @@ import (
 )
 
 const (
-	issueClaimConflict  = "claim-conflict"
-	issueRecoveryUnsafe = "recovery-evidence"
-	issueQueuePressure  = "queue-pressure"
-	issueQueueIO        = "queue-io"
-	issueUnknownInput   = "submission-unknown"
+	issueClaimConflict      = "claim-conflict"
+	issueRecoveryUnsafe     = "recovery-evidence"
+	issueQueuePressure      = "queue-pressure"
+	issueQueueIO            = "queue-io"
+	issueUnknownInput       = "submission-unknown"
+	issueUnknownLegacyInput = "terminal-submission-unknown"
+	issueInputRefused       = "input-refused"
+	issueRetryExhausted     = "retry-exhausted"
+	issueTargetUnavailable  = "target-unavailable"
+	issueAcceptedUnverified = "accepted-unverified"
 )
 
 var issueCodes = []string{
-	issueClaimConflict, issueRecoveryUnsafe, issueQueuePressure, issueQueueIO, issueUnknownInput,
+	issueClaimConflict, issueRecoveryUnsafe, issueQueuePressure, issueQueueIO, issueUnknownInput, issueUnknownLegacyInput, issueInputRefused, issueRetryExhausted, issueTargetUnavailable, issueAcceptedUnverified,
 }
 
 type WakeIssue struct {
@@ -33,6 +38,7 @@ type WakeIssue struct {
 type Health struct {
 	Queued    int
 	Uncertain int
+	Refused   int
 	Issues    []WakeIssue
 }
 
@@ -106,16 +112,26 @@ func noteConfirmedDelivery(now int64) {
 func ReadHealth(now int64) Health {
 	var out Health
 	var oldest int64
+	legacyUncertain := 0
 	for _, entry := range readQueue() {
 		name := entry.Name()
+		if strings.HasSuffix(name, legacyUncertainSuffix) || attemptsOf(name) > 0 {
+			legacyUncertain++
+			out.Uncertain++
+			continue
+		}
 		if strings.HasSuffix(name, nativeUncertainSuffix) {
 			out.Uncertain++
+			continue
+		}
+		if strings.HasSuffix(name, wakeRefusedSuffix) {
+			out.Refused++
 		}
 		if !strings.HasSuffix(name, ".txt") {
 			continue
 		}
 		out.Queued++
-		if dueOf(name) > now*int64(time.Second) {
+		if dueForAttempt(name) > now*int64(time.Second) {
 			continue
 		}
 		info, err := entry.Info()
@@ -140,6 +156,13 @@ func ReadHealth(now int64) Health {
 			clear = clear && recovery > i.LastAt
 		case issueQueuePressure:
 			clear = clear && out.Queued < maxQueueEntries
+		case issueInputRefused, issueRetryExhausted:
+			clear = clear && out.Refused == 0
+		case issueAcceptedUnverified:
+			files, err := os.ReadDir(acceptedWakeDir())
+			clear = err == nil && len(files) == 0 && confirmed >= i.FirstAt
+		case issueUnknownLegacyInput:
+			clear = clear && legacyUncertain == 0
 		case issueUnknownInput:
 			// A success for another batch cannot settle this submitted-unknown evidence.
 			clear = false

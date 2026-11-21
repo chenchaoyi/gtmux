@@ -787,11 +787,9 @@
   },
   "internal/hqnudge/autorecovery_test.go": {
     "cases": [
-      "HWA-001",
-      "HWA-002"
+      "HWA-011"
     ],
     "selectors": [
-      "TestHWA001AttributableParkCollisionKeepsIndependentDelivery",
       "TestHWA002KeyedMergePreservesOnlyCurrentPendingIncarnation"
     ]
   },
@@ -807,15 +805,10 @@
   },
   "internal/hqnudge/native_recovery_test.go": {
     "cases": [
-      "HRW-009",
-      "HRW-010"
+      "HWA-011"
     ],
     "selectors": [
-      "TestHRW009NativeOutcomeCrashCannotRebatchOldInput",
-      "TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer",
-      "TestHRW009JournalFailuresAndForeignReplacementHoldWithoutMutation",
-      "TestHRW010ClaimReturnPreservesForeignConflictAndInterruptedPublication",
-      "TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate"
+      "TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer"
     ]
   },
   "internal/hqnudge/pressure_health_test.go": {
@@ -828,15 +821,65 @@
       "TestHWA004ConflictNeedsCleanScanAndPositiveReceipt"
     ]
   },
+  "internal/hqnudge/hqnudge_test.go": {
+    "cases": [
+      "HWA-007"
+    ],
+    "selectors": [
+      "TestDrain_PasteErrorRetainsUnknownWithoutReplay",
+      "TestDrain_EnterErrorKeepsExactDraftForRepair",
+      "TestDrain_UnconfirmedAckNeverRepastes",
+      "TestDrain_UnconfirmedEntryPreservesItsHealthEvidence",
+      "TestDrain_SendErrorDoesNotBlockUnrelatedWork",
+      "TestReclaim_StrandedClaimHoldsWithoutReplaying",
+      "TestUnackableClaimIsRetainedWithoutFalseAudit",
+      "TestDrain_NewWakeDoesNotReplayUnconfirmedOldEntry",
+      "TestRepair_ExhaustedHandsBack",
+      "TestRepair_ExactBatch_IsSubmitted"
+    ]
+  },
+  "internal/hqnudge/wake_retry_test.go": {
+    "cases": [
+      "HWA-006",
+      "HWA-007"
+    ],
+    "selectors": [
+      "TestHWA006NativePositiveRefusalUsesDurableBoundedBackoff",
+      "TestHWA006UnknownAndChangedTargetNeverResubmit",
+      "TestHWA007GuardsPermitNoClientInput",
+      "TestHWA007CrashAfterLegacyEnterRetainsOriginal"
+    ]
+  },
+  "internal/hq/wake_rotation_regression_test.go": {
+    "cases": [
+      "HWA-008"
+    ],
+    "selectors": [
+      "TestHWA008ChangedSuccessorFailsIndependentlyWithoutSecondReset"
+    ]
+  },
+  "internal/hqnudge/wake_evidence_test.go": {
+    "cases": [
+      "HWA-012"
+    ],
+    "selectors": [
+      "TestHWA012AcceptanceWaitsForIndependentProof"
+    ]
+  },
+  "internal/transcript/wake_evidence_test.go": {
+    "cases": [
+      "HWA-013"
+    ],
+    "selectors": [
+      "TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt"
+    ]
+  },
   "internal/hqnudge/rotation_priority_test.go": {
     "cases": [
-      "HRW-004",
-      "HRW-005",
-      "HRW-008"
+      "HWA-012"
     ],
     "selectors": [
       "TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority",
-      "TestHRW004RotationDoesNotSubmitOrRepairUserDraft",
       "TestHRW004ExactOwnStrandedRepairPrecedesReservation",
       "TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity",
       "TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource"

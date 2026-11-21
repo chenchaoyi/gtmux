@@ -149,6 +149,7 @@ func hqSummaryTick(now int64) {
 // resource-sampling cadence. Cheap-gated on Pending() — a dir scan — so a quiet queue
 // costs no tmux at all.
 func DrainHQNudges() {
+	hqnudge.ObserveWakeEvidence(time.Now())
 	ProcessPendingHQRotation() // reserve a ready window before any new automatic wake
 	if hqnudge.Pending() {
 		hqnudge.Drain(hqpane.Find())
@@ -182,6 +183,12 @@ func wakeHeldCause() string {
 	pane := hqpane.Find()
 	if pane == "" {
 		return ""
+	}
+	if state.Exists(state.WaitingPath(pane)) {
+		return "the HQ agent is waiting for user input"
+	}
+	if state.Exists(state.ActivePath(pane)) {
+		return "the HQ pane is busy or its active marker has not cleared"
 	}
 	why, ok := dispatch.Reach(dispatchbridge.DispatchIO(pane))
 	if ok {

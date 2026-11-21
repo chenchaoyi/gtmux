@@ -131,7 +131,7 @@ func TestHRW010BusyReturnPreservesDelayedNewestKeyedProducer(t *testing.T) {
 			updates++
 			DeliverKeyedAt("%isolated", "done-%worker", "newest-B", dueNano)
 		}
-		return dispatch.Result{State: dispatch.StateRefusedWaiting}, true
+		return dispatch.Result{State: dispatch.StateRefusedWaiting, Submission: dispatch.SubmissionNotSubmitted, Evidence: "wake-loaded-idle-required"}, true
 	}
 	DeliverKeyedAt("%isolated", "done-%worker", "original-A", dueNano)
 	if updates != 0 {

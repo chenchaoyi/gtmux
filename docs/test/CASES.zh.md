@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1397 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1401 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3816 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2589 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2604 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -284,8 +284,14 @@
 | HPT-001 | Source identity stays unchanged, unauthorized dispositions fail, and the target receipt retains the exact goal follow-up. Reassessment preserves user hold, unknown delivery and terminal state safeguards. |
 | HPT-002 | Eligible source rows become durable triage once, while wrong, suppressed and HQ rows create no triage. A uniquely matched Stop keeps the existing continuation path. |
 | HPT-003 | A one-time lost wake does not erase evidence or issue input. The exact CLI lease and handoff receipt point to durable, visible next responsibility with the worker untouched until separate authorization. Foreground handling and all synthetic terminal behavior are separately identified. |
+| HWA-006 | The generation ID stays stable while only a positively unsent attempt can use a fresh transport-attempt ID. No early dispatch, at most three known-unsent attempts, final exhaustion is retained and visible. Unknown and identity failures never submit again. |
+| HWA-007 | The uncertain original is never pasted twice. An exact matching receipt can settle without typing. Safe Enter-only behavior is limited to a positively matching own draft, with bounded retries and recheck. Real drafts, unready or unidentifiable targets receive no input. |
+| HWA-008 | A receiver/start observation does not confirm durable handoff. Changed successor is reported independently, one reset at most, stale retry is inert. |
 | HWA-001 | Both original inodes, bytes, pins and journal records remain. The independent wake submits exactly once without paste or replay. Unreadable or unidentifiable intent still prevents all admission. |
 | HWA-002 | An unclaimed merge keeps its due time and identity. A new generation has a distinct name even at identical due time. It cannot overwrite an existing sending or parked entry. A provably refused obsolete generation yields to a newer pending one while uncertain records remain frozen. Neither operation pastes into the pane. |
+| HWA-012 | Acceptance alone neither starts nor confirms delivery. An exact prompt in the acknowledged newly-started turn records both independent observations once. An unrelated turn, an unproven prompt, and authorizing an automatic replay remain excluded. |
+| HWA-013 | An old or unrelated turn cannot establish wake delivery or new start. The exact matching composite yields timestamps without waiving a pending workspace obligation. |
+| HWA-011 | The newer unclaimed generation retains its original deadline and remains eligible; a stale generation never overwrites or replays into it. |
 | HWA-003 | The warning is explicitly rejected and all prior decision entries survive. An equal-priority new entry may replace the oldest of its rank with a truthful eviction audit. Both pressure outcomes have distinct stages. |
 | HWA-004 | First, changed and continuing reasons alert at bounded cadence even with old down marker. Historical uncertainty remains separate. Pending work, quiet mode or absence of HQ cannot suppress the independent deadline alarm. Recovery requires an exact positive receipt or the tracked condition being conclusively settled. |
 | HWA-005 | Deadline and out-of-band report share the goal follow-up ID. Quiet/inactive HQ does not stop that report. Request handling stays open until workbench outcome exists and recovery emits no duplicate alert. |

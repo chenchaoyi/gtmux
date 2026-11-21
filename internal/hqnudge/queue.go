@@ -38,7 +38,7 @@ func lockQueue() (func(), error) {
 
 func pendingKey(field string) string {
 	for _, entry := range readQueue() {
-		if entry.Type().IsRegular() && queuedKey(entry.Name()) == field {
+		if retry, valid := parseRetry(entry.Name()); valid && retry.Number == 0 && attemptsOf(entry.Name()) == 0 && entry.Type().IsRegular() && queuedKey(entry.Name()) == field {
 			return entry.Name()
 		}
 	}
@@ -58,6 +58,28 @@ func queuedKey(path string) string {
 	return "." + field
 }
 
+// A later producer supersedes only positively refused generations. Held and
+// uncertain claims are never candidates for coalescing or deletion.
+func retireObsoleteRetries(field string, now int64) {
+	for _, name := range queuedNames(func(name string) bool { return queuedKey(name) == field }) {
+		retry, valid := parseRetry(name)
+		if !valid || retry.Number == 0 {
+			continue
+		}
+		path := filepath.Join(queueDir(), name)
+		body, err := readNativeBytes(path)
+		if err == nil {
+			err = os.Remove(path)
+		}
+		if err != nil {
+			queueFailure(now, err)
+			continue
+		}
+		events.AuditWakeDropped(events.DropSuperseded, string(body), time.Now().Unix())
+		wakeStage("rejected", path, "", diag.Refused, events.DropSuperseded)
+	}
+}
+
 func takeQueued(src, dst string) bool {
 	release, err := lockQueue()
 	if err != nil {
@@ -73,7 +95,7 @@ func takeQueued(src, dst string) bool {
 
 // admitQueued runs under the queue lease. Rank the newcomer before changing
 // existing entries and publish it completely before removing a verified victim.
-func admitQueued(name, message string, now int64) {
+func admitQueued(name, message string, now int64) bool {
 	names := queuedNames(func(string) bool { return true })
 	path := filepath.Join(queueDir(), name)
 	if len(names) >= maxQueueEntries {
@@ -81,27 +103,28 @@ func admitQueued(name, message string, now int64) {
 		if prioOf(name) > prioOf(names[len(names)-1]) {
 			events.AuditWakeDropped(events.DropQueueFull, message, time.Now().Unix())
 			wakeStage("rejected", name, "", diag.Refused, events.DropQueueFull)
-			return
+			return false
 		}
 	}
 	for len(names) > maxQueueEntries { // an interrupted admission can leave one extra file
 		if err := evictQueued(&names); err != nil {
 			queueFailure(now, err)
-			return
+			return false
 		}
 	}
 	if err := state.WritePrivateFile(path, []byte(message)); err != nil {
 		queueFailure(now, err)
-		return
+		return false
 	}
 	if len(names) >= maxQueueEntries {
 		if err := evictQueued(&names); err != nil {
 			queueFailure(now, errors.Join(err, os.Remove(path)))
 			wakeStage("rejected", name, "", diag.Failed, "eviction-error")
-			return
+			return false
 		}
 	}
 	wakeStage("enqueued", name, "", diag.OK, "")
+	return true
 }
 
 func evictQueued(names *[]string) error {

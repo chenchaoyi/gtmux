@@ -121,7 +121,7 @@ func TestHWA002KeyedMergePreservesOnlyCurrentPendingIncarnation(t *testing.T) {
 			if newer == "" || newer == legacy || dueOf(newer) != 0 {
 				t.Fatalf("queued generation reused legacy name: %q", newer)
 			}
-			return dispatch.Result{State: dispatch.StateRefusedWaiting}, true
+			return dispatch.Result{State: dispatch.StateRefusedWaiting, Submission: dispatch.SubmissionNotSubmitted, Evidence: "wake-loaded-idle-required"}, true
 		}
 		if !strings.Contains(payload, "new generation merged") {
 			t.Fatalf("stale generation was reintroduced: %q", payload)
