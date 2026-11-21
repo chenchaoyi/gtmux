@@ -1,11 +1,10 @@
-// Package codexrpc addresses explicit user input to a verified local Codex thread.
+// Package codexrpc addresses input and metadata to a verified local Codex thread.
 // It never discovers conversations, resumes threads or enables remote control.
 package codexrpc
 
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"path/filepath"
 	"time"
@@ -141,43 +140,12 @@ func submitInputs(ctx context.Context, target Target, messageID string, inputs [
 	if target.BackendPID > 0 && (c.peerPID != target.BackendPID || c.peerStart != target.BackendStart) {
 		return Outcome{Reason: "backend-changed"}
 	}
-	enc := json.NewEncoder(c.writer)
-	// Addressed metadata is bounded; never request conversation items or a catalog.
-	dec := json.NewDecoder(io.LimitReader(c.reader, 2<<20))
-	send := func(id int, method string, params any) error {
-		return enc.Encode(map[string]any{"id": id, "method": method, "params": params})
+	w := newWire(c)
+	if reason := w.initialize(target.HomeID); reason != "" {
+		return Outcome{Reason: reason}
 	}
-	read := func(id int) (wireResponse, error) {
-		for n := 0; n < 64; n++ {
-			var r wireResponse
-			if err := dec.Decode(&r); err != nil {
-				return r, err
-			}
-			if r.ID == id {
-				return r, nil
-			}
-		}
-		return wireResponse{}, errors.New("response bound exceeded")
-	}
-	if send(1, "initialize", map[string]any{
-		"clientInfo":   map[string]string{"name": "gtmux", "title": "gtmux", "version": "1"},
-		"capabilities": map[string]bool{"experimentalApi": true},
-	}) != nil {
-		return Outcome{Reason: "initialize-unavailable"}
-	}
-	r, err := read(1)
-	if err != nil || r.Error != nil {
-		return Outcome{Reason: "initialize-unavailable"}
-	}
-	var server struct {
-		Home string `json:"codexHome"`
-	}
-	if json.Unmarshal(r.Result, &server) != nil || server.Home == "" || transcript.CodexHomeIDForPath(server.Home) != target.HomeID {
-		return Outcome{Reason: "server-home-mismatch"}
-	}
-	if enc.Encode(map[string]any{"method": "initialized", "params": map[string]any{}}) != nil {
-		return Outcome{Reason: "initialize-unavailable"}
-	}
+	send, read := w.send, w.read
+	var r wireResponse
 	id, turnID, startIdle := 2, "", false
 	if policy != queuedInput {
 		var why string
