@@ -795,6 +795,16 @@
       "TestHWA002KeyedMergePreservesOnlyCurrentPendingIncarnation"
     ]
   },
+  "internal/hqnudge/autorecovery_review_test.go": {
+    "cases": [
+      "HWA-009",
+      "HWA-010"
+    ],
+    "selectors": [
+      "TestHWA009LateReceiptRespectsProtectedClaim",
+      "TestHWA010MixedRecoveryFaultHoldsAdmission"
+    ]
+  },
   "internal/hqnudge/native_recovery_test.go": {
     "cases": [
       "HRW-009",

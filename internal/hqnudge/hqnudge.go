@@ -657,7 +657,7 @@ func drainInto(x io, pane string) {
 		}
 	}
 	reclaimOrphansExcept(protected)
-	settleEarlierAttempts(x, pane)
+	settleEarlierAttempts(x, pane, protected)
 	// Never rename a queued replacement onto a held foreign/changed claim.
 	due := queuedNames(func(n string) bool { return !protected[n+sendingSuffix] && dueOf(n) <= x.nowNano() })
 	claimed, msgs, held := claimBatch(due)
@@ -794,7 +794,7 @@ func recordAttempt(claimed []string, payload, id string, since int64) {
 // It runs before a new batch is claimed, so a delivered entry is never coalesced into a
 // new batch and pasted again. Reads only: nothing is typed. A record whose entries are
 // all gone (delivered or dropped another way) or that is past the window is removed.
-func settleEarlierAttempts(x io, pane string) {
+func settleEarlierAttempts(x io, pane string, protected map[string]bool) {
 	files, _ := os.ReadDir(attemptsDir())
 	now := x.nowNano() / int64(time.Second)
 	for _, f := range files {
@@ -806,8 +806,18 @@ func settleEarlierAttempts(x io, pane string) {
 			continue
 		}
 		queued := queuedEntries(r.Entries)
-		if len(queued) == 0 || now-r.Since > retryLookbackSec {
+		if len(queued) == 0 {
 			_ = os.Remove(p)
+			continue
+		}
+		if now-r.Since > retryLookbackSec {
+			held := false
+			for _, src := range queued {
+				held = held || protected[filepath.Base(src)+sendingSuffix]
+			}
+			if !held {
+				_ = os.Remove(p)
+			}
 			continue
 		}
 		if !ackConfirmed(x, pane, r.ID, r.Since) {
@@ -815,14 +825,17 @@ func settleEarlierAttempts(x io, pane string) {
 		}
 		var claimed []string
 		for _, src := range queued {
-			if os.Rename(src, src+sendingSuffix) == nil { // a concurrent drainer may have it
-				claimed = append(claimed, src+sendingSuffix)
+			dst := src + sendingSuffix
+			if !protected[filepath.Base(dst)] && takeQueued(src, dst) {
+				claimed = append(claimed, dst)
 			}
 		}
 		if len(claimed) > 0 {
 			finishDelivered(pane, r.Payload, claimed)
 		}
-		_ = os.Remove(p)
+		if len(claimed) == len(queued) {
+			_ = os.Remove(p)
+		}
 	}
 }
 
