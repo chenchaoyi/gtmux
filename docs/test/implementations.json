@@ -818,6 +818,16 @@
       "TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate"
     ]
   },
+  "internal/hqnudge/pressure_health_test.go": {
+    "cases": [
+      "HWA-003",
+      "HWA-004"
+    ],
+    "selectors": [
+      "TestHWA003IncomingStandingWakeCannotEvictDecisions",
+      "TestHWA004ConflictNeedsCleanScanAndPositiveReceipt"
+    ]
+  },
   "internal/hqnudge/rotation_priority_test.go": {
     "cases": [
       "HRW-004",
@@ -4203,6 +4213,14 @@
       "TestWorkspaceContinuationIncidentReplay"
     ]
   },
+  "internal/app/hq_wake_deadline_test.go": {
+    "cases": [
+      "HWA-005"
+    ],
+    "selectors": [
+      "TestHWA005DeadlineIsOwedUntilOriginalMatterSettles"
+    ]
+  },
   "internal/app/hqworkspace_continuation_cli_test.go": {
     "cases": [
       "HPC-004",
@@ -4600,6 +4618,14 @@
     "selectors": [
       "LAP-012 pending draft survives an early",
       "LAP-013 bookmarks remain usable without persistent"
+    ]
+  },
+  "internal/hq/wake_autorecovery_test.go": {
+    "cases": [
+      "HWA-004"
+    ],
+    "selectors": [
+      "TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter"
     ]
   }
 }

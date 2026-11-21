@@ -64,6 +64,8 @@ const (
 const (
 	// DropEvicted — the queue cap evicted the lowest-priority oldest entry.
 	DropEvicted = "evicted"
+	// DropQueueFull — an incoming wake ranked below all occupied slots.
+	DropQueueFull = "queue-full"
 	// DropUnconfirmed — the ack budget was exhausted (drain path or an abandoned
 	// Enter repair); the degradation counter has already announced the doubt.
 	DropUnconfirmed = "unconfirmed"

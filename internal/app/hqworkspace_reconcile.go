@@ -316,6 +316,7 @@ func notifyWorkspaceReconciliation(s *hqworkspace.Store, now, next int64) (int64
 	if err != nil {
 		return next, err
 	}
+	workspaceWakeDeadlines(d, now)
 	signals, err := s.RemindContinuations(d, now)
 	if err != nil {
 		return next, err

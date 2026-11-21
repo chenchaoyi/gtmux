@@ -442,6 +442,7 @@ LEG-5641587aed04,L1,Go core / CLI / server,internal/app/hooksilence_test.go,26,T
 LEG-b54c9bdc958c,L1,Go core / CLI / server,internal/app/hooksilence_test.go,35,Test,TestAQuietPaneIsNotReported,False,legacy-not-retrospectively-reviewed
 LEG-19d6ceb43769,L1,Go core / CLI / server,internal/app/hooksilence_test.go,44,Test,TestARecentEventIsEnough,False,legacy-not-retrospectively-reviewed
 LEG-b4c53a66c7ba,L1,Go core / CLI / server,internal/app/hooksilence_test.go,56,Test,TestEventsReadGivesThePaneItsNewest,False,legacy-not-retrospectively-reviewed
+MAP-19a5906d1fd5,L2,reviewed implementation,internal/app/hq_wake_deadline_test.go,10,reviewed-selector,TestHWA005DeadlineIsOwedUntilOriginalMatterSettles,False,HWA-005
 LEG-22c10bb33192,L1,Go core / CLI / server,internal/app/hqmemory_row_test.go,30,Test,TestHQMemoryRowReadsItsThreeStates,False,legacy-not-retrospectively-reviewed
 LEG-7d78fb6a41eb,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,15,Test,TestStitchEarlierKeepsEachHQAgentsIdentity,False,legacy-not-retrospectively-reviewed
 LEG-150db10da0b7,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,45,Test,TestTranscriptOnlyStitchesSupervisorHistory,False,legacy-not-retrospectively-reviewed
@@ -1981,6 +1982,7 @@ LEG-790dd88e839e,L1,Go core / CLI / server,internal/hq/unread_test.go,359,Test,T
 LEG-205875935d1a,L1,Go core / CLI / server,internal/hq/unread_test.go,380,Test,TestUnreadSensorNoOpWithoutASupervisor,False,legacy-not-retrospectively-reviewed
 LEG-a6531e827f1d,L1,Go core / CLI / server,internal/hq/unread_test.go,403,Test,TestConsumptionStatus,False,legacy-not-retrospectively-reviewed
 LEG-c5ecbd9a3fe3,L1,Go core / CLI / server,internal/hq/unread_test.go,451,Test,TestUnreadExcludesAuditTrailButCountsTriggers,False,legacy-not-retrospectively-reviewed
+MAP-d3fb86c5d55c,L2,reviewed implementation,internal/hq/wake_autorecovery_test.go,14,reviewed-selector,TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter,False,HWA-004
 LEG-9eb4f55233e6,L1,Go core / CLI / server,internal/hq/wakecause_test.go,12,Test,TestWakeNotifyMessageSaysWhatToDo,False,legacy-not-retrospectively-reviewed
 LEG-45b57c95ef7b,L1,Go core / CLI / server,internal/hq/watchdog_test.go,10,Test,TestShouldEscalate,False,legacy-not-retrospectively-reviewed
 LEG-4e5f8c43a6a8,L1,Go core / CLI / server,internal/hq/watchdog_test.go,42,Test,TestShouldEscalate_PremiseIsProvenanceNotAskText,False,legacy-not-retrospectively-reviewed
@@ -2066,6 +2068,8 @@ MAP-62be7306061f,L2,reviewed implementation,internal/hqnudge/native_recovery_tes
 MAP-cbf26a49e444,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,317,reviewed-selector,TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate,False,"HRW-009,HRW-010"
 LEG-9bd5cd8afd4f,G,Go core / CLI / server,internal/hqnudge/native_test.go,10,Test,TestNativeWakeAcceptanceAndUncertaintyNeverPasteOrReplay,False,legacy-not-retrospectively-reviewed
 LEG-096a5372e6f5,L1,Go core / CLI / server,internal/hqnudge/native_test.go,12,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-ac1ffa61f5b2,L2,reviewed implementation,internal/hqnudge/pressure_health_test.go,13,reviewed-selector,TestHWA003IncomingStandingWakeCannotEvictDecisions,False,"HWA-003,HWA-004"
+MAP-392ca77cfaeb,L2,reviewed implementation,internal/hqnudge/pressure_health_test.go,38,reviewed-selector,TestHWA004ConflictNeedsCleanScanAndPositiveReceipt,False,"HWA-003,HWA-004"
 MAP-2f393b4dfbb1,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,28,reviewed-selector,TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority,False,"HRW-004,HRW-005,HRW-008"
 MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,88,reviewed-selector,TestHRW004RotationDoesNotSubmitOrRepairUserDraft,False,"HRW-004,HRW-005,HRW-008"
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,102,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"

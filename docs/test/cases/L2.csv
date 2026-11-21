@@ -83,6 +83,7 @@ MAP-c7f093bf6da7,L2,reviewed implementation,internal/app/dsh_terminal_spool_test
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
 MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
 MAP-8667d3e135cb,L2,reviewed implementation,internal/app/hold_reader_test.go,12,reviewed-selector,TestHoldReaderChild,False,RSD-004
+MAP-19a5906d1fd5,L2,reviewed implementation,internal/app/hq_wake_deadline_test.go,10,reviewed-selector,TestHWA005DeadlineIsOwedUntilOriginalMatterSettles,False,HWA-005
 MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-479200cd9eee,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,146,reviewed-selector,TestPhase1CursorProspectiveActivation,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
 MAP-b0e7a04d99c5,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,183,reviewed-selector,TestPhase1CursorEmptyRetentionGap,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
@@ -268,6 +269,7 @@ MAP-26c222f9b436,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,180
 MAP-27e9b5f03486,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,198,reviewed-selector,TestHQR004RefreshUsesExistingApplyLock,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 MAP-564acb685125,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,219,reviewed-selector,TestHQR005RefreshRefusesUnsafeManagedFiles,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 MAP-1b8457abb5dd,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,278,reviewed-selector,TestHQR006RefreshPreservesBackupNamesAndFailsSafely,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-d3fb86c5d55c,L2,reviewed implementation,internal/hq/wake_autorecovery_test.go,14,reviewed-selector,TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter,False,HWA-004
 MAP-e4cfa47e623e,L2,reviewed implementation,internal/hqinput/rotation_test.go,13,reviewed-selector,TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize,False,HRW-003
 MAP-23d161981468,L2,reviewed implementation,internal/hqnudge/autorecovery_review_test.go,35,reviewed-selector,TestHWA009LateReceiptRespectsProtectedClaim,False,"HWA-009,HWA-010"
 MAP-f684d0fb5b52,L2,reviewed implementation,internal/hqnudge/autorecovery_review_test.go,99,reviewed-selector,TestHWA010MixedRecoveryFaultHoldsAdmission,False,"HWA-009,HWA-010"
@@ -285,6 +287,8 @@ MAP-10606a0f2e3f,L2,reviewed implementation,internal/hqnudge/native_recovery_tes
 MAP-0d1dc15a6a6e,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,167,reviewed-selector,TestHRW009JournalFailuresAndForeignReplacementHoldWithoutMutation,False,"HRW-009,HRW-010"
 MAP-62be7306061f,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,277,reviewed-selector,TestHRW010ClaimReturnPreservesForeignConflictAndInterruptedPublication,False,"HRW-009,HRW-010"
 MAP-cbf26a49e444,L2,reviewed implementation,internal/hqnudge/native_recovery_test.go,317,reviewed-selector,TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate,False,"HRW-009,HRW-010"
+MAP-ac1ffa61f5b2,L2,reviewed implementation,internal/hqnudge/pressure_health_test.go,13,reviewed-selector,TestHWA003IncomingStandingWakeCannotEvictDecisions,False,"HWA-003,HWA-004"
+MAP-392ca77cfaeb,L2,reviewed implementation,internal/hqnudge/pressure_health_test.go,38,reviewed-selector,TestHWA004ConflictNeedsCleanScanAndPositiveReceipt,False,"HWA-003,HWA-004"
 MAP-2f393b4dfbb1,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,28,reviewed-selector,TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority,False,"HRW-004,HRW-005,HRW-008"
 MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,88,reviewed-selector,TestHRW004RotationDoesNotSubmitOrRepairUserDraft,False,"HRW-004,HRW-005,HRW-008"
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,102,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"

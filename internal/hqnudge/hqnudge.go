@@ -299,6 +299,7 @@ func withHQInput(work func()) {
 	release, acquired, err := hqinput.Acquire()
 	if err != nil {
 		diag.ReportStoreFailure("hq-input", err)
+		recordIssue(issueRecoveryUnsafe, time.Now().UnixNano())
 		return
 	}
 	if !acquired {
@@ -441,9 +442,9 @@ func enqueue(x io, msg string) {
 		return
 	}
 	defer release()
-	evictOverflow()
-	name := fmt.Sprintf("%019d-%d-%s.p%d.txt", x.nowNano(), os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg))
-	diag.ReportStoreFailure("hq-wake-queue", state.WritePrivateFile(filepath.Join(queueDir(), name), []byte(msg)))
+	now := x.nowNano()
+	name := fmt.Sprintf("%019d-%d-%s.p%d.txt", now, os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg))
+	admitQueued(name, msg, now)
 }
 
 // enqueueKeyed replaces the still-queued generation in place to keep its due
@@ -458,30 +459,15 @@ func enqueueKeyed(x io, key, msg string, dueNano int64) {
 	defer release()
 	field := keyField(key)
 	if name := pendingKey(field); name != "" {
-		diag.ReportStoreFailure("hq-wake-queue", state.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0600))
+		if err := state.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0600); err != nil {
+			queueFailure(x.nowNano(), err)
+		} else {
+			wakeStage("merged", name, "", diag.OK, "pending-key")
+		}
 		return
 	}
-	evictOverflow()
 	name := fmt.Sprintf("%019d-%d-%s.p%d%s.txt", dueNano, os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg), field)
-	diag.ReportStoreFailure("hq-wake-queue", state.WritePrivateFile(filepath.Join(queueDir(), name), []byte(msg)))
-}
-
-// evictOverflow keeps the queue under maxQueueEntries by dropping the LOWEST-priority
-// OLDEST entry (never a claim in flight). Deliberate priority inversion: a standing
-// resource warning re-fires on the next tick, a goal-changed never does — and the
-// oldest standing warning is also the most stale reading of the two. The eviction is
-// journaled: a dropped line HQ never saw must at least be findable afterwards.
-func evictOverflow() {
-	names := queuedNames(func(string) bool { return true })
-	for len(names) >= maxQueueEntries {
-		i := len(names) - 1
-		for lowest := prioOf(names[i]); i > 0 && prioOf(names[i-1]) == lowest; i-- {
-		}
-		victim := filepath.Join(queueDir(), names[i])
-		auditDroppedFile(events.DropEvicted, victim)
-		_ = os.Remove(victim)
-		names = append(names[:i], names[i+1:]...)
-	}
+	admitQueued(name, msg, x.nowNano())
 }
 
 // auditDroppedFile journals a queue entry that is about to be removed undelivered.
@@ -624,8 +610,13 @@ func batchID(claims []string, payload string) string {
 // A claim is REMOVED only once the delivery is acked; otherwise it is returned to the
 // queue for a later attempt.
 func drainInto(x io, pane string) {
-	if pending, err := hqinput.RotationPending(pane); err != nil || pending {
-		return // own stranded repair ran first; do not claim a NEW batch
+	pending, err := hqinput.RotationPending(pane)
+	if err != nil {
+		recordIssue(issueRecoveryUnsafe, x.nowNano())
+		return
+	}
+	if pending {
+		return // an unsent maintenance request reserves a safe input window
 	}
 	// Recover possible native submissions before ordinary orphan handling, even
 	// if the current pane now selects a legacy route. A restart is not a retry.
@@ -633,8 +624,10 @@ func drainInto(x io, pane string) {
 	if err != nil {
 		diag.ReportStoreFailure("hq-native-wake", err)
 		if protected == nil {
+			recordIssue(issueRecoveryUnsafe, x.nowNano())
 			return
-		} // unreadable/malformed intent holds the whole channel
+		}
+		recordIssue(issueClaimConflict, x.nowNano())
 	}
 	var submit func(string, string) (dispatch.Result, bool)
 	if x.nativePrepare != nil {
@@ -649,12 +642,17 @@ func drainInto(x io, pane string) {
 				if err := parkNativeClaim(filepath.Join(queueDir(), e.Name())); err != nil {
 					diag.ReportStoreFailure("hq-native-wake", err)
 					if !errors.Is(err, errNativeClaimConflict) {
+						recordIssue(issueRecoveryUnsafe, x.nowNano())
 						return
 					}
+					recordIssue(issueClaimConflict, x.nowNano())
 					protected[e.Name()] = true
 				}
 			}
 		}
+	}
+	if len(protected) == 0 {
+		noteCleanRecovery(x.nowNano())
 	}
 	reclaimOrphansExcept(protected)
 	settleEarlierAttempts(x, pane, protected)
@@ -674,6 +672,9 @@ func drainInto(x io, pane string) {
 	}
 	id := "#" + batchID(claimed, payload)
 	payload += " · " + id
+	for _, path := range claimed {
+		wakeStage("claimed", claimBase(path), id, diag.OK, "batch")
+	}
 
 	if submit != nil {
 		intent, err := prepareNativeIntent(pane, id, payload, claimed)
@@ -707,6 +708,7 @@ func drainInto(x io, pane string) {
 			case "delivered":
 				finishDelivered(pane, payload, nil)
 			case "uncertain":
+				recordIssue(issueUnknownInput, x.nowNano())
 				writeFailCount(readFailCount() + 1)
 				events.AuditWakeDropped(events.DropUnconfirmed, payload, time.Now().Unix())
 			}
@@ -858,6 +860,7 @@ func queuedEntries(ids []string) []string {
 // the journal is where "what did gtmux tell HQ at 14:02" becomes answerable — the hook's
 // own receipt records only the six-hex id.
 func finishDelivered(pane, payload string, claimed []string) {
+	noteConfirmedDelivery(time.Now().Unix())
 	events.AuditWakeDelivered(pane, payload, time.Now().Unix())
 	for _, c := range claimed {
 		_ = os.Remove(c)

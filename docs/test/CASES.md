@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1394 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1397 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3816 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2585 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2589 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -286,6 +286,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HPT-003 | A one-time lost wake does not erase evidence or issue input. The exact CLI lease and handoff receipt point to durable, visible next responsibility with the worker untouched until separate authorization. Foreground handling and all synthetic terminal behavior are separately identified. |
 | HWA-001 | Both original inodes, bytes, pins and journal records remain. The independent wake submits exactly once without paste or replay. Unreadable or unidentifiable intent still prevents all admission. |
 | HWA-002 | An unclaimed merge keeps its due time and identity. A new generation has a distinct name even at identical due time. It cannot overwrite an existing sending or parked entry. A provably refused obsolete generation yields to a newer pending one while uncertain records remain frozen. Neither operation pastes into the pane. |
+| HWA-003 | The warning is explicitly rejected and all prior decision entries survive. An equal-priority new entry may replace the oldest of its rank with a truthful eviction audit. Both pressure outcomes have distinct stages. |
+| HWA-004 | First, changed and continuing reasons alert at bounded cadence even with old down marker. Historical uncertainty remains separate. Pending work, quiet mode or absence of HQ cannot suppress the independent deadline alarm. Recovery requires an exact positive receipt or the tracked condition being conclusively settled. |
+| HWA-005 | Deadline and out-of-band report share the goal follow-up ID. Quiet/inactive HQ does not stop that report. Request handling stays open until workbench outcome exists and recovery emits no duplicate alert. |
 | HWA-009 | The two native inodes and pending replacement survive, and the previous receipt stays recoverable. Only the independent wake submits. |
 | HWA-010 | The mixed intent retains its evidence, the hard recovery failure prevents all new input, and the independent pending entry remains available after the storage issue is resolved. |
 | HPC-006 | No early repeat. At the next eligible tick, the exact evidence remains pending and its second wake is enqueued without waiting for another full interval. |

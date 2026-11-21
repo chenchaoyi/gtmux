@@ -359,21 +359,22 @@ recognizable, a loss is not acceptable.
 
 ### Requirement: A broken wake channel escalates out of band
 
-Consecutive unconfirmed deliveries SHALL be counted, and reaching the failure limit
-(3) SHALL raise a CRITICAL `wake-degraded` degradation exactly once per transition into
-the degraded state: a control record at important severity appended to the session
-JOURNAL (so the pull side actually carries it — a record written only to the feed spool
-reaches no reader, the measured #647 failure shape), a best-effort HQ wake line, and a
-desktop notification — the last because the alarm for a broken wake channel MUST NOT
-depend on that channel. A confirmed delivery SHALL reset the counter, and recovery
-SHALL NOT re-alert.
+A sustained stall, known recovery conflict, capacity refusal, storage error or
+repeated unconfirmed delivery SHALL be visible in a durable diagnostic and through
+the existing independent owner desktop notice channel when available. A notice
+does not depend on a running HQ, a working wake transport or the quiet setting.
+Alert state SHALL be scoped by reason and repeated on a bounded cadence. Verified
+recovery evidence clears the applicable condition. Historical uncertain batches
+remain visible separately. The workspace SHALL retain overdue matters until
+its own evidence settles them; its first overdue notice is independent of wake
+admission.
 
 #### Scenario: The wake channel breaks
 
 - **WHEN** three consecutive wake deliveries fail to confirm
 - **THEN** a `wake-degraded` control record at important severity is appended to the
   journal — visible to `gtmux events` and counted toward the consumption debt — and a
-  desktop notification is posted, once
+  desktop notification is attempted with per-reason rate limiting
 
 #### Scenario: Recovery is silent
 
@@ -426,9 +427,11 @@ delivery by BOTH a line count (8) and a payload size (~800 chars — large enoug
 useful, small enough that an agent TUI renders it rather than folding it into a
 paste placeholder the ack could not read), and SHALL indicate that entries were held
 back. The queue SHALL
-be bounded (200 entries), evicting the lowest-priority oldest entry when full — a
-standing warning that will re-fire is preferred over a decision-dense wake that will not.
-Entries written by an earlier version SHALL remain drainable.
+be bounded (200 pending entries). At capacity, a newcomer ranked below every
+existing entry SHALL be refused and audited as queue-full. Other admissions may
+evict the oldest entry in the lowest occupied priority. Record a successful
+eviction only after removing the victim. Entries written by an earlier version
+SHALL remain drainable.
 
 #### Scenario: A decision-dense wake overtakes standing warnings
 
