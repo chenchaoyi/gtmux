@@ -2,93 +2,111 @@ package codexbridge
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
-	"strings"
 	"testing"
 
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
+	"github.com/gorilla/websocket"
 )
 
-func TestHQRootTitleBeforeBinding(t *testing.T) {
-	o, bound := readyObserver(t)
-	var named []string
-	o.seedRootName = func(id string) string {
-		if len(*bound) != len(named) {
-			t.Fatal("root was published before title confirmation")
-		}
-		named = append(named, id)
-		return hqThreadTitle
+func titleObserverFixture(t *testing.T, directory string, epoch *connectionEpoch, id uint64, publish func(string)) (*frontendBinding, *observer) {
+	t.Helper()
+	b := newConnectionBinding(context.Background(), resume.CodexFrontend{
+		HomeID: transcript.CodexHomeIDForPath(directory), Sequence: id,
+	}, epoch, nil)
+	b.end = func(resume.CodexFrontend) {}
+	t.Cleanup(b.close)
+	b.bind = func(f resume.CodexFrontend, thread, _ string) (resume.CodexFrontend, error) {
+		f.SessionID = thread
+		publish(thread)
+		return f, nil
 	}
-	for i, method := range []string{"thread/start", "thread/start", "thread/resume"} {
-		id, thread := i+1, fmt.Sprintf("hq-root-%d", i+1)
-		o.request([]byte(fmt.Sprintf(`{"id":%d,"method":%q}`, id, method)))
-		data := []byte(fmt.Sprintf(`{"id":%d,"result":{"thread":{"id":%q,"name":null,"source":"cli","unknown":{"retain":42}},"model":"test"}}`, id, thread))
-		got := o.rootResponse(data)
-		for _, want := range []string{`"name":"` + hqThreadTitle + `"`, `"unknown":{"retain":42}`, `"model":"test"`} {
-			if !bytes.Contains(got, []byte(want)) {
-				t.Fatalf("%s response lost %s: %s", method, want, got)
-			}
-		}
+	o := b.observer()
+	o.request([]byte(`{"id":0,"method":"initialize"}`))
+	home, _ := json.Marshal(directory)
+	o.response([]byte(`{"id":0,"result":{"codexHome":` + string(home) + `}}`))
+	if !o.homeVerified() {
+		t.Fatal("fixture home verification failed")
 	}
-	if !slices.Equal(named, []string{"hq-root-1", "hq-root-2", "hq-root-3"}) || !slices.Equal(named, *bound) {
-		t.Fatalf("naming = %v, bindings = %v", named, *bound)
-	}
+	return b, o
 }
 
-func TestHQRootTitlePreservesUnownedOrNamedFrames(t *testing.T) {
-	o, bound := readyObserver(t)
-	o.seedRootName = func(id string) string {
-		t.Fatalf("unexpected title operation on %s", id)
-		return ""
-	}
-	o.request([]byte(`{"id":1,"method":"thread/start"}`))
-	o.request([]byte(`{"id":2,"method":"thread/resume"}`))
-	for _, data := range [][]byte{
-		rootResponse(1, "stale"),
-		[]byte(`{"method":"thread/started","params":{"thread":{"id":"foreign"}}}`),
-		[]byte(`{"id":2,"result":{"thread":{"id":"user-renamed","name":"My coordination notes","source":"cli"}}}`),
-	} {
-		if got := o.rootResponse(data); !bytes.Equal(got, data) {
-			t.Fatalf("altered frame: %s", got)
+// Exercise the same forwarding and observer wiring as the accepted frontend
+// transport, with the backend response deliberately delayed by the caller.
+func checkHQTitleFrames(t *testing.T, o *observer, frames ...[]byte) {
+	t.Helper()
+	client, down := trustUnixPair(t)
+	up, backend := trustUnixPair(t)
+	done := make(chan error, 1)
+	go func() { done <- forward(up, down, o.response) }()
+	defer func() {
+		_ = up.Close()
+		<-done
+	}()
+	for _, want := range frames {
+		if err := backend.WriteMessage(websocket.TextMessage, want); err != nil {
+			t.Fatal(err)
 		}
-	}
-	o.request([]byte(`{"id":3,"method":"thread/start","params":{"ephemeral":true}}`))
-	data := rootResponse(3, "helper")
-	if got := o.rootResponse(data); !bytes.Equal(got, data) || strings.Join(*bound, ",") != "user-renamed" {
-		t.Fatalf("helper or stale response affected bindings %v or frame %s", *bound, got)
-	}
-	// A normal pane and a failed HQ naming call both pass through the original
-	// root response and do not block that root's ordinary publication.
-	for _, seed := range []func(string) string{nil, func(string) string { return "" }} {
-		o.seedRootName = seed
-		o.request([]byte(`{"id":4,"method":"thread/start"}`))
-		data := rootResponse(4, "usable")
-		if got := o.rootResponse(data); !bytes.Equal(got, data) || (*bound)[len(*bound)-1] != "usable" {
-			t.Fatalf("lost original root response: %s, %v", got, *bound)
+		kind, got, err := client.ReadMessage()
+		if err != nil || kind != websocket.TextMessage || !bytes.Equal(got, want) {
+			t.Fatalf("Codex frame changed after forwarding: got %s, want %s, error %v", got, want, err)
 		}
 	}
 }
 
-func TestHQTitleRequiresExactStampedPane(t *testing.T) {
-	attachment := resume.CodexFrontend{CodexBindingTarget: resume.CodexBindingTarget{
-		Pane: "%11", PanePID: 123, TTY: "ttys001",
-	}}
-	home := t.TempDir()
-	prefix := "%11\t123\t/dev/ttys001\t"
-	for name, snapshot := range map[string]string{
-		"stamped":     prefix + home,
-		"unstamped":   prefix,
-		"foreign":     prefix + t.TempDir(),
-		"wrong pane":  "%21\t123\t/dev/ttys001\t" + home,
-		"wrong pid":   "%11\t321\t/dev/ttys001\t" + home,
-		"wrong tty":   "%11\t123\t/dev/ttys002\t" + home,
-		"no terminal": "",
-	} {
-		t.Run(name, func(t *testing.T) {
-			if got := matchesHQTitlePane(attachment, snapshot, home); got != (name == "stamped") {
-				t.Fatalf("stamped pane match = %v", got)
-			}
-		})
+func TestHCOTitleFramesKeepNativeRenameAfterStaleRoot(t *testing.T) {
+	var epoch connectionEpoch
+	id := epoch.reserve()
+	epoch.activate(id)
+	var commits []string
+	_, o := titleObserverFixture(t, t.TempDir(), &epoch, id, func(thread string) { commits = append(commits, thread) })
+	for i, method := range []string{"thread/start", "thread/resume", "thread/start"} {
+		thread := fmt.Sprintf("root-%d", i+1)
+		o.request([]byte(fmt.Sprintf(`{"id":%d,"method":%q}`, i+1, method)))
+		// The server prepared this result while the root was unnamed. Its
+		// notification reflects the independently confirmed later rename.
+		stale := []byte(fmt.Sprintf(`{"id":%d,"result":{"thread":{"id":%q,"name":null,"source":"cli","turns":[]}}}`, i+1, thread))
+		rename := []byte(fmt.Sprintf(`{"method":"thread/name/updated","params":{"threadId":%q,"threadName":"My coordination title"}}`, thread))
+		checkHQTitleFrames(t, o, stale, rename)
+	}
+	if !slices.Equal(commits, []string{"root-1", "root-2", "root-3"}) {
+		t.Fatalf("unexpected root commits: %v", commits)
+	}
+}
+
+func TestHCORetiredFrontendCannotReclaimDelayedRoot(t *testing.T) {
+	var epoch connectionEpoch
+	first, second := epoch.reserve(), epoch.reserve()
+	epoch.activate(first)
+	directory := t.TempDir()
+	var commits []string
+	publish := func(thread string) { commits = append(commits, thread) }
+	b, old := titleObserverFixture(t, directory, &epoch, first, publish)
+	old.request([]byte(`{"id":1,"method":"thread/start"}`))
+	stale := []byte(`{"id":1,"result":{"thread":{"id":"old-root","name":null,"source":"cli"}}}`)
+	ended := make(chan error, 2)
+	ended <- nil
+	release := make(chan struct{})
+	go func() {
+		<-release
+		if !epoch.activate(second) {
+			t.Error("reconnect could not activate")
+		}
+		old.response(stale)
+		ended <- nil
+	}()
+	down := bindingLifetimeCloser(func() error { return nil })
+	up := bindingLifetimeCloser(func() error { close(release); return nil })
+	runFrontendLifetime(context.Background(), nil, down, up, ended, b)
+
+	_, current := titleObserverFixture(t, directory, &epoch, second, publish)
+	current.request([]byte(`{"id":2,"method":"thread/start"}`))
+	checkHQTitleFrames(t, current, rootResponse(2, "current-root"))
+	if !slices.Equal(commits, []string{"current-root"}) {
+		t.Fatalf("retired root reached publication: %v", commits)
 	}
 }

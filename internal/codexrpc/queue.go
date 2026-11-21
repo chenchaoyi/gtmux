@@ -1,4 +1,4 @@
-// Package codexrpc addresses input and metadata to a verified local Codex thread.
+// Package codexrpc addresses input to a verified local Codex thread.
 // It never discovers conversations, resumes threads or enables remote control.
 package codexrpc
 

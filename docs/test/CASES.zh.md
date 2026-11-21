@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1420 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1419 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2655 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2656 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -228,6 +228,9 @@
 | HCT-001 | The exact thread is offered for naming before its binding publishes. The returned root carries the confirmed name while its other fields survive. Unrelated, stale and ephemeral responses never name a thread. An existing name, an ordinary pane and a failed name operation preserve the original frame. The first input cannot determine the name of a successfully named root. |
 | HCT-002 | The supported name request contains the exact ID and title. The acknowledgement precedes publication. A current user name is returned intact. Changed pane identity, foreign home or backend, wrong thread, a lost guard, and RPC failure grant no successful default name. No prompt or resume request is issued. |
 | HCT-003 | The shared task value matches the current saved name and follows a rename. Missing or foreign title evidence keeps the existing task fallback. Ordinary pane labels are preserved. Web, phone, iPad and menu-bar conversation consumers receive the same task field. |
+| HCO-001 | The original root result and native notification reach the frontend unchanged and only ordinary root binding occurs. A fresh name read still returns the user's name, with no automatic title mutation. The obsolete test for conditional behavior built on the unconditional API is retired. |
+| HCO-002 | The old connection grants neither a title write nor a binding. The current connection binds its own root and leaves the Codex name unchanged. |
+| HCO-003 | A matching HQ stamp and verified binding use the current saved name in the shared payload. An absent or foreign stamp keeps the ordinary label even when the directory implies a supervisor role. Existing role inference retains its own behavior. |
 | HPC-003 | Older claims and same-second siblings never suppress an unclaimed observation. An exact live lease suppresses itself, expiry restores eligibility, and a successor fences the old generation. |
 | HPC-004 | The draft stays intact. Revalidation drops the settled urgent wake and still delivers the standing wake. Neither path spends the other's scheduling interval. |
 | HPC-005 | Claim-only issues no work and leaves debt. Current owner and generation control the assessment. The authorized live worker receives and performs the exact action once and an independently produced exact progress receipt covers the step. A wrong target and external wait yield zero input. Unknown submission keeps its intent reserved without duplicate work. |
