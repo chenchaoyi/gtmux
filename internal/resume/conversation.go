@@ -61,7 +61,7 @@ func conversationFrontend(loc string) (CodexFrontend, bool) {
 		if !ok {
 			return CodexFrontend{}, false
 		}
-		if f.Loc != loc {
+		if f.Retired || f.Loc != loc {
 			continue
 		}
 		observed = append(observed, f)

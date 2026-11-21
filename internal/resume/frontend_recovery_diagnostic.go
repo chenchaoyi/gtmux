@@ -31,9 +31,12 @@ func frontendRecoveryKind(loc string, r Record) FrontendRecoveryKind {
 	if r.FrontendRetired {
 		return FrontendRecoveryStopped
 	}
-	f, ok := readFrontend(r.Frontend)
+	f, ok := readStoredFrontend(r.Frontend)
 	if !ok || f.Loc != loc || f.HomeID != r.HomeID || f.SessionID != r.SessionID {
 		return FrontendRecoveryUnknown
+	}
+	if f.Retired {
+		return FrontendRecoveryStopped
 	}
 	return frontendBridgeRecoveryKind(f)
 }

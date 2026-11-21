@@ -751,8 +751,8 @@ LEG-1b4321abb702,L1,Go core / CLI / server,internal/app/restoresave_test.go,149,
 LEG-48d1499ee05e,L1,Go core / CLI / server,internal/app/restoresave_test.go,164,Test,TestSavedSessionID,False,legacy-not-retrospectively-reviewed
 LEG-61cb3f4adf9d,L1,Go core / CLI / server,internal/app/restoresave_test.go,176,Test,TestSavedCodexRestoreRecordIsNotLiveAuthority,False,legacy-not-retrospectively-reviewed
 LEG-ea742c06ec68,L1,Go core / CLI / server,internal/app/restoresave_test.go,189,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-3d25512ca9d8,L1,Go core / CLI / server,internal/app/restoresave_test.go,207,Test,TestLoadSavedLayout,False,legacy-not-retrospectively-reviewed
-LEG-3144dd0b77b4,L1,Go core / CLI / server,internal/app/restoresave_test.go,246,Test,TestIncidentSaveClassification,False,legacy-not-retrospectively-reviewed
+LEG-3d25512ca9d8,L1,Go core / CLI / server,internal/app/restoresave_test.go,208,Test,TestLoadSavedLayout,False,legacy-not-retrospectively-reviewed
+LEG-3144dd0b77b4,L1,Go core / CLI / server,internal/app/restoresave_test.go,247,Test,TestIncidentSaveClassification,False,legacy-not-retrospectively-reviewed
 LEG-5d0ac680b4a2,L1,Go core / CLI / server,internal/app/resurrectsave_test.go,24,Test,TestSaveIsStale,False,legacy-not-retrospectively-reviewed
 LEG-ad43e052c509,L1,Go core / CLI / server,internal/app/resurrectsave_test.go,43,Test,TestSaveStalenessWarning,False,legacy-not-retrospectively-reviewed
 LEG-6193427553f7,L1,Go core / CLI / server,internal/app/resurrectsave_test.go,56,Test,TestStatusRightHasContinuumTrigger,False,legacy-not-retrospectively-reviewed
@@ -2833,6 +2833,9 @@ MAP-2f995243dd1e,L2,reviewed implementation,internal/resume/frontend_cross_pane_
 MAP-0b80f885bd72,L2,reviewed implementation,internal/resume/frontend_cross_pane_index_test.go,72,reviewed-selector,TestCPI002CurrentHeartbeatRestoresProvenCrossPaneIndex,False,"CPI-001,CPI-002,CPI-003,CPI-004"
 MAP-48a718ac59e2,L2,reviewed implementation,internal/resume/frontend_cross_pane_index_test.go,129,reviewed-selector,TestCPI003CurrentHeartbeatRefusesUnprovenConflict,False,"CPI-001,CPI-002,CPI-003,CPI-004"
 MAP-64617bd7b956,L2,reviewed implementation,internal/resume/frontend_cross_pane_index_test.go,194,reviewed-selector,TestCPI004LegacyWriterCanReuseVerifiedVacatedLocation,False,"CPI-001,CPI-002,CPI-003,CPI-004"
+MAP-685196835c44,L2,reviewed implementation,internal/resume/frontend_cross_pane_rereview_test.go,14,reviewed-selector,TestCXW001SameThreadRepairKeepsContinuousPublicationLease,False,"CXW-001,CXW-002,CXW-003"
+MAP-1aa52090b199,L2,reviewed implementation,internal/resume/frontend_cross_pane_rereview_test.go,78,reviewed-selector,TestCXW002ClosureReleasesExactLayoutAliasesAndRetainsFailureProof,False,"CXW-001,CXW-002,CXW-003"
+MAP-03e1bd96f94b,L2,reviewed implementation,internal/resume/frontend_cross_pane_rereview_test.go,135,reviewed-selector,TestCXW003LegacyUnlinkNeedsPositiveExactNativeExit,False,"CXW-001,CXW-002,CXW-003"
 MAP-fe71515f66c7,L2,reviewed implementation,internal/resume/frontend_cross_pane_review_test.go,17,reviewed-selector,TestCPR001CrossPaneRecoveryCannotEraseAnotherPublisher,False,"CPR-001,CPR-002,CPR-003,CPR-004"
 MAP-f818218158ae,L2,reviewed implementation,internal/resume/frontend_cross_pane_review_test.go,79,reviewed-selector,TestCPR002LegacyReleaseRequiresPositiveIncumbentEvidence,False,"CPR-001,CPR-002,CPR-003,CPR-004"
 MAP-eb3b49663cf2,L2,reviewed implementation,internal/resume/frontend_cross_pane_review_test.go,172,reviewed-selector,TestCPR003OnlyRelevantStructurallyValidReceiptsCompete,False,"CPR-001,CPR-002,CPR-003,CPR-004"

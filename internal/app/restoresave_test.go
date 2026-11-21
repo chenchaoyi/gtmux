@@ -187,6 +187,7 @@ func TestSavedCodexRestoreRecordIsNotLiveAuthority(t *testing.T) {
 		{"unproven saved process", transcript.CodexHomeID(), "gtmux serve", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir()) // independent historical capture for each source home
 			sp := savedPane{Loc: "worker:0.0", Cmd: "gtmux", Full: tc.full}
 			if err := resume.Save(sp.Loc, resume.Record{Agent: "codex", SessionID: "saved-thread", HomeID: tc.home, Frontend: "expired-frontend"}); err != nil {
 				t.Fatal(err)

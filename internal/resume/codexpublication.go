@@ -2,8 +2,10 @@ package resume
 
 import (
 	"errors"
+	"os"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -59,8 +61,14 @@ func legacyCodexIndexReleased(loc string, current Record) bool {
 		return frontendPath(current.Frontend) != ""
 	}
 	f, ok := readStoredFrontend(current.Frontend)
-	if !ok || f.HomeID != current.HomeID {
+	if !ok {
+		return legacyUnlinkedFrontendStopped(current)
+	}
+	if f.HomeID != current.HomeID {
 		return false
+	}
+	if f.Retired {
+		return true
 	}
 	// The stored instance names the same bridge across root changes, including
 	// a new root receipt written before its index could be committed.
@@ -75,4 +83,20 @@ func legacyCodexIndexReleased(loc string, current Record) bool {
 	moved, exists := Load(f.Loc)
 	return exists && !moved.FrontendRetired && moved.Agent == "codex" && moved.HomeID == f.HomeID &&
 		moved.SessionID == f.SessionID && moved.Frontend == f.Instance && freshFrontend(f, true)
+}
+
+// Old frontends unlinked their bridge receipt on normal close. File absence
+// alone is ambiguous. An exact native binding can prove the recorded terminal
+// client is gone; PID reuse or unreadable evidence cannot prove that fact.
+func legacyUnlinkedFrontendStopped(current Record) bool {
+	path := frontendPath(current.Frontend)
+	if path == "" || current.HomeID == "" {
+		return false
+	}
+	if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
+		return false
+	}
+	bound, ok := native.BindingFor(current.SessionID, current.HomeID)
+	return ok && bound.Kind == "frontend" && bound.ID == current.Frontend && bound.PID > 1 &&
+		bound.BackendPID > 1 && bound.BackendStart != "" && frontendRecoveryGone(bound.PID)
 }

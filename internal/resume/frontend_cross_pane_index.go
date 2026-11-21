@@ -36,24 +36,17 @@ func preserveCrossPaneIndex(ctx context.Context, previous, next CodexFrontend, i
 		return nil, conflict
 	}
 
-	saved, ok := readFrontend(previous.Instance)
-	last := saved
-	last.UpdatedAt = previous.UpdatedAt
-	// A failed index write may have refreshed this same receipt. Accept only
-	// an exact match apart from the newer timestamp.
-	if !ok || last != previous || saved.UpdatedAt < previous.UpdatedAt || saved.UpdatedAt > next.UpdatedAt ||
-		!producerHasUniqueIndexProof(previous, next, saved) {
+	if !producerHasCommittedIndexOwner(previous, next) {
 		return nil, conflict
 	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	unavailable := crossPaneIndexUnavailable()
-	raw, err := readCrossPaneIndex(fileFor(next.Loc))
-	var current Record
-	if err != nil || json.Unmarshal(raw, &current) != nil || current != index {
-		return nil, unavailable
+	raw, err := snapshotResumeIndex(next.Loc, index)
+	if err != nil {
+		return nil, err
 	}
+	unavailable := crossPaneIndexUnavailable()
 	// Recommit equal visible bytes too: a previous atomic write can report a
 	// failed directory sync after rename. Sync the parent of the archive
 	// directory as well, since the first write may have just created it.
@@ -77,7 +70,16 @@ func crossPaneIndexUnavailable() *FrontendBindingError {
 
 // All upgraded writers honor the same publication lease. Recheck the exact
 // bytes immediately before publishing to catch observed old-binary writes too.
-func verifyPreservedCrossPaneIndex(loc string, raw []byte) error {
+func snapshotResumeIndex(loc string, index Record) ([]byte, error) {
+	raw, err := readCrossPaneIndex(fileFor(loc))
+	var current Record
+	if err != nil || json.Unmarshal(raw, &current) != nil || current != index {
+		return nil, crossPaneIndexUnavailable()
+	}
+	return raw, nil
+}
+
+func verifyResumeIndexBytes(loc string, raw []byte) error {
 	current, err := readCrossPaneIndex(fileFor(loc))
 	if err != nil {
 		return crossPaneIndexUnavailable()

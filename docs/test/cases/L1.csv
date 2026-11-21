@@ -535,8 +535,8 @@ LEG-1b4321abb702,L1,Go core / CLI / server,internal/app/restoresave_test.go,149,
 LEG-48d1499ee05e,L1,Go core / CLI / server,internal/app/restoresave_test.go,164,Test,TestSavedSessionID,False,legacy-not-retrospectively-reviewed
 LEG-61cb3f4adf9d,L1,Go core / CLI / server,internal/app/restoresave_test.go,176,Test,TestSavedCodexRestoreRecordIsNotLiveAuthority,False,legacy-not-retrospectively-reviewed
 LEG-ea742c06ec68,L1,Go core / CLI / server,internal/app/restoresave_test.go,189,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-3d25512ca9d8,L1,Go core / CLI / server,internal/app/restoresave_test.go,207,Test,TestLoadSavedLayout,False,legacy-not-retrospectively-reviewed
-LEG-3144dd0b77b4,L1,Go core / CLI / server,internal/app/restoresave_test.go,246,Test,TestIncidentSaveClassification,False,legacy-not-retrospectively-reviewed
+LEG-3d25512ca9d8,L1,Go core / CLI / server,internal/app/restoresave_test.go,208,Test,TestLoadSavedLayout,False,legacy-not-retrospectively-reviewed
+LEG-3144dd0b77b4,L1,Go core / CLI / server,internal/app/restoresave_test.go,247,Test,TestIncidentSaveClassification,False,legacy-not-retrospectively-reviewed
 LEG-5d0ac680b4a2,L1,Go core / CLI / server,internal/app/resurrectsave_test.go,24,Test,TestSaveIsStale,False,legacy-not-retrospectively-reviewed
 LEG-ad43e052c509,L1,Go core / CLI / server,internal/app/resurrectsave_test.go,43,Test,TestSaveStalenessWarning,False,legacy-not-retrospectively-reviewed
 LEG-6193427553f7,L1,Go core / CLI / server,internal/app/resurrectsave_test.go,56,Test,TestStatusRightHasContinuumTrigger,False,legacy-not-retrospectively-reviewed

@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1407 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1408 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2627 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2630 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -112,6 +112,10 @@
 | CPI-002 | Only the exact original thread regains live identity. The other pane is unchanged. The archive preserves the exact displaced bytes and is reused on retry; a failed index write does not lose the original or prevent a verified retry. |
 | CPI-003 | No recovery or input authority; a stable typed reason distinguishes conflict from unavailable preservation. Exact existing bytes and the producer receipt are preserved. |
 | CPI-004 | The old address remains guarded during partial relocation. The new thread can use it after the managed frontend is strictly verified at the new address with a matching committed index. The original frontend keeps live identity at its new address. |
+| CXW-001 | An upgraded writer receives contention or proves its write occurs before or after repair. A visible changed version survives. A serialized successful repair retains same-thread historical fields. |
+| CXW-002 | Committed aliases explicitly release without becoming live. The error path preserves an exact closed receipt rather than deleting the only process witness; it never grants live input and permits subsequent legitimate publication. |
+| CXW-003 | Absent, unreadable, unrelated or alive proof cannot release. A matching private native receipt with positive process absence can release the legacy index without granting live authority. |
+| CXW-004 | Fixture setup never asks the stricter publisher to overwrite an unrelated previous case's managed index. All original restore and home-scope assertions remain unchanged. |
 | CPR-001 | Normal writers cannot report a successful write in the protected window and can publish after the lease. The raw comparison refuses a visible uncoordinated update and preserves the exact newer index. |
 | CPR-002 | Missing or uncertain evidence and another home's live receipt cannot release the old index. Explicit retirement preserves history but revokes live authority. Exit permits publication after a partial relocation and from another home. Foreign-home receipts never grant live input. |
 | CPR-003 | A valid other-home receipt elsewhere does not interfere. A viable competitor at the same location or unreadable record prevents recovery without changing either index. |

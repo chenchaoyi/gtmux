@@ -24,6 +24,16 @@ func producerCanRenewMissingIndex(previous, next CodexFrontend, saved CodexFront
 	return producerHasUniqueIndexProof(previous, next, saved)
 }
 
+func producerHasCommittedIndexOwner(previous, next CodexFrontend) bool {
+	saved, ok := readFrontend(previous.Instance)
+	last := saved
+	last.UpdatedAt = previous.UpdatedAt
+	// The exact same producer may have refreshed its receipt before a failed
+	// index write. No other change is compatible with the committed owner.
+	return ok && last == previous && saved.UpdatedAt >= previous.UpdatedAt &&
+		saved.UpdatedAt <= next.UpdatedAt && producerHasUniqueIndexProof(previous, next, saved)
+}
+
 func producerHasUniqueIndexProof(previous, next, saved CodexFrontend) bool {
 	if previous.BridgePID != os.Getpid() || previous.Loc != next.Loc {
 		return false
@@ -59,7 +69,7 @@ func producerHasUniqueIndexProof(previous, next, saved CodexFrontend) bool {
 			ownerStillPresent = true
 			continue
 		}
-		if other.Loc != next.Loc {
+		if other.Retired || other.Loc != next.Loc {
 			continue
 		}
 		age := now - other.UpdatedAt

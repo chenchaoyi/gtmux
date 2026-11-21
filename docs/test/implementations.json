@@ -34,6 +34,14 @@
       "TestSID001HelpStillRecognizesCommandsAfterDisplayConfig"
     ]
   },
+  "internal/app/restoresave_test.go": {
+    "cases": [
+      "CXW-004"
+    ],
+    "selectors": [
+      "TestSavedCodexRestoreRecordIsNotLiveAuthority"
+    ]
+  },
   "internal/app/client_contract_test.go": {
     "cases": [
       "CT-HTTP"
@@ -1392,6 +1400,18 @@
       "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
       "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
       "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
+    ]
+  },
+  "internal/resume/frontend_cross_pane_rereview_test.go": {
+    "cases": [
+      "CXW-001",
+      "CXW-002",
+      "CXW-003"
+    ],
+    "selectors": [
+      "TestCXW001SameThreadRepairKeepsContinuousPublicationLease",
+      "TestCXW002ClosureReleasesExactLayoutAliasesAndRetainsFailureProof",
+      "TestCXW003LegacyUnlinkNeedsPositiveExactNativeExit"
     ]
   },
   "internal/resume/frontend_cross_pane_review_test.go": {

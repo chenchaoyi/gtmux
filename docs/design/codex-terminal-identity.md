@@ -105,3 +105,11 @@ index across Codex homes or after an incomplete move. Valid receipts at other
 locations do not compete. Foreign receipts confer no live authority. Ambiguous
 ownership or failed preservation leaves the existing index in place with a
 specific heartbeat diagnostic.
+
+Same-thread index repair holds the same lease from verification through
+publication and checks the captured bytes again before replacement. A clean
+close retires every recorded alias for that attachment. If writing an alias
+fails, the bridge retains a closed receipt. For an older missing receipt, a
+separately recorded exact native client that the kernel confirms has exited
+can release its former index. Missing or ambiguous evidence keeps the index
+protected.
