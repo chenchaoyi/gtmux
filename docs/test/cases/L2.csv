@@ -208,6 +208,8 @@ MAP-67cdcc44a1a8,L2,reviewed implementation,internal/codexbridge/daemon_readines
 MAP-69577470f44b,L2,reviewed implementation,internal/codexbridge/hq_title_test.go,13,reviewed-selector,TestHQRootTitleBeforeBinding,False,"HCT-001,HCT-002"
 MAP-d71c389a67a0,L2,reviewed implementation,internal/codexbridge/hq_title_test.go,39,reviewed-selector,TestHQRootTitlePreservesUnownedOrNamedFrames,False,"HCT-001,HCT-002"
 MAP-f7089e0a2fbd,L2,reviewed implementation,internal/codexbridge/hq_title_test.go,73,reviewed-selector,TestHQTitleRequiresExactStampedPane,False,"HCT-001,HCT-002"
+MAP-eafea2f78a37,L2,reviewed implementation,internal/codexbridge/hq_title_test.go,61,reviewed-selector,TestHCOTitleFramesKeepNativeRenameAfterStaleRoot,False,"HCO-001,HCO-002"
+MAP-28db191ece5e,L2,reviewed implementation,internal/codexbridge/hq_title_test.go,81,reviewed-selector,TestHCORetiredFrontendCannotReclaimDelayedRoot,False,"HCO-001,HCO-002"
 MAP-4bb0cccd29ff,L2,reviewed implementation,internal/codexbridge/readiness_test.go,12,reviewed-selector,TestCFR003AdmissionRetriesOnlyTransientEvidence,False,CFR-003
 MAP-3cb7a6a952c7,L2,reviewed implementation,internal/codexbridge/readiness_test.go,68,reviewed-selector,TestCFR003LaunchPublicationAndCancellation,False,CFR-003
 MAP-a35414decb85,L2,reviewed implementation,internal/codexbridge/trust_alias_policy_test.go,17,reviewed-selector,TestWTR005CanonicalProjectDecisionsKeepResponseUnchanged,False,WTR-005
@@ -224,7 +226,6 @@ MAP-b2659a0a9502,L2,reviewed implementation,internal/codexrpc/direct_user_input_
 MAP-09d632a0de8e,L2,reviewed implementation,internal/codexrpc/direct_user_input_test.go,76,reviewed-selector,TestMSD001UserInputRefusesUnsafeMetadataAndNeverReplaysAmbiguousWrite,False,MSD-001
 MAP-0457021e01bc,L2,reviewed implementation,internal/codexrpc/idle_wake_test.go,9,reviewed-selector,TestHRW001AutomaticWakeUsesFreshIdleWithoutQueueOrSteer,False,HRW-001
 MAP-980af6c817a4,L2,reviewed implementation,internal/codexrpc/input_cancel_test.go,8,reviewed-selector,TestSPL022WireChecksCancellationAroundFinalGuard,False,SPL-022
-MAP-723cd4ca7047,L2,reviewed implementation,internal/codexrpc/thread_name_test.go,15,reviewed-selector,TestSeedThreadNameRequiresExactCodexAcknowledgement,False,HCT-002
 LEG-5eb1eb0e8cd5,L2,Go core / CLI / server,internal/connect/remotes_test.go,38,Test,TestAHostThatMovedIsFoundThroughTheAddressesItGave,False,legacy-not-retrospectively-reviewed
 LEG-953eea56e22d,L2,Go core / CLI / server,internal/connect/remotes_test.go,85,Test,TestAnAddressThatAnswersToSomeoneElseIsNotThisHost,False,legacy-not-retrospectively-reviewed
 MAP-e3a6e2c9d7d3,L2,reviewed implementation,internal/dispatch/input_failure_test.go,9,reviewed-selector,TestSPL008SubmissionBoundary,False,SPL-008
@@ -428,7 +429,7 @@ MAP-d562c313395b,L2,reviewed implementation,internal/radar/codex_foreign_marker_
 MAP-3b7c2c0858d3,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,58,reviewed-selector,TestCSR001StaleActiveCannotReviveReadyFinishedPane,False,"CSR-001,CSR-002"
 MAP-3a420ae89cea,L2,reviewed implementation,internal/radar/codex_stale_state_test.go,158,reviewed-selector,TestCSR002SupersededActiveDoesNotDateCurrentWork,False,"CSR-001,CSR-002"
 MAP-981c45e6de6f,L2,reviewed implementation,internal/radar/energy_gather_test.go,8,reviewed-selector,TestPWR002GatherSharesFramesOnlyInsideOnePass,False,PWR-002
-MAP-f8bc4e82bd07,L2,reviewed implementation,internal/radar/hq_title_test.go,13,reviewed-selector,TestHQAgentTaskUsesCurrentCodexName,False,HCT-003
+MAP-f8bc4e82bd07,L2,reviewed implementation,internal/radar/hq_title_test.go,14,reviewed-selector,TestHQAgentTaskUsesCurrentCodexName,False,HCT-003
 MAP-95b503a0bcfb,L2,reviewed implementation,internal/radar/observed_identity_test.go,13,reviewed-selector,TestSID004HistoricalProjectionIsUniqueAndDoesNotBorrowAuthority,False,SID-004
 MAP-081f78baa59f,L2,reviewed implementation,internal/relay/inbox_test.go,30,reviewed-selector,TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts,False,RBL-002
 MAP-6010cd28478a,L2,reviewed implementation,internal/relay/inbox_test.go,95,reviewed-selector,TestRBL002FreshnessLegacyAndBoundedSourceWait,False,RBL-002
