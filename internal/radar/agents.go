@@ -1487,6 +1487,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 	// still live are added.
 	panes = append(panes, watchedPanes(panes, paneFieldsByID)...)
 	applyRolePrecedence(panes, hqStamps)
+	applyHQThreadTitles(panes, resume.CodexFrontendForPane)
 	// Self-heal: drop turn-state markers left behind by panes tmux no longer has
 	// (an exited agent whose pane was closed). livePanes is the raw pane set gathered
 	// above (agents or not) — reusing it avoids a second list-panes on the hot path.

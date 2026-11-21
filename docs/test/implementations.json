@@ -1,4 +1,16 @@
 {
+  "internal/codexbridge/hq_title_test.go": {
+    "cases": ["HCT-001", "HCT-002"],
+    "selectors": ["TestHQRootTitleBeforeBinding", "TestHQRootTitlePreservesUnownedOrNamedFrames", "TestHQTitleRequiresExactStampedPane"]
+  },
+  "internal/codexrpc/thread_name_test.go": {
+    "cases": ["HCT-002"],
+    "selectors": ["TestSeedThreadNameRequiresExactCodexAcknowledgement"]
+  },
+  "internal/radar/hq_title_test.go": {
+    "cases": ["HCT-003"],
+    "selectors": ["TestHQAgentTaskUsesCurrentCodexName"]
+  },
   "internal/hqnudge/wake_restart_recovery_test.go": {
     "cases": ["WNR-001", "WNR-002"],
     "selectors": [

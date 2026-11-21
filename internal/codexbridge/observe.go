@@ -1,6 +1,6 @@
 // Package codexbridge observes root-thread identity on one verified local TUI
-// connection. Frames are unchanged except for the narrow verified worktree-trust
-// compatibility read documented in trust_config.go. It stores no message bodies.
+// connection. It can reflect a confirmed HQ name in a root response and adapt
+// the worktree-trust read documented in trust_config.go. It stores no message bodies.
 package codexbridge
 
 import (
@@ -30,6 +30,7 @@ type observer struct {
 	latest            uint64
 	initializeVersion uint64
 	bind              func(string, string)
+	seedRootName      func(string) string
 	selectRoot        func()
 	resetHome         func()
 }
@@ -82,9 +83,11 @@ func (o *observer) request(data []byte) {
 	}
 }
 
-func (o *observer) response(data []byte) {
+func (o *observer) response(data []byte) { o.rootResponse(data) }
+
+func (o *observer) rootResponse(data []byte) []byte {
 	if len(data) > 64<<20 {
-		return
+		return data
 	}
 	// Most envelopes start with id. Large untracked catalogs take this bounded
 	// header path and never become a generic object or retained pending entry.
@@ -94,14 +97,14 @@ func (o *observer) response(data []byte) {
 	key, keyErr := d.Token()
 	if err == nil && keyErr == nil && opening == json.Delim('{') && key == "id" {
 		if d.Decode(&id) != nil {
-			return
+			return data
 		}
 	} else {
 		var envelope struct {
 			ID json.RawMessage `json:"id"`
 		}
 		if json.Unmarshal(data, &envelope) != nil {
-			return
+			return data
 		}
 		id = envelope.ID
 	}
@@ -109,7 +112,7 @@ func (o *observer) response(data []byte) {
 	_, pending := o.pending[string(id)]
 	o.mu.Unlock()
 	if !pending {
-		return
+		return data
 	}
 	var v struct {
 		ID     json.RawMessage `json:"id"`
@@ -120,37 +123,42 @@ func (o *observer) response(data []byte) {
 				ID             string          `json:"id"`
 				ParentThreadID string          `json:"parentThreadId"`
 				Cwd            string          `json:"cwd"`
+				Name           string          `json:"name"`
 				Ephemeral      bool            `json:"ephemeral"`
 				Source         json.RawMessage `json:"source"`
 			} `json:"thread"`
 		} `json:"result"`
 	}
 	if json.Unmarshal(data, &v) != nil {
-		return
+		return data
 	}
 	o.mu.Lock()
+	defer o.mu.Unlock()
 	op, ok := o.pending[string(v.ID)]
 	delete(o.pending, string(v.ID))
 	if !ok || len(v.Error) > 0 && string(v.Error) != "null" {
-		o.mu.Unlock()
-		return
+		return data
 	}
 	if op.initialize {
 		if op.sequence == o.initializeVersion {
 			o.ready = v.Result.Home != "" && transcript.CodexHomeIDForPath(v.Result.Home) == o.home
 			o.homeReady.Store(o.ready)
 		}
-		o.mu.Unlock()
-		return
+		return data
 	}
 	t := v.Result.Thread
 	var source string
 	_ = json.Unmarshal(t.Source, &source)
 	valid := o.ready && op.sequence == o.latest && t.ID != "" && len(t.ID) <= 256 && !t.Ephemeral && t.ParentThreadID == "" && (source == "cli" || source == "vscode")
 	if valid {
+		if t.Name == "" && o.seedRootName != nil {
+			if name := o.seedRootName(t.ID); name != "" {
+				data = withRootName(data, name)
+			}
+		}
 		o.bind(t.ID, t.Cwd)
 	}
-	o.mu.Unlock()
+	return data
 }
 
 func (o *observer) homeVerified() bool { return o.homeReady.Load() }

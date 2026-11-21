@@ -146,11 +146,14 @@ func Run(bin string, args []string, pane string) int {
 		})
 		defer binding.close()
 		o := &observer{home: attachment.HomeID, bind: binding.stage, selectRoot: binding.selectRoot, resetHome: binding.resetHome}
+		o.seedRootName = func(thread string) string {
+			return seedHQThreadName(ctx, &sequence, attachment, thread)
+		}
 
 		trust := newTrustConfig(r.Context(), o.homeVerified)
 		ended := make(chan error, 2)
 		go func() { ended <- forward(down, up, func(data []byte) { o.request(data); trust.request(data) }) }()
-		go func() { ended <- forward(up, down, o.response, trust.response) }()
+		go func() { ended <- forward(up, down, nil, trust.response, o.rootResponse) }()
 		tick := time.NewTicker(time.Second)
 		defer tick.Stop()
 		runFrontendLifetime(ctx, tick.C, down, up, ended, binding)
@@ -217,7 +220,9 @@ func forward(from, to *websocket.Conn, observe func([]byte), transforms ...func(
 			for _, transform := range transforms {
 				body = transform(body)
 			}
-			observe(body)
+			if observe != nil {
+				observe(body)
+			}
 		}
 		if err := to.WriteMessage(kind, body); err != nil {
 			return err

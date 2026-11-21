@@ -71,6 +71,29 @@ The system SHALL use the executing Codex thread and canonical home instead of a 
 - **WHEN** HQ replies to a saved thread-scoped request
 - **THEN** the new occupant receives nothing; exact native acceptance or a pull-readable uncertain/unavailable receipt is retained
 
+### Requirement: Managed Codex HQ receives a stable conversation name
+When an admitted Codex frontend on the authoritative stamped HQ pane selects an
+unnamed persistent root, gtmux SHALL attempt to set its default name to
+`gtmux HQ` through Codex's `thread/name/set` protocol. It SHALL wait for
+Codex's acknowledgement before returning the confirmed name to the frontend
+and publishing the root binding. The operation SHALL preserve any existing name,
+use a bounded deadline, and leave the original root response usable if naming
+is unavailable. Shared radar conversation labels for the verified HQ binding
+SHALL follow the name saved by Codex.
+
+#### Scenario: HQ starts or rotates before its first task
+- **WHEN** the managed HQ frontend starts or selects a new unnamed root
+- **THEN** the verified default name is available before the first input
+- **AND** the input source does not determine the name
+
+#### Scenario: HQ resumes a named conversation
+- **WHEN** the managed HQ frontend resumes a root with an existing name
+- **THEN** Codex retains its saved name, including a user rename
+
+#### Scenario: An ordinary frontend selects a conversation
+- **WHEN** the frontend has no matching authoritative HQ stamp
+- **THEN** the frontend retains Codex's usual naming behavior
+
 ### Requirement: Managed Codex HQ wakes retain exact input identity
 HQ wake delivery SHALL use the verified addressed route for managed Codex, retaining existing input leases and draft guards. Accepted queue receipts MAY close a batch without claiming execution. Uncertain native batch entries SHALL be retained for reconciliation and degradation reporting, never recoalesced into a new message ID or replayed through a terminal. Legacy agents SHALL retain their existing wake protocol.
 
