@@ -835,6 +835,12 @@ SHALL remain pending. Missing/invalid history and send failures SHALL be explici
 - **WHEN** the command is sent but no fresh target confirmation follows
 - **THEN** the output and diagnostics retain pending startup rather than confirmed recovery
 
+#### Scenario: An accepted submission outlasts startup observation
+
+- **WHEN** the restore command was sent and the bounded observation ends before startup is verified
+- **THEN** the terminal totals count the pane as pending confirmation
+- **AND** the pane row reports the observation timeout and preserves any uncertain submission outcome
+
 #### Scenario: Many windows restored into a narrow terminal
 - **WHEN** the pane receipt contains long names or IDs
 - **THEN** rows align and wrap within available columns without dropping identities or interpreting control characters
