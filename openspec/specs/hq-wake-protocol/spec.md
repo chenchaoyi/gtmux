@@ -232,6 +232,20 @@ evidence without re-pasting or classifying the result as delivery or discard. A 
 driver or screen receipt can confirm only the original batch. The legacy receipt
 path SHALL honor native protected slots and shall never replace an occupied claim.
 
+An already parked uncertain claim MAY remain recognized after an OS device-number
+change when its original sending slot is absent and both retained files are hard
+links to the recorded inode with the exact original bytes. Recognition SHALL leave
+the files and receipt intact and grant no authority to retry, retire or overwrite
+them. An occupied slot, different inode, changed bytes or missing retained link
+SHALL keep the ordinary recovery protection.
+
+Desktop wake health notices SHALL combine simultaneous channel reasons into one
+notification and one independent journal event, with the reason and inventory kept
+available. Retained archives, refusals and other recorded incidents SHALL notify
+again only on a new occurrence. Continuing conditions such as a stalled queue
+SHALL keep periodic reminders. Workspace deadlines and relay follow-ups SHALL
+keep their independent notification schedules.
+
 Only a positive not-submitted proof, a retryable condition and the same verified
 target authorize automatic native retry. A persisted pre-upgrade refusal with
 no verified original target remains held with its original evidence. The original

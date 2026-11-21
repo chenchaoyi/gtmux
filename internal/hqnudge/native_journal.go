@@ -246,13 +246,24 @@ func settleNativeIntent(r nativeIntent) error {
 	// A local conflict may protect an exact slot, but all members must still
 	// be checked for unsafe storage before any new submission can proceed.
 	var conflicts []error
+	var claims []nativeEntry
 	for _, e := range r.Entries {
 		if err := validateNativeClaim(r, e); err != nil {
 			if !errors.Is(err, errNativeClaimConflict) {
 				return err
 			}
+			if r.Outcome == "uncertain" {
+				parked, verifyErr := nativeParkedAcrossDeviceChange(e)
+				if verifyErr != nil {
+					return verifyErr
+				}
+				if parked {
+					continue
+				}
+			}
 			conflicts = append(conflicts, err)
 		}
+		claims = append(claims, e)
 		if r.Outcome == "prepared" || r.Outcome == "uncertain" || r.Outcome == "held" {
 			p := filepath.Join(queueDir(), e.Name)
 			if err := checkNativeParkDestination(p, finalClaimPath(r, p)); err != nil {
@@ -266,7 +277,7 @@ func settleNativeIntent(r nativeIntent) error {
 	if len(conflicts) > 0 {
 		return errors.Join(conflicts...)
 	}
-	for _, e := range r.Entries {
+	for _, e := range claims {
 		p := filepath.Join(queueDir(), e.Name)
 		switch r.Outcome {
 		case "accepted", "delivered":

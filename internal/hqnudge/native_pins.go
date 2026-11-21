@@ -8,6 +8,8 @@ import (
 	stdio "io"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -84,6 +86,42 @@ func nativeAnchor(e nativeEntry) (nativeEntry, error) {
 	}
 	return pin, nil
 }
+
+// An already parked unknown can survive mount device renumbering. The original
+// sending slot must be absent, and both retained names must still be links to
+// the original inode and bytes. This check grants no authority to move, retire
+// or resubmit either file. In-flight and terminal claim handling stays strict.
+func nativeParkedAcrossDeviceChange(e nativeEntry) (bool, error) {
+	src := filepath.Join(queueDir(), e.Name)
+	if _, err := os.Lstat(src); !errors.Is(err, os.ErrNotExist) {
+		return false, err
+	}
+	pin, err := nativeFingerprint(nativePinPath(e))
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	oldDevice, oldInode, _ := strings.Cut(e.FileID, ":")
+	newDevice, newInode, _ := strings.Cut(pin.FileID, ":")
+	if _, err := strconv.ParseUint(oldDevice, 10, 64); err != nil {
+		return false, nil
+	}
+	if oldDevice == newDevice || oldInode != newInode || pin.SHA256 != e.SHA256 {
+		return false, nil
+	}
+	parked, err := nativeFingerprint(claimBase(src) + nativeUncertainSuffix)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return parked.FileID == pin.FileID && parked.ChangedAt == pin.ChangedAt &&
+		parked.SHA256 == pin.SHA256, nil
+}
+
 func retireNativePin(r nativeIntent, e nativeEntry) error {
 	pin, err := nativeAnchor(e)
 	if errors.Is(err, errNativeClaimConflict) {
