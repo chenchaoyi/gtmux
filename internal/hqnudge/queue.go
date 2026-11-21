@@ -106,7 +106,7 @@ func takeQueued(src, dst string) bool {
 // admitQueued runs under the queue lease. Rank the newcomer before changing
 // existing entries and publish it completely before removing a verified victim.
 func admitQueued(name, message string, now int64) bool {
-	names := queuedNames(func(string) bool { return true })
+	names := queuedNames(func(name string) bool { return !isRelayAttention(name) })
 	path := filepath.Join(queueDir(), name)
 	if len(names) >= maxQueueEntries {
 		recordIssue(issueQueuePressure, now)

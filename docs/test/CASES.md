@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1404 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1408 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2618 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2625 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -235,9 +235,16 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HPC-002 | Fresh evidence bypasses generic wake backoff; the next reconciliation cycle recovers one missing wake. Draft remains intact while the durable obligation waits. Enqueue alone creates no claim or intent; exact accepted/claimed work is distinct. After lease expiry a successor can claim; the old generation cannot assess. No scenario issues unauthorised source input. A delivered but unclaimed wake creates no ownership. Its bounded recheck has a different transport batch ID and leaves exactly one durable claim. |
 | HRC-001 | Request, reply, hint, fetch and actual work are distinct. Both unfetched and fetched without execution remain visible. A queue or input receipt cannot prove work. |
 | HRC-002 | Only one exact idle native transport can receive the bounded receipt-specific reminder. No implicit grant, fallback, stale replay or second submission; blockers and original attempt remain inspectable. |
+| HRA-001 | One pending slot; second producer remains eligible. No decision evicted or trimmed. One original exact report ID and a full existing decision batch submit together. The old .txt queue reader ignores the protected slot. |
+| HRA-002 | Zero terminal input while unsafe. Unknown retains original evidence and cannot trigger a second scheduler publication of that report. Only proven refusals can use bounded retry at the exact target. |
+| HRA-003 | No old backlog is enrolled. Exact paired report wins, retains original source and claim state, and is dropped before submission after a genuine claim or closure. No report body is put in the wake. |
+| HRA-004 | One exact reference alert, independent of the queue or HQ presence. Limits apply to the reference, distinguish scheduling from acceptance, and clear on verified source or workspace claim. |
 | HRS-001 | Only first exact prompt after lower bound matches. First record remains stable across append; rewrite/replacement/continuation changes invalidate. Complete lines only; no result bodies retained. Cancelled/error reads do not grant attribution. |
 | HRS-002 | Only accepted exact canonical HQ reply in correct Codex home/thread at its first source record gets from.kind=hq. Wrong identity, receipt state, body, missing clock/record or later human copy remains unattributed; existing sender preserved; no new sends or ledger writes. |
 | HRS-003 | App/Web API turn JSON exposes identical HQ sender; new receipt invalidates prior human snapshot, unchanged snapshot is cacheable; old pages keep correct first-only attribution; policy/ledger/source unchanged by reads; CLI-origin and desktop-origin both work. |
+| HRF-001 | At most eight first notices per scan; ninth announced without waiting for earlier claims; prior history stays intact and no duplicate alerts. |
+| HRF-002 | No early wake; at due it is ordinarily visible and its original native opportunity remains consumed. |
+| HRF-003 | An earlier matching end in the five-minute window still prioritizes the report. Unrelated or outside-window ends confer no priority. |
 | HRC-006 | Only a reviewed exact current authority permits the original unused action to submit once. Submitted or uncertain work remains reserved. |
 | HRC-007 | Only a unique continuous exact source joins. Original observations remain immutable and a durable attribution identifies the same receipt. |
 | HRC-008 | Reconciliation identifies the original delivery, reports zero fresh reminders, and still requires source execution evidence. |

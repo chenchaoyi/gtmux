@@ -307,7 +307,7 @@ func Pending() bool { return hasPending() }
 
 func hasPending() bool {
 	for _, e := range readQueue() {
-		if strings.HasSuffix(e.Name(), ".txt") || strings.HasSuffix(e.Name(), stuckSuffix) ||
+		if isPendingWake(e.Name()) || strings.HasSuffix(e.Name(), stuckSuffix) ||
 			strings.HasSuffix(e.Name(), legacyUncertainSuffix) ||
 			isOrphanClaim(e) {
 			return true
@@ -328,7 +328,7 @@ func Degraded(now int64) bool {
 	}
 	oldest := int64(0)
 	for _, e := range readQueue() {
-		if !strings.HasSuffix(e.Name(), ".txt") && !strings.HasSuffix(e.Name(), nativeUncertainSuffix) {
+		if !isPendingWake(e.Name()) && !strings.HasSuffix(e.Name(), nativeUncertainSuffix) {
 			continue
 		}
 		if dueOf(e.Name()) > now*int64(time.Second) {
@@ -476,7 +476,7 @@ func auditDroppedFile(reason, path string) {
 func queuedNames(keep func(name string) bool) []string {
 	var names []string
 	for _, e := range readQueue() {
-		if strings.HasSuffix(e.Name(), ".txt") && attemptsOf(e.Name()) == 0 && keep(e.Name()) {
+		if isPendingWake(e.Name()) && attemptsOf(e.Name()) == 0 && keep(e.Name()) {
 			names = append(names, e.Name())
 		}
 	}
@@ -544,7 +544,7 @@ func prioOf(name string) int {
 // without its delivery being confirmed. A key can never be confused for it —
 // sanitizeKey strips dots.
 func attemptsOf(name string) int {
-	base := strings.TrimSuffix(name, ".txt")
+	base := wakeFileStem(name)
 	i := strings.LastIndex(base, ".a")
 	if i < 0 {
 		return 0
@@ -560,7 +560,7 @@ func attemptsOf(name string) int {
 // STABLE identity. batchID hashes these, so a re-send of the same entries produces
 // the same id no matter how many attempts it took.
 func identityOf(name string) string {
-	base := strings.TrimSuffix(name, ".txt")
+	base := wakeFileStem(name)
 	if retry, valid := parseRetry(name); valid && retry.Number > 0 {
 		return base[:strings.LastIndex(base, ".r")]
 	}
@@ -653,18 +653,43 @@ func drainInto(x io, pane string) {
 	}
 	now := x.nowNano()
 	due := queuedNames(func(n string) bool { return !protected[n+sendingSuffix] && dueForAttempt(n) <= now })
-	if len(due) == 0 {
+	regular, reserved := splitRelayAttention(due)
+	reservedTarget := ""
+	if reserved != "" && submit != nil && emptyRecognizedWakeBox(x, pane) {
+		reservedTarget = wakeIdentity(x, pane)
+	}
+	if !validWakeTarget(reservedTarget) {
+		reserved = ""
+	}
+	first := reserved
+	if len(regular) > 0 {
+		first = regular[0]
+		// A due protected retry stays fenced to its original target. Give
+		// that bounded retry a turn without dropping fresh decision lines.
+		if reserveRetry, _ := parseRetry(reserved); reserveRetry.Number > 0 {
+			first = reserved
+		}
+	}
+	if first == "" {
 		return
 	}
-	retry, _ := parseRetry(due[0])
-	group := make([]string, 0, len(due))
-	for _, n := range due {
+	retry, _ := parseRetry(first)
+	group := make([]string, 0, len(regular))
+	for _, n := range regular {
 		candidate, _ := parseRetry(n)
 		if sameRetryGroup(retry, candidate) {
 			group = append(group, n)
 		}
 	}
 	claimed, msgs, held := claimBatch(group)
+	hasReserved := false
+	if reserved != "" {
+		if reserveState, _ := parseRetry(reserved); sameRetryGroup(retry, reserveState) {
+			extra, line, _ := claimBatch([]string{reserved})
+			hasReserved = len(extra) > 0
+			claimed, msgs = append(claimed, extra...), append(msgs, line...)
+		}
+	}
 	if len(msgs) == 0 {
 		return
 	}
@@ -691,11 +716,13 @@ func drainInto(x io, pane string) {
 		var result dispatch.Result
 		managed := true
 		switch {
-		case retry.Number > 0 && (submit == nil || target != retry.Target):
+		case hasReserved && target != reservedTarget, retry.Number > 0 && (submit == nil || target != retry.Target):
 			result = dispatch.Result{State: dispatch.StateRefusedWaiting, Submission: dispatch.SubmissionNotSubmitted}
+		case hasReserved && (!emptyRecognizedWakeBox(x, pane) || wakeBusy(x, pane)):
+			result = dispatch.Result{State: dispatch.StateRefusedDraft, Submission: dispatch.SubmissionNotSubmitted, Evidence: "wake-loaded-idle-required"}
 		default:
 			result, managed = submit(payload, nativeAttemptID(id, retry))
-			if !managed && retry.Number > 0 {
+			if !managed && (retry.Number > 0 || hasReserved) {
 				managed = true
 				result = dispatch.Result{State: dispatch.StateRefusedWaiting, Submission: dispatch.SubmissionNotSubmitted}
 			}

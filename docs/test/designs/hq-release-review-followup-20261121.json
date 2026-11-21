@@ -1,0 +1,46 @@
+{
+  "id": "hq-release-review-followup-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review of regression design",
+    "date": "2026-11-21",
+    "decision": "Address the independently reproduced release review findings before closing the candidate",
+    "notes": "Reviewed the exact preceding PR head, the standalone read-only Codex review, and the actual call paths. Synthetic fixtures only. Review findings are independently obtained; this design record is authored here."
+  },
+  "cases": [
+    {
+      "id": "HRF-001",
+      "layer": "L2",
+      "description": "Every unsurfaced report gets a bounded independent notice opportunity",
+      "setup": "Nine outstanding managed relay references and the real notice journal, fake desktop sink, fake clock.",
+      "action": "Scan twice with all nine still unclaimed, then re-scan under cooldown.",
+      "expected": "At most eight first notices per scan; ninth announced without waiting for earlier claims; prior history stays intact and no duplicate alerts.",
+      "planned_files": [
+        "internal/hq/relay_attention_review_test.go"
+      ]
+    },
+    {
+      "id": "HRF-002",
+      "layer": "L2",
+      "description": "A due deferred report gets an ordinary check without renewing the native reservation",
+      "setup": "Persisted deferred managed report previously reserved and another before its due clock.",
+      "action": "Read both wake projections before and at the due point.",
+      "expected": "No early wake; at due it is ordinarily visible and its original native opportunity remains consumed.",
+      "planned_files": [
+        "internal/hqworkspace/relay_attention_review_test.go"
+      ]
+    },
+    {
+      "id": "HRF-003",
+      "layer": "L2",
+      "description": "A qualifying same-thread Stop survives later unrelated turns",
+      "setup": "Synthetic different-home and exact-home end rows, including triage-ambiguous Stop and a later exact-home Stop.",
+      "action": "Build the real attention queue before and after inserting the later turn end.",
+      "expected": "An earlier matching end in the five-minute window still prioritizes the report. Unrelated or outside-window ends confer no priority.",
+      "planned_files": [
+        "internal/hqworkspace/relay_attention_review_test.go"
+      ]
+    }
+  ],
+  "seal": "d85f2b2784fb87bf215709bd9cfeb1cabd4fb623279e7c12827888f53f1c21ef"
+}
