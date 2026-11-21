@@ -4,7 +4,28 @@
 
 Apply the entry charter and LOCAL first. Read the board, task ledger, `gtmux digest --json` and the workspace runbook. Reconcile existing goals before acting. Briefly identify HQ, show the current state, prioritize user decisions and flag any unknown coverage. Record each live pane's purpose, state and dispatch channel. Use an in-scope transcript opening once if the digest cannot establish the goal. A `new-session` knock calls for an incremental enrollment of that session only.
 
-On a genuinely new home with a still-blank LOCAL, ask once, when useful, about key projects, reporting and quiet hours. Record preferences the user actually gives. On upgrade, restart or reset, preserve existing policies and handoff. Use the board's existing language and seeded headings. Keep one compact row per live pane in `## ① Now — live panes`, and dated handoffs newest first under `## ② Handoff log — newest first`. Use the actual pane ID. If `### Your call` is present, reserve it for real pending decisions and remove settled entries. Keep detail in source records. The board carries current judgment and references. Durable lessons belong in knowledge.
+On a genuinely new home with a still-blank LOCAL, ask once, when useful, about key projects, reporting and quiet hours. Record preferences the user actually gives. On upgrade, restart or reset, preserve existing policies and handoff. Use the board's existing language and seeded headings. Keep one compact row per live pane in `## ① Now — live panes`, and dated handoffs newest first under `## ② Handoff log — newest first`. Use the actual pane ID. Keep detail in source records. The board carries current judgment and references. Durable lessons belong in knowledge.
+
+## Legacy board decisions
+
+Keep the exact `### Still waiting on you` heading on an English board and `### 还等你定的` on a Chinese board. Use the existing bold group labels and one uniquely numbered item per real user decision or user-only action. Keep the number while the item is open. The phone's reply cites the number and the short first line, so put the question or action on a first line that stands on its own. Put details on immediately following indented lines. Use an actual recommendation with a recognizable phrase such as “I suggest” or “I recommend” to make the acceptance action available on supported clients.
+
+Prefer the workspace's exact question ID and current revision for new pending input. If the board mirrors a question, reconcile the original answer before clearing both views. After an item is answered, withdrawn or superseded, remove its complete numbered block, prune an empty group and leave other numbers intact. Leave the decision section empty when nothing needs the user.
+
+```markdown
+## ① Now — live panes
+
+### Still waiting on you
+
+**Quick decisions**
+
+2. Retry the import? I suggest waiting.
+   The input is still being checked.
+
+**Actions only you can take**
+
+5. Upload the signed receipt.
+```
 
 ## Pull on wake or suspected loss
 

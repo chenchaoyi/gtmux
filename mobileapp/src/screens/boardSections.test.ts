@@ -1,4 +1,6 @@
-import {parseBoardSections, sectionCount, askItems, askHead, askQuote, boardOutline} from './boardSections';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {parseBoardSections, sectionCount, askItems, askHead, askQuote, boardOutline, findAsk} from './boardSections';
 
 describe('parseBoardSections', () => {
   it('splits at ## and keeps the heading text', () => {
@@ -177,6 +179,49 @@ describe('askItems', () => {
     expect(askItems('')).toEqual([]);
     expect(askItems('just a paragraph\n\nand another')).toEqual([]);
     expect(askItems('1. code below\n```\n2. not an item\n```\n').map(i => i.n)).toEqual(['1']);
+  });
+});
+
+
+describe('HQ startup runbook examples', () => {
+  it.each([
+    {
+      lang: 'en',
+      heading: 'Still waiting on you',
+      groups: ['Quick decisions', 'Actions only you can take'],
+      head: 'Retry the import? I suggest waiting.',
+      detail: 'The input is still being checked.',
+      quote: 'Board "Still waiting on you" #2 (Retry the import? I suggest waiting.): ',
+    },
+    {
+      lang: 'zh',
+      heading: '还等你定的',
+      groups: ['一句话就能定的', '要你动手的'],
+      head: '现在重试导入吗？我建议先等。',
+      detail: '正在核对输入。',
+      quote: '态势板「还等你定的」第 2 条（现在重试导入吗？我建议先等。）：',
+    },
+  ])('reads the shipped $lang legacy board example', ({lang, heading, groups, head, detail, quote}) => {
+    const runbook = resolve(__dirname, '../../../internal/hq/playbook', lang, 'startup.md');
+    const example = readFileSync(runbook, 'utf8').match(/^```markdown\n([\s\S]*?)^```$/m)?.[1] ?? '';
+    const section = findAsk(parseBoardSections(example));
+    expect(section?.title).toBe(heading);
+
+    const items = askItems(section?.body ?? '');
+    expect(items.map(item => item.n)).toEqual(['2', '5']);
+    expect(items.map(item => item.group)).toEqual(groups);
+    expect(items.map(item => item.suggests)).toEqual([true, false]);
+    expect(items[0].head).toBe(head);
+    expect(items[0].text).toContain(detail);
+    expect(askQuote(items[0], lang === 'zh')).toBe(quote);
+
+    const answered = example.replace(/^2\. [^\n]*\n(?:[ \t]+[^\n]*\n)*/m, '');
+    const remaining = findAsk(parseBoardSections(answered));
+    expect(askItems(remaining?.body ?? '')).toEqual([items[1]]);
+    const empty = `## Now\n\n### ${heading}\n`;
+    const emptySection = findAsk(parseBoardSections(empty));
+    expect(askItems(emptySection?.body ?? '')).toEqual([]);
+    expect(boardOutline(parseBoardSections(empty))).toEqual([]);
   });
 });
 

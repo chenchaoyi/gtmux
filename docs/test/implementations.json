@@ -4643,5 +4643,13 @@
     "selectors": [
       "TestBothChartersTeachUsableExistingGoalRegistration"
     ]
+  },
+  "mobileapp/src/screens/boardSections.test.ts": {
+    "cases": [
+      "HQBC-001"
+    ],
+    "selectors": [
+      "reads the shipped $lang legacy board example"
+    ]
   }
 }

@@ -49288,13 +49288,13 @@
       "sha256": "510bdf75091ff0818954848b75439dad61f5db3e51df73f6cd9aedee487a75f2"
     },
     "mobileapp/src/screens/boardSections.test.ts": {
-      "sha256": "17af3021bcdb35b9adf2480ea1620805e910f5adef451ff22c2fde9989cf079c",
+      "sha256": "9a2ac7bb29d4bc2a39f996015c61fd9a8a46091388b7bcbacf0943be4fe25bff",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-f7d329675b52",
-          "line": 4,
+          "line": 6,
           "kind": "it",
           "name": "splits at ## and keeps the heading text",
           "dynamic": false,
@@ -49302,7 +49302,7 @@
         },
         {
           "id": "LEG-a7119188bab4",
-          "line": 11,
+          "line": 13,
           "kind": "it",
           "name": "keeps content that comes before the first heading",
           "dynamic": false,
@@ -49310,7 +49310,7 @@
         },
         {
           "id": "LEG-0ea6bd6606ab",
-          "line": 18,
+          "line": 20,
           "kind": "it",
           "name": "does not split on a ## inside a fenced code block",
           "dynamic": false,
@@ -49318,7 +49318,7 @@
         },
         {
           "id": "LEG-67d979a153fc",
-          "line": 28,
+          "line": 30,
           "kind": "it",
           "name": "nests ### entries under their ## section",
           "dynamic": false,
@@ -49326,7 +49326,7 @@
         },
         {
           "id": "LEG-b92f0cea2665",
-          "line": 40,
+          "line": 42,
           "kind": "it",
           "name": "does not repeat a child body inside its parent",
           "dynamic": false,
@@ -49334,7 +49334,7 @@
         },
         {
           "id": "LEG-b452a9c4926c",
-          "line": 48,
+          "line": 50,
           "kind": "it",
           "name": "gives a child a key distinct from every other row",
           "dynamic": false,
@@ -49342,7 +49342,7 @@
         },
         {
           "id": "LEG-f4a0247e1444",
-          "line": 54,
+          "line": 56,
           "kind": "it",
           "name": "ignores a ### with no ## above it, rather than dropping its text",
           "dynamic": false,
@@ -49350,7 +49350,7 @@
         },
         {
           "id": "LEG-9bc4e9f5decb",
-          "line": 60,
+          "line": 62,
           "kind": "it",
           "name": "does not nest on a ### inside a fence",
           "dynamic": false,
@@ -49358,7 +49358,7 @@
         },
         {
           "id": "LEG-f0f62d83bec3",
-          "line": 66,
+          "line": 68,
           "kind": "it",
           "name": "preserves the AUTHOR order and never sorts",
           "dynamic": false,
@@ -49366,7 +49366,7 @@
         },
         {
           "id": "LEG-57dcae3eafdd",
-          "line": 73,
+          "line": 75,
           "kind": "it",
           "name": "gives every section a distinct key even when titles repeat",
           "dynamic": false,
@@ -49374,7 +49374,7 @@
         },
         {
           "id": "LEG-81f9ad732ed5",
-          "line": 78,
+          "line": 80,
           "kind": "it",
           "name": "handles a board with no headings at all",
           "dynamic": false,
@@ -49382,7 +49382,7 @@
         },
         {
           "id": "LEG-966474e9bc21",
-          "line": 85,
+          "line": 87,
           "kind": "it",
           "name": "is empty for an empty board, rather than one blank section",
           "dynamic": false,
@@ -49390,7 +49390,7 @@
         },
         {
           "id": "LEG-9b8f1b89b778",
-          "line": 94,
+          "line": 96,
           "kind": "it",
           "name": "is dropped from the preamble",
           "dynamic": false,
@@ -49398,7 +49398,7 @@
         },
         {
           "id": "LEG-35de96ef1c69",
-          "line": 100,
+          "line": 102,
           "kind": "it",
           "name": "leaves a section heading alone — only the preamble can hold a document title",
           "dynamic": false,
@@ -49406,7 +49406,7 @@
         },
         {
           "id": "LEG-a24edac46461",
-          "line": 105,
+          "line": 107,
           "kind": "it",
           "name": "drops a preamble that was nothing but the title",
           "dynamic": false,
@@ -49414,7 +49414,7 @@
         },
         {
           "id": "LEG-a052c502051e",
-          "line": 127,
+          "line": 129,
           "kind": "test",
           "name": "a table reports its rows, not its lines",
           "dynamic": false,
@@ -49422,7 +49422,7 @@
         },
         {
           "id": "LEG-fa33e7bc1651",
-          "line": 131,
+          "line": 133,
           "kind": "test",
           "name": "a bulleted section reports its bullets",
           "dynamic": false,
@@ -49430,7 +49430,7 @@
         },
         {
           "id": "LEG-d52dbbd89f63",
-          "line": 135,
+          "line": 137,
           "kind": "test",
           "name": "prose with nothing countable gets no bubble at all",
           "dynamic": false,
@@ -49438,7 +49438,7 @@
         },
         {
           "id": "LEG-68131147f791",
-          "line": 159,
+          "line": 161,
           "kind": "it",
           "name": "reads the numbered items under their groups, and knows which carry a recommendation",
           "dynamic": false,
@@ -49446,7 +49446,7 @@
         },
         {
           "id": "LEG-034622a839e5",
-          "line": 170,
+          "line": 172,
           "kind": "it",
           "name": "quotes an item back to HQ by number and head, in the reader’s language",
           "dynamic": false,
@@ -49454,7 +49454,7 @@
         },
         {
           "id": "LEG-a58baeee77fa",
-          "line": 176,
+          "line": 178,
           "kind": "it",
           "name": "passes over prose and fences, and an empty section has no items",
           "dynamic": false,
@@ -49462,11 +49462,20 @@
         },
         {
           "id": "LEG-c3d488672915",
-          "line": 185,
+          "line": 230,
           "kind": "it",
           "name": "retains child entries when lifting a top-level decision body",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-e51f89ef8bda",
+          "line": 204,
+          "kind": "reviewed-selector",
+          "name": "reads the shipped $lang legacy board example",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "HQBC-001"
         }
       ]
     },

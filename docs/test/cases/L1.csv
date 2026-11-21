@@ -3603,6 +3603,7 @@ LEG-f898dfb4693c,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,128,it,d
 LEG-77bf282237b3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,134,it,a request rejected just before a brief inactive interval cannot start an old alternate attempt,False,legacy-not-retrospectively-reviewed
 LEG-cd3d33f35f35,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,147,it,retains the write queue barrier until an aborted transport actually settles,False,legacy-not-retrospectively-reviewed
 MAP-7f66e0d7556c,L1,reviewed implementation,mobileapp/src/screens/attachmentEchoIdentity.test.ts,7,reviewed-selector,AEC-001 dual-representation identity preserves ordered attachment multiplicity,False,AEC-001
+MAP-e51f89ef8bda,L1,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,204,reviewed-selector,reads the shipped $lang legacy board example,False,HQBC-001
 MAP-4dfc41d98d20,L1,reviewed implementation,mobileapp/src/screens/knowledgeReading.semantics.test.ts,10,reviewed-selector,History API is current guidance rather than an explicit historical title,False,"KRDS-001,KRDS-002,KRDS-003"
 MAP-fea0656072e3,L1,reviewed implementation,mobileapp/src/screens/knowledgeReading.semantics.test.ts,17,reviewed-selector,a current peer section after History remains visible by default,False,"KRDS-001,KRDS-002,KRDS-003"
 MAP-deea1a99d411,L1,reviewed implementation,mobileapp/src/screens/knowledgeReading.semantics.test.ts,22,reviewed-selector,a multiline comment across the first blank stays hidden through actual Markdown parsing,False,"KRDS-001,KRDS-002,KRDS-003"

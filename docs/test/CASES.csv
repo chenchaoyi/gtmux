@@ -5447,28 +5447,29 @@ MAP-7f66e0d7556c,L1,reviewed implementation,mobileapp/src/screens/attachmentEcho
 MAP-a18aa405051e,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,63,reviewed-selector,AEC-002 %s retires image echo in its first recorded commit and ignores late receipt,False,AEC-002
 MAP-ccf9121e82e2,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,79,reviewed-selector,AEC-002 %s keeps an old identical occurrence pending but retires a new one,False,AEC-002
 MAP-6021aa4402f5,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,92,reviewed-selector,AEC-002 %s retires plain-text echo without one duplicate committed frame,False,AEC-002
-LEG-f7d329675b52,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,4,it,splits at ## and keeps the heading text,False,legacy-not-retrospectively-reviewed
-LEG-a7119188bab4,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,11,it,keeps content that comes before the first heading,False,legacy-not-retrospectively-reviewed
-LEG-0ea6bd6606ab,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,18,it,does not split on a ## inside a fenced code block,False,legacy-not-retrospectively-reviewed
-LEG-67d979a153fc,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,28,it,nests ### entries under their ## section,False,legacy-not-retrospectively-reviewed
-LEG-b92f0cea2665,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,40,it,does not repeat a child body inside its parent,False,legacy-not-retrospectively-reviewed
-LEG-b452a9c4926c,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,48,it,gives a child a key distinct from every other row,False,legacy-not-retrospectively-reviewed
-LEG-f4a0247e1444,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,54,it,"ignores a ### with no ## above it, rather than dropping its text",False,legacy-not-retrospectively-reviewed
-LEG-9bc4e9f5decb,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,60,it,does not nest on a ### inside a fence,False,legacy-not-retrospectively-reviewed
-LEG-f0f62d83bec3,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,66,it,preserves the AUTHOR order and never sorts,False,legacy-not-retrospectively-reviewed
-LEG-57dcae3eafdd,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,73,it,gives every section a distinct key even when titles repeat,False,legacy-not-retrospectively-reviewed
-LEG-81f9ad732ed5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,78,it,handles a board with no headings at all,False,legacy-not-retrospectively-reviewed
-LEG-966474e9bc21,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,85,it,"is empty for an empty board, rather than one blank section",False,legacy-not-retrospectively-reviewed
-LEG-9b8f1b89b778,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,94,it,is dropped from the preamble,False,legacy-not-retrospectively-reviewed
-LEG-35de96ef1c69,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,100,it,leaves a section heading alone — only the preamble can hold a document title,False,legacy-not-retrospectively-reviewed
-LEG-a24edac46461,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,105,it,drops a preamble that was nothing but the title,False,legacy-not-retrospectively-reviewed
-LEG-a052c502051e,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,127,test,"a table reports its rows, not its lines",False,legacy-not-retrospectively-reviewed
-LEG-fa33e7bc1651,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,131,test,a bulleted section reports its bullets,False,legacy-not-retrospectively-reviewed
-LEG-d52dbbd89f63,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,135,test,prose with nothing countable gets no bubble at all,False,legacy-not-retrospectively-reviewed
-LEG-68131147f791,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,159,it,"reads the numbered items under their groups, and knows which carry a recommendation",False,legacy-not-retrospectively-reviewed
-LEG-034622a839e5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,170,it,"quotes an item back to HQ by number and head, in the reader’s language",False,legacy-not-retrospectively-reviewed
-LEG-a58baeee77fa,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,176,it,"passes over prose and fences, and an empty section has no items",False,legacy-not-retrospectively-reviewed
-LEG-c3d488672915,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,185,it,retains child entries when lifting a top-level decision body,False,legacy-not-retrospectively-reviewed
+LEG-f7d329675b52,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,6,it,splits at ## and keeps the heading text,False,legacy-not-retrospectively-reviewed
+LEG-a7119188bab4,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,13,it,keeps content that comes before the first heading,False,legacy-not-retrospectively-reviewed
+LEG-0ea6bd6606ab,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,20,it,does not split on a ## inside a fenced code block,False,legacy-not-retrospectively-reviewed
+LEG-67d979a153fc,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,30,it,nests ### entries under their ## section,False,legacy-not-retrospectively-reviewed
+LEG-b92f0cea2665,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,42,it,does not repeat a child body inside its parent,False,legacy-not-retrospectively-reviewed
+LEG-b452a9c4926c,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,50,it,gives a child a key distinct from every other row,False,legacy-not-retrospectively-reviewed
+LEG-f4a0247e1444,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,56,it,"ignores a ### with no ## above it, rather than dropping its text",False,legacy-not-retrospectively-reviewed
+LEG-9bc4e9f5decb,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,62,it,does not nest on a ### inside a fence,False,legacy-not-retrospectively-reviewed
+LEG-f0f62d83bec3,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,68,it,preserves the AUTHOR order and never sorts,False,legacy-not-retrospectively-reviewed
+LEG-57dcae3eafdd,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,75,it,gives every section a distinct key even when titles repeat,False,legacy-not-retrospectively-reviewed
+LEG-81f9ad732ed5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,80,it,handles a board with no headings at all,False,legacy-not-retrospectively-reviewed
+LEG-966474e9bc21,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,87,it,"is empty for an empty board, rather than one blank section",False,legacy-not-retrospectively-reviewed
+LEG-9b8f1b89b778,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,96,it,is dropped from the preamble,False,legacy-not-retrospectively-reviewed
+LEG-35de96ef1c69,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,102,it,leaves a section heading alone — only the preamble can hold a document title,False,legacy-not-retrospectively-reviewed
+LEG-a24edac46461,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,107,it,drops a preamble that was nothing but the title,False,legacy-not-retrospectively-reviewed
+LEG-a052c502051e,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,129,test,"a table reports its rows, not its lines",False,legacy-not-retrospectively-reviewed
+LEG-fa33e7bc1651,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,133,test,a bulleted section reports its bullets,False,legacy-not-retrospectively-reviewed
+LEG-d52dbbd89f63,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,137,test,prose with nothing countable gets no bubble at all,False,legacy-not-retrospectively-reviewed
+LEG-68131147f791,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,161,it,"reads the numbered items under their groups, and knows which carry a recommendation",False,legacy-not-retrospectively-reviewed
+LEG-034622a839e5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,172,it,"quotes an item back to HQ by number and head, in the reader’s language",False,legacy-not-retrospectively-reviewed
+LEG-a58baeee77fa,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,178,it,"passes over prose and fences, and an empty section has no items",False,legacy-not-retrospectively-reviewed
+LEG-c3d488672915,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,230,it,retains child entries when lifting a top-level decision body,False,legacy-not-retrospectively-reviewed
+MAP-e51f89ef8bda,L1,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,204,reviewed-selector,reads the shipped $lang legacy board example,False,HQBC-001
 LEG-d002ac73d57a,L2,RN / mobile harness,mobileapp/src/screens/connectionGroup.test.ts,15,it,uses the server’s own name,False,legacy-not-retrospectively-reviewed
 LEG-84540a24c938,L2,RN / mobile harness,mobileapp/src/screens/connectionGroup.test.ts,20,it,"falls back to ""your server"", never to ""this server""",False,legacy-not-retrospectively-reviewed
 LEG-072de133b535,L2,RN / mobile harness,mobileapp/src/screens/connectionGroup.test.ts,28,it,exists for the owner regardless of loaded route count,False,legacy-not-retrospectively-reviewed
