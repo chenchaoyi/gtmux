@@ -785,6 +785,16 @@
       "TestHRW015UncertainRestartRequiresItsRetainedAnchor"
     ]
   },
+  "internal/hqnudge/autorecovery_test.go": {
+    "cases": [
+      "HWA-001",
+      "HWA-002"
+    ],
+    "selectors": [
+      "TestHWA001AttributableParkCollisionKeepsIndependentDelivery",
+      "TestHWA002KeyedMergePreservesOnlyCurrentPendingIncarnation"
+    ]
+  },
   "internal/hqnudge/native_recovery_test.go": {
     "cases": [
       "HRW-009",

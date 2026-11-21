@@ -291,7 +291,24 @@ func ignoreNativeMissing(err error) error {
 // A hard-link publication is atomic and never replaces another producer's leaf.
 // The original claim is removed only after the queue path safely owns its inode.
 func returnClaim(src string) error {
+	release, err := lockQueue()
+	if err != nil {
+		return err
+	}
+	defer release()
 	dst := claimBase(src)
+	field := queuedKey(dst)
+	if field != "" {
+		if current := pendingKey(field); current != "" && current != filepath.Base(dst) {
+			if _, err := nativeFingerprint(src); errors.Is(err, os.ErrNotExist) {
+				return nil
+			} else if err != nil {
+				return err
+			}
+			auditDroppedFile(events.DropSuperseded, src)
+			return os.Remove(src)
+		}
+	}
 	if err := os.Link(src, dst); err == nil {
 		return os.Remove(src)
 	} else if errors.Is(err, os.ErrNotExist) {
@@ -321,6 +338,9 @@ func returnClaim(src string) error {
 	return fmt.Errorf("wake return destination already exists: %s", filepath.Base(dst))
 }
 func parkNativeClaim(src string) error {
+	if _, err := nativeFingerprint(src); err != nil {
+		return ignoreNativeMissing(err)
+	}
 	dst := claimBase(src) + nativeUncertainSuffix
 	if err := os.Link(src, dst); err == nil {
 		return os.Remove(src)
@@ -341,7 +361,15 @@ func parkNativeClaim(src string) error {
 		return eb
 	}
 	if !os.SameFile(a, b) {
-		return errors.New("native uncertain destination was replaced")
+		// Only managed regular files identify an exact conflicting slot. An
+		// untrusted or unreadable path is a channel error, even at this location.
+		if _, err := nativeFingerprint(src); err != nil {
+			return err
+		}
+		if _, err := nativeFingerprint(dst); err != nil {
+			return err
+		}
+		return fmt.Errorf("%w: native uncertain destination was replaced", errNativeClaimConflict)
 	}
 	return os.Remove(src)
 }

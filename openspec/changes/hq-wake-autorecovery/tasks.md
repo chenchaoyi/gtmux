@@ -1,6 +1,6 @@
 ## 1. Recovery and evidence
 
-- [ ] Isolate attributable claim collisions and use unique keyed incarnations.
+- [x] Isolate attributable claim collisions and use unique keyed incarnations.
 - [ ] Bound retries of positively unsent work and hold ambiguous submissions.
 - [ ] Account for pressure and correlate attempts and delivery stages.
 - [ ] Escalate deadline and channel failures independently, then verify recovery.
