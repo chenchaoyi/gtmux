@@ -1,0 +1,47 @@
+{
+  "id": "hq-waiting-witness-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-21",
+    "decision": "Verify prospective ordinary waiting entries at fresh claim time and recognize the exact native wake in the existing independent delivery observer.",
+    "notes": "Reviewed the recorded v1.0.189 batch shape and receipt. A missing or ambiguous source cannot prove that a wait ended. Exercise actual durable queue and receipt paths with isolated state and synthetic terminal/transcript observations. Hosted CI and independent review remain separate."
+  },
+  "cases": [
+    {
+      "id": "HWW-001",
+      "layer": "L2",
+      "description": "Fresh waiting-generation claims are checked individually against exact evidence",
+      "setup": "An isolated ordinary queue with identifiable screen waits, legacy plain waiting entries and a protected managed relay. Give the exact original runs live waits, a recognized clear composer, or a positively retired terminal. Include an unstructured source frame, pane reuse, foreign Codex Home and a newer wait marker.",
+      "action": "Drain with an HQ draft, then open the first eligible native input window and drain again after acceptance.",
+      "expected": "The draft receives no input. Each proved obsolete fresh wait produces a drop audit while live, unknown and legacy lines follow normal routing. The relay appears exactly once in the first batch and stays accepted.",
+      "planned_files": [
+        "internal/hqnudge/waiting_test.go",
+        "internal/hook/nudge_test.go"
+      ]
+    },
+    {
+      "id": "HWW-002",
+      "layer": "L2",
+      "description": "A previously attempted waiting generation stays under existing recovery rules",
+      "setup": "An isolated native receiver that returns a positive retryable refusal or unknown after a fresh waiting claim.",
+      "action": "Retire the original source and drain with the original verified target after the backoff. Leave a receiver receipt in independent observation storage.",
+      "expected": "A scoped known refusal uses its existing retry budget, an uncertain generation is not submitted again or discarded, and source evidence does not alter accepted receipts.",
+      "planned_files": [
+        "internal/hqnudge/waiting_test.go"
+      ]
+    },
+    {
+      "id": "HWW-003",
+      "layer": "L2",
+      "description": "A real sigil-prefixed wake in the exact new Codex turn has one independent delivery audit",
+      "setup": "A synthetic retained native receipt and rollout with the observed coalesced waiting and relay payload and the Codex task_started and response_item records.",
+      "action": "Observe twice. Repeat with mismatched Home, session, turn, time and content, including an earlier unrelated first input. Exercise ordinary user-prompt filtering separately.",
+      "expected": "Only the exact positive pair produces one delivery audit. Mismatches leave evidence protected, and ordinary user rendering continues to filter wake echoes while accepting ordinary prompts.",
+      "planned_files": [
+        "internal/hqnudge/waiting_witness_test.go"
+      ]
+    }
+  ],
+  "seal": "1bf910845de27ffd14c20939697e205c4af493518cbb41563499479f490fcd11"
+}
