@@ -98,11 +98,37 @@ func (r *workspaceCLIReplay) pane(t *testing.T, name, role, mode string) string 
 	if err != nil {
 		t.Fatal(err, pane)
 	}
-	if err := state.WriteMarker(state.ActivePath(pane), name); err != nil {
+	waitWorkspaceFixture(t, pane, func() bool { return strings.Contains(tmux.CapturePane(pane), "❯") })
+	if role == "hq" {
+		bindIdleWorkspaceFixture(t, pane, name)
+	} else if err := state.WriteMarker(state.ActivePath(pane), name); err != nil {
 		t.Fatal(err)
 	}
-	waitWorkspaceFixture(t, pane, func() bool { return strings.Contains(tmux.CapturePane(pane), "❯") })
 	return pane
+}
+
+// Bind the synthetic executable to the conversation in its private tmux
+// server. The real wake guard still verifies that process and pane.
+func bindIdleWorkspaceFixture(t *testing.T, pane, session string) {
+	t.Helper()
+	loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
+	command := tmux.Display(pane, "#{pane_current_command}")
+	if loc == "" || command == "" {
+		t.Fatal("fixture target identity unavailable")
+	}
+	if err := resume.Save(loc, resume.Record{Agent: command, SessionID: session, UpdatedAt: time.Now().Unix()}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func workspaceFixtureTurn(t *testing.T, session string, run func()) {
+	t.Helper()
+	marker := state.ActivePath(os.Getenv("TMUX_PANE"))
+	if err := state.WriteMarker(marker, session); err != nil {
+		t.Fatal(err)
+	}
+	defer state.Remove(marker)
+	run()
 }
 
 func waitWorkspaceFixture(t *testing.T, pane string, ready func() bool) {
@@ -188,31 +214,34 @@ func workspaceCLIReplayHQ(t *testing.T) {
 			return
 		}
 		line := input.Text()
-		if strings.HasPrefix(line, "{") {
-			var command workspaceFixtureCommand
-			if err := json.Unmarshal([]byte(line), &command); err != nil {
-				t.Fatal(err)
+		session := tmux.Display(os.Getenv("TMUX_PANE"), "#{session_name}")
+		workspaceFixtureTurn(t, session, func() {
+			if strings.HasPrefix(line, "{") {
+				var command workspaceFixtureCommand
+				if err := json.Unmarshal([]byte(line), &command); err != nil {
+					t.Fatal(err)
+				}
+				body, err := json.Marshal(command.Action)
+				if err != nil {
+					t.Fatal(err)
+				}
+				code, raw := goalCLI(t, string(body), "hq", "workspace", "act", "--stdin", "--json")
+				output, err := json.Marshal(workspaceFixtureResult{Code: code, Output: raw})
+				if err != nil {
+					t.Fatal(err)
+				}
+				workspaceReplayWrite(t, "cli-result-"+strconv.Itoa(command.ID), output)
+				return
 			}
-			body, err := json.Marshal(command.Action)
-			if err != nil {
-				t.Fatal(err)
+			if !strings.Contains(line, "workspace reconciliation") {
+				t.Fatalf("unexpected HQ fixture input %q", line)
 			}
-			code, raw := goalCLI(t, string(body), "hq", "workspace", "act", "--stdin", "--json")
-			output, err := json.Marshal(workspaceFixtureResult{Code: code, Output: raw})
-			if err != nil {
-				t.Fatal(err)
+			code, raw := goalCLI(t, "", "hq", "workspace", "reconcile", "--json")
+			if code != 0 {
+				t.Fatal(code, raw)
 			}
-			workspaceReplayWrite(t, "cli-result-"+strconv.Itoa(command.ID), output)
-			continue
-		}
-		if !strings.Contains(line, "workspace reconciliation") {
-			t.Fatalf("unexpected HQ fixture input %q", line)
-		}
-		code, raw := goalCLI(t, "", "hq", "workspace", "reconcile", "--json")
-		if code != 0 {
-			t.Fatal(code, raw)
-		}
-		workspaceReplayWrite(t, "hq-read-"+os.Getenv("TMUX_PANE"), []byte(raw))
+			workspaceReplayWrite(t, "hq-read-"+os.Getenv("TMUX_PANE"), []byte(raw))
+		})
 	}
 }
 

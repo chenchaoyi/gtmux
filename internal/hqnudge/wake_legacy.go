@@ -77,7 +77,7 @@ func holdOrphanClaims(x io, protected map[string]bool) bool {
 			continue
 		}
 		recordIssue(issueUnknownLegacyInput, x.nowNano())
-		wakeStage("outcome-unknown", claimBase(src), "", diag.Failed, "orphaned-claim")
+		wakeStage("act.wake.outcome.unknown", claimBase(src), "", diag.Failed, "orphaned-claim")
 	}
 	return true
 }
@@ -187,7 +187,7 @@ func holdLegacyWake(x io, r attemptRecord, claims []string) {
 			diag.ReportStoreFailure("hq-wake-attempt", err)
 			recordIssue(issueRecoveryUnsafe, x.nowNano())
 		}
-		wakeStage("outcome-unknown", base, r.ID, diag.Failed, "terminal-ack-missing")
+		wakeStage("act.wake.outcome.unknown", base, r.ID, diag.Failed, "terminal-ack-missing")
 	}
 	recordIssue(issueUnknownLegacyInput, x.nowNano())
 	writeFailCount(readFailCount() + 1)

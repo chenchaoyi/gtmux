@@ -97,7 +97,7 @@ func liveWakeIdentity(pane string) string {
 	} else {
 		loc := tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}")
 		r, ok := resume.LoadLive(loc)
-		if !ok || r.SessionID == "" || r.Agent != tmux.Display(pane, "#{pane_current_command}") {
+		if !ok || r.SessionID == "" || r.Agent == "" || r.Agent != tmux.Display(pane, "#{pane_current_command}") {
 			return ""
 		}
 		identity = r.Agent + ":" + r.SessionID
@@ -154,16 +154,23 @@ func setNativeWakeOutcome(intent *nativeIntent, result dispatch.Result, retry re
 }
 
 func recordWakeOutcome(intent nativeIntent, now int64) {
-	stage, status := intent.Outcome, diag.OK
+	var stage string
+	status := diag.OK
 	switch intent.Outcome {
+	case "accepted":
+		stage = "act.wake.accepted"
+	case "delivered":
+		stage = "act.wake.delivered"
 	case "refused":
-		stage, status = "retry-scheduled", diag.Refused
+		stage, status = "act.wake.retry.scheduled", diag.Refused
 	case "held":
-		stage, status = "refused", diag.Refused
+		stage, status = "act.wake.refused", diag.Refused
 		recordIssue(intent.Reason, now)
 	case "uncertain":
-		stage, status = "outcome-unknown", diag.Failed
+		stage, status = "act.wake.outcome.unknown", diag.Failed
 		recordIssue(issueUnknownInput, now)
+	default:
+		return
 	}
 	for _, entry := range intent.Entries {
 		wakeStage(stage, claimBase(entry.Name), intent.ID, status, intent.Reason)

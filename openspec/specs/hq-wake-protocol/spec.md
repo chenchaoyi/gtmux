@@ -229,7 +229,9 @@ driver or screen receipt can confirm only the original batch. The legacy receipt
 path SHALL honor native protected slots and shall never replace an occupied claim.
 
 Only a positive not-submitted proof, a retryable condition and the same verified
-target authorize automatic native retry. The original generation identity is stable.
+target authorize automatic native retry. A persisted pre-upgrade refusal with
+no verified original target remains held with its original evidence. The original
+generation identity is stable.
 After 5 and 15 seconds of backoff, the third known refusal exhausts the budget and
 retains the payload with a distinct reason. A deliberate refusal and an unknown
 submission each remain visible to independent diagnostics.

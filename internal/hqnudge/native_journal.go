@@ -198,7 +198,7 @@ func recoverNativeIntentsWithProtection() (map[string]bool, error) {
 		if json.Unmarshal(b, &r) != nil || !validNativeIntent(r) || nativeIntentPath(r) != p {
 			return nil, errors.New("native wake recovery evidence invalid")
 		}
-		if err := settleNativeIntent(r); err != nil {
+		if err := recoverNativeIntent(r); err != nil {
 			if !errors.Is(err, errNativeClaimConflict) {
 				return nil, err
 			}
@@ -216,6 +216,27 @@ func recoverNativeIntentsWithProtection() (map[string]bool, error) {
 	}
 	return protected, errors.Join(conflicts...)
 }
+
+// A v2 refusal predates both the positive submission boundary and the saved
+// target. A matching pane number alone cannot authorize a post-upgrade attempt.
+func recoverNativeIntent(r nativeIntent) error {
+	if r.Outcome != "refused" || r.Retry.Number != 0 {
+		return settleNativeIntent(r)
+	}
+	for _, entry := range r.Entries {
+		if err := validateNativeClaim(r, entry); err != nil && !errors.Is(err, errNativeClaimConflict) {
+			return err
+		}
+		// An interrupted old handoff may have a pending name too. Check its
+		// storage before returning a local hold for the entire known slot.
+		_, err := nativeFingerprint(claimBase(filepath.Join(queueDir(), entry.Name)))
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+	}
+	return fmt.Errorf("%w: legacy refusal lacks verified submission and original target evidence", errNativeClaimConflict)
+}
+
 func settleNativeIntent(r nativeIntent) error {
 	if r.Outcome == "accepted" && r.WakeReceipt != nil {
 		if err := retainAcceptedWake(r); err != nil {
@@ -372,10 +393,28 @@ func returnClaimAt(src, dst string) error {
 	field := queuedKey(dst)
 	if field != "" {
 		if current := pendingKey(field); current != "" && current != filepath.Base(dst) {
-			if _, err := nativeFingerprint(src); errors.Is(err, os.ErrNotExist) {
+			source, err := nativeFingerprint(src)
+			if errors.Is(err, os.ErrNotExist) {
 				return nil
-			} else if err != nil {
+			}
+			if err != nil {
 				return err
+			}
+			if dst != claimBase(src) {
+				// Recovery may find the retry link published just before a crash.
+				// A newer producer supersedes that exact link as well as the claim.
+				published, err := nativeFingerprint(dst)
+				if err != nil && !errors.Is(err, os.ErrNotExist) {
+					return err
+				}
+				if err == nil {
+					if published.FileID != source.FileID {
+						return errors.New("wake retry publication now refers to different evidence")
+					}
+					if err := os.Remove(dst); err != nil {
+						return err
+					}
+				}
 			}
 			auditDroppedFile(events.DropSuperseded, src)
 			return os.Remove(src)

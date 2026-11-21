@@ -73,7 +73,7 @@ func archiveAcceptedWake(key string, a acceptedWake, reason string, now time.Tim
 		return err
 	}
 	recordIssue(issueProofArchived, now.UnixNano())
-	diag.For("hq").Act("act.wake.observation-archived", "system", a.Pane, diag.Refused, "Wake receiver acknowledgement archived",
+	diag.For("hq").Act("act.wake.observation.archived", "system", a.Pane, diag.Refused, "Wake receiver acknowledgement archived",
 		"batch", a.Batch, "receiver_request", a.Receipt.Request, "turn", a.Receipt.Turn, "reason", reason)
 	return nil
 }

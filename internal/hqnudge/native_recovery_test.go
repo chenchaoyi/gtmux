@@ -328,21 +328,26 @@ func TestHRW010RecoveryAfterReturnPublicationKeepsConcurrentKeyUpdate(t *testing
 		t.Fatal(err)
 	}
 	r.Outcome = "refused"
+	r.Retry = retryState{Number: 1, At: x.nowNano() + int64(5*time.Second), Target: x.identity("%isolated")}
 	if err := writeNativeIntent(r); err != nil {
 		t.Fatal(err)
 	}
-	dst := claimBase(claimed[0])
+	dst := finalClaimPath(r, claimed[0])
 	if err := os.Link(claimed[0], dst); err != nil {
 		t.Fatal(err)
 	}
-	// Stop after publication; a producer may legitimately update the queue inode.
+	// Stop after publication. A new producer publishes a new generation
+	// while the two old hard links still belong to recovery.
 	enqueueKeyed(x, "key", "newest-B", 1)
 	if err := recoverNativeIntents(); err != nil {
 		t.Fatal("published queue ownership was mistaken for a replaced claim", err)
 	}
-	b, err := os.ReadFile(dst)
-	if err != nil || string(b) != "newest-B" {
-		t.Fatal("newest update lost", err, string(b))
+	b, err := os.ReadFile(filepath.Join(queueDir(), pendingKey(keyField("key"))))
+	if err != nil || string(b) != "newest-B" || queuedCount(t) != 1 {
+		t.Fatal("newest update lost or the obsolete retry survived", err, string(b))
+	}
+	if _, err := os.Stat(dst); !os.IsNotExist(err) {
+		t.Fatal("superseded retry still has its interrupted publication", err)
 	}
 	if _, err := os.Stat(claimed[0]); !os.IsNotExist(err) {
 		t.Fatal("old claim survived settled refused return")

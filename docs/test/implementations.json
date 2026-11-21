@@ -868,6 +868,16 @@
       "TestHWA015AcceptedProofCrashRetryKeepsOneDeliveryAudit"
     ]
   },
+  "internal/hqnudge/wake_storage_review_test.go": {
+    "cases": [
+      "HWA-017",
+      "HWA-018"
+    ],
+    "selectors": [
+      "TestHWA017UnboundLegacyRefusalDoesNotEnterNewTarget",
+      "TestHWA018QueueIOHealthSurvivesUntilVerifiedProgress"
+    ]
+  },
   "internal/hqnudge/wake_evidence_test.go": {
     "cases": [
       "HWA-012"
@@ -4260,7 +4270,7 @@
   },
   "internal/app/hqworkspace_continuation_test.go": {
     "cases": [
-      "HPC-002"
+      "HWA-016"
     ],
     "selectors": [
       "TestWorkspaceContinuationIncidentReplay"
@@ -4276,8 +4286,7 @@
   },
   "internal/app/hqworkspace_continuation_cli_test.go": {
     "cases": [
-      "HPC-004",
-      "HPC-005"
+      "HWA-016"
     ],
     "selectors": [
       "TestWorkspaceDraftKeepsBothWakeQueues",

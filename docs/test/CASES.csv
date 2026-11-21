@@ -446,7 +446,7 @@ MAP-19a5906d1fd5,L2,reviewed implementation,internal/app/hq_wake_deadline_test.g
 LEG-22c10bb33192,L1,Go core / CLI / server,internal/app/hqmemory_row_test.go,30,Test,TestHQMemoryRowReadsItsThreeStates,False,legacy-not-retrospectively-reviewed
 LEG-7d78fb6a41eb,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,15,Test,TestStitchEarlierKeepsEachHQAgentsIdentity,False,legacy-not-retrospectively-reviewed
 LEG-150db10da0b7,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,45,Test,TestTranscriptOnlyStitchesSupervisorHistory,False,legacy-not-retrospectively-reviewed
-MAP-6c44c0313e74,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,305,reviewed-selector,TestWorkspaceDraftKeepsBothWakeQueues,False,"HPC-004,HPC-005"
+MAP-6c44c0313e74,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,334,reviewed-selector,TestWorkspaceDraftKeepsBothWakeQueues,False,"HPC-004,HPC-005"
 MAP-69d66d9f9a98,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,97,reviewed-selector,TestWorkspaceContinuationCLI,False,"HPC-004,HPC-005"
 MAP-0e82e0de8675,L3,reviewed implementation,internal/app/hqworkspace_continuation_test.go,23,reviewed-selector,TestWorkspaceContinuationIncidentReplay,False,HPC-002
 MAP-9931f487fae1,L2,reviewed implementation,internal/app/hqworkspace_cursor_test.go,109,reviewed-selector,TestPhase1CursorEmptyScanConcurrentAppend,False,"HQP1-F1-001,HQP1-F1-002,HQP1-F1-003,HQP1-F1-004"
@@ -2091,6 +2091,8 @@ MAP-a8b272ecc334,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,
 MAP-6d6b23733fd9,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,57,reviewed-selector,TestHWA006UnknownAndChangedTargetNeverResubmit,False,"HWA-006,HWA-007"
 MAP-63c494f35db1,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,94,reviewed-selector,TestHWA007GuardsPermitNoClientInput,False,"HWA-006,HWA-007"
 MAP-730731030887,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,114,reviewed-selector,TestHWA007CrashAfterLegacyEnterRetainsOriginal,False,"HWA-006,HWA-007"
+MAP-b05639455d46,L2,reviewed implementation,internal/hqnudge/wake_storage_review_test.go,14,reviewed-selector,TestHWA017UnboundLegacyRefusalDoesNotEnterNewTarget,False,"HWA-017,HWA-018"
+MAP-5a37fd2ce65b,L2,reviewed implementation,internal/hqnudge/wake_storage_review_test.go,67,reviewed-selector,TestHWA018QueueIOHealthSurvivesUntilVerifiedProgress,False,"HWA-017,HWA-018"
 LEG-2a0fc9ba851d,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,49,Test,TestFind_ByCurrentPath,False,legacy-not-retrospectively-reviewed
 LEG-5978d4c88e2f,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,60,Test,TestFind_SymlinkedHomeStillResolves,False,legacy-not-retrospectively-reviewed
 LEG-612d23c91cb2,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,82,Test,TestFind_ByStampAfterACd,False,legacy-not-retrospectively-reviewed

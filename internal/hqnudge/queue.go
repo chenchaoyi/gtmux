@@ -39,7 +39,10 @@ func lockQueue() (func(), error) {
 func pendingKey(field string) string {
 	for _, entry := range readQueue() {
 		if retry, valid := parseRetry(entry.Name()); valid && retry.Number == 0 && attemptsOf(entry.Name()) == 0 && entry.Type().IsRegular() && queuedKey(entry.Name()) == field {
-			return entry.Name()
+			// A linked handoff or a reused legacy slot can have both names.
+			if _, err := os.Lstat(filepath.Join(queueDir(), entry.Name()+sendingSuffix)); errors.Is(err, os.ErrNotExist) {
+				return entry.Name()
+			}
 		}
 	}
 	return ""
@@ -61,10 +64,17 @@ func queuedKey(path string) string {
 // A later producer supersedes only positively refused generations. Held and
 // uncertain claims are never candidates for coalescing or deletion.
 func retireObsoleteRetries(field string, now int64) {
+	active := map[string]bool{}
+	for _, entry := range readQueue() {
+		if strings.HasSuffix(entry.Name(), sendingSuffix) {
+			active[identityOf(claimBase(entry.Name()))] = true
+		}
+	}
 	for _, name := range queuedNames(func(name string) bool { return queuedKey(name) == field }) {
 		retry, valid := parseRetry(name)
-		if !valid || retry.Number == 0 {
-			continue
+		if !valid || retry.Number == 0 || active[identityOf(name)] {
+			continue // recovery owns an interrupted hard-link publication
+
 		}
 		path := filepath.Join(queueDir(), name)
 		body, err := readNativeBytes(path)
@@ -76,14 +86,14 @@ func retireObsoleteRetries(field string, now int64) {
 			continue
 		}
 		events.AuditWakeDropped(events.DropSuperseded, string(body), time.Now().Unix())
-		wakeStage("rejected", path, "", diag.Refused, events.DropSuperseded)
+		wakeStage("act.wake.rejected", path, "", diag.Refused, events.DropSuperseded)
 	}
 }
 
 func takeQueued(src, dst string) bool {
 	release, err := lockQueue()
 	if err != nil {
-		diag.ReportStoreFailure("hq-wake-queue", err)
+		queueFailure(time.Now().UnixNano(), err)
 		return false
 	}
 	defer release()
@@ -102,7 +112,7 @@ func admitQueued(name, message string, now int64) bool {
 		recordIssue(issueQueuePressure, now)
 		if prioOf(name) > prioOf(names[len(names)-1]) {
 			events.AuditWakeDropped(events.DropQueueFull, message, time.Now().Unix())
-			wakeStage("rejected", name, "", diag.Refused, events.DropQueueFull)
+			wakeStage("act.wake.rejected", name, "", diag.Refused, events.DropQueueFull)
 			return false
 		}
 	}
@@ -119,11 +129,11 @@ func admitQueued(name, message string, now int64) bool {
 	if len(names) >= maxQueueEntries {
 		if err := evictQueued(&names); err != nil {
 			queueFailure(now, errors.Join(err, os.Remove(path)))
-			wakeStage("rejected", name, "", diag.Failed, "eviction-error")
+			wakeStage("act.wake.rejected", name, "", diag.Failed, "eviction-error")
 			return false
 		}
 	}
-	wakeStage("enqueued", name, "", diag.OK, "")
+	wakeStage("act.wake.enqueued", name, "", diag.OK, "")
 	return true
 }
 
@@ -142,7 +152,7 @@ func evictQueued(names *[]string) error {
 	}
 	*names = append(queued[:i], queued[i+1:]...)
 	events.AuditWakeDropped(events.DropEvicted, string(body), time.Now().Unix())
-	wakeStage("evicted", victim, "", diag.Refused, events.DropEvicted)
+	wakeStage("act.wake.evicted", victim, "", diag.Refused, events.DropEvicted)
 	return nil
 }
 
@@ -151,8 +161,8 @@ func queueFailure(now int64, err error) {
 	recordIssue(issueQueueIO, now)
 }
 
-func wakeStage(stage, entry, batch string, outcome string, reason string) {
+func wakeStage(event, entry, batch string, outcome string, reason string) {
 	raw := sha256.Sum256([]byte(identityOf(filepath.Base(entry))))
-	diag.For("hq").Act("act.wake."+stage, "system", "hq", outcome, "HQ wake stage",
+	diag.For("hq").Act(event, "system", "hq", outcome, "HQ wake stage",
 		"entry", hex.EncodeToString(raw[:12]), "batch", batch, "reason", reason)
 }

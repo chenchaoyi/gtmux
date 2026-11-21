@@ -345,9 +345,25 @@ func Degraded(now int64) bool {
 	return oldest > 0 && now-oldest > staleQueueSecs
 }
 
-// readQueue lists the queue dir (empty on any error — an absent dir is an empty queue).
+// readQueue is used by the active producers and drainer. Health inspection
+// calls inspectQueue directly so merely inspecting the queue is read-only.
 func readQueue() []os.DirEntry {
-	entries, _ := os.ReadDir(queueDir())
+	entries, err := inspectQueue()
+	if err != nil {
+		queueFailure(time.Now().UnixNano(), err)
+	}
+	return entries
+}
+
+func inspectQueue() ([]os.DirEntry, error) {
+	dir := queueDir()
+	if err := state.CheckPrivateDirectory(dir); err != nil {
+		return nil, ignoreNativeMissing(err)
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, ignoreNativeMissing(err)
+	}
 	out := entries[:0]
 	for _, e := range entries {
 		if !e.IsDir() && e.Name() != filepath.Base(failCountPath()) &&
@@ -355,7 +371,7 @@ func readQueue() []os.DirEntry {
 			out = append(out, e)
 		}
 	}
-	return out
+	return out, nil
 }
 
 // isOrphanClaim reports whether e is a claim old enough that its owner must be
@@ -402,13 +418,13 @@ func boxEmpty(x io, pane string) bool {
 func enqueue(x io, msg string) {
 	release, err := lockQueue()
 	if err != nil {
-		diag.ReportStoreFailure("hq-wake-queue", err)
+		queueFailure(x.nowNano(), err)
 		return
 	}
 	defer release()
 	now := x.nowNano()
 	name := fmt.Sprintf("%019d-%d-%s.p%d.txt", now, os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg))
-	wakeStage("scheduled", name, "", diag.OK, "immediate")
+	wakeStage("act.wake.scheduled", name, "", diag.OK, "immediate")
 	admitQueued(name, msg, now)
 }
 
@@ -418,24 +434,24 @@ func enqueue(x io, msg string) {
 func enqueueKeyed(x io, key, msg string, dueNano int64) {
 	release, err := lockQueue()
 	if err != nil {
-		diag.ReportStoreFailure("hq-wake-queue", err)
+		queueFailure(x.nowNano(), err)
 		return
 	}
 	defer release()
 	field := keyField(key)
 	now := x.nowNano()
 	if name := pendingKey(field); name != "" {
-		wakeStage("scheduled", name, "", diag.OK, "updated")
+		wakeStage("act.wake.scheduled", name, "", diag.OK, "updated")
 		if err := state.WriteFile(filepath.Join(queueDir(), name), []byte(msg), 0600); err != nil {
 			queueFailure(now, err)
 		} else {
-			wakeStage("merged", name, "", diag.OK, "pending-key")
+			wakeStage("act.wake.merged", name, "", diag.OK, "pending-key")
 			retireObsoleteRetries(field, now)
 		}
 		return
 	}
 	name := fmt.Sprintf("%019d-%d-%s.p%d%s.txt", dueNano, os.Getpid(), diag.NewOpID(), hqwake.PriorityOf(msg), field)
-	wakeStage("scheduled", name, "", diag.OK, "keyed")
+	wakeStage("act.wake.scheduled", name, "", diag.OK, "keyed")
 	if admitQueued(name, msg, now) {
 		retireObsoleteRetries(field, now)
 	}
@@ -660,7 +676,7 @@ func drainInto(x io, pane string) {
 	id := "#" + batchID(claimed, payload)
 	payload += " · " + id
 	for _, path := range claimed {
-		wakeStage("claimed", claimBase(path), id, diag.OK, "batch")
+		wakeStage("act.wake.claimed", claimBase(path), id, diag.OK, "batch")
 	}
 
 	if submit != nil || retry.Number > 0 {

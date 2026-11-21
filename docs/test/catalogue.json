@@ -18599,7 +18599,7 @@
           "design": "HRW-009,HRW-010"
         }
       ],
-      "sha256": "a2ffe09b17b827a395e0793741f70b3f2d9cdee64cc2c7b45cc72711ca5ad48a"
+      "sha256": "e6a91ca5e233ab943705a95f949300b1b9025a5078228cbb2108451c46587e5e"
     },
     "internal/hqnudge/native_test.go": {
       "sha256": "8491d9bacf0d6e65202a0378f9d5f2504670b00fc8a0a3fe94a8e8b603e79040",
@@ -67336,7 +67336,7 @@
       "cases": [
         {
           "id": "MAP-6c44c0313e74",
-          "line": 305,
+          "line": 334,
           "kind": "reviewed-selector",
           "name": "TestWorkspaceDraftKeepsBothWakeQueues",
           "dynamic": false,
@@ -67353,7 +67353,7 @@
           "design": "HPC-004,HPC-005"
         }
       ],
-      "sha256": "557badb0af889d5ae2030ece293090204ebb279e00bc3c4e308b2c47984ab69b"
+      "sha256": "e813464fd362d238261f91ecd7b4767729d4191ae6a033f68a481c4e82d5b442"
     },
     "internal/app/hqworkspace_continuation_test.go": {
       "layer": "L3",
@@ -67369,7 +67369,7 @@
           "design": "HPC-002"
         }
       ],
-      "sha256": "4ed1b30c2d42c1dd074c5ad5a7f401ebc4807ba791171239ffaa1c82163ccb4f"
+      "sha256": "55cdca8493f5442af4736bac693e8699f943b6821bace59f956db97c2dc00871"
     },
     "internal/hqworkspace/continuation_claim_test.go": {
       "layer": "L2",
@@ -68612,6 +68612,31 @@
         }
       ],
       "sha256": "c4368e2904a23fc9892f79bf4d986c1c9cf04eaba66fc781afa606348aa0508e"
+    },
+    "internal/hqnudge/wake_storage_review_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b05639455d46",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestHWA017UnboundLegacyRefusalDoesNotEnterNewTarget",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-017,HWA-018"
+        },
+        {
+          "id": "MAP-5a37fd2ce65b",
+          "line": 67,
+          "kind": "reviewed-selector",
+          "name": "TestHWA018QueueIOHealthSurvivesUntilVerifiedProgress",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWA-017,HWA-018"
+        }
+      ],
+      "sha256": "798e59c5b217f14220ad41d557c4f01e9275849581e1654756c1e579aa1a8090"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

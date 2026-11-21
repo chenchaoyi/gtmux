@@ -436,8 +436,23 @@ act.unwatch                panes
 act.update                 update
 act.upload                 serve
 act.wake.accepted          hq, relay, serve, hook
+act.wake.claimed           serve, hook
 act.wake.delivered         serve, hook
 act.wake.dropped           serve, hook
+act.wake.enqueued          hq, relay, serve, hook
+act.wake.entered           serve, hook
+act.wake.evicted           hq, relay, serve, hook
+act.wake.merged            hq, relay, serve, hook
+act.wake.notice            serve
+act.wake.observation.archived serve, hook
+act.wake.outcome.unknown   serve, hook
+act.wake.pasted            serve, hook
+act.wake.receiver          serve, hook
+act.wake.refused           serve, hook
+act.wake.rejected          hq, relay, serve, hook
+act.wake.retry.scheduled   serve, hook
+act.wake.scheduled         hq, relay, serve, hook
+act.wake.started           serve
 act.wait.suppressed        hook
 act.watch                  panes
 ```

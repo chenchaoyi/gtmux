@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1402 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1403 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3816 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2606 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2608 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -291,6 +291,8 @@
 | HWA-002 | An unclaimed merge keeps its due time and identity. A new generation has a distinct name even at identical due time. It cannot overwrite an existing sending or parked entry. A provably refused obsolete generation yields to a newer pending one while uncertain records remain frozen. Neither operation pastes into the pane. |
 | HWA-012 | Acceptance alone neither starts nor confirms delivery. An exact prompt in the acknowledged newly-started turn records both independent observations once. An unrelated turn, an unproven prompt, and authorizing an automatic replay remain excluded. |
 | HWA-013 | An old or unrelated turn cannot establish wake delivery or new start. The exact matching composite yields timestamps without waiving a pending workspace obligation. |
+| HWA-017 | Original old-target evidence remains and is never submitted. Independent work proceeds exactly once, with no Paste or Enter. |
+| HWA-018 | Direct inspection and failed producers expose a queue I/O reason even without a drain or HQ. Healthy directory alone cannot erase the observed issue before confirmed progress. |
 | HWA-011 | The newer unclaimed generation retains its original deadline and remains eligible; a stale generation never overwrites or replays into it. |
 | HWA-003 | The warning is explicitly rejected and all prior decision entries survive. An equal-priority new entry may replace the oldest of its rank with a truthful eviction audit. Both pressure outcomes have distinct stages. |
 | HWA-004 | First, changed and continuing reasons alert at bounded cadence even with old down marker. Historical uncertainty remains separate. Pending work, quiet mode or absence of HQ cannot suppress the independent deadline alarm. Recovery requires an exact positive receipt or the tracked condition being conclusively settled. |
@@ -299,6 +301,7 @@
 | HWA-010 | The mixed intent retains its evidence, the hard recovery failure prevents all new input, and the independent pending entry remains available after the storage issue is resolved. |
 | HWA-014 | One submission per fresh batch, no replays or lost acknowledgement. Full or expired active proofs are retained with exact receipt provenance in a bounded private archive and independently discoverable. |
 | HWA-015 | One durable delivery audit for this batch, with no input mutation. Clean up the retained receipt only after observing the matching audit. |
+| HWA-016 | Pending work is preserved until an eligible idle composer. Exact terminal input reaches the identified fixture; the same authorized actions, ownership, durable continuation and no-replay checks still pass. |
 | HPC-006 | No early repeat. At the next eligible tick, the exact evidence remains pending and its second wake is enqueued without waiting for another full interval. |
 | SPL-026 | A stale temporary name can be recovered under the lease. The published record is a single-link file; earlier evidence still protects both native and raw routing. A verified new stable ID can publish and settle. A competing destination is preserved. |
 | SPL-023 | Overflow from the shared budget frees active slots, verified old keys never regain authority, and exhausted total budget and warning headroom are explicit. |

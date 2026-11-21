@@ -114,7 +114,8 @@ func ReadHealth(now int64) Health {
 	var out Health
 	var oldest int64
 	legacyUncertain := 0
-	for _, entry := range readQueue() {
+	queue, queueErr := inspectQueue()
+	for _, entry := range queue {
 		name := entry.Name()
 		if strings.HasSuffix(name, legacyUncertainSuffix) || attemptsOf(name) > 0 {
 			legacyUncertain++
@@ -145,6 +146,9 @@ func ReadHealth(now int64) Health {
 	for _, reason := range issueCodes {
 		i, err := readIssue(reason)
 		if errors.Is(err, os.ErrNotExist) {
+			if reason == issueQueueIO && queueErr != nil {
+				out.Issues = append(out.Issues, WakeIssue{Reason: issueQueueIO, FirstAt: now, LastAt: now})
+			}
 			continue
 		}
 		if err != nil {
@@ -156,7 +160,9 @@ func ReadHealth(now int64) Health {
 		case issueClaimConflict, issueRecoveryUnsafe:
 			clear = clear && recovery > i.LastAt
 		case issueQueuePressure:
-			clear = clear && out.Queued < maxQueueEntries
+			clear = clear && out.Queued < maxQueueEntries && queueErr == nil
+		case issueQueueIO:
+			clear = clear && queueErr == nil
 		case issueInputRefused, issueRetryExhausted:
 			clear = clear && out.Refused == 0
 		case issueAcceptedUnverified:
