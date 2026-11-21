@@ -248,48 +248,30 @@ func TestReadMemoryStateMeasuresWhatIsAtRisk(t *testing.T) {
 	}
 }
 
-func TestPlaybookBackupsAreNotHoardedForever(t *testing.T) {
-	// Keeping every upgrade was right while there were three. The real HQ home had
-	// TWENTY, which reads as a folder of debris a reader has to scroll past to find
-	// their own files. The backup exists so one bad upgrade can be undone.
+func TestPlaybookUpgradeKeepsExistingBackups(t *testing.T) {
 	seedMemory(t)
-	base := time.Now().Add(-40 * time.Hour)
-	// Named so the LEXICAL order disagrees with the chronological one: v9 sorts after
-	// v22, so a prune that sorted by name would keep the oldest.
-	for i, v := range []int{2, 5, 7, 9, 10, 22, 25, 33} {
-		p := hqInstructionsPath() + fmt.Sprintf(".bak-v%d-en", v)
-		if err := os.WriteFile(p, []byte("playbook v"+fmt.Sprint(v)), 0o644); err != nil {
-			t.Fatal(err)
-		}
-		at := base.Add(time.Duration(i) * time.Hour)
-		if err := os.Chtimes(p, at, at); err != nil {
+	prior := playbookMarker(67, "en") + "\nformer charter\n"
+	if err := os.WriteFile(hqInstructionsPath(), []byte(prior), 0600); err != nil {
+		t.Fatal(err)
+	}
+	for _, version := range []int{60, 61, 62, 67} {
+		path := hqInstructionsPath() + fmt.Sprintf(".bak-v%d-en", version)
+		if err := os.WriteFile(path, []byte("existing backup"), 0600); err != nil {
 			t.Fatal(err)
 		}
 	}
-	prunePlaybookBackups()
-
-	left, _ := filepath.Glob(hqInstructionsPath() + ".bak-v*")
-	if len(left) != playbookBackupsKeep {
-		t.Fatalf("kept %d backups, want %d: %v", len(left), playbookBackupsKeep, left)
+	result, err := seedHQHome("")
+	if err != nil || !result.Upgraded {
+		t.Fatalf("upgrade: %+v %v", result, err)
 	}
-	// The NEWEST survive, which is what "undo the last upgrade" needs.
-	for _, want := range []int{22, 25, 33} {
-		if _, err := os.Stat(hqInstructionsPath() + fmt.Sprintf(".bak-v%d-en", want)); err != nil {
-			t.Errorf("v%d should have been kept: %v", want, err)
+	if got, err := os.ReadFile(result.BackupPath); err != nil || string(got) != prior {
+		t.Fatalf("incorrect upgrade backup: %v", err)
+	}
+	for _, version := range []int{60, 61, 62, 67} {
+		path := hqInstructionsPath() + fmt.Sprintf(".bak-v%d-en", version)
+		if got, err := os.ReadFile(path); err != nil || string(got) != "existing backup" {
+			t.Fatalf("prior backup %s changed: %v", path, err)
 		}
-	}
-}
-
-func TestPruneLeavesAHandfulAlone(t *testing.T) {
-	seedMemory(t)
-	for _, v := range []int{31, 32} {
-		if err := os.WriteFile(hqInstructionsPath()+fmt.Sprintf(".bak-v%d-en", v), []byte("x"), 0o644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	prunePlaybookBackups()
-	if left, _ := filepath.Glob(hqInstructionsPath() + ".bak-v*"); len(left) != 2 {
-		t.Errorf("pruned below the keep count: %v", left)
 	}
 }
 

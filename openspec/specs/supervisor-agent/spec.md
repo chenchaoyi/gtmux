@@ -10,14 +10,15 @@ TBD - created by archiving change supervisor-mvp. Update Purpose after archive.
 The standalone `gtmux hq --refresh-rules` action SHALL reuse the shipped charter
 renderer and version/language decision for an existing owned regular managed
 AGENTS.md. It SHALL preserve its language, LOCAL/CLAUDE/notes/knowledge and every
-other session marker or input. Equal/newer versions SHALL remain unchanged.
+other session marker or input. Equal/newer entries SHALL remain unchanged. An exact
+current entry may recover a missing linked managed runbook.
 The action SHALL NOT initialize a missing/legacy home, require tmux, enroll panes,
 focus, launch, rotate or send input; combining another action SHALL be refused.
 
 #### Scenario: An installed CLI carries newer rules while HQ keeps running
 
 - **WHEN** the standalone action reads a valid older managed file under the shared startup/import lock
-- **THEN** it saves the exact old bytes under a fresh exclusive backup name without pruning old backups, atomically publishes the shipped rules in the existing language, and leaves all session actions untouched
+- **THEN** it saves the exact old bytes under a fresh exclusive backup name without pruning old backups, installs the matching runbooks first, atomically publishes the shipped entry in the existing language, and leaves all session actions untouched
 
 #### Scenario: Unsafe file, occupied lock or backup failure
 
@@ -43,28 +44,25 @@ history while the target is in an alternate screen.
 The system SHALL provide `gtmux hq` (中控): it creates — or focuses, when one
 already runs — a dedicated tmux session running the user's coding agent (Claude
 by default, per existing agent profiles) with its working directory set to the
-persistent supervisor home (`~/.config/gtmux/hq/`). The playbook SHALL be
-gtmux-OWNED and VERSION-TRACKED: AGENTS.md is the canonical FULL playbook (the
-cross-agent convention Codex/Cursor/Amp read natively) carrying a machine-parseable
-VERSION marker, and CLAUDE.md is a one-line `@AGENTS.md` import so Claude reads the
-SAME content with no two-doc drift (`--agent`/`GTMUX_HQ_AGENT` pick which agent runs).
-User PERSONALIZATION SHALL live in a separate seed-once `LOCAL.md` that the generated
-AGENTS.md `@`-imports (reaching Claude through the CLAUDE.md→AGENTS.md→LOCAL.md chain);
-gtmux SHALL create `LOCAL.md` once from a template and SHALL NEVER overwrite it. On
-`gtmux hq`, when the SHIPPED playbook version is newer than the installed one, the
-system SHALL UPGRADE the managed AGENTS.md: back up the prior file to
-`AGENTS.md.bak-v<old>` FIRST, regenerate at the new version, and print a one-line
-notice. When the versions match it SHALL be idempotent (no rewrite). An existing
-AGENTS.md with NO version marker SHALL be treated as version 0 and MIGRATED once via
-the same backup-then-regenerate path, with the notice directing the user to move any
-personal edits into `LOCAL.md`. The situation board (`notes/board.md`) and knowledge
-base (`knowledge/*`) SHALL remain seed-if-absent and SHALL NOT be touched by an
-upgrade. A legacy full CLAUDE.md-only home (pre-AGENTS.md convention) SHALL follow
-"Managed playbook migrates legacy homes": back up the legacy file first, generate the
-managed AGENTS.md plus CLAUDE.md pointer, seed LOCAL.md once, and name the backup in
-the migration notice. `gtmux hq` SHALL WARN — rather
-than silently proceed — when it detects a redundant layout (a full CLAUDE.md alongside
-AGENTS.md) or a broken one (a CLAUDE.md `@AGENTS.md` import while AGENTS.md is missing).
+persistent supervisor home (`~/.config/gtmux/hq/`). The playbook SHALL have a
+version-stamped, agent-neutral AGENTS.md entry with identity, authority, evidence,
+short-turn and privacy rules followed by links to the shipped procedures. Install
+the startup, dispatch, workspace and maintenance runbooks in a language- and
+version-specific directory before publishing the entry. Ordinary links SHALL
+make their contents available on demand.
+
+A new CLAUDE.md SHALL be the one-line `@AGENTS.md` pointer. Keep the sole
+`@LOCAL.md` import for import-capable clients. The entry SHALL also direct
+clients to read the complete LOCAL.md explicitly if they did not load it, and
+to apply its standing rules ahead of managed defaults. Create the user file
+only when absent. Keep its existing bytes on upgrade, repair or language
+change. A verified backup of the previous managed entry precedes publication.
+Preserve earlier backups and modules for old sessions. An equal-version
+entry SHALL remain unchanged except on an explicit language switch. Repair
+missing modules for an exact current entry, preserving conflicting files.
+A newer entry SHALL remain unchanged. Keep the existing board and knowledge
+base. Unversioned or mixed AGENTS.md and full legacy CLAUDE.md stay active for
+review under "Preserve legacy personal instructions".
 The seeded playbook teaches the supervisor to loop — read `gtmux digest --json`, judge,
 drill into a pane (`tmux capture-pane`) only when warranted, drive via `gtmux send`,
 report to the user with a token-usage section ALWAYS included in status reports (the
@@ -106,7 +104,7 @@ shell, and `--here`/`--new-pane` SHALL refuse outside tmux rather than guess.
 #### Scenario: Fresh home seeds the managed playbook + LOCAL.md
 
 - **WHEN** `gtmux hq` runs and `~/.config/gtmux/hq/` has NO policy file
-- **THEN** a version-stamped AGENTS.md (the full playbook), a CLAUDE.md `@AGENTS.md`
+- **THEN** a version-stamped AGENTS.md, linked runbooks, a CLAUDE.md `@AGENTS.md`
   import, and an empty `LOCAL.md` template are generated, and a tmux session starts the
   agent there
 
@@ -120,31 +118,29 @@ shell, and `--here`/`--new-pane` SHALL refuse outside tmux rather than guess.
 #### Scenario: Matching version is idempotent
 
 - **WHEN** `gtmux hq` runs and the installed AGENTS.md version equals the shipped one
-- **THEN** AGENTS.md is left unchanged (no rewrite) and no notice is printed
+- **THEN** AGENTS.md is left unchanged. A notice identifies any missing runbooks repaired.
 
 #### Scenario: LOCAL.md is never overwritten
 
 - **WHEN** `gtmux hq` upgrades the playbook and the user has content in `LOCAL.md`
 - **THEN** `LOCAL.md` is left exactly as the user wrote it, and its content still reaches
-  the agent via the AGENTS.md import
+  the agent via the import or the prescribed explicit read
 
-#### Scenario: A legacy unversioned AGENTS.md is migrated once
+#### Scenario: A legacy unversioned AGENTS.md remains active
 
-- **WHEN** `gtmux hq` runs and the home holds an AGENTS.md with no version marker
-- **THEN** it is backed up to `AGENTS.md.bak-v0`, regenerated at the shipped version, and
-  the notice directs the user to move any personal edits into `LOCAL.md`
+- **WHEN** `gtmux hq` finds an unversioned entry or one with separate user/knowledge blocks
+- **THEN** it preserves the active file and reports that the layout needs review
 
 #### Scenario: The board and knowledge base survive an upgrade
 
 - **WHEN** `gtmux hq` upgrades the playbook
 - **THEN** `notes/board.md` and every `knowledge/*` file are left untouched
 
-#### Scenario: A legacy full CLAUDE.md becomes the managed layout
+#### Scenario: A legacy full CLAUDE.md remains active
 
-- **WHEN** `gtmux hq` runs and the home already holds a full CLAUDE.md but no AGENTS.md
-- **THEN** the legacy CLAUDE.md is preserved in its backup, the managed AGENTS.md and
-  CLAUDE.md import pointer are generated, LOCAL.md is seeded once, and the migration
-  notice names the backup
+- **WHEN** `gtmux hq` finds a full CLAUDE.md and no AGENTS.md
+- **THEN** it preserves CLAUDE.md, seeds the managed entry and runbooks beside it,
+  and points out the dual layout for review
 
 #### Scenario: A redundant or broken layout warns
 
@@ -1044,36 +1040,20 @@ quiet mode board-only unless something CRITICAL rode the tick.
 - **THEN** HQ emits one ≤6-line `⟣ ◈` brief naming each outcome in one clause, and
   nothing else
 
-### Requirement: Managed playbook migrates legacy homes
+### Requirement: Preserve legacy personal instructions
 
-`gtmux hq` SHALL migrate a legacy HQ home whose only policy file is a full
-CLAUDE.md (no managed AGENTS.md): back up the legacy file alongside
-(timestamped, never deleted), generate the managed AGENTS.md at the current
-playbook version plus the `@AGENTS.md` CLAUDE.md pointer, seed LOCAL.md once,
-and print a one-line notice naming the backup. A home with a managed AGENTS.md
-SHALL continue on the existing upgrade path. The seeder SHALL NOT silently skip
-any home shape.
+Startup SHALL keep older user-owned policies and their originals in place.
+A full CLAUDE.md stays active alongside the managed entry. A prior managed
+pointer stays in place when its missing AGENTS.md is restored. Older AGENTS.md
+files with a recognized managed marker can upgrade after a verified backup.
+Unknown unversioned AGENTS.md or identifiable independent instructions stay
+active and require review. Both startup and refresh preserve existing LOCAL.md.
 
-#### Scenario: A legacy home is upgraded on next start
+#### Scenario: A missing managed entry is repaired
 
-- **WHEN** `gtmux hq` runs against a home containing only a legacy full CLAUDE.md
-- **THEN** the legacy file is backed up in place, the managed AGENTS.md + pointer +
-  LOCAL.md are written at the shipped version, and the notice names the backup
-
-#### Scenario: A second migration keeps every earlier backup
-
-- **WHEN** a home is migrated, its AGENTS.md is removed, and `gtmux hq` migrates it again
-  the same day
-- **THEN** the second backup gets a name of its own, the first backup still holds the
-  original playbook byte for byte, no existing file at a backup name is overwritten, and
-  a LOCAL.md the user wrote is left as it is
-
-#### Scenario: No backup, no migration
-
-- **WHEN** the legacy file cannot be backed up (or the copy does not read back)
-- **THEN** the migration stops before anything else is written: the legacy CLAUDE.md, a
-  missing AGENTS.md and LOCAL.md stay as they were, no partial backup is left, and no
-  migration is reported
+- **WHEN** the existing CLAUDE.md is already the managed pointer and AGENTS.md is missing
+- **THEN** normal startup recreates the managed entry with its runbooks and
+  preserves CLAUDE.md, LOCAL.md and earlier backups
 
 ### Requirement: The playbook teaches the wake re-send identifier
 

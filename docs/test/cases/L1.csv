@@ -1322,11 +1322,9 @@ LEG-618e86c9a264,L1,Go core / CLI / server,internal/hq/archive_small_records_tes
 LEG-01098dda3d23,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,127,Benchmark,BenchmarkSmallRecordArchive7000,False,legacy-not-retrospectively-reviewed
 LEG-8ad77d3c1573,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,128,Benchmark,BenchmarkSmallRecordArchive10000,False,legacy-not-retrospectively-reviewed
 LEG-29886f95fa14,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,138,Test,TestArchivePreflightIncludesTarOverhead,False,legacy-upstream-PR1814
-LEG-52f76e5b76eb,L1,Go core / CLI / server,internal/hq/board_shape_test.go,16,Test,TestPlaybookSpecifiesTheBoardShape,False,legacy-not-retrospectively-reviewed
-LEG-0027ec241967,L1,Go core / CLI / server,internal/hq/board_shape_test.go,32,Test,TestBoardShapeShippedWithAVersionBump,False,legacy-not-retrospectively-reviewed
-LEG-15483d5020ad,L1,Go core / CLI / server,internal/hq/board_shape_test.go,52,Test,TestBoardSeedHasBothParts,False,legacy-not-retrospectively-reviewed
-LEG-a8636bbce213,L1,Go core / CLI / server,internal/hq/board_shape_test.go,71,Test,TestPlaybookAndSeedAgreeOnTheHeadings,False,legacy-not-retrospectively-reviewed
-LEG-f6324716e51f,L1,Go core / CLI / server,internal/hq/board_shape_test.go,87,Test,TestBoardDoesNotSpeakTranslationese,False,legacy-not-retrospectively-reviewed
+LEG-15483d5020ad,L1,Go core / CLI / server,internal/hq/board_shape_test.go,30,Test,TestBoardSeedHasBothParts,False,legacy-not-retrospectively-reviewed
+LEG-a8636bbce213,L1,Go core / CLI / server,internal/hq/board_shape_test.go,49,Test,TestPlaybookAndSeedAgreeOnTheHeadings,False,legacy-not-retrospectively-reviewed
+LEG-f6324716e51f,L1,Go core / CLI / server,internal/hq/board_shape_test.go,65,Test,TestBoardDoesNotSpeakTranslationese,False,legacy-not-retrospectively-reviewed
 LEG-194cc93ffc40,L1,Go core / CLI / server,internal/hq/board_test.go,18,Test,TestBoardReadsTextAndModTime,False,legacy-not-retrospectively-reviewed
 LEG-a7a00b6ffdda,L1,Go core / CLI / server,internal/hq/board_test.go,40,Test,TestBoardAbsentReportsNotOk,False,legacy-not-retrospectively-reviewed
 LEG-7edd04aaf72a,L1,Go core / CLI / server,internal/hq/board_test.go,49,Test,TestBoardTruncatesToTheHead,False,legacy-not-retrospectively-reviewed
@@ -1392,26 +1390,18 @@ LEG-5b929e4e0757,L1,Go core / CLI / server,internal/hq/eventscmd_test.go,719,Tes
 LEG-f0a705a79093,L1,Go core / CLI / server,internal/hq/help_test.go,11,Test,TestHQHelpReadableAtDisplayWidths,False,legacy-not-retrospectively-reviewed
 LEG-225a7ec26768,L1,Go core / CLI / server,internal/hq/help_test.go,45,Test,TestHQHelpDoesNotTouchHomeOrRotate,False,legacy-not-retrospectively-reviewed
 LEG-d784bc888ce1,L1,Go core / CLI / server,internal/hq/help_test.go,68,Test,TestMigrationHelpKeepsItsOwnEntryPoint,False,legacy-not-retrospectively-reviewed
-LEG-eaf8f16b1863,L1,Go core / CLI / server,internal/hq/hq_test.go,20,Test,TestPlaybookTeachesDistill,False,legacy-not-retrospectively-reviewed
-LEG-cb6388429b0b,L1,Go core / CLI / server,internal/hq/hq_test.go,40,Test,TestPlaybookTeachesCaptureLoop,False,legacy-not-retrospectively-reviewed
-LEG-84354e678904,L1,Go core / CLI / server,internal/hq/hq_test.go,68,Test,TestPlaybookTeachesMaintenanceWakes,False,legacy-not-retrospectively-reviewed
-LEG-11e9d6335c2e,L1,Go core / CLI / server,internal/hq/hq_test.go,91,Test,TestPlaybookTeachesFileGoalChannel,False,legacy-not-retrospectively-reviewed
-LEG-110539020bd2,L1,Go core / CLI / server,internal/hq/hq_test.go,114,Test,TestPlaybookTeachesTheConsumptionWatermark,False,legacy-not-retrospectively-reviewed
-LEG-384ff63f08c7,L1,Go core / CLI / server,internal/hq/hq_test.go,136,Test,TestPlaybookTeachesBatteryWatch,False,legacy-not-retrospectively-reviewed
-LEG-d5ecf68e6e0d,L1,Go core / CLI / server,internal/hq/hq_test.go,321,Test,TestParsePlaybookVersion,False,legacy-not-retrospectively-reviewed
-LEG-3d9a954ba61a,L1,Go core / CLI / server,internal/hq/hq_test.go,402,Test,TestHQPolicyWarning,False,legacy-not-retrospectively-reviewed
-LEG-2d3528c57ca7,L1,Go core / CLI / server,internal/hq/hq_test.go,535,Test,TestHQBriefingPrompt,False,legacy-not-retrospectively-reviewed
-LEG-2c7d3e52f9ef,L1,Go core / CLI / server,internal/hq/hq_test.go,570,Test,TestHQBriefingEnabled,False,legacy-not-retrospectively-reviewed
-LEG-f8087baa3f2d,L1,Go core / CLI / server,internal/hq/hq_test.go,659,Test,TestHQAgentCommand,False,legacy-not-retrospectively-reviewed
-LEG-a44a4950d716,L1,Go core / CLI / server,internal/hq/hq_test.go,745,Test,TestAgentAliveByCmd,False,legacy-not-retrospectively-reviewed
-LEG-be97b228bfc7,L1,Go core / CLI / server,internal/hq/hq_test.go,775,Test,TestSeedsAndPlaybookCarryNoAuthorLeakage,False,legacy-not-retrospectively-reviewed
-LEG-deaead4c014f,L1,Go core / CLI / server,internal/hq/hq_test.go,808,Test,TestBoardSeedFollowsLanguage,False,legacy-not-retrospectively-reviewed
-LEG-1919417fcf78,L1,Go core / CLI / server,internal/hq/hq_test.go,832,Test,TestPlaybookDropsRetiredPerceptionVocabulary,False,legacy-not-retrospectively-reviewed
-LEG-cc52ed61de30,L1,Go core / CLI / server,internal/hq/hq_test.go,850,Test,TestGeneratedPlaybookFollowsLanguage,False,legacy-not-retrospectively-reviewed
-LEG-a7757e9edc9b,L1,Go core / CLI / server,internal/hq/hq_test.go,984,Test,TestMismatchNoticeSaysNothingChangedAndHow,False,legacy-not-retrospectively-reviewed
-LEG-06f3f97b807c,L1,Go core / CLI / server,internal/hq/hq_test.go,1000,Test,TestChartersShareSkeletonAndAnchors,False,legacy-not-retrospectively-reviewed
-LEG-14efba6eb225,L1,Go core / CLI / server,internal/hq/hq_test.go,1080,Test,TestExplicitSwitchNoticeSaysItWasAskedFor,False,legacy-not-retrospectively-reviewed
-LEG-4acd5eceac53,L1,Go core / CLI / server,internal/hq/hq_test.go,1102,Test,TestPlaybookTeachesDispatchToChooseAgentAndModel,False,legacy-not-retrospectively-reviewed
+LEG-d5ecf68e6e0d,L1,Go core / CLI / server,internal/hq/hq_test.go,148,Test,TestParsePlaybookVersion,False,legacy-not-retrospectively-reviewed
+LEG-3d9a954ba61a,L1,Go core / CLI / server,internal/hq/hq_test.go,208,Test,TestHQPolicyWarning,False,legacy-not-retrospectively-reviewed
+LEG-2d3528c57ca7,L1,Go core / CLI / server,internal/hq/hq_test.go,313,Test,TestHQBriefingPrompt,False,legacy-not-retrospectively-reviewed
+LEG-2c7d3e52f9ef,L1,Go core / CLI / server,internal/hq/hq_test.go,338,Test,TestHQBriefingEnabled,False,legacy-not-retrospectively-reviewed
+LEG-f8087baa3f2d,L1,Go core / CLI / server,internal/hq/hq_test.go,381,Test,TestHQAgentCommand,False,legacy-not-retrospectively-reviewed
+LEG-a44a4950d716,L1,Go core / CLI / server,internal/hq/hq_test.go,395,Test,TestAgentAliveByCmd,False,legacy-not-retrospectively-reviewed
+LEG-be97b228bfc7,L1,Go core / CLI / server,internal/hq/hq_test.go,425,Test,TestSeedsAndPlaybookCarryNoAuthorLeakage,False,legacy-not-retrospectively-reviewed
+LEG-deaead4c014f,L1,Go core / CLI / server,internal/hq/hq_test.go,462,Test,TestBoardSeedFollowsLanguage,False,legacy-not-retrospectively-reviewed
+LEG-1919417fcf78,L1,Go core / CLI / server,internal/hq/hq_test.go,486,Test,TestPlaybookDropsRetiredPerceptionVocabulary,False,legacy-not-retrospectively-reviewed
+LEG-cc52ed61de30,L1,Go core / CLI / server,internal/hq/hq_test.go,504,Test,TestGeneratedPlaybookFollowsLanguage,False,legacy-not-retrospectively-reviewed
+LEG-a7757e9edc9b,L1,Go core / CLI / server,internal/hq/hq_test.go,641,Test,TestMismatchNoticeSaysNothingChangedAndHow,False,legacy-not-retrospectively-reviewed
+LEG-14efba6eb225,L1,Go core / CLI / server,internal/hq/hq_test.go,688,Test,TestExplicitSwitchNoticeSaysItWasAskedFor,False,legacy-not-retrospectively-reviewed
 LEG-82d5be2b17ec,L1,Go core / CLI / server,internal/hq/hqacts_filter_test.go,12,Test,TestEventsJSONActsOnlyFilters,False,legacy-not-retrospectively-reviewed
 LEG-b9240e5e6117,L1,Go core / CLI / server,internal/hq/hqagent_test.go,11,Test,TestHQLaunchBinary,False,legacy-not-retrospectively-reviewed
 LEG-b7efce2fcb0f,L1,Go core / CLI / server,internal/hq/hqagent_test.go,29,Test,TestHQLaunchOptions,False,legacy-not-retrospectively-reviewed
@@ -1446,12 +1436,10 @@ LEG-1f1260b4ce77,L1,Go core / CLI / server,internal/hq/memory_test.go,185,Test,T
 LEG-ad9f8811d277,L1,Go core / CLI / server,internal/hq/memory_test.go,207,Test,TestSnapshotIsNotStoredInsideTheThingItProtects,False,legacy-not-retrospectively-reviewed
 LEG-2d873b652b50,L1,Go core / CLI / server,internal/hq/memory_test.go,227,Test,TestSnapshotNoSupervisor,False,legacy-not-retrospectively-reviewed
 LEG-188b4d2ceffe,L1,Go core / CLI / server,internal/hq/memory_test.go,234,Test,TestReadMemoryStateMeasuresWhatIsAtRisk,False,legacy-not-retrospectively-reviewed
-LEG-250213b452ae,L1,Go core / CLI / server,internal/hq/memory_test.go,251,Test,TestPlaybookBackupsAreNotHoardedForever,False,legacy-not-retrospectively-reviewed
-LEG-5975c463ed21,L1,Go core / CLI / server,internal/hq/memory_test.go,283,Test,TestPruneLeavesAHandfulAlone,False,legacy-not-retrospectively-reviewed
-LEG-4732ab9ca190,L1,Go core / CLI / server,internal/hq/memory_test.go,299,Test,TestMemoryJSONCarriesWhatASurfaceNeeds,False,legacy-not-retrospectively-reviewed
-LEG-ce5a2872bb8e,L1,Go core / CLI / server,internal/hq/memory_test.go,317,Test,TestMemoryJSONOnAMachineWithNoSupervisor,False,legacy-not-retrospectively-reviewed
-LEG-7d353d6c0f44,L1,Go core / CLI / server,internal/hq/memory_test.go,332,Test,TestOffMachineHintDoesNotClaimABackupItCannotSee,False,legacy-not-retrospectively-reviewed
-LEG-75da05c2b12f,L1,Go core / CLI / server,internal/hq/memory_test.go,366,Test,TestWorkspaceBackupRetainsRecordsButDoesNotReplayPendingInstructions,False,legacy-not-retrospectively-reviewed
+LEG-4732ab9ca190,L1,Go core / CLI / server,internal/hq/memory_test.go,281,Test,TestMemoryJSONCarriesWhatASurfaceNeeds,False,legacy-not-retrospectively-reviewed
+LEG-ce5a2872bb8e,L1,Go core / CLI / server,internal/hq/memory_test.go,299,Test,TestMemoryJSONOnAMachineWithNoSupervisor,False,legacy-not-retrospectively-reviewed
+LEG-7d353d6c0f44,L1,Go core / CLI / server,internal/hq/memory_test.go,314,Test,TestOffMachineHintDoesNotClaimABackupItCannotSee,False,legacy-not-retrospectively-reviewed
+LEG-75da05c2b12f,L1,Go core / CLI / server,internal/hq/memory_test.go,348,Test,TestWorkspaceBackupRetainsRecordsButDoesNotReplayPendingInstructions,False,legacy-not-retrospectively-reviewed
 LEG-87f900855dd3,L1,Go core / CLI / server,internal/hq/memorycrypt_test.go,50,Test,TestWrongPassphraseChangesNothing,False,legacy-not-retrospectively-reviewed
 LEG-7d21f1ef070b,L1,Go core / CLI / server,internal/hq/memorycrypt_test.go,72,Test,TestAShortPassphraseIsRefused,False,legacy-not-retrospectively-reviewed
 LEG-96c1c580f374,L1,Go core / CLI / server,internal/hq/memorycrypt_test.go,87,Test,TestPlainExportIsRecordedAsNotLocked,False,legacy-not-retrospectively-reviewed
@@ -1465,7 +1453,6 @@ LEG-7ec3020f9c60,L1,Go core / CLI / server,internal/hq/mine_test.go,44,Test,Test
 LEG-82208d1311f7,L1,Go core / CLI / server,internal/hq/mine_test.go,82,Test,TestParseSinceArg,False,legacy-not-retrospectively-reviewed
 LEG-7aa06d916ba2,L1,Go core / CLI / server,internal/hq/mine_test.go,96,Test,TestPlaybookTeachesTranscriptLeadsInBothLanguages,False,legacy-not-retrospectively-reviewed
 LEG-48e101d4acbd,L1,Go core / CLI / server,internal/hq/playbook_version_test.go,27,Test,TestChangingTheCharterBumpsTheVersion,False,legacy-not-retrospectively-reviewed
-LEG-d7fe8fa1ceab,L1,Go core / CLI / server,internal/hq/playbook_version_test.go,58,Test,TestTheFingerprintCoversBothLanguages,False,legacy-not-retrospectively-reviewed
 LEG-76bdb76577ec,L1,Go core / CLI / server,internal/hq/revalidate_test.go,12,Test,TestResourceWarnProbe_PassesThroughWhatItDoesNotOwn,False,legacy-not-retrospectively-reviewed
 LEG-c834fd9e88b8,L1,Go core / CLI / server,internal/hq/revalidate_test.go,29,Test,TestRevalidatorChainDefaultsToIdentity,False,legacy-not-retrospectively-reviewed
 LEG-4ccc7b392dda,L1,Go core / CLI / server,internal/hq/revalidate_test.go,39,Test,TestSplitWakeTail,False,legacy-not-retrospectively-reviewed
@@ -1566,7 +1553,6 @@ LEG-45b57c95ef7b,L1,Go core / CLI / server,internal/hq/watchdog_test.go,10,Test,
 LEG-4e5f8c43a6a8,L1,Go core / CLI / server,internal/hq/watchdog_test.go,42,Test,TestShouldEscalate_PremiseIsProvenanceNotAskText,False,legacy-not-retrospectively-reviewed
 LEG-299a386d0b2e,L1,Go core / CLI / server,internal/hq/watchdog_test.go,64,Test,TestWatchdogMarker_OncePerEpisode,False,legacy-not-retrospectively-reviewed
 LEG-b69f5d669218,L1,Go core / CLI / server,internal/hq/workspace_playbook_test.go,11,Test,TestBothChartersTeachUsableExistingGoalRegistration,False,legacy-not-retrospectively-reviewed
-LEG-fde4bdc91c6f,L1,Go core / CLI / server,internal/hq/workspace_playbook_test.go,13,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-e3fbf38a42ec,L1,Go core / CLI / server,internal/hqinput/lease_test.go,9,Test,TestCompetingChannelsHoldRatherThanOverwriteAndResumeAfterRelease,False,legacy-not-retrospectively-reviewed
 LEG-fdd84b1b101f,L1,Go core / CLI / server,internal/hqinput/lease_test.go,29,Test,TestInputLeaseFailureIsExplicit,False,legacy-not-retrospectively-reviewed
 LEG-091421d02382,L1,Go core / CLI / server,internal/hqnudge/hqinput_test.go,10,Test,TestPublicWakeChannelsKeepQueueWhileWorkspaceOwnsInput,False,legacy-not-retrospectively-reviewed
@@ -3617,6 +3603,7 @@ LEG-f898dfb4693c,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,128,it,d
 LEG-77bf282237b3,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,134,it,a request rejected just before a brief inactive interval cannot start an old alternate attempt,False,legacy-not-retrospectively-reviewed
 LEG-cd3d33f35f35,L1,RN / mobile harness,mobileapp/src/push/sync.test.ts,147,it,retains the write queue barrier until an aborted transport actually settles,False,legacy-not-retrospectively-reviewed
 MAP-7f66e0d7556c,L1,reviewed implementation,mobileapp/src/screens/attachmentEchoIdentity.test.ts,7,reviewed-selector,AEC-001 dual-representation identity preserves ordered attachment multiplicity,False,AEC-001
+MAP-e51f89ef8bda,L1,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,204,reviewed-selector,reads the shipped $lang legacy board example,False,HQBC-001
 MAP-4dfc41d98d20,L1,reviewed implementation,mobileapp/src/screens/knowledgeReading.semantics.test.ts,10,reviewed-selector,History API is current guidance rather than an explicit historical title,False,"KRDS-001,KRDS-002,KRDS-003"
 MAP-fea0656072e3,L1,reviewed implementation,mobileapp/src/screens/knowledgeReading.semantics.test.ts,17,reviewed-selector,a current peer section after History remains visible by default,False,"KRDS-001,KRDS-002,KRDS-003"
 MAP-deea1a99d411,L1,reviewed implementation,mobileapp/src/screens/knowledgeReading.semantics.test.ts,22,reviewed-selector,a multiline comment across the first blank stays hidden through actual Markdown parsing,False,"KRDS-001,KRDS-002,KRDS-003"

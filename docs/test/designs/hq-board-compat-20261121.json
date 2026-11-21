@@ -1,0 +1,24 @@
+{
+  "id": "hq-board-compat-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, design self-review with independent review finding",
+    "date": "2026-11-21",
+    "decision": "Exercise the bilingual startup runbook examples through the existing phone board parser",
+    "notes": "The independent review reproduced a heading the consumers cannot lift and documented the numbered reply contract. The examples in the shipped runbooks are the inputs, so a corrected hand-written test fixture cannot conceal a wrong runbook. Keep the mobile and macOS readers unchanged. The data is synthetic and the low-write local run uses the phone parser with Node assertions. The mobile Jest suite and installed-client acceptance remain CI and review activities."
+  },
+  "cases": [
+    {
+      "id": "HQBC-001",
+      "layer": "L1",
+      "description": "Both startup runbooks teach the recognized legacy decision section and reply format",
+      "setup": "Load one Markdown example from each bundled startup runbook. Include stable nonconsecutive item numbers, two bold groups, a recommendation and an item with a continuation.",
+      "action": "Parse each example with parseBoardSections, findAsk, askItems and askQuote. Remove the answered item, then separately provide an empty decision section.",
+      "expected": "Exact language-specific titles are lifted. The original number, short first-line quote and group are retained. An explicit recommendation is recognized. Removal leaves the other item and its number intact. An empty decision section produces no actionable item.",
+      "planned_files": [
+        "mobileapp/src/screens/boardSections.test.ts"
+      ]
+    }
+  ],
+  "seal": "039cf42a6016842c6d4822f020e39b9b7c54583982c6ceb555381b2156e60e8e"
+}

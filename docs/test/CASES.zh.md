@@ -2,16 +2,16 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1403 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1404 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3816 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2608 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2618 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
-| G · 质量门禁 | 507 | [G.csv](cases/G.csv) |
+| G · 质量门禁 | 497 | [G.csv](cases/G.csv) |
 
 数字不是通过数。存量 6,223 个位置来自 4fad6119 盘点（声明、子测试、动态模板），另加明确的新用例、原生过程入口和评审映射入口；动态实例不展开。没有具名用例的辅助文件仍保留摘要。存量层次是结构分类，混合边界在触及时需语义复核，不补造历史评审/运行结果。`reviewed-selector` 也不冒充框架发现的声明。源码/目录/映射漂移由门禁拦截，但测试名不能自动证明断言质量。
 
@@ -203,6 +203,7 @@
 | FOCUS-001 | Literal and decorated versions of the complete session match; differently quoted, truncated, unrelated, wrong-separator and empty identities do not. Existing ordinary/decorated titles and bare trailing-whitespace tolerance remain supported. |
 | FOCUS-002 | A literal match wins across all tabs before tolerant decoration fallback. With only a decorated match it is selected. The chosen record, indices and trailing title bytes remain unchanged; no match and empty session return false. Multiple literal tabs retain first-match order. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |
+| HQBC-001 | Exact language-specific titles are lifted. The original number, short first-line quote and group are retained. An explicit recommendation is recognized. Removal leaves the other item and its number intact. An empty decision section produces no actionable item. |
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |
 | MC-HQ-WINDOW | The complete native HQ window keeps a long question header, original conversation and composer inside narrow/wide viewports; AX choice activation updates the real NSTextView and focus, independent of read timeout. |
 | MC-HQ-READ | Stored matter/overview reads do not perform roster or historical discovery. Slow or failed optional source enrichment cannot block selection/preparing replies or replace newer matters/drafts. Legacy CLI fallback is bounded to explicit unsupported flags. |
@@ -219,6 +220,9 @@
 | HGD-008 | Unchanged held/queued premises preserve owner/generation/lease and permit current assessment; real premise changes, expiry and old generation reject stale assessments. |
 | HGD-009 | Stop marks a bounded scan; no-event/quiet still leaves HQ debt; actual dispatch guard queues once only for the exact empty composer, refuses draft/identity without input, and the registered premise probe drops the obsolete goal reminder after explicit completion. Background work is joined before restoring test globals. |
 | HGD-010 | Historically accurate reports durably reserve the original action even when already expired; current duty remains HQ verification, never live driving, and send count stays zero across reopen/restore. Wrong identity/intent/ambiguous interval/future or pre-intent time/unknown state/invalid deadline/ask never creates driver history. |
+| HQIL-001 | Short entry retains local precedence, includes only the existing LOCAL import, publishes files under the matching version and language, and leaves prior files, tasks and sessions alone. |
+| HQIL-002 | Recreate only missing managed files, keep active personal files and old backups intact, refuse a conflicting runbook, and retain the previous entry on failed publication. |
+| HQIL-003 | Use matching board sections, register without replay, respect known versus unknown usage, resolve approved review and capture from sourced leads. |
 | HRW-014 | Generation/ctime mismatch never deletes or reauthorizes the claim, despite identical inode/body/mtime. Normal unchanged accepted cleanup passes. Exact owned uncertain publication completes one link retirement and retains original batch uncertainty; changed payload or foreign link holds without deletion. Known-refused shared queue ownership still preserves newest B. Original T tests/expectations remain unchanged; old-source target red is a real assertion, not compile/setup/allocator failure. |
 | HRW-015 | Only a verified same-inode anchor can support native cleanup; original inode remains alive across process loss and cannot naturally be reused. Missing/foreign/unknown pin holds without deletion or native call. Accepted/refused closes only own references, uncertain preserves exact original input and pin; valid conflicting batches cannot overwrite protected claims or block independent fresh events. Pin count is bounded before mutation; errors never fall back or replay. No sleep, allocator-luck or relaxed cloud assertion. |
 | HRW-009 | A is never submitted under a new batch identity; original exact payload, ID and uncertainty remain inspectable. Accepted/uncertain spool state is not downgraded to unsent. B and legitimate fresh duplicate text can progress once. Journal precedes possible mutation; failure holds without mutation. Recovery never removes a foreign replacement; malformed evidence holds conservatively. Ordinary non-native transport retains its existing contract. |

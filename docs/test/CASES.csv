@@ -1677,11 +1677,10 @@ LEG-618e86c9a264,L1,Go core / CLI / server,internal/hq/archive_small_records_tes
 LEG-01098dda3d23,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,127,Benchmark,BenchmarkSmallRecordArchive7000,False,legacy-not-retrospectively-reviewed
 LEG-8ad77d3c1573,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,128,Benchmark,BenchmarkSmallRecordArchive10000,False,legacy-not-retrospectively-reviewed
 LEG-29886f95fa14,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,138,Test,TestArchivePreflightIncludesTarOverhead,False,legacy-upstream-PR1814
-LEG-52f76e5b76eb,L1,Go core / CLI / server,internal/hq/board_shape_test.go,16,Test,TestPlaybookSpecifiesTheBoardShape,False,legacy-not-retrospectively-reviewed
-LEG-0027ec241967,L1,Go core / CLI / server,internal/hq/board_shape_test.go,32,Test,TestBoardShapeShippedWithAVersionBump,False,legacy-not-retrospectively-reviewed
-LEG-15483d5020ad,L1,Go core / CLI / server,internal/hq/board_shape_test.go,52,Test,TestBoardSeedHasBothParts,False,legacy-not-retrospectively-reviewed
-LEG-a8636bbce213,L1,Go core / CLI / server,internal/hq/board_shape_test.go,71,Test,TestPlaybookAndSeedAgreeOnTheHeadings,False,legacy-not-retrospectively-reviewed
-LEG-f6324716e51f,L1,Go core / CLI / server,internal/hq/board_shape_test.go,87,Test,TestBoardDoesNotSpeakTranslationese,False,legacy-not-retrospectively-reviewed
+LEG-15483d5020ad,L1,Go core / CLI / server,internal/hq/board_shape_test.go,30,Test,TestBoardSeedHasBothParts,False,legacy-not-retrospectively-reviewed
+LEG-a8636bbce213,L1,Go core / CLI / server,internal/hq/board_shape_test.go,49,Test,TestPlaybookAndSeedAgreeOnTheHeadings,False,legacy-not-retrospectively-reviewed
+LEG-f6324716e51f,L1,Go core / CLI / server,internal/hq/board_shape_test.go,65,Test,TestBoardDoesNotSpeakTranslationese,False,legacy-not-retrospectively-reviewed
+MAP-20be41ebaa2b,L2,Go core / CLI / server,internal/hq/board_shape_test.go,8,reviewed-selector,TestRunbookSpecifiesTheBoardShape,False,"HQIL-001,HQIL-003"
 LEG-194cc93ffc40,L1,Go core / CLI / server,internal/hq/board_test.go,18,Test,TestBoardReadsTextAndModTime,False,legacy-not-retrospectively-reviewed
 LEG-a7a00b6ffdda,L1,Go core / CLI / server,internal/hq/board_test.go,40,Test,TestBoardAbsentReportsNotOk,False,legacy-not-retrospectively-reviewed
 LEG-7edd04aaf72a,L1,Go core / CLI / server,internal/hq/board_test.go,49,Test,TestBoardTruncatesToTheHead,False,legacy-not-retrospectively-reviewed
@@ -1755,43 +1754,30 @@ LEG-f0a705a79093,L1,Go core / CLI / server,internal/hq/help_test.go,11,Test,Test
 LEG-225a7ec26768,L1,Go core / CLI / server,internal/hq/help_test.go,45,Test,TestHQHelpDoesNotTouchHomeOrRotate,False,legacy-not-retrospectively-reviewed
 LEG-d784bc888ce1,L1,Go core / CLI / server,internal/hq/help_test.go,68,Test,TestMigrationHelpKeepsItsOwnEntryPoint,False,legacy-not-retrospectively-reviewed
 LEG-30b0727f7dcc,G,Go core / CLI / server,internal/hq/housekeeping_test.go,15,Test,TestHousekeepRetiresWhatNothingReadsAndKeepsWhatDoctorDoes,False,legacy-not-retrospectively-reviewed
-LEG-eaf8f16b1863,L1,Go core / CLI / server,internal/hq/hq_test.go,20,Test,TestPlaybookTeachesDistill,False,legacy-not-retrospectively-reviewed
-LEG-cb6388429b0b,L1,Go core / CLI / server,internal/hq/hq_test.go,40,Test,TestPlaybookTeachesCaptureLoop,False,legacy-not-retrospectively-reviewed
-LEG-84354e678904,L1,Go core / CLI / server,internal/hq/hq_test.go,68,Test,TestPlaybookTeachesMaintenanceWakes,False,legacy-not-retrospectively-reviewed
-LEG-11e9d6335c2e,L1,Go core / CLI / server,internal/hq/hq_test.go,91,Test,TestPlaybookTeachesFileGoalChannel,False,legacy-not-retrospectively-reviewed
-LEG-110539020bd2,L1,Go core / CLI / server,internal/hq/hq_test.go,114,Test,TestPlaybookTeachesTheConsumptionWatermark,False,legacy-not-retrospectively-reviewed
-LEG-384ff63f08c7,L1,Go core / CLI / server,internal/hq/hq_test.go,136,Test,TestPlaybookTeachesBatteryWatch,False,legacy-not-retrospectively-reviewed
-LEG-18ecc83f6c01,G,Go core / CLI / server,internal/hq/hq_test.go,156,Test,TestSeedHQHomeIdempotent,False,legacy-not-retrospectively-reviewed
-LEG-2c17b411342c,G,Go core / CLI / server,internal/hq/hq_test.go,264,Test,TestSeedHQHome_UpgradesOnNewerVersion,False,legacy-not-retrospectively-reviewed
-LEG-de61585f4cc4,G,Go core / CLI / server,internal/hq/hq_test.go,300,Test,TestSeedHQHome_UpgradeLeavesMemoryUntouched,False,legacy-not-retrospectively-reviewed
-LEG-d5ecf68e6e0d,L1,Go core / CLI / server,internal/hq/hq_test.go,321,Test,TestParsePlaybookVersion,False,legacy-not-retrospectively-reviewed
-LEG-06c3846efb12,G,Go core / CLI / server,internal/hq/hq_test.go,339,Test,TestSeedHQHome_LegacyClaudeMigrates,False,legacy-not-retrospectively-reviewed
-LEG-a07d737d3644,G,Go core / CLI / server,internal/hq/hq_test.go,381,Test,TestSeedHQHome_AgentsOnlyAddsPointer,False,legacy-not-retrospectively-reviewed
-LEG-3d9a954ba61a,L1,Go core / CLI / server,internal/hq/hq_test.go,402,Test,TestHQPolicyWarning,False,legacy-not-retrospectively-reviewed
-LEG-a472b5d72fd8,G,Go core / CLI / server,internal/hq/hq_test.go,432,Test,TestSeedHQKnowledge,False,legacy-not-retrospectively-reviewed
-LEG-78702eaa7fbe,G,Go core / CLI / server,internal/hq/hq_test.go,467,Test,TestHQPlaybookHardening,False,legacy-not-retrospectively-reviewed
-LEG-a2646b785cc5,G,Go core / CLI / server,internal/hq/hq_test.go,495,Test,TestHQPlaybookCharter,False,legacy-not-retrospectively-reviewed
-LEG-2d3528c57ca7,L1,Go core / CLI / server,internal/hq/hq_test.go,535,Test,TestHQBriefingPrompt,False,legacy-not-retrospectively-reviewed
-LEG-2c7d3e52f9ef,L1,Go core / CLI / server,internal/hq/hq_test.go,570,Test,TestHQBriefingEnabled,False,legacy-not-retrospectively-reviewed
-LEG-a365bdf9befc,G,Go core / CLI / server,internal/hq/hq_test.go,591,Test,TestSeedHQNotesBoard,False,legacy-not-retrospectively-reviewed
-LEG-b0ec249dbdfb,G,Go core / CLI / server,internal/hq/hq_test.go,616,Test,TestHQPlaybookChiefOfStaff,False,legacy-not-retrospectively-reviewed
-LEG-f8087baa3f2d,L1,Go core / CLI / server,internal/hq/hq_test.go,659,Test,TestHQAgentCommand,False,legacy-not-retrospectively-reviewed
-LEG-53c90b5faa6f,G,Go core / CLI / server,internal/hq/hq_test.go,673,Test,TestHQPlaybookWakeProtocol,False,legacy-not-retrospectively-reviewed
-LEG-98958ff1a4ed,G,Go core / CLI / server,internal/hq/hq_test.go,709,Test,TestHQPlaybookThreeReads,False,legacy-not-retrospectively-reviewed
-LEG-a44a4950d716,L1,Go core / CLI / server,internal/hq/hq_test.go,745,Test,TestAgentAliveByCmd,False,legacy-not-retrospectively-reviewed
-LEG-be97b228bfc7,L1,Go core / CLI / server,internal/hq/hq_test.go,775,Test,TestSeedsAndPlaybookCarryNoAuthorLeakage,False,legacy-not-retrospectively-reviewed
-LEG-deaead4c014f,L1,Go core / CLI / server,internal/hq/hq_test.go,808,Test,TestBoardSeedFollowsLanguage,False,legacy-not-retrospectively-reviewed
-LEG-1919417fcf78,L1,Go core / CLI / server,internal/hq/hq_test.go,832,Test,TestPlaybookDropsRetiredPerceptionVocabulary,False,legacy-not-retrospectively-reviewed
-LEG-cc52ed61de30,L1,Go core / CLI / server,internal/hq/hq_test.go,850,Test,TestGeneratedPlaybookFollowsLanguage,False,legacy-not-retrospectively-reviewed
-LEG-74a84fc207b8,G,Go core / CLI / server,internal/hq/hq_test.go,876,Test,TestShellLanguageNeverRewritesTheCharter,False,legacy-not-retrospectively-reviewed
-LEG-75f33c06f2f5,G,Go core / CLI / server,internal/hq/hq_test.go,915,Test,TestExplicitLangRewritesTheCharter,False,legacy-not-retrospectively-reviewed
-LEG-c14e7e44c775,G,Go core / CLI / server,internal/hq/hq_test.go,945,Test,TestVersionUpgradeKeepsTheCharterLanguage,False,legacy-not-retrospectively-reviewed
-LEG-a7757e9edc9b,L1,Go core / CLI / server,internal/hq/hq_test.go,984,Test,TestMismatchNoticeSaysNothingChangedAndHow,False,legacy-not-retrospectively-reviewed
-LEG-06f3f97b807c,L1,Go core / CLI / server,internal/hq/hq_test.go,1000,Test,TestChartersShareSkeletonAndAnchors,False,legacy-not-retrospectively-reviewed
-LEG-73fed776ec92,G,Go core / CLI / server,internal/hq/hq_test.go,1047,Test,TestLocalTemplateFollowsLanguage,False,legacy-not-retrospectively-reviewed
-LEG-14efba6eb225,L1,Go core / CLI / server,internal/hq/hq_test.go,1080,Test,TestExplicitSwitchNoticeSaysItWasAskedFor,False,legacy-not-retrospectively-reviewed
-LEG-4acd5eceac53,L1,Go core / CLI / server,internal/hq/hq_test.go,1102,Test,TestPlaybookTeachesDispatchToChooseAgentAndModel,False,legacy-not-retrospectively-reviewed
-MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,194,reviewed-selector,TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords,False,STOR-002
+LEG-18ecc83f6c01,G,Go core / CLI / server,internal/hq/hq_test.go,18,Test,TestSeedHQHomeIdempotent,False,legacy-not-retrospectively-reviewed
+LEG-d5ecf68e6e0d,L1,Go core / CLI / server,internal/hq/hq_test.go,148,Test,TestParsePlaybookVersion,False,legacy-not-retrospectively-reviewed
+LEG-a07d737d3644,G,Go core / CLI / server,internal/hq/hq_test.go,187,Test,TestSeedHQHome_AgentsOnlyAddsPointer,False,legacy-not-retrospectively-reviewed
+LEG-3d9a954ba61a,L1,Go core / CLI / server,internal/hq/hq_test.go,208,Test,TestHQPolicyWarning,False,legacy-not-retrospectively-reviewed
+LEG-a472b5d72fd8,G,Go core / CLI / server,internal/hq/hq_test.go,238,Test,TestSeedHQKnowledge,False,legacy-not-retrospectively-reviewed
+LEG-78702eaa7fbe,G,Go core / CLI / server,internal/hq/hq_test.go,273,Test,TestHQPlaybookHardening,False,legacy-not-retrospectively-reviewed
+LEG-2d3528c57ca7,L1,Go core / CLI / server,internal/hq/hq_test.go,313,Test,TestHQBriefingPrompt,False,legacy-not-retrospectively-reviewed
+LEG-2c7d3e52f9ef,L1,Go core / CLI / server,internal/hq/hq_test.go,338,Test,TestHQBriefingEnabled,False,legacy-not-retrospectively-reviewed
+LEG-a365bdf9befc,G,Go core / CLI / server,internal/hq/hq_test.go,359,Test,TestSeedHQNotesBoard,False,legacy-not-retrospectively-reviewed
+LEG-f8087baa3f2d,L1,Go core / CLI / server,internal/hq/hq_test.go,381,Test,TestHQAgentCommand,False,legacy-not-retrospectively-reviewed
+LEG-a44a4950d716,L1,Go core / CLI / server,internal/hq/hq_test.go,395,Test,TestAgentAliveByCmd,False,legacy-not-retrospectively-reviewed
+LEG-be97b228bfc7,L1,Go core / CLI / server,internal/hq/hq_test.go,425,Test,TestSeedsAndPlaybookCarryNoAuthorLeakage,False,legacy-not-retrospectively-reviewed
+LEG-deaead4c014f,L1,Go core / CLI / server,internal/hq/hq_test.go,462,Test,TestBoardSeedFollowsLanguage,False,legacy-not-retrospectively-reviewed
+LEG-1919417fcf78,L1,Go core / CLI / server,internal/hq/hq_test.go,486,Test,TestPlaybookDropsRetiredPerceptionVocabulary,False,legacy-not-retrospectively-reviewed
+LEG-cc52ed61de30,L1,Go core / CLI / server,internal/hq/hq_test.go,504,Test,TestGeneratedPlaybookFollowsLanguage,False,legacy-not-retrospectively-reviewed
+LEG-74a84fc207b8,G,Go core / CLI / server,internal/hq/hq_test.go,530,Test,TestShellLanguageNeverRewritesTheCharter,False,legacy-not-retrospectively-reviewed
+LEG-75f33c06f2f5,G,Go core / CLI / server,internal/hq/hq_test.go,572,Test,TestExplicitLangRewritesTheCharter,False,legacy-not-retrospectively-reviewed
+LEG-c14e7e44c775,G,Go core / CLI / server,internal/hq/hq_test.go,602,Test,TestVersionUpgradeKeepsTheCharterLanguage,False,legacy-not-retrospectively-reviewed
+LEG-a7757e9edc9b,L1,Go core / CLI / server,internal/hq/hq_test.go,641,Test,TestMismatchNoticeSaysNothingChangedAndHow,False,legacy-not-retrospectively-reviewed
+LEG-73fed776ec92,G,Go core / CLI / server,internal/hq/hq_test.go,655,Test,TestLocalTemplateFollowsLanguage,False,legacy-not-retrospectively-reviewed
+LEG-14efba6eb225,L1,Go core / CLI / server,internal/hq/hq_test.go,688,Test,TestExplicitSwitchNoticeSaysItWasAskedFor,False,legacy-not-retrospectively-reviewed
+MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,56,reviewed-selector,TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords,False,STOR-002
+MAP-49d3148748c4,L2,Go core / CLI / server,internal/hq/hq_test.go,126,reviewed-selector,TestStartupPreservesIndependentRules,False,"HQIL-001,HQIL-002"
+MAP-f1c24debc01b,L2,Go core / CLI / server,internal/hq/hq_test.go,163,reviewed-selector,TestSeedHQHomePreservesFullLegacyClaude,False,"HQIL-001,HQIL-002"
 LEG-82d5be2b17ec,L1,Go core / CLI / server,internal/hq/hqacts_filter_test.go,12,Test,TestEventsJSONActsOnlyFilters,False,legacy-not-retrospectively-reviewed
 LEG-b9240e5e6117,L1,Go core / CLI / server,internal/hq/hqagent_test.go,11,Test,TestHQLaunchBinary,False,legacy-not-retrospectively-reviewed
 LEG-b7efce2fcb0f,L1,Go core / CLI / server,internal/hq/hqagent_test.go,29,Test,TestHQLaunchOptions,False,legacy-not-retrospectively-reviewed
@@ -1810,9 +1796,7 @@ MAP-125403c4d59d,L1,reviewed implementation,internal/hq/knowledge_workflow_test.
 LEG-44fc72d69358,L1,Go core / CLI / server,internal/hq/knowledgeshim_test.go,12,Test,TestPromotionsStatus,False,legacy-not-retrospectively-reviewed
 LEG-1b6109077040,L1,Go core / CLI / server,internal/hq/launchtarget_test.go,7,Test,TestResolveLaunchTarget,False,legacy-not-retrospectively-reviewed
 LEG-db2e10739955,L1,Go core / CLI / server,internal/hq/launchtarget_test.go,33,Test,TestShq,False,legacy-not-retrospectively-reviewed
-LEG-62d8b7f2c722,G,Go core / CLI / server,internal/hq/legacybackup_test.go,39,Test,TestASecondMigrationKeepsTheFirstBackup,False,legacy-not-retrospectively-reviewed
-LEG-28e85d7c673a,G,Go core / CLI / server,internal/hq/legacybackup_test.go,75,Test,TestABackupNameInUseIsNotOverwritten,False,legacy-not-retrospectively-reviewed
-LEG-32fa410edc18,G,Go core / CLI / server,internal/hq/legacybackup_test.go,96,Test,TestNoBackupNoMigration,False,legacy-not-retrospectively-reviewed
+MAP-13f40b32c332,L2,Go core / CLI / server,internal/hq/legacybackup_test.go,11,reviewed-selector,TestRepairMissingEntryKeepsLocalAndEarlierLegacyBackup,False,HQIL-002
 LEG-fb0d66170c7d,L1,Go core / CLI / server,internal/hq/maintenance_test.go,16,Test,TestMaintenanceState,False,legacy-not-retrospectively-reviewed
 LEG-50381a8f8ff6,L1,Go core / CLI / server,internal/hq/maintenance_test.go,43,Test,TestMaintenanceStatusReadsMarkers,False,legacy-not-retrospectively-reviewed
 LEG-559e70c211f5,L1,Go core / CLI / server,internal/hq/maintenance_test.go,84,Test,TestCompleteMaintenanceRequiresHQAndRecordsOnce,False,legacy-not-retrospectively-reviewed
@@ -1833,12 +1817,11 @@ LEG-1f1260b4ce77,L1,Go core / CLI / server,internal/hq/memory_test.go,185,Test,T
 LEG-ad9f8811d277,L1,Go core / CLI / server,internal/hq/memory_test.go,207,Test,TestSnapshotIsNotStoredInsideTheThingItProtects,False,legacy-not-retrospectively-reviewed
 LEG-2d873b652b50,L1,Go core / CLI / server,internal/hq/memory_test.go,227,Test,TestSnapshotNoSupervisor,False,legacy-not-retrospectively-reviewed
 LEG-188b4d2ceffe,L1,Go core / CLI / server,internal/hq/memory_test.go,234,Test,TestReadMemoryStateMeasuresWhatIsAtRisk,False,legacy-not-retrospectively-reviewed
-LEG-250213b452ae,L1,Go core / CLI / server,internal/hq/memory_test.go,251,Test,TestPlaybookBackupsAreNotHoardedForever,False,legacy-not-retrospectively-reviewed
-LEG-5975c463ed21,L1,Go core / CLI / server,internal/hq/memory_test.go,283,Test,TestPruneLeavesAHandfulAlone,False,legacy-not-retrospectively-reviewed
-LEG-4732ab9ca190,L1,Go core / CLI / server,internal/hq/memory_test.go,299,Test,TestMemoryJSONCarriesWhatASurfaceNeeds,False,legacy-not-retrospectively-reviewed
-LEG-ce5a2872bb8e,L1,Go core / CLI / server,internal/hq/memory_test.go,317,Test,TestMemoryJSONOnAMachineWithNoSupervisor,False,legacy-not-retrospectively-reviewed
-LEG-7d353d6c0f44,L1,Go core / CLI / server,internal/hq/memory_test.go,332,Test,TestOffMachineHintDoesNotClaimABackupItCannotSee,False,legacy-not-retrospectively-reviewed
-LEG-75da05c2b12f,L1,Go core / CLI / server,internal/hq/memory_test.go,366,Test,TestWorkspaceBackupRetainsRecordsButDoesNotReplayPendingInstructions,False,legacy-not-retrospectively-reviewed
+LEG-4732ab9ca190,L1,Go core / CLI / server,internal/hq/memory_test.go,281,Test,TestMemoryJSONCarriesWhatASurfaceNeeds,False,legacy-not-retrospectively-reviewed
+LEG-ce5a2872bb8e,L1,Go core / CLI / server,internal/hq/memory_test.go,299,Test,TestMemoryJSONOnAMachineWithNoSupervisor,False,legacy-not-retrospectively-reviewed
+LEG-7d353d6c0f44,L1,Go core / CLI / server,internal/hq/memory_test.go,314,Test,TestOffMachineHintDoesNotClaimABackupItCannotSee,False,legacy-not-retrospectively-reviewed
+LEG-75da05c2b12f,L1,Go core / CLI / server,internal/hq/memory_test.go,348,Test,TestWorkspaceBackupRetainsRecordsButDoesNotReplayPendingInstructions,False,legacy-not-retrospectively-reviewed
+MAP-5e7886aee75b,L2,Go core / CLI / server,internal/hq/memory_test.go,251,reviewed-selector,TestPlaybookUpgradeKeepsExistingBackups,False,HQIL-002
 LEG-82f825a7c632,G,Go core / CLI / server,internal/hq/memorycrypt_test.go,12,Test,TestEncryptedExportRoundTrip,False,legacy-not-retrospectively-reviewed
 LEG-87f900855dd3,L1,Go core / CLI / server,internal/hq/memorycrypt_test.go,50,Test,TestWrongPassphraseChangesNothing,False,legacy-not-retrospectively-reviewed
 LEG-7d21f1ef070b,L1,Go core / CLI / server,internal/hq/memorycrypt_test.go,72,Test,TestAShortPassphraseIsRefused,False,legacy-not-retrospectively-reviewed
@@ -1859,8 +1842,12 @@ LEG-7ec3020f9c60,L1,Go core / CLI / server,internal/hq/mine_test.go,44,Test,Test
 LEG-82208d1311f7,L1,Go core / CLI / server,internal/hq/mine_test.go,82,Test,TestParseSinceArg,False,legacy-not-retrospectively-reviewed
 LEG-7aa06d916ba2,L1,Go core / CLI / server,internal/hq/mine_test.go,96,Test,TestPlaybookTeachesTranscriptLeadsInBothLanguages,False,legacy-not-retrospectively-reviewed
 MAP-b07a4b75d0d1,L2,reviewed implementation,internal/hq/observation_contract_test.go,12,reviewed-selector,TestDPC005UncertainObservationsStayInEveryCoreSelection,False,DPC-005
+MAP-93ac3136ee0d,L2,reviewed implementation,internal/hq/playbook_layout_test.go,13,reviewed-selector,TestHQPlaybookBudgetLinksAndImports,False,"HQIL-001,HQIL-002"
+MAP-a223febc4970,L2,reviewed implementation,internal/hq/playbook_layout_test.go,77,reviewed-selector,TestHQRunbooksRepairWithoutRewritingEntry,False,"HQIL-001,HQIL-002"
+MAP-16719f9f18d6,L2,reviewed implementation,internal/hq/playbook_layout_test.go,99,reviewed-selector,TestHQRunbookConflictKeepsEntryAndLocal,False,"HQIL-001,HQIL-002"
+MAP-e90ab47cf8fd,L2,reviewed implementation,internal/hq/playbook_layout_test.go,117,reviewed-selector,TestHQPlaybookLanguageParity,False,"HQIL-001,HQIL-002"
+MAP-e023eadb98e8,L2,reviewed implementation,internal/hq/playbook_layout_test.go,140,reviewed-selector,TestHQPlaybookGatesStayInTheEntry,False,"HQIL-001,HQIL-002"
 LEG-48e101d4acbd,L1,Go core / CLI / server,internal/hq/playbook_version_test.go,27,Test,TestChangingTheCharterBumpsTheVersion,False,legacy-not-retrospectively-reviewed
-LEG-d7fe8fa1ceab,L1,Go core / CLI / server,internal/hq/playbook_version_test.go,58,Test,TestTheFingerprintCoversBothLanguages,False,legacy-not-retrospectively-reviewed
 MAP-ead7aeb8f6cb,L2,reviewed implementation,internal/hq/process_materials_test.go,27,reviewed-selector,TestDPC001AutomaticScopePreservesUnknownNotesAndIncludes,False,"DPC-001,DPC-002"
 MAP-09d9db3d9987,L2,reviewed implementation,internal/hq/process_materials_test.go,108,reviewed-selector,TestDPC002ProcessMaterialInventoryProtectsCoreAndUnknown,False,"DPC-001,DPC-002"
 LEG-76bdb76577ec,L1,Go core / CLI / server,internal/hq/revalidate_test.go,12,Test,TestResourceWarnProbe_PassesThroughWhatItDoesNotOwn,False,legacy-not-retrospectively-reviewed
@@ -1905,11 +1892,11 @@ MAP-578e146c5570,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_te
 MAP-44bbae26a68a,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,136,reviewed-selector,TestHQR010HardlinkedLockCannotChangeExternalPermissions,False,"HQR-007,HQR-008,HQR-009,HQR-010"
 MAP-2c176da9ae7f,L2,reviewed implementation,internal/hq/rulesrefresh_inline_block_test.go,14,reviewed-selector,TestHQR011InlineInSyncKnowledgeRemainsEffective,False,HQR-011
 MAP-f07cf6ea366b,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,84,reviewed-selector,TestHQR001RefreshOnlyUpdatesManagedRules,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
-MAP-f3c6fa0664ed,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,137,reviewed-selector,TestHQR002RefreshKeepsLanguageAndConverges,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
-MAP-26c222f9b436,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,180,reviewed-selector,TestHQR003RefreshRejectsConflictingOptions,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
-MAP-27e9b5f03486,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,198,reviewed-selector,TestHQR004RefreshUsesExistingApplyLock,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
-MAP-564acb685125,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,219,reviewed-selector,TestHQR005RefreshRefusesUnsafeManagedFiles,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
-MAP-1b8457abb5dd,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,278,reviewed-selector,TestHQR006RefreshPreservesBackupNamesAndFailsSafely,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-f3c6fa0664ed,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,147,reviewed-selector,TestHQR002RefreshKeepsLanguageAndConverges,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-26c222f9b436,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,190,reviewed-selector,TestHQR003RefreshRejectsConflictingOptions,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-27e9b5f03486,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,208,reviewed-selector,TestHQR004RefreshUsesExistingApplyLock,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-564acb685125,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,229,reviewed-selector,TestHQR005RefreshRefusesUnsafeManagedFiles,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-1b8457abb5dd,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,288,reviewed-selector,TestHQR006RefreshPreservesBackupNamesAndFailsSafely,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 LEG-2a593377c08f,L1,Go core / CLI / server,internal/hq/selfcheck_test.go,5,Test,TestShouldSelfCheck,False,legacy-not-retrospectively-reviewed
 LEG-aed11f21a248,L1,Go core / CLI / server,internal/hq/selfcheck_test.go,44,Test,TestSelfCheckMarkerRoundTrip,False,legacy-not-retrospectively-reviewed
 LEG-372c52d5f12f,L1,Go core / CLI / server,internal/hq/selfrotate_test.go,19,Test,TestSessionRefForLiveAgentRejectsPreviousHQAgent,False,legacy-not-retrospectively-reviewed
@@ -1989,7 +1976,6 @@ LEG-45b57c95ef7b,L1,Go core / CLI / server,internal/hq/watchdog_test.go,10,Test,
 LEG-4e5f8c43a6a8,L1,Go core / CLI / server,internal/hq/watchdog_test.go,42,Test,TestShouldEscalate_PremiseIsProvenanceNotAskText,False,legacy-not-retrospectively-reviewed
 LEG-299a386d0b2e,L1,Go core / CLI / server,internal/hq/watchdog_test.go,64,Test,TestWatchdogMarker_OncePerEpisode,False,legacy-not-retrospectively-reviewed
 LEG-b69f5d669218,L1,Go core / CLI / server,internal/hq/workspace_playbook_test.go,11,Test,TestBothChartersTeachUsableExistingGoalRegistration,False,legacy-not-retrospectively-reviewed
-LEG-fde4bdc91c6f,L1,Go core / CLI / server,internal/hq/workspace_playbook_test.go,13,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-e3fbf38a42ec,L1,Go core / CLI / server,internal/hqinput/lease_test.go,9,Test,TestCompetingChannelsHoldRatherThanOverwriteAndResumeAfterRelease,False,legacy-not-retrospectively-reviewed
 LEG-fdd84b1b101f,L1,Go core / CLI / server,internal/hqinput/lease_test.go,29,Test,TestInputLeaseFailureIsExplicit,False,legacy-not-retrospectively-reviewed
 MAP-e4cfa47e623e,L2,reviewed implementation,internal/hqinput/rotation_test.go,13,reviewed-selector,TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize,False,HRW-003
@@ -5488,28 +5474,29 @@ MAP-7f66e0d7556c,L1,reviewed implementation,mobileapp/src/screens/attachmentEcho
 MAP-a18aa405051e,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,63,reviewed-selector,AEC-002 %s retires image echo in its first recorded commit and ignores late receipt,False,AEC-002
 MAP-ccf9121e82e2,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,79,reviewed-selector,AEC-002 %s keeps an old identical occurrence pending but retires a new one,False,AEC-002
 MAP-6021aa4402f5,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,92,reviewed-selector,AEC-002 %s retires plain-text echo without one duplicate committed frame,False,AEC-002
-LEG-f7d329675b52,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,4,it,splits at ## and keeps the heading text,False,legacy-not-retrospectively-reviewed
-LEG-a7119188bab4,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,11,it,keeps content that comes before the first heading,False,legacy-not-retrospectively-reviewed
-LEG-0ea6bd6606ab,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,18,it,does not split on a ## inside a fenced code block,False,legacy-not-retrospectively-reviewed
-LEG-67d979a153fc,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,28,it,nests ### entries under their ## section,False,legacy-not-retrospectively-reviewed
-LEG-b92f0cea2665,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,40,it,does not repeat a child body inside its parent,False,legacy-not-retrospectively-reviewed
-LEG-b452a9c4926c,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,48,it,gives a child a key distinct from every other row,False,legacy-not-retrospectively-reviewed
-LEG-f4a0247e1444,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,54,it,"ignores a ### with no ## above it, rather than dropping its text",False,legacy-not-retrospectively-reviewed
-LEG-9bc4e9f5decb,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,60,it,does not nest on a ### inside a fence,False,legacy-not-retrospectively-reviewed
-LEG-f0f62d83bec3,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,66,it,preserves the AUTHOR order and never sorts,False,legacy-not-retrospectively-reviewed
-LEG-57dcae3eafdd,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,73,it,gives every section a distinct key even when titles repeat,False,legacy-not-retrospectively-reviewed
-LEG-81f9ad732ed5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,78,it,handles a board with no headings at all,False,legacy-not-retrospectively-reviewed
-LEG-966474e9bc21,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,85,it,"is empty for an empty board, rather than one blank section",False,legacy-not-retrospectively-reviewed
-LEG-9b8f1b89b778,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,94,it,is dropped from the preamble,False,legacy-not-retrospectively-reviewed
-LEG-35de96ef1c69,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,100,it,leaves a section heading alone — only the preamble can hold a document title,False,legacy-not-retrospectively-reviewed
-LEG-a24edac46461,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,105,it,drops a preamble that was nothing but the title,False,legacy-not-retrospectively-reviewed
-LEG-a052c502051e,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,127,test,"a table reports its rows, not its lines",False,legacy-not-retrospectively-reviewed
-LEG-fa33e7bc1651,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,131,test,a bulleted section reports its bullets,False,legacy-not-retrospectively-reviewed
-LEG-d52dbbd89f63,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,135,test,prose with nothing countable gets no bubble at all,False,legacy-not-retrospectively-reviewed
-LEG-68131147f791,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,159,it,"reads the numbered items under their groups, and knows which carry a recommendation",False,legacy-not-retrospectively-reviewed
-LEG-034622a839e5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,170,it,"quotes an item back to HQ by number and head, in the reader’s language",False,legacy-not-retrospectively-reviewed
-LEG-a58baeee77fa,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,176,it,"passes over prose and fences, and an empty section has no items",False,legacy-not-retrospectively-reviewed
-LEG-c3d488672915,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,185,it,retains child entries when lifting a top-level decision body,False,legacy-not-retrospectively-reviewed
+LEG-f7d329675b52,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,6,it,splits at ## and keeps the heading text,False,legacy-not-retrospectively-reviewed
+LEG-a7119188bab4,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,13,it,keeps content that comes before the first heading,False,legacy-not-retrospectively-reviewed
+LEG-0ea6bd6606ab,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,20,it,does not split on a ## inside a fenced code block,False,legacy-not-retrospectively-reviewed
+LEG-67d979a153fc,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,30,it,nests ### entries under their ## section,False,legacy-not-retrospectively-reviewed
+LEG-b92f0cea2665,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,42,it,does not repeat a child body inside its parent,False,legacy-not-retrospectively-reviewed
+LEG-b452a9c4926c,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,50,it,gives a child a key distinct from every other row,False,legacy-not-retrospectively-reviewed
+LEG-f4a0247e1444,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,56,it,"ignores a ### with no ## above it, rather than dropping its text",False,legacy-not-retrospectively-reviewed
+LEG-9bc4e9f5decb,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,62,it,does not nest on a ### inside a fence,False,legacy-not-retrospectively-reviewed
+LEG-f0f62d83bec3,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,68,it,preserves the AUTHOR order and never sorts,False,legacy-not-retrospectively-reviewed
+LEG-57dcae3eafdd,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,75,it,gives every section a distinct key even when titles repeat,False,legacy-not-retrospectively-reviewed
+LEG-81f9ad732ed5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,80,it,handles a board with no headings at all,False,legacy-not-retrospectively-reviewed
+LEG-966474e9bc21,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,87,it,"is empty for an empty board, rather than one blank section",False,legacy-not-retrospectively-reviewed
+LEG-9b8f1b89b778,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,96,it,is dropped from the preamble,False,legacy-not-retrospectively-reviewed
+LEG-35de96ef1c69,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,102,it,leaves a section heading alone — only the preamble can hold a document title,False,legacy-not-retrospectively-reviewed
+LEG-a24edac46461,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,107,it,drops a preamble that was nothing but the title,False,legacy-not-retrospectively-reviewed
+LEG-a052c502051e,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,129,test,"a table reports its rows, not its lines",False,legacy-not-retrospectively-reviewed
+LEG-fa33e7bc1651,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,133,test,a bulleted section reports its bullets,False,legacy-not-retrospectively-reviewed
+LEG-d52dbbd89f63,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,137,test,prose with nothing countable gets no bubble at all,False,legacy-not-retrospectively-reviewed
+LEG-68131147f791,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,161,it,"reads the numbered items under their groups, and knows which carry a recommendation",False,legacy-not-retrospectively-reviewed
+LEG-034622a839e5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,172,it,"quotes an item back to HQ by number and head, in the reader’s language",False,legacy-not-retrospectively-reviewed
+LEG-a58baeee77fa,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,178,it,"passes over prose and fences, and an empty section has no items",False,legacy-not-retrospectively-reviewed
+LEG-c3d488672915,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,230,it,retains child entries when lifting a top-level decision body,False,legacy-not-retrospectively-reviewed
+MAP-e51f89ef8bda,L1,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,204,reviewed-selector,reads the shipped $lang legacy board example,False,HQBC-001
 LEG-d002ac73d57a,L2,RN / mobile harness,mobileapp/src/screens/connectionGroup.test.ts,15,it,uses the server’s own name,False,legacy-not-retrospectively-reviewed
 LEG-84540a24c938,L2,RN / mobile harness,mobileapp/src/screens/connectionGroup.test.ts,20,it,"falls back to ""your server"", never to ""this server""",False,legacy-not-retrospectively-reviewed
 LEG-072de133b535,L2,RN / mobile harness,mobileapp/src/screens/connectionGroup.test.ts,28,it,exists for the owner regardless of loaded route count,False,legacy-not-retrospectively-reviewed

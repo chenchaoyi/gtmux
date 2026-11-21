@@ -95,8 +95,8 @@ func TestParseSinceArg(t *testing.T) {
 
 func TestPlaybookTeachesTranscriptLeadsInBothLanguages(t *testing.T) {
 	for _, tc := range []struct{ name, body, mark string }{
-		{"en", hqInstructions, "TRANSCRIPT MINER"},
-		{"zh", hqInstructionsZH, "会话采矿器"},
+		{"en", playbookText("en", "maintenance.md"), "TRANSCRIPT MINER"},
+		{"zh", playbookText("zh", "maintenance.md"), "会话采矿器"},
 	} {
 		if !strings.Contains(tc.body, tc.mark) || !strings.Contains(tc.body, "knowledge mine --status") {
 			t.Errorf("%s playbook does not teach the transcript leads", tc.name)

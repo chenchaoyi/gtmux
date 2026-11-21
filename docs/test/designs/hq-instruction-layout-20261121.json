@@ -1,0 +1,57 @@
+{
+  "id": "hq-instruction-layout-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, design self-review",
+    "date": "2026-11-21",
+    "decision": "Validate the versioned entry and procedure bundle in isolated HQ homes",
+    "notes": "Reviewed the v67 baseline at 64d3dbf4 and client-load observations. Use the existing normal seed and rules-only refresh paths. Keep client and workspace runtime gates intact. Check executed filesystem/CLI behavior for publishing, preservation and missing files, and inspect actual rendered links and automatic imports. Existing subsystem tests cover delivery, drafts, workspace authority, rotation and watermark behavior. Coverage anchors assist review and do not prove model behavior. Provisional worktree edits predate this test-plan seal; land the reviewed plan first in branch history. No independent approval is claimed."
+  },
+  "cases": [
+    {
+      "id": "HQIL-001",
+      "layer": "L2",
+      "description": "Fresh and upgraded managed entries resolve exactly the four relevant-language runbooks",
+      "setup": "Isolated HQ homes seeded through the real helper and standalone refresh, with both languages and a synthetic legacy LOCAL.",
+      "action": "Check the actual output bytes, paths, imports, runbook trigger links and language anchors. Check the emitted wake vocabulary against both shipped editions.",
+      "expected": "Short entry retains local precedence, includes only the existing LOCAL import, publishes files under the matching version and language, and leaves prior files, tasks and sessions alone.",
+      "planned_files": [
+        "internal/hq/board_shape_test.go",
+        "internal/hq/hq_test.go",
+        "internal/hq/playbook_layout_test.go",
+        "internal/hq/playbook_version_test.go",
+        "internal/hq/rulesrefresh_test.go"
+      ]
+    },
+    {
+      "id": "HQIL-002",
+      "layer": "L2",
+      "description": "File recovery and upgrades preserve active personal instructions and existing evidence",
+      "setup": "Legacy or mixed AGENTS, standalone full CLAUDE, persisted backups, LOCAL bytes, a missing managed runbook and a conflicting managed runbook.",
+      "action": "Exercise normal startup and rules-only refresh on independent fixtures. Compare entry identity, mtime, content and backup bytes.",
+      "expected": "Recreate only missing managed files, keep active personal files and old backups intact, refuse a conflicting runbook, and retain the previous entry on failed publication.",
+      "planned_files": [
+        "internal/hq/hq_test.go",
+        "internal/hq/legacybackup_test.go",
+        "internal/hq/memory_test.go",
+        "internal/hq/playbook_layout_test.go",
+        "internal/hq/rulesrefresh_test.go"
+      ]
+    },
+    {
+      "id": "HQIL-003",
+      "layer": "L1",
+      "description": "Procedures retain the board, workspace registration and bounded knowledge workflow contracts",
+      "setup": "Embedded startup, workspace and maintenance procedures and the real workspace store.",
+      "action": "Check board heading and order against seeding, apply the example register operation to a fixture store, and check required review and mining concepts in each edition.",
+      "expected": "Use matching board sections, register without replay, respect known versus unknown usage, resolve approved review and capture from sourced leads.",
+      "planned_files": [
+        "internal/hq/board_shape_test.go",
+        "internal/hq/knowledge_workflow_test.go",
+        "internal/hq/mine_test.go",
+        "internal/hq/workspace_playbook_test.go"
+      ]
+    }
+  ],
+  "seal": "97e5fe15424610450c227bbae688a23d82f2a24aeaaa01ddaf7a1b4c589e2056"
+}

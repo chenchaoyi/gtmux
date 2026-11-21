@@ -43,26 +43,16 @@ func TestChangingTheCharterBumpsTheVersion(t *testing.T) {
 	}
 }
 
-// charterFingerprint hashes both language halves, because both are the seeded charter:
-// a home seeded in Chinese gets hqInstructionsZH, and an edit to only that half is just
-// as invisible to an existing home as an edit to only the English one.
+// Any shipped entry or procedure edit needs a new version because runbooks are
+// published under a versioned path, as a set.
 func charterFingerprint() string {
 	h := sha256.New()
-	h.Write([]byte(hqInstructionsEN))
-	h.Write([]byte(hqInstructionsZH))
-	return hex.EncodeToString(h.Sum(nil))[:16]
-}
-
-// Both halves must actually reach the fingerprint — a hash over one language would let
-// the other drift silently, which is the same defect one language further in.
-func TestTheFingerprintCoversBothLanguages(t *testing.T) {
-	base := charterFingerprint()
-	for name, one := range map[string]string{"EN": hqInstructionsEN, "ZH": hqInstructionsZH} {
-		h := sha256.New()
-		h.Write([]byte(one))
-		if hex.EncodeToString(h.Sum(nil))[:16] == base {
-			t.Errorf("the fingerprint is the hash of %s alone — the other language could "+
-				"change without anyone hearing about it", name)
+	for _, lang := range []string{"en", "zh"} {
+		h.Write([]byte(playbookIn(lang)))
+		for _, name := range runbookNames {
+			h.Write([]byte(name))
+			h.Write([]byte(playbookText(lang, name)))
 		}
 	}
+	return hex.EncodeToString(h.Sum(nil))[:16]
 }

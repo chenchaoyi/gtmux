@@ -241,13 +241,23 @@ MAP-7bf0b97f95d1,L2,reviewed implementation,internal/hook/codex_completed_turn_t
 MAP-6752a622a3e4,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,72,reviewed-selector,TestCompletedCodexTurnKeepsLegacyAndUncertainCallbacks,False,"CET-004,CET-005"
 MAP-2dd42a3caeb8,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,114,reviewed-selector,TestCodexContinuationPreservesActiveStart,False,"CET-004,CET-005"
 MAP-cce8e70a6d32,L2,reviewed implementation,internal/hook/codex_manual_compact_test.go,11,reviewed-selector,TestCompletedCodexTurnPreservesManualCompactReceipt,False,CET-006
+MAP-20be41ebaa2b,L2,Go core / CLI / server,internal/hq/board_shape_test.go,8,reviewed-selector,TestRunbookSpecifiesTheBoardShape,False,"HQIL-001,HQIL-003"
 MAP-99b86a9378f3,L2,reviewed implementation,internal/hq/dreamdiagnostics_test.go,13,reviewed-selector,TestDreamDiagnosticsClassifiedBoundedAndPrivate,False,KBDREAM-DIAGNOSTICS
 MAP-f188a5a64e53,L2,reviewed implementation,internal/hq/dreamexec_test.go,15,reviewed-selector,TestDreamCLIModelSelectionAndIsolation,False,KBDREAM-EXECUTOR
 MAP-21a1b3d6966f,L2,reviewed implementation,internal/hq/dreamexec_test.go,43,reviewed-selector,TestDreamCLIParsesTerminalUsageAndRejectsTools,False,KBDREAM-EXECUTOR
 MAP-cb02aefedb71,L2,reviewed implementation,internal/hq/dreamexec_test.go,72,reviewed-selector,TestDreamCLIProcessCompletionCancellationAndBoundedOutput,False,KBDREAM-EXECUTOR
-MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,194,reviewed-selector,TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords,False,STOR-002
+MAP-d6cd13ff80b3,L2,Go core / CLI / server,internal/hq/hq_test.go,56,reviewed-selector,TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords,False,STOR-002
+MAP-49d3148748c4,L2,Go core / CLI / server,internal/hq/hq_test.go,126,reviewed-selector,TestStartupPreservesIndependentRules,False,"HQIL-001,HQIL-002"
+MAP-f1c24debc01b,L2,Go core / CLI / server,internal/hq/hq_test.go,163,reviewed-selector,TestSeedHQHomePreservesFullLegacyClaude,False,"HQIL-001,HQIL-002"
 MAP-426d8c4b1e7f,L2,reviewed implementation,internal/hq/identity_launch_test.go,11,reviewed-selector,TestSID001ActualHQRecipeRetainsManagedFrontend,False,SID-001
+MAP-13f40b32c332,L2,Go core / CLI / server,internal/hq/legacybackup_test.go,11,reviewed-selector,TestRepairMissingEntryKeepsLocalAndEarlierLegacyBackup,False,HQIL-002
+MAP-5e7886aee75b,L2,Go core / CLI / server,internal/hq/memory_test.go,251,reviewed-selector,TestPlaybookUpgradeKeepsExistingBackups,False,HQIL-002
 MAP-b07a4b75d0d1,L2,reviewed implementation,internal/hq/observation_contract_test.go,12,reviewed-selector,TestDPC005UncertainObservationsStayInEveryCoreSelection,False,DPC-005
+MAP-93ac3136ee0d,L2,reviewed implementation,internal/hq/playbook_layout_test.go,13,reviewed-selector,TestHQPlaybookBudgetLinksAndImports,False,"HQIL-001,HQIL-002"
+MAP-a223febc4970,L2,reviewed implementation,internal/hq/playbook_layout_test.go,77,reviewed-selector,TestHQRunbooksRepairWithoutRewritingEntry,False,"HQIL-001,HQIL-002"
+MAP-16719f9f18d6,L2,reviewed implementation,internal/hq/playbook_layout_test.go,99,reviewed-selector,TestHQRunbookConflictKeepsEntryAndLocal,False,"HQIL-001,HQIL-002"
+MAP-e90ab47cf8fd,L2,reviewed implementation,internal/hq/playbook_layout_test.go,117,reviewed-selector,TestHQPlaybookLanguageParity,False,"HQIL-001,HQIL-002"
+MAP-e023eadb98e8,L2,reviewed implementation,internal/hq/playbook_layout_test.go,140,reviewed-selector,TestHQPlaybookGatesStayInTheEntry,False,"HQIL-001,HQIL-002"
 MAP-ead7aeb8f6cb,L2,reviewed implementation,internal/hq/process_materials_test.go,27,reviewed-selector,TestDPC001AutomaticScopePreservesUnknownNotesAndIncludes,False,"DPC-001,DPC-002"
 MAP-09d9db3d9987,L2,reviewed implementation,internal/hq/process_materials_test.go,108,reviewed-selector,TestDPC002ProcessMaterialInventoryProtectsCoreAndUnknown,False,"DPC-001,DPC-002"
 MAP-fc5da55172ab,L2,reviewed implementation,internal/hq/rotation_admission_test.go,11,reviewed-selector,TestHRW007RegistrationSharesTheInputClaimLease,False,HRW-007
@@ -264,11 +274,11 @@ MAP-578e146c5570,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_te
 MAP-44bbae26a68a,L2,reviewed implementation,internal/hq/rulesrefresh_boundary_test.go,136,reviewed-selector,TestHQR010HardlinkedLockCannotChangeExternalPermissions,False,"HQR-007,HQR-008,HQR-009,HQR-010"
 MAP-2c176da9ae7f,L2,reviewed implementation,internal/hq/rulesrefresh_inline_block_test.go,14,reviewed-selector,TestHQR011InlineInSyncKnowledgeRemainsEffective,False,HQR-011
 MAP-f07cf6ea366b,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,84,reviewed-selector,TestHQR001RefreshOnlyUpdatesManagedRules,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
-MAP-f3c6fa0664ed,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,137,reviewed-selector,TestHQR002RefreshKeepsLanguageAndConverges,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
-MAP-26c222f9b436,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,180,reviewed-selector,TestHQR003RefreshRejectsConflictingOptions,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
-MAP-27e9b5f03486,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,198,reviewed-selector,TestHQR004RefreshUsesExistingApplyLock,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
-MAP-564acb685125,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,219,reviewed-selector,TestHQR005RefreshRefusesUnsafeManagedFiles,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
-MAP-1b8457abb5dd,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,278,reviewed-selector,TestHQR006RefreshPreservesBackupNamesAndFailsSafely,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-f3c6fa0664ed,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,147,reviewed-selector,TestHQR002RefreshKeepsLanguageAndConverges,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-26c222f9b436,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,190,reviewed-selector,TestHQR003RefreshRejectsConflictingOptions,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-27e9b5f03486,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,208,reviewed-selector,TestHQR004RefreshUsesExistingApplyLock,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-564acb685125,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,229,reviewed-selector,TestHQR005RefreshRefusesUnsafeManagedFiles,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-1b8457abb5dd,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,288,reviewed-selector,TestHQR006RefreshPreservesBackupNamesAndFailsSafely,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 MAP-d3fb86c5d55c,L2,reviewed implementation,internal/hq/wake_autorecovery_test.go,14,reviewed-selector,TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter,False,HWA-004
 MAP-d03b4abfe4f2,L2,reviewed implementation,internal/hq/wake_rotation_regression_test.go,12,reviewed-selector,TestHWA008ChangedSuccessorFailsIndependentlyWithoutSecondReset,False,HWA-008
 MAP-e4cfa47e623e,L2,reviewed implementation,internal/hqinput/rotation_test.go,13,reviewed-selector,TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize,False,HRW-003
@@ -1330,28 +1340,28 @@ LEG-d3ae384ff85c,L2,RN / mobile harness,mobileapp/src/screens/accessHistoryPrese
 MAP-a18aa405051e,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,63,reviewed-selector,AEC-002 %s retires image echo in its first recorded commit and ignores late receipt,False,AEC-002
 MAP-ccf9121e82e2,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,79,reviewed-selector,AEC-002 %s keeps an old identical occurrence pending but retires a new one,False,AEC-002
 MAP-6021aa4402f5,L2,reviewed implementation,mobileapp/src/screens/attachmentEchoReconciliation.test.tsx,92,reviewed-selector,AEC-002 %s retires plain-text echo without one duplicate committed frame,False,AEC-002
-LEG-f7d329675b52,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,4,it,splits at ## and keeps the heading text,False,legacy-not-retrospectively-reviewed
-LEG-a7119188bab4,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,11,it,keeps content that comes before the first heading,False,legacy-not-retrospectively-reviewed
-LEG-0ea6bd6606ab,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,18,it,does not split on a ## inside a fenced code block,False,legacy-not-retrospectively-reviewed
-LEG-67d979a153fc,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,28,it,nests ### entries under their ## section,False,legacy-not-retrospectively-reviewed
-LEG-b92f0cea2665,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,40,it,does not repeat a child body inside its parent,False,legacy-not-retrospectively-reviewed
-LEG-b452a9c4926c,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,48,it,gives a child a key distinct from every other row,False,legacy-not-retrospectively-reviewed
-LEG-f4a0247e1444,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,54,it,"ignores a ### with no ## above it, rather than dropping its text",False,legacy-not-retrospectively-reviewed
-LEG-9bc4e9f5decb,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,60,it,does not nest on a ### inside a fence,False,legacy-not-retrospectively-reviewed
-LEG-f0f62d83bec3,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,66,it,preserves the AUTHOR order and never sorts,False,legacy-not-retrospectively-reviewed
-LEG-57dcae3eafdd,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,73,it,gives every section a distinct key even when titles repeat,False,legacy-not-retrospectively-reviewed
-LEG-81f9ad732ed5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,78,it,handles a board with no headings at all,False,legacy-not-retrospectively-reviewed
-LEG-966474e9bc21,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,85,it,"is empty for an empty board, rather than one blank section",False,legacy-not-retrospectively-reviewed
-LEG-9b8f1b89b778,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,94,it,is dropped from the preamble,False,legacy-not-retrospectively-reviewed
-LEG-35de96ef1c69,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,100,it,leaves a section heading alone — only the preamble can hold a document title,False,legacy-not-retrospectively-reviewed
-LEG-a24edac46461,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,105,it,drops a preamble that was nothing but the title,False,legacy-not-retrospectively-reviewed
-LEG-a052c502051e,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,127,test,"a table reports its rows, not its lines",False,legacy-not-retrospectively-reviewed
-LEG-fa33e7bc1651,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,131,test,a bulleted section reports its bullets,False,legacy-not-retrospectively-reviewed
-LEG-d52dbbd89f63,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,135,test,prose with nothing countable gets no bubble at all,False,legacy-not-retrospectively-reviewed
-LEG-68131147f791,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,159,it,"reads the numbered items under their groups, and knows which carry a recommendation",False,legacy-not-retrospectively-reviewed
-LEG-034622a839e5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,170,it,"quotes an item back to HQ by number and head, in the reader’s language",False,legacy-not-retrospectively-reviewed
-LEG-a58baeee77fa,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,176,it,"passes over prose and fences, and an empty section has no items",False,legacy-not-retrospectively-reviewed
-LEG-c3d488672915,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,185,it,retains child entries when lifting a top-level decision body,False,legacy-not-retrospectively-reviewed
+LEG-f7d329675b52,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,6,it,splits at ## and keeps the heading text,False,legacy-not-retrospectively-reviewed
+LEG-a7119188bab4,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,13,it,keeps content that comes before the first heading,False,legacy-not-retrospectively-reviewed
+LEG-0ea6bd6606ab,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,20,it,does not split on a ## inside a fenced code block,False,legacy-not-retrospectively-reviewed
+LEG-67d979a153fc,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,30,it,nests ### entries under their ## section,False,legacy-not-retrospectively-reviewed
+LEG-b92f0cea2665,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,42,it,does not repeat a child body inside its parent,False,legacy-not-retrospectively-reviewed
+LEG-b452a9c4926c,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,50,it,gives a child a key distinct from every other row,False,legacy-not-retrospectively-reviewed
+LEG-f4a0247e1444,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,56,it,"ignores a ### with no ## above it, rather than dropping its text",False,legacy-not-retrospectively-reviewed
+LEG-9bc4e9f5decb,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,62,it,does not nest on a ### inside a fence,False,legacy-not-retrospectively-reviewed
+LEG-f0f62d83bec3,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,68,it,preserves the AUTHOR order and never sorts,False,legacy-not-retrospectively-reviewed
+LEG-57dcae3eafdd,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,75,it,gives every section a distinct key even when titles repeat,False,legacy-not-retrospectively-reviewed
+LEG-81f9ad732ed5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,80,it,handles a board with no headings at all,False,legacy-not-retrospectively-reviewed
+LEG-966474e9bc21,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,87,it,"is empty for an empty board, rather than one blank section",False,legacy-not-retrospectively-reviewed
+LEG-9b8f1b89b778,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,96,it,is dropped from the preamble,False,legacy-not-retrospectively-reviewed
+LEG-35de96ef1c69,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,102,it,leaves a section heading alone — only the preamble can hold a document title,False,legacy-not-retrospectively-reviewed
+LEG-a24edac46461,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,107,it,drops a preamble that was nothing but the title,False,legacy-not-retrospectively-reviewed
+LEG-a052c502051e,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,129,test,"a table reports its rows, not its lines",False,legacy-not-retrospectively-reviewed
+LEG-fa33e7bc1651,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,133,test,a bulleted section reports its bullets,False,legacy-not-retrospectively-reviewed
+LEG-d52dbbd89f63,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,137,test,prose with nothing countable gets no bubble at all,False,legacy-not-retrospectively-reviewed
+LEG-68131147f791,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,161,it,"reads the numbered items under their groups, and knows which carry a recommendation",False,legacy-not-retrospectively-reviewed
+LEG-034622a839e5,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,172,it,"quotes an item back to HQ by number and head, in the reader’s language",False,legacy-not-retrospectively-reviewed
+LEG-a58baeee77fa,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,178,it,"passes over prose and fences, and an empty section has no items",False,legacy-not-retrospectively-reviewed
+LEG-c3d488672915,L2,RN / mobile harness,mobileapp/src/screens/boardSections.test.ts,230,it,retains child entries when lifting a top-level decision body,False,legacy-not-retrospectively-reviewed
 LEG-d002ac73d57a,L2,RN / mobile harness,mobileapp/src/screens/connectionGroup.test.ts,15,it,uses the server’s own name,False,legacy-not-retrospectively-reviewed
 LEG-84540a24c938,L2,RN / mobile harness,mobileapp/src/screens/connectionGroup.test.ts,20,it,"falls back to ""your server"", never to ""this server""",False,legacy-not-retrospectively-reviewed
 LEG-072de133b535,L2,RN / mobile harness,mobileapp/src/screens/connectionGroup.test.ts,28,it,exists for the owner regardless of loaded route count,False,legacy-not-retrospectively-reviewed

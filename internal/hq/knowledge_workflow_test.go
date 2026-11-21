@@ -8,7 +8,7 @@ import (
 // The shipped instruction is the integration surface: no worker launch, miner,
 // watermark consumption or active-home reseed belongs in this contract test.
 func TestKnowledgeWorkflowUsesBoundedReviewWithoutManufacturedReuse(t *testing.T) {
-	for lang, text := range map[string]string{"en": hqInstructionsEN, "zh": hqInstructionsZH} {
+	for lang, text := range map[string]string{"en": playbookText("en", "maintenance.md"), "zh": playbookText("zh", "maintenance.md")} {
 		t.Run(lang, func(t *testing.T) {
 			for _, required := range []string{
 				"knowledge consult --query", "missing_required", "--role hq --budget 1200",
