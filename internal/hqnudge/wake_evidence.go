@@ -23,7 +23,10 @@ type acceptedWake struct {
 	Receipt dispatch.WakeReceipt `json:"receipt"`
 }
 
-const acceptedProofGrace = 2 * time.Minute
+const (
+	acceptedProofGrace    = 2 * time.Minute
+	acceptedProofLifetime = 30 * time.Minute
+)
 
 var wakeWitness = transcript.CodexWakeWitness
 var wakeTranscriptHome = transcript.CodexHomeID
@@ -43,7 +46,8 @@ func retainAcceptedWake(r nativeIntent) error {
 	dir := acceptedWakeDir()
 	name := filepath.Base(nativeIntentPath(r))
 	path := filepath.Join(dir, name)
-	body, err := json.Marshal(acceptedWake{Pane: r.Pane, Batch: r.ID, Payload: r.Payload, Since: r.SubmittedAt, Receipt: *r.WakeReceipt})
+	accepted := acceptedWake{Pane: r.Pane, Batch: r.ID, Payload: r.Payload, Since: r.SubmittedAt, Receipt: *r.WakeReceipt}
+	body, err := json.Marshal(accepted)
 	if err != nil {
 		return err
 	}
@@ -62,7 +66,9 @@ func retainAcceptedWake(r nativeIntent) error {
 		return err
 	}
 	if len(files) >= maxQueueEntries {
-		return errors.New("accepted wake proof budget exhausted")
+		// The receiver already accepted this exact request. Capacity for
+		// independent observation is not capacity for input admission.
+		return archiveAcceptedWake(name, accepted, "proof-window-full", time.Unix(0, r.SubmittedAt))
 	}
 	if err := state.WritePrivateFile(path, body); err != nil {
 		return err
@@ -121,6 +127,15 @@ func ObserveWakeEvidence(now time.Time) {
 				}
 			}
 		}
+		if now.Sub(since) >= acceptedProofLifetime {
+			if err := archiveAcceptedWake(file.Name(), accepted, "proof-window-expired", now); err != nil {
+				diag.ReportStoreFailure("hq-wake-evidence", err)
+				recordIssue(issueRecoveryUnsafe, now.UnixNano())
+				continue
+			}
+			diag.ReportStoreFailure("hq-wake-evidence", ignoreNativeMissing(os.Remove(p)))
+			continue
+		}
 		if now.Sub(since) >= acceptedProofGrace {
 			recordIssue(issueAcceptedUnverified, now.UnixNano())
 		}
@@ -129,12 +144,15 @@ func ObserveWakeEvidence(now time.Time) {
 
 func confirmAcceptedWake(path string, a acceptedWake, witness transcript.WakeWitness, now time.Time) bool {
 	recordID := strings.TrimSuffix(filepath.Base(path), ".json")
-	if err := events.AuditWakeDeliveredChecked(a.Pane, a.Payload, recordID, witness.Delivered.Unix()); err != nil {
+	appended, err := events.AuditWakeDeliveredChecked(a.Pane, a.Payload, recordID, witness.Delivered.Unix())
+	if err != nil {
 		diag.ReportStoreFailure("hq-wake-evidence", err)
 		return false
 	}
-	diag.For("hq").Act("act.wake.started", "system", a.Pane, diag.OK, "HQ wake turn and prompt independently observed",
-		"batch", a.Batch, "receiver_request", a.Receipt.Request, "turn", a.Receipt.Turn, "started_at", witness.Started.UnixNano(), "receipt", recordID)
+	if appended {
+		diag.For("hq").Act("act.wake.started", "system", a.Pane, diag.OK, "HQ wake turn and prompt independently observed",
+			"batch", a.Batch, "receiver_request", a.Receipt.Request, "turn", a.Receipt.Turn, "started_at", witness.Started.UnixNano(), "receipt", recordID)
+	}
 	noteConfirmedDelivery(now.Unix())
 	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		diag.ReportStoreFailure("hq-wake-evidence", err)

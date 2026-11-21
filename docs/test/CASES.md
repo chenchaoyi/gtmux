@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1401 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1402 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3816 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2604 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2606 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -297,6 +297,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HWA-005 | Deadline and out-of-band report share the goal follow-up ID. Quiet/inactive HQ does not stop that report. Request handling stays open until workbench outcome exists and recovery emits no duplicate alert. |
 | HWA-009 | The two native inodes and pending replacement survive, and the previous receipt stays recoverable. Only the independent wake submits. |
 | HWA-010 | The mixed intent retains its evidence, the hard recovery failure prevents all new input, and the independent pending entry remains available after the storage issue is resolved. |
+| HWA-014 | One submission per fresh batch, no replays or lost acknowledgement. Full or expired active proofs are retained with exact receipt provenance in a bounded private archive and independently discoverable. |
+| HWA-015 | One durable delivery audit for this batch, with no input mutation. Clean up the retained receipt only after observing the matching audit. |
 | HPC-006 | No early repeat. At the next eligible tick, the exact evidence remains pending and its second wake is enqueued without waiting for another full interval. |
 | SPL-026 | A stale temporary name can be recovered under the lease. The published record is a single-link file; earlier evidence still protects both native and raw routing. A verified new stable ID can publish and settle. A competing destination is preserved. |
 | SPL-023 | Overflow from the shared budget frees active slots, verified old keys never regain authority, and exhausted total budget and warning headroom are explicit. |

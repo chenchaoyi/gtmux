@@ -23,10 +23,11 @@ const (
 	issueRetryExhausted     = "retry-exhausted"
 	issueTargetUnavailable  = "target-unavailable"
 	issueAcceptedUnverified = "accepted-unverified"
+	issueProofArchived      = "observation-archived"
 )
 
 var issueCodes = []string{
-	issueClaimConflict, issueRecoveryUnsafe, issueQueuePressure, issueQueueIO, issueUnknownInput, issueUnknownLegacyInput, issueInputRefused, issueRetryExhausted, issueTargetUnavailable, issueAcceptedUnverified,
+	issueClaimConflict, issueRecoveryUnsafe, issueQueuePressure, issueQueueIO, issueUnknownInput, issueUnknownLegacyInput, issueInputRefused, issueRetryExhausted, issueTargetUnavailable, issueAcceptedUnverified, issueProofArchived,
 }
 
 type WakeIssue struct {
@@ -163,6 +164,8 @@ func ReadHealth(now int64) Health {
 			clear = err == nil && len(files) == 0 && confirmed >= i.FirstAt
 		case issueUnknownLegacyInput:
 			clear = clear && legacyUncertain == 0
+		case issueProofArchived:
+			clear = false // another wake's delivery does not prove an archived receipt
 		case issueUnknownInput:
 			// A success for another batch cannot settle this submitted-unknown evidence.
 			clear = false

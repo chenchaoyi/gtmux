@@ -303,6 +303,8 @@ MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_t
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,103,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"
 MAP-62d7c36b98c4,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,121,reviewed-selector,TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity,False,"HRW-004,HRW-005,HRW-008"
 MAP-f6f7a40c985c,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,152,reviewed-selector,TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource,False,"HRW-004,HRW-005,HRW-008"
+MAP-809457712075,L2,reviewed implementation,internal/hqnudge/wake_evidence_review_test.go,18,reviewed-selector,TestHWA014AcceptedProofBudgetDoesNotFreezeAdmission,False,"HWA-014,HWA-015"
+MAP-d8bc2e7c48ba,L2,reviewed implementation,internal/hqnudge/wake_evidence_review_test.go,87,reviewed-selector,TestHWA015AcceptedProofCrashRetryKeepsOneDeliveryAudit,False,"HWA-014,HWA-015"
 MAP-60d41c147213,L2,reviewed implementation,internal/hqnudge/wake_evidence_test.go,13,reviewed-selector,TestHWA012AcceptanceWaitsForIndependentProof,False,HWA-012
 MAP-a8b272ecc334,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,12,reviewed-selector,TestHWA006NativePositiveRefusalUsesDurableBoundedBackoff,False,"HWA-006,HWA-007"
 MAP-6d6b23733fd9,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,57,reviewed-selector,TestHWA006UnknownAndChangedTargetNeverResubmit,False,"HWA-006,HWA-007"

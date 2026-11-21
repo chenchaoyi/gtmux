@@ -213,7 +213,10 @@ Wake producers SHALL queue a generation before attempting to submit it. A native
 receiver may acknowledge acceptance before evidence of a new turn or prompt ingestion.
 A Codex acknowledgement with a bound receipt SHALL be observed independently. Only
 the exact prompt tied to the expected new turn in the original transcript confirms
-start and delivery. Unconfirmed receipts raise an independent notice. A confirmed
+start and delivery. Unconfirmed receipts raise an independent notice. Full or expired
+observation windows SHALL archive exact receiver evidence without blocking new wakes.
+The private archive uses two bounded segments. Recovering a retained receipt SHALL
+reuse any exact delivery audit already in the journal. A confirmed
 wake SHALL NOT update workspace completion without the workspace's own evidence.
 The terminal route SHALL confirm the current HQ identity and safe composer before
 Paste, verify its exact draft over two frames, and issue Enter separately. A live user

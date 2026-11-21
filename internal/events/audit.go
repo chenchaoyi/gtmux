@@ -130,16 +130,21 @@ func AuditWakeDelivered(pane, payload string, now int64) {
 		"batch", batchTag(payload), "bytes", len(payload), "op_id", id)
 }
 
-// AuditWakeDeliveredChecked lets a durable observer retain the exact witness
-// until the event journal accepts it. The stable op ID identifies a crash retry.
-func AuditWakeDeliveredChecked(pane, payload, id string, now int64) error {
-	err := AppendChecked(Record{Event: AuditEventWakeDelivered, Pane: pane, Summary: auditLine(payload, auditWakeMax),
+// AuditWakeDeliveredChecked lets a durable observer retain its witness until
+// the event journal accepts it. The observer serializes attempts for an op ID.
+func AuditWakeDeliveredChecked(pane, payload, id string, now int64) (bool, error) {
+	summary := auditLine(payload, auditWakeMax)
+	found, err := retainedWakeAudit(id, pane, summary)
+	if err != nil || found {
+		return false, err
+	}
+	err = AppendChecked(Record{Event: AuditEventWakeDelivered, Pane: pane, Summary: summary,
 		Ts: now, Severity: SevRoutine, OpID: id})
 	if err == nil {
 		diag.For("hq").Act("act.wake.delivered", "system", pane, diag.OK, "a wake reached HQ",
 			"batch", batchTag(payload), "bytes", len(payload), "op_id", id)
 	}
-	return err
+	return err == nil, err
 }
 
 func AuditWakeAccepted(pane, payload string, now int64) {

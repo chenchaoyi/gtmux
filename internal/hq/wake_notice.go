@@ -80,6 +80,8 @@ func wakeIssueAdvice(reason string) (string, string) {
 		return "The HQ pane identity could not be verified", "Automatic input remains queued. Reopen the original HQ conversation or verify the current attachment."
 	case "input-refused":
 		return "A wake could not be safely submitted to its original target", "Verify the HQ identity and check the original workspace matter before requesting another attempt."
+	case "observation-archived":
+		return "Some accepted wakes exceeded the active proof window", "Receiver acknowledgements are retained in the local wake archive. Review the affected workspace matter before deciding on a new attempt."
 	case "accepted-unverified":
 		return "The receiver accepted a wake without independent start or delivery evidence", "An automatic replay would risk duplication. Check the original matter and the exact receiver receipt."
 	case "submission-unknown", "terminal-submission-unknown":
