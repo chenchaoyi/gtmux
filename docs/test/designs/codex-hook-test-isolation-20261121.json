@@ -1,0 +1,37 @@
+{
+  "id": "codex-hook-test-isolation-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-21",
+    "decision": "Verify test entry isolation and diagnose dead Codex hook executables",
+    "notes": "Reviewed the package TestMain, the actual config resolver, the captured disabled StopFailure fixture in the backup, and the doctor and repair call paths. The tests touch only temporary homes and files. This design record is not independent approval or proof that a running real Codex process reloaded its hooks."
+  },
+  "cases": [
+    {
+      "id": "CHI-001",
+      "layer": "L2",
+      "description": "The app test binary isolates an inherited Codex home before installer fixtures run",
+      "setup": "A disposable directory representing the caller's CODEX_HOME contains a sentinel hooks.json. Use a different disposable HOME for a child invocation of the existing doctor installer test.",
+      "action": "Run the existing Codex installer fixture in the child through the real app TestMain.",
+      "expected": "The child test passes. The caller sentinel's bytes and directory entries are unchanged. A test may still set its own override explicitly after TestMain.",
+      "planned_files": [
+        "internal/app/testmain_test.go",
+        "internal/app/doctor_agent_hooks_test.go"
+      ]
+    },
+    {
+      "id": "CHI-002",
+      "layer": "L2",
+      "description": "Doctor reports a present Codex hook whose executable cannot run and repairs the managed entry",
+      "setup": "Synthetic Codex home with hooks enabled, a complete registered event set, a foreign hook, and a disposable executable gtmux. Replace only the Stop command's executable with a separate missing, non-executable, or directory target named gtmux.",
+      "action": "Check the Codex doctor result for each target, then invoke the existing consented Codex repair step with the disposable executable.",
+      "expected": "Each bad target marks Stop as needing repair. The checks never run the hook. The repaired configuration validates and preserves the foreign hook. Available bare and absolute commands keep their existing behavior.",
+      "planned_files": [
+        "internal/app/doctor_agent_hooks_test.go",
+        "internal/app/hookcompleteness_test.go"
+      ]
+    }
+  ],
+  "seal": "6dbe6e8e7f20ef3d1fff10400caa9cf32e3952e384cca95bc3cc77ca7a79ca0d"
+}
