@@ -1,4 +1,12 @@
 {
+  "internal/hq/relay_attention_review_test.go": {
+    "cases": ["HRF-001"],
+    "selectors": ["TestHRF001UnsurfacedRelayReferencesGetIndependentNotice"]
+  },
+  "internal/hqworkspace/relay_attention_review_test.go": {
+    "cases": ["HRF-002", "HRF-003"],
+    "selectors": ["TestHRF002DueDeferredReportKeepsItsConsumedReservation", "TestHRF003PairedRelayRetainsEarlierMatchingStop"]
+  },
   "internal/agentclient/expected_target_test.go": {
     "cases": [
       "ASC-004"

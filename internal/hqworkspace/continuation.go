@@ -75,7 +75,16 @@ func ContinuationWakeQueue(d Database, now int64) []Reconciliation {
 func ReconciliationWakeQueue(d Database, now int64) []Reconciliation {
 	var out []Reconciliation
 	for _, q := range ReconciliationQueue(d, now) {
-		if q.Observation.RelayAttention || q.Observation.Continuation || q.Observation.NeedsTriage() || hasLiveClaim(q, now) {
+		if hasLiveClaim(q, now) {
+			continue
+		}
+		if q.Observation.RelayAttention {
+			// A due HQ deferral is new workspace responsibility and uses the
+			// ordinary reminder, without resetting the exact report's reservation.
+			if !relayAttentionRecheckDue(q, now) {
+				continue
+			}
+		} else if q.Observation.Continuation || q.Observation.NeedsTriage() {
 			continue
 		}
 		out = append(out, q)

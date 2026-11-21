@@ -51,13 +51,13 @@ func serviceWorkspaceRelayAttention(s *hqworkspace.Store, d hqworkspace.Database
 		q := due.Reconciliation
 		late := now-q.Observation.OccurredAt >= int64(2*time.Minute/time.Second)
 		eligible := !checkedSlot && q.RelayAttentionAt == 0 && (due.SourceEnded || late)
-		if !eligible && (!late || len(notices) >= 8) {
+		if !eligible && !late {
 			continue
 		}
 		r, pending, verifyErr := readPendingAttention(q, now)
 		if verifyErr != nil {
 			diag.ReportStoreFailure("hq-relay-attention", verifyErr)
-			if late && len(notices) < 8 {
+			if late {
 				notices = append(notices, hq.RelayAttention{ID: strings.TrimPrefix(q.Observation.Ref, "relay:"),
 					Since: q.Observation.OccurredAt, ReservedAt: q.RelayAttentionAt, Unverified: true})
 			}
@@ -77,7 +77,7 @@ func serviceWorkspaceRelayAttention(s *hqworkspace.Store, d hqworkspace.Database
 			})
 			diag.ReportStoreFailure("hq-relay-attention", err)
 		}
-		if late && len(notices) < 8 {
+		if late {
 			notices = append(notices, hq.RelayAttention{ID: r.ID, Since: r.CreatedAt, ReservedAt: q.RelayAttentionAt})
 		}
 	}

@@ -1,6 +1,9 @@
 package hqworkspace
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 type RelayAttentionDue struct {
 	Reconciliation
@@ -12,25 +15,30 @@ type RelayAttentionDue struct {
 func RelayAttentionQueue(d Database, now int64) ([]RelayAttentionDue, bool) {
 	var paired, unpaired []RelayAttentionDue
 	enrolled := false
-	ends := map[Conversation]int64{}
+	ends := map[Conversation][]int64{}
 	for _, q := range d.Reconciliations {
 		o := q.Observation
 		enrolled = enrolled || o.RelayAttention
 		switch o.Kind {
-		case "Stop", "StopFailure", "triage-unassigned:Stop", "triage-unassigned:StopFailure":
+		case "Stop", "StopFailure", "triage-unassigned:Stop", "triage-unassigned:StopFailure",
+			"triage-ambiguous:Stop", "triage-ambiguous:StopFailure":
 			if o.OccurredAt <= now {
 				source := relayAttentionSource(o.Conversation)
-				ends[source] = max(ends[source], o.OccurredAt)
+				ends[source] = append(ends[source], o.OccurredAt)
 			}
 		}
+	}
+	for _, observed := range ends {
+		slices.Sort(observed)
 	}
 	for _, q := range ReconciliationQueue(d, now) {
 		if !relayAttentionOwed(q, now) {
 			continue
 		}
 		o := q.Observation
-		end := ends[relayAttentionSource(o.Conversation)]
-		row := RelayAttentionDue{Reconciliation: q, SourceEnded: end >= o.OccurredAt && end-o.OccurredAt <= 5*60}
+		observed := ends[relayAttentionSource(o.Conversation)]
+		first, _ := slices.BinarySearch(observed, o.OccurredAt)
+		row := RelayAttentionDue{Reconciliation: q, SourceEnded: first < len(observed) && observed[first]-o.OccurredAt <= 5*60}
 		if row.SourceEnded {
 			paired = append(paired, row)
 		} else {
@@ -50,7 +58,11 @@ func relayAttentionOwed(q Reconciliation, now int64) bool {
 		o.OccurredAt <= 0 || o.OccurredAt > now || hasLiveClaim(q, now) {
 		return false
 	}
-	return q.State == "pending" || q.State == "leased"
+	return q.State == "pending" || q.State == "leased" || relayAttentionRecheckDue(q, now)
+}
+
+func relayAttentionRecheckDue(q Reconciliation, now int64) bool {
+	return q.State == "deferred" && q.NextCheck > 0 && q.NextCheck <= now
 }
 
 // ReserveRelayAttention consumes a scheduling opportunity, never a source

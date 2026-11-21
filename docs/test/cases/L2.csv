@@ -262,6 +262,7 @@ MAP-e90ab47cf8fd,L2,reviewed implementation,internal/hq/playbook_layout_test.go,
 MAP-e023eadb98e8,L2,reviewed implementation,internal/hq/playbook_layout_test.go,140,reviewed-selector,TestHQPlaybookGatesStayInTheEntry,False,"HQIL-001,HQIL-002"
 MAP-ead7aeb8f6cb,L2,reviewed implementation,internal/hq/process_materials_test.go,27,reviewed-selector,TestDPC001AutomaticScopePreservesUnknownNotesAndIncludes,False,"DPC-001,DPC-002"
 MAP-09d9db3d9987,L2,reviewed implementation,internal/hq/process_materials_test.go,108,reviewed-selector,TestDPC002ProcessMaterialInventoryProtectsCoreAndUnknown,False,"DPC-001,DPC-002"
+MAP-5580d0a3574a,L2,reviewed implementation,internal/hq/relay_attention_review_test.go,11,reviewed-selector,TestHRF001UnsurfacedRelayReferencesGetIndependentNotice,False,HRF-001
 MAP-fc5da55172ab,L2,reviewed implementation,internal/hq/rotation_admission_test.go,11,reviewed-selector,TestHRW007RegistrationSharesTheInputClaimLease,False,HRW-007
 MAP-5fb504a908e7,L2,reviewed implementation,internal/hq/rotation_attention_test.go,14,reviewed-selector,TestHRW011RotationFailureUsesNonWaitingAttention,False,HRW-011
 MAP-5ca00611b9a2,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,8,reviewed-selector,TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity,False,HRW-012
@@ -348,6 +349,8 @@ MAP-8d3525e25015,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,
 MAP-8c722e686be5,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,151,reviewed-selector,TestPhase1RecoveryFencingAtomicAssessment,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-6cde1202d0f1,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,220,reviewed-selector,TestPhase1OldObservationDeferralAndSchemaMigration,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
 MAP-05f8c00db7ff,L2,reviewed implementation,internal/hqworkspace/phase1_test.go,281,reviewed-selector,TestPhase1ExactAttributionAndAmbiguity,False,"HQP1-001,HQP1-002,HQP1-003,HQP1-004,HQP1-005,HQP1-006,HQP1-007,HQP1-008"
+MAP-13073625e63f,L2,reviewed implementation,internal/hqworkspace/relay_attention_review_test.go,5,reviewed-selector,TestHRF002DueDeferredReportKeepsItsConsumedReservation,False,"HRF-002,HRF-003"
+MAP-f939c98ca273,L2,reviewed implementation,internal/hqworkspace/relay_attention_review_test.go,20,reviewed-selector,TestHRF003PairedRelayRetainsEarlierMatchingStop,False,"HRF-002,HRF-003"
 MAP-6655d6f58f73,L2,reviewed implementation,internal/hqworkspace/triage_test.go,8,reviewed-selector,TestWorkspaceTriageAssessment,False,HPT-001
 MAP-259bfbcda714,L2,Go core / CLI / server,internal/knowledge/distribute_test.go,161,reviewed-selector,TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions,False,STOR-001
 MAP-f2c2067e1564,L2,reviewed implementation,internal/knowledge/dreamallowance_test.go,13,reviewed-selector,TestDreamAllowancePreservesProgressCostsAndIdempotency,False,KBDREAM-ALLOWANCE
