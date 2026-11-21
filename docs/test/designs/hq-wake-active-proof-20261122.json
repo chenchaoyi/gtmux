@@ -1,0 +1,24 @@
+{
+  "id": "hq-wake-active-proof-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-22",
+    "decision": "Tie missing-proof alerts to live receiver acknowledgements after the grace period",
+    "notes": "The production evidence identified a fresh acknowledgement at six seconds, a settled historical aggregate, and an independent archive addition. Use durable synthetic records, an explicit clock, and a fake desktop channel to reproduce the same transitions. The fixtures contain invented content."
+  },
+  "cases": [
+    {
+      "id": "WAP-001",
+      "layer": "L2",
+      "description": "Fresh or settled receiver acknowledgements do not revive historical missing-proof alerts",
+      "setup": "Seed a historical accepted-unverified marker and its notice watermark, a successful later confirmation, a separately reported archive marker, and synthetic active receiver acknowledgements with a controlled clock.",
+      "action": "Run the real health watchdog while observation is empty, at six seconds after a fresh acceptance, and across the grace boundary. Leave one overdue receipt active while a different one ages, then retire each receipt and run the watchdog again.",
+      "expected": "A settled marker and a fresh receipt produce zero missing-proof journal or desktop alerts. A receipt reaching the grace period independently emits a missing-proof alert. A distinct later overdue receipt emits a new rate-limited alert even while the earlier one remains. Repeated scans send neither receipt again. After retirement there is no active missing-proof notice. A newly archived acknowledgement remains a separate alert.",
+      "planned_files": [
+        "internal/hq/wake_accepted_notice_test.go"
+      ]
+    }
+  ],
+  "seal": "dd04e9d9cc6dfc14e659dc6d6db220cdd31c1975e6e0982b631d471f140d9669"
+}

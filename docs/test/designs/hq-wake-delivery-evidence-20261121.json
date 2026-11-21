@@ -2,10 +2,10 @@
   "id": "hq-wake-delivery-evidence-20261121",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner; design self-review",
-    "date": "2026-11-21",
-    "decision": "Require independent exact evidence after acceptance and preserve maintenance reservations",
-    "notes": "Synthetic receipts and transcript fixtures. A live transport result or same pane cannot imply an accepted wake's start, exact prompt ingestion, or workspace completion."
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-22",
+    "decision": "Recheck independent receipt, delivery, and maintenance boundaries against active-proof health",
+    "notes": "Synthetic receipts and transcript fixtures. Query the public health view for the live acknowledgement rather than coupling the existing acceptance test to a historical aggregate marker. Acceptance, exact start and prompt evidence, and workspace completion remain distinct."
   },
   "cases": [
     {
@@ -14,7 +14,7 @@
       "description": "Accepted native wakes need exact independent turn and prompt evidence",
       "setup": "Inject a native receiver acknowledgement after a maintenance reservation and, separately, a fake transcript observation ordered around expected attempt time. Include a different prompt in an existing active turn.",
       "action": "Accept a batch, run observation without evidence, then supply its exact turn and prompt transcript evidence. Run again across a simulated reboot.",
-      "expected": "Acceptance alone neither starts nor confirms delivery. An exact prompt in the acknowledged newly-started turn records both independent observations once. An unrelated turn, an unproven prompt, and authorizing an automatic replay remain excluded.",
+      "expected": "Acceptance alone neither starts nor confirms delivery. An exact prompt in the acknowledged newly-started turn records both independent observations once. An unrelated turn, an unproven prompt, and authorizing an automatic replay remain excluded. The health view lists a live acknowledgement after its grace period and clears that missing-proof issue after the exact receipt settles.",
       "planned_files": [
         "internal/hqnudge/wake_evidence_test.go",
         "internal/hqnudge/rotation_priority_test.go"
@@ -32,5 +32,5 @@
       ]
     }
   ],
-  "seal": "9a4fd49272f80ec1218f766148557d54f481c6497186ab3968cee21833a1eb58"
+  "seal": "f0118e3108ddc4fc30f45d629974987a8dc0e7afec1894c7143e4efec64fafd9"
 }
