@@ -1,0 +1,47 @@
+{
+  "id": "hq-codex-title-ownership-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-21",
+    "decision": "Preserve native Codex title ownership across connection lifecycle",
+    "notes": "The independent review and an isolated run on the merged base reproduced a user rename acknowledged and read back between the bridge's empty read and unconditional write. Codex 0.171.0 exposes no atomic name-if-empty operation. The reviewed contract leaves title ownership with Codex, including on unnamed roots, and limits gtmux title projection to a verified binding on a pane stamped for this HQ. Fixtures verify frame and accessor boundaries. A separate native run verifies persisted names. Independent review is still required on the exact PR head."
+  },
+  "cases": [
+    {
+      "id": "HCO-001",
+      "layer": "L2",
+      "description": "A stale unnamed root response leaves a concurrently confirmed Codex name intact",
+      "setup": "Initialize the configured-home observer and production forwarding over two private sockets. Hold an unnamed root response while a separate client sets and reads back a name. Use a fake server in the portable test and an isolated Codex 0.171.0 server for native verification.",
+      "action": "Deliver the stale root response and then the native name notification. Verify user, ordinary, and HQ traffic at the forwarding boundary.",
+      "expected": "The original root result and native notification reach the frontend unchanged and only ordinary root binding occurs. A fresh name read still returns the user's name, with no automatic title mutation. The obsolete test for conditional behavior built on the unconditional API is retired.",
+      "planned_files": [
+        "internal/codexbridge/hq_title_test.go",
+        "internal/codexrpc/thread_name_test.go"
+      ]
+    },
+    {
+      "id": "HCO-002",
+      "layer": "L2",
+      "description": "A delayed root on a disconnected or superseded frontend cannot write a title or reclaim the binding",
+      "setup": "Create a private frontend binding and hold an unnamed root after its request has been observed. Trigger disconnect and activate the next connection before draining the old root.",
+      "action": "Release the old root after teardown, then bind a root on the new connection. Observe any attempted name writes and the final attachment.",
+      "expected": "The old connection grants neither a title write nor a binding. The current connection binds its own root and leaves the Codex name unchanged.",
+      "planned_files": [
+        "internal/codexbridge/hq_title_test.go"
+      ]
+    },
+    {
+      "id": "HCO-003",
+      "layer": "L2",
+      "description": "A task label uses the Codex name only on a positively stamped HQ pane",
+      "setup": "Give an ordinary Codex pane the HQ working directory, a directory-derived supervisor role and a current same-home binding with a saved name. Add a verified stamped HQ case and a foreign-stamp case.",
+      "action": "Project the shared radar task before and after a matching stamp and a native user rename.",
+      "expected": "A matching HQ stamp and verified binding use the current saved name in the shared payload. An absent or foreign stamp keeps the ordinary label even when the directory implies a supervisor role. Existing role inference retains its own behavior.",
+      "planned_files": [
+        "internal/radar/hq_title_test.go"
+      ]
+    }
+  ],
+  "seal": "0ed7c986db0c19ff91fab8999e4dc2a3d4dcf02da49c26b36eb9e97c96cd5083"
+}
