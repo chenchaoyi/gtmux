@@ -3861,6 +3861,14 @@
       "WWP002 Preserves saved freeform geometry while placing a new tile"
     ]
   },
+  "internal/app/restore_startup_receipt_test.go": {
+    "cases": [
+      "RSRC-001"
+    ],
+    "selectors": [
+      "TestRestoreStartupSummaryKeepsAcceptedTimeoutPending"
+    ]
+  },
   "internal/app/codex_managed_restore_test.go": {
     "cases": [
       "CRMB-001",

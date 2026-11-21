@@ -73,10 +73,11 @@ func renderResumeAttempts(attempts []resumeAttempt, width int) string {
 	width = maxInt(20, min(width, 100))
 	confirmed, pending, skipped := 0, 0, 0
 	for _, a := range attempts {
-		switch a.State {
-		case "confirmed":
+		switch {
+		case a.State == "confirmed":
 			confirmed++
-		case "pending", "prefilled":
+		case a.State == "pending", a.State == "prefilled",
+			a.State == "startup-timeout" && a.IssueState == "pending":
 			pending++
 		default:
 			skipped++

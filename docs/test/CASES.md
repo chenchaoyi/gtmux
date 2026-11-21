@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1422 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1423 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2661 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2662 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -529,6 +529,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | RSD-002 | The first receipt retains uncertainty. The duplicate gets neither a literal nor Enter; a distinct identity still dispatches. |
 | RSD-003 | The valid local pane stays visible and the changed file invalidates its fingerprint. A local read error is distinguishable from an empty save. The remote reader retains its cap. |
 | RSD-004 | Every original hold and send assertion remains. The fake process is resident before observation. A launch or capture error reports its own failure within the existing wait. |
+| RSRC-001 | Only the verified-send timeout contributes to pending verification. Unknown transport and failed send stay in their respective outcome wording, and the timeout row preserves its observation limit. |
 | RRV-001 | Local pane A and explicit startup timeout appear before B preparation; no confirmation is fabricated; command and Enter log is exact and no real tmux is reachable |
 | RRV-002 | Both final results retain startup-timeout; first pending versus unknown remains distinguishable as issue_state after persistence, without replay or extra sender calls |
 | RRV-003 | User sees startup timeout and original unknown/send-failed distinctly; old responses without issue_state remain accepted; malformed optional values are rejected; no POST/send occurs |

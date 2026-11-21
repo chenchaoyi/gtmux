@@ -147,6 +147,7 @@ MAP-a7a51c9026b2,L2,reviewed implementation,internal/app/restore_serial_test.go,
 MAP-e0787fe90142,L2,reviewed implementation,internal/app/restore_serial_test.go,159,reviewed-selector,TestRestoreSerialNativeIssueKeepsCommandEnterAndStoreOrder,False,"CNRV4-003,CNRV4-004,CNRV4-005"
 MAP-de7eb092706c,L2,reviewed implementation,internal/app/restore_serial_test.go,228,reviewed-selector,TestRestoreSerialCancelAfterReserveKeepsOccupationWithoutSend,False,"CNRV4-003,CNRV4-004,CNRV4-005"
 MAP-fc043904c69b,L2,reviewed implementation,internal/app/restore_serial_test.go,253,reviewed-selector,TestRestoreSerialUncertainSendWaitsWithoutClaimingReady,False,"CNRV4-003,CNRV4-004,CNRV4-005"
+MAP-a31621313faf,L2,reviewed implementation,internal/app/restore_startup_receipt_test.go,10,reviewed-selector,TestRestoreStartupSummaryKeepsAcceptedTimeoutPending,False,RSRC-001
 MAP-54bad8843802,L2,reviewed implementation,internal/app/restore_visibility_test.go,89,reviewed-selector,TestRRVLocalTimeoutVisibleBeforeNextPreparation,False,"RRV-001,RRV-002"
 MAP-cf0179917a35,L2,reviewed implementation,internal/app/restore_visibility_test.go,119,reviewed-selector,TestRRVRemoteFinalStoreRetainsFirstIssueFact,False,"RRV-001,RRV-002"
 MAP-4e1e34ccdf4a,L2,reviewed implementation,internal/app/restore_wrapper_cancel_test.go,17,reviewed-selector,TestCompatibilityCancellationDuringFinalTargetQuery,False,RWC-001

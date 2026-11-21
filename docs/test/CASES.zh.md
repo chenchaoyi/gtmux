@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1422 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1423 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2661 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2662 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -529,6 +529,7 @@
 | RSD-002 | The first receipt retains uncertainty. The duplicate gets neither a literal nor Enter; a distinct identity still dispatches. |
 | RSD-003 | The valid local pane stays visible and the changed file invalidates its fingerprint. A local read error is distinguishable from an empty save. The remote reader retains its cap. |
 | RSD-004 | Every original hold and send assertion remains. The fake process is resident before observation. A launch or capture error reports its own failure within the existing wait. |
+| RSRC-001 | Only the verified-send timeout contributes to pending verification. Unknown transport and failed send stay in their respective outcome wording, and the timeout row preserves its observation limit. |
 | RRV-001 | Local pane A and explicit startup timeout appear before B preparation; no confirmation is fabricated; command and Enter log is exact and no real tmux is reachable |
 | RRV-002 | Both final results retain startup-timeout; first pending versus unknown remains distinguishable as issue_state after persistence, without replay or extra sender calls |
 | RRV-003 | User sees startup timeout and original unknown/send-failed distinctly; old responses without issue_state remain accepted; malformed optional values are rejected; no POST/send occurs |
