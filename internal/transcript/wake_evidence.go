@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -62,37 +63,70 @@ func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {
 	// A partial final append is not evidence until its newline is durable.
 	for _, row := range rows[:len(rows)-1] {
 		var line codexLine
-		if json.Unmarshal(row, &line) != nil || line.Type != "event_msg" {
-			continue
-		}
-		var e struct {
-			Type    string `json:"type"`
-			Turn    string `json:"turn_id"`
-			Message string `json:"message"`
-		}
-		if json.Unmarshal(line.Payload, &e) != nil {
+		if json.Unmarshal(row, &line) != nil {
 			continue
 		}
 		at, err := time.Parse(time.RFC3339Nano, line.Timestamp)
 		if err != nil {
 			continue
 		}
-		switch e.Type {
-		case "task_started":
-			start = time.Time{}
-			if e.Turn == turn && !at.Before(since) {
-				start = at
+		if line.Type == "event_msg" {
+			var boundary struct {
+				Type string `json:"type"`
+				Turn string `json:"turn_id"`
 			}
-		case "task_complete", "turn_aborted":
-			start = time.Time{}
-		case "user_message":
-			if !start.IsZero() && !at.Before(start) && e.Message == prompt {
-				return WakeWitness{Started: start, Delivered: at}
+			if json.Unmarshal(line.Payload, &boundary) != nil {
+				continue
 			}
-			// The first input establishes the turn's causation. A subsequent
-			// identical line on a different user-started turn cannot attest it.
-			start = time.Time{}
+			switch boundary.Type {
+			case "task_started":
+				start = time.Time{}
+				if boundary.Turn == turn && !at.Before(since) {
+					start = at
+				}
+				continue
+			case "task_complete", "turn_aborted":
+				start = time.Time{}
+				continue
+			}
 		}
+		if start.IsZero() || at.Before(start) {
+			continue
+		}
+		raw, isPrompt := wakePrompt(line)
+		if !isPrompt {
+			continue
+		}
+		if raw == prompt {
+			return WakeWitness{Started: start, Delivered: at}
+		}
+		// The first human-origin input establishes causation. A later copy
+		// in a turn already opened by different input cannot attest the wake.
+		start = time.Time{}
 	}
 	return WakeWitness{}
+}
+
+func wakePrompt(line codexLine) (string, bool) {
+	var payload codexPayload
+	if json.Unmarshal(line.Payload, &payload) != nil {
+		return "", false
+	}
+	var text string
+	switch {
+	case line.Type == "event_msg" && payload.Type == "user_message":
+		text = payload.Message
+	case line.Type == "response_item" && payload.Type == "message" && payload.Role == "user":
+		var parts []string
+		for _, item := range payload.Content {
+			if item.Type == "input_text" && strings.TrimSpace(item.Text) != "" {
+				parts = append(parts, item.Text)
+			}
+		}
+		text = strings.Join(parts, "\n")
+	default:
+		return "", false
+	}
+	_, real := codexUserPrompt(text)
+	return text, real
 }

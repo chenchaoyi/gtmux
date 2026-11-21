@@ -91,7 +91,13 @@ func ObserveWakeEvidence(now time.Time) {
 	}
 	defer lease.Close()
 	home := wakeTranscriptHome()
-	for _, file := range files {
+	const proofBatch = 8
+	first := int((now.Unix() / 3) * proofBatch % int64(len(files)))
+	if first < 0 {
+		first = 0
+	}
+	for i := 0; i < min(proofBatch, len(files)); i++ {
+		file := files[(first+i)%len(files)]
 		if strings.HasPrefix(file.Name(), ".private-") {
 			continue
 		}

@@ -19,9 +19,18 @@ func TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt(t *testing.
 	}
 	wakeStarted := record("task_started", "wanted", "", since.Add(time.Second))
 	wakeMessage := record("user_message", "", prompt, since.Add(2*time.Second))
+	modern := func(text string, at time.Time) string {
+		b, _ := json.Marshal(map[string]any{"type": "response_item", "timestamp": at.Format(time.RFC3339Nano),
+			"payload": map[string]any{"type": "message", "role": "user",
+				"content": []map[string]string{{"type": "input_text", "text": text}}}})
+		return string(b) + "\n"
+	}
+	instructions := modern("# AGENTS.md instructions\nrepository context", since.Add(time.Second))
 	path := filepath.Join(t.TempDir(), "rollout.jsonl")
 	for name, fixture := range map[string]string{
 		"matched":       wakeStarted + wakeMessage,
+		"modern":        wakeStarted + instructions + modern(prompt, since.Add(2*time.Second)),
+		"foreign input": wakeStarted + modern("foreign prompt", since.Add(time.Second)) + wakeMessage,
 		"existing turn": record("task_started", "wanted", "", since.Add(-time.Second)) + wakeMessage,
 		"different":     record("task_started", "foreign", "", since.Add(time.Second)) + wakeMessage,
 		"user turn":     wakeStarted + record("user_message", "", "unrelated input", since.Add(time.Second)) + wakeMessage,
@@ -32,7 +41,7 @@ func TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt(t *testing.
 				t.Fatal(err)
 			}
 			got := wakeWitnessIn(path, "wanted", prompt, since)
-			if name == "matched" {
+			if name == "matched" || name == "modern" {
 				if !got.Started.Equal(since.Add(time.Second)) || !got.Delivered.Equal(since.Add(2*time.Second)) {
 					t.Fatal("positive start and prompt evidence did not match", got)
 				}
