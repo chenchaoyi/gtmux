@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1419 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1420 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2652 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2655 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -331,10 +331,13 @@
 | HWA-018 | Direct inspection and failed producers expose a queue I/O reason even without a drain or HQ. Healthy directory alone cannot erase the observed issue before confirmed progress. |
 | HWA-011 | The newer unclaimed generation retains its original deadline and remains eligible; a stale generation never overwrites or replays into it. |
 | HWA-003 | The warning is explicitly rejected and all prior decision entries survive. An equal-priority new entry may replace the oldest of its rank with a truthful eviction audit. Both pressure outcomes have distinct stages. |
-| HWA-004 | First, changed and continuing reasons alert at bounded cadence even with old down marker. Historical uncertainty remains separate. Pending work, quiet mode or absence of HQ cannot suppress the independent deadline alarm. Recovery requires an exact positive receipt or the tracked condition being conclusively settled. |
+| HWA-004 | First and changed reasons alert even with the old down marker. A retained conflict and a recorded pressure event do not cause periodic reannouncement. Historical uncertainty remains separate. Pending work, quiet mode or absence of HQ cannot suppress the independent deadline alarm. Recovery requires an exact positive receipt or the tracked condition being conclusively settled. |
 | HWA-005 | Deadline and out-of-band report share the goal follow-up ID. Quiet/inactive HQ does not stop that report. Request handling stays open until workbench outcome exists and recovery emits no duplicate alert. |
 | HWA-009 | The two native inodes and pending replacement survive, and the previous receipt stays recoverable. Only the independent wake submits. |
 | HWA-010 | The mixed intent retains its evidence, the hard recovery failure prevents all new input, and the independent pending entry remains available after the storage issue is resolved. |
+| WNR-001 | There is no conflict for that parked claim. The journal, pin and parked bytes remain identical and no pending or sending file is created. |
+| WNR-002 | Every ambiguous original remains protected. Neither replacement nor submission is performed. A separately verified parked claim is still recognized. |
+| WNR-003 | Retained archives and refusals remain diagnosable without repeated desktop alerts. A new occurrence and newly active cause remain visible. Simultaneous channel reasons produce one desktop notice and one journal event. Active stalls and workspace deadlines keep their own rate-limited reminders. |
 | HWA-014 | One submission per fresh batch, no replays or lost acknowledgement. Full or expired active proofs are retained with exact receipt provenance in a bounded private archive and independently discoverable. |
 | HWA-015 | One durable delivery audit for this batch, with no input mutation. Clean up the retained receipt only after observing the matching audit. |
 | HWA-019 | The initial held wake and the draft are protected. One terminal wake reaches the verified idle fixture after its deadline, exact ownership is retained, and no workspace authority is invented. |

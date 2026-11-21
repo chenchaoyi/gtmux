@@ -291,6 +291,7 @@ MAP-27e9b5f03486,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,208
 MAP-564acb685125,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,229,reviewed-selector,TestHQR005RefreshRefusesUnsafeManagedFiles,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 MAP-1b8457abb5dd,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,288,reviewed-selector,TestHQR006RefreshPreservesBackupNamesAndFailsSafely,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 MAP-d3fb86c5d55c,L2,reviewed implementation,internal/hq/wake_autorecovery_test.go,14,reviewed-selector,TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter,False,HWA-004
+MAP-fb32a730b2aa,L2,reviewed implementation,internal/hq/wake_autorecovery_test.go,63,reviewed-selector,TestWNR003WakeNoticeCoalescesNewCausesAndSkipsHistoricalInventory,False,"HWA-004,WNR-003"
 MAP-d03b4abfe4f2,L2,reviewed implementation,internal/hq/wake_rotation_regression_test.go,12,reviewed-selector,TestHWA008ChangedSuccessorFailsIndependentlyWithoutSecondReset,False,HWA-008
 MAP-e4cfa47e623e,L2,reviewed implementation,internal/hqinput/rotation_test.go,13,reviewed-selector,TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize,False,HRW-003
 MAP-23d161981468,L2,reviewed implementation,internal/hqnudge/autorecovery_review_test.go,35,reviewed-selector,TestHWA009LateReceiptRespectsProtectedClaim,False,"HWA-009,HWA-010"
@@ -333,6 +334,8 @@ MAP-e97fcddb77e7,L2,reviewed implementation,internal/hqnudge/waiting_witness_tes
 MAP-809457712075,L2,reviewed implementation,internal/hqnudge/wake_evidence_review_test.go,18,reviewed-selector,TestHWA014AcceptedProofBudgetDoesNotFreezeAdmission,False,"HWA-014,HWA-015"
 MAP-d8bc2e7c48ba,L2,reviewed implementation,internal/hqnudge/wake_evidence_review_test.go,87,reviewed-selector,TestHWA015AcceptedProofCrashRetryKeepsOneDeliveryAudit,False,"HWA-014,HWA-015"
 MAP-60d41c147213,L2,reviewed implementation,internal/hqnudge/wake_evidence_test.go,13,reviewed-selector,TestHWA012AcceptanceWaitsForIndependentProof,False,HWA-012
+MAP-67dcf50f97c3,L2,reviewed implementation,internal/hqnudge/wake_restart_recovery_test.go,65,reviewed-selector,TestWNR001DeviceChangeKeepsParkedUnknownIntact,False,"WNR-001,WNR-002"
+MAP-ca51caefaa67,L2,reviewed implementation,internal/hqnudge/wake_restart_recovery_test.go,84,reviewed-selector,TestWNR002DeviceChangeStillProtectsAmbiguousClaims,False,"WNR-001,WNR-002"
 MAP-a8b272ecc334,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,12,reviewed-selector,TestHWA006NativePositiveRefusalUsesDurableBoundedBackoff,False,"HWA-006,HWA-007"
 MAP-6d6b23733fd9,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,57,reviewed-selector,TestHWA006UnknownAndChangedTargetNeverResubmit,False,"HWA-006,HWA-007"
 MAP-63c494f35db1,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,94,reviewed-selector,TestHWA007GuardsPermitNoClientInput,False,"HWA-006,HWA-007"
