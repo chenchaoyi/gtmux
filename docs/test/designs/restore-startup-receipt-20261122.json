@@ -1,0 +1,24 @@
+{
+  "id": "restore-startup-receipt-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-22",
+    "decision": "Approve receipt expectations before tests",
+    "notes": "An isolated real tmux and Codex restore accepted a command, reported the bounded observation deadline, and then established a readable and writable App connection. The display should not collapse that accepted command into the failed-send count. This test checks the terminal report; actual pane startup has separate evidence."
+  },
+  "cases": [
+    {
+      "id": "RSRC-001",
+      "layer": "L2",
+      "description": "Restore summary keeps accepted but not observed startup pending",
+      "setup": "Five synthetic restore outcomes cover confirmed, pending, observation expired after a verified send, observation expired after an unknown send, and a refused send.",
+      "action": "Render the English and Chinese terminal summaries and each timeout row.",
+      "expected": "Only the verified-send timeout contributes to pending verification. Unknown transport and failed send stay in their respective outcome wording, and the timeout row preserves its observation limit.",
+      "planned_files": [
+        "internal/app/restore_startup_receipt_test.go"
+      ]
+    }
+  ],
+  "seal": "57eed7d3de3f1b52b77dca6e62e2b1f7404a6201b1e8d63f22d45730450f54c6"
+}
