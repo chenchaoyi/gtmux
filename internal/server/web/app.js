@@ -3761,12 +3761,31 @@
   // ---- tiles ------------------------------------------------------------
   var SNAP = 20;
   function snapv(v) { return WB.snap ? Math.round(v / SNAP) * SNAP : v; }
+  function nextTilePosition(board) {
+    var margin = 14, width = 560, height = 480;
+    if (!WB.tiles.length) return {x: margin, y: margin, w: width, h: height};
+    var right = 0, bottom = 0;
+    WB.tiles.forEach(function (tile) {
+      right = Math.max(right, tile.x + tile.w);
+      bottom = Math.max(bottom, tile.y + tile.h);
+    });
+    var beside = board.clientWidth - right - 2 * margin;
+    if (beside >= 400 && board.clientHeight >= height + 2 * margin) {
+      return {x: right + margin, y: margin, w: Math.min(width, beside), h: height};
+    }
+    var below = board.clientHeight - bottom - 2 * margin;
+    if (below >= 320 && board.clientWidth >= width + 2 * margin) {
+      return {x: margin, y: bottom + margin, w: width, h: Math.min(height, below)};
+    }
+    var offset = margin + (WB.tiles.length % 4) * 28;
+    return {x: offset, y: offset, w: width, h: height};
+  }
   function addTile(a, pos) {
     if (!tileKey(a)) return null;
-    pos = pos || {};
     var existing = null; WB.tiles.forEach(function (t) { if (t.id === tileKey(a)) existing = t; });
     if (existing) { existing.el.style.zIndex = ++zTop; return existing; }
-    var board = $('board'), br = board.getBoundingClientRect();
+    var board = $('board');
+    pos = pos || nextTilePosition(board);
     var t = {
       id: tileKey(a), agent: a, mode: readableConversation(a) || pos.mode === 'chat' || pos.mode === 'trace' ? 'chat' : 'term',
       x: pos.x != null ? Math.max(0, pos.x) : 14 + (WB.tiles.length % 4) * 28,

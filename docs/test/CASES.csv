@@ -7198,6 +7198,8 @@ LEG-8045fa8cae9a,L3,Browser,tests/web/trace.test.cjs,237,scenario,Idle Trace jum
 LEG-db8aed8f1fc2,L3,Browser,tests/web/trace.test.cjs,268,scenario,`Trace preserves modified shortcuts at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-c8529da6a00a,L3,Browser,tests/web/trace.test.cjs,302,scenario,`Trace keeps repeated clockless calls on their original turn (record IDs ${recordIDs})`,True,legacy-not-retrospectively-reviewed
 LEG-e39e092eb399,L3,Browser,tests/web/trace.test.cjs,316,scenario,"iPad portrait, landscape and multitasking resize keep the selected tool and distinct navigation",False,legacy-not-retrospectively-reviewed
+MAP-7c302e814600,L2,reviewed implementation,tests/web/workbench-placement.test.cjs,15,reviewed-selector,WWP001 Opens two actionable workbench tiles,False,"WWP-001,WWP-002"
+MAP-6967230278b1,L2,reviewed implementation,tests/web/workbench-placement.test.cjs,57,reviewed-selector,WWP002 Preserves saved freeform geometry while placing a new tile,False,"WWP-001,WWP-002"
 LEG-69563fe32201,L2,Worker,tunnel-worker/src/direct.test.ts,36,test,the port formula is the client's: Go's crc32.ChecksumIEEE over the id,False,legacy-not-retrospectively-reviewed
 LEG-f3f8a76744ad,L2,Worker,tunnel-worker/src/direct.test.ts,49,test,"each device gets its own account, allowed its own port and nothing else",False,legacy-not-retrospectively-reviewed
 LEG-9986e056b831,L2,Worker,tunnel-worker/src/direct.test.ts,69,test,a device that redeems again gets the same account back,False,legacy-not-retrospectively-reviewed

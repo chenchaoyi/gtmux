@@ -3851,6 +3851,16 @@
       "detects the original final-image shift of minus64 pixels"
     ]
   },
+  "tests/web/workbench-placement.test.cjs": {
+    "cases": [
+      "WWP-001",
+      "WWP-002"
+    ],
+    "selectors": [
+      "WWP001 Opens two actionable workbench tiles",
+      "WWP002 Preserves saved freeform geometry while placing a new tile"
+    ]
+  },
   "internal/app/codex_managed_restore_test.go": {
     "cases": [
       "CRMB-001",
