@@ -27,7 +27,7 @@ const (
 )
 
 var issueCodes = []string{
-	issueClaimConflict, issueRecoveryUnsafe, issueQueuePressure, issueQueueIO, issueUnknownInput, issueUnknownLegacyInput, issueInputRefused, issueRetryExhausted, issueTargetUnavailable, issueAcceptedUnverified, issueProofArchived,
+	issueClaimConflict, issueRecoveryUnsafe, issueQueuePressure, issueQueueIO, issueUnknownInput, issueUnknownLegacyInput, issueInputRefused, issueRetryExhausted, issueTargetUnavailable, issueProofArchived,
 }
 
 type WakeIssue struct {
@@ -165,9 +165,6 @@ func ReadHealth(now int64) Health {
 			clear = clear && queueErr == nil
 		case issueInputRefused, issueRetryExhausted:
 			clear = clear && out.Refused == 0
-		case issueAcceptedUnverified:
-			files, err := os.ReadDir(acceptedWakeDir())
-			clear = err == nil && len(files) == 0 && confirmed >= i.FirstAt
 		case issueUnknownLegacyInput:
 			clear = clear && legacyUncertain == 0
 		case issueProofArchived:
@@ -179,6 +176,9 @@ func ReadHealth(now int64) Health {
 		if !clear {
 			out.Issues = append(out.Issues, i)
 		}
+	}
+	if issue := acceptedWakeIssue(now); issue.FirstAt > 0 {
+		out.Issues = append(out.Issues, issue)
 	}
 	if oldest > 0 && now-oldest > staleQueueSecs {
 		out.Issues = append(out.Issues, WakeIssue{Reason: "stalled", FirstAt: oldest, LastAt: now})

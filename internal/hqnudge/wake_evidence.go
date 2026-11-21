@@ -42,6 +42,21 @@ func validWakeReceipt(r dispatch.WakeReceipt) bool {
 	return true
 }
 
+func readAcceptedWake(path string) (acceptedWake, error) {
+	var accepted acceptedWake
+	b, err := readNativeBytes(path)
+	if err != nil {
+		return accepted, err
+	}
+	if err := json.Unmarshal(b, &accepted); err != nil {
+		return accepted, err
+	}
+	if accepted.Since <= 0 || !validWakeReceipt(accepted.Receipt) {
+		return accepted, errors.New("invalid accepted wake receipt")
+	}
+	return accepted, nil
+}
+
 func retainAcceptedWake(r nativeIntent) error {
 	dir := acceptedWakeDir()
 	name := filepath.Base(nativeIntentPath(r))
@@ -108,13 +123,11 @@ func ObserveWakeEvidence(now time.Time) {
 			continue
 		}
 		p := filepath.Join(acceptedWakeDir(), file.Name())
-		var accepted acceptedWake
-		b, err := readNativeBytes(p)
+		accepted, err := readAcceptedWake(p)
 		if errors.Is(err, os.ErrNotExist) {
 			continue
 		}
-		if err != nil || json.Unmarshal(b, &accepted) != nil || accepted.Since <= 0 ||
-			!validWakeReceipt(accepted.Receipt) {
+		if err != nil {
 			recordIssue(issueRecoveryUnsafe, now.UnixNano())
 			continue
 		}
@@ -134,12 +147,37 @@ func ObserveWakeEvidence(now time.Time) {
 				continue
 			}
 			diag.ReportStoreFailure("hq-wake-evidence", ignoreNativeMissing(os.Remove(p)))
-			continue
-		}
-		if now.Sub(since) >= acceptedProofGrace {
-			recordIssue(issueAcceptedUnverified, now.UnixNano())
 		}
 	}
+}
+
+// Only an active acknowledgement past its own proof deadline can raise a notice.
+// The observer reports invalid evidence separately and archives expired receipts.
+func acceptedWakeIssue(now int64) WakeIssue {
+	issue := WakeIssue{Reason: issueAcceptedUnverified}
+	files, err := os.ReadDir(acceptedWakeDir())
+	if err != nil {
+		return issue
+	}
+	for _, file := range files {
+		if strings.HasPrefix(file.Name(), ".private-") {
+			continue
+		}
+		accepted, err := readAcceptedWake(filepath.Join(acceptedWakeDir(), file.Name()))
+		if err != nil {
+			continue
+		}
+		// Round up to the first whole second at or after the proof deadline.
+		due := time.Unix(0, accepted.Since).Add(acceptedProofGrace + time.Second - time.Nanosecond).Unix()
+		if due > now {
+			continue
+		}
+		if issue.FirstAt == 0 || due < issue.FirstAt {
+			issue.FirstAt = due
+		}
+		issue.LastAt = max(issue.LastAt, due)
+	}
+	return issue
 }
 
 func confirmAcceptedWake(path string, a acceptedWake, witness transcript.WakeWitness, now time.Time) bool {

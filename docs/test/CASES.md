@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1423 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1424 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2662 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2663 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -326,12 +326,13 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HWW-001 | The draft receives no input. Each proved obsolete fresh wait produces a drop audit while live, unknown and legacy lines follow normal routing. The relay appears exactly once in the first batch and stays accepted. |
 | HWW-002 | A scoped known refusal uses its existing retry budget, an uncertain generation is not submitted again or discarded, and source evidence does not alter accepted receipts. |
 | HWW-003 | Only the exact positive pair produces one delivery audit. Mismatches leave evidence protected, and ordinary user rendering continues to filter wake echoes while accepting ordinary prompts. |
+| WAP-001 | A settled marker and a fresh receipt produce zero missing-proof journal or desktop alerts. A receipt reaching the grace period independently emits a missing-proof alert. A distinct later overdue receipt emits a new rate-limited alert even while the earlier one remains. Repeated scans send neither receipt again. After retirement there is no active missing-proof notice. A newly archived acknowledgement remains a separate alert. |
 | HWA-006 | The generation ID stays stable while only a positively unsent attempt can use a fresh transport-attempt ID. No early dispatch, at most three known-unsent attempts, final exhaustion is retained and visible. Unknown and identity failures never submit again. |
 | HWA-007 | The uncertain original is never pasted twice. An exact matching receipt can settle without typing. Safe Enter-only behavior is limited to a positively matching own draft, with bounded retries and recheck. Real drafts, unready or unidentifiable targets receive no input. |
 | HWA-008 | A receiver/start observation does not confirm durable handoff. Changed successor is reported independently, one reset at most, stale retry is inert. |
 | HWA-001 | Both original inodes, bytes, pins and journal records remain. The independent wake submits exactly once without paste or replay. Unreadable or unidentifiable intent still prevents all admission. |
 | HWA-002 | An unclaimed merge keeps its due time and identity. A new generation has a distinct name even at identical due time. It cannot overwrite an existing sending or parked entry. A provably refused obsolete generation yields to a newer pending one while uncertain records remain frozen. Neither operation pastes into the pane. |
-| HWA-012 | Acceptance alone neither starts nor confirms delivery. An exact prompt in the acknowledged newly-started turn records both independent observations once. An unrelated turn, an unproven prompt, and authorizing an automatic replay remain excluded. |
+| HWA-012 | Acceptance alone neither starts nor confirms delivery. An exact prompt in the acknowledged newly-started turn records both independent observations once. An unrelated turn, an unproven prompt, and authorizing an automatic replay remain excluded. The health view lists a live acknowledgement after its grace period and clears that missing-proof issue after the exact receipt settles. |
 | HWA-013 | An old or unrelated turn cannot establish wake delivery or new start. The exact matching composite yields timestamps without waiving a pending workspace obligation. |
 | HWA-017 | Original old-target evidence remains and is never submitted. Independent work proceeds exactly once, with no Paste or Enter. |
 | HWA-018 | Direct inspection and failed producers expose a queue I/O reason even without a drain or HQ. Healthy directory alone cannot erase the observed issue before confirmed progress. |

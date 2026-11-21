@@ -4796,6 +4796,14 @@
       "LAP-013 bookmarks remain usable without persistent"
     ]
   },
+  "internal/hq/wake_accepted_notice_test.go": {
+    "cases": [
+      "WAP-001"
+    ],
+    "selectors": [
+      "TestWAP001LiveReceiptsDriveWakeProofNotices"
+    ]
+  },
   "internal/hq/wake_autorecovery_test.go": {
     "cases": [
       "HWA-004", "WNR-003"

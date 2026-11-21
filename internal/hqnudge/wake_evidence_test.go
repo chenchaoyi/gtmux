@@ -45,8 +45,9 @@ func TestHWA012AcceptanceWaitsForIndependentProof(t *testing.T) {
 	if len(auditRecords(t, events.AuditEventWakeAccepted)) != 1 || len(auditRecords(t, events.AuditEventWakeDelivered)) != 0 {
 		t.Fatal("a receiver ack was confused with delivery")
 	}
-	if _, err := readIssue(issueAcceptedUnverified); err != nil {
-		t.Fatal("unverified receiver result was silent", err)
+	issues := ReadHealth(now.Add(3 * time.Minute).Unix()).Issues
+	if len(issues) != 1 || issues[0].Reason != issueAcceptedUnverified {
+		t.Fatal("unverified receiver result was silent", issues)
 	}
 	provideProof = true
 	ObserveWakeEvidence(now.Add(4 * time.Minute))

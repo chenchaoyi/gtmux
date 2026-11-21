@@ -37,6 +37,10 @@ func watchWakeHealth(now int64, view hqnudge.Health) {
 	alerts := make(map[string]wakeNotice)
 	for _, issue := range view.Issues {
 		why, action := wakeIssueAdvice(issue.Reason)
+		timing := fmt.Sprintf("First observed %s", wakeObservedAt(issue.FirstAt))
+		if issue.Reason == "accepted-unverified" {
+			timing = fmt.Sprintf("Latest proof deadline %s", wakeObservedAt(issue.LastAt))
+		}
 		if issue.Reason == "stalled" {
 			if cause := wakeHeldCause(); cause != "" {
 				why = cause
@@ -44,7 +48,7 @@ func watchWakeHealth(now int64, view hqnudge.Health) {
 			}
 		}
 		alerts[issue.Reason] = wakeNotice{
-			message:    fmt.Sprintf("%s. First observed %s. %s", why, wakeObservedAt(issue.FirstAt), action),
+			message:    fmt.Sprintf("%s. %s. %s", why, timing, action),
 			observedAt: wakeNoticeOccurrence(issue),
 		}
 	}
@@ -54,10 +58,10 @@ func watchWakeHealth(now int64, view hqnudge.Health) {
 
 func wakeNoticeOccurrence(issue hqnudge.WakeIssue) int64 {
 	switch issue.Reason {
-	case "claim-conflict", "accepted-unverified":
-		// A rescan can keep seeing the same conflict or unverified receipt.
+	case "claim-conflict":
+		// A rescan can keep seeing the same conflict.
 		return issue.FirstAt
-	case "queue-pressure", "input-refused", "retry-exhausted", "observation-archived",
+	case "accepted-unverified", "queue-pressure", "input-refused", "retry-exhausted", "observation-archived",
 		"submission-unknown", "terminal-submission-unknown":
 		// These timestamps advance for recorded incidents, not retained file counts.
 		return issue.LastAt
