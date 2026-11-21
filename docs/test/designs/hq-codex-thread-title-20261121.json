@@ -1,0 +1,47 @@
+{
+  "id": "hq-codex-thread-title-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-21",
+    "decision": "Verify the persisted Codex title before a managed HQ root is published",
+    "notes": "Reviewed the matched-root observer, the stamped tmux role, the Codex 0.171.0 protocol, and the shared radar task field. The tests exercise private fixtures and protocol ordering. Acceptance with an isolated Codex binary is separate from changing a running HQ or installing a release."
+  },
+  "cases": [
+    {
+      "id": "HCT-001",
+      "layer": "L2",
+      "description": "An unnamed managed HQ root has a confirmed title before its client or gtmux can use the new binding",
+      "setup": "Initialize a verified-home bridge observer and inject the title operation. Exercise fresh startup, a replacement root on the same connection, and resume.",
+      "action": "Deliver the corresponding unnamed root results, including a replacement after the initial HQ session and a saved resume result.",
+      "expected": "The exact thread is offered for naming before its binding publishes. The returned root carries the confirmed name while its other fields survive. Unrelated, stale and ephemeral responses never name a thread. An existing name, an ordinary pane and a failed name operation preserve the original frame. The first input cannot determine the name of a successfully named root.",
+      "planned_files": [
+        "internal/codexbridge/hq_title_test.go"
+      ]
+    },
+    {
+      "id": "HCT-002",
+      "layer": "L2",
+      "description": "Only the authoritative stamped HQ pane can seed a missing title using the Codex protocol",
+      "setup": "Use a pane snapshot with an exact pane ID, root PID, TTY and scoped HQ stamp. Use a synthetic verified control connection for thread metadata and name responses.",
+      "action": "Recheck role and current target, initialize the connection, read the exact thread without turns, and request its default title if still unnamed.",
+      "expected": "The supported name request contains the exact ID and title. The acknowledgement precedes publication. A current user name is returned intact. Changed pane identity, foreign home or backend, wrong thread, a lost guard, and RPC failure grant no successful default name. No prompt or resume request is issued.",
+      "planned_files": [
+        "internal/codexbridge/hq_title_test.go",
+        "internal/codexrpc/thread_name_test.go"
+      ]
+    },
+    {
+      "id": "HCT-003",
+      "layer": "L2",
+      "description": "The Codex HQ conversation label in the shared agent row follows its saved name",
+      "setup": "Use a configured-home title index and synthetic current and foreign attachments, with a supervisor role and a separate ordinary Codex pane.",
+      "action": "Project the live HQ title to the agent row, project it again after a rename, then replace the binding with an unavailable or foreign one.",
+      "expected": "The shared task value matches the current saved name and follows a rename. Missing or foreign title evidence keeps the existing task fallback. Ordinary pane labels are preserved. Web, phone, iPad and menu-bar conversation consumers receive the same task field.",
+      "planned_files": [
+        "internal/radar/hq_title_test.go"
+      ]
+    }
+  ],
+  "seal": "b19ba57f946a0afb08e4fd3210e1f0f231bf8ab390632dea196f61210f127d45"
+}
