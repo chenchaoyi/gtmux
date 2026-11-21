@@ -8,7 +8,7 @@ enrollment, input, focus and launch. Other HQ options cannot be combined with it
 help remains read-only. No tmux installation or running HQ is required.
 
 Use the same existing playbook version/language decision and `playbookIn` renderer.
-Keep the installed language; equal or newer managed rules are unchanged. Require
+Keep the installed language. Equal or newer entries are unchanged. An exact current entry can restore missing bundled runbooks. Require
 an owned regular writable file with the exact first-line managed marker and a known
 language. Missing, legacy/unmanaged, link and special files are refused rather than
 migrated. Bound reads to 1 MiB and use the existing private no-follow reader.
@@ -22,10 +22,10 @@ CAS. Finish manual editing before refresh. Pre-publication failures preserve the
 file; post-rename directory-sync errors may leave the complete new file and backup,
 and remain errors. No in-place partial-write or automatic rollback claim.
 
-Only the ordinary lock and necessary private parent-directory handling accompany
-AGENTS/backup writes. Other files, session markers, queue/input, service processes
-and authorization are outside the action. Startup keeps its existing behavior.
-The managed charter content/version is unchanged by this feature.
+Publish the matching versioned runbooks before the new entry; preserve old
+editions and refuse to replace a conflicting runbook. Writes belong to the
+managed entry, runbooks, backup, lock and necessary parent directory handling.
+The command leaves other files, session markers, inputs and services alone.
 
 Tests and chronology: `docs/test/designs/hq-rules-refresh-20261113.json`. Self-review
 precedes implementation; independent source review and normal shipping are required

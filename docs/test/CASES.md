@@ -2,16 +2,16 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1392 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1393 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3816 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2581 | [L2.csv](cases/L2.csv) |
+| L1 · Unit / pure logic | 3802 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 2591 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
-| G · Qualification guards | 507 | [G.csv](cases/G.csv) |
+| G · Qualification guards | 497 | [G.csv](cases/G.csv) |
 
 Numbers are not passes. The legacy 6,223 positions came from the 4fad6119 inventory (declarations, subtests, dynamic templates); explicit new cases, native oracles and reviewed selectors are indexed separately. Dynamic instances are not expanded. Harnesses without named cases retain their hashes. Legacy layers are structural triage; mixed boundaries need semantic review when touched, not fictional historical review/results. A reviewed-selector is not a framework-discovered declaration. Gates catch source/index/mapping drift; names cannot prove assertion quality.
 
@@ -219,6 +219,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HGD-008 | Unchanged held/queued premises preserve owner/generation/lease and permit current assessment; real premise changes, expiry and old generation reject stale assessments. |
 | HGD-009 | Stop marks a bounded scan; no-event/quiet still leaves HQ debt; actual dispatch guard queues once only for the exact empty composer, refuses draft/identity without input, and the registered premise probe drops the obsolete goal reminder after explicit completion. Background work is joined before restoring test globals. |
 | HGD-010 | Historically accurate reports durably reserve the original action even when already expired; current duty remains HQ verification, never live driving, and send count stays zero across reopen/restore. Wrong identity/intent/ambiguous interval/future or pre-intent time/unknown state/invalid deadline/ask never creates driver history. |
+| HQIL-001 | Short entry retains local precedence, includes only the existing LOCAL import, publishes files under the matching version and language, and leaves prior files, tasks and sessions alone. |
+| HQIL-002 | Recreate only missing managed files, keep active personal files and old backups intact, refuse a conflicting runbook, and retain the previous entry on failed publication. |
+| HQIL-003 | Use matching board sections, register without replay, respect known versus unknown usage, resolve approved review and capture from sourced leads. |
 | HRW-014 | Generation/ctime mismatch never deletes or reauthorizes the claim, despite identical inode/body/mtime. Normal unchanged accepted cleanup passes. Exact owned uncertain publication completes one link retirement and retains original batch uncertainty; changed payload or foreign link holds without deletion. Known-refused shared queue ownership still preserves newest B. Original T tests/expectations remain unchanged; old-source target red is a real assertion, not compile/setup/allocator failure. |
 | HRW-015 | Only a verified same-inode anchor can support native cleanup; original inode remains alive across process loss and cannot naturally be reused. Missing/foreign/unknown pin holds without deletion or native call. Accepted/refused closes only own references, uncertain preserves exact original input and pin; valid conflicting batches cannot overwrite protected claims or block independent fresh events. Pin count is bounded before mutation; errors never fall back or replay. No sleep, allocator-luck or relaxed cloud assertion. |
 | HRW-009 | A is never submitted under a new batch identity; original exact payload, ID and uncertainty remain inspectable. Accepted/uncertain spool state is not downgraded to unsent. B and legitimate fresh duplicate text can progress once. Journal precedes possible mutation; failure holds without mutation. Recovery never removes a foreign replacement; malformed evidence holds conservatively. Ordinary non-native transport retains its existing contract. |

@@ -36,24 +36,31 @@ func readManagedRules() ([]byte, os.FileInfo, error) {
 	}
 	version, lang := parsePlaybookVersion(string(body)), parsePlaybookLang(string(body))
 	if version < 1 || (lang != "en" && lang != "zh") || !strings.HasPrefix(string(body), playbookMarker(version, lang)+"\n") {
-		return nil, nil, errors.New(i18n.Tr("refresh requires existing managed HQ rules; missing or legacy rules need normal HQ setup", "只支持已有的受管规则；缺失或旧式档案请通过正常 HQ 启动流程处理"))
+		return nil, nil, errors.New(i18n.Tr("refresh requires existing managed HQ rules; missing rules need normal HQ setup; legacy rules need review", "只支持已有的受管规则；缺失规则用正常 HQ 启动流程恢复，旧式规则需先审阅"))
 	}
+	if err := checkIndependentRules(body); err != nil {
+		return nil, nil, err
+	}
+	return body, info, nil
+}
+
+func checkIndependentRules(body []byte) error {
 	afterLocal := false
 	for _, line := range strings.Split(string(body), "\n") {
 		line = strings.TrimSpace(line)
 		if afterLocal && line != "" {
-			return nil, nil, errors.New(i18n.Tr("HQ rules contain additional instructions after LOCAL; review them before refreshing. The original is unchanged", "LOCAL 引用后还有额外指令，请先核对；原件未修改"))
+			return errors.New(i18n.Tr("HQ rules contain additional instructions after LOCAL; review them before refreshing. The original is unchanged", "LOCAL 引用后还有额外指令，请先核对；原件未修改"))
 		}
 		// The knowledge protocol finds sentinels by substring, not line start.
 		// Reserve recognized independent blocks even beside other inline content.
 		if strings.Contains(line, "<!-- user:") || strings.Contains(line, "<!-- gtmux:knowledge:") {
-			return nil, nil, errors.New(i18n.Tr("HQ rules contain separate user or knowledge instructions; review them before refreshing. The original is unchanged", "规则中含有独立用户或知识指令，请先核对；原件未修改"))
+			return errors.New(i18n.Tr("HQ rules contain separate user or knowledge instructions; review them before refreshing. The original is unchanged", "规则中含有独立用户或知识指令，请先核对；原件未修改"))
 		}
 		if line == "@LOCAL.md" {
 			afterLocal = true
 		}
 	}
-	return body, info, nil
+	return nil
 }
 
 func refreshHQRulesCmd() int {
@@ -75,6 +82,9 @@ func refreshHQRulesCmd() int {
 		if err != nil {
 			return "", err
 		}
+		if _, err := ensureRunbooks(parsePlaybookLang(string(replacement))); err != nil {
+			return backup, err
+		}
 		current, info, err := readManagedRules()
 		if err != nil {
 			return backup, err
@@ -93,7 +103,7 @@ func refreshHQRulesCmd() int {
 	if err := upgradePlaybookBody(&result, "", body, publish); err != nil {
 		return fail(err)
 	}
-	if result.Upgraded {
+	if result.Upgraded || result.RunbooksRepaired {
 		printSeedNotice(result)
 	} else {
 		i18n.Say("HQ rules are already current. No session was changed.", "HQ 规则已是当前版本，没有操作会话。")

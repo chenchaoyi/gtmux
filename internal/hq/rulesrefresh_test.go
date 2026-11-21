@@ -120,9 +120,19 @@ func TestHQR001RefreshOnlyUpdatesManagedRules(t *testing.T) {
 					t.Errorf("unrelated existing file changed: %s", path)
 				}
 			}
+			allowed := map[string]bool{backupRel: true, lock: true}
+			for _, name := range runbookNames {
+				path := filepath.Join(state.HQHome(), runbookDir(lang), name)
+				body, err := os.ReadFile(path)
+				if err != nil || string(body) != playbookText(lang, name) {
+					t.Fatalf("linked runbook %s missing or wrong: %v", name, err)
+				}
+				rel, _ := filepath.Rel(home, path)
+				allowed[rel] = true
+			}
 			for path := range after {
-				if _, existed := before[path]; !existed && path != backupRel && path != lock {
-					t.Errorf("unexpected write outside rules/backup/lock: %s", path)
+				if _, existed := before[path]; !existed && !allowed[path] {
+					t.Errorf("unexpected write outside managed rules, runbooks, backup and lock: %s", path)
 				}
 			}
 			if _, err := os.Stat(calls); !os.IsNotExist(err) {

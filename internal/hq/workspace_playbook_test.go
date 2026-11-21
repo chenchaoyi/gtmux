@@ -9,7 +9,7 @@ import (
 )
 
 func TestBothChartersTeachUsableExistingGoalRegistration(t *testing.T) {
-	for lang, charter := range map[string]string{"en": hqWorkspaceInstructionsEN, "zh": hqWorkspaceInstructionsZH} {
+	for lang, charter := range map[string]string{"en": playbookText("en", "workspace.md"), "zh": playbookText("zh", "workspace.md")} {
 		t.Run(lang, func(t *testing.T) {
 			start := strings.Index(charter, `{"op":"register"`)
 			if start < 0 {

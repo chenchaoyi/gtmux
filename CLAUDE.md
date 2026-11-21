@@ -66,8 +66,8 @@ over one Go core (gtmux-core is the single data source):
   config). Everything else is pull-side: HQ wakes → `gtmux events --since-seq N` /
   `digest` → judges in a short turn, replying in the `⟣` signal register. A summary
   tick (10 min / burst 5, zero-change gate = zero cost) delivers the periodic brief;
-  playbook v2 teaches enrollment (建联, goal-aware dossiers) and works on any agent
-  (no background tail). `gtmux hq` also MIGRATES legacy CLAUDE.md-only homes now.
+  the startup runbook teaches enrollment (建联, goal-aware dossiers) without a
+  background tail. Keep a full legacy CLAUDE.md active for manual review.
   **Starting HQ in the pane `gtmux hq` is ITSELF running in** (`--here`, or a revive of the
   pane you are sitting in) types NOTHING: gtmux holds that terminal, so typed text is
   buffered by the tty and handed to the agent as stdin (a startup briefing arrived as an
@@ -165,14 +165,15 @@ over one Go core (gtmux-core is the single data source):
   [on|off|status]` tunes the surfacing threshold (a read-time gap CRITICAL is never
   quieted). HQ gates its OWN prints by the tier — CRITICAL/NORMAL print, QUIET is
   ledger-only.
-  **HQ playbook is VERSION-TRACKED** (`openspec/changes/versioned-hq-playbook`): the seeded
-  `AGENTS.md` is gtmux-OWNED, carries a `<!-- gtmux-hq-playbook vN -->` marker, and `gtmux
-  hq` REGENERATES it (backing up the prior to `AGENTS.md.bak-v<old>`) when the shipped
-  `hqPlaybookVersion` (in `hq.go`) is newer — so `gtmux update` + next `gtmux hq` upgrades
-  the charter, no manual re-seed. **Any change to `hqInstructions` MUST bump
-  `hqPlaybookVersion`** or it won't reach existing homes. User personalization lives in a
-  seed-once, never-overwritten `LOCAL.md` (imported by AGENTS.md); the situation board +
-  knowledge base stay untouched by upgrades.
+  **HQ playbook is VERSION-TRACKED.** The templates live in
+  `internal/hq/playbook/{en,zh}/`. The seeded `AGENTS.md` holds standing rules and
+  links to versioned runbooks. Normal startup and rules-only refresh install the
+  matching runbooks before a replacement entry and back up the old entry.
+  Bump `hqPlaybookVersion` and update its fingerprint when changing either language
+  or any bundled runbook. `LOCAL.md` stays user-owned. Claude can import it, while
+  Codex reads it explicitly as directed by the entry. Startup preserves full
+  legacy and separate personal policy for review. Upgrades leave board and
+  knowledge records in place.
   `spawn`+`tasks`+`reap` = **verified dispatch** (`internal/dispatch`): `spawn`
   launches an agent (new session / `--pane` / `--worktree`), proxied by construction,
   and delivers a task with LAND-VERIFICATION (hook-event first via the #388 stream,

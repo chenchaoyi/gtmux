@@ -14975,29 +14975,13 @@
       ]
     },
     "internal/hq/board_shape_test.go": {
-      "sha256": "ceb4f4692e32ca213bc8db07a823a6cc6a2863021df269d309871e4d36e570ae",
+      "sha256": "c29aa2a160dc26e83b14192ad8b6c74f642d0e92840d90328e4a0275c7dfae91",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
-          "id": "LEG-52f76e5b76eb",
-          "line": 16,
-          "kind": "Test",
-          "name": "TestPlaybookSpecifiesTheBoardShape",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-0027ec241967",
-          "line": 32,
-          "kind": "Test",
-          "name": "TestBoardShapeShippedWithAVersionBump",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
           "id": "LEG-15483d5020ad",
-          "line": 52,
+          "line": 30,
           "kind": "Test",
           "name": "TestBoardSeedHasBothParts",
           "dynamic": false,
@@ -15005,7 +14989,7 @@
         },
         {
           "id": "LEG-a8636bbce213",
-          "line": 71,
+          "line": 49,
           "kind": "Test",
           "name": "TestPlaybookAndSeedAgreeOnTheHeadings",
           "dynamic": false,
@@ -15013,11 +14997,20 @@
         },
         {
           "id": "LEG-f6324716e51f",
-          "line": 87,
+          "line": 65,
           "kind": "Test",
           "name": "TestBoardDoesNotSpeakTranslationese",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-20be41ebaa2b",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestRunbookSpecifiesTheBoardShape",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQIL-001,HQIL-003"
         }
       ]
     },
@@ -15714,101 +15707,29 @@
       ]
     },
     "internal/hq/hq_test.go": {
-      "sha256": "59dc2fe891fe4e763846931611038dabc831efe56b75ed4caa7a02e990393aae",
+      "sha256": "0b17d5f7a3368452938987dfee62c6547bf639e519e8ab70c520ce8f5860a989",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
-          "id": "LEG-eaf8f16b1863",
-          "line": 20,
-          "kind": "Test",
-          "name": "TestPlaybookTeachesDistill",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-cb6388429b0b",
-          "line": 40,
-          "kind": "Test",
-          "name": "TestPlaybookTeachesCaptureLoop",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-84354e678904",
-          "line": 68,
-          "kind": "Test",
-          "name": "TestPlaybookTeachesMaintenanceWakes",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-11e9d6335c2e",
-          "line": 91,
-          "kind": "Test",
-          "name": "TestPlaybookTeachesFileGoalChannel",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-110539020bd2",
-          "line": 114,
-          "kind": "Test",
-          "name": "TestPlaybookTeachesTheConsumptionWatermark",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-384ff63f08c7",
-          "line": 136,
-          "kind": "Test",
-          "name": "TestPlaybookTeachesBatteryWatch",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
           "id": "LEG-18ecc83f6c01",
-          "line": 156,
+          "line": 18,
           "kind": "Test",
           "name": "TestSeedHQHomeIdempotent",
           "dynamic": false,
           "layer": "G"
         },
         {
-          "id": "LEG-2c17b411342c",
-          "line": 264,
-          "kind": "Test",
-          "name": "TestSeedHQHome_UpgradesOnNewerVersion",
-          "dynamic": false,
-          "layer": "G"
-        },
-        {
-          "id": "LEG-de61585f4cc4",
-          "line": 300,
-          "kind": "Test",
-          "name": "TestSeedHQHome_UpgradeLeavesMemoryUntouched",
-          "dynamic": false,
-          "layer": "G"
-        },
-        {
           "id": "LEG-d5ecf68e6e0d",
-          "line": 321,
+          "line": 148,
           "kind": "Test",
           "name": "TestParsePlaybookVersion",
           "dynamic": false,
           "layer": "L1"
         },
         {
-          "id": "LEG-06c3846efb12",
-          "line": 339,
-          "kind": "Test",
-          "name": "TestSeedHQHome_LegacyClaudeMigrates",
-          "dynamic": false,
-          "layer": "G"
-        },
-        {
           "id": "LEG-a07d737d3644",
-          "line": 381,
+          "line": 187,
           "kind": "Test",
           "name": "TestSeedHQHome_AgentsOnlyAddsPointer",
           "dynamic": false,
@@ -15816,7 +15737,7 @@
         },
         {
           "id": "LEG-3d9a954ba61a",
-          "line": 402,
+          "line": 208,
           "kind": "Test",
           "name": "TestHQPolicyWarning",
           "dynamic": false,
@@ -15824,7 +15745,7 @@
         },
         {
           "id": "LEG-a472b5d72fd8",
-          "line": 432,
+          "line": 238,
           "kind": "Test",
           "name": "TestSeedHQKnowledge",
           "dynamic": false,
@@ -15832,23 +15753,15 @@
         },
         {
           "id": "LEG-78702eaa7fbe",
-          "line": 467,
+          "line": 273,
           "kind": "Test",
           "name": "TestHQPlaybookHardening",
           "dynamic": false,
           "layer": "G"
         },
         {
-          "id": "LEG-a2646b785cc5",
-          "line": 495,
-          "kind": "Test",
-          "name": "TestHQPlaybookCharter",
-          "dynamic": false,
-          "layer": "G"
-        },
-        {
           "id": "LEG-2d3528c57ca7",
-          "line": 535,
+          "line": 313,
           "kind": "Test",
           "name": "TestHQBriefingPrompt",
           "dynamic": false,
@@ -15856,7 +15769,7 @@
         },
         {
           "id": "LEG-2c7d3e52f9ef",
-          "line": 570,
+          "line": 338,
           "kind": "Test",
           "name": "TestHQBriefingEnabled",
           "dynamic": false,
@@ -15864,47 +15777,23 @@
         },
         {
           "id": "LEG-a365bdf9befc",
-          "line": 591,
+          "line": 359,
           "kind": "Test",
           "name": "TestSeedHQNotesBoard",
           "dynamic": false,
           "layer": "G"
         },
         {
-          "id": "LEG-b0ec249dbdfb",
-          "line": 616,
-          "kind": "Test",
-          "name": "TestHQPlaybookChiefOfStaff",
-          "dynamic": false,
-          "layer": "G"
-        },
-        {
           "id": "LEG-f8087baa3f2d",
-          "line": 659,
+          "line": 381,
           "kind": "Test",
           "name": "TestHQAgentCommand",
           "dynamic": false,
           "layer": "L1"
         },
         {
-          "id": "LEG-53c90b5faa6f",
-          "line": 673,
-          "kind": "Test",
-          "name": "TestHQPlaybookWakeProtocol",
-          "dynamic": false,
-          "layer": "G"
-        },
-        {
-          "id": "LEG-98958ff1a4ed",
-          "line": 709,
-          "kind": "Test",
-          "name": "TestHQPlaybookThreeReads",
-          "dynamic": false,
-          "layer": "G"
-        },
-        {
           "id": "LEG-a44a4950d716",
-          "line": 745,
+          "line": 395,
           "kind": "Test",
           "name": "TestAgentAliveByCmd",
           "dynamic": false,
@@ -15912,7 +15801,7 @@
         },
         {
           "id": "LEG-be97b228bfc7",
-          "line": 775,
+          "line": 425,
           "kind": "Test",
           "name": "TestSeedsAndPlaybookCarryNoAuthorLeakage",
           "dynamic": false,
@@ -15920,7 +15809,7 @@
         },
         {
           "id": "LEG-deaead4c014f",
-          "line": 808,
+          "line": 462,
           "kind": "Test",
           "name": "TestBoardSeedFollowsLanguage",
           "dynamic": false,
@@ -15928,7 +15817,7 @@
         },
         {
           "id": "LEG-1919417fcf78",
-          "line": 832,
+          "line": 486,
           "kind": "Test",
           "name": "TestPlaybookDropsRetiredPerceptionVocabulary",
           "dynamic": false,
@@ -15936,7 +15825,7 @@
         },
         {
           "id": "LEG-cc52ed61de30",
-          "line": 850,
+          "line": 504,
           "kind": "Test",
           "name": "TestGeneratedPlaybookFollowsLanguage",
           "dynamic": false,
@@ -15944,7 +15833,7 @@
         },
         {
           "id": "LEG-74a84fc207b8",
-          "line": 876,
+          "line": 530,
           "kind": "Test",
           "name": "TestShellLanguageNeverRewritesTheCharter",
           "dynamic": false,
@@ -15952,7 +15841,7 @@
         },
         {
           "id": "LEG-75f33c06f2f5",
-          "line": 915,
+          "line": 572,
           "kind": "Test",
           "name": "TestExplicitLangRewritesTheCharter",
           "dynamic": false,
@@ -15960,7 +15849,7 @@
         },
         {
           "id": "LEG-c14e7e44c775",
-          "line": 945,
+          "line": 602,
           "kind": "Test",
           "name": "TestVersionUpgradeKeepsTheCharterLanguage",
           "dynamic": false,
@@ -15968,23 +15857,15 @@
         },
         {
           "id": "LEG-a7757e9edc9b",
-          "line": 984,
+          "line": 641,
           "kind": "Test",
           "name": "TestMismatchNoticeSaysNothingChangedAndHow",
           "dynamic": false,
           "layer": "L1"
         },
         {
-          "id": "LEG-06f3f97b807c",
-          "line": 1000,
-          "kind": "Test",
-          "name": "TestChartersShareSkeletonAndAnchors",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
           "id": "LEG-73fed776ec92",
-          "line": 1047,
+          "line": 655,
           "kind": "Test",
           "name": "TestLocalTemplateFollowsLanguage",
           "dynamic": false,
@@ -15992,28 +15873,38 @@
         },
         {
           "id": "LEG-14efba6eb225",
-          "line": 1080,
+          "line": 688,
           "kind": "Test",
           "name": "TestExplicitSwitchNoticeSaysItWasAskedFor",
           "dynamic": false,
           "layer": "L1"
         },
         {
-          "id": "LEG-4acd5eceac53",
-          "line": 1102,
-          "kind": "Test",
-          "name": "TestPlaybookTeachesDispatchToChooseAgentAndModel",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
           "id": "MAP-d6cd13ff80b3",
-          "line": 194,
+          "line": 56,
           "kind": "reviewed-selector",
           "name": "TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords",
           "dynamic": false,
           "layer": "L2",
           "design": "STOR-002"
+        },
+        {
+          "id": "MAP-49d3148748c4",
+          "line": 126,
+          "kind": "reviewed-selector",
+          "name": "TestStartupPreservesIndependentRules",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQIL-001,HQIL-002"
+        },
+        {
+          "id": "MAP-f1c24debc01b",
+          "line": 163,
+          "kind": "reviewed-selector",
+          "name": "TestSeedHQHomePreservesFullLegacyClaude",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQIL-001,HQIL-002"
         }
       ]
     },
@@ -16186,7 +16077,7 @@
           "design": "KBMEM-HQ-WORKFLOW"
         }
       ],
-      "sha256": "5a2e888d43cceabede4ac60086b47d74d56f3f26dfed1209ef349f2153d4e4bf"
+      "sha256": "6eea8a26cf2ff169f927185d383d6fae4412e4610c40985457b4cd6a26eef16c"
     },
     "internal/hq/knowledgeshim_test.go": {
       "sha256": "2b1b2b5d070b540e1805a247e6bca9c8e1f4f5bcefae10d30ed790a613407159",
@@ -16227,33 +16118,18 @@
       ]
     },
     "internal/hq/legacybackup_test.go": {
-      "sha256": "d2be225fd6960f2603ba4c9a08f5a8a60bdcf87348925c00656cb93b4a79ec75",
+      "sha256": "b030278ca4a37027632607459833fab987ab0877af5261f328ab5226febb8e4e",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
-          "id": "LEG-62d8b7f2c722",
-          "line": 39,
-          "kind": "Test",
-          "name": "TestASecondMigrationKeepsTheFirstBackup",
+          "id": "MAP-13f40b32c332",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestRepairMissingEntryKeepsLocalAndEarlierLegacyBackup",
           "dynamic": false,
-          "layer": "G"
-        },
-        {
-          "id": "LEG-28e85d7c673a",
-          "line": 75,
-          "kind": "Test",
-          "name": "TestABackupNameInUseIsNotOverwritten",
-          "dynamic": false,
-          "layer": "G"
-        },
-        {
-          "id": "LEG-32fa410edc18",
-          "line": 96,
-          "kind": "Test",
-          "name": "TestNoBackupNoMigration",
-          "dynamic": false,
-          "layer": "G"
+          "layer": "L2",
+          "design": "HQIL-002"
         }
       ]
     },
@@ -16345,7 +16221,7 @@
       ]
     },
     "internal/hq/memory_test.go": {
-      "sha256": "f0d09482c86714b0739495872b0efcb3fda82604fcc6bc41ea55e3ce6e0bc9b0",
+      "sha256": "3075fc05ee4a70a1a1f08168e8d5644d58f8280bc37fc786463686ba4b504494",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -16430,24 +16306,8 @@
           "layer": "L1"
         },
         {
-          "id": "LEG-250213b452ae",
-          "line": 251,
-          "kind": "Test",
-          "name": "TestPlaybookBackupsAreNotHoardedForever",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-5975c463ed21",
-          "line": 283,
-          "kind": "Test",
-          "name": "TestPruneLeavesAHandfulAlone",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
           "id": "LEG-4732ab9ca190",
-          "line": 299,
+          "line": 281,
           "kind": "Test",
           "name": "TestMemoryJSONCarriesWhatASurfaceNeeds",
           "dynamic": false,
@@ -16455,7 +16315,7 @@
         },
         {
           "id": "LEG-ce5a2872bb8e",
-          "line": 317,
+          "line": 299,
           "kind": "Test",
           "name": "TestMemoryJSONOnAMachineWithNoSupervisor",
           "dynamic": false,
@@ -16463,7 +16323,7 @@
         },
         {
           "id": "LEG-7d353d6c0f44",
-          "line": 332,
+          "line": 314,
           "kind": "Test",
           "name": "TestOffMachineHintDoesNotClaimABackupItCannotSee",
           "dynamic": false,
@@ -16471,11 +16331,20 @@
         },
         {
           "id": "LEG-75da05c2b12f",
-          "line": 366,
+          "line": 348,
           "kind": "Test",
           "name": "TestWorkspaceBackupRetainsRecordsButDoesNotReplayPendingInstructions",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-5e7886aee75b",
+          "line": 251,
+          "kind": "reviewed-selector",
+          "name": "TestPlaybookUpgradeKeepsExistingBackups",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQIL-002"
         }
       ]
     },
@@ -16614,7 +16483,7 @@
       ]
     },
     "internal/hq/mine_test.go": {
-      "sha256": "d0d1db2a9e62acfa192e927234f14d45bdd80968446dbacff976caabfd910dec",
+      "sha256": "3f4b4948d5dbfa636bb98b19e96be24f2ce7ecb324edfcbae6970930ea8b58ed",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -16653,7 +16522,7 @@
       ]
     },
     "internal/hq/playbook_version_test.go": {
-      "sha256": "ede4c8e06b6dfc9f8b469ba807839c893833fe9c5b718b3e17ca8a8cbad63f89",
+      "sha256": "ab35d845e48dff649e617f8447ecc5df8efb6e740ebef4c87cc747659c22981e",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -16662,14 +16531,6 @@
           "line": 27,
           "kind": "Test",
           "name": "TestChangingTheCharterBumpsTheVersion",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-d7fe8fa1ceab",
-          "line": 58,
-          "kind": "Test",
-          "name": "TestTheFingerprintCoversBothLanguages",
           "dynamic": false,
           "layer": "L1"
         }
@@ -17101,7 +16962,7 @@
         },
         {
           "id": "MAP-f3c6fa0664ed",
-          "line": 137,
+          "line": 147,
           "kind": "reviewed-selector",
           "name": "TestHQR002RefreshKeepsLanguageAndConverges",
           "dynamic": false,
@@ -17110,7 +16971,7 @@
         },
         {
           "id": "MAP-26c222f9b436",
-          "line": 180,
+          "line": 190,
           "kind": "reviewed-selector",
           "name": "TestHQR003RefreshRejectsConflictingOptions",
           "dynamic": false,
@@ -17119,7 +16980,7 @@
         },
         {
           "id": "MAP-27e9b5f03486",
-          "line": 198,
+          "line": 208,
           "kind": "reviewed-selector",
           "name": "TestHQR004RefreshUsesExistingApplyLock",
           "dynamic": false,
@@ -17128,7 +16989,7 @@
         },
         {
           "id": "MAP-564acb685125",
-          "line": 219,
+          "line": 229,
           "kind": "reviewed-selector",
           "name": "TestHQR005RefreshRefusesUnsafeManagedFiles",
           "dynamic": false,
@@ -17137,7 +16998,7 @@
         },
         {
           "id": "MAP-1b8457abb5dd",
-          "line": 278,
+          "line": 288,
           "kind": "reviewed-selector",
           "name": "TestHQR006RefreshPreservesBackupNamesAndFailsSafely",
           "dynamic": false,
@@ -17145,7 +17006,7 @@
           "design": "HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
         }
       ],
-      "sha256": "8decd1edc7b405788f7ce77850249fe75b5ed482ff43d61be617a1283c6a3d81"
+      "sha256": "5e3d7baf39a189d76020b7497d25abe90475807103fe646e91337ded6d49365a"
     },
     "internal/hq/selfcheck_test.go": {
       "sha256": "8b8ff4022c2a32fb2bde3b92926cce203982b196dbb3687c2bebbc75e71dad2c",
@@ -17861,7 +17722,7 @@
       ]
     },
     "internal/hq/workspace_playbook_test.go": {
-      "sha256": "2fe62b684c46939a9cd7403cdda667a7f99bc2bb36921c6bc7d60bc9b93a4bee",
+      "sha256": "1ce2bdfc63df7d8653b117f48187124717b7fdc5f533de01cbd1fe7a1b57e17b",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -17871,14 +17732,6 @@
           "kind": "Test",
           "name": "TestBothChartersTeachUsableExistingGoalRegistration",
           "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-fde4bdc91c6f",
-          "line": 13,
-          "kind": "subtest",
-          "name": "[dynamic subtest]",
-          "dynamic": true,
           "layer": "L1"
         }
       ]
@@ -68317,6 +68170,58 @@
         }
       ],
       "sha256": "a4b60b59a61c2661bf2a7b210603ed11857c24b2d1485d9959ff10f21ea4db84"
+    },
+    "internal/hq/playbook_layout_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-93ac3136ee0d",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestHQPlaybookBudgetLinksAndImports",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQIL-001,HQIL-002"
+        },
+        {
+          "id": "MAP-a223febc4970",
+          "line": 77,
+          "kind": "reviewed-selector",
+          "name": "TestHQRunbooksRepairWithoutRewritingEntry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQIL-001,HQIL-002"
+        },
+        {
+          "id": "MAP-16719f9f18d6",
+          "line": 99,
+          "kind": "reviewed-selector",
+          "name": "TestHQRunbookConflictKeepsEntryAndLocal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQIL-001,HQIL-002"
+        },
+        {
+          "id": "MAP-e90ab47cf8fd",
+          "line": 117,
+          "kind": "reviewed-selector",
+          "name": "TestHQPlaybookLanguageParity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQIL-001,HQIL-002"
+        },
+        {
+          "id": "MAP-e023eadb98e8",
+          "line": 140,
+          "kind": "reviewed-selector",
+          "name": "TestHQPlaybookGatesStayInTheEntry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HQIL-001,HQIL-002"
+        }
+      ],
+      "sha256": "574fcda082d0eaf43fa17f9b8e4008b9f6068f1115644dd5f9dd1cc345c99242"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

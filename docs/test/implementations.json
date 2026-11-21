@@ -633,9 +633,12 @@
   },
   "internal/hq/hq_test.go": {
     "cases": [
-      "STOR-002"
+      "HQIL-001",
+      "HQIL-002"
     ],
     "selectors": [
+      "TestStartupPreservesIndependentRules",
+      "TestSeedHQHomePreservesFullLegacyClaude",
       "TestStorageBoundaryUpgradePreservesLocalRulesAndExistingRecords"
     ]
   },
@@ -649,7 +652,7 @@
   },
   "internal/hq/knowledge_workflow_test.go": {
     "cases": [
-      "KBMEM-HQ-WORKFLOW"
+      "HQIL-003"
     ],
     "selectors": [
       "TestKnowledgeWorkflowUsesBoundedReviewWithoutManufacturedReuse"
@@ -740,20 +743,16 @@
   },
   "internal/hq/rulesrefresh_test.go": {
     "cases": [
-      "HQR-001",
-      "HQR-002",
-      "HQR-003",
-      "HQR-004",
-      "HQR-005",
-      "HQR-006"
+      "HQIL-001",
+      "HQIL-002"
     ],
     "selectors": [
       "TestHQR001RefreshOnlyUpdatesManagedRules",
       "TestHQR002RefreshKeepsLanguageAndConverges",
+      "TestHQR006RefreshPreservesBackupNamesAndFailsSafely",
       "TestHQR003RefreshRejectsConflictingOptions",
       "TestHQR004RefreshUsesExistingApplyLock",
-      "TestHQR005RefreshRefusesUnsafeManagedFiles",
-      "TestHQR006RefreshPreservesBackupNamesAndFailsSafely"
+      "TestHQR005RefreshRefusesUnsafeManagedFiles"
     ]
   },
   "internal/hqinput/rotation_test.go": {
@@ -4580,6 +4579,69 @@
     "selectors": [
       "LAP-012 pending draft survives an early",
       "LAP-013 bookmarks remain usable without persistent"
+    ]
+  },
+  "internal/hq/board_shape_test.go": {
+    "cases": [
+      "HQIL-001",
+      "HQIL-003"
+    ],
+    "selectors": [
+      "TestRunbookSpecifiesTheBoardShape",
+      "TestPlaybookAndSeedAgreeOnTheHeadings"
+    ]
+  },
+  "internal/hq/legacybackup_test.go": {
+    "cases": [
+      "HQIL-002"
+    ],
+    "selectors": [
+      "TestRepairMissingEntryKeepsLocalAndEarlierLegacyBackup"
+    ]
+  },
+  "internal/hq/memory_test.go": {
+    "cases": [
+      "HQIL-002"
+    ],
+    "selectors": [
+      "TestPlaybookUpgradeKeepsExistingBackups"
+    ]
+  },
+  "internal/hq/mine_test.go": {
+    "cases": [
+      "HQIL-003"
+    ],
+    "selectors": [
+      "TestPlaybookTeachesTranscriptLeadsInBothLanguages"
+    ]
+  },
+  "internal/hq/playbook_layout_test.go": {
+    "cases": [
+      "HQIL-001",
+      "HQIL-002"
+    ],
+    "selectors": [
+      "TestHQPlaybookBudgetLinksAndImports",
+      "TestHQRunbooksRepairWithoutRewritingEntry",
+      "TestHQRunbookConflictKeepsEntryAndLocal",
+      "TestHQPlaybookLanguageParity",
+      "TestHQPlaybookGatesStayInTheEntry"
+    ]
+  },
+  "internal/hq/playbook_version_test.go": {
+    "cases": [
+      "HQIL-001"
+    ],
+    "selectors": [
+      "TestChangingTheCharterBumpsTheVersion"
+    ]
+  },
+  "internal/hq/workspace_playbook_test.go": {
+    "cases": [
+      "HQIL-003"
+    ],
+    "selectors": [
+      "TestBothChartersTeachUsableExistingGoalRegistration"
     ]
   }
 }
