@@ -1984,6 +1984,7 @@ LEG-790dd88e839e,L1,Go core / CLI / server,internal/hq/unread_test.go,359,Test,T
 LEG-205875935d1a,L1,Go core / CLI / server,internal/hq/unread_test.go,380,Test,TestUnreadSensorNoOpWithoutASupervisor,False,legacy-not-retrospectively-reviewed
 LEG-a6531e827f1d,L1,Go core / CLI / server,internal/hq/unread_test.go,403,Test,TestConsumptionStatus,False,legacy-not-retrospectively-reviewed
 LEG-c5ecbd9a3fe3,L1,Go core / CLI / server,internal/hq/unread_test.go,451,Test,TestUnreadExcludesAuditTrailButCountsTriggers,False,legacy-not-retrospectively-reviewed
+MAP-5ac6bcaf0b06,L2,reviewed implementation,internal/hq/wake_accepted_notice_test.go,16,reviewed-selector,TestWAP001LiveReceiptsDriveWakeProofNotices,False,WAP-001
 MAP-d3fb86c5d55c,L2,reviewed implementation,internal/hq/wake_autorecovery_test.go,14,reviewed-selector,TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter,False,HWA-004
 MAP-fb32a730b2aa,L2,reviewed implementation,internal/hq/wake_autorecovery_test.go,63,reviewed-selector,TestWNR003WakeNoticeCoalescesNewCausesAndSkipsHistoricalInventory,False,"HWA-004,WNR-003"
 MAP-d03b4abfe4f2,L2,reviewed implementation,internal/hq/wake_rotation_regression_test.go,12,reviewed-selector,TestHWA008ChangedSuccessorFailsIndependentlyWithoutSecondReset,False,HWA-008

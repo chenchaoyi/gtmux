@@ -294,6 +294,7 @@ MAP-26c222f9b436,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,190
 MAP-27e9b5f03486,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,208,reviewed-selector,TestHQR004RefreshUsesExistingApplyLock,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 MAP-564acb685125,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,229,reviewed-selector,TestHQR005RefreshRefusesUnsafeManagedFiles,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
 MAP-1b8457abb5dd,L2,reviewed implementation,internal/hq/rulesrefresh_test.go,288,reviewed-selector,TestHQR006RefreshPreservesBackupNamesAndFailsSafely,False,"HQR-001,HQR-002,HQR-003,HQR-004,HQR-005,HQR-006"
+MAP-5ac6bcaf0b06,L2,reviewed implementation,internal/hq/wake_accepted_notice_test.go,16,reviewed-selector,TestWAP001LiveReceiptsDriveWakeProofNotices,False,WAP-001
 MAP-d3fb86c5d55c,L2,reviewed implementation,internal/hq/wake_autorecovery_test.go,14,reviewed-selector,TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter,False,HWA-004
 MAP-fb32a730b2aa,L2,reviewed implementation,internal/hq/wake_autorecovery_test.go,63,reviewed-selector,TestWNR003WakeNoticeCoalescesNewCausesAndSkipsHistoricalInventory,False,"HWA-004,WNR-003"
 MAP-d03b4abfe4f2,L2,reviewed implementation,internal/hq/wake_rotation_regression_test.go,12,reviewed-selector,TestHWA008ChangedSuccessorFailsIndependentlyWithoutSecondReset,False,HWA-008

@@ -217,8 +217,11 @@ start and delivery. For a `»` batch, the receipt's Codex home and rollout sessi
 metadata SHALL match, the expected turn SHALL start at or after the submission
 boundary, and the first input SHALL contain the exact batch with no added content.
 The ordinary user-prompt filter SHALL continue to exclude wake echoes.
-Unconfirmed receipts raise an independent notice. Full or expired
-observation windows SHALL archive exact receiver evidence without blocking new wakes.
+Accepted receipts that stay active past their own proof deadline raise an independent
+notice. Each new missed proof deadline remains eligible for the rate-limited notice
+while earlier receipts are still open. Archived receipts have a separate notice.
+Full or expired observation windows SHALL archive exact receiver evidence without
+blocking new wakes.
 The private archive uses two bounded segments. Recovering a retained receipt SHALL
 reuse any exact delivery audit already in the journal. A confirmed
 wake SHALL NOT update workspace completion without the workspace's own evidence.
