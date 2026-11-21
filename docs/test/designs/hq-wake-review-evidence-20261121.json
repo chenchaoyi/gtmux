@@ -1,0 +1,35 @@
+{
+  "id": "hq-wake-review-evidence-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; independent failure evidence from pane %80",
+    "date": "2026-11-21",
+    "decision": "Keep unverified acceptance out of input admission and make an already written delivery audit idempotent",
+    "notes": "Independent review reproduced both failures using synthetic HOME and a fake driver. Preserve receiver identity when the observation window is full or expires."
+  },
+  "cases": [
+    {
+      "id": "HWA-014",
+      "layer": "L2",
+      "description": "Unverified acceptance history at capacity does not block later independent admissions",
+      "setup": "Fill the active proof window with old but valid synthetic receiver acknowledgements from a retired Home, and prepare two new independent wakes.",
+      "action": "Accept a fresh batch at capacity, then observe past expiry and drain the independent later wake.",
+      "expected": "One submission per fresh batch, no replays or lost acknowledgement. Full or expired active proofs are retained with exact receipt provenance in a bounded private archive and independently discoverable.",
+      "planned_files": [
+        "internal/hqnudge/wake_evidence_review_test.go"
+      ]
+    },
+    {
+      "id": "HWA-015",
+      "layer": "L2",
+      "description": "A crash after the durable delivery audit cannot recount the same batch",
+      "setup": "Retain the same accepted-wake receipt and exact transcript proof as if cleanup was interrupted after append.",
+      "action": "Confirm the receipt twice while keeping the append result and original stable op ID across simulated restart.",
+      "expected": "One durable delivery audit for this batch, with no input mutation. Clean up the retained receipt only after observing the matching audit.",
+      "planned_files": [
+        "internal/hqnudge/wake_evidence_review_test.go"
+      ]
+    }
+  ],
+  "seal": "a7967639e7e45ac3329f7702cd4b39a5c150ba293e76d6c5bf3ab37851c83f8d"
+}
