@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/codexterminal"
+	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/launchhost"
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -224,7 +225,7 @@ func confirmFrontendStartup(f CodexFrontend) error {
 }
 
 // RefreshCodexFrontend is a bounded liveness heartbeat from the bridge process.
-// It does not promote a different thread or reclaim an incumbent's location.
+// It never promotes a different thread or displaces a competing publisher.
 func RefreshCodexFrontend(f CodexFrontend) (CodexFrontend, error) {
 	return RefreshCodexFrontendContext(context.Background(), f)
 }
@@ -256,7 +257,7 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 		return f, err
 	}
 	defer lease.Close()
-	publishIndex, wroteReceipt := false, false
+	publishIndex, wroteReceipt, recoveredConflict := false, false, false
 	canceled := func() error {
 		err := ctx.Err()
 		if err == nil {
@@ -306,10 +307,13 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 		}
 		r = frontendRecord(f)
 		publishIndex = true
-		ok = true
 	}
-	if !ok || r.Agent != "codex" || r.SessionID != f.SessionID || r.HomeID != f.HomeID || r.Frontend != "" && r.Frontend != f.Instance {
-		return f, errors.New("frontend binding replaced")
+	if r.Agent != "codex" || r.SessionID != f.SessionID || r.HomeID != f.HomeID || r.Frontend != "" && r.Frontend != f.Instance {
+		if err := preserveCrossPaneIndex(ctx, previous, f, r); err != nil {
+			return f, err
+		}
+		r = frontendRecord(f)
+		publishIndex, recoveredConflict = true, true
 	}
 	if r.Frontend == "" {
 		// Older hook binaries omit the additive field when publishing the SAME
@@ -357,6 +361,9 @@ func RefreshCodexFrontendContext(ctx context.Context, f CodexFrontend) (CodexFro
 	receiptErr := confirmFrontendStartup(f)
 	if err := canceled(); err != nil {
 		return f, err
+	}
+	if recoveredConflict && receiptErr == nil {
+		diag.For("resume").Info("codex.binding.index.recovered", "managed Codex index restored after a verified cross-pane conflict", "pane", f.Pane)
 	}
 	return f, receiptErr
 }

@@ -117,7 +117,8 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 	if !ok || target != fresh {
 		return errors.New("terminal process or pane changed")
 	}
-	lease, err := lockCodexPublication(target.Loc, incumbent)
+	record := Record{Agent: "codex", HomeID: r.HomeID, SessionID: r.SessionID, Cwd: target.Cwd, UpdatedAt: now, Launcher: target.Launcher}
+	lease, err := lockCodexPublication(target.Loc, incumbent, record)
 	if err != nil {
 		return err
 	}
@@ -136,7 +137,6 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 	if err != nil || frontend != oldFrontend || migrate != migrateFrontend {
 		return errors.New("frontend disposition changed under publication lease")
 	}
-	record := Record{Agent: "codex", HomeID: r.HomeID, SessionID: r.SessionID, Cwd: target.Cwd, UpdatedAt: now, Launcher: target.Launcher}
 	if incumbent.SessionID == r.SessionID && incumbent.HomeID == r.HomeID {
 		record.TerminalClient = incumbent.TerminalClient
 		record.RecoverySessionID = incumbent.RecoverySessionID

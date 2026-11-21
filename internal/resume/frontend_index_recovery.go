@@ -21,6 +21,13 @@ func producerCanRenewMissingIndex(previous, next CodexFrontend, saved CodexFront
 	if _, err := os.Lstat(fileFor(next.Loc)); !errors.Is(err, os.ErrNotExist) {
 		return false // malformed/unreadable or concurrently occupied is not missing
 	}
+	return producerHasUniqueIndexProof(previous, next, saved)
+}
+
+func producerHasUniqueIndexProof(previous, next, saved CodexFrontend) bool {
+	if previous.BridgePID != os.Getpid() || previous.Loc != next.Loc {
+		return false
+	}
 	checked := saved
 	checked.UpdatedAt = next.UpdatedAt
 	if producerFrontendProof(checked) != nil {

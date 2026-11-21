@@ -1386,6 +1386,20 @@
       "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
     ]
   },
+  "internal/resume/frontend_cross_pane_index_test.go": {
+    "cases": [
+      "CPI-001",
+      "CPI-002",
+      "CPI-003",
+      "CPI-004"
+    ],
+    "selectors": [
+      "TestCPI001LegacyWritersPreserveExpiredManagedOwner",
+      "TestCPI002CurrentHeartbeatRestoresProvenCrossPaneIndex",
+      "TestCPI003CurrentHeartbeatRefusesUnprovenConflict",
+      "TestCPI004LegacyWriterCanReuseVerifiedVacatedLocation"
+    ]
+  },
   "internal/resume/frontend_index_recovery_test.go": {
     "cases": [
       "DCA-004",

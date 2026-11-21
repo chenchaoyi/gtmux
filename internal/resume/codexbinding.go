@@ -315,7 +315,7 @@ func completeCodexBinding(scope *transcript.CodexPathScope, intent CodexBindingI
 		frontend = current.Frontend
 	}
 	record := codexBindingCheckpoint(Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: live.Cwd, UpdatedAt: now, Launcher: live.Launcher, Frontend: frontend}, current)
-	lease, err := lockCodexPublication(live.Loc, current)
+	lease, err := lockCodexPublication(live.Loc, current, record)
 	if err != nil {
 		return err
 	}

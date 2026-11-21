@@ -436,6 +436,10 @@ MAP-8bd80450b6d7,L2,reviewed implementation,internal/resume/frontend_binding_con
 MAP-1c1e4be8a53f,L2,reviewed implementation,internal/resume/frontend_binding_readiness_test.go,12,reviewed-selector,TestCBA001UnavailableProofIsRetryableButNeverPublishes,False,CBA-001
 MAP-39ddbf3063f8,L2,reviewed implementation,internal/resume/frontend_binding_readiness_test.go,40,reviewed-selector,TestCBA001ObservedBirthHomeAndTargetChangesStayHard,False,CBA-001
 MAP-7904cc643f1d,L2,reviewed implementation,internal/resume/frontend_binding_readiness_test.go,68,reviewed-selector,TestCBA001MissingTerminalProofNeverBecomesInputAuthority,False,CBA-001
+MAP-2f995243dd1e,L2,reviewed implementation,internal/resume/frontend_cross_pane_index_test.go,16,reviewed-selector,TestCPI001LegacyWritersPreserveExpiredManagedOwner,False,"CPI-001,CPI-002,CPI-003,CPI-004"
+MAP-0b80f885bd72,L2,reviewed implementation,internal/resume/frontend_cross_pane_index_test.go,72,reviewed-selector,TestCPI002CurrentHeartbeatRestoresProvenCrossPaneIndex,False,"CPI-001,CPI-002,CPI-003,CPI-004"
+MAP-48a718ac59e2,L2,reviewed implementation,internal/resume/frontend_cross_pane_index_test.go,129,reviewed-selector,TestCPI003CurrentHeartbeatRefusesUnprovenConflict,False,"CPI-001,CPI-002,CPI-003,CPI-004"
+MAP-64617bd7b956,L2,reviewed implementation,internal/resume/frontend_cross_pane_index_test.go,194,reviewed-selector,TestCPI004LegacyWriterCanReuseVerifiedVacatedLocation,False,"CPI-001,CPI-002,CPI-003,CPI-004"
 MAP-d093d1c50adb,L2,reviewed implementation,internal/resume/frontend_first_root_retry_test.go,40,reviewed-selector,TestCFL006FirstRootAndExistingRootFinishTheirOwnPartialMovedPublication,False,CFL-006
 MAP-fb06902199c4,L2,reviewed implementation,internal/resume/frontend_first_root_retry_test.go,113,reviewed-selector,TestCFL006FirstRootRetryRejectsOtherRootsGenerationsAndInvalidReceipts,False,CFL-006
 MAP-5ce76c76c48d,L2,reviewed implementation,internal/resume/frontend_first_root_retry_test.go,169,reviewed-selector,TestCFL006LateFirstRootRetryCannotReplaceANewerDestinationOwner,False,CFL-006

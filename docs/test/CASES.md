@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1404 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1405 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2618 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2622 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -108,6 +108,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CET-004 | An explicit callback matching structured completion and current turn is ignored without clearing completion or minting events. Actual next start and unknown/missing legacy IDs are not fenced; approvals are preserved. |
 | CET-005 | Continuation leaves marker start intact; actual new prompt/turn start and ownership change still refresh active time. |
 | CET-006 | A real manual PostCompact receipt is recorded once, active stays absent and exact completion/current turn remain intact. Only actual rearm decisions are eligible for the completed-turn fence. |
+| CPI-001 | An expired receipt confers no live authority. Foreign and unknown producer attempts leave the exact incumbent in place, same-owner update retains its frontend identity, and a positively gone or retired owner permits normal legacy publication. |
+| CPI-002 | Only the exact original thread regains live identity. The other pane is unchanged. The archive preserves the exact displaced bytes and is reused on retry; a failed index write does not lose the original or prevent a verified retry. |
+| CPI-003 | No recovery or input authority; a stable typed reason distinguishes conflict from unavailable preservation. Exact existing bytes and the producer receipt are preserved. |
+| CPI-004 | The old address remains guarded during partial relocation. The new thread can use it after the managed frontend is strictly verified at the new address with a matching committed index. The original frontend keeps live identity at its new address. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
 | CFL-006 | Unmodified exact R must fail a real production-package target assertion for empty first root/move/index IO/same-root retry while controls are meaningful. Fixed same owner completes with same nonce, correct current location/root and live association, no second root operation/input. Existing-root and proof-failure behavior stay intact. Conflicting, unknown, stale/future, canceled or retired evidence cannot authorize or resurrect publication. Bridge positive controller controls may pass R and are not called an old-red guard; they verify pending/suspended/attachment and later ticks. Full source maps and command evidence distinguish this production-package coverage from independent extracted model and from actual TTY/runtime acceptance |

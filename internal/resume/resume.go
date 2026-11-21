@@ -12,7 +12,6 @@ package resume
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -70,8 +69,8 @@ func Save(key string, r Record) error {
 	if previous.Frontend != "" && r.Agent == "codex" {
 		if previous.Agent == r.Agent && previous.SessionID == r.SessionID && previous.HomeID == r.HomeID {
 			r.Frontend = previous.Frontend
-		} else if f, ok := readFrontend(previous.Frontend); ok && freshFrontend(f, false) {
-			return errors.New("live Codex frontend owns this location")
+		} else if err := guardLegacyCodexPublication(key, previous, r); err != nil {
+			return err
 		}
 	}
 	r = withRecoveryCheckpoint(r, previous)

@@ -88,3 +88,14 @@ reported as unavailable conversation identity, rather than a permission question
 Existing approvals, drafts, uncertain delivery and retry guards remain in force.
 Updating CLI/serve does not replace an already running older frontend producer;
 that frontend needs a normal new-version launch before it can use this behavior.
+
+## Resume index conflicts
+
+An expired heartbeat revokes live input but cannot give a legacy writer ownership
+over a different thread while the managed publisher is still alive or its exit
+cannot be determined. The original publisher may repair an older, unowned index
+only after verifying its full terminal identity and two independent receipts
+that place the threads in separate panes. It retains the displaced bytes under
+`resume/codex-index-conflicts/` as private diagnostic history. A retry reuses
+the same backup. Ambiguous ownership or failed preservation leaves the existing
+index in place with a specific heartbeat diagnostic.

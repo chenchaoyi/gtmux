@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Managed Codex resume indexes survive transient heartbeat loss
-Legacy Codex publishers SHALL preserve an incumbent managed frontend index for a different thread or home while its receipt is present and the bridge incarnation is alive or uncertain. The expired receipt SHALL remain ineligible for live input. An explicitly retired receipt or a positively ended bridge incarnation permits normal legacy admission.
+Legacy Codex publishers SHALL preserve an incumbent managed frontend index for a different thread or home while its receipt is present and the bridge incarnation is alive or uncertain. The expired receipt SHALL remain ineligible for live input. An explicitly retired receipt, a positively ended bridge incarnation, or a verified relocation committed at its destination permits normal legacy admission.
 
 #### Scenario: A legacy publisher follows a missed heartbeat
 - **WHEN** a legacy writer attempts to publish a different Codex thread while the incumbent managed frontend has missed heartbeats but its bridge still exists

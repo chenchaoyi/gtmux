@@ -18,13 +18,24 @@ var frontendRecoveryGone = func(pid int) bool {
 
 func LoadFrontendRecoveryKind(loc string) FrontendRecoveryKind {
 	r, ok := Load(loc)
-	if !ok || r.Agent != "codex" || r.Frontend == "" {
+	if !ok {
+		return FrontendRecoveryUnknown
+	}
+	return frontendRecoveryKind(loc, r)
+}
+
+func frontendRecoveryKind(loc string, r Record) FrontendRecoveryKind {
+	if r.Agent != "codex" || r.Frontend == "" {
 		return FrontendRecoveryUnknown
 	}
 	f, ok := readFrontend(r.Frontend)
 	if !ok || f.Loc != loc || f.HomeID != r.HomeID || f.SessionID != r.SessionID {
 		return FrontendRecoveryUnknown
 	}
+	return frontendBridgeRecoveryKind(f)
+}
+
+func frontendBridgeRecoveryKind(f CodexFrontend) FrontendRecoveryKind {
 	p, ok := frontendProcess(f.BridgePID)
 	if !ok {
 		if frontendRecoveryGone(f.BridgePID) {
