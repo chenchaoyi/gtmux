@@ -57,7 +57,7 @@ func conversationFrontend(loc string) (CodexFrontend, bool) {
 		if !strings.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
-		f, ok := readFrontend(strings.TrimSuffix(entry.Name(), ".json"))
+		f, ok := readStoredFrontend(strings.TrimSuffix(entry.Name(), ".json"))
 		if !ok {
 			return CodexFrontend{}, false
 		}
@@ -73,7 +73,7 @@ func conversationFrontend(loc string) (CodexFrontend, bool) {
 		}
 		found = f
 	}
-	if found.Instance == "" || !freshFrontend(found, true) {
+	if found.Instance == "" || found.HomeID != transcript.CodexHomeID() || !freshFrontend(found, true) {
 		return CodexFrontend{}, false
 	}
 	for _, f := range observed {

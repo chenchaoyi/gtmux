@@ -48,7 +48,7 @@ func producerHasUniqueIndexProof(previous, next, saved CodexFrontend) bool {
 		if !strings.HasSuffix(entry.Name(), ".json") {
 			continue
 		}
-		other, ok := readFrontend(strings.TrimSuffix(entry.Name(), ".json"))
+		other, ok := readStoredFrontend(strings.TrimSuffix(entry.Name(), ".json"))
 		if !ok {
 			return false
 		}

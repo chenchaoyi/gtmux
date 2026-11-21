@@ -17,23 +17,23 @@ import (
 
 // Only the authenticated heartbeat can use this path. The caller holds the
 // publication lease and restores the index only after preserving the original.
-func preserveCrossPaneIndex(ctx context.Context, previous, next CodexFrontend, index Record) error {
+func preserveCrossPaneIndex(ctx context.Context, previous, next CodexFrontend, index Record) ([]byte, error) {
 	conflict := &FrontendBindingError{Code: "frontend-index-conflict"}
 	if index.Agent != "codex" || index.SessionID == "" || index.SessionID == previous.SessionID ||
 		index.HomeID != previous.HomeID || index.Frontend != "" || index.TerminalClient != "" {
-		return conflict
+		return nil, conflict
 	}
 	own, ok := native.BindingFor(previous.SessionID, previous.HomeID)
 	if !ok || own.Kind != "frontend" || own.ID != previous.Instance || own.Pane != previous.Pane ||
 		own.Loc != previous.Loc || own.PanePID != previous.PanePID || own.PID != previous.PID ||
 		own.BackendPID != previous.BackendPID || own.BackendStart != previous.BackendStart {
-		return conflict
+		return nil, conflict
 	}
 	foreign, ok := native.BindingFor(index.SessionID, index.HomeID)
 	if !ok || foreign.Kind != "frontend" || foreign.BackendPID <= 1 || foreign.BackendStart == "" ||
-		foreign.Cwd != index.Cwd || foreign.Pane == own.Pane || foreign.Loc == own.Loc ||
+		foreign.ID == own.ID || foreign.Cwd != index.Cwd || foreign.Pane == own.Pane || foreign.Loc == own.Loc ||
 		foreign.PanePID == own.PanePID || foreign.PID == own.PID {
-		return conflict
+		return nil, conflict
 	}
 
 	saved, ok := readFrontend(previous.Instance)
@@ -43,30 +43,49 @@ func preserveCrossPaneIndex(ctx context.Context, previous, next CodexFrontend, i
 	// an exact match apart from the newer timestamp.
 	if !ok || last != previous || saved.UpdatedAt < previous.UpdatedAt || saved.UpdatedAt > next.UpdatedAt ||
 		!producerHasUniqueIndexProof(previous, next, saved) {
-		return conflict
+		return nil, conflict
 	}
 	if err := ctx.Err(); err != nil {
-		return err
+		return nil, err
 	}
-	unavailable := &FrontendBindingError{Code: "frontend-index-preservation-unavailable", Retryable: true}
+	unavailable := crossPaneIndexUnavailable()
 	raw, err := readCrossPaneIndex(fileFor(next.Loc))
 	var current Record
 	if err != nil || json.Unmarshal(raw, &current) != nil || current != index {
-		return unavailable
+		return nil, unavailable
 	}
-	// Content addressing keeps retries idempotent and distinct displaced
-	// versions separate. Normal resume and input readers never use this path.
+	// Recommit equal visible bytes too: a previous atomic write can report a
+	// failed directory sync after rename. Sync the parent of the archive
+	// directory as well, since the first write may have just created it.
 	path := crossPaneIndexHistoryPath(next.Loc, raw)
 	archived, err := readCrossPaneIndex(path)
-	switch {
-	case err == nil && bytes.Equal(archived, raw):
-		return nil
-	case errors.Is(err, os.ErrNotExist):
-		if state.WritePrivateFile(path, raw) == nil {
-			return nil
-		}
+	if err == nil && !bytes.Equal(archived, raw) || err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, unavailable
 	}
-	return unavailable
+	if writeCrossPaneArchive(path, raw) != nil || syncCrossPaneArchiveParent(filepath.Dir(filepath.Dir(path))) != nil {
+		return nil, unavailable
+	}
+	return raw, nil
+}
+
+var writeCrossPaneArchive = state.WritePrivateFile
+var syncCrossPaneArchiveParent = state.SyncPrivateDirectory
+
+func crossPaneIndexUnavailable() *FrontendBindingError {
+	return &FrontendBindingError{Code: "frontend-index-preservation-unavailable", Retryable: true}
+}
+
+// All upgraded writers honor the same publication lease. Recheck the exact
+// bytes immediately before publishing to catch observed old-binary writes too.
+func verifyPreservedCrossPaneIndex(loc string, raw []byte) error {
+	current, err := readCrossPaneIndex(fileFor(loc))
+	if err != nil {
+		return crossPaneIndexUnavailable()
+	}
+	if !bytes.Equal(current, raw) {
+		return &FrontendBindingError{Code: "frontend-index-changed", Retryable: true}
+	}
+	return nil
 }
 
 func crossPaneIndexHistoryPath(loc string, raw []byte) string {
@@ -81,12 +100,12 @@ func readCrossPaneIndex(path string) ([]byte, error) {
 	defer file.Close()
 	info, err := file.Stat()
 	if err != nil || info.Mode().Perm()&0077 != 0 {
-		return nil, errors.New("Codex resume index is not private")
+		return nil, errors.New("resume index is not private")
 	}
 	const limit = 8192
 	raw, err := io.ReadAll(io.LimitReader(file, limit+1))
 	if len(raw) > limit {
-		return nil, errors.New("Codex resume index exceeds recovery limit")
+		return nil, errors.New("resume index exceeds recovery limit")
 	}
 	return raw, err
 }

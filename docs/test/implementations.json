@@ -594,6 +594,14 @@
       "TestSessionTabPrefersLiteralIdentity"
     ]
   },
+  "internal/hook/codex_cross_pane_stop_test.go": {
+    "cases": [
+      "CPR-005"
+    ],
+    "selectors": [
+      "TestCPR005DetachedCodexStopUsesOnlyCurrentPaneBinding"
+    ]
+  },
   "internal/hook/codex_completed_turn_test.go": {
     "cases": [
       "CET-004",
@@ -1384,6 +1392,20 @@
       "TestCBA006HeartbeatCanceledStrictProofCannotRebindOrRecoverIndex",
       "TestCBA006HeartbeatCanceledPartialWritesRetireOnlyExactOwnReceipt",
       "TestCBA006UncanceledHeartbeatKeepsSameThreadRecovery"
+    ]
+  },
+  "internal/resume/frontend_cross_pane_review_test.go": {
+    "cases": [
+      "CPR-001",
+      "CPR-002",
+      "CPR-003",
+      "CPR-004"
+    ],
+    "selectors": [
+      "TestCPR001CrossPaneRecoveryCannotEraseAnotherPublisher",
+      "TestCPR002LegacyReleaseRequiresPositiveIncumbentEvidence",
+      "TestCPR003OnlyRelevantStructurallyValidReceiptsCompete",
+      "TestCPR004VisibleArchiveMustPassDurabilityOnRetry"
     ]
   },
   "internal/resume/frontend_cross_pane_index_test.go": {

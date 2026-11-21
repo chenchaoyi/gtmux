@@ -143,7 +143,7 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 		record.RecoveryCwd = incumbent.RecoveryCwd
 		record.RecoveryAt = incumbent.RecoveryAt
 		if incumbent.Agent == "codex" && !migrateFrontend {
-			record.Frontend = incumbent.Frontend
+			record.Frontend, record.FrontendRetired = incumbent.Frontend, incumbent.FrontendRetired
 		}
 	}
 	if err := codexProcessBindingWrite(fileFor(target.Loc), record); err != nil {
@@ -233,6 +233,9 @@ func ReconcileCodexProcesses(scope *transcript.CodexPathScope, records []native.
 func processFrontendDisposition(loc string, incumbent Record, target CodexBindingTarget) (CodexFrontend, bool, error) {
 	if incumbent.Agent != "codex" || incumbent.Frontend == "" {
 		return CodexFrontend{}, false, nil
+	}
+	if incumbent.FrontendRetired {
+		return CodexFrontend{}, true, nil
 	}
 	f, ok := readFrontend(incumbent.Frontend)
 	if !ok || f.Loc != loc || f.SessionID != incumbent.SessionID || f.HomeID != incumbent.HomeID {

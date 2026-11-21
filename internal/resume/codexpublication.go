@@ -2,11 +2,23 @@ package resume
 
 import (
 	"errors"
-	"os"
-	"path/filepath"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
+
+// All location writers share the installed bridge's existing kernel lease.
+func tryResumePublication() (*state.Lease, error) {
+	const interval = 10 * time.Millisecond
+	const attempts = 5
+	for attempt := 1; ; attempt++ {
+		lease, err := state.TryLease("codex-frontend-binding")
+		if !errors.Is(err, state.ErrLeaseHeld) || attempt >= attempts {
+			return lease, err
+		}
+		time.Sleep(interval)
+	}
+}
 
 // lockCodexPublication joins Save/Bind/Refresh's kernel-owned publication lease.
 // Preparation may read history or processes without holding this global lease;
@@ -43,24 +55,24 @@ func guardLegacyCodexPublication(loc string, current, proposed Record) error {
 }
 
 func legacyCodexIndexReleased(loc string, current Record) bool {
-	f, ok := readFrontend(current.Frontend)
-	if !ok {
-		path := frontendPath(current.Frontend)
-		if path == "" || state.CheckPrivateDirectory(filepath.Dir(path)) != nil {
-			return false
-		}
-		_, err := os.Lstat(path)
-		return errors.Is(err, os.ErrNotExist) // EndCodexFrontend unlinks the receipt.
+	if current.FrontendRetired {
+		return frontendPath(current.Frontend) != ""
 	}
-	if f.HomeID != current.HomeID {
+	f, ok := readStoredFrontend(current.Frontend)
+	if !ok || f.HomeID != current.HomeID {
 		return false
 	}
-	if f.Loc != loc {
-		// A completed relocation can leave a historical index at the old
-		// address. A receipt written before a failed index write is not enough.
-		moved, exists := Load(f.Loc)
-		return exists && moved.Agent == "codex" && moved.HomeID == f.HomeID &&
-			moved.SessionID == f.SessionID && moved.Frontend == f.Instance && freshFrontend(f, true)
+	// The stored instance names the same bridge across root changes, including
+	// a new root receipt written before its index could be committed.
+	if frontendBridgeRecoveryKind(f) == FrontendRecoveryStopped {
+		return true
 	}
-	return f.SessionID == current.SessionID && frontendBridgeRecoveryKind(f) == FrontendRecoveryStopped
+	if f.Loc == loc {
+		return false
+	}
+	// A complete relocation permits the old address to be reused. A receipt
+	// written before a failed destination-index write is insufficient.
+	moved, exists := Load(f.Loc)
+	return exists && !moved.FrontendRetired && moved.Agent == "codex" && moved.HomeID == f.HomeID &&
+		moved.SessionID == f.SessionID && moved.Frontend == f.Instance && freshFrontend(f, true)
 }

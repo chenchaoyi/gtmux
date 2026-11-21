@@ -28,6 +28,9 @@ func frontendRecoveryKind(loc string, r Record) FrontendRecoveryKind {
 	if r.Agent != "codex" || r.Frontend == "" {
 		return FrontendRecoveryUnknown
 	}
+	if r.FrontendRetired {
+		return FrontendRecoveryStopped
+	}
 	f, ok := readFrontend(r.Frontend)
 	if !ok || f.Loc != loc || f.HomeID != r.HomeID || f.SessionID != r.SessionID {
 		return FrontendRecoveryUnknown

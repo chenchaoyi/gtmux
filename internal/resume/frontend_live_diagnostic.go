@@ -9,6 +9,9 @@ func LoadLiveDiagnostic(loc string) (Record, bool, string) {
 	if !ok {
 		return r, false, "resume-record-unavailable"
 	}
+	if r.FrontendRetired {
+		return r, false, "frontend-index-retired"
+	}
 	if r.Frontend == "" {
 		return r, true, ""
 	} // preserve legacy LoadLive semantics

@@ -68594,6 +68594,65 @@
         }
       ],
       "sha256": "a4863597e2d06589e1d100e3897dc85e1b1ec38b55195c857180256fa8af9911"
+    },
+    "internal/hook/codex_cross_pane_stop_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7e65dd794cb9",
+          "line": 20,
+          "kind": "reviewed-selector",
+          "name": "TestCPR005DetachedCodexStopUsesOnlyCurrentPaneBinding",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPR-005"
+        }
+      ],
+      "sha256": "d58e87aa195306d0ec529cccc6d80c4a4799f285af18f964e5768e89d95e2974"
+    },
+    "internal/resume/frontend_cross_pane_review_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fe71515f66c7",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestCPR001CrossPaneRecoveryCannotEraseAnotherPublisher",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPR-001,CPR-002,CPR-003,CPR-004"
+        },
+        {
+          "id": "MAP-f818218158ae",
+          "line": 79,
+          "kind": "reviewed-selector",
+          "name": "TestCPR002LegacyReleaseRequiresPositiveIncumbentEvidence",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPR-001,CPR-002,CPR-003,CPR-004"
+        },
+        {
+          "id": "MAP-eb3b49663cf2",
+          "line": 172,
+          "kind": "reviewed-selector",
+          "name": "TestCPR003OnlyRelevantStructurallyValidReceiptsCompete",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPR-001,CPR-002,CPR-003,CPR-004"
+        },
+        {
+          "id": "MAP-d01ca14dadd8",
+          "line": 220,
+          "kind": "reviewed-selector",
+          "name": "TestCPR004VisibleArchiveMustPassDurabilityOnRetry",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CPR-001,CPR-002,CPR-003,CPR-004"
+        }
+      ],
+      "sha256": "afcc77a49d2af7c3868789fbc8db4ec08f2df7f808645cb92289607e1fb5961b"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",
