@@ -1,0 +1,46 @@
+{
+  "id": "hq-wake-restart-notices-20261121",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-21",
+    "decision": "Recognize already parked uncertain input across device renumbering and coalesce wake health notices",
+    "notes": "Reviewed the installed release diagnostics and current main, including #1915's exact-turn witness. The reconstructed archived deliveries are diagnostic evidence only. Tests use temporary state, a fake clock and a fake notification driver."
+  },
+  "cases": [
+    {
+      "id": "WNR-001",
+      "layer": "L2",
+      "description": "A parked unknown claim remains parked across a filesystem device-number change",
+      "setup": "A valid uncertain intent holds the original claim's inode and bytes. Its private pin and parked claim are hard links. The recorded device number differs from the current device number.",
+      "action": "Inspect native recovery twice through the normal recovery entry point.",
+      "expected": "There is no conflict for that parked claim. The journal, pin and parked bytes remain identical and no pending or sending file is created.",
+      "planned_files": [
+        "internal/hqnudge/wake_restart_recovery_test.go"
+      ]
+    },
+    {
+      "id": "WNR-002",
+      "layer": "L2",
+      "description": "A device-number change cannot authorize a different inode, live claim or changed content",
+      "setup": "Use separate synthetic uncertain intents with an original sending file, a replacement parked file with identical bytes, a changed original inode's bytes, or an absent parked file.",
+      "action": "Run native recovery and examine the protected set and original evidence.",
+      "expected": "Every ambiguous original remains protected. Neither replacement nor submission is performed. A separately verified parked claim is still recognized.",
+      "planned_files": [
+        "internal/hqnudge/wake_restart_recovery_test.go"
+      ]
+    },
+    {
+      "id": "WNR-003",
+      "layer": "L2",
+      "description": "Desktop health reports join simultaneous causes and do not repeat retained inventory",
+      "setup": "Use a fake desktop notifier, seeded v189 notice timestamps and synthetic health observations with a fake clock.",
+      "action": "Scan historical archives and refusals past their reminder interval, add new occurrences and simultaneous new causes, and keep an active stalled condition across scans. Check the independent workspace deadline channel.",
+      "expected": "Retained archives and refusals remain diagnosable without repeated desktop alerts. A new occurrence and newly active cause remain visible. Simultaneous channel reasons produce one desktop notice and one journal event. Active stalls and workspace deadlines keep their own rate-limited reminders.",
+      "planned_files": [
+        "internal/hq/wake_autorecovery_test.go"
+      ]
+    }
+  ],
+  "seal": "26ebd25273a6e3db62c8d5b991e5e2ba5c414de7183aad0a04d270441e253e22"
+}
