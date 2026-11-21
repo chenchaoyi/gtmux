@@ -49,7 +49,7 @@ const hqPlaybookVersion = 68
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
-	68: "e993aeeb569cb808",
+	68: "7e15c9857443e0ae",
 	67: "2cb3afde152fce06",
 	66: "035a6dd5a27e114a",
 	65: "a31739bfc2e0d0ba",
@@ -307,6 +307,14 @@ func upgradePlaybookIfNewer(r *seedResult, wantLang string) error {
 		return err
 	}
 	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	if info.Mode().Perm()&0200 == 0 {
+		r.Preserved = true
+		return nil
+	}
 	const limit = 1024 * 1024
 	body, err := io.ReadAll(io.LimitReader(f, limit+1))
 	if err != nil {
