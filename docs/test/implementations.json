@@ -4421,7 +4421,7 @@
   },
   "internal/app/hqworkspace_triage_cli_test.go": {
     "cases": [
-      "HPT-003"
+      "HWA-019"
     ],
     "selectors": [
       "TestWorkspaceTriageCLI"

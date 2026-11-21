@@ -67559,7 +67559,7 @@
       "cases": [
         {
           "id": "MAP-4472b7512a0d",
-          "line": 24,
+          "line": 27,
           "kind": "reviewed-selector",
           "name": "TestWorkspaceTriageCLI",
           "dynamic": false,
@@ -67567,7 +67567,7 @@
           "design": "HPT-003"
         }
       ],
-      "sha256": "a47f579b66586c67a7d260d9e346944fcd55944d6cd2eabc35442004affc3301"
+      "sha256": "028a13dd25f6d34ec2c8aa8f70715c5fa39a61073021a39d9b3076002349b41a"
     },
     "internal/app/hqworkspace_triage_test.go": {
       "layer": "L2",

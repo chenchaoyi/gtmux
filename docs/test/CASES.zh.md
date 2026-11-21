@@ -301,6 +301,7 @@
 | HWA-010 | The mixed intent retains its evidence, the hard recovery failure prevents all new input, and the independent pending entry remains available after the storage issue is resolved. |
 | HWA-014 | One submission per fresh batch, no replays or lost acknowledgement. Full or expired active proofs are retained with exact receipt provenance in a bounded private archive and independently discoverable. |
 | HWA-015 | One durable delivery audit for this batch, with no input mutation. Clean up the retained receipt only after observing the matching audit. |
+| HWA-019 | The initial held wake and the draft are protected. One terminal wake reaches the verified idle fixture after its deadline, exact ownership is retained, and no workspace authority is invented. |
 | HWA-016 | Pending work is preserved until an eligible idle composer. Exact terminal input reaches the identified fixture; the same authorized actions, ownership, durable continuation and no-replay checks still pass. |
 | HPC-006 | No early repeat. At the next eligible tick, the exact evidence remains pending and its second wake is enqueued without waiting for another full interval. |
 | SPL-026 | A stale temporary name can be recovered under the lease. The published record is a single-link file; earlier evidence still protects both native and raw routing. A verified new stable ID can publish and settle. A competing destination is preserved. |
