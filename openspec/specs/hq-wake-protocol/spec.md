@@ -213,7 +213,11 @@ Wake producers SHALL queue a generation before attempting to submit it. A native
 receiver may acknowledge acceptance before evidence of a new turn or prompt ingestion.
 A Codex acknowledgement with a bound receipt SHALL be observed independently. Only
 the exact prompt tied to the expected new turn in the original transcript confirms
-start and delivery. Unconfirmed receipts raise an independent notice. Full or expired
+start and delivery. For a `»` batch, the receipt's Codex home and rollout session
+metadata SHALL match, the expected turn SHALL start at or after the submission
+boundary, and the first input SHALL contain the exact batch with no added content.
+The ordinary user-prompt filter SHALL continue to exclude wake echoes.
+Unconfirmed receipts raise an independent notice. Full or expired
 observation windows SHALL archive exact receiver evidence without blocking new wakes.
 The private archive uses two bounded segments. Recovering a retained receipt SHALL
 reuse any exact delivery audit already in the journal. A confirmed
@@ -288,6 +292,32 @@ submission each remain visible to independent diagnostics.
 
 - **WHEN** the HQ pane hosts an agent with no driver receipt capability
 - **THEN** delivery confirmation uses the screen read exactly as before, unchanged
+
+### Requirement: Ordinary waiting wakes are rechecked at their fresh claim
+
+An ordinary waiting wake SHALL carry the task ID, verified conversation and
+home, original terminal identity, and waiting episode when those facts are
+available. On a fresh claim the queue SHALL suppress an individual line only
+when positive evidence confirms that the exact source terminal retired or that
+the waiting premise was released. A successful inventory of the original tmux
+server can establish that its pane retired. A recognized clear composer for the
+same verified source and episode, or exact post-wait turn-end evidence, can
+establish a release. The journal SHALL record the reason and source attribution
+for each suppressed line.
+
+#### Scenario: A source is retired while HQ has a draft
+
+- **WHEN** the original terminal retires while HQ holds an unsent draft
+- **THEN** on the next safe fresh claim only the proved obsolete waiting lines
+  are suppressed and audited. A ready protected relay can use that window once.
+
+#### Scenario: Waiting provenance is incomplete or protected
+
+- **WHEN** terminal or home identity differs, the terminal cannot be read,
+  a later marker leaves the original episode ambiguous, or an old queue line
+  lacks provenance
+- **THEN** the line follows the existing queue and draft rules. Prior attempts,
+  parked drafts and retained receipts follow the existing recovery rules.
 
 ### Requirement: Each coalesced wake batch carries a re-send identifier
 

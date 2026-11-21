@@ -276,6 +276,7 @@ func stuckDispatchSweep(gather func() []radar.Pane) {
 		if p.Status != "waiting" || state.Exists(state.WaitingPath(p.PaneID)) {
 			continue
 		}
+		src := hqnudge.WaitingSourceForPane(p.PaneID)
 		kind := radar.StuckDispatchKind(p.PaneID, p.Agent)
 		if kind == "" {
 			kind = radar.CodexScreenWaitKind(p.PaneID, p.Agent)
@@ -288,7 +289,10 @@ func stuckDispatchSweep(gather func() []radar.Pane) {
 			if kind == "permission" {
 				detail = "approval menu on screen"
 			}
-			nudgeHQPane(hqwake.Line(hqwake.ClassWaiting, p.Loc+" ("+p.PaneID+")", detail), "")
+			if target := hqpane.Find(); target != "" {
+				hqnudge.DeliverWaiting(target, hqwake.Line(hqwake.ClassWaiting, p.Loc+" ("+p.PaneID+")", detail),
+					src, kind, "", "", "", "")
+			}
 		}
 	}
 }

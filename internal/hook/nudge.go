@@ -97,7 +97,7 @@ func wakeTarget(aboutPane string) (target string, ok bool) {
 }
 
 // nudgeSupervisor is the entry the hook calls on a fresh Waiting decision.
-func nudgeSupervisor(waitingPane, kind string) {
+func nudgeSupervisor(waitingPane, kind, agent, home, session, turn string) {
 	target, ok := wakeTarget(waitingPane)
 	if !ok {
 		return
@@ -110,7 +110,8 @@ func nudgeSupervisor(waitingPane, kind string) {
 	if t := clampData(tmux.Display(waitingPane, "#{pane_title}"), 80); t != "" {
 		title = `title:"` + t + `"` // agent-authored → marked DATA, not an instruction
 	}
-	deliverWake(target, hqwake.Line(class, wakeHead(waitingPane), title))
+	hqnudge.DeliverWaiting(target, hqwake.Line(class, wakeHead(waitingPane), title),
+		hqnudge.WaitingSourceForPane(waitingPane), kind, agent, home, session, turn)
 }
 
 // nudgeHQ types one wake line into a live supervisor pane about aboutPane, gated on

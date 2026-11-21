@@ -71,7 +71,9 @@ const (
 	DropUnconfirmed = "unconfirmed"
 	// DropSuperseded — the delivery-side revalidation probe found the premise
 	// gone, so the line was dropped instead of delivered stale.
-	DropSuperseded = "superseded"
+	DropSuperseded        = "superseded"
+	DropWaitSourceRetired = "wait-source-retired"
+	DropWaitResolved      = "wait-resolved"
 )
 
 // Audit summary budgets (bytes of rendered text, truncated rune-safe). A wake
@@ -186,6 +188,14 @@ func AuditWakeDropped(reason, line string, now int64) {
 	}
 	diag.For("hq").Act("act.wake.dropped", "system", "hq", outcome, "a wake was not delivered",
 		key, reason, "bytes", len(line), "op_id", id)
+}
+
+// AuditWaitingWakeDropped records the exact source for an affirmative queue-time
+// decision. The caller keeps the line eligible if the audit cannot be written.
+func AuditWaitingWakeDropped(reason, line, pane, loc, task, session, home string, now int64) error {
+	return AppendChecked(Record{Event: AuditEventWakeDropped, Pane: pane, Loc: loc, TaskID: task,
+		AgentSession: session, HomeID: home, Outcome: reason, Ts: now,
+		Severity: SevRoutine, OpID: diag.NewOpID(), Summary: reason + ": " + auditLine(line, auditWakeMax)})
 }
 
 // AuditSend journals a `gtmux send` text delivery's settlement: the target pane, the

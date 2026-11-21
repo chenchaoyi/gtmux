@@ -14192,7 +14192,7 @@
       ]
     },
     "internal/hook/nudge_test.go": {
-      "sha256": "b971a740bb9cb84228734af071389285be9a801ace35dd789566044388bf4ed8",
+      "sha256": "457a88195171a96b4954b9a96998fe9327b7282eead2151fd317a24bc57638dd",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -68839,6 +68839,47 @@
         }
       ],
       "sha256": "02dffb06fc3c140d41602d70fd58bcab1fb0f5a240419a2fa77c5efb53e932c6"
+    },
+    "internal/hqnudge/waiting_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3cdb1de3f223",
+          "line": 91,
+          "kind": "reviewed-selector",
+          "name": "TestHWW001FreshWaitingRevalidationWithProtectedRelay",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWW-001,HWW-002"
+        },
+        {
+          "id": "MAP-fd0f7cbc9edc",
+          "line": 172,
+          "kind": "reviewed-selector",
+          "name": "TestHWW002PreviouslyAttemptedWaitingKeepsRecoveryRules",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWW-001,HWW-002"
+        }
+      ],
+      "sha256": "4d8e930da0593886b5ad72c352553ba473bc036886699c279ff8f326e17f3e50"
+    },
+    "internal/hqnudge/waiting_witness_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e97fcddb77e7",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "TestHWW003RealWakePromptGetsExactIndependentAudit",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HWW-003"
+        }
+      ],
+      "sha256": "c7c1811b9084959c7fe6fcc8918b4002a02e390b4f55f8c7203b13561cd0dfa3"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

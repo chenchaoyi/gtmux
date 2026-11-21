@@ -1,4 +1,7 @@
 {
+  "internal/hook/nudge_test.go": {"cases": ["HWW-001"], "selectors": ["TestNudgeSupervisorNoop"]},
+  "internal/hqnudge/waiting_test.go": {"cases": ["HWW-001", "HWW-002"], "selectors": ["TestHWW001FreshWaitingRevalidationWithProtectedRelay", "TestHWW002PreviouslyAttemptedWaitingKeepsRecoveryRules"]},
+  "internal/hqnudge/waiting_witness_test.go": {"cases": ["HWW-003"], "selectors": ["TestHWW003RealWakePromptGetsExactIndependentAudit"]},
   "internal/app/testmain_test.go": {
     "cases": ["CHI-001"],
     "selectors": ["func TestMain"]

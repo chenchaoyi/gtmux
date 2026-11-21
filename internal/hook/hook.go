@@ -1231,7 +1231,7 @@ func Run(stdin io.Reader, args []string) int {
 		// Enter-waiting (P1): a FRESH waiting transition informs a live hq pane. Before
 		// the viewing suppression — that gate is the USER's eyes; HQ learns regardless.
 		if d.notify && d.setWaiting {
-			nudgeSupervisor(pane, string(waitKind))
+			nudgeSupervisor(pane, string(waitKind), agentKey, homeID, agentSession, payload.TurnID)
 		}
 		// Resolved edge (incident ⑤): a wait that EXISTED is now cleared (the user
 		// answered in-pane, or the agent resumed) → tell HQ so it drops any stale chase.
