@@ -41,9 +41,13 @@ func readPendingAttention(q hqworkspace.Reconciliation, now int64) (relay.Reques
 }
 
 func serviceWorkspaceRelayAttention(s *hqworkspace.Store, d hqworkspace.Database, now int64) {
+	candidates, enrolled := hqworkspace.RelayAttentionQueue(d, now)
+	if !enrolled {
+		return
+	}
 	var notices []hq.RelayAttention
 	checkedSlot := false
-	for _, due := range hqworkspace.RelayAttentionQueue(d, now) {
+	for _, due := range candidates {
 		q := due.Reconciliation
 		late := now-q.Observation.OccurredAt >= int64(2*time.Minute/time.Second)
 		eligible := !checkedSlot && q.RelayAttentionAt == 0 && (due.SourceEnded || late)

@@ -9,11 +9,13 @@ type RelayAttentionDue struct {
 
 // RelayAttentionQueue sorts by actual source end evidence, then by the
 // reconciliation queue's stable intake order. Matter assignment is optional.
-func RelayAttentionQueue(d Database, now int64) []RelayAttentionDue {
+func RelayAttentionQueue(d Database, now int64) ([]RelayAttentionDue, bool) {
 	var paired, unpaired []RelayAttentionDue
+	enrolled := false
 	ends := map[Conversation]int64{}
 	for _, q := range d.Reconciliations {
 		o := q.Observation
+		enrolled = enrolled || o.RelayAttention
 		switch o.Kind {
 		case "Stop", "StopFailure", "triage-unassigned:Stop", "triage-unassigned:StopFailure":
 			if o.OccurredAt <= now {
@@ -35,7 +37,7 @@ func RelayAttentionQueue(d Database, now int64) []RelayAttentionDue {
 			unpaired = append(unpaired, row)
 		}
 	}
-	return append(paired, unpaired...)
+	return append(paired, unpaired...), enrolled
 }
 
 func relayAttentionSource(c Conversation) Conversation {
