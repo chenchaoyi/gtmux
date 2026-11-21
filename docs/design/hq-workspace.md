@@ -417,8 +417,9 @@ New, nonblocking Codex reports with an exact managed task and source pane identi
 remain in the relay ledger. After an independently observed end from the same
 thread, they can take one protected native wake slot. Other eligible reports wait
 two minutes for a claim before competing. The slot can join an ordinary batch
-without removing any decision entry. Earlier ledger rows keep their existing
-reconciliation path.
+when their retry groups match. If the groups differ, the protected report can
+use the first eligible window and the ordinary retry keeps its original target,
+attempt and due time. Earlier ledger rows keep their existing reconciliation path.
 
 The workspace records a scheduling opportunity separately from transport
 acceptance, turn start, delivery and HQ claim. The native bridge must verify its

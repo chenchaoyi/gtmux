@@ -322,6 +322,7 @@ MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_t
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,103,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"
 MAP-62d7c36b98c4,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,121,reviewed-selector,TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity,False,"HRW-004,HRW-005,HRW-008"
 MAP-f6f7a40c985c,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,152,reviewed-selector,TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource,False,"HRW-004,HRW-005,HRW-008"
+MAP-dac5bb4a6387,L2,reviewed implementation,internal/hqnudge/waiting_relay_retry_test.go,14,reviewed-selector,TestHWW004ProtectedRelayUsesFirstWindowWithDueWaitingRetry,False,HWW-004
 MAP-3cdb1de3f223,L2,reviewed implementation,internal/hqnudge/waiting_test.go,91,reviewed-selector,TestHWW001FreshWaitingRevalidationWithProtectedRelay,False,"HWW-001,HWW-002"
 MAP-fd0f7cbc9edc,L2,reviewed implementation,internal/hqnudge/waiting_test.go,172,reviewed-selector,TestHWW002PreviouslyAttemptedWaitingKeepsRecoveryRules,False,"HWW-001,HWW-002"
 MAP-e97fcddb77e7,L2,reviewed implementation,internal/hqnudge/waiting_witness_test.go,18,reviewed-selector,TestHWW003RealWakePromptGetsExactIndependentAudit,False,HWW-003

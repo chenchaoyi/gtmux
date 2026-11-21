@@ -668,14 +668,11 @@ func drainInto(x io, pane string) {
 	if !validWakeTarget(reservedTarget) {
 		reserved = ""
 	}
+	// The protected relay gets this window. Ordinary entries can share it
+	// when their retry group matches, or keep their original pending slot.
 	first := reserved
-	if len(regular) > 0 {
+	if first == "" && len(regular) > 0 {
 		first = regular[0]
-		// A due protected retry stays fenced to its original target. Give
-		// that bounded retry a turn without dropping fresh decision lines.
-		if reserveRetry, _ := parseRetry(reserved); reserveRetry.Number > 0 {
-			first = reserved
-		}
 	}
 	if first == "" {
 		return

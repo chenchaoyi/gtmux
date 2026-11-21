@@ -1161,6 +1161,11 @@ A prospective worker report addressed to HQ with exact managed task identity SHA
 #### Scenario: A full decision queue and a recent report
 - **WHEN** the regular queue is full, a new managed report remains unclaimed, and a verified native input window is available
 - **THEN** the report reference can join a guarded delivery without dropping a decision, and the original report remains unclaimed until HQ claims it
+
+#### Scenario: An ordinary retry and a protected report have different groups
+- **WHEN** an eligible protected report and a due ordinary retry have incompatible retry groups
+- **THEN** the report SHALL use the first verified native window. The ordinary retry SHALL retain its original target, attempt and due time without sharing the report's submission.
+
 #### Scenario: Several reports remain pending
 - **WHEN** earlier notices are still rate-limited or a deferred report reaches its next check
 - **THEN** unsurfaced references receive bounded notice opportunities, and due rechecks use ordinary reminders without renewing the exact report's native reservation
