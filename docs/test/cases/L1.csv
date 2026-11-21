@@ -168,7 +168,7 @@ LEG-43539f89e3dd,L1,Go core / CLI / server,internal/app/digest_test.go,112,Test,
 LEG-fc72fc41119b,L1,Go core / CLI / server,internal/app/digest_test.go,134,Test,TestDigestInModeContract,False,legacy-not-retrospectively-reviewed
 LEG-b422f974910d,L1,Go core / CLI / server,internal/app/digestwidth_test.go,17,Test,TestDigestTableFitsTheTerminal,False,legacy-not-retrospectively-reviewed
 LEG-a9a69f8edb48,L1,Go core / CLI / server,internal/app/digestwidth_test.go,43,Test,TestDigestLayoutGivesWayInOrder,False,legacy-not-retrospectively-reviewed
-LEG-a018663902fc,L1,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,9,Test,TestDoctorRejectsWrongDisabledAndScopedBindings,False,legacy-not-retrospectively-reviewed
+LEG-a018663902fc,L1,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,22,Test,TestDoctorRejectsWrongDisabledAndScopedBindings,False,legacy-not-retrospectively-reviewed
 LEG-27cedb4bffb2,L1,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,12,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-28bec547a2b0,L1,Go core / CLI / server,internal/app/doctor_claudetui_test.go,12,Test,TestClaudeTUIRow,False,legacy-not-retrospectively-reviewed
 LEG-8f15b04a541d,L1,Go core / CLI / server,internal/app/doctor_claudetui_test.go,36,Test,TestClaudeTUIPinnableOnlyWithEvidenceAndNoExplicitChoice,False,legacy-not-retrospectively-reviewed
@@ -299,11 +299,11 @@ LEG-e9dcdd1be507,L1,Go core / CLI / server,internal/app/help_test.go,177,Test,Te
 LEG-458ab344984a,L1,Go core / CLI / server,internal/app/hook_presence_test.go,71,Test,TestSavedAgentHomesDoNotSelectHooksOrDoctorRepairs,False,legacy-not-retrospectively-reviewed
 LEG-c7127d072da7,L1,Go core / CLI / server,internal/app/hook_presence_test.go,120,Test,TestHookPresenceUsesRegistryExecutableProbes,False,legacy-not-retrospectively-reviewed
 LEG-5de4952de93e,L1,Go core / CLI / server,internal/app/hook_presence_test.go,142,Test,TestDetectedCLIWithoutHomeCanConfigureHooks,False,legacy-not-retrospectively-reviewed
-LEG-cda060207e23,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,35,Test,TestMissingAgentHookEvents,False,legacy-not-retrospectively-reviewed
-LEG-92ed7645c202,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,60,Test,TestCompleteHooksReportNothingMissing,False,legacy-not-retrospectively-reviewed
-LEG-46c25c3d4d57,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,77,Test,TestNoHooksFileIsNotIncomplete,False,legacy-not-retrospectively-reviewed
-LEG-cdd8d835c53f,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,121,Test,TestMissingClaudeHookEvents,False,legacy-not-retrospectively-reviewed
-LEG-8b3c5a13c7e4,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,164,Test,TestAMisScopedHookCountsAsOutOfDate,False,legacy-not-retrospectively-reviewed
+LEG-cda060207e23,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,36,Test,TestMissingAgentHookEvents,False,legacy-not-retrospectively-reviewed
+LEG-92ed7645c202,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,61,Test,TestCompleteHooksReportNothingMissing,False,legacy-not-retrospectively-reviewed
+LEG-46c25c3d4d57,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,78,Test,TestNoHooksFileIsNotIncomplete,False,legacy-not-retrospectively-reviewed
+LEG-cdd8d835c53f,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,122,Test,TestMissingClaudeHookEvents,False,legacy-not-retrospectively-reviewed
+LEG-8b3c5a13c7e4,L1,Go core / CLI / server,internal/app/hookcompleteness_test.go,165,Test,TestAMisScopedHookCountsAsOutOfDate,False,legacy-not-retrospectively-reviewed
 LEG-a7785864b379,L1,Go core / CLI / server,internal/app/hookcoverage_test.go,19,Test,TestEveryRegisteredEventClassifies,False,legacy-not-retrospectively-reviewed
 LEG-00cbca4f2810,L1,Go core / CLI / server,internal/app/hookcoverage_test.go,55,Test,TestPostToolUseIsRegisteredForEveryTool,False,legacy-not-retrospectively-reviewed
 LEG-cb5a706a008b,L1,Go core / CLI / server,internal/app/hooks_test.go,67,Test,TestUpdateSettingsPreservesForeignHooksAndUninstalls,False,legacy-not-retrospectively-reviewed
