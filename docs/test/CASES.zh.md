@@ -522,7 +522,7 @@
 | RRB-R1 | One cumulative send after unknown; first legal wrapper still sends |
 | RRB-R2 | Second sends zero; unchanged sources still send |
 | RRB-R3 | A confirmed before B starts; no extra sleep; cancellation wins |
-| RRB-R6 | Host installation cannot choose route; native path asserts exact command and pane identity; diagnose unrelated failures without weakening assertions |
+| RRB-R6 | The actual type-only tmux entry renders the required managed command, verified executable and saved thread. The record-free fallback, explicit custom launcher and no-input assertions for ineligible panes remain covered. Native entry asserts exact command and pane identity. |
 | RRB-R4 | Pane and timeout visible before B; final summary remains |
 | RRB-R5 | Both timeout and first delivery uncertainty remain distinct in existing result/client states |
 | RSD-001 | The unchanged source is sent exactly once to its target. A replaced source prevents every literal and Enter for that target. |

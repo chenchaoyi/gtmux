@@ -104,6 +104,14 @@ func TestRestoreManagedCodexBridge(t *testing.T) {
 	if _, err := exec.LookPath("tmux"); err != nil {
 		t.Skip("tmux not installed")
 	}
+	binary := filepath.Join(t.TempDir(), "codex")
+	if err := os.WriteFile(binary, []byte("#!/bin/sh\nexit 1\n"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	oldFind := nativeRestoreFindBinary
+	nativeRestoreFindBinary = func() string { return binary }
+	t.Cleanup(func() { nativeRestoreFindBinary = oldFind })
+	t.Setenv("GTMUX_AGENT_PROXY", "off")
 	sock, err := os.MkdirTemp("/tmp", "gtbridge")
 	if err != nil {
 		t.Fatal(err)
@@ -159,7 +167,7 @@ func TestRestoreManagedCodexBridge(t *testing.T) {
 		if name == "bridge" {
 			// After reboot the frontend lease is dead, but its exact saved thread
 			// remains restore history; it must not need live-input authority.
-			rec.Frontend, rec.HomeID = "expired-frontend", transcript.CodexHomeID()
+			rec.Frontend, rec.HomeID = strings.Repeat("e", 32), transcript.CodexHomeID()
 		}
 		if err := resume.Save(name+":0.0", rec); err != nil {
 			t.Fatal(err)
@@ -172,20 +180,28 @@ func TestRestoreManagedCodexBridge(t *testing.T) {
 		rrbWaitShell(t, name+":0.0")
 	}
 	resumeAgents() // type only: no Codex process or model is launched
+	commands := map[string]string{
+		"bridge":   "'codex' '--no-alt-screen' 'resume' 'bridge-thread'",
+		"fallback": " codex -- --no-alt-screen resume 'fallback-thread'",
+	}
 	for _, name := range names {
+		want := commands[name]
 		var screen string
 		for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(30 * time.Millisecond) {
 			screen, _ = tmux.Run("capture-pane", "-J", "-p", "-t", name+":0.0")
 			screen = strings.ReplaceAll(strings.ReplaceAll(screen, "\r", ""), "\n", "")
-			if strings.Contains(screen, "resume '") || name != "bridge" && name != "fallback" || time.Now().After(deadline) {
+			if want == "" || strings.Contains(screen, want) || time.Now().After(deadline) {
 				break
 			}
 		}
-		want := name == "bridge" || name == "fallback"
-		if want && (!strings.Contains(screen, " codex -- ") || !strings.Contains(screen, "resume '"+name+"-thread'")) {
+		if want != "" && !strings.Contains(screen, want) {
 			t.Fatalf("%s: original conversation was not typed through the bridge: %q", name, screen)
 		}
-		if !want && strings.Contains(screen, "resume '") {
+		if name == "bridge" && (!strings.Contains(screen, resume.CodexRestoreBinaryEnv+"=") ||
+			strings.Contains(screen, "'original-thread'") || strings.Contains(screen, "--no-daemon")) {
+			t.Fatalf("managed command lost routing or saved ownership: %q", screen)
+		}
+		if want == "" && (strings.Contains(screen, "resume '") || strings.Contains(screen, "'resume' '")) {
 			t.Fatalf("%s: stale record revived a non-interactive pane: %q", name, screen)
 		}
 	}

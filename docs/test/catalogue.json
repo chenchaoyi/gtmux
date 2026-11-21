@@ -1140,7 +1140,7 @@
       ]
     },
     "internal/app/agent_resume_launcher_test.go": {
-      "sha256": "b9d7b6befd513bde140a1de52f159bb4a120550fbaf2902e31bc4133d461bafe",
+      "sha256": "f5244d629ba22b0226f4826d20f537fb8fed1e2c121ca4aff81d665251a70117",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
