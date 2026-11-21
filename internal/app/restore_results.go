@@ -18,6 +18,9 @@ type resumeAttempt struct {
 
 func resumeAttemptConfirmed(attempt resumeAttempt, current resume.Record, live bool) bool {
 	if attempt.Native != nil {
+		if live && attempt.Record.Frontend != "" {
+			return resume.ConfirmManagedRestoreAttempt(*attempt.Native, current)
+		}
 		return live && resume.ConfirmNativeRestoreAttempt(*attempt.Native, current)
 	}
 	return live && current.Agent == attempt.Record.Agent && current.SessionID == attempt.Record.SessionID &&
@@ -43,6 +46,8 @@ func resumeStateLabel(state string) string {
 		return i18n.Tr("Already attempted this boot · inspect the original pane", "本次开机已尝试恢复 · 请检查原窗格")
 	case "executable-unavailable":
 		return i18n.Tr("Deferred · native executable could not be verified", "暂缓恢复 · 无法核实原生可执行文件")
+	case "managed-frontend-unavailable":
+		return i18n.Tr("Deferred · managed Codex bridge unavailable", "暂缓恢复 · Codex 会话桥接不可用")
 	case "incumbent-unavailable":
 		return i18n.Tr("Deferred · saved pane ownership could not be read", "暂缓恢复 · 无法读取窗格归属记录")
 	case "capability-unknown", "reservation-unavailable":

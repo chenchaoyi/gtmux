@@ -3851,6 +3851,24 @@
       "detects the original final-image shift of minus64 pixels"
     ]
   },
+  "internal/app/codex_managed_restore_test.go": {
+    "cases": [
+      "CRMB-001",
+      "CRMB-002"
+    ],
+    "selectors": [
+      "TestManagedRestorePreservesBridge",
+      "TestManagedRestoreNoStandaloneFallback"
+    ]
+  },
+  "internal/resume/managed_restore_test.go": {
+    "cases": [
+      "CRMB-003"
+    ],
+    "selectors": [
+      "TestManagedRestoreConfirmationRequiresNewLiveFrontend"
+    ]
+  },
   "internal/app/codex_restore_native_test.go": {
     "cases": [
       "CNRV4-001",

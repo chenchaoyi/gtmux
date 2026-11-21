@@ -16,6 +16,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/codexbridge"
 	"github.com/chenchaoyi/gtmux/internal/codexrpc"
 	"github.com/chenchaoyi/gtmux/internal/diag"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/toolpath"
@@ -68,7 +69,16 @@ func terminalPane() string {
 }
 
 func cmdCodex(args []string) int {
-	bin := nativeCodexBinary()
+	bin, managedRestore := os.LookupEnv(resume.CodexRestoreBinaryEnv)
+	if managedRestore {
+		// Scope this requirement and binary to this launch, not its children.
+		_ = os.Unsetenv(resume.CodexRestoreBinaryEnv)
+		if !filepath.IsAbs(bin) || !toolpath.IsExecutable(bin) {
+			return managedCodexRestoreFailed()
+		}
+	} else {
+		bin = nativeCodexBinary()
+	}
 	if bin == "" {
 		fmt.Fprintln(os.Stderr, "gtmux: Codex executable unavailable")
 		return 1
@@ -83,6 +93,9 @@ func cmdCodex(args []string) int {
 			}
 		}
 	}
+	if managedRestore {
+		return managedCodexRestoreFailed()
+	}
 	// Exact argv, stdin, environment and exit behavior remain native for older
 	// clients and excluded launches. Never retry after any new client has started.
 	diag.Did("act.codex.launch", "", diag.OK, "handing terminal to native Codex", "mode", "native-handoff")
@@ -90,6 +103,12 @@ func cmdCodex(args []string) int {
 		diag.Did("act.codex.launch", "", diag.Failed, "native Codex handoff failed", "error", err)
 		fmt.Fprintln(os.Stderr, "gtmux:", err)
 	}
+	return 1
+}
+
+func managedCodexRestoreFailed() int {
+	diag.Did("act.codex.launch", "", diag.Failed, "managed Codex restore could not start the terminal bridge", "mode", "managed-restore")
+	fmt.Fprintln(os.Stderr, "gtmux: managed Codex restore could not start the terminal bridge")
 	return 1
 }
 

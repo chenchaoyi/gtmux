@@ -16,7 +16,7 @@
 
 `gtmux codex -- …` 按实际能力接入交互启动，不按版本号硬切。标准派发、HQ、恢复共用同一适配。hook 安装和 doctor 提供可移除的 Bash/zsh 配置段，对新开的 tmux 交互终端生效；保留现有别名和函数，卸载只移除本配置段。不会重启现有会话或补造归属凭据。
 
-旧独立客户端继续使用前台进程与 hook 验证。显式 `--no-daemon`、remote、profile/config 覆盖、非交互、未知参数和自定义包装命令保留原生参数、环境及退出行为，不生成未经核实的桥接归属。符合条件的首次交互启动可仅调用官方 `codex app-server daemon start`；读取列表和历史不启动、不恢复客户端。子进程启动前失败可回退到原命令一次，启动之后不会自动再拉起一个客户端。
+旧独立客户端继续使用前台进程与 hook 验证。显式 `--no-daemon`、remote、profile/config 覆盖、非交互、未知参数和自定义包装命令保留原生参数、环境及退出行为，不生成未经核实的桥接归属。符合条件的首次交互启动可仅调用官方 `codex app-server daemon start`；读取列表和历史不启动、不恢复客户端。普通启动在桥接准备失败且尚未启动子进程时可回退到原命令一次。恢复已有托管绑定的会话时必须建立桥接，桥接不可用会明确报告启动失败。子进程启动后不会自动再拉起一个客户端。
 
 实现依据固定为官方 `rust-v0.165.0` 的 `360319d8dee62d87e2d59fc0c21805d79519cfed`：`codex-rs/tui/src/daemon_startup.rs`、`codex-rs/tui/src/app_server_connection.rs`、`codex-rs/app-server-protocol/src/protocol/v2.rs`、`codex-rs/app-server-transport/src/uds/daemon_directory.rs`。能力不满足时安全回退原生，不声称自动支持未来协议。
 
