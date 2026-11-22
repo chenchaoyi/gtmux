@@ -133,7 +133,12 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 		for _, notice := range alerts {
 			active = append(active, notice.desktopID)
 		}
-		diag.ReportStoreFailure("hq-attention-notice", notify.SyncAttention(desktopScope, active))
+		if err := notify.SyncAttention(desktopScope, active); err != nil {
+			// Do not publish an orphan request or start cooldown. A later scan
+			// can present the still-active condition after the store recovers.
+			diag.ReportStoreFailure("hq-attention-notice", err)
+			return
+		}
 	}
 	path := filepath.Join(state.Dir(), "hqwake", "notices-"+scope+".json")
 	previous, err := readWakeNotices(path)

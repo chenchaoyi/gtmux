@@ -446,6 +446,8 @@ LEG-5641587aed04,L1,Go core / CLI / server,internal/app/hooksilence_test.go,26,T
 LEG-b54c9bdc958c,L1,Go core / CLI / server,internal/app/hooksilence_test.go,35,Test,TestAQuietPaneIsNotReported,False,legacy-not-retrospectively-reviewed
 LEG-19d6ceb43769,L1,Go core / CLI / server,internal/app/hooksilence_test.go,44,Test,TestARecentEventIsEnough,False,legacy-not-retrospectively-reviewed
 LEG-b4c53a66c7ba,L1,Go core / CLI / server,internal/app/hooksilence_test.go,56,Test,TestEventsReadGivesThePaneItsNewest,False,legacy-not-retrospectively-reviewed
+MAP-3763bc8a0204,L2,reviewed implementation,internal/app/hq_notification_source_guard_test.go,22,reviewed-selector,TestHND006WorkspaceSourceOutageKeepsLiveAttentionAndPreventsReset,False,HND-006
+MAP-3ebff329d8e2,L2,reviewed implementation,internal/app/hq_notification_source_guard_test.go,78,reviewed-selector,TestHND006RelayParentOutageIsDistinctFromAnExactMissingReport,False,HND-006
 MAP-2205ade7faa7,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,17,reviewed-selector,TestHRA003ProspectiveRelayAttentionUsesExactSourceAndRealClaim,False,"HRA-002,HRA-003,HRA-004"
 MAP-70f381b3e425,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,119,reviewed-selector,TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim,False,"HRA-002,HRA-003,HRA-004"
 MAP-9a2267e34534,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,174,reviewed-selector,TestHRA004ResolvedRelayWithdrawsWithoutReconciledClaim,False,"HRA-002,HRA-003,HRA-004,HND-002"
@@ -1694,6 +1696,7 @@ LEG-8ad77d3c1573,L1,Go core / CLI / server,internal/hq/archive_small_records_tes
 LEG-29886f95fa14,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,138,Test,TestArchivePreflightIncludesTarOverhead,False,legacy-upstream-PR1814
 MAP-1785f3b3f89e,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,34,reviewed-selector,TestHND001WorkspaceAttentionChangesCopyWithoutChangingIdentity,False,"HND-001,HND-002"
 MAP-40ff8e1d0e6e,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,60,reviewed-selector,TestHND002RelayAttentionReplacesStatusAndKeepsARealBlocker,False,"HND-001,HND-002"
+MAP-6d2a56c8d3b3,L2,reviewed implementation,internal/hq/attention_publication_test.go,12,reviewed-selector,TestHND005SnapshotFailureDoesNotConsumeAlertOpportunity,False,HND-005
 LEG-15483d5020ad,L1,Go core / CLI / server,internal/hq/board_shape_test.go,30,Test,TestBoardSeedHasBothParts,False,legacy-not-retrospectively-reviewed
 LEG-a8636bbce213,L1,Go core / CLI / server,internal/hq/board_shape_test.go,49,Test,TestPlaybookAndSeedAgreeOnTheHeadings,False,legacy-not-retrospectively-reviewed
 LEG-f6324716e51f,L1,Go core / CLI / server,internal/hq/board_shape_test.go,65,Test,TestBoardDoesNotSpeakTranslationese,False,legacy-not-retrospectively-reviewed
@@ -3895,6 +3898,7 @@ LEG-7361a20c4a3e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQActivityT
 LEG-9af236398bdc,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQArchiveHintTests.swift,5,XCTest,testBackupObservationSurvivesLegacyWireTextAndLanguageChanges,False,legacy-not-retrospectively-reviewed
 LEG-cbbaff620b45,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQArchiveHintTests.swift,22,XCTest,testLegacyArchivesAreNotPresentedAsVerifiedAutomaticPoints,False,legacy-not-retrospectively-reviewed
 LEG-2a9b0534c565,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQArchiveHintTests.swift,30,XCTest,testOlderCoreKeepsUnknownValidity,False,legacy-not-retrospectively-reviewed
+MAP-8d377a0cf158,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionPublicationTests.swift,29,reviewed-selector,testRequestPublishedDuringDrainAndLateCallbackUseCurrentSnapshot,False,HND-004
 LEG-206bfa2b8f12,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQCardReportTests.swift,20,XCTest,testAPlanWindowsTierComesFromTheCore,False,legacy-not-retrospectively-reviewed
 LEG-557844f50caa,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQCardReportTests.swift,31,XCTest,testTheResourceReportDecodesTheWholeSnapshot,False,legacy-not-retrospectively-reviewed
 LEG-87c2a37bf663,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQCardReportTests.swift,52,XCTest,testARedMachineLeadsAndMayWrap,False,legacy-not-retrospectively-reviewed

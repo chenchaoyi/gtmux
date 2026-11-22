@@ -1,4 +1,29 @@
 {
+  "internal/hq/attention_publication_test.go": {
+    "cases": [
+      "HND-005"
+    ],
+    "selectors": [
+      "TestHND005SnapshotFailureDoesNotConsumeAlertOpportunity"
+    ]
+  },
+  "internal/app/hq_notification_source_guard_test.go": {
+    "cases": [
+      "HND-006"
+    ],
+    "selectors": [
+      "TestHND006WorkspaceSourceOutageKeepsLiveAttentionAndPreventsReset",
+      "TestHND006RelayParentOutageIsDistinctFromAnExactMissingReport"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQAttentionPublicationTests.swift": {
+    "cases": [
+      "HND-004"
+    ],
+    "selectors": [
+      "testRequestPublishedDuringDrainAndLateCallbackUseCurrentSnapshot"
+    ]
+  },
   "internal/hq/attention_lifecycle_test.go": {
     "cases": [
       "HND-001",

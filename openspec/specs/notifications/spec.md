@@ -234,3 +234,15 @@ notifications and the durable HQ audit remain independent.
 - **WHEN** a matter is awaiting an external result and HQ moves the next check
 - **THEN** the workspace shows the check without creating a desktop alert
 - **AND** an unanswered user question or a verified continuing blockage can still generate an independent notice
+
+#### Scenario: A managed request arrives during notification polling
+
+- **WHEN** the producer publishes a current scope snapshot and then its request
+- **THEN** the consumer checks the snapshot after observing that request or checks it on a later poll
+- **AND** a failed snapshot write leaves the current alert eligible after recovery
+
+#### Scenario: An upstream attention source is unavailable
+
+- **WHEN** the workspace records or the entire relay store are temporarily unavailable
+- **THEN** the last verified active notice stays in place
+- **AND** a confirmed resolution or absence of a single report in an available store only withdraws that report

@@ -287,11 +287,10 @@ func scheduleWorkspaceReconciliation() {
 	workspaceReconciliationNext = now + workspaceReconciliationInterval
 	workspaceGoalCheckStamp = stamp
 	workspaceReconciliationRunner.start(func() {
-		s := workspaceStore()
-		if snapshot, err := s.Read(); err == nil {
-			workspaceAttention(snapshot, now)
-		} else {
+		s, err := workspaceForReconciliation(workspaceStore(), now)
+		if err != nil {
 			diag.ReportStoreFailure("hq-workspace-attention", err)
+			return
 		}
 		if err := ingestWorkspaceObservations(s, now); err != nil {
 			diag.ReportStoreFailure("hq-reconciliation", err)

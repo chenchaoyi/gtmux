@@ -1,13 +1,41 @@
 package app
 
 import (
+	"errors"
+	"os"
+
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
+	"github.com/chenchaoyi/gtmux/internal/notify"
 )
 
 var workspaceAttentionNotice = hq.WatchWorkspaceAttention
 
 const workspaceAttentionGrace = 60
+
+func workspaceForReconciliation(store *hqworkspace.Store, now int64) (*hqworkspace.Store, error) {
+	existing := store.ExistingOnly()
+	snapshot, err := existing.Read()
+	if err == nil {
+		workspaceAttention(snapshot, now)
+		return existing, nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+	// A new workspace can bootstrap. If existing desktop attention still
+	// refers to the lost source, wait for recovery rather than recreating it.
+	for _, scope := range []string{"workspace", "relay"} {
+		active, stateErr := notify.HasActiveAttention(scope)
+		if stateErr != nil {
+			return nil, stateErr
+		}
+		if active {
+			return nil, err
+		}
+	}
+	return store, nil
+}
 
 // A check time only schedules a recheck. An explicit question or a blocked
 // attempt for the exact current intent is evidence for an independent notice.

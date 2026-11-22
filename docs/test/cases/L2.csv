@@ -87,6 +87,8 @@ MAP-c7f093bf6da7,L2,reviewed implementation,internal/app/dsh_terminal_spool_test
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
 MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
 MAP-8667d3e135cb,L2,reviewed implementation,internal/app/hold_reader_test.go,12,reviewed-selector,TestHoldReaderChild,False,RSD-004
+MAP-3763bc8a0204,L2,reviewed implementation,internal/app/hq_notification_source_guard_test.go,22,reviewed-selector,TestHND006WorkspaceSourceOutageKeepsLiveAttentionAndPreventsReset,False,HND-006
+MAP-3ebff329d8e2,L2,reviewed implementation,internal/app/hq_notification_source_guard_test.go,78,reviewed-selector,TestHND006RelayParentOutageIsDistinctFromAnExactMissingReport,False,HND-006
 MAP-2205ade7faa7,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,17,reviewed-selector,TestHRA003ProspectiveRelayAttentionUsesExactSourceAndRealClaim,False,"HRA-002,HRA-003,HRA-004"
 MAP-70f381b3e425,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,119,reviewed-selector,TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim,False,"HRA-002,HRA-003,HRA-004"
 MAP-9a2267e34534,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,174,reviewed-selector,TestHRA004ResolvedRelayWithdrawsWithoutReconciledClaim,False,"HRA-002,HRA-003,HRA-004,HND-002"
@@ -258,6 +260,7 @@ MAP-7e65dd794cb9,L2,reviewed implementation,internal/hook/codex_cross_pane_stop_
 MAP-cce8e70a6d32,L2,reviewed implementation,internal/hook/codex_manual_compact_test.go,11,reviewed-selector,TestCompletedCodexTurnPreservesManualCompactReceipt,False,CET-006
 MAP-1785f3b3f89e,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,34,reviewed-selector,TestHND001WorkspaceAttentionChangesCopyWithoutChangingIdentity,False,"HND-001,HND-002"
 MAP-40ff8e1d0e6e,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,60,reviewed-selector,TestHND002RelayAttentionReplacesStatusAndKeepsARealBlocker,False,"HND-001,HND-002"
+MAP-6d2a56c8d3b3,L2,reviewed implementation,internal/hq/attention_publication_test.go,12,reviewed-selector,TestHND005SnapshotFailureDoesNotConsumeAlertOpportunity,False,HND-005
 MAP-20be41ebaa2b,L2,Go core / CLI / server,internal/hq/board_shape_test.go,8,reviewed-selector,TestRunbookSpecifiesTheBoardShape,False,"HQIL-001,HQIL-003"
 MAP-99b86a9378f3,L2,reviewed implementation,internal/hq/dreamdiagnostics_test.go,13,reviewed-selector,TestDreamDiagnosticsClassifiedBoundedAndPrivate,False,KBDREAM-DIAGNOSTICS
 MAP-f188a5a64e53,L2,reviewed implementation,internal/hq/dreamexec_test.go,15,reviewed-selector,TestDreamCLIModelSelectionAndIsolation,False,KBDREAM-EXECUTOR
@@ -939,6 +942,7 @@ MAP-b642bcb9f926,L2,reviewed implementation,internal/transcript/startup_context_
 MAP-8bab4244dbb9,L2,reviewed implementation,internal/transcript/startup_directory_witness_test.go,5,reviewed-selector,TestHSP005DirectoryQualifiedContextRequiresVerifiedMetadata,False,HSP-005
 MAP-76e251a582e3,L2,reviewed implementation,internal/transcript/startup_witness_test.go,12,reviewed-selector,TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix,False,"HSP-001,HSP-002"
 MAP-bb3df0aabb7c,L2,reviewed implementation,internal/transcript/wake_evidence_test.go,11,reviewed-selector,TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt,False,HWA-013
+MAP-8d377a0cf158,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionPublicationTests.swift,29,reviewed-selector,testRequestPublishedDuringDrainAndLateCallbackUseCurrentSnapshot,False,HND-004
 MAP-18b153c61e83,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,12,reviewed-selector,class ChoiceFixture,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
 MAP-d6fdd79aba67,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,60,reviewed-selector,enum HQChoiceTestSupport,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"
 MAP-0143ada6d861,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceResponseTests.swift,8,reviewed-selector,testChoicePreparesFocusWithoutSendingAndPreservesEditedDraft,False,"MC-HQ-CHOICE,MC-HQ-READ"

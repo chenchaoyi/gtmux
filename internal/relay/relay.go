@@ -115,7 +115,10 @@ func read(id string) (Request, error) {
 	if !validID(id) {
 		return Request{}, ErrMissing
 	}
-	b, err := os.ReadFile(path(id))
+	return decodeRequest(os.ReadFile(path(id)))
+}
+
+func decodeRequest(b []byte, err error) (Request, error) {
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return Request{}, ErrMissing
@@ -227,6 +230,20 @@ func ClearReplyAttempt(id string) error {
 	})
 }
 func Get(id string) (Request, error) { return read(id) }
+
+// GetFromExistingStore proves the parent is available before attributing an
+// ENOENT to a single report. The root handle pins that directory during read.
+func GetFromExistingStore(id string) (Request, error) {
+	if !validID(id) {
+		return Request{}, ErrMissing
+	}
+	root, err := os.OpenRoot(dir())
+	if err != nil {
+		return Request{}, err
+	}
+	defer root.Close()
+	return decodeRequest(root.ReadFile(id + ".json"))
+}
 func List() []Request {
 	entries, _ := os.ReadDir(dir())
 	var out []Request

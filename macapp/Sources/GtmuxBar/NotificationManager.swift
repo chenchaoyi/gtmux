@@ -232,12 +232,13 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     }
 
     private func drain() {
-        let checkedAttentionScopes = refreshHQAttention()
-        guard !readingSettings, authorization.permission != .checking else { return }
         let fm = FileManager.default
-        guard let files = try? fm.contentsOfDirectory(
-            at: queueDir, includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]) else { return }
+        // The producer publishes state before each request. List first so the
+        // snapshot checked here cannot precede a request in this batch.
+        let files = try? fm.contentsOfDirectory(at: queueDir, includingPropertiesForKeys: nil,
+                                               options: [.skipsHiddenFiles])
+        let checkedAttentionScopes = refreshHQAttention()
+        guard !readingSettings, authorization.permission != .checking, let files else { return }
         for f in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where f.pathExtension == "json" {
             var consume = true
             defer { if consume { try? fm.removeItem(at: f) } }
@@ -260,8 +261,12 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
                         consume = req.ts <= 0 // hold a fresh request while its state cannot be verified
                         continue
                     }
-                    guard attentionActive(req.attentionID) == true else { continue }
-                } else if req.pane.isEmpty, obsoleteLegacyAttention(req.title, req.body) {
+                    guard attentionActive(req.attentionID) == true else {
+                        DiagLog.act("act.notify.post", target: req.attentionID, outcome: "refused",
+                                    "HQ attention was already resolved", ["reason": "resolved", "kind": req.kind])
+                        continue
+                    }
+                } else if req.pane.isEmpty, obsoleteLegacyAttention(req.title, req.body, checked: checkedAttentionScopes) {
                     continue
                 }
             }
@@ -335,7 +340,9 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
                         } else { self.waitingBanners.insert(pane) }
                     }
                     if kind == "attention", !req.attentionID.isEmpty {
-                        if self.attentionActive(req.attentionID) == false {
+                        let checked = self.refreshHQAttention()
+                        if let scope = self.attentionScope(req.attentionID), checked.contains(scope),
+                           self.attentionActive(req.attentionID) == false {
                             self.center.removeDelivered([id])
                         } else {
                             self.withdrawObsoleteHQAttention(replacing: req.attentionID)
@@ -359,7 +366,7 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         return hqAttention[scope]?.contains(identity)
     }
 
-    private func refreshHQAttention() -> Set<String> {
+    private func refreshHQAttention(removeObsolete: Bool = true) -> Set<String> {
         // A missing or unreadable snapshot is not evidence of resolution.
         let limit = 128 * 1024
         var changed = false
@@ -376,16 +383,18 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             hqAttention[scope] = keys
             changed = true
         }
-        if changed { withdrawObsoleteHQAttention() }
+        if changed && removeObsolete { withdrawObsoleteHQAttention() }
         return checked
     }
 
-    private func obsoleteLegacyAttention(_ title: String, _ body: String, replacing: String? = nil) -> Bool {
+    private func obsoleteLegacyAttention(_ title: String, _ body: String, checked: Set<String>,
+                                         replacing: String? = nil) -> Bool {
         switch title {
         case "HQ workspace deadline overdue":
-            return hqAttention["workspace"] != nil
+            return checked.contains("workspace")
         case "HQ report still needs attention":
-            guard let command = body.range(of: "gtmux relay show ", options: .backwards),
+            guard checked.contains("relay"),
+                  let command = body.range(of: "gtmux relay show ", options: .backwards),
                   let report = body[command.upperBound...].split(separator: " ").first else { return false }
             let identity = "relay/" + String(report)
             return attentionActive(identity) == false || identity == replacing
@@ -398,13 +407,15 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         center.delivered { [weak self] notifications in
             DispatchQueue.main.async {
                 guard let self else { return }
+                let checked = self.refreshHQAttention(removeObsolete: false)
                 let obsolete = notifications.filter { notification in
                     if notification.identifier.hasPrefix(self.hqAttentionPrefix) {
                         let identity = String(notification.identifier.dropFirst(self.hqAttentionPrefix.count))
+                        guard let scope = self.attentionScope(identity), checked.contains(scope) else { return false }
                         return self.attentionActive(identity) == false
                     }
                     return notification.pane.isEmpty && UUID(uuidString: notification.identifier) != nil &&
-                        self.obsoleteLegacyAttention(notification.title, notification.body, replacing: replacing)
+                        self.obsoleteLegacyAttention(notification.title, notification.body, checked: checked, replacing: replacing)
                 }
                 if !obsolete.isEmpty { self.center.removeDelivered(obsolete.map(\.identifier)) }
             }
