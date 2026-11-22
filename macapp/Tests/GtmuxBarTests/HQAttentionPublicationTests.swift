@@ -2,8 +2,11 @@ import XCTest
 import UserNotifications
 @testable import GtmuxBar
 
-private final class PublicationNotificationCenter: DesktopNotificationCenter {
+final class PublicationNotificationCenter: DesktopNotificationCenter {
     var onListDelivered: (() -> Void)?
+    var holdDeliveredRead = false
+    var heldDeliveredRead: (([DeliveredDesktopNotification]) -> Void)?
+    var presented: [DeliveredDesktopNotification] = []
     var requests: [UNNotificationRequest] = []
     var posted: ((Error?) -> Void)?
     var removed: [String] = []
@@ -18,10 +21,17 @@ private final class PublicationNotificationCenter: DesktopNotificationCenter {
         requests.append(request)
         posted = completion
     }
-    func removeDelivered(_ identifiers: [String]) { removed += identifiers }
+    func removeDelivered(_ identifiers: [String]) {
+        removed += identifiers
+        presented.removeAll { identifiers.contains($0.identifier) }
+    }
     func delivered(_ completion: @escaping ([DeliveredDesktopNotification]) -> Void) {
         onListDelivered?()
-        completion([])
+        if holdDeliveredRead {
+            heldDeliveredRead = completion
+        } else {
+            completion(presented)
+        }
     }
 }
 

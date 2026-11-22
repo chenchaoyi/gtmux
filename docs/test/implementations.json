@@ -1,4 +1,8 @@
 {
+  "macapp/Tests/GtmuxBarTests/HQAttentionSweepRecoveryTests.swift": {
+    "cases": ["HND-007"],
+    "selectors": ["testSameSnapshotAfterReadOutageRetriesIncompleteSweep"]
+  },
   "internal/hq/attention_publication_test.go": {
     "cases": [
       "HND-005"

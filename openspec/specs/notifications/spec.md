@@ -246,3 +246,9 @@ notifications and the durable HQ audit remain independent.
 - **WHEN** the workspace records or the entire relay store are temporarily unavailable
 - **THEN** the last verified active notice stays in place
 - **AND** a confirmed resolution or absence of a single report in an available store only withdraws that report
+
+#### Scenario: A cleanup scan encounters an unreadable snapshot
+
+- **WHEN** the live snapshot is temporarily unavailable while the app checks delivered notices
+- **THEN** that scope remains pending for cleanup
+- **AND** a later verified snapshot resumes cleanup even if its bytes match a previous read
