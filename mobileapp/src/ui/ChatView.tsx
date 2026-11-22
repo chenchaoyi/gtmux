@@ -458,6 +458,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
           style={[
             styles.collapseBar,
             controlsTop !== undefined && [styles.collapseBarFloating, {top: controlsTop}],
+            controlsTop !== undefined && status === 'working' && liveOpen &&
+              [styles.collapseBarOverLive, {backgroundColor: pal.bg}],
             // Under the chrome (not in full screen) it rides the chrome's slide. It used to
             // stay in the flow at the top of the chat, under the chrome (%6, 2026-10-06).
             // Keep an identity transform when leaving the native animation. Fabric
@@ -791,6 +793,8 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   earlierText: {fontSize: 12, color: pal.fg2, textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
   collapseBarFloating: {position: 'absolute', right: 14, height: 44, zIndex: 2, backgroundColor: 'transparent', paddingHorizontal: 0, paddingVertical: 0},
+  // An enlarged preview pulls replies under the fixed action.
+  collapseBarOverLive: {left: 0, right: 0, paddingHorizontal: 14},
   collapseBarText: {fontSize: 12.5, color: readingColors(pal).link, fontWeight: '600'},
   // per-turn reply toggle shown while collapsed (chevron + preview).
   replyToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 3, maxWidth: '88%'},

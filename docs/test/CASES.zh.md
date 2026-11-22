@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1425 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1426 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2666 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2667 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -469,6 +469,7 @@
 | KRDS-003 | Hidden comment markers/content never become visible. Conservative whole-body fallback retains the exact source. Ordinary supported split still retains guidance and history; existing reference-definition fallback stays unchanged |
 | LVR-001 | Upward drag expands the local preview and exposes additional earlier output without losing the latest row. A downward drag shrinks it. Orientation/keyboard bounds clamp effective height and restoring space restores the selected size. The height control is limited to the grip. |
 | LVR-002 | The selection survives redraw, folding and temporary idle within the same scope. A new scope starts folded at the default size. Resizing does not create an input action or change pane identity. |
+| LVR-003 | While the preview is visible, the fixed control occupies a 44-point strip in the conversation background and retains its touch target and scroll-through surrounding area. Folding removes the added strip. Rendered iPhone QA confirms that a reply underneath does not overprint the label. |
 | PPR-001 | No upload/send/history or clearing while read is pending; visible disabled Send and concise reading feedback. Only one picker request; all four photos remain ordered and a later explicit Send uploads each exactly once before the original caption/paths are submitted. No automatic resend. |
 | PPR-002 | Full lifecycle finally releases ref/state, pending selection blocks send and reentry; after settlement a new selection/send is possible. Caption and existing images remain; no automatic upload/send, no spurious photo editor. Existing unmount late-result guard remains. |
 | PPR-003 | Message contains only that send snapshot in order; later file remains staged for its own explicit Send. No asset deletion or silent removal of unsent IDs. Existing upload failure preservation stays unchanged. |

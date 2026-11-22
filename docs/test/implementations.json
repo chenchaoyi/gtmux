@@ -4985,5 +4985,13 @@
       "dragging the live grip reveals more terminal lines and respects the available height",
       "preview sizing survives updates, folding and idle but starts fresh on another pane"
     ]
+  },
+  "mobileapp/src/ui/ChatView.liveResizeFold.test.tsx": {
+    "cases": [
+      "LVR-003"
+    ],
+    "selectors": [
+      "the fixed fold label has a conversation background while the live preview is open"
+    ]
   }
 }
