@@ -1,0 +1,60 @@
+{
+  "id": "android-ci-shards-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-22",
+    "decision": "Proceed with the formal CI candidate after the isolated emulator trial",
+    "notes": "Reviewed the two device profiles, one producer, two disjoint subsets per device and retained check identities against workflow 45020309125. GitHub attempt and artifact selection must fail closed. Test fixtures exercise synthetic receipts; the formal PR must exercise both real emulator profiles. No release or branch rule change."
+  },
+  "cases": [
+    {
+      "id": "ACS-001",
+      "layer": "G",
+      "surfaces": [
+        "GitHub Actions Android CI",
+        "Android delivery validation"
+      ],
+      "description": "Keep the same-phone and same-tablet delivery checks while verifying one Android QA producer and four emulator shards",
+      "setup": "Inspect the repository workflow, change selection and aggregate verdict with the Android scope selected and unselected.",
+      "action": "Check all Android jobs are selected together, every emulator consumes the native QA output, and existing phone/tablet check names survive as reducers.",
+      "expected": "The branch aggregate retains ci-required; both existing device check names require verified shard receipts. An unselected Android scope may skip; any selected failed, cancelled, missing or skipped Android job makes ci-required fail.",
+      "planned_files": [
+        ".github/workflows/ci.yml",
+        "scripts/ci.py",
+        "scripts/ci_test.py"
+      ]
+    },
+    {
+      "id": "ACS-002",
+      "layer": "G",
+      "surfaces": [
+        "GitHub Actions Android CI"
+      ],
+      "description": "Require each registered Android emulator case exactly once per device and bind both shards to the one verified QA APK",
+      "setup": "Use the real Android case inventory and synthetic phone and tablet result, lane and per-run APK receipts.",
+      "action": "Verify complete results; mutate the subset, group, case state, identity and APK digest, including duplicate and missing rows.",
+      "expected": "Only both disjoint subsets of the complete registered inventory pass. A dependency or setup group cannot cross the boundary. Unexpected not-run, failure, blocked, lost automation, foreign source/profile/attempt or APK mismatch fails.",
+      "planned_files": [
+        "scripts/android_ci_results.py",
+        "scripts/android_ci_results_test.py"
+      ]
+    },
+    {
+      "id": "ACS-003",
+      "layer": "G",
+      "surfaces": [
+        "GitHub Actions failed-only reruns"
+      ],
+      "description": "Select receipts from the latest job per shard of the same run, including a retained success on a failed-only rerun",
+      "setup": "Simulate the checked GitHub failure-only history, including new job IDs and created timestamps on copied successes, while retaining original runner/start/end. Include PR head and tested merge SHA.",
+      "action": "Resolve the actual execution from the current attempt view and all recorded attempts, then try non-success, ambiguous origin, missing original receipt, duplicate attempt or foreign run or head.",
+      "expected": "Bind each latest effective success to its unique actual execution attempt. Older successes only qualify when copied from the same runner/start/end and expected run/source. Missing history, newer non-success and conflicting identities fail.",
+      "planned_files": [
+        "scripts/android_ci_results.py",
+        "scripts/android_ci_results_test.py"
+      ]
+    }
+  ],
+  "seal": "933a6d5ce82f436b2fe9438ae1d97638dab08fb9d4399ed26cf66f70065373d8"
+}
