@@ -1,0 +1,24 @@
+{
+  "id": "hq-notification-sweep-recovery-20261123",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; prospective design self-review",
+    "date": "2026-11-23",
+    "decision": "Keep scope cleanup eligible until the latest valid snapshot has actually been swept",
+    "notes": "Exact #1930 third-head independent finding. Use the fake system center to hold an asynchronous read callback, then explicitly recover scope bytes. Exercise active isolation; no actual desktop mutation."
+  },
+  "cases": [
+    {
+      "id": "HND-007",
+      "layer": "L2",
+      "description": "A completed notification is withdrawn after the same verified snapshot recovers",
+      "setup": "Two delivered scope notices; Go removes one. Delay the OS delivered-list callback and make the snapshot unreadable when that callback runs.",
+      "action": "Restore byte-identical verified bytes and let the normal poll run without any new queued notice.",
+      "expected": "Unknown state does not clear either notice. Recovery retries cleanup and removes only the resolved notice. No extra alert is posted.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/HQAttentionSweepRecoveryTests.swift"
+      ]
+    }
+  ],
+  "seal": "c0583b1ddb49eac045eb3adb66fb47c10f76f7aa50509facf81987130ac9f4d3"
+}
