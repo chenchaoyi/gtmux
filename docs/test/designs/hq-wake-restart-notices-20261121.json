@@ -2,10 +2,10 @@
   "id": "hq-wake-restart-notices-20261121",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner, regression design self-review",
-    "date": "2026-11-21",
-    "decision": "Recognize already parked uncertain input across device renumbering and coalesce wake health notices",
-    "notes": "Reviewed the installed release diagnostics and current main, including #1915's exact-turn witness. The reconstructed archived deliveries are diagnostic evidence only. Tests use temporary state, a fake clock and a fake notification driver."
+    "reviewer": "Codex implementation owner; prospective design self-review",
+    "date": "2026-11-22",
+    "decision": "Review the existing regressions against the scoped desktop notification lifecycle",
+    "notes": "Follow-up for the installed Mac duplicate HQ alerts. Preserve durable scheduling, real urgency, read-only verification and recovery handling. Use only isolated synthetic fixtures and fake desktop output."
   },
   "cases": [
     {
@@ -35,12 +35,12 @@
       "layer": "L2",
       "description": "Desktop health reports join simultaneous causes and do not repeat retained inventory",
       "setup": "Use a fake desktop notifier, seeded v189 notice timestamps and synthetic health observations with a fake clock.",
-      "action": "Scan historical archives and refusals past their reminder interval, add new occurrences and simultaneous new causes, and keep an active stalled condition across scans. Check the independent workspace deadline channel.",
-      "expected": "Retained archives and refusals remain diagnosable without repeated desktop alerts. A new occurrence and newly active cause remain visible. Simultaneous channel reasons produce one desktop notice and one journal event. Active stalls and workspace deadlines keep their own rate-limited reminders.",
+      "action": "Present retained incidents across restart, then observe new wake causes and a separate confirmed workspace blocker.",
+      "expected": "Retained incidents stay quiet. Live or new causes produce the expected grouped wake notice, and an independently confirmed workspace blocker still produces its own stable desktop notice.",
       "planned_files": [
         "internal/hq/wake_autorecovery_test.go"
       ]
     }
   ],
-  "seal": "26ebd25273a6e3db62c8d5b991e5e2ba5c414de7183aad0a04d270441e253e22"
+  "seal": "c6757b1f7c3770f9c1ee4b5eac833dc9aa6e4d19ad4dc0d8e72ed7742a88bda6"
 }
