@@ -2951,7 +2951,7 @@ An expanded Live terminal with captured output SHALL expose a top resize grip. U
 
 ### Requirement: Local Markdown links open conversation previews
 
-The mobile conversation reader SHALL recognize an angle-delimited inline Markdown link destination, including paths with spaces, Unicode and parentheses. Markdown escapes and character references in file destinations SHALL be interpreted once before resolving the file. Bare paths with literal angle characters after their first character SHALL remain supported. Supported local destinations SHALL use the existing scoped file preview. Code spans and rejected destinations SHALL remain inert. External web and mail links SHALL decode only semicolon-terminated character references to preserve ordinary query parameters.
+The mobile conversation reader SHALL recognize an angle-delimited inline Markdown link destination, including paths with spaces, Unicode and parentheses. Markdown escapes and character references in file destinations SHALL be interpreted once before resolving the file. Bare paths with literal angle characters after their first character SHALL remain supported. Supported local destinations SHALL use the existing scoped file preview. Code spans and rejected destinations SHALL remain inert. External web and mail links SHALL decode only semicolon-terminated character references and SHALL require a recognized protocol after that decoding. A malformed external protocol SHALL produce neither a web link nor a local preview.
 
 #### Scenario: Open an HTML report with spaces in its filename
 

@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1433 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1434 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2679 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2680 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -480,6 +480,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | LVR-001 | Upward drag expands the local preview and exposes additional earlier output without losing the latest row. A downward drag shrinks it. Orientation/keyboard bounds clamp effective height and restoring space restores the selected size. The height control is limited to the grip. |
 | LVR-002 | The selection survives redraw, folding and temporary idle within the same scope. A new scope starts folded at the default size. Resizing does not create an input action or change pane identity. |
 | LVR-003 | While the preview is visible, the fixed control occupies a 44-point strip in the conversation background and retains its touch target and scroll-through surrounding area. Folding removes the added strip. Rendered iPhone QA confirms that a reply underneath does not overprint the label. |
+| MCE-007 | Only well-formed external links reach the native opener. Permissive-only protocol matches do not become local previews or external links. Explicit entity references preserve query separators and local evidence still uses the paired resolver interpretation. |
 | PPR-001 | No upload/send/history or clearing while read is pending; visible disabled Send and concise reading feedback. Only one picker request; all four photos remain ordered and a later explicit Send uploads each exactly once before the original caption/paths are submitted. No automatic resend. |
 | PPR-002 | Full lifecycle finally releases ref/state, pending selection blocks send and reentry; after settlement a new selection/send is possible. Caption and existing images remain; no automatic upload/send, no spurious photo editor. Existing unmount late-result guard remains. |
 | PPR-003 | Message contains only that send snapshot in order; later file remains staged for its own explicit Send. No asset deletion or silent removal of unsent IDs. Existing upload failure preservation stays unchanged. |

@@ -5076,5 +5076,13 @@
     "selectors": [
       "MCE-006 preserves raw query parameters and the paired file destination"
     ]
+  },
+  "mobileapp/src/ui/MarkdownView.externalProtocol.test.tsx": {
+    "cases": [
+      "MCE-007"
+    ],
+    "selectors": [
+      "MCE-007 requires strict external protocols before either opener"
+    ]
   }
 }

@@ -10,6 +10,8 @@
 
 import {decodeHTML, decodeHTMLStrict} from 'entities/lib/decode.js';
 
+const EXTERNAL_LINK = /^(https?:\/\/|mailto:)/i;
+
 export type Inline =
   | {t: 'text'; s: string}
   | {t: 'b'; s: string}
@@ -90,10 +92,13 @@ export function parseInline(s: string): Inline[] {
     if (code) consider(code.idx, code.len, {t: 'code', s: code.s});
     if ((m = /\[([^\]\r\n]+)\]\((?:<((?:\\[^\r\n]|[^<>\\\r\n])+)>|((?!<)[^)\s]+))\)/.exec(rest))) {
       const destination = (m[2] ?? m[3]).replace(/\\([!-/:-@[-\x60{-~])/g, '$1');
-      // Only terminated references are unambiguous in external URL queries.
       // Local paths follow the server's existing Markdown evidence decoder.
-      const strict = decodeHTMLStrict(destination);
-      const href = /^(https?:\/\/|mailto:)/i.test(strict) ? strict : decodeHTML(destination);
+      // An external address needs an explicit protocol after strict decoding.
+      let href = decodeHTML(destination);
+      if (EXTERNAL_LINK.test(href)) {
+        href = decodeHTMLStrict(destination);
+        if (!EXTERNAL_LINK.test(href)) href = '';
+      }
       consider(m.index, m[0].length, {t: 'link', s: m[1], href});
     }
     if ((m = /\*\*([^*]+)\*\*/.exec(rest))) consider(m.index, m[0].length, {t: 'b', s: m[1]});
