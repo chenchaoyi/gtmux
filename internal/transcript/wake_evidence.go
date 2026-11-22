@@ -1,10 +1,12 @@
 package transcript
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -13,17 +15,29 @@ import (
 // rollout. A start next to a different prompt, or an old active turn reported
 // by the receiver, cannot settle this wake. No transcript content escapes.
 type WakeWitness struct {
-	Started   time.Time
-	Delivered time.Time
+	Started       time.Time
+	Delivered     time.Time
+	StartupPrefix bool
 }
 
 func CodexWakeWitness(session, turn, prompt string, since time.Time) WakeWitness {
+	return codexWakeWitness(session, turn, prompt, since, false)
+}
+
+// CodexStartupWakeWitness is for an active, exact startup acknowledgement.
+// It may read a second bounded range if the usual tail missed the turn start.
+func CodexStartupWakeWitness(session, turn, prompt string, since time.Time) WakeWitness {
+	return codexWakeWitness(session, turn, prompt, since, true)
+}
+
+func codexWakeWitness(session, turn, prompt string, since time.Time, startup bool) WakeWitness {
 	if session == "" || turn == "" || prompt == "" || since.IsZero() {
 		return WakeWitness{}
 	}
 	var result WakeWitness
-	for _, path := range historyPaths("codex", session) {
-		w := wakeWitnessInSession(path, session, turn, prompt, since)
+	paths := historyPaths("codex", session)
+	for _, path := range paths {
+		w := wakeWitnessInSession(path, session, turn, prompt, since, startup && len(paths) == 1)
 		if w.Delivered.IsZero() {
 			continue
 		}
@@ -36,10 +50,17 @@ func CodexWakeWitness(session, turn, prompt string, since time.Time) WakeWitness
 }
 
 func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {
-	return wakeWitnessInSession(path, "", turn, prompt, since)
+	return wakeWitnessInSession(path, "", turn, prompt, since, false)
 }
 
-func wakeWitnessInSession(path, session, turn, prompt string, since time.Time) WakeWitness {
+const wakeWitnessBudget int64 = 256 << 10
+
+type startupProofScope struct {
+	turn string
+	cwd  string
+}
+
+func wakeWitnessInSession(path, session, turn, prompt string, since time.Time, startup bool) WakeWitness {
 	f, err := os.Open(path)
 	if err != nil {
 		return WakeWitness{}
@@ -50,8 +71,24 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time) W
 		return WakeWitness{}
 	}
 	expectWake := strings.HasPrefix(prompt, Sigil+" ")
+	var headerEnd int64
+	scope := startupProofScope{turn: turn}
 	if expectWake {
-		meta := scanCodexSessionMeta(f)
+		var meta codexPayload
+		if startup {
+			header := bufio.NewReader(io.NewSectionReader(f, 0, min(info.Size(), codexSessionMetaBudget)))
+			row, err := header.ReadBytes('\n')
+			if err != nil {
+				return WakeWitness{}
+			}
+			meta = parseCodexSessionMeta(row)
+			headerEnd = int64(len(row))
+			if filepath.IsAbs(meta.Cwd) && !strings.ContainsAny(meta.Cwd, "\x00\r\n") {
+				scope.cwd = meta.Cwd
+			}
+		} else {
+			meta = scanCodexSessionMeta(f)
+		}
 		id := meta.ID
 		if id == "" {
 			id = meta.SessionID
@@ -59,11 +96,13 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time) W
 		if session == "" || id != session {
 			return WakeWitness{}
 		}
+		if meta.SessionID != "" && meta.SessionID != session {
+			headerEnd = 0 // Never extend an ambiguous metadata identity.
+		}
 	}
-	const budget int64 = 256 << 10
-	offset := max(0, info.Size()-budget)
+	offset := max(0, info.Size()-wakeWitnessBudget)
 	buf := make([]byte, info.Size()-offset)
-	if _, err := f.ReadAt(buf, offset); err != nil && err != io.EOF {
+	if _, err := f.ReadAt(buf, offset); err != nil && (err != io.EOF || startup) {
 		return WakeWitness{}
 	}
 	if offset > 0 {
@@ -73,17 +112,45 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time) W
 		}
 		buf = tail
 	}
+	witness, missedStart := scanWakeWitness(buf, turn, prompt, since, expectWake, nil)
+	if !witness.Delivered.IsZero() || !missedStart || headerEnd == 0 || offset < headerEnd {
+		return witness
+	}
+	// Prove the complete start-to-input sequence inside one range. The tail
+	// cannot fill a gap or supply a partial record from beyond the budget.
+	prefix := make([]byte, min(wakeWitnessBudget, info.Size()-headerEnd))
+	if _, err := f.ReadAt(prefix, headerEnd); err != nil {
+		return WakeWitness{}
+	}
+	witness, _ = scanWakeWitness(prefix, turn, prompt, since, true, &scope)
+	witness.StartupPrefix = !witness.Delivered.IsZero()
+	return witness
+}
+
+// The second result allows a prefix read only when a usable tail never saw the
+// exact turn start. A seen start with a rejected first input is conclusive.
+func scanWakeWitness(buf []byte, turn, prompt string, since time.Time, expectWake bool, scope *startupProofScope) (WakeWitness, bool) {
 	rows := bytes.Split(buf, []byte{'\n'})
 	var start time.Time
 	seenTurn := false
+	usable := len(rows) > 1
+	strict := scope != nil
 	// A partial final append is not evidence until its newline is durable.
 	for _, row := range rows[:len(rows)-1] {
 		var line codexLine
-		if json.Unmarshal(row, &line) != nil {
+		if json.Unmarshal(row, &line) != nil || line.Type == "" {
+			if strict {
+				return WakeWitness{}, false
+			}
+			usable = false
 			continue
 		}
 		at, err := time.Parse(time.RFC3339Nano, line.Timestamp)
 		if err != nil {
+			if strict {
+				return WakeWitness{}, false
+			}
+			usable = false
 			continue
 		}
 		if line.Type == "event_msg" {
@@ -91,7 +158,11 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time) W
 				Type string `json:"type"`
 				Turn string `json:"turn_id"`
 			}
-			if json.Unmarshal(line.Payload, &boundary) != nil {
+			if json.Unmarshal(line.Payload, &boundary) != nil || (strict && boundary.Type == "") {
+				if strict {
+					return WakeWitness{}, false
+				}
+				usable = false
 				continue
 			}
 			switch boundary.Type {
@@ -99,7 +170,7 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time) W
 				start = time.Time{}
 				if boundary.Turn == turn {
 					if at.Before(since) || seenTurn {
-						return WakeWitness{}
+						return WakeWitness{}, false
 					}
 					seenTurn = true
 					start = at
@@ -110,27 +181,36 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time) W
 				continue
 			}
 		}
-		if start.IsZero() || at.Before(start) {
+		if start.IsZero() {
 			continue
 		}
-		raw, isPrompt, complete := wakePrompt(line, expectWake)
+		if !strict && at.Before(start) {
+			continue
+		}
+		raw, isPrompt, complete := wakePrompt(line, expectWake, scope)
 		if !isPrompt {
 			continue
 		}
-		if raw == prompt && (!expectWake || complete) {
-			return WakeWitness{Started: start, Delivered: at}
+		if raw == prompt && (!expectWake || complete) && !at.Before(start) {
+			return WakeWitness{Started: start, Delivered: at}, false
 		}
 		// The first human-origin input establishes causation. A later copy
 		// in a turn already opened by different input cannot attest the wake.
 		start = time.Time{}
 	}
-	return WakeWitness{}
+	return WakeWitness{}, usable && !seenTurn
 }
 
-func wakePrompt(line codexLine, expectWake bool) (text string, candidate, complete bool) {
-	var payload codexPayload
-	if json.Unmarshal(line.Payload, &payload) != nil {
+func wakePrompt(line codexLine, expectWake bool, scope *startupProofScope) (text string, candidate, complete bool) {
+	if line.Type != "event_msg" && line.Type != "response_item" {
 		return "", false, false
+	}
+	var payload struct {
+		codexPayload
+		Turn string `json:"turn_id"`
+	}
+	if json.Unmarshal(line.Payload, &payload) != nil || (scope != nil && payload.Type == "") {
+		return "", scope != nil, false
 	}
 	hasMedia := false
 	switch {
@@ -144,18 +224,42 @@ func wakePrompt(line codexLine, expectWake bool) (text string, candidate, comple
 		parsed := json.Unmarshal(line.Payload, &extras) == nil
 		hasMedia = len(extras.Images)+len(extras.LocalImages) > 0
 		complete = parsed && !hasMedia && len(extras.Elements) == 0
-	case line.Type == "response_item" && payload.Type == "message" && payload.Role == "user":
+	case line.Type == "response_item" && payload.Type == "message":
+		if payload.Role != "user" {
+			switch payload.Role {
+			case "assistant", "developer", "system", "tool":
+				return "", false, false
+			default:
+				return "", scope != nil, false
+			}
+		}
 		var parts []string
+		contextOnly := scope != nil && len(payload.Content) > 0
 		for _, item := range payload.Content {
 			if item.Type == "input_text" && strings.TrimSpace(item.Text) != "" {
 				parts = append(parts, item.Text)
 			}
 			hasMedia = hasMedia || item.Type == "input_image"
+			contextOnly = contextOnly && item.Type == "input_text" && codexStartupContextBlock(item.Text, scope.cwd)
+		}
+		if contextOnly && (payload.Turn == "" || payload.Turn == scope.turn) {
+			return "", false, false
 		}
 		text = strings.Join(parts, "\n")
 		complete = len(payload.Content) == 1 && payload.Content[0].Type == "input_text"
 	default:
 		return "", false, false
+	}
+	if scope != nil {
+		if !complete || strings.TrimSpace(text) == "" || payload.Turn != "" && payload.Turn != scope.turn {
+			return text, true, false
+		}
+		// Modern records are classified block by block above. The legacy
+		// event carries one plain text field.
+		if line.Type == "event_msg" && codexStartupContextBlock(text, scope.cwd) {
+			return "", false, false
+		}
+		return text, true, true
 	}
 	// This observer already has a bound receiver receipt and expects exact raw
 	// text. The chat filter intentionally strips wake echoes. A different wake
@@ -165,4 +269,15 @@ func wakePrompt(line codexLine, expectWake bool) (text string, candidate, comple
 	}
 	_, real := codexUserPrompt(text)
 	return text, real, complete
+}
+
+// Only a known harness block can be skipped in a continuous startup proof.
+// A user-role record with another block may contain the actual first input.
+func codexStartupContextBlock(text, cwd string) bool {
+	text = strings.TrimSpace(text)
+	firstLine, _, _ := strings.Cut(text, "\n")
+	const heading = "# AGENTS.md instructions"
+	return strings.TrimSpace(firstLine) == heading ||
+		(cwd != "" && strings.TrimSuffix(firstLine, "\r") == heading+" for "+cwd) ||
+		(strings.HasPrefix(text, "<environment_context>") && strings.HasSuffix(text, "</environment_context>"))
 }

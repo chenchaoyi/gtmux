@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1426 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1430 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2667 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2671 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -305,6 +305,11 @@
 | HQR-004 | Contention exits1 without changing AGENTS/backup/other files; after release exactly one upgrade succeeds, no session effects or deadlock. No sleep/probabilistic race proof. |
 | HQR-005 | Exit1 without following links/special files or blocking FIFO, without chmod repair of the source or seeding/migration. No downgrade of future versions. Only the pre-existing shared lock outside the HQ home may be created; no credentials/real homes read. |
 | HQR-006 | Collisions get a fresh bounded numbered backup and never overwrite/delete existing material; full namespace or backup I/O failure exits1 with the original AGENTS unchanged. Successful publication is atomic via the existing private state writer; a post-rename sync failure may leave complete new content plus backup and is an error, not promised rollback. |
+| HSP-001 | Before append, tail proves the exact start and delivery. After append, the ordinary tail has no witness, and only the startup reader proves the same two timestamps from the continuous prefix. Proof reports only timing and source. |
+| HSP-002 | No invalid variant produces a witness. A visible start without valid proof cannot trigger fallback. Proof cannot cross a new turn, a corrupt row or a read gap. At most one 256 KiB continuous read after complete metadata can contribute additional proof. |
+| HSP-003 | Only the current same-Home standalone startup gets one delivery audit with its original identity and proven time. Ordinary, mixed and foreign receipts follow the existing lifecycle, expired history is preserved, and unknown input is neither promoted nor submitted again. No Paste or Enter is issued. |
+| HSP-004 | Only complete recognized context can be skipped, alongside legitimate explicitly non-user records. Mixed text, foreign bound context and an unclassifiable role hold the original proof unknown. |
+| HSP-005 | The complete two-block record with a heading matching the verified metadata directory can precede exact proof. Missing metadata directory, mismatched or lookalike directory, and mixed or unknown content leave the receipt unproved. |
 | HQP1-F1-001 | The empty read leaves cursor 10 and persists the gap notice. The next read durably queues exact event-11 with its own type/body/conversation, then cursor 11. Repeated reads leave the database byte-for-byte unchanged. Old code must fail without source mutation or sleeps. The complete durable observation includes the continuation marker for Stop or StopFailure. The instruction remains ordinary. |
 | HQP1-F1-002 | Activation does not ingest history and writes an explicit events cursor even at zero. The new event at boundary+1 is queued with its actual identity, persists across reopen, and is never treated as historical on a second activation. |
 | HQP1-F1-003 | The empty gap keeps cursor 10 and one stable gap record; retry changes no bytes. Actual retained event 16 is queued atomically with cursor 16, and neither gaps nor duplicate reads erase it. Source epoch-reset repair remains out of scope. |

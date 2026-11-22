@@ -972,6 +972,39 @@
       "TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt"
     ]
   },
+  "internal/transcript/startup_witness_test.go": {
+    "cases": [
+      "HSP-001",
+      "HSP-002"
+    ],
+    "selectors": [
+      "TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix"
+    ]
+  },
+  "internal/transcript/startup_context_witness_test.go": {
+    "cases": [
+      "HSP-004"
+    ],
+    "selectors": [
+      "TestHSP004StartupContextRecordsKeepFirstInputUnambiguous"
+    ]
+  },
+  "internal/transcript/startup_directory_witness_test.go": {
+    "cases": [
+      "HSP-005"
+    ],
+    "selectors": [
+      "TestHSP005DirectoryQualifiedContextRequiresVerifiedMetadata"
+    ]
+  },
+  "internal/hqnudge/startup_witness_test.go": {
+    "cases": [
+      "HSP-003"
+    ],
+    "selectors": [
+      "TestHSP003StartupReceiptObservationDoesNotReplayInput"
+    ]
+  },
   "internal/hqnudge/rotation_priority_test.go": {
     "cases": [
       "HWA-012"

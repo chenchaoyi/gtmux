@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1426 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1430 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2667 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2671 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -305,6 +305,11 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQR-004 | Contention exits1 without changing AGENTS/backup/other files; after release exactly one upgrade succeeds, no session effects or deadlock. No sleep/probabilistic race proof. |
 | HQR-005 | Exit1 without following links/special files or blocking FIFO, without chmod repair of the source or seeding/migration. No downgrade of future versions. Only the pre-existing shared lock outside the HQ home may be created; no credentials/real homes read. |
 | HQR-006 | Collisions get a fresh bounded numbered backup and never overwrite/delete existing material; full namespace or backup I/O failure exits1 with the original AGENTS unchanged. Successful publication is atomic via the existing private state writer; a post-rename sync failure may leave complete new content plus backup and is an error, not promised rollback. |
+| HSP-001 | Before append, tail proves the exact start and delivery. After append, the ordinary tail has no witness, and only the startup reader proves the same two timestamps from the continuous prefix. Proof reports only timing and source. |
+| HSP-002 | No invalid variant produces a witness. A visible start without valid proof cannot trigger fallback. Proof cannot cross a new turn, a corrupt row or a read gap. At most one 256 KiB continuous read after complete metadata can contribute additional proof. |
+| HSP-003 | Only the current same-Home standalone startup gets one delivery audit with its original identity and proven time. Ordinary, mixed and foreign receipts follow the existing lifecycle, expired history is preserved, and unknown input is neither promoted nor submitted again. No Paste or Enter is issued. |
+| HSP-004 | Only complete recognized context can be skipped, alongside legitimate explicitly non-user records. Mixed text, foreign bound context and an unclassifiable role hold the original proof unknown. |
+| HSP-005 | The complete two-block record with a heading matching the verified metadata directory can precede exact proof. Missing metadata directory, mismatched or lookalike directory, and mixed or unknown content leave the receipt unproved. |
 | HQP1-F1-001 | The empty read leaves cursor 10 and persists the gap notice. The next read durably queues exact event-11 with its own type/body/conversation, then cursor 11. Repeated reads leave the database byte-for-byte unchanged. Old code must fail without source mutation or sleeps. The complete durable observation includes the continuation marker for Stop or StopFailure. The instruction remains ordinary. |
 | HQP1-F1-002 | Activation does not ingest history and writes an explicit events cursor even at zero. The new event at boundary+1 is queued with its actual identity, persists across reopen, and is never treated as historical on a second activation. |
 | HQP1-F1-003 | The empty gap keeps cursor 10 and one stable gap record; retry changes no bytes. Actual retained event 16 is queued atomically with cursor 16, and neither gaps nor duplicate reads erase it. Source epoch-reset repair remains out of scope. |

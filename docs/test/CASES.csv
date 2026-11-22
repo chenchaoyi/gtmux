@@ -2089,6 +2089,7 @@ MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_t
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,103,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"
 MAP-62d7c36b98c4,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,121,reviewed-selector,TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity,False,"HRW-004,HRW-005,HRW-008"
 MAP-f6f7a40c985c,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,152,reviewed-selector,TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource,False,"HRW-004,HRW-005,HRW-008"
+MAP-047069ddfab6,L2,reviewed implementation,internal/hqnudge/startup_witness_test.go,17,reviewed-selector,TestHSP003StartupReceiptObservationDoesNotReplayInput,False,HSP-003
 MAP-dac5bb4a6387,L2,reviewed implementation,internal/hqnudge/waiting_relay_retry_test.go,14,reviewed-selector,TestHWW004ProtectedRelayUsesFirstWindowWithDueWaitingRetry,False,HWW-004
 MAP-3cdb1de3f223,L2,reviewed implementation,internal/hqnudge/waiting_test.go,91,reviewed-selector,TestHWW001FreshWaitingRevalidationWithProtectedRelay,False,"HWW-001,HWW-002"
 MAP-fd0f7cbc9edc,L2,reviewed implementation,internal/hqnudge/waiting_test.go,172,reviewed-selector,TestHWW002PreviouslyAttemptedWaitingKeepsRecoveryRules,False,"HWW-001,HWW-002"
@@ -3632,6 +3633,9 @@ LEG-4067639a8141,L1,Go core / CLI / server,internal/transcript/recordid_test.go,
 LEG-57f4663d09ab,L1,Go core / CLI / server,internal/transcript/revision_test.go,13,Test,TestTheCacheAndTheRevisionSeeEveryKindOfChange,False,legacy-not-retrospectively-reviewed
 LEG-a28b4888288e,L1,Go core / CLI / server,internal/transcript/sessionbinding_test.go,12,Test,TestCodexBindingReadsOnlySubmittedUserMessages,False,legacy-not-retrospectively-reviewed
 LEG-e4a2949ee7df,L1,Go core / CLI / server,internal/transcript/sessionbinding_test.go,41,Test,TestCodexBindingReadsBoundedRolloutTail,False,legacy-not-retrospectively-reviewed
+MAP-b642bcb9f926,L2,reviewed implementation,internal/transcript/startup_context_witness_test.go,12,reviewed-selector,TestHSP004StartupContextRecordsKeepFirstInputUnambiguous,False,HSP-004
+MAP-8bab4244dbb9,L2,reviewed implementation,internal/transcript/startup_directory_witness_test.go,5,reviewed-selector,TestHSP005DirectoryQualifiedContextRequiresVerifiedMetadata,False,HSP-005
+MAP-76e251a582e3,L2,reviewed implementation,internal/transcript/startup_witness_test.go,12,reviewed-selector,TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix,False,"HSP-001,HSP-002"
 LEG-e83034b94b32,L1,Go core / CLI / server,internal/transcript/titles_test.go,10,Test,TestSessionTitles,False,legacy-not-retrospectively-reviewed
 LEG-31e07de7e8be,L1,Go core / CLI / server,internal/transcript/titles_test.go,44,Test,TestSessionTitlesBoundedTail,False,legacy-not-retrospectively-reviewed
 MAP-d8d563bbd03e,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,11,reviewed-selector,TestNativeCallDetailsAreLazyScopedAndRedacted,False,"TCV-001,TCV-002"
