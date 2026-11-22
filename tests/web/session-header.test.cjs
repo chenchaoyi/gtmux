@@ -96,10 +96,10 @@ scenario('WHS-003 narrow board maximize restore and focused modes',{viewport:{wi
   const draft=panel.locator('.cx-input');await draft.fill('Board draft');
   await head.locator('[data-tool="trace"]').click();await page.locator('.session-tool').waitFor();
   await page.locator('.session-tool > .dialog-head .dialog-close').click();assert.equal(await draft.inputValue(),'Board draft');
-  await page.locator('#rail-tab').focus();
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('Tab');
   const open = head.getByRole('button',{name:'Open conversation'});
+  await page.locator('.session-tool').waitFor({state:'detached'});
+  await page.locator('#rail-tab').focus();
+  await tabTo(page, open);
   const focus = await open.evaluate(button => {
     const {outlineStyle, outlineWidth, outlineColor} = getComputedStyle(button);
     return {active: document.activeElement === button && button.matches(':focus-visible'), outlineStyle, outlineWidth, outlineColor};
@@ -182,3 +182,11 @@ scenario('WHS-004 neutral native terminal reduced motion and retired delayed sta
     assert.equal(await page.locator('#bar').getAttribute('data-session-state'),null);assert.equal(await page.locator('#session-state').isVisible(),false);
   } finally { held.resolve(); }
 });
+
+async function tabTo(page, target) {
+  for (let step = 0; step < 8; step++) {
+    await page.keyboard.press('Tab');
+    if (await target.evaluate(button => document.activeElement === button)) return;
+  }
+  assert.fail('Tab did not reach Open conversation from the workbench sidebar');
+}
