@@ -3898,6 +3898,8 @@ LEG-7361a20c4a3e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQActivityT
 LEG-9af236398bdc,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQArchiveHintTests.swift,5,XCTest,testBackupObservationSurvivesLegacyWireTextAndLanguageChanges,False,legacy-not-retrospectively-reviewed
 LEG-cbbaff620b45,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQArchiveHintTests.swift,22,XCTest,testLegacyArchivesAreNotPresentedAsVerifiedAutomaticPoints,False,legacy-not-retrospectively-reviewed
 LEG-2a9b0534c565,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQArchiveHintTests.swift,30,XCTest,testOlderCoreKeepsUnknownValidity,False,legacy-not-retrospectively-reviewed
+MAP-ddc82854da4a,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift,9,reviewed-selector,testUnknownLateSuccessRetriesCleanupAfterSameSnapshotRecovers,False,"HND-008,HND-009"
+MAP-53ff7f04ac68,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift,45,reviewed-selector,testBoundedSweepRemovesLateDeliveryWithoutOldProcessCallback,False,"HND-008,HND-009"
 MAP-8d377a0cf158,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionPublicationTests.swift,39,reviewed-selector,testRequestPublishedDuringDrainAndLateCallbackUseCurrentSnapshot,False,HND-004
 MAP-f5cf1e63f1e8,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionSweepRecoveryTests.swift,5,reviewed-selector,testSameSnapshotAfterReadOutageRetriesIncompleteSweep,False,HND-007
 LEG-206bfa2b8f12,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/HQCardReportTests.swift,20,XCTest,testAPlanWindowsTierComesFromTheCore,False,legacy-not-retrospectively-reviewed

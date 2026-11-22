@@ -252,3 +252,9 @@ notifications and the durable HQ audit remain independent.
 - **WHEN** the live snapshot is temporarily unavailable while the app checks delivered notices
 - **THEN** that scope remains pending for cleanup
 - **AND** a later verified snapshot resumes cleanup even if its bytes match a previous read
+
+#### Scenario: The OS finishes a delivery after the app's last cleanup
+
+- **WHEN** a managed notification is added after its matter was resolved
+- **THEN** a late callback retains cleanup work when the source is unavailable
+- **AND** a bounded periodic sweep can withdraw a stale notice after an app restart, even when the old callback was lost

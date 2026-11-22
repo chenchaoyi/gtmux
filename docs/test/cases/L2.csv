@@ -942,6 +942,8 @@ MAP-b642bcb9f926,L2,reviewed implementation,internal/transcript/startup_context_
 MAP-8bab4244dbb9,L2,reviewed implementation,internal/transcript/startup_directory_witness_test.go,5,reviewed-selector,TestHSP005DirectoryQualifiedContextRequiresVerifiedMetadata,False,HSP-005
 MAP-76e251a582e3,L2,reviewed implementation,internal/transcript/startup_witness_test.go,12,reviewed-selector,TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix,False,"HSP-001,HSP-002"
 MAP-bb3df0aabb7c,L2,reviewed implementation,internal/transcript/wake_evidence_test.go,11,reviewed-selector,TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt,False,HWA-013
+MAP-ddc82854da4a,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift,9,reviewed-selector,testUnknownLateSuccessRetriesCleanupAfterSameSnapshotRecovers,False,"HND-008,HND-009"
+MAP-53ff7f04ac68,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift,45,reviewed-selector,testBoundedSweepRemovesLateDeliveryWithoutOldProcessCallback,False,"HND-008,HND-009"
 MAP-8d377a0cf158,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionPublicationTests.swift,39,reviewed-selector,testRequestPublishedDuringDrainAndLateCallbackUseCurrentSnapshot,False,HND-004
 MAP-f5cf1e63f1e8,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionSweepRecoveryTests.swift,5,reviewed-selector,testSameSnapshotAfterReadOutageRetriesIncompleteSweep,False,HND-007
 MAP-18b153c61e83,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQChoiceFixture.swift,12,reviewed-selector,class ChoiceFixture,False,"MC-HQ-CHOICE,MC-HQ-WINDOW,MC-HQ-READ"

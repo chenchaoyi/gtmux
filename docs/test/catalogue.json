@@ -69584,6 +69584,31 @@
         }
       ],
       "sha256": "924f9f94ed5840581643c85477185851d6c06096b02ba7870687678b28a2ff83"
+    },
+    "macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ddc82854da4a",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "testUnknownLateSuccessRetriesCleanupAfterSameSnapshotRecovers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-008,HND-009"
+        },
+        {
+          "id": "MAP-53ff7f04ac68",
+          "line": 45,
+          "kind": "reviewed-selector",
+          "name": "testBoundedSweepRemovesLateDeliveryWithoutOldProcessCallback",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-008,HND-009"
+        }
+      ],
+      "sha256": "494c35932f4ec31ff80ecbf0954a817abda5372a95c2c3b967f7477345c4dfb6"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

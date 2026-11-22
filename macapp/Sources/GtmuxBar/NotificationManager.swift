@@ -32,6 +32,7 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     private var hqAttention: [String: Set<String>] = [:]
     private var pendingAttentionSweep: Set<String> = []
     private var attentionSweepInFlight = false
+    private var nextAttentionSweep = Date.distantPast
     private var replacedLegacyReports: Set<String> = []
     private let hqAttentionPrefix = "gtmux-hq-attention-"
 
@@ -347,9 +348,11 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
                         let checked = self.refreshHQAttention()
                         if checked.contains(scope), self.attentionActive(req.attentionID) == false {
                             self.center.removeDelivered([id])
-                        } else if scope == "relay" {
-                            self.replacedLegacyReports.insert(req.attentionID)
+                        } else {
+                            // A success under unknown state can introduce a
+                            // notification after the last completed sweep.
                             self.pendingAttentionSweep.insert(scope)
+                            if scope == "relay" { self.replacedLegacyReports.insert(req.attentionID) }
                         }
                         self.sweepHQAttentionIfNeeded(checked: checked)
                     }
@@ -407,8 +410,13 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     }
 
     private func sweepHQAttentionIfNeeded(checked: Set<String>) {
+        // The OS may finish an old process's add after this process's first
+        // sweep. Recheck at a bounded cadence even with unchanged state.
+        let current = now()
+        if current >= nextAttentionSweep { pendingAttentionSweep.formUnion(checked) }
         guard !attentionSweepInFlight, !pendingAttentionSweep.isDisjoint(with: checked) else { return }
         attentionSweepInFlight = true
+        nextAttentionSweep = current.addingTimeInterval(60)
         center.delivered { [weak self] notifications in
             DispatchQueue.main.async {
                 guard let self else { return }
