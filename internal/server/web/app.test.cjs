@@ -860,20 +860,34 @@ test('returning to the same pane and mode still discards its previous request', 
 });
 
 test('slow reads coalesce and a later completed read replaces them', async () => {
-  const h = harness({}); const first = deferred(), second = deferred(); let n = 0;
-  h.context.fetch = () => (++n === 1 ? first : second).promise;
-  h.api.setPin('%1', {agent: 'Claude Code'}, 'term', []); h.api.show('pane');
-  h.api.pollPane(); h.api.pollPane(); assert.equal(n, 1);
+  const h = harness({}); const first = deferred(), second = deferred(), roster = deferred(); let n = 0, rosterReads = 0, draws = 0;
+  h.api.onDraw(() => draws++);
+  // WHS-005: the roster and capture are separate, coalesced production lanes.
+  h.context.fetch = url => url.includes('/api/agents') ? (rosterReads++, roster.promise) : (++n === 1 ? first : second).promise;
+  h.api.setPin('%1', {pane_id: '%1', agent: 'Claude Code'}, 'term', []); h.api.show('pane');
+  h.api.pollPane(); h.api.pollPane(); assert.equal(n, 1); assert.equal(rosterReads, 1);
+  roster.resolve({ok: true, json: async () => [{pane_id: '%1', agent: 'Claude Code', status: 'waiting'}]}); await flush();
+  assert.equal(h.node('bar').dataset.sessionState, 'waiting');
+  assert.equal(draws, 0, 'roster completion cannot draw hidden Chat');
+  assert.deepEqual(Array.from(h.api.written()), [], 'roster completion cannot write terminal text');
   first.resolve({ok: true, json: async () => ({text: 'first'})}); await flush();
   assert.deepEqual(Array.from(h.api.written()), ['first']);
   h.api.pollPane(); second.resolve({ok: true, json: async () => ({text: 'second'})}); await flush();
   assert.deepEqual(Array.from(h.api.written()), ['first', 'second']);
   const old = deferred(), newer = deferred(); n = 0;
-  h.context.fetch = () => (++n === 1 ? old : newer).promise;
+  h.context.fetch = url => url.includes('/api/agents') ? roster.promise : (++n === 1 ? old : newer).promise;
   h.api.pollPane(); h.api.show('chat'); h.api.show('pane'); h.api.pollPane();
   newer.resolve({ok: true, json: async () => ({text: 'newest'})}); await flush();
   old.resolve({ok: true, json: async () => ({text: 'outdated'})}); await flush();
   assert.deepEqual(Array.from(h.api.written()), ['first', 'second', 'newest']);
+
+  const lateRoster = deferred();
+  h.context.fetch = url => url.includes('/api/agents') ? lateRoster.promise : newer.promise;
+  h.api.pollPane(); h.api.show('radar');
+  lateRoster.resolve({ok: true, json: async () => [{pane_id: '%1', agent: 'Claude Code', status: 'idle', error: true}]});
+  await flush();
+  assert.equal(h.node('bar').dataset.sessionState, undefined);
+  assert.equal(h.node('session-state').hidden, true);
 });
 
 test('a delayed transcript body cannot replace the new pane conversation', async () => {

@@ -56,7 +56,7 @@ for extraction and privacy limits. The observation can be old; it is not current
 - Each tile = a live xterm mirror of one pane (reusing the existing xterm write + scroll lock in `app.js`).
 - Tile: drag the title to move, drag the bottom-right corner to resize, stack or tile freely; optional snap to grid alignment.
 - Tile header: avatar + corner status badge · name · `Chat / Terminal` presentation switch · direct Trace / Diff actions separated from the mode switch by spacing · ⤢ full screen · × close.
-- A waiting tile gets a red border + a light pulse.
+- Each conversation header shows the roster state across the full strip with a soft opaque tint, a thin colored top edge, and a visible label and symbol. Working is cyan, waiting red, and idle green. Running uses a gray dot with the idle label. An explicit error takes precedence in amber on agent and readable conversation headers. Plain terminals and unavailable states stay neutral. Light and dark themes use distinct backgrounds and inks with at least 4.5:1 text contrast. Keyboard focus has its own outline. A waiting tile keeps a red border without a continuous pulse.
 - Multiple panes = multiple concurrent `/api/pane?id` mounts; `diff` uses `/api/diff?id`; `chat` uses `/api/transcript?id`.
 - Tiles use absolute positions: resizing one does not reflow the others. Clicking anywhere in its header except a button, without dragging, maximizes it within the board; `f` and `1–9` also maximize tiles. The workbench-only command palette adds or finds a tile, flashes it, and maximizes it in the board. Use Restore or Esc to return. This board maximization is distinct from the ⤢ focus view.
 
@@ -70,6 +70,8 @@ A tile’s ⤢ button or a narrow-screen radar row opens the single-pane focus v
 This also applies to plain shell panes, whose Chat/Terminal tabs are hidden.
 
 **Codex's pinned prompt.** Codex pins the prompt of the turn on screen to row 0, cut at the pane's width with "…". In the single-pane terminal view the full prompt from the conversation log takes a bar above the terminal (two lines at rest, a click opens it, Copy) and the cut row leaves the terminal. The rules are the phone's (MOBILE.md), run by a JavaScript copy in `app.js` against the same case file (`mobileapp/src/ui/codexPinnedCases.json`) and the same tmux-measured cell widths, to check agreement on those cases and width tables. While the row is on screen but unexplained, the view fetches the log at most every 4 s. Not in workbench tiles: there is no room for a second bar in a tile, and its row stays as captured.
+
+Focused Chat and Terminal share the same header presentation. Terminal reuses the bounded roster read and leaves hidden Chat alone. Returning to the workspace or losing the credential clears the header. A late reply from the previous view cannot recolor it. Status updates preserve panel layout, drafts, reading position, capabilities and tools.
 
 ## 5. Chat mode · wide-screen edition (mockup §03)
 
