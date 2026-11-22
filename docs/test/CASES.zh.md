@@ -262,6 +262,8 @@
 | HND-001 | No desktop alert for the check time alone, one actionable notice per affected matter, stable identity across status changes, and no desktop notice after verified resolution. Existing goal data and scheduling remain intact. |
 | HND-002 | Stable report IDs update the copy when evidence changes. Confirmed claim, close or missing original remove only the corresponding alert. Unreadable state stays visible until verified; ongoing distinct blockers remain independent and periodically eligible. |
 | HND-003 | Repeated messages share one system ID, distinct objects stay independent, verified stale and matched legacy notifications withdraw, unknown snapshots do not clear notifications, and late completion cannot resurrect a removed banner. |
+| HND-008 | The unknown callback cannot revoke B or lose the cleanup obligation. A is withdrawn once after recovery and no new add occurs. |
+| HND-009 | No rapid additional cleanup loop. The bounded next sweep removes stale A, keeps B and does not post again. |
 | HND-004 | The new request is submitted exactly once; source-approved removal before callback withdraws it without requiring another external poll. |
 | HND-005 | No orphan request is issued while state cannot publish. Repair makes the still-active alert immediately eligible once; no duplicate follows. |
 | HND-006 | The active workspace cannot be implicitly initialized from an outage and the relay notices remain live while their parent is unavailable. A genuinely new workspace can initialize. Exact confirmed resolution only retracts its own notice. No delivery intent is executed. |
