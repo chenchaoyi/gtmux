@@ -216,6 +216,14 @@ the exact prompt tied to the expected new turn in the original transcript confir
 start and delivery. For a `»` batch, the receipt's Codex home and rollout session
 metadata SHALL match, the expected turn SHALL start at or after the submission
 boundary, and the first input SHALL contain the exact batch with no added content.
+While a standalone startup acknowledgement is active, a usable tail that lacks
+the expected turn start MAY allow one extra read of at most 256 KiB from just
+after verified metadata in the same, unambiguous rollout. The start and exact
+first complete input SHALL both be proven by that continuous read and remain in
+the original observation time bounds. A visible start without valid input proof,
+an intervening turn boundary, an invalid input, or a read gap SHALL NOT provide
+additional authority to settle the receipt. This observation only records delivery
+evidence, with a structured proof source, and SHALL NOT submit input.
 The ordinary user-prompt filter SHALL continue to exclude wake echoes.
 Accepted receipts that stay active past their own proof deadline raise an independent
 notice. Each new missed proof deadline remains eligible for the rate-limited notice

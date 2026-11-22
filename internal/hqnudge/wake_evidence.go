@@ -23,6 +23,15 @@ type acceptedWake struct {
 	Receipt dispatch.WakeReceipt `json:"receipt"`
 }
 
+func (a acceptedWake) standaloneStartup() bool {
+	// The original accepted batch carries the producer's leading class and
+	// batch suffix. A reference to startup inside another wake is insufficient.
+	body, bound := strings.CutSuffix(a.Payload, " · "+a.Batch)
+	text, startup := strings.CutPrefix(body, transcript.Sigil+" gtmux·startup │ ")
+	return bound && a.Batch != "" && startup && text != "" &&
+		!strings.Contains(text, " · ") && !strings.ContainsAny(text, "\r\n")
+}
+
 const (
 	acceptedProofGrace    = 2 * time.Minute
 	acceptedProofLifetime = 30 * time.Minute
@@ -133,7 +142,11 @@ func ObserveWakeEvidence(now time.Time) {
 		}
 		since := time.Unix(0, accepted.Since)
 		if accepted.Receipt.Home == home {
-			witness := wakeWitness(accepted.Receipt.Session, accepted.Receipt.Turn, accepted.Payload, since)
+			reader := wakeWitness
+			if now.Sub(since) < acceptedProofLifetime && accepted.standaloneStartup() {
+				reader = transcript.CodexStartupWakeWitness
+			}
+			witness := reader(accepted.Receipt.Session, accepted.Receipt.Turn, accepted.Payload, since)
 			if !witness.Started.Before(since) && !witness.Delivered.Before(witness.Started) && !witness.Delivered.After(now) {
 				if confirmAcceptedWake(p, accepted, witness, now) {
 					continue
@@ -188,8 +201,12 @@ func confirmAcceptedWake(path string, a acceptedWake, witness transcript.WakeWit
 		return false
 	}
 	if appended {
+		source := "rollout-tail"
+		if witness.StartupPrefix {
+			source = "startup-prefix"
+		}
 		diag.For("hq").Act("act.wake.started", "system", a.Pane, diag.OK, "HQ wake turn and prompt independently observed",
-			"batch", a.Batch, "receiver_request", a.Receipt.Request, "turn", a.Receipt.Turn, "started_at", witness.Started.UnixNano(), "receipt", recordID)
+			"batch", a.Batch, "receiver_request", a.Receipt.Request, "turn", a.Receipt.Turn, "started_at", witness.Started.UnixNano(), "receipt", recordID, "proof_source", source)
 	}
 	noteConfirmedDelivery(now.Unix())
 	if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {

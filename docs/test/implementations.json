@@ -972,6 +972,23 @@
       "TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt"
     ]
   },
+  "internal/transcript/startup_witness_test.go": {
+    "cases": [
+      "HSP-001",
+      "HSP-002"
+    ],
+    "selectors": [
+      "TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix"
+    ]
+  },
+  "internal/hqnudge/startup_witness_test.go": {
+    "cases": [
+      "HSP-003"
+    ],
+    "selectors": [
+      "TestHSP003StartupReceiptObservationDoesNotReplayInput"
+    ]
+  },
   "internal/hqnudge/rotation_priority_test.go": {
     "cases": [
       "HWA-012"

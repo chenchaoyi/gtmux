@@ -308,14 +308,20 @@ func readCodexSessionMeta(path string) codexPayload {
 	return scanCodexSessionMeta(f)
 }
 
+const codexSessionMetaBudget = 1 << 20 // session_meta can contain large base_instructions
+
 func scanCodexSessionMeta(r io.Reader) codexPayload {
 	sc := bufio.NewScanner(r)
-	sc.Buffer(make([]byte, 0, 64*1024), 1<<20) // session_meta can be large (base_instructions)
+	sc.Buffer(make([]byte, 0, 64*1024), codexSessionMetaBudget)
 	if !sc.Scan() {
 		return codexPayload{}
 	}
+	return parseCodexSessionMeta(sc.Bytes())
+}
+
+func parseCodexSessionMeta(row []byte) codexPayload {
 	var e codexLine
-	if json.Unmarshal(sc.Bytes(), &e) != nil || e.Type != "session_meta" {
+	if json.Unmarshal(row, &e) != nil || e.Type != "session_meta" {
 		return codexPayload{}
 	}
 	var p codexPayload
