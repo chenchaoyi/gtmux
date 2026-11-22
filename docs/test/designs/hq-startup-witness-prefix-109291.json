@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, self-review",
     "date": "2026-11-22",
     "decision": "Allow a bounded continuous startup proof only when the regular tail missed the exact turn start.",
-    "notes": "The independent synthetic rollout shows a 24 KiB append can displace the start while the exact input stays in the tail. The live incident lacks per-scan evidence. Use only synthetic Codex Home and an isolated fake native driver. This is the pre-implementation design review; independent candidate review and hosted CI are separate. After the initial independent rejection, review additionally recorded HSP-004 before creating its own source. The initial case expectations and original implementation chronology remain auditable."
+    "notes": "The independent synthetic rollout shows a 24 KiB append can displace the start while the exact input stays in the tail. The live incident lacks per-scan evidence. Use only synthetic Codex Home and an isolated fake native driver. This is the pre-implementation design review; independent candidate review and hosted CI are separate. After the initial independent rejection, review additionally recorded HSP-004 before creating its own source. The initial case expectations and original implementation chronology remain auditable. A second independent review found the live-shaped directory-qualified AGENTS heading. HSP-005 was reviewed before implementation and must bind directory qualification to the already verified rollout metadata."
   },
   "cases": [
     {
@@ -51,7 +51,18 @@
       "planned_files": [
         "internal/transcript/startup_context_witness_test.go"
       ]
+    },
+    {
+      "id": "HSP-005",
+      "layer": "L2",
+      "description": "A directory-qualified startup context is recognized only for the rollout's exact metadata directory",
+      "setup": "Use a displaced startup turn in one synthetic Codex rollout. Put a directory-qualified AGENTS text block and full environment_context in the same user-role record. Vary the heading, metadata directory, and genuine user text.",
+      "action": "Observe the startup receipt using the bounded prefix reader.",
+      "expected": "The complete two-block record with a heading matching the verified metadata directory can precede exact proof. Missing metadata directory, mismatched or lookalike directory, and mixed or unknown content leave the receipt unproved.",
+      "planned_files": [
+        "internal/transcript/startup_directory_witness_test.go"
+      ]
     }
   ],
-  "seal": "40c1ef2fce9813e8665831d7478860bd2fc7e6b29bfbb81de0738bf2ac226771"
+  "seal": "9a14b6d9e4980d88c832e08170e25ef9513a898ea7f6225f9ab9adf254242491"
 }
