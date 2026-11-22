@@ -5035,5 +5035,63 @@
     "selectors": [
       "the fixed fold label has a conversation background while the live preview is open"
     ]
+  },
+  "mobileapp/src/ui/ChatView.liveDisclosure.test.tsx": {
+    "cases": [
+      "MCE-002"
+    ],
+    "selectors": [
+      "MCE-002 %s Live has one outlined disclosure and an emphasized action"
+    ]
+  },
+  "mobileapp/src/ui/MarkdownView.test.tsx": {
+    "cases": [
+      "MCE-001"
+    ],
+    "selectors": [
+      "MCE-001 angle-delimited document links open the exact filename"
+    ]
+  },
+  "mobileapp/src/ui/NewSessionSheet.test.tsx": {
+    "cases": [
+      "MCE-003"
+    ],
+    "selectors": [
+      "identifies the target and creates an automatically named session (MCE-003)",
+      "MCE-003 blocks a name with nonprinting characters and accepts the corrected name"
+    ]
+  },
+  "mobileapp/src/ui/MarkdownView.compat.test.tsx": {
+    "cases": [
+      "MCE-004"
+    ],
+    "selectors": [
+      "MCE-004 preserves bare angles and decodes Markdown destination syntax once"
+    ]
+  },
+  "mobileapp/src/ui/NewSessionSheet.compat.test.tsx": {
+    "cases": [
+      "MCE-005"
+    ],
+    "selectors": [
+      "MCE-005 shows the trimmed name and sends the same value",
+      "MCE-005 blocks tmux formatting in %s"
+    ]
+  },
+  "mobileapp/src/ui/MarkdownView.externalLinks.test.tsx": {
+    "cases": [
+      "MCE-006"
+    ],
+    "selectors": [
+      "MCE-006 preserves raw query parameters and the paired file destination"
+    ]
+  },
+  "mobileapp/src/ui/MarkdownView.externalProtocol.test.tsx": {
+    "cases": [
+      "MCE-007"
+    ],
+    "selectors": [
+      "MCE-007 requires strict external protocols before either opener"
+    ]
   }
 }

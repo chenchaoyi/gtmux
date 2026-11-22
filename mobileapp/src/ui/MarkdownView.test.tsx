@@ -189,6 +189,21 @@ test('local document links retain their destination and use the file callback', 
   act(() => tree.unmount());
 });
 
+test('MCE-001 angle-delimited document links open the exact filename', () => {
+  const open = jest.fn();
+  const path = '/private/tmp/发布 报告 (iOS).html';
+  const encoded = '/private/tmp/QA%20notes.md';
+  const source = `[报告](<${path}>) · [Notes](${encoded}) · [Plain](/tmp/plain.md)\n\n` +
+    '`[literal](</private/tmp/Other File.md>)` · [Bad](<javascript:alert(1)>) · [Broken](</tmp/missing-close.md)';
+  let tree!: renderer.ReactTestRenderer;
+  act(() => { tree = renderer.create(<MarkdownView source={source} colors={colors} openFile={open} />); });
+  const links = tree.root.findAllByType(Text).filter(node => node.props.accessibilityRole === 'link');
+  expect(links.map(node => node.props.accessibilityHint)).toEqual([path, encoded, '/tmp/plain.md']);
+  links.forEach(node => act(() => node.props.onPress()));
+  expect(open.mock.calls).toEqual([[path], [encoded], ['/tmp/plain.md']]);
+  act(() => tree.unmount());
+});
+
 test.each(['**[Open](https://downloads.example.test/install)**','*[Open](https://downloads.example.test/install)*','~~[Open](https://downloads.example.test/install)~~'])('emphasis preserves an actionable nested link: %s', source => {
   const {Linking}=require('react-native');const open=jest.spyOn(Linking,'openURL').mockResolvedValue(undefined);
   let tree!:renderer.ReactTestRenderer;

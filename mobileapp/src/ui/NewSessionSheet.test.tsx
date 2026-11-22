@@ -21,13 +21,31 @@ function mount(lang: 'en' | 'zh' = 'en') {
 }
 afterEach(() => { for (const t of mounted.splice(0)) act(() => t.unmount()); });
 
-test('identifies the target and creates an automatically named session', async () => {
+test('identifies the target and creates an automatically named session (MCE-003)', async () => {
   const m = mount('zh');
   expect(m.text()).toContain('Studio Mac');
-  expect(m.input().props.placeholder).toBe('自动命名');
+  expect(m.input().props.placeholder).toBe('默认名称');
+  expect(m.text()).toContain('留空使用默认数字编号');
+  expect(m.text()).toContain('80 个字符');
   await act(async () => { await m.submit().props.onPress(); });
   expect(m.createSession).toHaveBeenCalledWith('', expect.any(String));
   expect(m.onCreated).toHaveBeenCalledWith(result);
+});
+
+test('MCE-003 blocks a name with nonprinting characters and accepts the corrected name', async () => {
+  const m = mount();
+  act(() => m.input().props.onChangeText('QA\u0085review'));
+  expect(m.text()).toContain('Use one line without control characters');
+  expect(m.submit().props.accessibilityState.disabled).toBe(true);
+  await act(async () => {
+    await m.submit().props.onPress();
+    await m.input().props.onSubmitEditing();
+  });
+  expect(m.createSession).not.toHaveBeenCalled();
+  act(() => m.input().props.onChangeText('发布.v2:检查'));
+  expect(m.text()).toContain('发布-v2-检查');
+  await act(async () => { await m.submit().props.onPress(); });
+  expect(m.createSession).toHaveBeenCalledWith('发布-v2-检查', expect.any(String));
 });
 
 test('previews normalized names, locks repeated taps and blocks dismissal while creating', async () => {
@@ -96,9 +114,13 @@ test('focuses the name on the next frame, not when the fade ends', () => {
   }
 });
 
-test('says what Create and open will do', () => {
-  expect(mount('en').text()).toContain('Starts a new tmux session on this server and opens its terminal here, so you can start an agent in it.');
-  expect(mount('zh').text()).toContain('在这台服务器上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。');
+test('says what Create and open will do in its label', () => {
+  const m = mount();
+  expect(m.input().props.placeholder).toBe('Default name');
+  expect(m.text()).toContain('Leave blank for a default number.');
+  expect(m.text()).toContain('Up to 80 characters on one line.');
+  expect(m.text()).toContain('Create and open');
+  expect(m.text()).not.toContain('Starts a new tmux session');
 });
 
 // One motion, with the keyboard (%6's recordings of the first fix, 2026-10-05: the form
@@ -277,7 +299,7 @@ describe('a phone held sideways lays the form out short', () => {
   const maxHeight = (m: ReturnType<typeof mount>) =>
     m.tree.root.findAll(n => typeof n.type === 'string' && (n.props.style as any)?.flat?.().some((x: any) => x?.maxHeight))[0]
       .props.style.flat().find((x: any) => x?.maxHeight).maxHeight;
-  const order = (m: ReturnType<typeof mount>) => m.text().indexOf('Starts a new tmux session') > m.text().indexOf('Session name');
+  const order = (m: ReturnType<typeof mount>) => m.text().indexOf('Leave blank for a default number.') > m.text().indexOf('Create and open');
 
   test('sideways: the field and Create share a row, the explanation follows, the height is the sideways one', () => {
     // A portrait keyboard said its height first: it must not size the sideways form.

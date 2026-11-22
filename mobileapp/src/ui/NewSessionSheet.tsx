@@ -8,6 +8,8 @@ import {Palette, StatusColor} from './theme';
 import {MODAL_ORIENTATIONS} from './modalOrientations';
 import {useModalDismiss} from './useModalDismiss';
 
+const SESSION_NAME_LIMIT = 80;
+
 export function normalizedSessionName(name: string): string { return name.trim().replace(/[.:]/g, '-'); }
 
 // The form opens already where the keyboard will put it, and moves with the keyboard, never
@@ -54,9 +56,7 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
   // avoider (it rarely meets the keyboard, and when it does it has room).
   const follow = Platform.OS === 'ios' && !regular;
   // A phone held sideways leaves about 220 points above the keyboard, and the form needs
-  // about 300: the header, Cancel and the field pushed the explanation and the label out
-  // and cut the top off the field (%6, 2026-10-06). Laid out short, the field and Create
-  // share a row and the explanation moves below them, where the form may scroll.
+  // about 300. In the short layout the field and Create share a row above the scrollable hint.
   const short = follow && height < SHORT_WINDOW;
   // The form's height depends on the keyboard's, which is known only once it says it.
   const [, keyboardSaid] = useReducer((n: number) => n + 1, 0);
@@ -128,8 +128,20 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     };
   }, [visible]);
   const normalized = normalizedSessionName(name);
+  // tmux evaluates -s as a format, including single-letter aliases and hash escapes.
+  const hasTmuxFormat = /#(?:$|[#({,}DFHIPSTWh])/.test(normalized);
+  const nameError = /[\p{Cc}\u2028\u2029]/u.test(name)
+    ? (zh ? '请输入单行名称，去掉换行或控制字符。' : 'Use one line without control characters.')
+    : hasTmuxFormat ? (zh ? '请修改 # 写法，以便按原样使用名称。' : 'Change the # sequence so the name can be used as typed.') : '';
+  const nameHint = zh
+    ? `留空使用默认数字编号。自定义名称限单行，最多 ${SESSION_NAME_LIMIT} 个字符。`
+    : `Leave blank for a default number. Up to ${SESSION_NAME_LIMIT} characters on one line.`;
+  const nameFeedback = nameError || (normalized && normalized !== name
+    ? (zh ? '创建时使用名称 ' : 'Will be named ') + normalized
+    : nameHint);
   const uncertain = !!failure && (failure.status === 0 || failure.code === 'create_failed');
   const blocked = !!failure && ['unsupported', 'owner_only', 'unauthorized'].includes(failure.code);
+  const disabled = busy || blocked || !!nameError;
   const errorText = !failure ? '' : failure.code === 'name_exists'
     ? (zh ? '这个名称已被使用，请换一个名称。' : 'That name is already in use. Choose another.')
     : failure.code === 'unsupported'
@@ -140,8 +152,8 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     ? (zh ? '创建结果待确认，可先查看会话列表。' : 'Creation not confirmed. Check the session list or retry.')
     : (zh ? '无法创建会话，请检查名称后重试。' : 'Could not create the session. Check the name and try again.');
   const create = async () => {
-    if (inFlight.current || blocked) return;
-    const nextName = normalizedSessionName(name);
+    if (inFlight.current || blocked || nameError) return;
+    const nextName = normalized;
     if (!request.current || request.current.name !== nextName) {
       request.current = {name: nextName, id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}-${Math.random().toString(36).slice(2, 12)}`};
     }
@@ -158,18 +170,18 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
     }
   };
   const close = () => { if (!inFlight.current) onClose(); };
-  const explain = <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '在这台服务器上新开一个 tmux 会话，并在这里打开它的终端，你可以在里面启动 agent。' : 'Starts a new tmux session on this server and opens its terminal here, so you can start an agent in it.'}</Text>;
   const field = (
     <TextInput ref={input} testID="new-session-name" accessibilityLabel={zh ? '会话名称（可选）' : 'Session name (optional)'}
+      accessibilityHint={nameFeedback}
       value={name} onChangeText={value => { setName(value); setFailure(null); }} editable={!busy && !uncertain}
-      placeholder={zh ? '自动命名' : 'Automatic name'} placeholderTextColor={pal.fg3}
-      style={[styles.input, short && styles.grow, {color: pal.fg, backgroundColor: pal.raised, borderColor: pal.divLoud}]}
-      selectionColor={StatusColor.working} maxLength={80} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={create}
+      placeholder={zh ? '默认名称' : 'Default name'} placeholderTextColor={pal.fg3}
+      style={[styles.input, short && styles.grow, {color: pal.fg, backgroundColor: pal.raised, borderColor: nameError ? StatusColor.waiting : pal.divLoud}]}
+      selectionColor={StatusColor.working} maxLength={SESSION_NAME_LIMIT} autoCapitalize="none" autoCorrect={false} returnKeyType="done" onSubmitEditing={create}
       onFocus={() => { focused.current = true; }} />
   );
   const createButton = (
-    <TouchableOpacity testID="new-session-create" accessibilityRole="button" accessibilityState={{disabled: busy || blocked, busy}}
-      activeOpacity={0.6} disabled={busy || blocked} onPress={create} style={[styles.create, short && styles.createShort, {backgroundColor: StatusColor.working, opacity: busy || blocked ? 0.5 : 1}]}>
+    <TouchableOpacity testID="new-session-create" accessibilityRole="button" accessibilityState={{disabled, busy}}
+      activeOpacity={0.6} disabled={disabled} onPress={create} style={[styles.create, short && styles.createShort, disabled && styles.createDisabled]}>
       <Text style={styles.createText}>{busy ? (zh ? '正在创建…' : 'Creating…') : uncertain ? (zh ? '重试' : 'Retry') : (zh ? '创建并打开' : 'Create and open')}</Text>
     </TouchableOpacity>
   );
@@ -187,15 +199,15 @@ export function NewSessionSheet({visible, client, macName, lang, pal, layout = '
             </View>
           <ScrollView keyboardShouldPersistTaps="always" style={styles.body} contentContainerStyle={[styles.bodyContent, short && styles.bodyShort]}>
             <Text style={[styles.mac, {color: pal.fg2}]}>{macName}</Text>
-            {!short && explain}
             <Text style={[styles.label, short && styles.labelShort, {color: pal.fg}]}>{zh ? '会话名称（可选）' : 'Session name (optional)'}</Text>
             {short ? <View testID="new-session-row" style={styles.row}>{field}{createButton}</View> : field}
-            {normalized !== name.trim() && <Text style={[styles.hint, {color: pal.fg2}]}>{zh ? '创建为：' : 'Will be named: '}{normalized}</Text>}
+            <Text accessibilityRole={nameError ? 'alert' : undefined} style={[styles.hint, {color: nameError ? pal.fg : pal.fg2}]}>
+              {nameFeedback}
+            </Text>
             {!!failure && <Text accessibilityRole="alert" testID="new-session-error" style={[styles.error, {color: pal.fg}]}>{errorText}</Text>}
             {uncertain && <TouchableOpacity onPress={onCheckSessions} style={styles.check} accessibilityRole="button">
               <Text style={{color: StatusColor.working}}>{zh ? '查看会话列表' : 'Check sessions'}</Text>
             </TouchableOpacity>}
-            {short && explain}
           </ScrollView>
           {!short && <View style={styles.footer}>{createButton}</View>}
         </View>
@@ -224,11 +236,12 @@ const styles = StyleSheet.create({
   content: {paddingHorizontal: 20, paddingTop: 12}, body: {flexGrow: 0, flexShrink: 1}, bodyContent: {paddingHorizontal: 20, paddingBottom: 4}, bodyShort: {paddingBottom: 16}, footer: {padding: 20}, header: {flexDirection: 'row', alignItems: 'center', gap: 12},
   title: {fontSize: 22, fontWeight: '700', flex: 1}, cancel: {minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center'},
   mac: {fontSize: 14, fontWeight: '600', marginTop: 4}, hint: {fontSize: 13, lineHeight: 19, marginTop: 6},
-  label: {fontSize: 14, fontWeight: '600', marginTop: 24, marginBottom: 8}, labelShort: {marginTop: 10, marginBottom: 6},
+  label: {fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 8}, labelShort: {marginTop: 10, marginBottom: 6},
   row: {flexDirection: 'row', alignItems: 'center', gap: 10}, grow: {flex: 1},
   input: {minHeight: 48, borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, fontSize: 16},
   error: {fontSize: 14, lineHeight: 21, marginTop: 16}, check: {minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start'},
-  create: {minHeight: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 12},
+  create: {minHeight: 48, borderRadius: 10, alignItems: 'center', justifyContent: 'center', padding: 12, backgroundColor: StatusColor.working},
   createShort: {paddingHorizontal: 18},
+  createDisabled: {opacity: 0.5},
   createText: {fontSize: 16, fontWeight: '600', color: '#fff'},
 });

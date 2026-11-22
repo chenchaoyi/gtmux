@@ -1,0 +1,24 @@
+{
+  "id": "mobile-preview-web-query-compatibility-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-22",
+    "decision": "Decode external Markdown link entities only when terminated, while matching the installed paired resolver for local destinations.",
+    "notes": "The independent same-head review found that legacy substring matching removes ordinary query parameter separators. The assertions observe the actual rendered link action and preserve the local resolver's legacy decoding."
+  },
+  "cases": [
+    {
+      "id": "MCE-006",
+      "layer": "L2",
+      "description": "Markdown preview decoding preserves ordinary URL query boundaries",
+      "setup": "Render standalone HTTPS or mailto links with raw copy, region or ordinary query parameters and an explicitly escaped separator. Include a paired local Markdown reference using a named character reference accepted by the server.",
+      "action": "Tap each accessible link and inspect the native callback and the local preview request reference.",
+      "expected": "Raw external query parameters are preserved. Explicitly terminated HTML entities decode once. The paired file path still matches existing Markdown extraction. External actions never use the local preview callback.",
+      "planned_files": [
+        "mobileapp/src/ui/MarkdownView.externalLinks.test.tsx"
+      ]
+    }
+  ],
+  "seal": "069ecf8386269b4cca69d402fdd06f1e6d0dc5779cf5fedf7f3b480693b3e349"
+}

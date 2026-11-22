@@ -1,0 +1,46 @@
+{
+  "id": "mobile-conversation-entry-polish-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-22",
+    "decision": "Use the existing preview resolver, highlight the Live action, and describe the actual default session name.",
+    "notes": "The supplied iPhone screenshots identify the native Markdown renderer, the working Live strip and the New session sheet. Synthetic tests cover behavior and presentation invariants. Native visual acceptance is separate."
+  },
+  "cases": [
+    {
+      "id": "MCE-001",
+      "layer": "L2",
+      "description": "Angle-delimited document links open scoped preview with exact filenames",
+      "setup": "Render Markdown containing angle-delimited, percent-encoded and ordinary links, and lookalike markup inside inline code or an unsafe destination.",
+      "action": "Inspect available links and activate each local preview.",
+      "expected": "Paths with spaces, Unicode and parentheses reach the same file callback with the intended destination. The unsafe or code examples have no link action.",
+      "planned_files": [
+        "mobileapp/src/ui/MarkdownView.test.tsx"
+      ]
+    },
+    {
+      "id": "MCE-002",
+      "layer": "L2",
+      "description": "The Live entry remains a single prominent disclosure in both appearances",
+      "setup": "Show a compact working conversation with synthetic terminal output in both light and dark appearances.",
+      "action": "Inspect the disclosure target, activate it and close it again.",
+      "expected": "The single control has a distinct outlined appearance and at least a 48-point target, retains the live state text, and announces its expanded state. The expanded panel retains its own resize behavior.",
+      "planned_files": [
+        "mobileapp/src/ui/ChatView.liveDisclosure.test.tsx"
+      ]
+    },
+    {
+      "id": "MCE-003",
+      "layer": "L2",
+      "description": "Session naming explains and preserves default and custom creation",
+      "setup": "Show New session in Chinese and English with a fake create API.",
+      "action": "Check the field instructions, submit a blank value, submit a name with control characters, then correct it to a valid spelling with punctuation.",
+      "expected": "The form identifies the host and explains the default numeric name and custom input. Blank sends an empty name. Both submit actions reject nonprinting input. The app shows and submits the existing normalized spelling when valid.",
+      "planned_files": [
+        "mobileapp/src/ui/NewSessionSheet.test.tsx"
+      ]
+    }
+  ],
+  "seal": "5df58ecec0475d97bfccc9400c22676d7282e25eca244e0143afee6163616204"
+}

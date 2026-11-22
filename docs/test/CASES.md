@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1431 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1435 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2672 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2681 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -460,6 +460,11 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MSD-003 | Preferred receipt returned as additive JSON while legacy clients retain status ok; no mutation when unauthorized, guest out of scope or key invalid; queue acceptance not claimed read/completed; no message body or secrets in diagnostics. |
 | MSD-004 | Full send settles at finite deadline and aborts network; late success cannot overwrite timeout; only one fetch, original send ID retained by caller for explicit retry; refusal and legacy success remain compatible. |
 | MSD-005 | Queued is labeled queued awaiting next turn, accepted means received not read/completed; finite network deadline keeps text and explicit same-ID retry; late old response/failure cannot replace a newer pending attempt; transcript confirmation retires the correct echo; no resends, no queue deletion, no draft/approval bypass. |
+| MCE-004 | Legacy and encoded paths keep their exact reference. Markdown escapes and character references are interpreted once, so new targets reach the existing renderer and resolver using the same path as Markdown on the server. Malformed or unsafe destinations expose no preview action. |
+| MCE-005 | Trimming is visible before submit and the submitted name exactly matches the preview. Format-bearing names have inline correction feedback and make no request. Names with a literal hash and blank default input remain available. |
+| MCE-001 | Paths with spaces, Unicode and parentheses reach the same file callback with the intended destination. The unsafe or code examples have no link action. |
+| MCE-002 | The single control has a distinct outlined appearance and at least a 48-point target, retains the live state text, and announces its expanded state. The expanded panel retains its own resize behavior. |
+| MCE-003 | The form identifies the host and explains the default numeric name and custom input. Blank sends an empty name. Both submit actions reject nonprinting input. The app shows and submits the existing normalized spelling when valid. |
 | MEX-005 | First action releases busy by15seconds from click even though its queued read has not settled; its late completion cannot clear a newer action. Current valid results still update the roster and background coalescing remains intact. Client switch retires old timers/results and cannot clear new client's action; cached timestamp and authority boundaries remain unchanged. |
 | MEX-006 | Empty/whitespace success is failed at both boundaries, never complete or sent; caption and both photos remain and no automatic retry occurs. An explicit double-tapped retry uses the existing in-flight guard and sends one valid message. Nonblank paths are preserved exactly and ordinary saved success remains complete only after response. |
 | MEX-001 | Viewer contains existing OLD-NORMAL plus current green frame with trailing rows; verifiers exclude old history, retain current frame; history_size unchanged, invalid targets empty and names cannot inject commands |
@@ -477,6 +482,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | LVR-001 | Upward drag expands the local preview and exposes additional earlier output without losing the latest row. A downward drag shrinks it. Orientation/keyboard bounds clamp effective height and restoring space restores the selected size. The height control is limited to the grip. |
 | LVR-002 | The selection survives redraw, folding and temporary idle within the same scope. A new scope starts folded at the default size. Resizing does not create an input action or change pane identity. |
 | LVR-003 | While the preview is visible, the fixed control occupies a 44-point strip in the conversation background and retains its touch target and scroll-through surrounding area. Folding removes the added strip. Rendered iPhone QA confirms that a reply underneath does not overprint the label. |
+| MCE-007 | Only well-formed external links reach the native opener. Permissive-only protocol matches do not become local previews or external links. Explicit entity references preserve query separators and local evidence still uses the paired resolver interpretation. |
 | PPR-001 | No upload/send/history or clearing while read is pending; visible disabled Send and concise reading feedback. Only one picker request; all four photos remain ordered and a later explicit Send uploads each exactly once before the original caption/paths are submitted. No automatic resend. |
 | PPR-002 | Full lifecycle finally releases ref/state, pending selection blocks send and reentry; after settlement a new selection/send is possible. Caption and existing images remain; no automatic upload/send, no spurious photo editor. Existing unmount late-result guard remains. |
 | PPR-003 | Message contains only that send snapshot in order; later file remains staged for its own explicit Send. No asset deletion or silent removal of unsent IDs. Existing upload failure preservation stays unchanged. |
@@ -484,6 +490,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MPU-002 | No draft or staged attachment is removed, uploaded or submitted. Invalid assets do not create thumbnails. An unmounted scope cannot open an editor or stage returned photos. |
 | MPU-003 | Only measured finite positive totals yield fractions. Unknown totals stay indeterminate. Body completion is processing, never successful save; only valid successful response completes. Legacy fraction callback remains byte-events-only. Settled callbacks are ignored; failure preserves failure result and existing watchdog bounds. |
 | MPU-004 | A compact status row names current file/count, shows measured progress or preparation/saving copy, uses a smooth bar limited to observed bytes and obeys Reduce Motion. Waiting files do not show fake zero percentages. Sending is gated and failure leaves caption and all images. No submit occurs until every upload succeeds. |
+| MCE-006 | Raw external query parameters are preserved. Explicitly terminated HTML entities decode once. The paired file path still matches existing Markdown extraction. External actions never use the local preview callback. |
 | RDRC-001 | No empty/tutorial claim before a valid result. Shared loading/error/access/stale states remain in main even with sidebar hidden. Only successful empty shows welcome; a populated roster offers selection while original automatic selection runs. Guest creation stays unavailable; no duplicated list/banner/header or excerpt. Existing selected views remain unchanged. |
 | RDRC-002 | SSE live alone cannot clear the read error, readable notice or last-update time. Cached rows remain visible/stale; malformed-like failure is not described as unreachable network. Pending retry is visible and duplicate retry disabled. Current successful read clears notice and updates time; a changed client inherits neither rows nor error. Access failure preserves owner settings or guest contact guidance without new authority. |
 | RDR-001 | Loading does not become zero/empty on stream open. Valid empty sets hasValue, new client cannot borrow old rows/counts/error or late old reads; same-client refresh/error retains prior rows/lastUpdated. Demo declares its already supplied snapshot. |

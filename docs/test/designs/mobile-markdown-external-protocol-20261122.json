@@ -1,0 +1,24 @@
+{
+  "id": "mobile-markdown-external-protocol-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-22",
+    "decision": "Require a recognized external protocol from strict Markdown decoding. Reject a permissive-only external address before it can reach either opener.",
+    "notes": "The independent review reproduced a permissive-only protocol with a missing numeric entity terminator for HTTPS and mailto. This case includes a file-like external address and escaped slashes to cover both opener boundaries."
+  },
+  "cases": [
+    {
+      "id": "MCE-007",
+      "layer": "L2",
+      "description": "Only strictly decoded protocols can launch a Markdown web or mail link",
+      "setup": "Mix literal schemes and fully terminated escaped protocol characters with missing terminators in the colon or slashes. Include a malformed URL ending in a file extension and an actual local file with legacy entity syntax.",
+      "action": "Inspect link affordances and activate the rendered links in the shared mobile renderer.",
+      "expected": "Only well-formed external links reach the native opener. Permissive-only protocol matches do not become local previews or external links. Explicit entity references preserve query separators and local evidence still uses the paired resolver interpretation.",
+      "planned_files": [
+        "mobileapp/src/ui/MarkdownView.externalProtocol.test.tsx"
+      ]
+    }
+  ],
+  "seal": "2c80110382dfedd5d19cfea4d431e44a6a04dc83bb7c63a4752527a82cdd18b2"
+}
