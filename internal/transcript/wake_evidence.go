@@ -216,21 +216,42 @@ func wakePrompt(line codexLine, expectWake bool, proofTurn string) (text string,
 		parsed := json.Unmarshal(line.Payload, &extras) == nil
 		hasMedia = len(extras.Images)+len(extras.LocalImages) > 0
 		complete = parsed && !hasMedia && len(extras.Elements) == 0
-	case line.Type == "response_item" && payload.Type == "message" && payload.Role == "user":
+	case line.Type == "response_item" && payload.Type == "message":
+		if payload.Role != "user" {
+			switch payload.Role {
+			case "assistant", "developer", "system", "tool":
+				return "", false, false
+			default:
+				return "", proofTurn != "", false
+			}
+		}
 		var parts []string
+		contextOnly := proofTurn != "" && len(payload.Content) > 0
 		for _, item := range payload.Content {
 			if item.Type == "input_text" && strings.TrimSpace(item.Text) != "" {
 				parts = append(parts, item.Text)
 			}
 			hasMedia = hasMedia || item.Type == "input_image"
+			contextOnly = contextOnly && item.Type == "input_text" && codexStartupContextBlock(item.Text)
+		}
+		if contextOnly && (payload.Turn == "" || payload.Turn == proofTurn) {
+			return "", false, false
 		}
 		text = strings.Join(parts, "\n")
 		complete = len(payload.Content) == 1 && payload.Content[0].Type == "input_text"
 	default:
 		return "", false, false
 	}
-	if proofTurn != "" && (!complete || strings.TrimSpace(text) == "" || payload.Turn != "" && payload.Turn != proofTurn) {
-		return text, true, false
+	if proofTurn != "" {
+		if !complete || strings.TrimSpace(text) == "" || payload.Turn != "" && payload.Turn != proofTurn {
+			return text, true, false
+		}
+		// Modern records are classified block by block above. The legacy
+		// event carries one plain text field.
+		if line.Type == "event_msg" && codexStartupContextBlock(text) {
+			return "", false, false
+		}
+		return text, true, true
 	}
 	// This observer already has a bound receiver receipt and expects exact raw
 	// text. The chat filter intentionally strips wake echoes. A different wake
@@ -240,4 +261,13 @@ func wakePrompt(line codexLine, expectWake bool, proofTurn string) (text string,
 	}
 	_, real := codexUserPrompt(text)
 	return text, real, complete
+}
+
+// Only a known harness block can be skipped in a continuous startup proof.
+// A user-role record with another block may contain the actual first input.
+func codexStartupContextBlock(text string) bool {
+	text = strings.TrimSpace(text)
+	firstLine, _, _ := strings.Cut(text, "\n")
+	return strings.TrimSpace(firstLine) == "# AGENTS.md instructions" ||
+		(strings.HasPrefix(text, "<environment_context>") && strings.HasSuffix(text, "</environment_context>"))
 }
