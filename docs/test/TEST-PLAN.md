@@ -73,7 +73,7 @@ and real-device runs require explicit recording; do not imply they run on every 
 | `web` | Complete `internal/server/web/*.test.cjs` Node tests, Chromium rendered tests (`tests/web`) (L1/L3) | Embedded Web/browser/shared mobile presentation changes |
 | `ios-native` | Production Swift HTML/Markdown oracles via `check-native-documents.py` (L1); Ruby Widget boundary; unsigned Release ARM64 app + two embedded extensions compile/architecture (G) | iOS/RN/shared changes; no device boot, UI automation, signing or upload |
 | `android-native` | `assembleQa testQaUnitTest lintQa`; source seal, package/ABI/16KiB checks (L1 + G) | Android/RN/shared input changes |
-| `android-emulator` | Phone and tablet matrix consuming the exact source-sealed QA APK; actual UI journey (L4) | Always selected with Android build; no shared local emulator/ADB |
+| `android-emulator-shards` and `android-emulator` | Two shards per device run the real UI (L4) on one source-sealed QA APK; the phone and tablet checks each require complete, disjoint coverage | Always selected with Android build; each shard uses its own hosted emulator |
 | `menubar` | Swift universal build, UsageWidgets and menu-bar Swift tests, Widget build/design (L1/L2 + G) | Menu-bar or shared/uncertain changes; native visual/focus acceptance separate |
 | `relay-worker` | Typecheck, shared JSON/APNs/FCM payload and handler tests (L2 + G) | Push source/tests and downstream clients |
 | `tunnel-worker` | Typecheck, Node contract + Worker runtime Vitest tests (L2/L3 + G) | Tunnel/shared/uncertain changes |
