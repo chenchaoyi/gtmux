@@ -1925,6 +1925,7 @@ LEG-427e4947f736,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,1
 LEG-fedf4b1b1e84,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,109,it,shows the explicit task before its pane id and location without inventing a summary,False,legacy-not-retrospectively-reviewed
 LEG-59a587268f25,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,121,it,retains the opened pane when a new row is inserted before it,False,legacy-not-retrospectively-reviewed
 LEG-32b06a97e1b8,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,131,it,reveals long status text within a field without dropping any text,False,legacy-not-retrospectively-reviewed
+MAP-70386de0653a,L2,reviewed implementation,mobileapp/src/ui/MarkdownView.compat.test.tsx,8,reviewed-selector,MCE-004 preserves bare angles and decodes Markdown destination syntax once,False,MCE-004
 LEG-17cea6d58228,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,39,it,wears no background under calmEmphasis — a page of prose filled with white chips,False,legacy-not-retrospectively-reviewed
 LEG-177e871affa2,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,45,it,"keeps its chip in chat, where a code span is rare and should stand out",False,legacy-not-retrospectively-reviewed
 LEG-7f7fcc25d98c,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,51,it,is set at 85% of the prose under calmEmphasis,False,legacy-not-retrospectively-reviewed
@@ -1938,10 +1939,9 @@ LEG-b5b88d078cf9,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,1
 LEG-cf4c8bc8c52c,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,157,it,does nothing at all where the caller did not ask for it,False,legacy-not-retrospectively-reviewed
 LEG-945d026187ed,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,165,test,long prose uses a labelled 44-point button with expanded state in both languages,False,legacy-not-retrospectively-reviewed
 LEG-570d49e784eb,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,180,test,local document links retain their destination and use the file callback,False,legacy-not-retrospectively-reviewed
-LEG-8ddb135d5819,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,234,test.each(),emphasis preserves an actionable nested link: %s,True,legacy-not-retrospectively-reviewed
-LEG-22184a07bca3,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,242,test,"nested local links keep scoped file open, while code and unsafe URLs stay inert",False,legacy-not-retrospectively-reviewed
+LEG-8ddb135d5819,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,207,test.each(),emphasis preserves an actionable nested link: %s,True,legacy-not-retrospectively-reviewed
+LEG-22184a07bca3,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,215,test,"nested local links keep scoped file open, while code and unsafe URLs stay inert",False,legacy-not-retrospectively-reviewed
 MAP-7b7ea91cf1fc,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,192,reviewed-selector,MCE-001 angle-delimited document links open the exact filename,False,MCE-001
-MAP-6de4817ca777,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,207,reviewed-selector,MCE-004 preserves bare angles and decodes Markdown destination syntax once,False,"MCE-001,MCE-004"
 LEG-43cadc3b96e0,L2,RN / mobile harness,mobileapp/src/ui/MoveKey.test.ts,4,it,returns null inside the dead zone,False,legacy-not-retrospectively-reviewed
 LEG-1ec9ebc183e8,L2,RN / mobile harness,mobileapp/src/ui/MoveKey.test.ts,10,it,maps the dominant horizontal axis past the threshold,False,legacy-not-retrospectively-reviewed
 LEG-1b9fae0acb02,L2,RN / mobile harness,mobileapp/src/ui/MoveKey.test.ts,15,it,maps the dominant vertical axis past the threshold,False,legacy-not-retrospectively-reviewed
@@ -1975,29 +1975,29 @@ LEG-c03a4ca7517c,L2,RN / mobile harness,mobileapp/src/ui/NewSessionAction.test.t
 LEG-9fe88a12149f,L2,RN / mobile harness,mobileapp/src/ui/NewSessionAction.test.tsx,25,test,offline entry is visibly and accessibly disabled,False,legacy-not-retrospectively-reviewed
 LEG-5384804c7de6,L2,RN / mobile harness,mobileapp/src/ui/NewSessionAction.test.tsx,29,test.each(),dismisses first and selects the exact new terminal in the %s shell,True,legacy-not-retrospectively-reviewed
 LEG-066023df2b61,L2,RN / mobile harness,mobileapp/src/ui/NewSessionAction.test.tsx,42,test,checking an uncertain result refreshes the existing pane browser after dismissal,False,legacy-not-retrospectively-reviewed
+MAP-92edf239dc79,L2,reviewed implementation,mobileapp/src/ui/NewSessionSheet.compat.test.tsx,24,reviewed-selector,MCE-005 shows the trimmed name and sends the same value,False,MCE-005
+MAP-104956bc7f5a,L2,reviewed implementation,mobileapp/src/ui/NewSessionSheet.compat.test.tsx,32,reviewed-selector,MCE-005 blocks tmux formatting in %s,False,MCE-005
 LEG-424a726caaae,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,24,test,identifies the target and creates an automatically named session,False,legacy-not-retrospectively-reviewed
-LEG-786ae4344a47,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,71,test,"previews normalized names, locks repeated taps and blocks dismissal while creating",False,legacy-not-retrospectively-reviewed
-LEG-4e285e4ffcc2,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,85,test,uncertain creation retries the same request and does not allow changing its name,False,legacy-not-retrospectively-reviewed
-LEG-b3ad35e6b4cb,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,95,test,a duplicate name retains the form and accepts a corrected name,False,legacy-not-retrospectively-reviewed
-LEG-a3cf0f30e339,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,106,test,"an old server gives an update instruction, and unmount suppresses late navigation",False,legacy-not-retrospectively-reviewed
-LEG-7cd7ced4100a,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,120,test,"focuses the name on the next frame, not when the fade ends",False,legacy-not-retrospectively-reviewed
-LEG-2a25215175e9,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,137,test,says what Create and open will do,False,legacy-not-retrospectively-reviewed
+LEG-786ae4344a47,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,51,test,"previews normalized names, locks repeated taps and blocks dismissal while creating",False,legacy-not-retrospectively-reviewed
+LEG-4e285e4ffcc2,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,65,test,uncertain creation retries the same request and does not allow changing its name,False,legacy-not-retrospectively-reviewed
+LEG-b3ad35e6b4cb,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,75,test,a duplicate name retains the form and accepts a corrected name,False,legacy-not-retrospectively-reviewed
+LEG-a3cf0f30e339,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,86,test,"an old server gives an update instruction, and unmount suppresses late navigation",False,legacy-not-retrospectively-reviewed
+LEG-7cd7ced4100a,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,100,test,"focuses the name on the next frame, not when the fade ends",False,legacy-not-retrospectively-reviewed
+LEG-2a25215175e9,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,117,test,says what Create and open will do,False,legacy-not-retrospectively-reviewed
 LEG-73cc8e55a0c7,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,125,test,"the first open is already lifted, by a guess, and moves only on the keyboard's timing",False,legacy-not-retrospectively-reviewed
-LEG-c9e6a6722174,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,176,test,"a later open starts at the height the keyboard said, so nothing moves",False,legacy-not-retrospectively-reviewed
-LEG-377e77556bf4,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,185,test,the iPad form keeps the keyboard avoider,False,legacy-not-retrospectively-reviewed
-LEG-316d39da5d9a,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,221,test,"a late keyboard is followed, and nothing settles before it",False,legacy-not-retrospectively-reviewed
-LEG-86126a93033d,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,232,test,a focus that took and no keyboard: it settles only after the long grace,False,legacy-not-retrospectively-reviewed
-LEG-25128083c960,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,241,test,"a focus that did not take: no keyboard will come, so it settles soon",False,legacy-not-retrospectively-reviewed
-LEG-1cf65cefc6fe,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,249,test,a busy JS thread that runs the timer before onFocus does not drop the form,False,legacy-not-retrospectively-reviewed
-LEG-b8711e7cf9aa,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,263,test,closing the form ends its timers and its keyboard listeners,False,legacy-not-retrospectively-reviewed
-LEG-651e55db6c4f,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,274,test,reopening starts afresh: a late keyboard again settles nothing first,False,legacy-not-retrospectively-reviewed
-LEG-961b0577da01,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,290,test,"a keyboard already on screen places the form at once, and nothing waits",False,legacy-not-retrospectively-reviewed
-LEG-ccd51bb6b631,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,324,test,"sideways: the field and Create share a row, the explanation follows, the height is the sideways one",False,legacy-not-retrospectively-reviewed
-LEG-6a1db8c585e7,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,340,test,upright: the portrait layout is unchanged,False,legacy-not-retrospectively-reviewed
+LEG-c9e6a6722174,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,156,test,"a later open starts at the height the keyboard said, so nothing moves",False,legacy-not-retrospectively-reviewed
+LEG-377e77556bf4,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,165,test,the iPad form keeps the keyboard avoider,False,legacy-not-retrospectively-reviewed
+LEG-316d39da5d9a,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,201,test,"a late keyboard is followed, and nothing settles before it",False,legacy-not-retrospectively-reviewed
+LEG-86126a93033d,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,212,test,a focus that took and no keyboard: it settles only after the long grace,False,legacy-not-retrospectively-reviewed
+LEG-25128083c960,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,221,test,"a focus that did not take: no keyboard will come, so it settles soon",False,legacy-not-retrospectively-reviewed
+LEG-1cf65cefc6fe,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,229,test,a busy JS thread that runs the timer before onFocus does not drop the form,False,legacy-not-retrospectively-reviewed
+LEG-b8711e7cf9aa,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,243,test,closing the form ends its timers and its keyboard listeners,False,legacy-not-retrospectively-reviewed
+LEG-651e55db6c4f,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,254,test,reopening starts afresh: a late keyboard again settles nothing first,False,legacy-not-retrospectively-reviewed
+LEG-961b0577da01,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,270,test,"a keyboard already on screen places the form at once, and nothing waits",False,legacy-not-retrospectively-reviewed
+LEG-ccd51bb6b631,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,304,test,"sideways: the field and Create share a row, the explanation follows, the height is the sideways one",False,legacy-not-retrospectively-reviewed
+LEG-6a1db8c585e7,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,320,test,upright: the portrait layout is unchanged,False,legacy-not-retrospectively-reviewed
 MAP-35c367e0ec36,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,24,reviewed-selector,identifies the target and creates an automatically named session (MCE-003),False,MCE-003
 MAP-d1e7645b392b,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,35,reviewed-selector,MCE-003 blocks a name with nonprinting characters and accepts the corrected name,False,MCE-003
-MAP-dd3f261a6144,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,51,reviewed-selector,MCE-005 shows the trimmed name and sends the same value,False,"MCE-003,MCE-005"
-MAP-c472f55dd446,L2,RN / mobile harness,mobileapp/src/ui/NewSessionSheet.test.tsx,59,reviewed-selector,MCE-005 blocks tmux formatting in %s,False,"MCE-003,MCE-005"
 LEG-76c73ba03cef,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,20,test,human and historical sender never request another runtime profile,False,legacy-not-retrospectively-reviewed
 LEG-e8b485cbaf43,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,37,test,message facts stay historical while a same-session launch chain loads on demand,False,legacy-not-retrospectively-reviewed
 LEG-3214ecb838f4,L2,RN / mobile harness,mobileapp/src/ui/ParticipantProfileModal.test.tsx,65,test,a tmux message can verify its chain when the radar row has no session id,False,legacy-not-retrospectively-reviewed
