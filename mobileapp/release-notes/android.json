@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.0.192",
+    "en": [
+      "Scan access history by operation and outcome, then tap a request for full details.",
+      "Drag the top of the Live terminal preview to show more output in Chat."
+    ],
+    "zh": [
+      "访问历史优先展示操作与结果，点开请求可查看完整明细。",
+      "在聊天中拖动 Live 终端预览顶边，可查看更多输出。"
+    ]
+  },
+  {
     "version": "1.0.188",
     "en": [
       "Resume saved sessions on the connected server and follow restore progress. In the terminal, new output keeps your reading position while you review older lines.",

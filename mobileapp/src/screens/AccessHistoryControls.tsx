@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { StyleSheet, Text, Alert, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, Text, Alert, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import type {
   AccessFilter,
   AccessGroup,
@@ -12,6 +12,8 @@ import {
 } from '../ui/AnchoredMenu';
 import { accessGroupFilter, accessIdentity } from './accessHistoryExploration';
 import { accessName } from './accessHistoryPresentation';
+import { SIcon } from '../ui/SettingsIcons';
+import { Size, type Palette } from '../ui/theme';
 
 type Kind = 'device' | 'operation' | 'outcome';
 export function AccessHistoryControls({
@@ -26,12 +28,13 @@ export function AccessHistoryControls({
   groups: AccessGroup[];
   operations: AccessOperation[];
   zh: boolean;
-  pal: any;
+  pal: Palette;
   onChange: (f: AccessFilter) => void;
 }) {
   const [kind, setKind] = useState<Kind | null>(null),
     [anchor, setAnchor] = useState<MenuAnchor | null>(null);
   const refs = useRef<Partial<Record<Kind, View | null>>>({});
+  const {fontScale} = useWindowDimensions();
   const names = {
     device: zh ? '来源' : 'Source',
     operation: zh ? '操作' : 'Operation',
@@ -127,30 +130,37 @@ export function AccessHistoryControls({
       (zh ? '全部操作' : 'All operations'),
     outcome: outcomes.find(o => o.key === (filter.outcome || ''))!.label,
   };
+  const filters: Kind[] = ['device', 'operation', 'outcome'];
+  const selected: Record<Kind, boolean> = {
+    device: !!accessIdentity(filter),
+    operation: !!filter.operation,
+    outcome: !!filter.outcome,
+  };
+  const selectedFilters = filters.filter(k => selected[k]);
   return (
     <View>
-      <View style={styles.row}>
+      <View style={[styles.segmented, {backgroundColor: pal.rowSelected, borderColor: pal.divider}]}>
         {[undefined, 'device' as const].map(mode => (
           <TouchableOpacity
             key={mode || 'logs'}
-            accessibilityRole="button"
+            accessibilityRole="tab"
             accessibilityState={{ selected: filter.group_by === mode }}
             onPress={() => onChange({ ...filter, group_by: mode })}
             style={[
               styles.tab,
-              filter.group_by === mode && { borderBottomColor: pal.fg },
+              filter.group_by === mode && { backgroundColor: pal.surface, borderColor: pal.divider },
             ]}
           >
             <Text
-              style={{ color: filter.group_by === mode ? pal.fg : pal.fg2 }}
+              style={[styles.tabText, { color: filter.group_by === mode ? pal.fg : pal.fg2 }]}
             >
               {mode ? (zh ? '来源汇总' : 'Sources') : zh ? '日志' : 'Logs'}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
-      <View style={styles.row}>
-        {(['device', 'operation', 'outcome'] as Kind[]).map(k => (
+      <View style={styles.filters}>
+        {filters.map(k => (
           <TouchableOpacity
             key={k}
             ref={r => {
@@ -158,6 +168,7 @@ export function AccessHistoryControls({
             }}
             accessibilityRole="button"
             accessibilityLabel={`${names[k]}: ${labels[k]}`}
+            accessibilityState={{expanded: kind === k, selected: selected[k]}}
             onPress={() => {
               setKind(k);
               setAnchor(null);
@@ -165,26 +176,30 @@ export function AccessHistoryControls({
                 setAnchor({ x, y, width, height }),
               );
             }}
-            style={[styles.filter, { backgroundColor: pal.surface }]}
+            style={[styles.filter, {
+              backgroundColor: selected[k] ? pal.rowSelected : pal.surface,
+              borderColor: selected[k] ? pal.divLoud : pal.divider,
+              flexBasis: Math.ceil(95 * Math.max(1, fontScale)),
+            }]}
           >
-            <Text numberOfLines={1} style={{ color: pal.fg }}>
-              {labels[k]} ⌄
-            </Text>
+            <Text style={[styles.filterLabel, { color: pal.fg }]}>{names[k]}</Text>
+            <SIcon name="chevronDown" size={14} color={pal.fg2} />
           </TouchableOpacity>
         ))}
-        {(!!filter.device_id ||
-          !!filter.actor ||
-          !!filter.operation ||
-          !!filter.outcome) && (
+      </View>
+      {selectedFilters.length > 0 && <View style={styles.active}>
+        <View style={styles.activeValues}>
+          {selectedFilters.map(k => <Text key={k} style={[styles.activeFilter, {color: pal.fg2}]}>{names[k]} · {labels[k]}</Text>)}
+        </View>
           <TouchableOpacity
             accessibilityRole="button"
+            accessibilityLabel={zh ? '清除访问历史筛选' : 'Clear access history filters'}
             onPress={() => onChange({ group_by: filter.group_by })}
-            style={styles.tab}
+            style={styles.clear}
           >
-            <Text style={{ color: pal.fg2 }}>{zh ? '清除' : 'Clear'}</Text>
+            <Text style={[styles.clearText, { color: pal.fg }]}>{zh ? '清除' : 'Clear'}</Text>
           </TouchableOpacity>
-        )}
-      </View>
+      </View>}
       <AnchoredMenu
         visible={kind !== null}
         anchor={anchor}
@@ -199,20 +214,36 @@ export function AccessHistoryControls({
   );
 }
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 },
+  segmented: {flexDirection: 'row', gap: 3, padding: 3, borderRadius: Size.radiusRow + 2, borderWidth: StyleSheet.hairlineWidth},
   tab: {
+    flex: 1,
     minHeight: 44,
-    paddingHorizontal: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 6,
     justifyContent: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderRadius: Size.radiusRow - 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'transparent',
   },
+  tabText: {fontSize: 14, fontWeight: '600', textAlign: 'center'},
+  filters: {flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginTop: 9},
   filter: {
     flexGrow: 1,
-    flexBasis: 86,
+    flexShrink: 1,
     minHeight: 44,
-    paddingHorizontal: 10,
-    justifyContent: 'center',
-    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 3,
+    borderRadius: Size.radiusRow - 2,
+    borderWidth: StyleSheet.hairlineWidth,
   },
+  filterLabel: {fontSize: 13, fontWeight: '600', flexShrink: 1},
+  active: {flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 3},
+  activeValues: {flex: 1, gap: 2, paddingVertical: 6},
+  activeFilter: {fontSize: 12.5, lineHeight: 18},
+  clear: {minHeight: 44, minWidth: 44, paddingHorizontal: 5, justifyContent: 'center', alignItems: 'center'},
+  clearText: {fontSize: 13, fontWeight: '600'},
 });

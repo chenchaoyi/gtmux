@@ -306,9 +306,7 @@ bubbles as they arrive, with tool calls between them. The raw terminal screen is
 opt-in preview: a compact Thinking / Working row retains elapsed time and has explicit
 Show live view / Hide live view text plus a chevron. It starts collapsed in a new conversation, pane, source session or server. The
 reader’s choice survives timestamp corrections and working/waiting/idle transitions
-in that conversation as well as ordinary screen/transcript refresh. The expanded preview keeps the last 14 non-trailing-empty screen rows,
-with a 220pt vertical limit and horizontal scrolling for long lines, inside the
-original full-width, subtly tinted live card rather than a separate dark inset. No output shows an
+in that conversation as well as ordinary screen/transcript refresh. The expanded preview starts at 220pt where space permits. The top grip adjusts the terminal height up or down within the measured Chat viewport, including keyboard and orientation changes. Larger heights show more captured lines above the latest output. Long lines scroll horizontally. The grip provides screen-reader increase/decrease actions, and the chosen height follows the same conversation scope as the disclosure. No output shows an
 explicit empty state. The disclosure has a minimum 44pt target and an accessible expanded
 state. Phone, iPad, Detail and HQ share the component. Waiting choices and the existing composer
 remain independent, so required input is never hidden by this fold.
@@ -1521,7 +1519,7 @@ value layout; values wrap naturally and remain selectable, with actions beside t
 field rather than competing for label width.
 
 ## Server access history
-Settings → Manage server → Access history is available to owners on phone and iPad. Both shells share one API client, virtualized list and readable content width. Refresh/earlier-page actions distinguish unsupported, denied, expired and transient failures; late responses from another server are ignored. Compact date-grouped log rows show local clocks with seconds, selected-language dates and full device identity inline, without per-record disclosures. See [coverage and privacy](server-access-audit.md).
+Settings → Manage server → Access history is available to owners on phone and iPad. Both shells share one API client, virtualized list and readable content width. Refresh/earlier-page actions distinguish unsupported, denied, expired and transient failures; late responses from another server are ignored. Compact date-grouped rows prioritize the operation, outcome, source and local time with seconds. Opening a row reveals selectable full device identity, address, method, HTTP code and duration. Filter categories stay readable while active values can wrap below them. See [coverage and privacy](server-access-audit.md).
 
 The same screen offers Logs/Devices, exact full-ID/operation/outcome filters, and device-to-log drill-down. Device choices show full IDs; a native text prompt accepts an undiscovered historical ID. Summaries accumulate bounded pages with an explicit partial state. Counts are recorded activity, not complete request totals. Filter/server changes reset pagination and ignore late replies.
 

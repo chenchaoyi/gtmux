@@ -1,3 +1,2 @@
-- Opening conversation files now gives clearer guidance when a file is unavailable or a new link is needed. Repeated attempts keep their conversation context.
-- Appearance controls are in one place. Reply, settings and session controls have clearer labels and more room to tap.
-- Sending now explains when the server's terminal input queue is full and confirms that your message was not submitted, so you can retry when space is available.
+- Access history is easier to scan. Tap a request to see its full device and HTTP details, and read selected filters without truncation.
+- Drag the top of the Live terminal preview up or down to see more output while staying in Chat.

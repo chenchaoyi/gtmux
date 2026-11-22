@@ -25,11 +25,20 @@ export function accessOperation(e: AccessEntry, zh: boolean) {
   const target = e.target || (e.session_id ? `Codex · ${e.session_id}` : '');
   return (zh ? e.label_zh : e.label_en) + (target ? ` · ${target}` : '');
 }
-export function accessOutcome(e: AccessEntry, zh: boolean) {
+export function accessOutcome(e: AccessEntry, zh: boolean, includeStatus = true) {
   const label = e.outcome === 'ok' ? (zh ? '已接受' : 'Accepted') : e.outcome === 'refused' ? (zh ? '已拒绝' : 'Refused') : (zh ? '失败' : 'Failed');
-  return label + (e.status ? ` · ${e.status}` : '');
+  return label + (includeStatus && e.status ? ` · ${e.status}` : '');
 }
-export function accessMetadata(e: AccessEntry, zh: boolean) {
-  return [e.platform, e.source_ip, e.device_id ? `${zh ? '设备' : 'Device'} ${e.device_id}` : '', e.method,
-    e.duration_ms ? `${e.duration_ms} ms` : ''].filter(Boolean).join(' · ');
+
+export function accessDetailFields(e: AccessEntry, zh: boolean) {
+  const fields = [
+    {key: 'time', label: zh ? '记录时间' : 'Recorded at', value: e.at},
+    {key: 'platform', label: zh ? '平台' : 'Platform', value: e.platform},
+    {key: 'address', label: zh ? '来源地址' : 'Source address', value: e.source_ip},
+    {key: 'device', label: zh ? '设备 ID' : 'Device ID', value: e.device_id},
+    {key: 'method', label: zh ? '请求方法' : 'Method', value: e.method},
+    {key: 'status', label: zh ? 'HTTP 状态码' : 'HTTP status', value: e.status ? String(e.status) : ''},
+    {key: 'duration', label: zh ? '耗时' : 'Duration', value: e.duration_ms == null ? '' : `${e.duration_ms} ms`},
+  ];
+  return fields.filter(field => field.value);
 }
