@@ -244,6 +244,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       package: ${{ steps.package.outputs.name }}
+      receipt: ${{ steps.package.outputs.receipt }}
     env:
       GTMUX_SOURCE_SHA: ${{ github.sha }}
     steps:
@@ -280,6 +281,8 @@ jobs:
         run: |
           python3 scripts/android_ci_package.py write --source "$GITHUB_SHA" --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
           echo "name=android-qa-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
+          receipt=$(jq -c . mobileapp/android/app/build/outputs/apk/qa/CI-PACKAGE.json)
+          echo "receipt=$receipt" >> "$GITHUB_OUTPUT"
       - name: Preserve the checked QA package
         uses: actions/upload-artifact@v4
         with:
@@ -290,8 +293,23 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  android-emulator:
-    name: Android ${{ matrix.device }} emulator flows
+  android-phone:
+    # Android delivery looks up this exact check name.
+    name: Android phone emulator flows
+    needs: [scope, android-native]
+    if: needs.scope.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/android-emulator
+        with:
+          device: phone
+          package: ${{ needs.android-native.outputs.package }}
+          receipt: ${{ needs.android-native.outputs.receipt }}
+
+  android-emulator-shards:
+    name: Android tablet emulator shard ${{ matrix.shard }}
     needs: [scope, android-native]
     if: needs.scope.outputs.android == 'true'
     runs-on: ubuntu-latest
@@ -299,64 +317,81 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - device: phone
-            profile: pixel_7
-          - device: tablet
-            profile: pixel_tablet
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v5
-      - name: Isolate Android automation data
-        run: |
-          echo "APPIUM_HOME=$RUNNER_TEMP/gtmux-appium" >> "$GITHUB_ENV"
-          echo "GTMUX_ANDROID_E2E_OUTPUT=$RUNNER_TEMP/gtmux-android-evidence" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/android-emulator
+        with:
+          device: tablet
+          shard: ${{ matrix.shard }}
+          package: ${{ needs.android-native.outputs.package }}
+          receipt: ${{ needs.android-native.outputs.receipt }}
+
+  android-emulator:
+    # Android delivery looks up this exact check name.
+    name: Android tablet emulator flows
+    needs: [scope, android-native, android-emulator-shards]
+    if: always() && needs.scope.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    env:
+      ANDROID_DEVICE: tablet
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-          cache: npm
-          cache-dependency-path: mobileapp/package-lock.json
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools
-      - name: Install Android automation dependencies
-        working-directory: mobileapp
+      - name: Resolve actual successful shard attempts
+        id: receipts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GTMUX_CI_JOB_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          npm ci
-          npx appium driver install --source=local "$PWD/node_modules/appium-uiautomator2-driver"
+          set -o pipefail
+          endpoint="repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?filter=all&per_page=100"
+          for read in 1 2 3; do
+            if timeout 30s gh api --paginate --slurp "$endpoint" > "$RUNNER_TEMP/android-job-pages.json"; then
+              break
+            fi
+            test "$read" -lt 3 || exit 1
+            sleep 2
+          done
+          jq '[.[].jobs[]]' "$RUNNER_TEMP/android-job-pages.json" > "$RUNNER_TEMP/android-jobs.json"
+          python3 scripts/android_ci_results.py resolve \
+            --jobs "$RUNNER_TEMP/android-jobs.json" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
+        id: coverage_1
         with:
-          name: ${{ needs.android-native.outputs.package }}
-          path: mobileapp/android/app/build/outputs/apk/qa
-      - name: Verify the shared QA package before installation
-        run: python3 scripts/android_ci_package.py verify --source "$GITHUB_SHA" --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
-      - name: Allow KVM on this disposable runner
+          name: android-emulator-coverage-tablet-1-${{ github.run_id }}-${{ steps.receipts.outputs.attempt_1 }}
+          path: ${{ runner.temp }}/android-coverage/1
+      - uses: actions/download-artifact@v4
+        id: coverage_2
+        with:
+          name: android-emulator-coverage-tablet-2-${{ github.run_id }}-${{ steps.receipts.outputs.attempt_2 }}
+          path: ${{ runner.temp }}/android-coverage/2
+      - name: Require every case once on the verified QA APK
+        env:
+          GTMUX_ANDROID_QA_RECEIPT: ${{ needs.android-native.outputs.receipt }}
+          SHARD_1_ATTEMPT: ${{ steps.receipts.outputs.attempt_1 }}
+          SHARD_2_ATTEMPT: ${{ steps.receipts.outputs.attempt_2 }}
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-gtmux-kvm.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: Exercise the complete synthetic suite
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 36
-          target: google_apis
-          arch: x86_64
-          profile: ${{ matrix.profile }}
-          avd-name: gtmux-ci-${{ matrix.device }}
-          force-avd-creation: true
-          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader
-          script: ANDROID_SERIAL=emulator-5554 npm --prefix mobileapp run test:e2e:android
-      - name: Preserve synthetic emulator evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-emulator-${{ matrix.device }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/gtmux-android-evidence
-          if-no-files-found: warn
-          retention-days: 7
+          python3 scripts/android_ci_results.py verify \
+            --receipts "$RUNNER_TEMP/android-coverage" --attempt-1 "$SHARD_1_ATTEMPT" --attempt-2 "$SHARD_2_ATTEMPT"
+      - name: Explain recovery for unavailable shard coverage
+        if: failure() && (steps.coverage_1.outcome == 'failure' || steps.coverage_2.outcome == 'failure')
+        env:
+          COVERAGE_1: ${{ steps.coverage_1.outcome }}
+          COVERAGE_2: ${{ steps.coverage_2.outcome }}
+        run: |
+          if [[ "$COVERAGE_1" == failure ]]; then shard=1; else shard=2; fi
+          echo "Check the listed coverage artifact for this run. If it still exists, retry the tablet summary."
+          echo "If missing or expired, rerun Android $ANDROID_DEVICE emulator shard $shard and its dependents."
+          echo "If the original QA APK is also unavailable, rerun Android QA build and native policies and its dependents."
 
   web:
     name: Web logic and rendered browser flows
@@ -605,7 +640,7 @@ jobs:
 
   ci-required:
     if: always()
-    needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, android-emulator, relay-worker, tunnel-worker, menubar]
+    needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, android-phone, android-emulator-shards, android-emulator, relay-worker, tunnel-worker, menubar]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

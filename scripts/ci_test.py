@@ -62,11 +62,11 @@ class ScopeTests(unittest.TestCase):
     def test_recognized_modules_include_consumers(self):
         self.assertEqual(ci.classify(["internal/radar/agents_test.go"])["selected"], ["test"])
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
-                         {"mobile", "web", "ios-native", "android-native", "android-emulator"})
+                         {"mobile", "web", "ios-native", "android-native", "android-phone", "android-emulator-shards", "android-emulator"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
                          {"mobile", "ios-native"})
         self.assertEqual(set(ci.classify(["relay-worker/src/index.ts"])["selected"]),
-                         {"relay-worker", "test", "mobile", "android-native", "android-emulator"})
+                         {"relay-worker", "test", "mobile", "android-native", "android-phone", "android-emulator-shards", "android-emulator"})
 
     def test_nul_parser_preserves_names_and_old_rename_path(self):
         names = ci.parse_diff(b"R100\0internal/radar/a.go\0docs/a.md\0D\0docs/deleted.md\0M\0docs/\xe4\xb8\xad\xe6\x96\x87\n$(oops).md\0")
@@ -139,17 +139,50 @@ class ScopeTests(unittest.TestCase):
 
     def test_android_package_is_built_once_and_both_devices_use_its_output(self):
         text = (ROOT / ".github/workflows/ci.yml").read_text()
-        build = text.split("  android-native:\n", 1)[1].split("  android-emulator:\n", 1)[0]
-        emulators = text.split("  android-emulator:\n", 1)[1].split("  web:\n", 1)[0]
+        build, rest = text.split("  android-native:\n", 1)[1].split("  android-phone:\n", 1)
+        phone, rest = rest.split("  android-emulator-shards:\n", 1)
+        shards, rest = rest.split("  android-emulator:\n", 1)
+        tablet = rest.split("  web:\n", 1)[0]
+        action = (ROOT / ".github/actions/android-emulator/action.yml").read_text()
         self.assertEqual(text.count(":app:assembleQa"), 1)
-        self.assertIn("fail-fast: false", emulators)
-        for device in ("phone", "tablet"):
-            self.assertIn("- device: " + device, emulators)
+        self.assertIn("name: Android phone emulator flows\n", phone)
+        self.assertIn("device: phone", phone)
+        self.assertNotIn("shard:", phone)
+        self.assertIn("default: '0'", action)
+        self.assertIn("device: tablet", shards)
+        self.assertIn("shard: [1, 2]", shards)
+        self.assertIn("fail-fast: false", shards)
         self.assertIn("steps.package.outputs.name", build)
-        self.assertIn("needs.android-native.outputs.package", emulators)
-        self.assertIn("android_ci_package.py verify", emulators)
-        self.assertNotIn("GTMUX_ANDROID_E2E_ONLY", emulators)
-        self.assertIn("github.run_attempt", emulators)
+        self.assertIn("steps.package.outputs.receipt", build)
+        for job in (phone, shards):
+            self.assertIn("uses: ./.github/actions/android-emulator", job)
+            self.assertIn("needs.android-native.outputs.package", job)
+            self.assertIn("needs.android-native.outputs.receipt", job)
+        self.assertIn("android_ci_package.py verify", action)
+        self.assertIn("android_ci_results.py select", action)
+        self.assertIn("unset GTMUX_ANDROID_E2E_ONLY", action)
+        self.assertIn("android_ci_results.py verify-lane", action)
+        self.assertIn("name: Android tablet emulator flows\n", tablet)
+        self.assertIn("always() && needs.scope.outputs.android == 'true'", tablet)
+        self.assertIn("needs.android-native.outputs.receipt", tablet)
+        self.assertIn("android_ci_results.py resolve", tablet)
+        self.assertIn("android_ci_results.py verify", tablet)
+        required = text.split("  ci-required:\n", 1)[1]
+        needs = re.search(r"needs: \[([^\]]+)", required)[1].split(", ")
+        self.assertTrue(ci.ANDROID_JOBS.issubset(needs))
+
+    def test_android_receipt_retention_spans_reruns_and_names_the_producer(self):
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text()
+        action = (ROOT / ".github/actions/android-emulator/action.yml").read_text()
+        coverage, diagnostics = action.split("    - name: Preserve successful tablet shard coverage\n", 1)[1].split(
+            "    - name: Preserve synthetic emulator evidence\n", 1)
+        self.assertIn("if: inputs.device == 'tablet'", coverage)
+        self.assertIn("retention-days: 35", coverage)
+        self.assertIn("retention-days: 7", diagnostics)
+        self.assertRegex(workflow, r"if-no-files-found: error\n          retention-days: 7")
+        self.assertIn("retry the tablet summary", workflow)
+        self.assertIn("rerun Android $ANDROID_DEVICE emulator shard $shard", workflow)
+        self.assertIn("rerun Android QA build and native policies", workflow)
 
 
 class ResultTests(unittest.TestCase):
@@ -171,6 +204,13 @@ class ResultTests(unittest.TestCase):
                 with self.subTest(name=name, result=result):
                     needs = self.results(ci.JOBS); needs[name] = {"result": result}
                     self.assertTrue(ci.verdict(plan, needs))
+
+    def test_android_aggregation_requires_the_entire_job_family(self):
+        self.assertEqual(ci.ANDROID_JOBS, {"android-native", "android-phone", "android-emulator-shards", "android-emulator"})
+        for missing in ci.ANDROID_JOBS:
+            with self.subTest(missing=missing):
+                partial = ci.ANDROID_JOBS - {missing}
+                self.assertTrue(ci.verdict({"selected": sorted(partial), "full": False}, self.results(partial)))
 
     def test_bad_plans_or_unselected_failure_are_rejected(self):
         for plan in (None, {}, {"selected": ["unknown"], "full": False},

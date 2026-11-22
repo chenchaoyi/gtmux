@@ -2972,20 +2972,54 @@
       "large rendering pages disclose bounds and preserve all characters"
     ]
   },
-  "scripts/ci.py": {
+  "scripts/android_ci_results.py": {
     "cases": [
-      "CT-SCOPE"
+      "ACS-002",
+      "ACS-003"
     ],
     "selectors": [
-      "confirmed_unit_test_isolation"
+      "def partition(",
+      "def shard_attempts(",
+      "def verify_lane(",
+      "def verify_device("
+    ]
+  },
+  "scripts/android_ci_results_test.py": {
+    "cases": [
+      "ACS-002",
+      "ACS-003"
+    ],
+    "selectors": [
+      "test_failed_only_rerun_binds_the_actual_execution_attempt",
+      "test_current_failure_skip_cancel_incomplete_or_missing_never_uses_an_older_pass",
+      "test_duplicate_or_foreign_job_history_is_rejected",
+      "test_both_device_suites_require_each_case_once_on_the_original_qa_package",
+      "test_missing_or_invalid_case_and_lane_receipts_fail",
+      "test_full_phone_rejects_any_selection_or_missing_scenario",
+      "test_partition_rejects_crossing_setup_groups_or_prerequisites"
+    ]
+  },
+  "scripts/ci.py": {
+    "cases": [
+      "CT-SCOPE",
+      "ACS-001"
+    ],
+    "selectors": [
+      "confirmed_unit_test_isolation",
+      "ANDROID_JOBS"
     ]
   },
   "scripts/ci_test.py": {
     "cases": [
-      "CT-SCOPE"
+      "CT-SCOPE",
+      "ACS-001",
+      "ACS-004"
     ],
     "selectors": [
-      "test_unit_test_scope_requires_immutable_product_exclusion"
+      "test_unit_test_scope_requires_immutable_product_exclusion",
+      "test_android_package_is_built_once_and_both_devices_use_its_output",
+      "test_android_aggregation_requires_the_entire_job_family",
+      "test_android_receipt_retention_spans_reruns_and_names_the_producer"
     ]
   },
   "scripts/test_design.py": {
