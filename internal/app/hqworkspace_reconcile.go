@@ -289,9 +289,9 @@ func scheduleWorkspaceReconciliation() {
 	workspaceReconciliationRunner.start(func() {
 		s := workspaceStore()
 		if snapshot, err := s.Read(); err == nil {
-			workspaceWakeDeadlines(snapshot, now)
+			workspaceAttention(snapshot, now)
 		} else {
-			diag.ReportStoreFailure("hq-wake-deadline", err)
+			diag.ReportStoreFailure("hq-workspace-attention", err)
 		}
 		if err := ingestWorkspaceObservations(s, now); err != nil {
 			diag.ReportStoreFailure("hq-reconciliation", err)

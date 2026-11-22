@@ -29,6 +29,8 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     private var nextWatchAttempt = Date.distantPast
     private var waitingBanners: Set<String> = []
     private var waitingSnapshot: Set<String>?
+    private var hqAttention: [String: Set<String>] = [:]
+    private let hqAttentionPrefix = "gtmux-hq-attention-"
 
     init(center: DesktopNotificationCenter = SystemDesktopNotificationCenter(),
          queueDirectory: URL = URL(fileURLWithPath: Paths.data("notify"), isDirectory: true),
@@ -55,8 +57,12 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         var session = ""
         var icon = ""
         var ts = 0
+        var attentionID = ""
         // tolerate missing fields
-        enum CodingKeys: String, CodingKey { case kind, title, subtitle, body, pane, session, icon, ts }
+        enum CodingKeys: String, CodingKey {
+            case kind, title, subtitle, body, pane, session, icon, ts
+            case attentionID = "attention_id"
+        }
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             func s(_ k: CodingKeys) -> String { (try? c.decode(String.self, forKey: k)) ?? "" }
@@ -64,6 +70,7 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             title = s(.title); subtitle = s(.subtitle); body = s(.body)
             pane = s(.pane); session = s(.session); icon = s(.icon)
             ts = (try? c.decode(Int.self, forKey: .ts)) ?? 0
+            attentionID = s(.attentionID)
         }
     }
 
@@ -225,13 +232,15 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     }
 
     private func drain() {
+        let checkedAttentionScopes = refreshHQAttention()
         guard !readingSettings, authorization.permission != .checking else { return }
         let fm = FileManager.default
         guard let files = try? fm.contentsOfDirectory(
             at: queueDir, includingPropertiesForKeys: nil,
             options: [.skipsHiddenFiles]) else { return }
         for f in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where f.pathExtension == "json" {
-            defer { try? fm.removeItem(at: f) } // one-shot: always consume
+            var consume = true
+            defer { if consume { try? fm.removeItem(at: f) } }
             guard let data = try? Data(contentsOf: f),
                   let req = try? JSONDecoder().decode(Request.self, from: data) else {
                 DiagLog.act("act.notify.post", target: "", outcome: "refused",
@@ -243,6 +252,18 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
                 DiagLog.act("act.notify.post", target: req.pane, outcome: "refused",
                             "a notification was not shown", ["reason": "stale", "kind": req.kind])
                 continue
+            }
+            if req.kind == "attention" {
+                if !req.attentionID.isEmpty {
+                    guard let scope = attentionScope(req.attentionID) else { continue }
+                    if !checkedAttentionScopes.contains(scope) {
+                        consume = req.ts <= 0 // hold a fresh request while its state cannot be verified
+                        continue
+                    }
+                    guard attentionActive(req.attentionID) == true else { continue }
+                } else if req.pane.isEmpty, obsoleteLegacyAttention(req.title, req.body) {
+                    continue
+                }
             }
             guard enabled() else { // respect the toggle
                 DiagLog.act("act.notify.post", target: req.pane, outcome: "refused",
@@ -289,7 +310,11 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             content.categoryIdentifier = doneCategory
             content.sound = .default
             content.interruptionLevel = .active
-            id = req.pane.isEmpty ? UUID().uuidString : "gtmux-attention-\(req.pane)"
+            if req.attentionID.isEmpty {
+                id = req.pane.isEmpty ? UUID().uuidString : "gtmux-attention-\(req.pane)"
+            } else {
+                id = hqAttentionPrefix + req.attentionID
+            }
         } else {
             content.categoryIdentifier = doneCategory
             content.sound = nil // finished is calm
@@ -309,9 +334,79 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
                             self.center.removeDelivered([self.waitID(pane)])
                         } else { self.waitingBanners.insert(pane) }
                     }
+                    if kind == "attention", !req.attentionID.isEmpty {
+                        if self.attentionActive(req.attentionID) == false {
+                            self.center.removeDelivered([id])
+                        } else {
+                            self.withdrawObsoleteHQAttention(replacing: req.attentionID)
+                        }
+                    }
                     DiagLog.act("act.notify.post", target: pane, outcome: "ok",
                                 "submitted a notification to macOS", ["kind": kind])
                 }
+            }
+        }
+    }
+
+    private let attentionScopes = ["workspace", "relay"]
+
+    private func attentionScope(_ identity: String) -> String? {
+        attentionScopes.first { identity.hasPrefix($0 + "/") && identity.count > $0.count + 1 }
+    }
+
+    private func attentionActive(_ identity: String) -> Bool? {
+        guard let scope = attentionScope(identity) else { return nil }
+        return hqAttention[scope]?.contains(identity)
+    }
+
+    private func refreshHQAttention() -> Set<String> {
+        // A missing or unreadable snapshot is not evidence of resolution.
+        let limit = 128 * 1024
+        var changed = false
+        var checked = Set<String>()
+        for scope in attentionScopes {
+            let path = queueDir.appendingPathComponent("hq-\(scope).attention")
+            guard let handle = try? FileHandle(forReadingFrom: path) else { continue }
+            defer { try? handle.close() }
+            guard let data = try? handle.read(upToCount: limit + 1), data.count <= limit,
+                  let keys = try? JSONDecoder().decode(Set<String>.self, from: data),
+                  keys.allSatisfy({ attentionScope($0) == scope }) else { continue }
+            checked.insert(scope)
+            guard hqAttention[scope] != keys else { continue }
+            hqAttention[scope] = keys
+            changed = true
+        }
+        if changed { withdrawObsoleteHQAttention() }
+        return checked
+    }
+
+    private func obsoleteLegacyAttention(_ title: String, _ body: String, replacing: String? = nil) -> Bool {
+        switch title {
+        case "HQ workspace deadline overdue":
+            return hqAttention["workspace"] != nil
+        case "HQ report still needs attention":
+            guard let command = body.range(of: "gtmux relay show ", options: .backwards),
+                  let report = body[command.upperBound...].split(separator: " ").first else { return false }
+            let identity = "relay/" + String(report)
+            return attentionActive(identity) == false || identity == replacing
+        default:
+            return false
+        }
+    }
+
+    private func withdrawObsoleteHQAttention(replacing: String? = nil) {
+        center.delivered { [weak self] notifications in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                let obsolete = notifications.filter { notification in
+                    if notification.identifier.hasPrefix(self.hqAttentionPrefix) {
+                        let identity = String(notification.identifier.dropFirst(self.hqAttentionPrefix.count))
+                        return self.attentionActive(identity) == false
+                    }
+                    return notification.pane.isEmpty && UUID(uuidString: notification.identifier) != nil &&
+                        self.obsoleteLegacyAttention(notification.title, notification.body, replacing: replacing)
+                }
+                if !obsolete.isEmpty { self.center.removeDelivered(obsolete.map(\.identifier)) }
             }
         }
     }

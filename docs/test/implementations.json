@@ -1,4 +1,23 @@
 {
+  "internal/hq/attention_lifecycle_test.go": {
+    "cases": [
+      "HND-001",
+      "HND-002"
+    ],
+    "selectors": [
+      "TestHND001WorkspaceAttentionChangesCopyWithoutChangingIdentity",
+      "TestHND002RelayAttentionReplacesStatusAndKeepsARealBlocker"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift": {
+    "cases": [
+      "HND-003"
+    ],
+    "selectors": [
+      "testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance",
+      "testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly"
+    ]
+  },
   "internal/codexbridge/hq_title_test.go": {
     "cases": ["HCO-001", "HCO-002"],
     "selectors": ["TestHCOTitleFramesKeepNativeRenameAfterStaleRoot", "TestHCORetiredFrontendCannotReclaimDelayedRoot"]
@@ -96,11 +115,13 @@
     "cases": [
       "HRA-002",
       "HRA-003",
-      "HRA-004"
+      "HRA-004",
+      "HND-002"
     ],
     "selectors": [
       "TestHRA003ProspectiveRelayAttentionUsesExactSourceAndRealClaim",
-      "TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim"
+      "TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim",
+      "TestHRA004ResolvedRelayWithdrawsWithoutReconciledClaim"
     ]
   },
   "internal/app/client_contract_test.go": {
@@ -4468,7 +4489,8 @@
   },
   "internal/app/hq_wake_deadline_test.go": {
     "cases": [
-      "HWA-005"
+      "HWA-005",
+      "HND-001"
     ],
     "selectors": [
       "TestHWA005DeadlineIsOwedUntilOriginalMatterSettles"

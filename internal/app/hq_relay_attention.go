@@ -43,6 +43,7 @@ func readPendingAttention(q hqworkspace.Reconciliation, now int64) (relay.Reques
 func serviceWorkspaceRelayAttention(s *hqworkspace.Store, d hqworkspace.Database, now int64) {
 	candidates, enrolled := hqworkspace.RelayAttentionQueue(d, now)
 	if !enrolled {
+		workspaceRelayAttentionNotice(now, nil)
 		return
 	}
 	var notices []hq.RelayAttention
@@ -57,7 +58,7 @@ func serviceWorkspaceRelayAttention(s *hqworkspace.Store, d hqworkspace.Database
 		r, pending, verifyErr := readPendingAttention(q, now)
 		if verifyErr != nil {
 			diag.ReportStoreFailure("hq-relay-attention", verifyErr)
-			if late {
+			if late && !errors.Is(verifyErr, relay.ErrMissing) {
 				notices = append(notices, hq.RelayAttention{ID: strings.TrimPrefix(q.Observation.Ref, "relay:"),
 					Since: q.Observation.OccurredAt, ReservedAt: q.RelayAttentionAt, Unverified: true})
 			}

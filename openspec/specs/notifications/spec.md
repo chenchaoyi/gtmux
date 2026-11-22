@@ -214,3 +214,23 @@ The menu-bar preferences SHALL group the desktop notification switch with its ex
 
 - **WHEN** macOS accepts a test notification
 - **THEN** feedback beside the test action reports submission without claiming that a banner appeared
+
+### Requirement: HQ desktop notices follow the exact outstanding condition
+
+The Mac app SHALL use stable, separate notification identities for actionable HQ
+matters and outstanding managed reports. Updated evidence SHALL replace the
+corresponding notice. When a verified current snapshot no longer includes that
+identity, the app SHALL withdraw its notice, including after restart. A missing
+or unreadable snapshot SHALL NOT be treated as resolution. Other desktop
+notifications and the durable HQ audit remain independent.
+
+#### Scenario: A review report is claimed or closed
+
+- **WHEN** HQ has a live claim or closes the exact original report
+- **THEN** its previous desktop notice is withdrawn while independent outstanding reports remain visible
+
+#### Scenario: HQ schedules another routine check
+
+- **WHEN** a matter is awaiting an external result and HQ moves the next check
+- **THEN** the workspace shows the check without creating a desktop alert
+- **AND** an unanswered user question or a verified continuing blockage can still generate an independent notice

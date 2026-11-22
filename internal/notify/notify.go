@@ -29,6 +29,8 @@ type Options struct {
 	Pane     string // tmux pane id (%N) to jump to on click; "" → focus --last
 	Session  string // session name (for the app's coalescing/threading)
 	IconPath string // thumbnail image path; "" to omit
+
+	AttentionID string // stable identity for an HQ notice owned by an attention snapshot
 }
 
 // request is the on-disk schema the menu-bar app decodes. Keep field names in
@@ -42,6 +44,8 @@ type request struct {
 	Session  string `json:"session,omitempty"`
 	Icon     string `json:"icon,omitempty"`
 	TS       int64  `json:"ts"` // unix seconds; the app drops stale requests
+
+	AttentionID string `json:"attention_id,omitempty"`
 }
 
 // Send enqueues o for the menu-bar app to deliver. Best-effort and non-blocking:
@@ -79,6 +83,8 @@ func TrySend(o Options) bool {
 		Session:  o.Session,
 		Icon:     o.IconPath,
 		TS:       time.Now().Unix(),
+
+		AttentionID: o.AttentionID,
 	})
 	if err != nil {
 		return false

@@ -448,6 +448,7 @@ LEG-19d6ceb43769,L1,Go core / CLI / server,internal/app/hooksilence_test.go,44,T
 LEG-b4c53a66c7ba,L1,Go core / CLI / server,internal/app/hooksilence_test.go,56,Test,TestEventsReadGivesThePaneItsNewest,False,legacy-not-retrospectively-reviewed
 MAP-2205ade7faa7,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,17,reviewed-selector,TestHRA003ProspectiveRelayAttentionUsesExactSourceAndRealClaim,False,"HRA-002,HRA-003,HRA-004"
 MAP-70f381b3e425,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,119,reviewed-selector,TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim,False,"HRA-002,HRA-003,HRA-004"
+MAP-9a2267e34534,L2,reviewed implementation,internal/app/hq_relay_attention_test.go,174,reviewed-selector,TestHRA004ResolvedRelayWithdrawsWithoutReconciledClaim,False,"HRA-002,HRA-003,HRA-004,HND-002"
 MAP-19a5906d1fd5,L2,reviewed implementation,internal/app/hq_wake_deadline_test.go,10,reviewed-selector,TestHWA005DeadlineIsOwedUntilOriginalMatterSettles,False,HWA-005
 LEG-22c10bb33192,L1,Go core / CLI / server,internal/app/hqmemory_row_test.go,30,Test,TestHQMemoryRowReadsItsThreeStates,False,legacy-not-retrospectively-reviewed
 LEG-7d78fb6a41eb,L1,Go core / CLI / server,internal/app/hqtranscript_agent_test.go,15,Test,TestStitchEarlierKeepsEachHQAgentsIdentity,False,legacy-not-retrospectively-reviewed
@@ -1691,6 +1692,8 @@ LEG-618e86c9a264,L1,Go core / CLI / server,internal/hq/archive_small_records_tes
 LEG-01098dda3d23,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,127,Benchmark,BenchmarkSmallRecordArchive7000,False,legacy-not-retrospectively-reviewed
 LEG-8ad77d3c1573,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,128,Benchmark,BenchmarkSmallRecordArchive10000,False,legacy-not-retrospectively-reviewed
 LEG-29886f95fa14,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,138,Test,TestArchivePreflightIncludesTarOverhead,False,legacy-upstream-PR1814
+MAP-1785f3b3f89e,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,34,reviewed-selector,TestHND001WorkspaceAttentionChangesCopyWithoutChangingIdentity,False,"HND-001,HND-002"
+MAP-40ff8e1d0e6e,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,60,reviewed-selector,TestHND002RelayAttentionReplacesStatusAndKeepsARealBlocker,False,"HND-001,HND-002"
 LEG-15483d5020ad,L1,Go core / CLI / server,internal/hq/board_shape_test.go,30,Test,TestBoardSeedHasBothParts,False,legacy-not-retrospectively-reviewed
 LEG-a8636bbce213,L1,Go core / CLI / server,internal/hq/board_shape_test.go,49,Test,TestPlaybookAndSeedAgreeOnTheHeadings,False,legacy-not-retrospectively-reviewed
 LEG-f6324716e51f,L1,Go core / CLI / server,internal/hq/board_shape_test.go,65,Test,TestBoardDoesNotSpeakTranslationese,False,legacy-not-retrospectively-reviewed
@@ -4120,16 +4123,18 @@ LEG-fca044986549,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NewSessionC
 LEG-074b20be4222,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NewSessionControllerTests.swift,15,XCTest,testPromptOpensWithTheNameFieldReadyToType,False,legacy-not-retrospectively-reviewed
 LEG-9e007d5e5ecc,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NewSessionControllerTests.swift,31,XCTest,testCompactFormLayoutAndActionsInBothLanguagesAndAppearances,False,legacy-not-retrospectively-reviewed
 LEG-27aac7a6ac6c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NewSessionControllerTests.swift,91,XCTest,testClearingTheSuggestionCreatesExactlyTheDisplayedName,False,legacy-not-retrospectively-reviewed
-LEG-4da97fd3772c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,63,XCTest,testBareOrTestHostNeverStartsTheSystemDeliveryPath,False,legacy-not-retrospectively-reviewed
-LEG-a0ac61a80b4c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,77,XCTest,testLaterTurnsOnTheSamePaneAreNotSilenced,False,legacy-not-retrospectively-reviewed
-LEG-ca8398f9394e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,96,XCTest,testAnAsynchronousFailureDoesNotPoisonTheNextTurn,False,legacy-not-retrospectively-reviewed
-LEG-3f7e830cbf9e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,108,XCTest,testResolvedWaitsWithdrawEvenWhenAcceptanceIsLate,False,legacy-not-retrospectively-reviewed
-LEG-5256316b25fe,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,129,XCTest,testStartupWaitsForPermissionAndDrainsEventsFromThatGap,False,legacy-not-retrospectively-reviewed
-LEG-a33a1fd43325,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,142,XCTest,testPermissionCanRecoverWithoutRestartingTheApp,False,legacy-not-retrospectively-reviewed
-LEG-de67024e42e1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,158,XCTest,testPermissionRefreshKeepsTheQueueUntilTheFreshVerdict,False,legacy-not-retrospectively-reviewed
-LEG-66c4149c72a4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,173,XCTest,testAnUndecidedPermissionIsRequestedOnce,False,legacy-not-retrospectively-reviewed
-LEG-85ba98704b83,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,183,XCTest,testOffAndStaleRequestsDoNotPost,False,legacy-not-retrospectively-reviewed
-LEG-563fd6673864,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,193,XCTest,testExplicitTestHasNoAgentTargetAndReportsAcceptanceOnly,False,legacy-not-retrospectively-reviewed
+LEG-4da97fd3772c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,77,XCTest,testBareOrTestHostNeverStartsTheSystemDeliveryPath,False,legacy-not-retrospectively-reviewed
+LEG-a0ac61a80b4c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,91,XCTest,testLaterTurnsOnTheSamePaneAreNotSilenced,False,legacy-not-retrospectively-reviewed
+LEG-ca8398f9394e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,110,XCTest,testAnAsynchronousFailureDoesNotPoisonTheNextTurn,False,legacy-not-retrospectively-reviewed
+LEG-3f7e830cbf9e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,122,XCTest,testResolvedWaitsWithdrawEvenWhenAcceptanceIsLate,False,legacy-not-retrospectively-reviewed
+LEG-5256316b25fe,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,199,XCTest,testStartupWaitsForPermissionAndDrainsEventsFromThatGap,False,legacy-not-retrospectively-reviewed
+LEG-a33a1fd43325,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,212,XCTest,testPermissionCanRecoverWithoutRestartingTheApp,False,legacy-not-retrospectively-reviewed
+LEG-de67024e42e1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,228,XCTest,testPermissionRefreshKeepsTheQueueUntilTheFreshVerdict,False,legacy-not-retrospectively-reviewed
+LEG-66c4149c72a4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,243,XCTest,testAnUndecidedPermissionIsRequestedOnce,False,legacy-not-retrospectively-reviewed
+LEG-85ba98704b83,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,253,XCTest,testOffAndStaleRequestsDoNotPost,False,legacy-not-retrospectively-reviewed
+LEG-563fd6673864,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,263,XCTest,testExplicitTestHasNoAgentTargetAndReportsAcceptanceOnly,False,legacy-not-retrospectively-reviewed
+MAP-aed926f4a8fc,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,143,reviewed-selector,testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance,False,HND-003
+MAP-1a382996af6d,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,169,reviewed-selector,testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly,False,HND-003
 LEG-d80028d0991c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationPreferencesLayoutTests.swift,32,XCTest,testTestFeedbackAndPermissionStatesRemainVisible,False,legacy-not-retrospectively-reviewed
 MAP-79ce2b9cc2d9,M,reviewed implementation,macapp/Tests/GtmuxBarTests/ObservedIdentityTests.swift,5,reviewed-selector,testSID008HistoryNeverPopulatesCurrentIdentity,False,SID-008
 LEG-659408c65bf3,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/PairStoreTests.swift,8,XCTest,testParseDevicesFiltersGuests,False,legacy-not-retrospectively-reviewed

@@ -30,10 +30,10 @@ func TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter(t *testing.T) {
 	watchWakeHealth(now+10, view)
 	view.Issues = append(view.Issues, hqnudge.WakeIssue{Reason: "queue-pressure", FirstAt: now + 11, LastAt: now + 11})
 	watchWakeHealth(now+11, view)
-	due := []WakeDeadline{{FollowupID: "goal-synthetic", MatterID: "synthetic-morning", Due: now}}
-	WatchWakeDeadlines(now+65, due)
-	WatchWakeDeadlines(now+66, due)
-	if len(notifications) != 3 || !strings.Contains(notifications[2].Message, "goal-synthetic") {
+	blocking := []WorkspaceAttention{{MatterID: "synthetic-morning", EvidenceID: "action-synthetic"}}
+	WatchWorkspaceAttention(now+65, blocking)
+	WatchWorkspaceAttention(now+66, blocking)
+	if len(notifications) != 3 || notifications[2].AttentionID != "workspace/synthetic-morning" {
 		t.Fatalf("changed cause or independent deadline was masked or repeated: %#v", notifications)
 	}
 	if hqnudge.Pending() {
@@ -54,7 +54,7 @@ func TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter(t *testing.T) {
 		t.Fatal("retained conflict or capacity observation was announced again")
 	}
 	watchWakeHealth(now+wakeNoticeInterval+2, hqnudge.Health{})
-	WatchWakeDeadlines(now+wakeNoticeInterval+2, nil)
+	WatchWorkspaceAttention(now+wakeNoticeInterval+2, nil)
 	if len(notifications) != 3 {
 		t.Fatal("a verified resolution emitted another alarm")
 	}
@@ -107,8 +107,8 @@ func TestWNR003WakeNoticeCoalescesNewCausesAndSkipsHistoricalInventory(t *testin
 		strings.Contains(seen[1].Message, "active proof window") {
 		t.Fatalf("new refusals or live stalls were hidden, or old archive repeated: %#v", seen)
 	}
-	WatchWakeDeadlines(again, []WakeDeadline{{FollowupID: "separate-followup", MatterID: "synthetic-matter", Due: now}})
-	if len(seen) != 3 || !strings.Contains(seen[2].Message, "separate-followup") {
+	WatchWorkspaceAttention(again, []WorkspaceAttention{{MatterID: "synthetic-matter", EvidenceID: "separate-followup"}})
+	if len(seen) != 3 || seen[2].AttentionID != "workspace/synthetic-matter" {
 		t.Fatalf("channel changes masked a workspace deadline: %#v", seen)
 	}
 }
