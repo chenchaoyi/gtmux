@@ -69249,6 +69249,22 @@
       ],
       "sha256": "daa3013a83aae9a103c08e04ee0d917976f98f9860dd123e2e0242a80f909d10"
     },
+    "internal/hqnudge/workspace_successor_witness_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-aac3046273e3",
+          "line": 18,
+          "kind": "reviewed-selector",
+          "name": "TestHSW001HSW002ObserveWorkspaceSuccessorReceipt",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HSW-001,HSW-002"
+        }
+      ],
+      "sha256": "65fff6bdf951579fe8d27f42bbce7d28767281f818bbb63d110434ec1a6ce176"
+    },
     "mobileapp/src/ui/MarkdownView.compat.test.tsx": {
       "layer": "L2",
       "stack": "reviewed implementation",
@@ -69264,31 +69280,6 @@
         }
       ],
       "sha256": "be367d95460b17c9c6c97409074057217afa38b0c0c235d3157f7b30f0a615c6"
-    },
-    "mobileapp/src/ui/NewSessionSheet.compat.test.tsx": {
-      "layer": "L2",
-      "stack": "reviewed implementation",
-      "cases": [
-        {
-          "id": "MAP-92edf239dc79",
-          "line": 24,
-          "kind": "reviewed-selector",
-          "name": "MCE-005 shows the trimmed name and sends the same value",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MCE-005"
-        },
-        {
-          "id": "MAP-104956bc7f5a",
-          "line": 32,
-          "kind": "reviewed-selector",
-          "name": "MCE-005 blocks tmux formatting in %s",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "MCE-005"
-        }
-      ],
-      "sha256": "16c28a7278f16eeec3c082cffc27b5c81fc72a933873967bf2eea9a77c00f033"
     },
     "mobileapp/src/ui/MarkdownView.externalLinks.test.tsx": {
       "layer": "L2",
@@ -69321,6 +69312,31 @@
         }
       ],
       "sha256": "55a820bccf9d3af972ebd3a0b7d0c126038ed42dfb1d0bd937d11ce595961220"
+    },
+    "mobileapp/src/ui/NewSessionSheet.compat.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-92edf239dc79",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "MCE-005 shows the trimmed name and sends the same value",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MCE-005"
+        },
+        {
+          "id": "MAP-104956bc7f5a",
+          "line": 32,
+          "kind": "reviewed-selector",
+          "name": "MCE-005 blocks tmux formatting in %s",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MCE-005"
+        }
+      ],
+      "sha256": "16c28a7278f16eeec3c082cffc27b5c81fc72a933873967bf2eea9a77c00f033"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

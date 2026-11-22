@@ -352,11 +352,7 @@ func notifyWorkspaceReconciliation(s *hqworkspace.Store, now, next int64) (int64
 		if goals == 0 && ordinary == 0 {
 			return next, nil
 		}
-		tail := "HQ coordination remains due; pull: gtmux hq workspace reconcile --json"
-		if repeated {
-			tail = "HQ has not completed its coordination after repeated reminders; pull: gtmux hq workspace reconcile --json"
-		}
-		workspaceReconcileWake(hqwake.Line(hqwake.ClassTick, "workspace reconciliation", fmt.Sprintf("pending:%d", len(rows)), tail))
+		workspaceReconcileWake(hqwake.WorkspaceReconciliationLine(len(rows), repeated))
 		return now + 300, nil
 	}
 	return next, nil
@@ -446,9 +442,5 @@ func revalidateWorkspaceReconciliation(d hqworkspace.Database, now int64, line s
 	if pending == 0 {
 		return false, ""
 	}
-	tail := "HQ coordination remains due; pull: gtmux hq workspace reconcile --json"
-	if repeated {
-		tail = "HQ has not completed its coordination after repeated reminders; pull: gtmux hq workspace reconcile --json"
-	}
-	return true, hqwake.Line(hqwake.ClassTick, "workspace reconciliation", fmt.Sprintf("pending:%d", pending), tail)
+	return true, hqwake.WorkspaceReconciliationLine(pending, repeated)
 }

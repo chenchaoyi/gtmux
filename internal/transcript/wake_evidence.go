@@ -18,26 +18,55 @@ type WakeWitness struct {
 	Started       time.Time
 	Delivered     time.Time
 	StartupPrefix bool
+	// FirstTurnPrefix identifies a candidate that still needs independent
+	// rotation evidence from its caller.
+	FirstTurnPrefix bool
 }
 
+type wakePrefixMode uint8
+
+const (
+	wakeTailOnly wakePrefixMode = iota
+	wakeStartupPrefix
+	wakeFirstTurnPrefix
+)
+
 func CodexWakeWitness(session, turn, prompt string, since time.Time) WakeWitness {
-	return codexWakeWitness(session, turn, prompt, since, false)
+	return codexWakeWitness(session, turn, prompt, since, wakeTailOnly)
 }
 
 // CodexStartupWakeWitness is for an active, exact startup acknowledgement.
 // It may read a second bounded range if the usual tail missed the turn start.
 func CodexStartupWakeWitness(session, turn, prompt string, since time.Time) WakeWitness {
-	return codexWakeWitness(session, turn, prompt, since, true)
+	return codexWakeWitness(session, turn, prompt, since, wakeStartupPrefix)
 }
 
-func codexWakeWitness(session, turn, prompt string, since time.Time, startup bool) WakeWitness {
+// CodexFirstTurnWakeWitness tries the usual tail, then one original-rollout
+// prefix. A prefix witness proves only the first native turn and input.
+func CodexFirstTurnWakeWitness(session, turn, prompt string, since time.Time) WakeWitness {
+	return codexWakeWitness(session, turn, prompt, since, wakeFirstTurnPrefix)
+}
+
+func codexWakeWitness(session, turn, prompt string, since time.Time, mode wakePrefixMode) WakeWitness {
 	if session == "" || turn == "" || prompt == "" || since.IsZero() {
 		return WakeWitness{}
 	}
 	var result WakeWitness
-	paths := historyPaths("codex", session)
+	var paths []string
+	if mode == wakeFirstTurnPrefix {
+		candidates := matchingCodexLogPaths(session, enumerateCodexCandidates())
+		if !unambiguousWakeOriginal(session, candidates) {
+			mode = wakeTailOnly
+		}
+		paths = foldCodexLogPaths(candidates)
+	} else {
+		paths = historyPaths("codex", session)
+	}
+	if len(paths) != 1 {
+		mode = wakeTailOnly
+	}
 	for _, path := range paths {
-		w := wakeWitnessInSession(path, session, turn, prompt, since, startup && len(paths) == 1)
+		w := wakeWitnessInSession(path, session, turn, prompt, since, mode)
 		if w.Delivered.IsZero() {
 			continue
 		}
@@ -49,18 +78,48 @@ func codexWakeWitness(session, turn, prompt string, since time.Time, startup boo
 	return result
 }
 
+// Chat folds matching basenames for display. The workspace prefix needs one
+// original rollout, so same-name paths may coexist only as aliases of one file.
+func unambiguousWakeOriginal(session string, paths []string) bool {
+	if len(paths) == 0 {
+		return false
+	}
+	name := filepath.Base(paths[0])
+	if base, _ := codexRolloutName(name, session); !base {
+		return false
+	}
+	if len(paths) == 1 {
+		return true
+	}
+	first, err := os.Stat(paths[0])
+	if err != nil || !first.Mode().IsRegular() {
+		return false
+	}
+	for _, path := range paths[1:] {
+		if filepath.Base(path) != name {
+			return false
+		}
+		info, err := os.Stat(path)
+		if err != nil || !os.SameFile(first, info) {
+			return false
+		}
+	}
+	return true
+}
+
 func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {
-	return wakeWitnessInSession(path, "", turn, prompt, since, false)
+	return wakeWitnessInSession(path, "", turn, prompt, since, wakeTailOnly)
 }
 
 const wakeWitnessBudget int64 = 256 << 10
 
 type startupProofScope struct {
-	turn string
-	cwd  string
+	turn      string
+	cwd       string
+	firstTurn bool
 }
 
-func wakeWitnessInSession(path, session, turn, prompt string, since time.Time, startup bool) WakeWitness {
+func wakeWitnessInSession(path, session, turn, prompt string, since time.Time, mode wakePrefixMode) WakeWitness {
 	f, err := os.Open(path)
 	if err != nil {
 		return WakeWitness{}
@@ -72,10 +131,10 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time, s
 	}
 	expectWake := strings.HasPrefix(prompt, Sigil+" ")
 	var headerEnd int64
-	scope := startupProofScope{turn: turn}
+	scope := startupProofScope{turn: turn, firstTurn: mode == wakeFirstTurnPrefix}
 	if expectWake {
 		var meta codexPayload
-		if startup {
+		if mode != wakeTailOnly {
 			header := bufio.NewReader(io.NewSectionReader(f, 0, min(info.Size(), codexSessionMetaBudget)))
 			row, err := header.ReadBytes('\n')
 			if err != nil {
@@ -102,7 +161,7 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time, s
 	}
 	offset := max(0, info.Size()-wakeWitnessBudget)
 	buf := make([]byte, info.Size()-offset)
-	if _, err := f.ReadAt(buf, offset); err != nil && (err != io.EOF || startup) {
+	if _, err := f.ReadAt(buf, offset); err != nil && (err != io.EOF || mode != wakeTailOnly) {
 		return WakeWitness{}
 	}
 	if offset > 0 {
@@ -123,7 +182,10 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time, s
 		return WakeWitness{}
 	}
 	witness, _ = scanWakeWitness(prefix, turn, prompt, since, true, &scope)
-	witness.StartupPrefix = !witness.Delivered.IsZero()
+	if !witness.Delivered.IsZero() {
+		witness.StartupPrefix = mode == wakeStartupPrefix
+		witness.FirstTurnPrefix = mode == wakeFirstTurnPrefix
+	}
 	return witness
 }
 
@@ -135,6 +197,7 @@ func scanWakeWitness(buf []byte, turn, prompt string, since time.Time, expectWak
 	seenTurn := false
 	usable := len(rows) > 1
 	strict := scope != nil
+	firstTurn := strict && scope.firstTurn
 	// A partial final append is not evidence until its newline is durable.
 	for _, row := range rows[:len(rows)-1] {
 		var line codexLine
@@ -167,6 +230,9 @@ func scanWakeWitness(buf []byte, turn, prompt string, since time.Time, expectWak
 			}
 			switch boundary.Type {
 			case "task_started":
+				if firstTurn && (seenTurn || boundary.Turn != turn) {
+					return WakeWitness{}, false
+				}
 				start = time.Time{}
 				if boundary.Turn == turn {
 					if at.Before(since) || seenTurn {
@@ -177,11 +243,14 @@ func scanWakeWitness(buf []byte, turn, prompt string, since time.Time, expectWak
 				}
 				continue
 			case "task_complete", "turn_aborted":
+				if firstTurn {
+					return WakeWitness{}, false
+				}
 				start = time.Time{}
 				continue
 			}
 		}
-		if start.IsZero() {
+		if start.IsZero() && !firstTurn {
 			continue
 		}
 		if !strict && at.Before(start) {
@@ -189,16 +258,55 @@ func scanWakeWitness(buf []byte, turn, prompt string, since time.Time, expectWak
 		}
 		raw, isPrompt, complete := wakePrompt(line, expectWake, scope)
 		if !isPrompt {
+			if firstTurn && !firstTurnSetup(line, turn) {
+				return WakeWitness{}, false
+			}
 			continue
 		}
-		if raw == prompt && (!expectWake || complete) && !at.Before(start) {
+		if !start.IsZero() && raw == prompt && (!expectWake || complete) && !at.Before(start) {
 			return WakeWitness{Started: start, Delivered: at}, false
+		}
+		if firstTurn {
+			return WakeWitness{}, false
 		}
 		// The first human-origin input establishes causation. A later copy
 		// in a turn already opened by different input cannot attest the wake.
 		start = time.Time{}
 	}
 	return WakeWitness{}, usable && !seenTurn
+}
+
+// The ordinary wake must precede execution in the successor. An assistant
+// response or tool activity before the exact input makes a later echo unsafe
+// to attribute, even when the earlier user input is unavailable.
+func firstTurnSetup(line codexLine, turn string) bool {
+	if len(line.Payload) == 0 || line.Payload[0] != '{' {
+		return false
+	}
+	var p struct {
+		Type string `json:"type"`
+		Role string `json:"role"`
+		Turn string `json:"turn_id"`
+	}
+	if json.Unmarshal(line.Payload, &p) != nil || (p.Turn != "" && p.Turn != turn) {
+		return false
+	}
+	switch line.Type {
+	case "world_state":
+		return true
+	case "turn_context":
+		return p.Turn == turn
+	case "event_msg":
+		return p.Type == "thread_settings_applied"
+	case "response_item":
+		if p.Type == "additional_tools" {
+			return p.Role == "developer"
+		}
+		// The caller already classified any user-role record's full content.
+		return p.Type == "message" && (p.Role == "user" || p.Role == "developer" || p.Role == "system")
+	default:
+		return false
+	}
 }
 
 func wakePrompt(line codexLine, expectWake bool, scope *startupProofScope) (text string, candidate, complete bool) {

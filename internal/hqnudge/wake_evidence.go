@@ -5,12 +5,14 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/events"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
@@ -30,6 +32,19 @@ func (a acceptedWake) standaloneStartup() bool {
 	text, startup := strings.CutPrefix(body, transcript.Sigil+" gtmux·startup │ ")
 	return bound && a.Batch != "" && startup && text != "" &&
 		!strings.Contains(text, " · ") && !strings.ContainsAny(text, "\r\n")
+}
+
+func (a acceptedWake) standaloneWorkspaceTick() bool {
+	body, bound := strings.CutSuffix(a.Payload, " · "+a.Batch)
+	prefix := hqwake.Line(hqwake.ClassTick, "workspace reconciliation", "pending:")
+	fields, tick := strings.CutPrefix(body, prefix)
+	if !bound || a.Batch == "" || !tick {
+		return false
+	}
+	count, _, _ := strings.Cut(fields, hqwake.FieldSep())
+	pending, err := strconv.Atoi(count)
+	return err == nil && pending > 0 &&
+		(body == hqwake.WorkspaceReconciliationLine(pending, false) || body == hqwake.WorkspaceReconciliationLine(pending, true))
 }
 
 const (
@@ -143,12 +158,18 @@ func ObserveWakeEvidence(now time.Time) {
 		since := time.Unix(0, accepted.Since)
 		if accepted.Receipt.Home == home {
 			reader := wakeWitness
-			if now.Sub(since) < acceptedProofLifetime && accepted.standaloneStartup() {
-				reader = transcript.CodexStartupWakeWitness
+			if now.Sub(since) < acceptedProofLifetime {
+				switch {
+				case accepted.standaloneStartup():
+					reader = transcript.CodexStartupWakeWitness
+				case accepted.standaloneWorkspaceTick():
+					reader = transcript.CodexFirstTurnWakeWitness
+				}
 			}
 			witness := reader(accepted.Receipt.Session, accepted.Receipt.Turn, accepted.Payload, since)
 			if !witness.Started.Before(since) && !witness.Delivered.Before(witness.Started) && !witness.Delivered.After(now) {
-				if confirmAcceptedWake(p, accepted, witness, now) {
+				if (!witness.FirstTurnPrefix || rotationSuccessorConfirmed(accepted.Receipt.Session, witness.Started, now)) &&
+					confirmAcceptedWake(p, accepted, witness, now) {
 					continue
 				}
 			}
@@ -162,6 +183,17 @@ func ObserveWakeEvidence(now time.Time) {
 			diag.ReportStoreFailure("hq-wake-evidence", ignoreNativeMissing(os.Remove(p)))
 		}
 	}
+}
+
+// The rotation audit scopes the additional read's result. The receiver and
+// contiguous original rollout still supply the session, turn and exact input.
+func rotationSuccessorConfirmed(session string, started, now time.Time) bool {
+	records := events.Recent(int64(acceptedProofLifetime.Seconds()), now.Unix(), 1, func(r events.Record) bool {
+		return r.Event == events.AuditEventRotate && r.AgentKey == "codex" && r.PreviousAgentKey == "codex" &&
+			r.Seq > 0 && r.OpID != "" && r.AgentSession == session && r.PreviousAgentSession != "" &&
+			r.PreviousAgentSession != session && r.Ts >= started.Unix() && r.Ts <= now.Unix()
+	})
+	return len(records) == 1
 }
 
 // Only an active acknowledgement past its own proof deadline can raise a notice.
@@ -204,6 +236,8 @@ func confirmAcceptedWake(path string, a acceptedWake, witness transcript.WakeWit
 		source := "rollout-tail"
 		if witness.StartupPrefix {
 			source = "startup-prefix"
+		} else if witness.FirstTurnPrefix {
+			source = "successor-first-turn-prefix"
 		}
 		diag.For("hq").Act("act.wake.started", "system", a.Pane, diag.OK, "HQ wake turn and prompt independently observed",
 			"batch", a.Batch, "receiver_request", a.Receipt.Request, "turn", a.Receipt.Turn, "started_at", witness.Started.UnixNano(), "receipt", recordID, "proof_source", source)

@@ -2105,6 +2105,7 @@ MAP-63c494f35db1,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,
 MAP-730731030887,L2,reviewed implementation,internal/hqnudge/wake_retry_test.go,114,reviewed-selector,TestHWA007CrashAfterLegacyEnterRetainsOriginal,False,"HWA-006,HWA-007"
 MAP-b05639455d46,L2,reviewed implementation,internal/hqnudge/wake_storage_review_test.go,14,reviewed-selector,TestHWA017UnboundLegacyRefusalDoesNotEnterNewTarget,False,"HWA-017,HWA-018"
 MAP-5a37fd2ce65b,L2,reviewed implementation,internal/hqnudge/wake_storage_review_test.go,67,reviewed-selector,TestHWA018QueueIOHealthSurvivesUntilVerifiedProgress,False,"HWA-017,HWA-018"
+MAP-aac3046273e3,L2,reviewed implementation,internal/hqnudge/workspace_successor_witness_test.go,18,reviewed-selector,TestHSW001HSW002ObserveWorkspaceSuccessorReceipt,False,"HSW-001,HSW-002"
 LEG-2a0fc9ba851d,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,49,Test,TestFind_ByCurrentPath,False,legacy-not-retrospectively-reviewed
 LEG-5978d4c88e2f,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,60,Test,TestFind_SymlinkedHomeStillResolves,False,legacy-not-retrospectively-reviewed
 LEG-612d23c91cb2,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,82,Test,TestFind_ByStampAfterACd,False,legacy-not-retrospectively-reviewed

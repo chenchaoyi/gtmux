@@ -186,6 +186,10 @@ func codexLogPathsFresh(sessionID string) []string {
 }
 
 func resolveCodexLogPaths(sessionID string, candidates []string) []string {
+	return foldCodexLogPaths(matchingCodexLogPaths(sessionID, candidates))
+}
+
+func matchingCodexLogPaths(sessionID string, candidates []string) []string {
 	if sessionID == "" || strings.ContainsAny(sessionID, `*/?[]\\`) {
 		return nil
 	}
@@ -206,6 +210,10 @@ func resolveCodexLogPaths(sessionID string, candidates []string) []string {
 		}
 		paths = append(paths, path)
 	}
+	return paths
+}
+
+func foldCodexLogPaths(paths []string) []string {
 	// The rollout name starts with its creation timestamp; sorting by basename
 	// keeps resumed files in conversation order across day directories/archives.
 	sort.SliceStable(paths, func(i, j int) bool {
