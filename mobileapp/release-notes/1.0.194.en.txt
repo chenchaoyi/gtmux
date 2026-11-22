@@ -1,0 +1,3 @@
+- Open conversation file previews when names contain spaces, Chinese characters, or parentheses.
+- Find Live terminal output more easily. Tap anywhere on the Live row to open it.
+- See the default number and the final spelling before creating a named session.

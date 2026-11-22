@@ -1,5 +1,18 @@
 [
   {
+    "version": "1.0.194",
+    "en": [
+      "Open conversation file previews for names with spaces, Chinese characters, and parentheses.",
+      "Tap anywhere on the clearer Live row to open terminal output.",
+      "See the default numeric name and any changes to a custom name before creating a session."
+    ],
+    "zh": [
+      "会话链接中的文件名包含空格、中文或括号时，可直接预览。",
+      "Live 入口更醒目，点击整条可查看实时终端。",
+      "新建会话时可了解默认数字编号，并在提交前确认调整后的名称。"
+    ]
+  },
+  {
     "version": "1.0.192",
     "en": [
       "Scan access history by operation and outcome, then tap a request for full details.",
