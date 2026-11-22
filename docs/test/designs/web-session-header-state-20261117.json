@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner (fresh self-review)",
     "date": "2026-11-22",
     "decision": "Port the full Web conversation header to the current main branch",
-    "notes": "Reviewed against main at 48f13d3f. Web alone owns these headers. Terminal/attach, menu bar, phone and iPad keep their existing status presentation. The shared roster and badge meanings serve the whole header without adding a detector. Working is cyan, waiting red, idle green and running a quiet gray dot with the existing idle label. An explicit error takes precedence for agents and readable conversations. Plain terminals remain neutral. Unknown or missing roster state clears the last known tint and badge while the existing view and access rules continue to apply. Review confirmed that show and startWorkbench must retain document-reader retirement, request cancellation and epoch advancement in that order. Positioning stays with the current board code. Focused Terminal reuses the existing bounded roster lane and does not fetch or redraw hidden Chat. Synthetic fixture evidence uses the existing Node and Chromium tests, with compact results and no real pane or account. Preserve the existing capture ordering, association and rejected-code assertions. This review covers work on this branch."
+    "notes": "Reviewed against main at 48f13d3f. Web alone owns these headers. Terminal/attach, menu bar, phone and iPad keep their existing status presentation. The shared roster and badge meanings serve the whole header without adding a detector. Working is cyan, waiting red, idle green and running a quiet gray dot with the existing idle label. An explicit error takes precedence for agents and readable conversations. Plain terminals remain neutral. Unknown or missing roster state clears the last known tint and badge while the existing view and access rules continue to apply. Review confirmed that show and startWorkbench must retain document-reader retirement, request cancellation and epoch advancement in that order. Positioning stays with the current board code. Focused Terminal reuses the existing bounded roster lane and does not fetch or redraw hidden Chat. Synthetic fixture evidence uses the existing Node and Chromium tests, with compact results and no real pane or account. Preserve the existing capture ordering, association and rejected-code assertions. This review covers work on this branch. Fresh follow-up review after run 45039394173 exposed fixed tab counts in the Linux browser. Wait for the tool dialog to leave the DOM and follow the live tab order from the board sidebar control. Keep the same visible-focus and Enter assertions and report any failure to reach the button within the first tile controls."
   },
   "cases": [
     {
@@ -64,5 +64,5 @@
       ]
     }
   ],
-  "seal": "71e185f2d14a5deba77c4875013bfd70d9c3fbf6d18874e7dd7a824331cc6d3a"
+  "seal": "7ada456bed217b402521e6914c63b83c4011ac3b4c2d97cde9805cc33bbaa80a"
 }
