@@ -1,0 +1,35 @@
+{
+  "id": "hq-workspace-successor-witness-109291",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-22",
+    "decision": "Use one bounded contiguous prefix for an active ordinary workspace reconciliation receipt whose exact input opened the recorded Codex rotation successor.",
+    "notes": "Isolated HOME, clock and native receiver only. The verified live record shape and sizes inform the fixture. Historical observer times, selected ranges and write results are unknown. A synthetic pass does not attribute the live incident or authorize input or archive recovery."
+  },
+  "cases": [
+    {
+      "id": "HSW-001",
+      "layer": "L2",
+      "description": "An accepted ordinary reconciliation tick can be independently proven after successor rollout growth",
+      "setup": "A fake native receiver produces one bound ordinary workspace receipt. Record a durable Codex rotation to the same session, and write its original rollout with a complete metadata row, the exact first turn, recognized developer and harness setup, and the exact first input. Append synthetic bytes 3.9 seconds later to reproduce the verified offsets.",
+      "action": "Compare the regular tail before and after growth. Observe the active accepted receipt twice, including a simulated restart after audit sync.",
+      "expected": "The v1.0.193 tail proves the short capture and loses proof after growth. A single contiguous prefix after the verified metadata proves exact original times. The original receipt key gains one independent delivery audit and no extra input attempts, Paste or Enter.",
+      "planned_files": [
+        "internal/hqnudge/workspace_successor_witness_test.go"
+      ]
+    },
+    {
+      "id": "HSW-002",
+      "layer": "L2",
+      "description": "Only an exact active receipt, confirmed successor and first input authorize additional proof",
+      "setup": "Vary absent, stale or wrong rotation, wrong Home, session or turn, an ordinary non-workspace class, mixed entries, a prior turn or different input, an untyped or foreign role, assistant output before the exact echo, another batch, an over-budget input, and a continuation file. Include an expired acknowledgement and an unknown submission.",
+      "action": "Observe and then drain repeatedly using the same synthetic source. Compare the durable delivery records, retained receipt or archive bytes and fake send counts.",
+      "expected": "Ineligible or ambiguous evidence cannot add a delivery audit. Active unverified and unknown input remain protected, expired evidence stays archived as its original receipt, and neither observation nor later drain resubmits it. The regular tail remains available for existing positive probes.",
+      "planned_files": [
+        "internal/hqnudge/workspace_successor_witness_test.go"
+      ]
+    }
+  ],
+  "seal": "06f45354357f881f4f0bb2b3f6cc73543d5a9fd95e324c10303780127ce06c44"
+}

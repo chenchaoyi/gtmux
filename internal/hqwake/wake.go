@@ -209,6 +209,17 @@ func Line(class, head string, fields ...string) string {
 	return b.String()
 }
 
+// WorkspaceReconciliationLine is the ordinary workbench tick. Continuation
+// and relay notices use their own signatures.
+func WorkspaceReconciliationLine(pending int, repeated bool) string {
+	tail := "HQ coordination remains due"
+	if repeated {
+		tail = "HQ has not completed its coordination after repeated reminders"
+	}
+	return Line(ClassTick, "workspace reconciliation", fmt.Sprintf("pending:%d", pending),
+		tail+"; pull: gtmux hq workspace reconcile --json")
+}
+
 // dir is hqwake's private state home (markers + tally) under the gtmux state dir.
 func dir() string { return filepath.Join(state.Dir(), "hqwake") }
 

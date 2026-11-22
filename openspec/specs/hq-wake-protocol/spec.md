@@ -229,6 +229,14 @@ from the verified rollout metadata exactly. A message
 with ambiguous role SHALL leave the prefix unproved. This observation records
 delivery evidence and SHALL NOT submit input. Its structured proof-source
 diagnostic is best effort and separate from the durable delivery audit.
+An active, standalone ordinary workspace reconciliation acknowledgement MAY
+use the same bounded prefix only for the first turn in an unambiguous original
+rollout of a confirmed Codex HQ rotation successor. The exact bound receipt,
+first start, complete first input and eligible receipt time remain required.
+The independent rotation audit SHALL name that successor; it alone gives no
+input or delivery authority. Earlier input, execution, another turn or
+unrecognized setup SHALL prevent prefix proof. Existing archived receipts
+SHALL remain outside this observation.
 The ordinary user-prompt filter SHALL continue to exclude wake echoes.
 Accepted receipts that stay active past their own proof deadline raise an independent
 notice. Each new missed proof deadline remains eligible for the rate-limited notice

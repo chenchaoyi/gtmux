@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1430 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1431 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2671 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2672 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -354,6 +354,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HWA-015 | One durable delivery audit for this batch, with no input mutation. Clean up the retained receipt only after observing the matching audit. |
 | HWA-019 | The initial held wake and the draft are protected. One terminal wake reaches the verified idle fixture after its deadline, exact ownership is retained, and no workspace authority is invented. |
 | HWA-016 | Pending work is preserved until an eligible idle composer. Exact terminal input reaches the identified fixture; the same authorized actions, ownership, durable continuation and no-replay checks still pass. |
+| HSW-001 | The v1.0.193 tail proves the short capture and loses proof after growth. A single contiguous prefix after the verified metadata proves exact original times. The original receipt key gains one independent delivery audit and no extra input attempts, Paste or Enter. |
+| HSW-002 | Ineligible or ambiguous evidence cannot add a delivery audit. Active unverified and unknown input remain protected, expired evidence stays archived as its original receipt, and neither observation nor later drain resubmits it. The regular tail remains available for existing positive probes. |
 | HPC-006 | No early repeat. At the next eligible tick, the exact evidence remains pending and its second wake is enqueued without waiting for another full interval. |
 | SPL-026 | A stale temporary name can be recovered under the lease. The published record is a single-link file; earlier evidence still protects both native and raw routing. A verified new stable ID can publish and settle. A competing destination is preserved. |
 | SPL-023 | Overflow from the shared budget frees active slots, verified old keys never regain authority, and exhausted total budget and warning headroom are explicit. |

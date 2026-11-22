@@ -997,6 +997,15 @@
       "TestHSP005DirectoryQualifiedContextRequiresVerifiedMetadata"
     ]
   },
+  "internal/hqnudge/workspace_successor_witness_test.go": {
+    "cases": [
+      "HSW-001",
+      "HSW-002"
+    ],
+    "selectors": [
+      "TestHSW001HSW002ObserveWorkspaceSuccessorReceipt"
+    ]
+  },
   "internal/hqnudge/startup_witness_test.go": {
     "cases": [
       "HSP-003"
