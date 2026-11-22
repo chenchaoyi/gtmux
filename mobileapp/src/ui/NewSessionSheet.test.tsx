@@ -48,6 +48,26 @@ test('MCE-003 blocks a name with nonprinting characters and accepts the correcte
   expect(m.createSession).toHaveBeenCalledWith('发布-v2-检查', expect.any(String));
 });
 
+test('MCE-005 shows the trimmed name and sends the same value', async () => {
+  const m = mount();
+  act(() => m.input().props.onChangeText('  Review #12  '));
+  expect(m.text()).toContain('Will be named Review #12');
+  await act(async () => { await m.submit().props.onPress(); });
+  expect(m.createSession).toHaveBeenCalledWith('Review #12', expect.any(String));
+});
+
+test.each(['QA#{version}', 'QA##', 'QA#H', 'QA#'])('MCE-005 blocks tmux formatting in %s', async name => {
+  const m = mount();
+  act(() => m.input().props.onChangeText(name));
+  expect(m.text()).toContain('Change the # sequence');
+  expect(m.submit().props.accessibilityState.disabled).toBe(true);
+  await act(async () => {
+    await m.submit().props.onPress();
+    await m.input().props.onSubmitEditing();
+  });
+  expect(m.createSession).not.toHaveBeenCalled();
+});
+
 test('previews normalized names, locks repeated taps and blocks dismissal while creating', async () => {
   const m = mount(); let resolve!: (v: typeof result) => void;
   m.createSession.mockReturnValue(new Promise(r => {resolve = r;}));

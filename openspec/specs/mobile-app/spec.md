@@ -1959,7 +1959,7 @@ The app SHALL offer New session in the radar and All panes for owner connections
 
 - **WHEN** the form opens
 - **THEN** a short hint next to the name field explains the default numeric name and 80-character, single-line input limit
-- **AND** an empty name lets tmux assign its default number, an adjusted name is previewed before submission, and unsupported control characters block creation with inline feedback
+- **AND** an empty name lets tmux assign its default number, trimming and punctuation adjustments are previewed before submission, and control characters or tmux format sequences block creation with inline feedback
 
 #### Scenario: Consistent toolbar appearance
 - **WHEN** New session appears as an icon-only toolbar action on phone or iPad
@@ -2951,7 +2951,7 @@ An expanded Live terminal with captured output SHALL expose a top resize grip. U
 
 ### Requirement: Local Markdown links open conversation previews
 
-The mobile conversation reader SHALL recognize an angle-delimited inline Markdown link destination, including paths with spaces, Unicode and parentheses. Supported local destinations SHALL use the existing scoped file preview. Code spans and rejected destinations SHALL remain inert.
+The mobile conversation reader SHALL recognize an angle-delimited inline Markdown link destination, including paths with spaces, Unicode and parentheses. Markdown escapes and character references in destinations SHALL be interpreted once before resolving the file. Bare paths with literal angle characters after their first character SHALL remain supported. Supported local destinations SHALL use the existing scoped file preview. Code spans and rejected destinations SHALL remain inert.
 
 #### Scenario: Open an HTML report with spaces in its filename
 

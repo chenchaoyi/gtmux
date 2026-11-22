@@ -55263,7 +55263,7 @@
       ]
     },
     "mobileapp/src/ui/MarkdownView.test.tsx": {
-      "sha256": "d2cf3298cb7eebeea6269de35569cc246647b7e02ee6dd9f1265d45600840485",
+      "sha256": "6ee1f6ab671f47d60da5d7f6f85618603bcd3bf38e7bc64321cb5afc18649ccb",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -55373,7 +55373,7 @@
         },
         {
           "id": "LEG-8ddb135d5819",
-          "line": 207,
+          "line": 234,
           "kind": "test.each()",
           "name": "emphasis preserves an actionable nested link: %s",
           "dynamic": true,
@@ -55381,7 +55381,7 @@
         },
         {
           "id": "LEG-22184a07bca3",
-          "line": 215,
+          "line": 242,
           "kind": "test",
           "name": "nested local links keep scoped file open, while code and unsafe URLs stay inert",
           "dynamic": false,
@@ -55395,6 +55395,15 @@
           "dynamic": false,
           "layer": "L2",
           "design": "MCE-001"
+        },
+        {
+          "id": "MAP-6de4817ca777",
+          "line": 207,
+          "kind": "reviewed-selector",
+          "name": "MCE-004 preserves bare angles and decodes Markdown destination syntax once",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MCE-001,MCE-004"
         }
       ]
     },
@@ -55675,7 +55684,7 @@
       ]
     },
     "mobileapp/src/ui/NewSessionSheet.test.tsx": {
-      "sha256": "05168b9c3df7ab0b83a7ce523e0e0e16c4682625be4ca9174cd7a7217ed39e06",
+      "sha256": "97b8f9477d2db776e8757b87c5149d16c2af85b3e78fa7a6f2702f59acd2487c",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -55689,7 +55698,7 @@
         },
         {
           "id": "LEG-786ae4344a47",
-          "line": 51,
+          "line": 71,
           "kind": "test",
           "name": "previews normalized names, locks repeated taps and blocks dismissal while creating",
           "dynamic": false,
@@ -55697,7 +55706,7 @@
         },
         {
           "id": "LEG-4e285e4ffcc2",
-          "line": 65,
+          "line": 85,
           "kind": "test",
           "name": "uncertain creation retries the same request and does not allow changing its name",
           "dynamic": false,
@@ -55705,7 +55714,7 @@
         },
         {
           "id": "LEG-b3ad35e6b4cb",
-          "line": 75,
+          "line": 95,
           "kind": "test",
           "name": "a duplicate name retains the form and accepts a corrected name",
           "dynamic": false,
@@ -55713,7 +55722,7 @@
         },
         {
           "id": "LEG-a3cf0f30e339",
-          "line": 86,
+          "line": 106,
           "kind": "test",
           "name": "an old server gives an update instruction, and unmount suppresses late navigation",
           "dynamic": false,
@@ -55721,7 +55730,7 @@
         },
         {
           "id": "LEG-7cd7ced4100a",
-          "line": 100,
+          "line": 120,
           "kind": "test",
           "name": "focuses the name on the next frame, not when the fade ends",
           "dynamic": false,
@@ -55729,7 +55738,7 @@
         },
         {
           "id": "LEG-2a25215175e9",
-          "line": 117,
+          "line": 137,
           "kind": "test",
           "name": "says what Create and open will do",
           "dynamic": false,
@@ -55745,7 +55754,7 @@
         },
         {
           "id": "LEG-c9e6a6722174",
-          "line": 156,
+          "line": 176,
           "kind": "test",
           "name": "a later open starts at the height the keyboard said, so nothing moves",
           "dynamic": false,
@@ -55753,7 +55762,7 @@
         },
         {
           "id": "LEG-377e77556bf4",
-          "line": 165,
+          "line": 185,
           "kind": "test",
           "name": "the iPad form keeps the keyboard avoider",
           "dynamic": false,
@@ -55761,7 +55770,7 @@
         },
         {
           "id": "LEG-316d39da5d9a",
-          "line": 201,
+          "line": 221,
           "kind": "test",
           "name": "a late keyboard is followed, and nothing settles before it",
           "dynamic": false,
@@ -55769,7 +55778,7 @@
         },
         {
           "id": "LEG-86126a93033d",
-          "line": 212,
+          "line": 232,
           "kind": "test",
           "name": "a focus that took and no keyboard: it settles only after the long grace",
           "dynamic": false,
@@ -55777,7 +55786,7 @@
         },
         {
           "id": "LEG-25128083c960",
-          "line": 221,
+          "line": 241,
           "kind": "test",
           "name": "a focus that did not take: no keyboard will come, so it settles soon",
           "dynamic": false,
@@ -55785,7 +55794,7 @@
         },
         {
           "id": "LEG-1cf65cefc6fe",
-          "line": 229,
+          "line": 249,
           "kind": "test",
           "name": "a busy JS thread that runs the timer before onFocus does not drop the form",
           "dynamic": false,
@@ -55793,7 +55802,7 @@
         },
         {
           "id": "LEG-b8711e7cf9aa",
-          "line": 243,
+          "line": 263,
           "kind": "test",
           "name": "closing the form ends its timers and its keyboard listeners",
           "dynamic": false,
@@ -55801,7 +55810,7 @@
         },
         {
           "id": "LEG-651e55db6c4f",
-          "line": 254,
+          "line": 274,
           "kind": "test",
           "name": "reopening starts afresh: a late keyboard again settles nothing first",
           "dynamic": false,
@@ -55809,7 +55818,7 @@
         },
         {
           "id": "LEG-961b0577da01",
-          "line": 270,
+          "line": 290,
           "kind": "test",
           "name": "a keyboard already on screen places the form at once, and nothing waits",
           "dynamic": false,
@@ -55817,7 +55826,7 @@
         },
         {
           "id": "LEG-ccd51bb6b631",
-          "line": 304,
+          "line": 324,
           "kind": "test",
           "name": "sideways: the field and Create share a row, the explanation follows, the height is the sideways one",
           "dynamic": false,
@@ -55825,7 +55834,7 @@
         },
         {
           "id": "LEG-6a1db8c585e7",
-          "line": 320,
+          "line": 340,
           "kind": "test",
           "name": "upright: the portrait layout is unchanged",
           "dynamic": false,
@@ -55848,6 +55857,24 @@
           "dynamic": false,
           "layer": "L2",
           "design": "MCE-003"
+        },
+        {
+          "id": "MAP-dd3f261a6144",
+          "line": 51,
+          "kind": "reviewed-selector",
+          "name": "MCE-005 shows the trimmed name and sends the same value",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MCE-003,MCE-005"
+        },
+        {
+          "id": "MAP-c472f55dd446",
+          "line": 59,
+          "kind": "reviewed-selector",
+          "name": "MCE-005 blocks tmux formatting in %s",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MCE-003,MCE-005"
         }
       ]
     },

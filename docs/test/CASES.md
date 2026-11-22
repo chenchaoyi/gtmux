@@ -7,7 +7,7 @@ The catalogue covers 1430 test/harness source files. Each CSV row lists stable I
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2675 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2678 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -458,6 +458,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MSD-003 | Preferred receipt returned as additive JSON while legacy clients retain status ok; no mutation when unauthorized, guest out of scope or key invalid; queue acceptance not claimed read/completed; no message body or secrets in diagnostics. |
 | MSD-004 | Full send settles at finite deadline and aborts network; late success cannot overwrite timeout; only one fetch, original send ID retained by caller for explicit retry; refusal and legacy success remain compatible. |
 | MSD-005 | Queued is labeled queued awaiting next turn, accepted means received not read/completed; finite network deadline keeps text and explicit same-ID retry; late old response/failure cannot replace a newer pending attempt; transcript confirmation retires the correct echo; no resends, no queue deletion, no draft/approval bypass. |
+| MCE-004 | Legacy and encoded paths keep their exact reference. Markdown escapes and character references are interpreted once, so new targets reach the existing renderer and resolver using the same path as Markdown on the server. Malformed or unsafe destinations expose no preview action. |
+| MCE-005 | Trimming is visible before submit and the submitted name exactly matches the preview. Format-bearing names have inline correction feedback and make no request. Names with a literal hash and blank default input remain available. |
 | MCE-001 | Paths with spaces, Unicode and parentheses reach the same file callback with the intended destination. The unsafe or code examples have no link action. |
 | MCE-002 | The single control has a distinct outlined appearance and at least a 48-point target, retains the live state text, and announces its expanded state. The expanded panel retains its own resize behavior. |
 | MCE-003 | The form identifies the host and explains the default numeric name and custom input. Blank sends an empty name. Both submit actions reject nonprinting input. The app shows and submits the existing normalized spelling when valid. |
