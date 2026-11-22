@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.194',
+    en: [
+      '- Open conversation file previews when names contain spaces, Chinese characters, or parentheses.',
+      '- Find Live terminal output more easily. Tap anywhere on the Live row to open it.',
+      '- See the default number and the final spelling before creating a named session.',
+    ],
+    zh: [
+      '- 会话链接中的文件名含空格、中文或括号时，也可以直接打开预览。',
+      '- Live 入口更醒目，点击整条即可展开实时终端。',
+      '- 新建会话时会说明默认编号，并在提交前显示实际使用的名称。',
+    ],
+  },
+  {
     version: '1.0.192',
     en: [
       '- Access history is easier to scan. Tap a request to see its full device and HTTP details, and read selected filters without truncation.',

@@ -1,2 +1,3 @@
-- Access history is easier to scan. Tap a request to see its full device and HTTP details, and read selected filters without truncation.
-- Drag the top of the Live terminal preview up or down to see more output while staying in Chat.
+- Open conversation file previews when names contain spaces, Chinese characters, or parentheses.
+- Find Live terminal output more easily. Tap anywhere on the Live row to open it.
+- See the default number and the final spelling before creating a named session.
