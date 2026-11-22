@@ -3633,6 +3633,7 @@ LEG-4067639a8141,L1,Go core / CLI / server,internal/transcript/recordid_test.go,
 LEG-57f4663d09ab,L1,Go core / CLI / server,internal/transcript/revision_test.go,13,Test,TestTheCacheAndTheRevisionSeeEveryKindOfChange,False,legacy-not-retrospectively-reviewed
 LEG-a28b4888288e,L1,Go core / CLI / server,internal/transcript/sessionbinding_test.go,12,Test,TestCodexBindingReadsOnlySubmittedUserMessages,False,legacy-not-retrospectively-reviewed
 LEG-e4a2949ee7df,L1,Go core / CLI / server,internal/transcript/sessionbinding_test.go,41,Test,TestCodexBindingReadsBoundedRolloutTail,False,legacy-not-retrospectively-reviewed
+MAP-b642bcb9f926,L2,reviewed implementation,internal/transcript/startup_context_witness_test.go,12,reviewed-selector,TestHSP004StartupContextRecordsKeepFirstInputUnambiguous,False,HSP-004
 MAP-76e251a582e3,L2,reviewed implementation,internal/transcript/startup_witness_test.go,12,reviewed-selector,TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix,False,"HSP-001,HSP-002"
 LEG-e83034b94b32,L1,Go core / CLI / server,internal/transcript/titles_test.go,10,Test,TestSessionTitles,False,legacy-not-retrospectively-reviewed
 LEG-31e07de7e8be,L1,Go core / CLI / server,internal/transcript/titles_test.go,44,Test,TestSessionTitlesBoundedTail,False,legacy-not-retrospectively-reviewed

@@ -981,6 +981,14 @@
       "TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix"
     ]
   },
+  "internal/transcript/startup_context_witness_test.go": {
+    "cases": [
+      "HSP-004"
+    ],
+    "selectors": [
+      "TestHSP004StartupContextRecordsKeepFirstInputUnambiguous"
+    ]
+  },
   "internal/hqnudge/startup_witness_test.go": {
     "cases": [
       "HSP-003"

@@ -46,13 +46,9 @@ func TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix(t *testing.T) {
 	boundary := func(at time.Time, event, id string) string {
 		return row(at, "event_msg", map[string]any{"type": event, "turn_id": id})
 	}
-	user := func(texts ...string) string {
-		blocks := make([]map[string]string, 0, len(texts))
-		for _, text := range texts {
-			blocks = append(blocks, map[string]string{"type": "input_text", "text": text})
-		}
+	user := func(text string) string {
 		return row(delivered, "response_item", map[string]any{"type": "message", "role": "user",
-			"content": blocks})
+			"content": []map[string]string{{"type": "input_text", "text": text}}})
 	}
 	padding := func(size int) string {
 		base := row(started, "world_state", map[string]any{"context": ""})
@@ -63,15 +59,11 @@ func TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix(t *testing.T) {
 	}
 	header := meta(session)
 	start := boundary(started, "task_started", turn)
-	const agents = "# AGENTS.md instructions\nsynthetic repository context"
-	const environment = "<environment_context>\n<cwd>/synthetic</cwd>\n</environment_context>"
-	harness := user(agents, environment)
-	nonUser := row(started, "response_item", map[string]any{"type": "message", "role": "developer",
-		"content": []map[string]string{{"type": "input_text", "text": "synthetic developer context"}}})
+	harness := user("# AGENTS.md instructions\nsynthetic repository context")
 	input := user(prompt)
 	// The original tail begins just before the end of metadata. An append then
 	// moves it into the padding, with the start absent and the input still whole.
-	before := header + start + harness + nonUser + padding(budget-64-len(start)-len(harness)-len(nonUser)-len(input)) + input
+	before := header + start + harness + padding(budget-64-len(start)-len(harness)-len(input)) + input
 	after := before + padding(24<<10)
 	if lo, startOffset, inputOffset := len(after)-budget, len(header), len(before)-len(input); !(startOffset < lo && lo < inputOffset) {
 		t.Fatal("fixture did not displace only the boundary")
@@ -97,19 +89,12 @@ func TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix(t *testing.T) {
 	extraContent := row(delivered, "response_item", map[string]any{"type": "message", "role": "user",
 		"content": []map[string]string{{"type": "input_text", "text": prompt}, {"type": "input_image"}}})
 	foreignInput := row(delivered, "event_msg", map[string]any{"type": "user_message", "message": prompt, "turn_id": foreign})
-	untyped := row(delivered, "response_item", map[string]any{"type": "message",
-		"content": []map[string]string{{"type": "input_text", "text": "synthetic unclassified input"}}})
-	foreignContext := row(delivered, "response_item", map[string]any{"type": "message", "role": "user", "turn_id": foreign,
-		"content": []map[string]string{{"type": "input_text", "text": agents}, {"type": "input_text", "text": environment}}})
 	for _, tc := range []struct{ name, data string }{
 		{"foreign start", header + start + boundary(started, "task_started", foreign) + padded + input + growth},
 		{"complete", header + start + boundary(started, "task_complete", turn) + padded + input + growth},
 		{"abort", header + start + boundary(started, "turn_aborted", turn) + padded + input + growth},
 		{"explicitly foreign input", header + start + padded + foreignInput + growth},
 		{"different first input", header + start + user("another synthetic prompt") + padded + input + growth},
-		{"known context mixed with human input", header + start + user(agents, "another synthetic prompt") + padded + input + growth},
-		{"context attached to another turn", header + start + foreignContext + padded + input + growth},
-		{"message with no role", header + start + untyped + padded + input + growth},
 		{"incomplete first input", header + start + extraContent + padded + input + growth},
 		{"unknown first input", header + start + row(delivered, "response_item", map[string]any{"type": "message", "role": "user"}) + padded + input + growth},
 		{"wrong metadata", meta(foreign) + start + padded + input + growth},
