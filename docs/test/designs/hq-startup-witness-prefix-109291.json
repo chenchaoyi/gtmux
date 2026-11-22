@@ -1,0 +1,46 @@
+{
+  "id": "hq-startup-witness-prefix-109291",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, self-review",
+    "date": "2026-11-22",
+    "decision": "Allow a bounded continuous startup proof only when the regular tail missed the exact turn start.",
+    "notes": "The independent synthetic rollout shows a 24 KiB append can displace the start while the exact input stays in the tail. The live incident lacks per-scan evidence. Use only synthetic Codex Home and an isolated fake native driver. This is the pre-implementation design review; independent candidate review and hosted CI are separate."
+  },
+  "cases": [
+    {
+      "id": "HSP-001",
+      "layer": "L2",
+      "description": "The Codex proof reader recovers a startup turn displaced by append-only growth",
+      "setup": "One synthetic original rollout with verified session metadata, an exact task start and harness context, and a first wake input ending within 256 KiB of the metadata. The initial tail includes the start. Append 24 KiB so the input stays in the tail and the start falls out.",
+      "action": "Run the ordinary tail and startup proof readers before and after the append.",
+      "expected": "Before append, tail proves the exact start and delivery. After append, the ordinary tail has no witness, and only the startup reader proves the same two timestamps from the continuous prefix. Proof reports only timing and source.",
+      "planned_files": [
+        "internal/transcript/startup_witness_test.go"
+      ]
+    },
+    {
+      "id": "HSP-002",
+      "layer": "L2",
+      "description": "The startup proof reader fails closed on conflicting, unscoped or incomplete first input",
+      "setup": "Synthetic rollout variants include an earlier different or incomplete input, another turn, completion or abort, mismatched or missing metadata, a missing file, early start, malformed records, input clipped by the byte cap, and a missing final newline. Include a visible target start with incomplete proof and a second competing rollout.",
+      "action": "Run the startup proof reader for the exact requested session, turn and submission boundary in each variant.",
+      "expected": "No invalid variant produces a witness. A visible start without valid proof cannot trigger fallback. Proof cannot cross a new turn, a corrupt row or a read gap. At most one 256 KiB continuous read after complete metadata can contribute additional proof.",
+      "planned_files": [
+        "internal/transcript/startup_witness_test.go"
+      ]
+    },
+    {
+      "id": "HSP-003",
+      "layer": "L2",
+      "description": "Only eligible durable startup receipts can use prefix proof and auditing remains exactly once",
+      "setup": "Use a synthetic HOME, real receipt/observer storage, a fake native receiver, and a fixed clock. Create displaced-turn fixtures for startup, ordinary and mixed notifications, foreign Home, and an expired startup. Include an unknown submission in the drain path.",
+      "action": "Drain and observe repeatedly, simulating retained receipt recovery after delivery audit for the positive case. For the negatives, check receipt or archive content and call drain again.",
+      "expected": "Only the current same-Home standalone startup gets one delivery audit with its original identity and proven time. Ordinary, mixed and foreign receipts follow the existing lifecycle, expired history is preserved, and unknown input is neither promoted nor submitted again. No Paste or Enter is issued.",
+      "planned_files": [
+        "internal/hqnudge/startup_witness_test.go"
+      ]
+    }
+  ],
+  "seal": "bec06546cac736e0386989f89ce524375869a6332de364dc059729439c6998c8"
+}
