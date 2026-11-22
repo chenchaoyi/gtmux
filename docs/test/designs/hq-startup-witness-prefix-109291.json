@@ -5,14 +5,14 @@
     "reviewer": "Codex implementation owner, self-review",
     "date": "2026-11-22",
     "decision": "Allow a bounded continuous startup proof only when the regular tail missed the exact turn start.",
-    "notes": "The independent synthetic rollout shows a 24 KiB append can displace the start while the exact input stays in the tail. The live incident lacks per-scan evidence. Use only synthetic Codex Home and an isolated fake native driver. This is the pre-implementation design review; independent candidate review and hosted CI are separate. Reviewed again after independent rejection of the first candidate. The strict prefix must handle real two-block Codex harness records and fail closed on role-less messages. Approval of this amended implementation remains pending independent review."
+    "notes": "The independent synthetic rollout shows a 24 KiB append can displace the start while the exact input stays in the tail. The live incident lacks per-scan evidence. Use only synthetic Codex Home and an isolated fake native driver. This is the pre-implementation design review; independent candidate review and hosted CI are separate. After the initial independent rejection, review additionally recorded HSP-004 before creating its own source. The initial case expectations and original implementation chronology remain auditable."
   },
   "cases": [
     {
       "id": "HSP-001",
       "layer": "L2",
       "description": "The Codex proof reader recovers a startup turn displaced by append-only growth",
-      "setup": "One synthetic original rollout with verified session metadata, an exact task start and harness context, and a first wake input ending within 256 KiB of the metadata. The initial tail includes the start. Append 24 KiB so the input stays in the tail and the start falls out. Include two known harness text blocks in one user-role response record and an explicitly identified non-user response record before the exact first input.",
+      "setup": "One synthetic original rollout with verified session metadata, an exact task start and harness context, and a first wake input ending within 256 KiB of the metadata. The initial tail includes the start. Append 24 KiB so the input stays in the tail and the start falls out.",
       "action": "Run the ordinary tail and startup proof readers before and after the append.",
       "expected": "Before append, tail proves the exact start and delivery. After append, the ordinary tail has no witness, and only the startup reader proves the same two timestamps from the continuous prefix. Proof reports only timing and source.",
       "planned_files": [
@@ -23,9 +23,9 @@
       "id": "HSP-002",
       "layer": "L2",
       "description": "The startup proof reader fails closed on conflicting, unscoped or incomplete first input",
-      "setup": "Synthetic rollout variants include an earlier different or incomplete input, another turn, completion or abort, mismatched or missing metadata, a missing file, early start, malformed records, input clipped by the byte cap, and a missing final newline. Include a visible target start with incomplete proof and a second competing rollout. Include ambiguous message role, harness text mixed with human input, and known harness text bound to a conflicting turn.",
+      "setup": "Synthetic rollout variants include an earlier different or incomplete input, another turn, completion or abort, mismatched or missing metadata, a missing file, early start, malformed records, input clipped by the byte cap, and a missing final newline. Include a visible target start with incomplete proof and a second competing rollout.",
       "action": "Run the startup proof reader for the exact requested session, turn and submission boundary in each variant.",
-      "expected": "No invalid variant produces a witness. A visible start without valid proof cannot trigger fallback. Proof cannot cross a new turn, a corrupt row or a read gap. At most one 256 KiB continuous read after complete metadata can contribute additional proof. A user-role record is skipped as harness context only when each block is recognized text and the turn is consistent. A role-less message cannot be skipped.",
+      "expected": "No invalid variant produces a witness. A visible start without valid proof cannot trigger fallback. Proof cannot cross a new turn, a corrupt row or a read gap. At most one 256 KiB continuous read after complete metadata can contribute additional proof.",
       "planned_files": [
         "internal/transcript/startup_witness_test.go"
       ]
@@ -40,7 +40,18 @@
       "planned_files": [
         "internal/hqnudge/startup_witness_test.go"
       ]
+    },
+    {
+      "id": "HSP-004",
+      "layer": "L2",
+      "description": "Displaced startup proof distinguishes known context blocks from ambiguous first input",
+      "setup": "In one synthetic rollout, an append displaces the bound turn start. Before the first possible input, vary a user-role record with two recognized harness blocks, a known non-user role, a human block mixed with harness text, another turn's harness or a message with no role.",
+      "action": "Call the strict startup prefix reader for the original turn and check the proof source and timestamps.",
+      "expected": "Only complete recognized context can be skipped, alongside legitimate explicitly non-user records. Mixed text, foreign bound context and an unclassifiable role hold the original proof unknown.",
+      "planned_files": [
+        "internal/transcript/startup_context_witness_test.go"
+      ]
     }
   ],
-  "seal": "d209ac7b5af118cdc619553d45dfcc04c702d6587ac17e41979cd7f82aabf0c7"
+  "seal": "40c1ef2fce9813e8665831d7478860bd2fc7e6b29bfbb81de0738bf2ac226771"
 }
