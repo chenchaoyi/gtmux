@@ -50,11 +50,29 @@ test('a late response from another server cannot replace the current history', a
   expect(words()).toContain('New server device'); expect(words()).not.toContain('Stale server device');
 });
 
-test('shows device identity inline without a disclosure', async () => {
-  client.accessHistory.mockResolvedValueOnce({entries: [{...record, device_id: 'device-full-identity', duration_ms: 24, method: 'POST'}], retain_days: 30});
-  await mount(); expect(words()).toContain('device-full-identity'); expect(words()).toContain('203.0.113.1');
-  expect(words()).toContain('24 ms'); expect(words()).toContain('POST');
-  expect(tree.root.findAllByType(TouchableOpacity).some(n => n.props.accessibilityState?.expanded !== undefined)).toBe(false);
+test('opens one access record with full selectable request details', async () => {
+  const first = {...record, device_id: 'device-full-identity', duration_ms: 24, method: 'POST'};
+  const second = {...record, id: 'r2', name: 'Browser', device_id: 'browser-full-identity'};
+  client.accessHistory.mockResolvedValue({entries: [first, second], retain_days: 30});
+  await mount();
+  const detail = (name: string) => tree.root.findAllByType(TouchableOpacity).find(n => n.props.accessibilityHint && n.props.accessibilityLabel.includes(name))!;
+  expect(words()).toContain('Send terminal input');
+  expect(detail('My iPhone').props.accessibilityLabel).toMatch(/%21, My iPhone, \d{2}:\d{2}:\d{2}, Accepted · 200/);
+  expect(detail('My iPhone').props.accessibilityState).toEqual({expanded: false});
+  expect(words()).not.toContain(first.device_id);
+  expect(words()).not.toContain(record.source_ip);
+  await act(async () => detail('My iPhone').props.onPress());
+  expect(detail('My iPhone').props.accessibilityState).toEqual({expanded: true});
+  for (const value of [first.device_id, record.source_ip, 'POST', '24 ms', '200']) {
+    expect(tree.root.findAllByType(Text).some(n => n.props.selectable && n.props.children === value)).toBe(true);
+  }
+  await act(async () => detail('Browser').props.onPress());
+  expect(detail('My iPhone').props.accessibilityState).toEqual({expanded: false});
+  expect(words()).not.toContain(first.device_id);
+  expect(words()).toContain(second.device_id);
+  await act(async () => tree.root.findByType(AccessHistoryControls).props.onChange({outcome: 'failed'}));
+  expect(words()).not.toContain(second.device_id);
+  expect(client.accessHistory).toHaveBeenLastCalledWith(undefined, expect.anything(), {outcome: 'failed'});
 });
 
 test('Chinese dates follow UI language and equal-day records share one heading', async () => {

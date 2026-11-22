@@ -1,0 +1,46 @@
+{
+  "id": "mobile-live-terminal-resize-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-22",
+    "decision": "Add a bounded resize grip to Chat\u2019s live terminal preview without intercepting terminal or conversation scrolling elsewhere",
+    "notes": "Grounded in the supplied iPhone screenshot and the working-row disclosure. Synthetic tests verify responder and accessibility behavior, viewport bounds, and scope. Native gesture feel needs separate rendered acceptance. iPhone Simulator native acceptance showed that enlarging the preview can scroll a reply under the fixed fold button. LVR-003 tests that the open preview has an opaque matching strip and that the closed conversation keeps its existing control layout. Rendered pixel acceptance is repeated on the refreshed simulator build."
+  },
+  "cases": [
+    {
+      "id": "LVR-001",
+      "layer": "L2",
+      "description": "The live terminal grip grows upward and reveals earlier lines within the Chat viewport",
+      "setup": "Open a synthetic working conversation with more than 40 captured rows. Supply a measured Chat viewport, then a smaller one.",
+      "action": "Use the resize responder and its accessible increase/decrease actions. Inspect measured preview bounds and visible lines.",
+      "expected": "Upward drag expands the local preview and exposes additional earlier output without losing the latest row. A downward drag shrinks it. Orientation/keyboard bounds clamp effective height and restoring space restores the selected size. The height control is limited to the grip.",
+      "planned_files": [
+        "mobileapp/src/ui/ChatView.liveResize.test.tsx"
+      ]
+    },
+    {
+      "id": "LVR-002",
+      "layer": "L2",
+      "description": "Preview resizing stays with the current live conversation scope",
+      "setup": "Open a working conversation, resize it, and refresh its capture. Offer an idle observation and then a different conversation.",
+      "action": "Fold and reopen the preview, transiently hide the working row, and switch to another pane.",
+      "expected": "The selection survives redraw, folding and temporary idle within the same scope. A new scope starts folded at the default size. Resizing does not create an input action or change pane identity.",
+      "planned_files": [
+        "mobileapp/src/ui/ChatView.liveResize.test.tsx"
+      ]
+    },
+    {
+      "id": "LVR-003",
+      "layer": "L2",
+      "description": "The fixed fold control stays legible above an enlarged live preview",
+      "setup": "Render a working conversation with one reply, floating chat controls and enough captured output to enlarge Live View.",
+      "action": "Open and enlarge the preview. Read the floating fold strip style and verify the control remains actionable. Fold the preview and inspect the control again.",
+      "expected": "While the preview is visible, the fixed control occupies a 44-point strip in the conversation background and retains its touch target and scroll-through surrounding area. Folding removes the added strip. Rendered iPhone QA confirms that a reply underneath does not overprint the label.",
+      "planned_files": [
+        "mobileapp/src/ui/ChatView.liveResizeFold.test.tsx"
+      ]
+    }
+  ],
+  "seal": "e7cbc9e4ee9294a8be479c35c331439b111ddaf347fc9339c534be60ef69be38"
+}

@@ -2481,7 +2481,7 @@ controls SHALL remain adjacent to their own field.
 - **THEN** the label stays readable above the full wrapping value
 
 ### Requirement: Owners can inspect server access history
-Phone and iPad SHALL share a read-only access-history screen under server management, using the owner-only API and bounded pagination. It SHALL show device, time, operation, optional pane/session and HTTP outcome in compact date-grouped log rows, with full device identity and metadata inline without a disclosure. Local 24-hour times SHALL include seconds; day headings SHALL follow the selected UI language. It SHALL support refresh/earlier records and distinguish unsupported servers, denied access, expired pages and transient failures. Failed pagination SHALL preserve loaded records; server switching SHALL invalidate late responses. Guest credentials SHALL NOT request history.
+Phone and iPad SHALL share a read-only access-history screen under server management, using the owner-only API and bounded pagination. It SHALL show device, time, operation, optional pane/session and HTTP outcome in compact date-grouped log rows, with full identity and metadata available as selectable values in an accessible row disclosure. Local 24-hour times SHALL include seconds; day headings SHALL follow the selected UI language. It SHALL support refresh/earlier records and distinguish unsupported servers, denied access, expired pages and transient failures. Failed pagination SHALL preserve loaded records; server switching SHALL invalidate late responses. Guest credentials SHALL NOT request history.
 Phone/iPad SHALL share Logs/Sources, exact device-ID entry/selection, operation/outcome filters and clear. Summaries SHALL accumulate bounded pages, preserve metadata and drill into exact-ID logs. Old-server filter mismatch SHALL require an update; server switching SHALL clear filters/identities and discard stale responses. Partial summaries SHALL not claim full totals.
 
 #### Scenario: A history page expires during inspection
@@ -2492,7 +2492,7 @@ Phone/iPad SHALL share Logs/Sources, exact device-ID entry/selection, operation/
 #### Scenario: Scanning compact access records in Chinese
 - **WHEN** the owner opens access history with the Chinese UI on an English-language system
 - **THEN** dates are Chinese, each local time includes seconds, and same-day rows share a date heading
-- **AND** full device identity, target, metadata and HTTP outcome are readable without expanding a row
+- **AND** the summary shows the target and HTTP outcome, and expanding a row reveals the full identity and request metadata
 - **AND** pagination preserves source order and does not repeat the same-day heading
 
 #### Scenario: Drilling into a device summary
@@ -2929,6 +2929,16 @@ Last-known history SHALL retain the authorized current-pane Live disclosure whil
 - **WHEN** a screen from the previous client or pane is cached or arrives late
 - **THEN** it is absent from the new Live preview until the current scope supplies its own screen
 
+
+### Requirement: Chat Live terminal height can be adjusted
+
+An expanded Live terminal with captured output SHALL expose a top resize grip. Upward and downward drags SHALL change the preview height within the available Chat viewport. The grip SHALL also support accessible increase and decrease actions. The preview SHALL preserve the newest captured line and show more captured lines as height increases. The selected height SHALL follow the same conversation scope as the disclosure.
+
+#### Scenario: Resize the working preview
+- **WHEN** a reader drags the grip upward or activates its increase action
+- **THEN** the preview shows more of the existing terminal output while keeping the latest line visible
+- **AND** the conversation composer and terminal input scope remain independent of the resize
+- **AND** reducing available space temporarily clamps the preview while retaining the selected height
 
 ### Requirement: Recorded attachment messages replace temporary echoes atomically
 

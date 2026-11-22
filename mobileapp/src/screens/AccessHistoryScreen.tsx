@@ -1,9 +1,9 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {FlatList, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {FlatList, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {ApiError} from '../api/client';
 import type {AccessEntry, AccessFilter, AccessGroup, AccessOperation} from '../api/accessHistory';
-import {accessLogLines, accessName, accessOperation, accessOutcome, accessMetadata, type AccessLogLine} from './accessHistoryPresentation';
+import {accessDetailFields, accessLogLines, accessName, accessOperation, accessOutcome, type AccessLogLine} from './accessHistoryPresentation';
 import {abortAtDeadline} from '../api/requestAbort';
 import {useApp} from '../state/AppContext';
 import {useAgents} from '../state/AgentsContext';
@@ -12,7 +12,9 @@ import {BrandLoader} from '../ui/BrandLoader';
 import {AccessHistoryControls} from './AccessHistoryControls';
 import {AccessHistoryHelp} from './AccessHistoryHelp';
 import {accessGroupFilter, mergeAccessGroups} from './accessHistoryExploration';
-import {ERRORED_COLOR} from '../ui/theme';
+import {ERRORED_COLOR, Size, StatusColor} from '../ui/theme';
+import {Chevron, ReloadIcon} from '../ui/Icons';
+import {SIcon} from '../ui/SettingsIcons';
 
 export function AccessHistoryScreen({navigation}: any) {
   const {lang, pal, mac} = useApp();
@@ -23,6 +25,7 @@ export function AccessHistoryScreen({navigation}: any) {
   const [groups, setGroups] = useState<AccessGroup[]>([]);
   const [known, setKnown] = useState<AccessGroup[]>([]);
   const [operations, setOperations] = useState<AccessOperation[]>([]);
+  const [expanded, setExpanded] = useState<string>();
   const server = useRef(client);
   const [next, setNext] = useState<string>();
   const [days, setDays] = useState(30);
@@ -35,6 +38,7 @@ export function AccessHistoryScreen({navigation}: any) {
     const controller = new AbortController(); pending.current = controller;
     const requestGeneration = generation.current;
     setLoading(true); setError(null);
+    if (!before) setExpanded(undefined);
     const timer = setTimeout(() => abortAtDeadline(controller, 15000), 15000);
     try {
       const page = await client.accessHistory(before, controller.signal, filter);
@@ -57,7 +61,7 @@ export function AccessHistoryScreen({navigation}: any) {
     }
   }, [client, guest, filter]);
   useEffect(() => {
-    if (server.current !== client) {server.current = client; setKnown([]); setOperations([]); setEntries([]); setGroups([]); setNext(undefined); setError(null); setLoading(false); setFilter({}); return;}
+    if (server.current !== client) {server.current = client; setKnown([]); setOperations([]); setEntries([]); setGroups([]); setNext(undefined); setError(null); setLoading(false); setExpanded(undefined); setFilter({}); return;}
     const effectGeneration = ++generation.current;
     setEntries([]); setGroups([]); setNext(undefined); setError(null); setLoading(false);
     load();
@@ -69,24 +73,45 @@ export function AccessHistoryScreen({navigation}: any) {
     : zh ? '无法载入访问历史，请重试。' : 'Could not load access history. Try again.';
   const lines = useMemo(() => accessLogLines(guest ? [] : entries, zh), [entries, guest, zh]);
   const rows: ({group: AccessGroup} | {line: AccessLogLine})[] = filter.group_by ? groups.map(group => ({group})) : lines.map(line => ({line}));
+  const activityCount = groups.reduce((n, g) => n + g.count, 0);
+  const summary = filter.group_by
+    ? (zh ? `${activityCount} 条已记录活动` : `${activityCount} recorded activities`)
+    : (zh ? `已载入 ${entries.length} 条记录` : `${entries.length} records loaded`);
+  const earlierEmpty = filter.group_by
+    ? (zh ? '本页没有来源，可继续汇总。' : 'No sources on this page. Continue the summary.')
+    : (zh ? '本页未找到访问记录，可继续载入更早记录。' : 'No access records in this page. Continue to earlier records.');
   return <SafeAreaView style={[styles.safe, {backgroundColor: pal.bg}]} edges={['top']}>
     <ContentColumn><View style={styles.header}>
-      <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel={zh ? '返回' : 'Back'} style={styles.button}><Text style={[styles.backIcon, {color: pal.fg2}]}>‹</Text></TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel={zh ? '返回' : 'Back'} style={styles.button}>
+        <View style={styles.backGlyph}><Chevron size={22} color={pal.fg} /></View>
+      </TouchableOpacity>
       <Text style={[styles.title, {color: pal.fg}]} accessibilityRole="header">{zh ? '访问历史' : 'Access history'}</Text>
-      <TouchableOpacity onPress={() => load()} disabled={loading || guest} accessibilityRole="button" style={styles.button}><Text style={{color: pal.fg2}}>{zh ? '刷新' : 'Refresh'}</Text></TouchableOpacity>
+      {!guest && <TouchableOpacity onPress={() => load()} disabled={loading} accessibilityRole="button"
+        accessibilityLabel={zh ? '刷新访问历史' : 'Refresh access history'} accessibilityState={{disabled: loading}}
+        style={[styles.button, styles.refresh, {backgroundColor: pal.surface, borderColor: pal.divider}]}>
+        <ReloadIcon size={21} color={loading ? pal.fgDisabled : pal.fg} />
+      </TouchableOpacity>}
     </View></ContentColumn>
     <FlatList
       data={rows}
+      extraData={expanded}
       keyExtractor={row => 'group' in row ? row.group.key : row.line.entry.id}
       contentContainerStyle={styles.body}
       ListHeaderComponent={<ContentColumn>
         {!guest && <AccessHistoryControls filter={filter} groups={known} operations={operations} zh={zh} pal={pal} onChange={setFilter} />}
-        <Text style={[styles.note, {color: pal.fg2}]}>{filter.group_by ? (zh ? `已汇总 ${groups.reduce((n, g) => n + g.count, 0)} 条已记录活动${next ? ' · 部分结果，可继续汇总' : ''}` : `${groups.reduce((n, g) => n + g.count, 0)} recorded activities${next ? ' · Partial summary; continue below' : ''}`) : (zh ? `已载入 ${entries.length} 条记录` : `${entries.length} records loaded`)}</Text>
+        {!guest && (rows.length > 0 || !!next) && <View style={styles.summary}>
+          <Text style={[styles.note, {color: pal.fg2}]}>{summary}</Text>
+          {!!filter.group_by && !!next && <Text style={[styles.note, {color: pal.fg2}]}>{zh ? '部分结果' : 'Partial summary'}</Text>}
+        </View>}
         {guest && <Text style={[styles.note, {color: pal.fg2}]}>{zh ? '访客链接不能查看访问历史。' : 'Guest links cannot read access history.'}</Text>}
         {!guest && error !== null && <View style={styles.error}><Text style={{color: ERRORED_COLOR}}>{failure}</Text><TouchableOpacity onPress={() => load()} disabled={loading} accessibilityRole="button" style={styles.button}><Text style={{color: pal.fg}}>{zh ? '重试' : 'Retry'}</Text></TouchableOpacity></View>}
       </ContentColumn>}
-      ListEmptyComponent={!guest ? <ContentColumn>{loading ? <BrandLoader labelColor={pal.fg2} label={zh ? '正在载入访问历史…' : 'Loading access history…'} /> : error === null && <Text style={[styles.note, {color: pal.fg2}]}>{next ? (zh ? '本页未找到访问记录，可继续载入更早记录。' : 'No access records in this page. Continue to earlier records.') : (filter.device_id || filter.actor || filter.operation || filter.outcome ? (zh ? '没有匹配记录，可清除筛选扩大范围。' : 'No matching records. Clear filters to broaden the search.') : (zh ? '暂无可识别的外部访问记录。' : 'No identified external access yet.'))}</Text>}</ContentColumn> : null}
-      renderItem={({item}) => <ContentColumn>{'line' in item ? <AccessRecord line={item.line} /> : <AccessGroupRecord group={item.group} select={() => setFilter(accessGroupFilter(filter, item.group))} />}</ContentColumn>}
+      ListEmptyComponent={!guest ? <ContentColumn>{loading ? <BrandLoader labelColor={pal.fg2} label={zh ? '正在载入访问历史…' : 'Loading access history…'} /> : error === null && <Text style={[styles.note, styles.emptyNote, {color: pal.fg2}]}>{next ? earlierEmpty : (filter.device_id || filter.actor || filter.operation || filter.outcome ? (zh ? '没有匹配记录，可清除筛选扩大范围。' : 'No matching records. Clear filters to broaden the search.') : (zh ? '暂无可识别的外部访问记录。' : 'No identified external access yet.'))}</Text>}</ContentColumn> : null}
+      renderItem={({item, index}) => <ContentColumn>{'line' in item
+        ? <AccessRecord line={item.line} last={index === lines.length - 1 || !!lines[index + 1]?.day}
+          open={expanded === item.line.entry.id} toggle={() => setExpanded(id => id === item.line.entry.id ? undefined : item.line.entry.id)} />
+        : <AccessGroupRecord group={item.group} first={index === 0} last={index === groups.length - 1}
+          select={() => setFilter(accessGroupFilter(filter, item.group))} />}</ContentColumn>}
       ListFooterComponent={!guest ? <ContentColumn>
         {!!next && <TouchableOpacity onPress={() => load(next)} disabled={loading} accessibilityRole="button" style={styles.button}><Text style={{color: pal.fg}}>{loading ? (zh ? '正在载入…' : 'Loading…') : (filter.group_by ? (zh ? '继续汇总' : 'Continue summary') : (zh ? '载入更早记录' : 'Load earlier'))}</Text></TouchableOpacity>}
         <AccessHistoryHelp zh={zh} days={days} color={pal.fg2} />
@@ -94,42 +119,97 @@ export function AccessHistoryScreen({navigation}: any) {
     />
   </SafeAreaView>;
 }
-function AccessGroupRecord({group: g, select}: {group: AccessGroup; select: () => void}) {
+function AccessGroupRecord({group: g, select, first, last: lastRow}: {group: AccessGroup; select: () => void; first: boolean; last: boolean}) {
   const {lang, pal} = useApp();
   const zh = lang === 'zh';
   const last = accessLogLines([{...g, id: g.key, at: g.last_at, operation: '', outcome: '', label_en: '', label_zh: ''}], zh)[0];
-  return <TouchableOpacity accessibilityRole="button" accessibilityLabel={(zh ? '查看来源日志：' : 'View source log: ') + accessName(g, zh) + ' ' + (g.device_id || g.source_ip || '') + (zh ? `，${g.count} 条已记录活动，${g.failed} 次失败` : `, ${g.count} recorded activities, ${g.failed} failed`)} onPress={select} style={[styles.record, {borderBottomColor: pal.divider}]}>
-    <Text style={[styles.name, {color: pal.fg}]}>{accessName(g, zh)}</Text>
-    <Text selectable style={[styles.meta, {color: pal.fg2}]}>{[g.device_id || (zh ? '未记录设备身份' : 'No paired device identity'), g.platform, g.source_ip].filter(Boolean).join(' · ')}</Text>
-    <Text style={[styles.operation, {color: pal.fg}]}>{zh ? `${g.count} 条已记录 · ${g.refused} 次拒绝 · ${g.failed} 次失败` : `${g.count} recorded · ${g.refused} refused · ${g.failed} failed`}</Text>
-    <Text style={[styles.meta, {color: pal.fg2}]}>{last.day} {last.clock} · {zh ? '查看日志 ›' : 'View log ›'}</Text>
+  const counts = zh ? `${g.count} 条已记录 · ${g.refused} 次拒绝 · ${g.failed} 次失败` : `${g.count} recorded · ${g.refused} refused · ${g.failed} failed`;
+  return <TouchableOpacity accessibilityRole="button"
+    accessibilityLabel={(zh ? '查看来源日志：' : 'View source log: ') + accessName(g, zh) + ' ' + (g.device_id || g.source_ip || '') + ', ' + counts}
+    onPress={select} style={[styles.record, styles.summaryRow, {backgroundColor: pal.surface, borderBottomColor: pal.divider}, first && styles.firstRow, lastRow && styles.lastRow]}>
+    <ClientIcon platform={g.platform} />
+    <View style={styles.recordMain}>
+      <Text style={[styles.operation, {color: pal.fg}]}>{accessName(g, zh)}</Text>
+      <Text selectable style={[styles.meta, {color: pal.fg2}]}>{[g.device_id || (zh ? '未记录设备身份' : 'No paired device identity'), g.platform, g.source_ip].filter(Boolean).join(' · ')}</Text>
+      <Text style={[styles.meta, styles.counts, {color: pal.fg}]}>{counts}</Text>
+      <Text style={[styles.meta, {color: pal.fg2}]}>{last.day} {last.clock}</Text>
+    </View>
+    <Chevron size={17} color={pal.fg2} />
   </TouchableOpacity>;
 }
-function AccessRecord({line}: {line: AccessLogLine}) {
+function ClientIcon({platform}: {platform?: string}) {
+  const {pal} = useApp();
+  const phone = /\b(?:iOS|iPadOS|Android)\b/i.test(platform || '');
+  return <View style={[styles.clientIcon, {backgroundColor: pal.raised}]}><SIcon name={phone ? 'phone' : 'globe'} size={17} color={pal.fg2} /></View>;
+}
+
+function AccessRecord({line, open, toggle, last}: {line: AccessLogLine; open: boolean; toggle: () => void; last: boolean}) {
   const {lang, pal} = useApp();
+  const {fontScale} = useWindowDimensions();
   const zh = lang === 'zh', e = line.entry;
-  const metadata = accessMetadata(e, zh);
+  const operation = accessOperation(e, zh);
+  const name = accessName(e, zh);
+  const outcome = accessOutcome(e, zh, e.outcome !== 'ok');
+  const details = open ? accessDetailFields(e, zh) : [];
+  const dotColor = e.outcome === 'ok' ? pal.fg3 : e.outcome === 'refused' ? StatusColor.waiting : ERRORED_COLOR;
   return <View>
     {!!line.day && <Text accessibilityRole="header" style={[styles.day, {color: pal.fg2}]}>{line.day}</Text>}
-    <View style={[styles.record, {borderBottomColor: pal.divider}]}>
-      <View style={styles.recordHeading}>
-        <Text selectable style={[styles.clock, {color: pal.fg2}]}>{line.clock}</Text>
-        <Text selectable style={[styles.name, {color: pal.fg}]}>{accessName(e, zh)}</Text>
-        <Text selectable style={[styles.outcome, {color: e.outcome === 'ok' ? pal.fg2 : ERRORED_COLOR}]}>{accessOutcome(e, zh)}</Text>
-      </View>
-      <Text selectable style={[styles.operation, {color: pal.fg}]}>{accessOperation(e, zh)}</Text>
-      {!!metadata && <Text selectable style={[styles.meta, {color: pal.fg2}]}>{metadata}</Text>}
+    <View style={[styles.record, {backgroundColor: pal.surface, borderBottomColor: pal.divider}, !!line.day && styles.firstRow, last && styles.lastRow]}>
+      <TouchableOpacity accessibilityRole="button" accessibilityLabel={`${operation}, ${name}, ${line.clock}, ${accessOutcome(e, zh)}`}
+        accessibilityHint={zh ? '显示或收起请求明细' : 'Shows or hides request details'}
+        accessibilityState={{expanded: open}} onPress={toggle} style={styles.summaryRow}>
+        <ClientIcon platform={e.platform} />
+        <View style={[styles.recordMain, fontScale <= 1.25 && styles.inlineStatus]}>
+          <View style={styles.recordText}>
+            <Text style={[styles.operation, {color: pal.fg}]}>{operation}</Text>
+            <Text style={[styles.meta, styles.clock, {color: pal.fg2}]}>{line.clock} · {name}</Text>
+          </View>
+          <View style={[styles.status, {backgroundColor: pal.raised}]}>
+            <View style={[styles.statusDot, {backgroundColor: dotColor}]} />
+            <Text style={[styles.outcome, {color: pal.fg}]}>{outcome}</Text>
+          </View>
+        </View>
+        <Chevron open={open} size={16} color={pal.fg2} />
+      </TouchableOpacity>
+      {open && !!details.length && <View style={[styles.details, {backgroundColor: pal.raised}]}>
+        {details.map(field => <View key={field.key} style={styles.detail}>
+          <Text style={[styles.detailLabel, {color: pal.fg2}]}>{field.label}</Text>
+          <Text selectable style={[styles.detailValue, {color: pal.fg}]}>{field.value}</Text>
+        </View>)}
+      </View>}
     </View>
   </View>;
 }
 const styles = StyleSheet.create({
-  safe: {flex: 1}, header: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 8},
-  backIcon: {fontSize: 26}, title: {fontSize: 26, fontWeight: '700', flex: 1}, button: {minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center'},
-  body: {padding: 16, paddingBottom: 32}, note: {fontSize: 14, lineHeight: 20, marginBottom: 12},
-  error: {paddingVertical: 10}, day: {fontSize: 14, fontWeight: '600', paddingTop: 14, paddingBottom: 6},
-  record: {paddingVertical: 10, gap: 4, borderBottomWidth: StyleSheet.hairlineWidth},
-  recordHeading: {flexDirection: 'row', alignItems: 'baseline', gap: 8},
-  clock: {fontSize: 12, fontVariant: ['tabular-nums']}, name: {fontSize: 15, fontWeight: '600', flex: 1},
-  outcome: {fontSize: 12, fontVariant: ['tabular-nums'], flexShrink: 1},
-  operation: {fontSize: 15, lineHeight: 21}, meta: {fontSize: 12, lineHeight: 17},
+  safe: {flex: 1},
+  header: {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, gap: 8, paddingVertical: 5},
+  backGlyph: {transform: [{rotate: '180deg'}]},
+  title: {fontSize: 25, fontWeight: '700', flex: 1},
+  button: {minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center'},
+  refresh: {borderRadius: Size.radiusRow, borderWidth: StyleSheet.hairlineWidth},
+  body: {paddingHorizontal: 16, paddingTop: 10, paddingBottom: 32},
+  summary: {paddingTop: 11, paddingHorizontal: 3, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 6},
+  note: {fontSize: 13, lineHeight: 19},
+  emptyNote: {marginTop: 12},
+  error: {paddingVertical: 10},
+  day: {fontSize: 14, fontWeight: '600', paddingTop: 16, paddingBottom: 7, paddingHorizontal: 3},
+  record: {borderBottomWidth: StyleSheet.hairlineWidth},
+  firstRow: {borderTopLeftRadius: Size.radiusRow, borderTopRightRadius: Size.radiusRow},
+  lastRow: {borderBottomLeftRadius: Size.radiusRow, borderBottomRightRadius: Size.radiusRow, borderBottomWidth: 0},
+  summaryRow: {flexDirection: 'row', alignItems: 'center', gap: 9, minHeight: 62, paddingVertical: 9, paddingHorizontal: 11},
+  clientIcon: {width: 32, height: 32, borderRadius: 9, alignItems: 'center', justifyContent: 'center'},
+  recordMain: {flex: 1, minWidth: 0, gap: 4},
+  recordText: {flexShrink: 1, minWidth: 0, gap: 2},
+  inlineStatus: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 7},
+  status: {alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 7},
+  statusDot: {width: 5, height: 5, borderRadius: 3},
+  clock: {fontVariant: ['tabular-nums']},
+  outcome: {fontSize: 11.5, fontWeight: '600', fontVariant: ['tabular-nums']},
+  operation: {fontSize: 15.5, lineHeight: 21, fontWeight: '600'},
+  meta: {fontSize: 12.5, lineHeight: 18},
+  counts: {fontWeight: '600'},
+  details: {marginHorizontal: 11, marginBottom: 10, borderRadius: 9, paddingHorizontal: 10, paddingVertical: 8, gap: 7},
+  detail: {gap: 1},
+  detailLabel: {fontSize: 12},
+  detailValue: {fontSize: 13.5, fontVariant: ['tabular-nums']},
 });

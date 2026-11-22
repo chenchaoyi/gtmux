@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1424 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1426 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2663 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2667 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -440,6 +440,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | LAP-013 | The mark and page-only feedback survive the redraw, removal works, and no bookmark is persisted. |
 | LAP-011 | No private composer data or bookmarks are restored. Normal credential changes still save drafts only for their original identity. |
 | AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
+| AHP-001 | Each summary exposes operation, target, source, time and outcome. Only one record can be expanded. Full details are available in the expanded row. A filter reset clears the open identity while preserving the existing request path. |
+| AHP-002 | Short category labels remain visible and the complete active value is readable outside the control. The full accessible control names, existing exact device selection, companion filters and clear action remain available. Controls can wrap as font scale grows. |
+| AHP-003 | Full identity and IP appear unchanged, fields have localized labels, HTTP 200 is selectable separately, and the failure is still identified as failed. |
 | BLP-001 | All three distinct fixed panes become highlighted in cyclic order, with smooth crossfade, constant mark footprint and no whole-logo opacity flashing or physical rotation. Repeated cycle boundary is continuous. Old whole-mark breathing fails a rendered-pane assertion semantically. |
 | BLP-002 | Static brand state until motion is known to be allowed. Reduced Motion, background/inactive and hidden/unmounted indicators have no running loop. Live preference wins over stale query; listeners and loops clean up, foreground may resume only when allowed. No frame-by-frame spoken announcements. |
 | BLP-003 | BrandLoader delegates to the same engine; existing color/label/size/style use remains compatible. Clear stable progress role/busy label with decorative panes hidden. Receipt remains in its14pt slot and never changes queue, expiry, success or send behavior. Inverse buttons retain legible contrast. Determinate upload progress and agent working-ring state keep their own meaning. |
@@ -464,6 +467,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | KRDS-001 | History API and extra ordinary title words remain current; exact supported titles with clear descriptors can fold, headings inside fences/quotes remain current; ordered source bytes remain identical |
 | KRDS-002 | Historical subheadings can stay in history; same/higher following headings cause conservative whole-body current fallback, retaining original order and all text. Non-heading code/quote lookalikes do not end history |
 | KRDS-003 | Hidden comment markers/content never become visible. Conservative whole-body fallback retains the exact source. Ordinary supported split still retains guidance and history; existing reference-definition fallback stays unchanged |
+| LVR-001 | Upward drag expands the local preview and exposes additional earlier output without losing the latest row. A downward drag shrinks it. Orientation/keyboard bounds clamp effective height and restoring space restores the selected size. The height control is limited to the grip. |
+| LVR-002 | The selection survives redraw, folding and temporary idle within the same scope. A new scope starts folded at the default size. Resizing does not create an input action or change pane identity. |
+| LVR-003 | While the preview is visible, the fixed control occupies a 44-point strip in the conversation background and retains its touch target and scroll-through surrounding area. Folding removes the added strip. Rendered iPhone QA confirms that a reply underneath does not overprint the label. |
 | PPR-001 | No upload/send/history or clearing while read is pending; visible disabled Send and concise reading feedback. Only one picker request; all four photos remain ordered and a later explicit Send uploads each exactly once before the original caption/paths are submitted. No automatic resend. |
 | PPR-002 | Full lifecycle finally releases ref/state, pending selection blocks send and reentry; after settlement a new selection/send is possible. Caption and existing images remain; no automatic upload/send, no spurious photo editor. Existing unmount late-result guard remains. |
 | PPR-003 | Message contains only that send snapshot in order; later file remains staged for its own explicit Send. No asset deletion or silent removal of unsent IDs. Existing upload failure preservation stays unchanged. |

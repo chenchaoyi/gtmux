@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.192',
+    en: [
+      '- Access history is easier to scan. Tap a request to see its full device and HTTP details, and read selected filters without truncation.',
+      '- Drag the top of the Live terminal preview up or down to see more output while staying in Chat.',
+    ],
+    zh: [
+      '- 访问历史更容易扫读。点开记录可查看完整设备和 HTTP 明细，已选筛选值可换行阅读。',
+      '- 拖动 Live 终端预览的顶边可拉高或缩小，在聊天中查看更多终端输出。',
+    ],
+  },
+  {
     version: '1.0.188',
     en: [
       '- Opening conversation files now gives clearer guidance when a file is unavailable or a new link is needed. Repeated attempts keep their conversation context.',

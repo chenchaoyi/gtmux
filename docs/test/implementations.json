@@ -4951,5 +4951,47 @@
       "TestCPI003CurrentHeartbeatRefusesUnprovenConflict",
       "TestCPI004LegacyWriterCanReuseVerifiedVacatedLocation"
     ]
+  },
+  "mobileapp/src/screens/AccessHistoryControls.test.tsx": {
+    "cases": [
+      "AHP-002"
+    ],
+    "selectors": [
+      "filter controls keep short categories and show the complete selection in a separate row"
+    ]
+  },
+  "mobileapp/src/screens/AccessHistoryScreen.test.tsx": {
+    "cases": [
+      "AHP-001"
+    ],
+    "selectors": [
+      "opens one access record with full selectable request details"
+    ]
+  },
+  "mobileapp/src/screens/accessHistoryPresentation.test.ts": {
+    "cases": [
+      "AHP-003"
+    ],
+    "selectors": [
+      "keeps full labelled request details and a failed outcome with HTTP 200"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.liveResize.test.tsx": {
+    "cases": [
+      "LVR-001",
+      "LVR-002"
+    ],
+    "selectors": [
+      "dragging the live grip reveals more terminal lines and respects the available height",
+      "preview sizing survives updates, folding and idle but starts fresh on another pane"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.liveResizeFold.test.tsx": {
+    "cases": [
+      "LVR-003"
+    ],
+    "selectors": [
+      "the fixed fold label has a conversation background while the live preview is open"
+    ]
   }
 }

@@ -37,7 +37,7 @@ import {separatorLabels} from './time';
 import {nativeFontFamily} from './term';
 import {BrandLoader} from './BrandLoader';
 import {ChromeText} from './ChromeText';
-import {LiveProgress} from './LiveProgress';
+import {DEFAULT_LIVE_PREVIEW_HEIGHT, LiveProgress} from './LiveProgress';
 import {segmentKey, stepsOpen} from './chatSteps';
 import {ToolSteps} from './ToolSteps';
 import {Agent, StatusName} from '../api/types';
@@ -186,6 +186,14 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
   const liveOpen = liveDisclosure.scope === liveScope && liveDisclosure.open;
   React.useEffect(() => {setLiveDisclosure(prev => prev.scope === liveScope ? prev : {scope: liveScope, open: false});}, [liveScope]);
+  const liveSize = React.useRef<{scope: string; height?: number}>({scope: liveScope});
+  if (liveSize.current.scope !== liveScope) liveSize.current = {scope: liveScope};
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [resizingLive, setResizingLive] = useState(false);
+  // Reserve the working row, grip and margins above the terminal body.
+  const liveHeightLimit = viewportHeight > 0
+    ? Math.max(1, Math.floor(viewportHeight - Math.max(topPad, controlsTop ?? 0) - 122))
+    : DEFAULT_LIVE_PREVIEW_HEIGHT;
   const [profileTarget, setProfileTarget] = useState<ProfileTarget | null>(null);
   const avatar = (content: React.ReactNode, target: ProfileTarget, placement?: 'incoming' | 'outgoing') => <TouchableOpacity testID="participant-avatar" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '查看参与者资料' : 'View participant profile'} style={[styles.avatarButton, placement === 'outgoing' && styles.messageAvatar, placement === 'incoming' && styles.incomingAvatar]} onPress={() => setProfileTarget(target)}>{content}</TouchableOpacity>;
   const fontFamily = nativeFontFamily(fontPref, Platform.OS); // match the terminal font (shared resolver)
@@ -430,11 +438,11 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         : 'Working…'
       : statusLabel(status, lang);
 
-  // Bound the optional working-screen preview; pending input has its own full reader.
-  const plain = lines.map(spans => spans.map(s => s.text).join(''));
-  let end = lines.length;
-  while (end > 0 && plain[end - 1].trim() === '') end--;
-  const liveShown = lines.slice(Math.max(0, end - 14), end);
+  const liveShown = useMemo(() => {
+    let end = lines.length;
+    while (end > 0 && lines[end - 1].every(span => !span.text.trim())) end--;
+    return end === lines.length ? lines : lines.slice(0, end);
+  }, [lines]);
 
   return (
     <ReadingPaletteContext.Provider value={pal}>
@@ -450,6 +458,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
           style={[
             styles.collapseBar,
             controlsTop !== undefined && [styles.collapseBarFloating, {top: controlsTop}],
+            controlsTop !== undefined && status === 'working' && liveOpen &&
+              [styles.collapseBarOverLive, {backgroundColor: pal.bg}],
             // Under the chrome (not in full screen) it rides the chrome's slide. It used to
             // stay in the flow at the top of the chat, under the chrome (%6, 2026-10-06).
             // Keep an identity transform when leaving the native animation. Fabric
@@ -465,6 +475,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       ref={scrollRef}
       testID={TestIds.detail.chat}
       style={styles.body}
+      scrollEnabled={!resizingLive}
       contentContainerStyle={[styles.content, (topPad > 0 || controlsTop !== undefined) && {paddingTop: Math.max(topPad, controlsTop ?? 0) + (controlsTop !== undefined && turns.length > 0 ? 44 : 0)}, maxWidth ? {maxWidth, width: '100%', alignSelf: 'center'} : null]}
       onScroll={onScroll}
       onScrollBeginDrag={() => {
@@ -479,7 +490,10 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       onMomentumScrollEnd={() => {
         onLiveEdge?.(gapRef.current);
       }}
-      onLayout={onBodyLayout}
+      onLayout={event => {
+        setViewportHeight(Math.floor(event.nativeEvent.layout.height));
+        onBodyLayout();
+      }}
       // The CONTENT can change size under a reader at the tail too — the host's `topPad`
       // grows when its chrome is measured or its disclosure opens, which pushes the whole
       // content down by that much and leaves the tail that far below the viewport. A
@@ -722,8 +736,17 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       {actRows(placed.after)}
 
       {/* The conversation owns this preference even while the working row is absent. */}
-      {status === 'working' && <LiveProgress
+      {status === 'working' && <LiveProgress key={liveScope}
         open={liveOpen} onToggle={() => setLiveDisclosure({scope: liveScope, open: !liveOpen})}
+        heightLimit={liveHeightLimit} savedHeight={liveSize.current.height}
+        onResize={height => {if (liveSize.current.scope === liveScope) liveSize.current.height = height;}}
+        onResizeActive={active => {
+          if (active) {
+            stick.current = true;
+            setAtBottom(true);
+          }
+          setResizingLive(active);
+        }}
         avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent})}
         label={liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
         inspectAvailable={!readOnly && !!agent.pane_id && agent.source !== 'native'}
@@ -770,6 +793,8 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   earlierText: {fontSize: 12, color: pal.fg2, textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
   collapseBarFloating: {position: 'absolute', right: 14, height: 44, zIndex: 2, backgroundColor: 'transparent', paddingHorizontal: 0, paddingVertical: 0},
+  // An enlarged preview pulls replies under the fixed action.
+  collapseBarOverLive: {left: 0, right: 0, paddingHorizontal: 14},
   collapseBarText: {fontSize: 12.5, color: readingColors(pal).link, fontWeight: '600'},
   // per-turn reply toggle shown while collapsed (chevron + preview).
   replyToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 3, maxWidth: '88%'},
