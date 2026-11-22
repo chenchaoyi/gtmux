@@ -1955,6 +1955,12 @@ row it shows, up to the 1000-line cap (2026-10-06: measured, not addressed here)
 
 The app SHALL offer New session in the radar and All panes for owner connections, with a labelled empty-radar action. Offline controls SHALL be disabled; guests and demo SHALL have no creation controls. A keyboard-ready form SHALL identify the active Mac, accept an optional name, preview canonicalization and offer Create and open. Compact canvases SHALL use a bottom sheet; regular canvases SHALL use a bounded centred form with the same behavior.
 
+#### Scenario: Name a new session
+
+- **WHEN** the form opens
+- **THEN** a short hint next to the name field explains the default numeric name and 80-character, single-line input limit
+- **AND** an empty name lets tmux assign its default number, an adjusted name is previewed before submission, and unsupported control characters block creation with inline feedback
+
 #### Scenario: Consistent toolbar appearance
 - **WHEN** New session appears as an icon-only toolbar action on phone or iPad
 - **THEN** its icon uses the same neutral secondary foreground as adjacent controls in either theme, while the labelled empty-radar action uses the brand accent
@@ -1967,8 +1973,6 @@ The app SHALL offer New session in the radar and All panes for owner connections
   height the app saw, or before any, a guess from the screen), the name field is focused
   on the next frame, and only the keyboard's own announced height corrects the lift, on
   the keyboard's duration and curve: the form never settles at the bottom and then jumps
-- **AND** the form says what Create and open does: a new tmux session on this Mac, its
-  terminal opened here, ready for an agent
 
 #### Scenario: No software keyboard comes
 
@@ -2934,11 +2938,25 @@ Last-known history SHALL retain the authorized current-pane Live disclosure whil
 
 An expanded Live terminal with captured output SHALL expose a top resize grip. Upward and downward drags SHALL change the preview height within the available Chat viewport. The grip SHALL also support accessible increase and decrease actions. The preview SHALL preserve the newest captured line and show more captured lines as height increases. The selected height SHALL follow the same conversation scope as the disclosure.
 
+#### Scenario: Find Live in a working conversation
+
+- **WHEN** the reader can inspect the pane and Live is collapsed
+- **THEN** a single outlined disclosure highlights the Live action beside the existing working label in either appearance and offers at least a 48-point touch target
+
 #### Scenario: Resize the working preview
 - **WHEN** a reader drags the grip upward or activates its increase action
 - **THEN** the preview shows more of the existing terminal output while keeping the latest line visible
 - **AND** the conversation composer and terminal input scope remain independent of the resize
 - **AND** reducing available space temporarily clamps the preview while retaining the selected height
+
+### Requirement: Local Markdown links open conversation previews
+
+The mobile conversation reader SHALL recognize an angle-delimited inline Markdown link destination, including paths with spaces, Unicode and parentheses. Supported local destinations SHALL use the existing scoped file preview. Code spans and rejected destinations SHALL remain inert.
+
+#### Scenario: Open an HTML report with spaces in its filename
+
+- **WHEN** an inline link points to a local HTML report with its destination enclosed in angle brackets
+- **THEN** tapping the link requests preview for the original filename without the Markdown delimiters
 
 ### Requirement: Recorded attachment messages replace temporary echoes atomically
 

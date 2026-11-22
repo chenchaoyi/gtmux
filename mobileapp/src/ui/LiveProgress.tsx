@@ -96,11 +96,11 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
       {inspectAvailable ? <TouchableOpacity testID={TestIds.detail.chatLiveToggle}
         accessibilityRole="button" accessibilityLabel={`${label}, ${action}`}
         accessibilityState={{expanded: open}}
-        onPress={onToggle} activeOpacity={0.7} style={[styles.disclosure, open && styles.openDisclosure]}>
+        onPress={onToggle} activeOpacity={0.7} style={[styles.disclosure, open ? styles.openDisclosure : styles.closedDisclosure]}>
         {marker}
         <View style={styles.action}>
           <ChromeText style={styles.actionText}>{action}</ChromeText>
-          <Chevron open={open} size={12} color={readingColors(pal).link} />
+          <Chevron open={open} size={13} color={readingColors(pal).link} />
         </View>
       </TouchableOpacity> : <View style={styles.disclosure}>{marker}</View>}
     </View>
@@ -127,11 +127,12 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   grip: {minHeight: 44, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', marginTop: -5},
   gripMark: {width: 36, height: 4, borderRadius: 2, backgroundColor: pal.fg3},
   row: {flexDirection: 'row', alignItems: 'center'},
-  disclosure: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 44, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: pal.surface},
+  disclosure: {flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, backgroundColor: pal.surface},
+  closedDisclosure: {minHeight: 48, borderWidth: 1, borderColor: readingColors(pal).dark ? '#24606B' : '#88C3CD'},
   openDisclosure: {backgroundColor: 'transparent', paddingHorizontal: 0},
-  label: {flex: 1, fontSize: 12, color: pal.fg2, fontVariant: ['tabular-nums']},
-  action: {flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1},
-  actionText: {fontSize: 12, color: readingColors(pal).link, flexShrink: 1},
+  label: {flex: 1, fontSize: 13, fontWeight: '500', color: pal.fg2, fontVariant: ['tabular-nums']},
+  action: {flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1, maxWidth: '62%', minHeight: 32, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: pal.raised},
+  actionText: {fontSize: 13, fontWeight: '600', color: readingColors(pal).link, flexShrink: 1},
   preview: {marginTop: 5, overflow: 'hidden'},
   source: {color: pal.fg2, fontSize: 12, lineHeight: 18, marginBottom: 4},
   viewport: {backgroundColor: '#17171A'},

@@ -7,7 +7,7 @@
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2671 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2675 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -458,6 +458,9 @@
 | MSD-003 | Preferred receipt returned as additive JSON while legacy clients retain status ok; no mutation when unauthorized, guest out of scope or key invalid; queue acceptance not claimed read/completed; no message body or secrets in diagnostics. |
 | MSD-004 | Full send settles at finite deadline and aborts network; late success cannot overwrite timeout; only one fetch, original send ID retained by caller for explicit retry; refusal and legacy success remain compatible. |
 | MSD-005 | Queued is labeled queued awaiting next turn, accepted means received not read/completed; finite network deadline keeps text and explicit same-ID retry; late old response/failure cannot replace a newer pending attempt; transcript confirmation retires the correct echo; no resends, no queue deletion, no draft/approval bypass. |
+| MCE-001 | Paths with spaces, Unicode and parentheses reach the same file callback with the intended destination. The unsafe or code examples have no link action. |
+| MCE-002 | The single control has a distinct outlined appearance and at least a 48-point target, retains the live state text, and announces its expanded state. The expanded panel retains its own resize behavior. |
+| MCE-003 | The form identifies the host and explains the default numeric name and custom input. Blank sends an empty name. Both submit actions reject nonprinting input. The app shows and submits the existing normalized spelling when valid. |
 | MEX-005 | First action releases busy by15seconds from click even though its queued read has not settled; its late completion cannot clear a newer action. Current valid results still update the roster and background coalescing remains intact. Client switch retires old timers/results and cannot clear new client's action; cached timestamp and authority boundaries remain unchanged. |
 | MEX-006 | Empty/whitespace success is failed at both boundaries, never complete or sent; caption and both photos remain and no automatic retry occurs. An explicit double-tapped retry uses the existing in-flight guard and sends one valid message. Nonblank paths are preserved exactly and ordinary saved success remains complete only after response. |
 | MEX-001 | Viewer contains existing OLD-NORMAL plus current green frame with trailing rows; verifiers exclude old history, retain current frame; history_size unchanged, invalid targets empty and names cannot inject commands |

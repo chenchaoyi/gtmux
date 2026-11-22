@@ -53801,13 +53801,13 @@
       ]
     },
     "mobileapp/src/ui/ChatView.liveDisclosure.test.tsx": {
-      "sha256": "29056454fdb271562fd5e8ddfe94d177c6a80699dbbf52b85b9155df8968e224",
+      "sha256": "63e06f439a71a416c6a48a6894af03773bdab17a999b431e0ff007f2907253aa",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-56b976fa48e0",
-          "line": 34,
+          "line": 52,
           "kind": "test.each()",
           "name": "%s: the default is a status row; the same disclosure opens and closes the bounded screen",
           "dynamic": true,
@@ -53815,7 +53815,7 @@
         },
         {
           "id": "LEG-37958d9f666f",
-          "line": 52,
+          "line": 70,
           "kind": "test",
           "name": "capture and transcript refresh retain expansion, including first output and temporary empty captures",
           "dynamic": false,
@@ -53823,7 +53823,7 @@
         },
         {
           "id": "LEG-086c5c5a6b44",
-          "line": 66,
+          "line": 89,
           "kind": "test.each()",
           "name": "a new working scope starts folded: %j",
           "dynamic": true,
@@ -53831,7 +53831,7 @@
         },
         {
           "id": "LEG-a5dc77223605",
-          "line": 78,
+          "line": 96,
           "kind": "test.each()",
           "name": "%s hides the working preview without losing the reader preference",
           "dynamic": true,
@@ -53839,7 +53839,7 @@
         },
         {
           "id": "LEG-31d065a33508",
-          "line": 89,
+          "line": 107,
           "kind": "test",
           "name": "a native conversation without terminal access keeps the status without an empty disclosure",
           "dynamic": false,
@@ -53847,11 +53847,20 @@
         },
         {
           "id": "LEG-40b967b90c1c",
-          "line": 97,
+          "line": 115,
           "kind": "test",
           "name": "radar timestamp corrections do not collapse the live view, and explicit folding survives updates",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-e5027560aedb",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "MCE-002 %s Live has one outlined disclosure and an emphasized action",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MCE-002"
         }
       ]
     },
@@ -55254,7 +55263,7 @@
       ]
     },
     "mobileapp/src/ui/MarkdownView.test.tsx": {
-      "sha256": "36ec34ddf6f56ef6c195c2561376b954f5d0d64229b239c2b2c4f066a8a1964b",
+      "sha256": "d2cf3298cb7eebeea6269de35569cc246647b7e02ee6dd9f1265d45600840485",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -55364,7 +55373,7 @@
         },
         {
           "id": "LEG-8ddb135d5819",
-          "line": 192,
+          "line": 207,
           "kind": "test.each()",
           "name": "emphasis preserves an actionable nested link: %s",
           "dynamic": true,
@@ -55372,11 +55381,20 @@
         },
         {
           "id": "LEG-22184a07bca3",
-          "line": 200,
+          "line": 215,
           "kind": "test",
           "name": "nested local links keep scoped file open, while code and unsafe URLs stay inert",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-7b7ea91cf1fc",
+          "line": 192,
+          "kind": "reviewed-selector",
+          "name": "MCE-001 angle-delimited document links open the exact filename",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MCE-001"
         }
       ]
     },
@@ -55657,7 +55675,7 @@
       ]
     },
     "mobileapp/src/ui/NewSessionSheet.test.tsx": {
-      "sha256": "46e53342cead44d4d90c393d3c2728fcae1580357b035c563fab124436ece252",
+      "sha256": "05168b9c3df7ab0b83a7ce523e0e0e16c4682625be4ca9174cd7a7217ed39e06",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
@@ -55671,7 +55689,7 @@
         },
         {
           "id": "LEG-786ae4344a47",
-          "line": 33,
+          "line": 51,
           "kind": "test",
           "name": "previews normalized names, locks repeated taps and blocks dismissal while creating",
           "dynamic": false,
@@ -55679,7 +55697,7 @@
         },
         {
           "id": "LEG-4e285e4ffcc2",
-          "line": 47,
+          "line": 65,
           "kind": "test",
           "name": "uncertain creation retries the same request and does not allow changing its name",
           "dynamic": false,
@@ -55687,7 +55705,7 @@
         },
         {
           "id": "LEG-b3ad35e6b4cb",
-          "line": 57,
+          "line": 75,
           "kind": "test",
           "name": "a duplicate name retains the form and accepts a corrected name",
           "dynamic": false,
@@ -55695,7 +55713,7 @@
         },
         {
           "id": "LEG-a3cf0f30e339",
-          "line": 68,
+          "line": 86,
           "kind": "test",
           "name": "an old server gives an update instruction, and unmount suppresses late navigation",
           "dynamic": false,
@@ -55703,7 +55721,7 @@
         },
         {
           "id": "LEG-7cd7ced4100a",
-          "line": 82,
+          "line": 100,
           "kind": "test",
           "name": "focuses the name on the next frame, not when the fade ends",
           "dynamic": false,
@@ -55711,7 +55729,7 @@
         },
         {
           "id": "LEG-2a25215175e9",
-          "line": 99,
+          "line": 117,
           "kind": "test",
           "name": "says what Create and open will do",
           "dynamic": false,
@@ -55727,7 +55745,7 @@
         },
         {
           "id": "LEG-c9e6a6722174",
-          "line": 134,
+          "line": 156,
           "kind": "test",
           "name": "a later open starts at the height the keyboard said, so nothing moves",
           "dynamic": false,
@@ -55735,7 +55753,7 @@
         },
         {
           "id": "LEG-377e77556bf4",
-          "line": 143,
+          "line": 165,
           "kind": "test",
           "name": "the iPad form keeps the keyboard avoider",
           "dynamic": false,
@@ -55743,7 +55761,7 @@
         },
         {
           "id": "LEG-316d39da5d9a",
-          "line": 179,
+          "line": 201,
           "kind": "test",
           "name": "a late keyboard is followed, and nothing settles before it",
           "dynamic": false,
@@ -55751,7 +55769,7 @@
         },
         {
           "id": "LEG-86126a93033d",
-          "line": 190,
+          "line": 212,
           "kind": "test",
           "name": "a focus that took and no keyboard: it settles only after the long grace",
           "dynamic": false,
@@ -55759,7 +55777,7 @@
         },
         {
           "id": "LEG-25128083c960",
-          "line": 199,
+          "line": 221,
           "kind": "test",
           "name": "a focus that did not take: no keyboard will come, so it settles soon",
           "dynamic": false,
@@ -55767,7 +55785,7 @@
         },
         {
           "id": "LEG-1cf65cefc6fe",
-          "line": 207,
+          "line": 229,
           "kind": "test",
           "name": "a busy JS thread that runs the timer before onFocus does not drop the form",
           "dynamic": false,
@@ -55775,7 +55793,7 @@
         },
         {
           "id": "LEG-b8711e7cf9aa",
-          "line": 221,
+          "line": 243,
           "kind": "test",
           "name": "closing the form ends its timers and its keyboard listeners",
           "dynamic": false,
@@ -55783,7 +55801,7 @@
         },
         {
           "id": "LEG-651e55db6c4f",
-          "line": 232,
+          "line": 254,
           "kind": "test",
           "name": "reopening starts afresh: a late keyboard again settles nothing first",
           "dynamic": false,
@@ -55791,7 +55809,7 @@
         },
         {
           "id": "LEG-961b0577da01",
-          "line": 248,
+          "line": 270,
           "kind": "test",
           "name": "a keyboard already on screen places the form at once, and nothing waits",
           "dynamic": false,
@@ -55799,7 +55817,7 @@
         },
         {
           "id": "LEG-ccd51bb6b631",
-          "line": 282,
+          "line": 304,
           "kind": "test",
           "name": "sideways: the field and Create share a row, the explanation follows, the height is the sideways one",
           "dynamic": false,
@@ -55807,11 +55825,29 @@
         },
         {
           "id": "LEG-6a1db8c585e7",
-          "line": 298,
+          "line": 320,
           "kind": "test",
           "name": "upright: the portrait layout is unchanged",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-35c367e0ec36",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "identifies the target and creates an automatically named session (MCE-003)",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MCE-003"
+        },
+        {
+          "id": "MAP-d1e7645b392b",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "MCE-003 blocks a name with nonprinting characters and accepts the corrected name",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MCE-003"
         }
       ]
     },

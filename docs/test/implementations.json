@@ -5026,5 +5026,30 @@
     "selectors": [
       "the fixed fold label has a conversation background while the live preview is open"
     ]
+  },
+  "mobileapp/src/ui/ChatView.liveDisclosure.test.tsx": {
+    "cases": [
+      "MCE-002"
+    ],
+    "selectors": [
+      "MCE-002 %s Live has one outlined disclosure and an emphasized action"
+    ]
+  },
+  "mobileapp/src/ui/MarkdownView.test.tsx": {
+    "cases": [
+      "MCE-001"
+    ],
+    "selectors": [
+      "MCE-001 angle-delimited document links open the exact filename"
+    ]
+  },
+  "mobileapp/src/ui/NewSessionSheet.test.tsx": {
+    "cases": [
+      "MCE-003"
+    ],
+    "selectors": [
+      "identifies the target and creates an automatically named session (MCE-003)",
+      "MCE-003 blocks a name with nonprinting characters and accepts the corrected name"
+    ]
   }
 }

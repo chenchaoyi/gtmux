@@ -86,7 +86,9 @@ export function parseInline(s: string): Inline[] {
     let m: RegExpExecArray | null;
     const code = codeSpan(rest);
     if (code) consider(code.idx, code.len, {t: 'code', s: code.s});
-    if ((m = /\[([^\]]+)\]\(([^)\s]+)\)/.exec(rest))) consider(m.index, m[0].length, {t: 'link', s: m[1], href: m[2]});
+    if ((m = /\[([^\]\r\n]+)\]\((?:<([^<>\r\n]+)>|([^<>)\s]+))\)/.exec(rest))) {
+      consider(m.index, m[0].length, {t: 'link', s: m[1], href: m[2] ?? m[3]});
+    }
     if ((m = /\*\*([^*]+)\*\*/.exec(rest))) consider(m.index, m[0].length, {t: 'b', s: m[1]});
     if ((m = /\*([^*\n]+)\*/.exec(rest))) consider(m.index, m[0].length, {t: 'i', s: m[1]});
     if ((m = /~~([^~]+)~~/.exec(rest))) consider(m.index, m[0].length, {t: 'del', s: m[1]});
