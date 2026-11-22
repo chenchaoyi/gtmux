@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, regression design self-review",
     "date": "2026-11-22",
     "decision": "Match Markdown destination escaping while preserving legacy bare links, and disclose every supported mobile name adjustment.",
-    "notes": "Independent review of 7e9402a6 reproduced two destination failures and tmux format expansion with exact paired readbacks. This complementary design covers the three counterexamples before test edits and does not claim independent approval."
+    "notes": "Independent review of 7e9402a6 reproduced two destination failures and tmux format expansion with exact paired readbacks. This complementary design covers the three counterexamples before test edits and does not claim independent approval. These independent-review cases live in separate test files so the gate can verify their own pre-implementation design chronology within this PR."
   },
   "cases": [
     {
@@ -16,7 +16,7 @@
       "action": "Activate each scoped local preview and inspect the request reference.",
       "expected": "Legacy and encoded paths keep their exact reference. Markdown escapes and character references are interpreted once, so new targets reach the existing renderer and resolver using the same path as Markdown on the server. Malformed or unsafe destinations expose no preview action.",
       "planned_files": [
-        "mobileapp/src/ui/MarkdownView.test.tsx"
+        "mobileapp/src/ui/MarkdownView.compat.test.tsx"
       ]
     },
     {
@@ -27,9 +27,9 @@
       "action": "Enter a padded Unicode name, a known tmux format and a valid literal hash name. Inspect the proposed name and run both submission entry points.",
       "expected": "Trimming is visible before submit and the submitted name exactly matches the preview. Format-bearing names have inline correction feedback and make no request. Names with a literal hash and blank default input remain available.",
       "planned_files": [
-        "mobileapp/src/ui/NewSessionSheet.test.tsx"
+        "mobileapp/src/ui/NewSessionSheet.compat.test.tsx"
       ]
     }
   ],
-  "seal": "599062c8de57e4892af27d5a9570cba1a1960b2b477a7a3872c92c6c7ec6eaa1"
+  "seal": "65df860bd53678d68d51ae4e9b19b64f8ca86ed59ab66627746f60a7f7e8861a"
 }
