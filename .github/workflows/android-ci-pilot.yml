@@ -1,0 +1,224 @@
+name: Android CI comparison pilot
+
+# The experiment is owned by this branch. The required CI workflow is independent.
+on:
+  push:
+    branches: [experiment/android-ci-comparison]
+    paths: [.github/workflows/android-ci-pilot.yml, scripts/android_ci_compare.py]
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: android-ci-comparison-pilot
+  cancel-in-progress: false
+
+env:
+  PRODUCT_SHA: 2fd999ed9dce57201f24d9fb6a2b91e18c1f62a4
+  QA_RUN: '45009166322'
+  QA_ATTEMPT: '1'
+  QA_ARTIFACT: '14749072426'
+  QA_ZIP_BYTES: '35336640'
+  QA_ZIP_SHA256: 8f25b8386d22256dca75a4f031154a9d0689599f31c36947195745ae4ae6cd5d
+
+jobs:
+  prepare:
+    name: Android comparison source and package
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: controller
+          persist-credentials: false
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.PRODUCT_SHA }}
+          path: product
+          persist-credentials: false
+      - name: Verify official QA provenance and transport
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ $(git -C product rev-parse HEAD) == "$PRODUCT_SHA" ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$QA_RUN" > "$RUNNER_TEMP/official-run.json"
+          jq -e --arg sha "$PRODUCT_SHA" --argjson attempt "$QA_ATTEMPT" '
+            .head_sha == $sha and .head_branch == "main" and .event == "push"
+            and .path == ".github/workflows/ci.yml" and .run_attempt == $attempt and .conclusion == "success"
+          ' "$RUNNER_TEMP/official-run.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$QA_ARTIFACT" > "$RUNNER_TEMP/official-artifact.json"
+          jq -e --arg sha "$PRODUCT_SHA" --arg run "$QA_RUN" --arg attempt "$QA_ATTEMPT" \
+            --arg hash "$QA_ZIP_SHA256" --argjson bytes "$QA_ZIP_BYTES" '
+            .name == "android-qa-\($run)-\($attempt)" and .expired == false
+            and .workflow_run.head_sha == $sha and (.workflow_run.id | tostring) == $run
+            and .digest == "sha256:\($hash)" and .size_in_bytes == $bytes
+          ' "$RUNNER_TEMP/official-artifact.json" >/dev/null
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$QA_ARTIFACT/zip" > "$RUNNER_TEMP/official-qa.zip"
+          python3 controller/scripts/android_ci_compare.py unpack --source "$PRODUCT_SHA" \
+            --package-run "$QA_RUN" --package-attempt "$QA_ATTEMPT" --archive "$RUNNER_TEMP/official-qa.zip" \
+            --zip-bytes "$QA_ZIP_BYTES" --zip-sha256 "$QA_ZIP_SHA256" --package-dir "$RUNNER_TEMP/pilot-package"
+      - name: Plan complete and split suites
+        id: plan
+        run: |
+          set -euo pipefail
+          python3 controller/scripts/android_ci_compare.py plan --source "$PRODUCT_SHA" --source-tree product > "$RUNNER_TEMP/plan.json"
+          matrix=$(jq -c '{include:[.include[] | {lane,device,profile,only:(.only // "")}]}' "$RUNNER_TEMP/plan.json")
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-ci-pilot-package-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pilot-package/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+
+  compare:
+    name: Android comparison / ${{ matrix.lane }}
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    env:
+      COMPARE_LANE: ${{ matrix.lane }}
+      COMPARE_DEVICE: ${{ matrix.device }}
+      COMPARE_PROFILE: ${{ matrix.profile }}
+      COMPARE_ONLY: ${{ matrix.only }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.PRODUCT_SHA }}
+          path: product
+          persist-credentials: false
+      - name: Isolate comparison data and record lane identity
+        run: |
+          set -euo pipefail
+          [[ $(git -C product rev-parse HEAD) == "$PRODUCT_SHA" ]]
+          out="$RUNNER_TEMP/gtmux-android-evidence"
+          mkdir "$out"
+          echo "APPIUM_HOME=$RUNNER_TEMP/gtmux-appium" >> "$GITHUB_ENV"
+          echo "GTMUX_ANDROID_E2E_OUTPUT=$out" >> "$GITHUB_ENV"
+          jq -n --arg source "$PRODUCT_SHA" --argjson package "$QA_ARTIFACT" \
+            --argjson run "$GITHUB_RUN_ID" --argjson attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg lane "$COMPARE_LANE" --arg device "$COMPARE_DEVICE" --arg profile "$COMPARE_PROFILE" \
+            '{source:$source,package_artifact:$package,comparison_run:$run,comparison_attempt:$attempt,
+              evidence_kind:"workflow",lane:$lane,device:$device,profile:$profile}' > "$out/LANE.json"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: product/mobileapp/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install Android automation dependencies
+        working-directory: product/mobileapp
+        run: |
+          npm ci
+          npx appium driver install --source=local "$PWD/node_modules/appium-uiautomator2-driver"
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-ci-pilot-package-${{ github.run_attempt }}
+          path: product/mobileapp/android/app/build/outputs/apk/qa
+      - name: Verify the QA package before installation
+        working-directory: product
+        run: python3 scripts/android_ci_package.py verify --source "$PRODUCT_SHA" --run "$QA_RUN" --attempt "$QA_ATTEMPT"
+      - name: Allow KVM on this disposable runner
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-gtmux-kvm.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Exercise the assigned synthetic scenarios
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: ${{ matrix.profile }}
+          avd-name: gtmux-ci-${{ matrix.device }}
+          force-avd-creation: true
+          emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader
+          script: >-
+            bash -c 'unset GTMUX_ANDROID_E2E_BLOCKS GTMUX_ANDROID_E2E_ONLY;
+            if [[ -n "$COMPARE_ONLY" ]]; then export GTMUX_ANDROID_E2E_ONLY="$COMPARE_ONLY"; fi;
+            ANDROID_SERIAL=emulator-5554 npm --prefix product/mobileapp run test:e2e:android'
+      - name: Preserve comparison lane evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-ci-pilot-evidence-${{ github.run_attempt }}-${{ matrix.lane }}
+          path: ${{ runner.temp }}/gtmux-android-evidence/
+          if-no-files-found: warn
+          retention-days: 7
+
+  report:
+    name: Android comparison receipts
+    if: always()
+    needs: [prepare, compare]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: controller
+          persist-credentials: false
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.PRODUCT_SHA }}
+          path: product
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-ci-pilot-package-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pilot-package
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: android-ci-pilot-evidence-${{ github.run_attempt }}-*
+          path: ${{ runner.temp }}/lane-downloads
+      - name: Verify complete per-device coverage and runner receipts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MATRIX_RESULT: ${{ needs.compare.result }}
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/comparison" "$RUNNER_TEMP/comparison-report"
+          report="$RUNNER_TEMP/comparison-report"
+          prefix="android-ci-pilot-evidence-$GITHUB_RUN_ATTEMPT-"
+          shopt -s nullglob
+          for path in "$RUNNER_TEMP/lane-downloads/$prefix"*; do
+            name=${path##*/}
+            mv -- "$path" "$RUNNER_TEMP/comparison/${name#"$prefix"}"
+          done
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100" > "$report/jobs.json"
+          status=0
+          python3 controller/scripts/android_ci_compare.py verify --source "$PRODUCT_SHA" --source-tree product \
+            --package-dir "$RUNNER_TEMP/pilot-package" --package-run "$QA_RUN" --package-attempt "$QA_ATTEMPT" \
+            --package-artifact "$QA_ARTIFACT" --comparison-run "$GITHUB_RUN_ID" --comparison-attempt "$GITHUB_RUN_ATTEMPT" \
+            --evidence-kind workflow --evidence "$RUNNER_TEMP/comparison" > "$report/coverage.json" || status=$?
+          cat "$report/coverage.json"
+          jq -e --arg sha "$GITHUB_SHA" --argjson attempt "$GITHUB_RUN_ATTEMPT" '
+            [.jobs[] | select(.name | startswith("Android comparison / "))]
+            | (map(.name) | sort) == ["Android comparison / full-phone", "Android comparison / full-tablet",
+               "Android comparison / split-phone-1", "Android comparison / split-phone-2",
+               "Android comparison / split-tablet-1", "Android comparison / split-tablet-2"]
+            and all(.status == "completed" and .conclusion == "success" and .head_sha == $sha and .run_attempt == $attempt)
+          ' "$report/jobs.json" >/dev/null
+          [[ "$MATRIX_RESULT" == success && "$status" == 0 ]]
+      - name: Preserve comparison summary even when a lane fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-ci-pilot-report-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/comparison-report/
+          if-no-files-found: warn
+          retention-days: 7
