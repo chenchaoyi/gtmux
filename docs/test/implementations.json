@@ -5068,5 +5068,13 @@
       "MCE-005 shows the trimmed name and sends the same value",
       "MCE-005 blocks tmux formatting in %s"
     ]
+  },
+  "mobileapp/src/ui/MarkdownView.externalLinks.test.tsx": {
+    "cases": [
+      "MCE-006"
+    ],
+    "selectors": [
+      "MCE-006 preserves raw query parameters and the paired file destination"
+    ]
   }
 }

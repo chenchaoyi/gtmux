@@ -8,7 +8,7 @@
 // [text](url). Underscore emphasis is intentionally NOT supported — snake_case
 // identifiers are common in agent prose and would be mangled into italics.
 
-import {decodeHTML} from 'entities/lib/decode.js';
+import {decodeHTML, decodeHTMLStrict} from 'entities/lib/decode.js';
 
 export type Inline =
   | {t: 'text'; s: string}
@@ -89,8 +89,11 @@ export function parseInline(s: string): Inline[] {
     const code = codeSpan(rest);
     if (code) consider(code.idx, code.len, {t: 'code', s: code.s});
     if ((m = /\[([^\]\r\n]+)\]\((?:<((?:\\[^\r\n]|[^<>\\\r\n])+)>|((?!<)[^)\s]+))\)/.exec(rest))) {
-      // Match the server's Markdown destination decoding. URL escaping belongs to the resolver.
-      const href = decodeHTML((m[2] ?? m[3]).replace(/\\([!-/:-@[-\x60{-~])/g, '$1'));
+      const destination = (m[2] ?? m[3]).replace(/\\([!-/:-@[-\x60{-~])/g, '$1');
+      // Only terminated references are unambiguous in external URL queries.
+      // Local paths follow the server's existing Markdown evidence decoder.
+      const strict = decodeHTMLStrict(destination);
+      const href = /^(https?:\/\/|mailto:)/i.test(strict) ? strict : decodeHTML(destination);
       consider(m.index, m[0].length, {t: 'link', s: m[1], href});
     }
     if ((m = /\*\*([^*]+)\*\*/.exec(rest))) consider(m.index, m[0].length, {t: 'b', s: m[1]});

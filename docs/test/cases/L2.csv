@@ -1926,6 +1926,7 @@ LEG-fedf4b1b1e84,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,1
 LEG-59a587268f25,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,121,it,retains the opened pane when a new row is inserted before it,False,legacy-not-retrospectively-reviewed
 LEG-32b06a97e1b8,L2,RN / mobile harness,mobileapp/src/ui/MarkdownFold.test.tsx,131,it,reveals long status text within a field without dropping any text,False,legacy-not-retrospectively-reviewed
 MAP-70386de0653a,L2,reviewed implementation,mobileapp/src/ui/MarkdownView.compat.test.tsx,8,reviewed-selector,MCE-004 preserves bare angles and decodes Markdown destination syntax once,False,MCE-004
+MAP-ea9a09cdf67e,L2,reviewed implementation,mobileapp/src/ui/MarkdownView.externalLinks.test.tsx,8,reviewed-selector,MCE-006 preserves raw query parameters and the paired file destination,False,MCE-006
 LEG-17cea6d58228,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,39,it,wears no background under calmEmphasis — a page of prose filled with white chips,False,legacy-not-retrospectively-reviewed
 LEG-177e871affa2,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,45,it,"keeps its chip in chat, where a code span is rare and should stand out",False,legacy-not-retrospectively-reviewed
 LEG-7f7fcc25d98c,L2,RN / mobile harness,mobileapp/src/ui/MarkdownView.test.tsx,51,it,is set at 85% of the prose under calmEmphasis,False,legacy-not-retrospectively-reviewed

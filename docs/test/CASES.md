@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1432 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1433 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2678 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2679 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -487,6 +487,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | MPU-002 | No draft or staged attachment is removed, uploaded or submitted. Invalid assets do not create thumbnails. An unmounted scope cannot open an editor or stage returned photos. |
 | MPU-003 | Only measured finite positive totals yield fractions. Unknown totals stay indeterminate. Body completion is processing, never successful save; only valid successful response completes. Legacy fraction callback remains byte-events-only. Settled callbacks are ignored; failure preserves failure result and existing watchdog bounds. |
 | MPU-004 | A compact status row names current file/count, shows measured progress or preparation/saving copy, uses a smooth bar limited to observed bytes and obeys Reduce Motion. Waiting files do not show fake zero percentages. Sending is gated and failure leaves caption and all images. No submit occurs until every upload succeeds. |
+| MCE-006 | Raw external query parameters are preserved. Explicitly terminated HTML entities decode once. The paired file path still matches existing Markdown extraction. External actions never use the local preview callback. |
 | RDRC-001 | No empty/tutorial claim before a valid result. Shared loading/error/access/stale states remain in main even with sidebar hidden. Only successful empty shows welcome; a populated roster offers selection while original automatic selection runs. Guest creation stays unavailable; no duplicated list/banner/header or excerpt. Existing selected views remain unchanged. |
 | RDRC-002 | SSE live alone cannot clear the read error, readable notice or last-update time. Cached rows remain visible/stale; malformed-like failure is not described as unreachable network. Pending retry is visible and duplicate retry disabled. Current successful read clears notice and updates time; a changed client inherits neither rows nor error. Access failure preserves owner settings or guest contact guidance without new authority. |
 | RDR-001 | Loading does not become zero/empty on stream open. Valid empty sets hasValue, new client cannot borrow old rows/counts/error or late old reads; same-client refresh/error retains prior rows/lastUpdated. Demo declares its already supplied snapshot. |
