@@ -1,0 +1,46 @@
+{
+  "id": "mobile-access-history-polish-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-22",
+    "decision": "Prioritize the logged operation and outcome, preserving exact details and the existing server-side filters",
+    "notes": "Grounded in the supplied iPhone screenshot. Synthetic component tests cover discoverability and filter behavior. They do not establish native pixel layout or VoiceOver behavior."
+  },
+  "cases": [
+    {
+      "id": "AHP-001",
+      "layer": "L2",
+      "description": "A compact log row exposes exact selectable details on demand",
+      "setup": "Mount the owner screen with two identified access records including a full device ID, IP, method, HTTP code and duration. Use synthetic values and the same-day fixture.",
+      "action": "Inspect both collapsed rows, open the first detail, then open the second and change the filter.",
+      "expected": "Each summary exposes operation, target, source, time and outcome. Only one record can be expanded. Full details are available in the expanded row. A filter reset clears the open identity while preserving the existing request path.",
+      "planned_files": [
+        "mobileapp/src/screens/AccessHistoryScreen.test.tsx"
+      ]
+    },
+    {
+      "id": "AHP-002",
+      "layer": "L2",
+      "description": "Filters keep readable category labels and expose active selections separately",
+      "setup": "Mount with long operation text and two same-name sources with distinct exact IDs.",
+      "action": "Inspect the visible control labels and active summary. Open choices and clear filters. Simulate a large system font scale.",
+      "expected": "Short category labels remain visible and the complete active value is readable outside the control. The full accessible control names, existing exact device selection, companion filters and clear action remain available. Controls can wrap as font scale grows.",
+      "planned_files": [
+        "mobileapp/src/screens/AccessHistoryControls.test.tsx"
+      ]
+    },
+    {
+      "id": "AHP-003",
+      "layer": "L2",
+      "description": "Access details preserve full values and distinguish HTTP status from the outcome",
+      "setup": "Use a synthetic record with a full pairing ID, IPv6 source, method, duration and independently failed outcome with HTTP 200.",
+      "action": "Build the localized detail fields and the concise outcome label.",
+      "expected": "Full identity and IP appear unchanged, fields have localized labels, HTTP 200 is selectable separately, and the failure is still identified as failed.",
+      "planned_files": [
+        "mobileapp/src/screens/accessHistoryPresentation.test.ts"
+      ]
+    }
+  ],
+  "seal": "1517f453c8b0da90979d0313044edd315c95319ac5a309b25f4493241afd6ce8"
+}
