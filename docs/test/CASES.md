@@ -2,7 +2,7 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1435 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1437 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ The catalogue covers 1435 test/harness source files. Each CSV row lists stable I
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 130 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
-| G · Qualification guards | 497 | [G.csv](cases/G.csv) |
+| G · Qualification guards | 509 | [G.csv](cases/G.csv) |
 
 Numbers are not passes. The legacy 6,223 positions came from the 4fad6119 inventory (declarations, subtests, dynamic templates); explicit new cases, native oracles and reviewed selectors are indexed separately. Dynamic instances are not expanded. Harnesses without named cases retain their hashes. Legacy layers are structural triage; mixed boundaries need semantic review when touched, not fictional historical review/results. A reviewed-selector is not a framework-discovered declaration. Gates catch source/index/mapping drift; names cannot prove assertion quality.
 
@@ -51,6 +51,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | ACP-001 | Fresh enabled Deny elements only; ignored first click can use one further explicit click in the same camera dialog, maximum two; no click starts after 10s; no unrelated permission acted upon; original command error preserved; no permission grant or settings mutation. |
 | ACP-002 | New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged. |
 | ACP-003 | Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions. |
+| ACS-001 | ci-required still reports all selected Android jobs. The phone and tablet checks keep their original names. An unselected Android scope may skip; any selected failed, cancelled, missing or skipped Android job fails ci-required. |
+| ACS-002 | A complete phone result and disjoint tablet subsets cover every registered case exactly once. Unexpected skip, failure, duplicate, missing file, blocked case, lost automation, wrong identity or APK mismatch fails. |
+| ACS-003 | Bind each latest effective success to its unique actual execution attempt. Older successes only qualify when copied from the same runner/start/end and expected run/source. Missing history, newer non-success and conflicting identities fail. |
+| ACS-004 | Retain successful tablet receipts for 35 days and QA APK and diagnostics for seven. An unavailable receipt still fails the summary. A missing receipt requires its producer, and a missing APK requires the native build or the whole workflow. |
 | DTV-006 | One Back only; delayed close cannot finish before visibility is false; reverse wait has10s upper bound; stuck close and original transport errors reject, and the final false assertion cannot be replaced by a successful wait alone. Other journey assertions/setup/budgets stay unchanged. |
 | APPFIX-BOOT-ISOLATION | Server starts and contains only the requested session; caller PATH reaches server, caller config marker does not; HOME/socket belong to fixture. Failure cleanup stays scoped to the test. |
 | APPFIX-NAME-STABILITY | No rename/options change for empty slug; regular slugs still include pane IDs and headless marker. No sleeps, retries or relaxed equality. |

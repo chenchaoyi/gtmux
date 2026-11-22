@@ -56,6 +56,34 @@ retain diagnostics. Obsolete runs are cancelled when a PR is updated. Manual run
 have a separate cancellation group, so they cannot cancel a main-push check that
 test delivery relies on.
 
+When Android is selected, the phone runs the full suite and the tablet runs two
+parallel shards. All three emulator jobs use one verified QA APK. The existing
+phone and tablet checks each require every registered case to pass once. The
+tablet summary resolves each shard's original execution attempt, so a rerun can
+reuse an earlier successful shard from the same run. Missing or conflicting
+receipts, incomplete coverage, or a shard that did not succeed fail the check.
+
+### Recover expired Android CI artifacts
+
+Tablet shard coverage receipts are retained for 35 days, which covers GitHub's 30-day
+rerun window. The larger QA APK and diagnostics are retained for seven days.
+The new retention period applies to receipts created by this workflow revision.
+
+If a coverage download fails, check the artifact's exact name and `expires_at`
+on the same run. Retry the tablet summary for a transient download error when
+the artifact is still available. If the coverage artifact is missing or expired
+and the original QA APK is available, choose **Re-run job** for the affected
+`Android tablet emulator shard <number>` producer. Repeat for the other shard if
+its receipt is also unavailable. GitHub reruns its dependent checks. If a phone
+job or shard needs the APK and it is missing or expired, rerun
+`Android QA build and native policies` and its dependents, or rerun the whole
+workflow when the affected producer cannot be identified reliably in that run.
+If the run cannot be identified or is outside the rerun window, start a fresh
+CI run for the intended revision.
+Each recovery must keep the receipts bound to the tested source and build.
+
+[GitHub rerun behavior](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)
+
 Maintainers can configure `ci-required` as a required GitHub branch check. Adding the
 job alone does **not** create branch protection; the repository's current policy remains
 separate. No new mandatory human review or deployment approval is introduced here.

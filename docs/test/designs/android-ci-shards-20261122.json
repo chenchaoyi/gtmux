@@ -1,0 +1,77 @@
+{
+  "id": "android-ci-shards-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review, not independent approval)",
+    "date": "2026-11-22",
+    "decision": "Proceed with a complete phone job and two tablet shards after reviewing the measured cost and rerun evidence",
+    "notes": "Reviewed the device profiles, one QA producer, independent phone completion, and disjoint tablet coverage against workflow 45020309125 and formal PR run 45024039846. Verified the 90-day repository maximum and 30-day provider rerun window. Only small tablet receipts receive longer retention. No branch rule or release work is part of this candidate."
+  },
+  "cases": [
+    {
+      "id": "ACS-001",
+      "layer": "G",
+      "surfaces": [
+        "GitHub Actions Android CI",
+        "Android delivery validation"
+      ],
+      "description": "Keep the original phone and tablet delivery checks with one QA producer, a complete phone run and two tablet shards",
+      "setup": "Inspect the repository workflow, change selection and aggregate verdict with the Android scope selected and unselected.",
+      "action": "Check that one named phone job runs the full inventory directly, two tablet shards share the same QA producer, and the original tablet check verifies their receipts.",
+      "expected": "ci-required still reports all selected Android jobs. The phone and tablet checks keep their original names. An unselected Android scope may skip; any selected failed, cancelled, missing or skipped Android job fails ci-required.",
+      "planned_files": [
+        ".github/workflows/ci.yml",
+        "scripts/ci.py",
+        "scripts/ci_test.py",
+        ".github/actions/android-emulator/action.yml"
+      ]
+    },
+    {
+      "id": "ACS-002",
+      "layer": "G",
+      "surfaces": [
+        "GitHub Actions Android CI"
+      ],
+      "description": "Require each case exactly once in the complete phone run and across the tablet shards on the same QA APK",
+      "setup": "Use the actual Android journey inventory and synthetic lane, APK and outcome receipts for both device profiles.",
+      "action": "Verify direct phone and paired tablet results, then mutate selection, observed cases, group, run identity and APK evidence.",
+      "expected": "A complete phone result and disjoint tablet subsets cover every registered case exactly once. Unexpected skip, failure, duplicate, missing file, blocked case, lost automation, wrong identity or APK mismatch fails.",
+      "planned_files": [
+        "scripts/android_ci_results.py",
+        "scripts/android_ci_results_test.py"
+      ]
+    },
+    {
+      "id": "ACS-003",
+      "layer": "G",
+      "surfaces": [
+        "GitHub Actions failed-only reruns"
+      ],
+      "description": "Select the actual tablet shard execution from same-run attempts when GitHub copies a retained success",
+      "setup": "Simulate the checked GitHub failure-only history, including new job IDs and created timestamps on copied successes, while retaining original runner/start/end. Include PR head and tested merge SHA.",
+      "action": "Resolve the actual execution from the current attempt view and all recorded attempts, then try non-success, ambiguous origin, missing original receipt, duplicate attempt or foreign run or head.",
+      "expected": "Bind each latest effective success to its unique actual execution attempt. Older successes only qualify when copied from the same runner/start/end and expected run/source. Missing history, newer non-success and conflicting identities fail.",
+      "planned_files": [
+        "scripts/android_ci_results.py",
+        "scripts/android_ci_results_test.py"
+      ]
+    },
+    {
+      "id": "ACS-004",
+      "layer": "G",
+      "surfaces": [
+        "GitHub Actions artifact retention and recovery"
+      ],
+      "description": "Retain small tablet coverage through the rerun window and explain how to recover unavailable evidence",
+      "setup": "Inspect the workflow retention declarations and simulate a coverage download failure for either tablet shard.",
+      "action": "Check the small receipt lifetime and the recovery message for each missing download, leaving the APK and diagnostic budget unchanged.",
+      "expected": "Retain successful tablet receipts for 35 days and QA APK and diagnostics for seven. An unavailable receipt still fails the summary. A missing receipt requires its producer, and a missing APK requires the native build or the whole workflow.",
+      "planned_files": [
+        ".github/actions/android-emulator/action.yml",
+        ".github/workflows/ci.yml",
+        "scripts/ci_test.py"
+      ]
+    }
+  ],
+  "seal": "f8b59fa22ba6268be8a74babb994f35cac26082230d6c10e452b739e6bbbf641"
+}

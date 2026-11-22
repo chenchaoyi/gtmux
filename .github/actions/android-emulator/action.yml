@@ -1,0 +1,115 @@
+name: Run Android emulator flows
+description: Exercise the assigned phone or tablet cases on the verified QA APK.
+inputs:
+  device:
+    description: Phone or tablet profile
+    required: true
+  shard:
+    description: 0 for the full suite or the tablet shard number
+    default: '0'
+  package:
+    description: Workflow artifact name from the Android QA build
+    required: true
+  receipt:
+    description: Exact QA build receipt
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Isolate Android automation data
+      shell: bash
+      run: |
+        echo "APPIUM_HOME=$RUNNER_TEMP/gtmux-appium" >> "$GITHUB_ENV"
+        echo "GTMUX_ANDROID_E2E_OUTPUT=$RUNNER_TEMP/gtmux-android-evidence" >> "$GITHUB_ENV"
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: npm
+        cache-dependency-path: mobileapp/package-lock.json
+    - uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+    - uses: android-actions/setup-android@v3
+      with:
+        packages: platform-tools
+    - name: Install Android automation dependencies
+      working-directory: mobileapp
+      shell: bash
+      run: |
+        npm ci
+        npx appium driver install --source=local "$PWD/node_modules/appium-uiautomator2-driver"
+    - uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.package }}
+        path: mobileapp/android/app/build/outputs/apk/qa
+    - name: Verify the shared QA package before installation
+      env:
+        GTMUX_ANDROID_QA_RECEIPT: ${{ inputs.receipt }}
+      shell: bash
+      run: |
+        python3 scripts/android_ci_package.py verify --source "$GITHUB_SHA" --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT"
+        jq -e --argjson expected "$GTMUX_ANDROID_QA_RECEIPT" '. == $expected' \
+          mobileapp/android/app/build/outputs/apk/qa/CI-PACKAGE.json >/dev/null
+    - name: Select and record the assigned cases
+      env:
+        ANDROID_DEVICE: ${{ inputs.device }}
+        ANDROID_SHARD: ${{ inputs.shard }}
+      shell: bash
+      run: |
+        only=$(python3 scripts/android_ci_results.py select --device "$ANDROID_DEVICE" \
+          --shard "$ANDROID_SHARD" --evidence "$GTMUX_ANDROID_E2E_OUTPUT")
+        if [[ -n "$only" ]]; then
+          echo "GTMUX_ANDROID_E2E_ONLY=$only" >> "$GITHUB_ENV"
+        fi
+    - name: Allow KVM on this disposable runner
+      shell: bash
+      run: |
+        echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-gtmux-kvm.rules
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --name-match=kvm
+    - name: Exercise the assigned synthetic scenarios
+      uses: reactivecircus/android-emulator-runner@v2
+      env:
+        ANDROID_SHARD: ${{ inputs.shard }}
+      with:
+        api-level: 36
+        target: google_apis
+        arch: x86_64
+        profile: ${{ inputs.device == 'phone' && 'pixel_7' || 'pixel_tablet' }}
+        avd-name: gtmux-ci-${{ inputs.device }}
+        force-avd-creation: true
+        emulator-options: -no-window -no-audio -no-snapshot -no-boot-anim -gpu swiftshader
+        script: >-
+          bash -c 'unset GTMUX_ANDROID_E2E_BLOCKS;
+          if [[ "$ANDROID_SHARD" == 0 ]]; then unset GTMUX_ANDROID_E2E_ONLY; fi;
+          ANDROID_SERIAL=emulator-5554 npm --prefix mobileapp run test:e2e:android'
+    - name: Verify every assigned case on the shared QA APK
+      env:
+        ANDROID_DEVICE: ${{ inputs.device }}
+        ANDROID_SHARD: ${{ inputs.shard }}
+        GTMUX_ANDROID_QA_RECEIPT: ${{ inputs.receipt }}
+      shell: bash
+      run: |
+        python3 scripts/android_ci_results.py verify-lane --device "$ANDROID_DEVICE" \
+          --shard "$ANDROID_SHARD" --evidence "$GTMUX_ANDROID_E2E_OUTPUT"
+    - name: Preserve successful tablet shard coverage
+      if: inputs.device == 'tablet'
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-emulator-coverage-${{ inputs.device }}-${{ inputs.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: |
+          ${{ runner.temp }}/gtmux-android-evidence/LANE.json
+          ${{ runner.temp }}/gtmux-android-evidence/APK.json
+          ${{ runner.temp }}/gtmux-android-evidence/RESULTS.json
+        if-no-files-found: error
+        # Retain the small receipts through GitHub's 30-day rerun window.
+        retention-days: 35
+    - name: Preserve synthetic emulator evidence
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-emulator-${{ inputs.device }}-${{ inputs.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ runner.temp }}/gtmux-android-evidence
+        if-no-files-found: warn
+        retention-days: 7

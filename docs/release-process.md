@@ -42,13 +42,14 @@ This prevents new disclosures; it does not erase metadata already published.
 
 ## Build once, verify independently
 
-Android CI builds/lints/tests the QA APK once. Phone and tablet jobs download the
-same run-scoped package, verify its exact source and checksum, and independently
-run the complete existing suite. Both jobs are mandatory, with separate evidence;
-one failure does not cancel the other. A failed-only rerun uses the original
-successful build output rather than guessing an artifact name from the new attempt.
-The Android delivery gate accepts either the complete older combined check or all
-three new checks, so previously reviewed sources remain usable.
+Android CI builds, lints, and tests the QA APK once. The phone runs the full suite,
+and the tablet runs two independent shards on the same package. The checks `Android phone emulator flows`
+and `Android tablet emulator flows` verify that their device completed every case
+exactly once against the native build's receipt. A failed shard does not cancel its
+siblings. Failure-only reruns resolve retained tablet receipts to their actual
+execution attempts and use the original successful APK build output. The Android
+delivery gate continues to accept the complete legacy combined check or the
+native, phone, and tablet checks together.
 
 Mac signing/notarization and protected mobile signing remain mandatory.
 Mac builds now overlap the CLI gate/build. A separate publisher waits for both,
