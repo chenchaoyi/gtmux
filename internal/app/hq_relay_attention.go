@@ -43,7 +43,6 @@ func readPendingAttention(q hqworkspace.Reconciliation, now int64) (relay.Reques
 func serviceWorkspaceRelayAttention(s *hqworkspace.Store, d hqworkspace.Database, now int64) {
 	candidates, enrolled := hqworkspace.RelayAttentionQueue(d, now)
 	if !enrolled {
-		workspaceRelayAttentionNotice(now, nil)
 		return
 	}
 	var notices []hq.RelayAttention
