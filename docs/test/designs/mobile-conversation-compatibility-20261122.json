@@ -1,0 +1,35 @@
+{
+  "id": "mobile-conversation-compatibility-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, regression design self-review",
+    "date": "2026-11-22",
+    "decision": "Match Markdown destination escaping while preserving legacy bare links, and disclose every supported mobile name adjustment.",
+    "notes": "Independent review of 7e9402a6 reproduced two destination failures and tmux format expansion with exact paired readbacks. This complementary design covers the three counterexamples before test edits and does not claim independent approval."
+  },
+  "cases": [
+    {
+      "id": "MCE-004",
+      "layer": "L2",
+      "description": "Preview uses the decoded Markdown destination while preserving working bare paths",
+      "setup": "Render a conversation with a supported legacy bare filename containing literal angle brackets, a new bracket-delimited filename with named entities or numeric references and escaped punctuation, an encoded URL and a malformed open destination.",
+      "action": "Activate each scoped local preview and inspect the request reference.",
+      "expected": "Legacy and encoded paths keep their exact reference. Markdown escapes and character references are interpreted once, so new targets reach the existing renderer and resolver using the same path as Markdown on the server. Malformed or unsafe destinations expose no preview action.",
+      "planned_files": [
+        "mobileapp/src/ui/MarkdownView.test.tsx"
+      ]
+    },
+    {
+      "id": "MCE-005",
+      "layer": "L2",
+      "description": "The form previews whitespace normalization and blocks names tmux would interpret",
+      "setup": "Mount New session with synthetic API and isolated name examples drawn from the observed tmux formatter.",
+      "action": "Enter a padded Unicode name, a known tmux format and a valid literal hash name. Inspect the proposed name and run both submission entry points.",
+      "expected": "Trimming is visible before submit and the submitted name exactly matches the preview. Format-bearing names have inline correction feedback and make no request. Names with a literal hash and blank default input remain available.",
+      "planned_files": [
+        "mobileapp/src/ui/NewSessionSheet.test.tsx"
+      ]
+    }
+  ],
+  "seal": "599062c8de57e4892af27d5a9570cba1a1960b2b477a7a3872c92c6c7ec6eaa1"
+}
