@@ -56,6 +56,13 @@ retain diagnostics. Obsolete runs are cancelled when a PR is updated. Manual run
 have a separate cancellation group, so they cannot cancel a main-push check that
 test delivery relies on.
 
+When Android is selected, four emulator shards consume one verified QA APK. The
+two existing device checks each require every registered case once on that device.
+The reducers check the actual execution attempt before opening its receipts, so a
+failed-only rerun can reuse an earlier successful shard from the same run. Missing
+or conflicting receipts, an incomplete case list, and a non-successful shard fail
+the affected device check.
+
 Maintainers can configure `ci-required` as a required GitHub branch check. Adding the
 job alone does **not** create branch protection; the repository's current policy remains
 separate. No new mandatory human review or deployment approval is introduced here.

@@ -68,7 +68,7 @@ HQ 发言身份、Markdown 和会话范围内的文件动作。只比较共享�
 | `web` | 完整 Node 逻辑与 Chromium 实际渲染（L1/L3） | 浏览器资源、测试或移动端共享呈现变更 |
 | `ios-native` | `check-native-documents.py` 执行生产 Swift HTML/Markdown 断言（L1）；Ruby Widget 边界；Release ARM64 App 与两个嵌入扩展无签名编译/架构检查（G） | iOS/RN/共享变更；不启动设备、不做 UI 自动化、签名或上传 |
 | `android-native` | `assembleQa testQaUnitTest lintQa`、源码封印、包/ABI/16KiB 检查（L1 + G） | Android/RN/共享输入变更 |
-| `android-emulator` | 手机/平板矩阵使用相同源码封印的 QA APK，执行实际 UI 旅程（L4） | 与 Android 构建一同选择；不使用本机共享模拟器/ADB |
+| `android-emulator-shards` 和 `android-emulator` | 手机和平板各用两个分片在同一份已核源码的 QA APK 上执行实际 UI 用例（L4），汇总分别验证各端完整覆盖且无重复 | 与 Android 构建一同选择，每片独立使用远端模拟器 |
 | `menubar` | Swift 通用架构构建、UsageWidgets 与菜单栏测试、Widget 构建/设计（L1/L2 + G） | 菜单栏或共享/未知影响；实际视觉/焦点另验 |
 | `relay-worker` | 类型、共享 JSON/APNs/FCM 载荷与 handler（L2 + G） | 推送源码/测试与下游消费端 |
 | `tunnel-worker` | 类型、Node 契约、Worker runtime Vitest（L2/L3 + G） | 隧道/共享/未知影响 |

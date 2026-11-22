@@ -62,11 +62,11 @@ class ScopeTests(unittest.TestCase):
     def test_recognized_modules_include_consumers(self):
         self.assertEqual(ci.classify(["internal/radar/agents_test.go"])["selected"], ["test"])
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
-                         {"mobile", "web", "ios-native", "android-native", "android-emulator"})
+                         {"mobile", "web", "ios-native", "android-native", "android-emulator-shards", "android-emulator"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
                          {"mobile", "ios-native"})
         self.assertEqual(set(ci.classify(["relay-worker/src/index.ts"])["selected"]),
-                         {"relay-worker", "test", "mobile", "android-native", "android-emulator"})
+                         {"relay-worker", "test", "mobile", "android-native", "android-emulator-shards", "android-emulator"})
 
     def test_nul_parser_preserves_names_and_old_rename_path(self):
         names = ci.parse_diff(b"R100\0internal/radar/a.go\0docs/a.md\0D\0docs/deleted.md\0M\0docs/\xe4\xb8\xad\xe6\x96\x87\n$(oops).md\0")
@@ -139,17 +139,28 @@ class ScopeTests(unittest.TestCase):
 
     def test_android_package_is_built_once_and_both_devices_use_its_output(self):
         text = (ROOT / ".github/workflows/ci.yml").read_text()
-        build = text.split("  android-native:\n", 1)[1].split("  android-emulator:\n", 1)[0]
-        emulators = text.split("  android-emulator:\n", 1)[1].split("  web:\n", 1)[0]
+        build, rest = text.split("  android-native:\n", 1)[1].split("  android-emulator-shards:\n", 1)
+        emulators, rest = rest.split("  android-emulator:\n", 1)
+        reducers = rest.split("  web:\n", 1)[0]
         self.assertEqual(text.count(":app:assembleQa"), 1)
         self.assertIn("fail-fast: false", emulators)
-        for device in ("phone", "tablet"):
-            self.assertIn("- device: " + device, emulators)
+        self.assertCountEqual(re.findall(r"- device: (\w+)\s+profile: (\w+)\s+shard: (\d+)", emulators),
+                              [(device, profile, shard) for device, profile in (("phone", "pixel_7"), ("tablet", "pixel_tablet"))
+                               for shard in ("1", "2")])
         self.assertIn("steps.package.outputs.name", build)
+        self.assertIn("steps.package.outputs.receipt", build)
         self.assertIn("needs.android-native.outputs.package", emulators)
+        for job in (emulators, reducers):
+            self.assertIn("needs.android-native.outputs.receipt", job)
         self.assertIn("android_ci_package.py verify", emulators)
-        self.assertNotIn("GTMUX_ANDROID_E2E_ONLY", emulators)
+        self.assertIn("android_ci_results.py select", emulators)
+        self.assertIn("GTMUX_ANDROID_E2E_ONLY", emulators)
         self.assertIn("github.run_attempt", emulators)
+        self.assertIn("name: Android ${{ matrix.device }} emulator flows", reducers)
+        self.assertIn("device: [phone, tablet]", reducers)
+        self.assertIn("always() && needs.scope.outputs.android == 'true'", reducers)
+        self.assertIn("android_ci_results.py resolve", reducers)
+        self.assertIn("android_ci_results.py verify", reducers)
 
 
 class ResultTests(unittest.TestCase):
@@ -171,6 +182,13 @@ class ResultTests(unittest.TestCase):
                 with self.subTest(name=name, result=result):
                     needs = self.results(ci.JOBS); needs[name] = {"result": result}
                     self.assertTrue(ci.verdict(plan, needs))
+
+    def test_android_aggregation_requires_the_entire_job_family(self):
+        self.assertEqual(ci.ANDROID_JOBS, {"android-native", "android-emulator-shards", "android-emulator"})
+        for missing in ci.ANDROID_JOBS:
+            with self.subTest(missing=missing):
+                partial = ci.ANDROID_JOBS - {missing}
+                self.assertTrue(ci.verdict({"selected": sorted(partial), "full": False}, self.results(partial)))
 
     def test_bad_plans_or_unselected_failure_are_rejected(self):
         for plan in (None, {}, {"selected": ["unknown"], "full": False},

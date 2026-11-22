@@ -10,10 +10,11 @@ import subprocess
 import sys
 
 
+ANDROID_JOBS = {"android-native", "android-emulator-shards", "android-emulator"}
 JOBS = {
     "test": "core", "cross-build": "cross", "mobile": "mobile", "web": "web",
     "menubar": "menubar", "relay-worker": "relay", "tunnel-worker": "tunnel",
-    "ios-native": "ios", "android-native": "android", "android-emulator": "android",
+    "ios-native": "ios", **dict.fromkeys(sorted(ANDROID_JOBS), "android"),
 }
 DOC_FILES = {"README.md", "README.zh.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE",
              "CLAUDE.md", ".github/pull_request_template.md"}
@@ -73,7 +74,7 @@ def classify(paths, force_reason=None, unit_test_isolation=False):
             full = True
             reasons.append("Shared HTTP contract consumer: " + json.dumps(path))
         elif path.startswith(("mobileapp/src/", "mobileapp/e2e/")) and PurePosixPath(path).suffix in {".ts", ".tsx", ".js", ".cjs"}:
-            selected.update(("mobile", "web", "ios-native", "android-native", "android-emulator"))
+            selected.update(ANDROID_JOBS | {"mobile", "web", "ios-native"})
             reasons.append("Phone/iPad code, native compile and shared Web presentation: " + json.dumps(path))
         elif path.startswith("mobileapp/ios/") and PurePosixPath(path).suffix in {".swift", ".m", ".mm", ".h"}:
             selected.update(("mobile", "ios-native"))
@@ -82,7 +83,7 @@ def classify(paths, force_reason=None, unit_test_isolation=False):
             selected.add("menubar")
             reasons.append("Menu-bar implementation/tests: " + json.dumps(path))
         elif path.startswith(("relay-worker/src/", "relay-worker/test/")) and PurePosixPath(path).suffix == ".ts":
-            selected.update(("relay-worker", "test", "mobile", "android-native", "android-emulator"))
+            selected.update(ANDROID_JOBS | {"relay-worker", "test", "mobile"})
             reasons.append("Push Worker, Go reference and phone consumer: " + json.dumps(path))
         else:
             # Core/API, tunnel control plane, dependencies, CI/build/install machinery,
@@ -136,8 +137,7 @@ def verdict(plan, needs):
     chosen = set(plan["selected"])
     if len(chosen) != len(plan["selected"]) or not chosen <= JOBS.keys() or (plan["full"] and chosen != JOBS.keys()):
         return ["Invalid CI plan"]
-    android = {"android-native", "android-emulator"}
-    if chosen & android and not android <= chosen:
+    if chosen & ANDROID_JOBS and not ANDROID_JOBS <= chosen:
         return ["Android build and both emulator checks must be selected together"]
     errors = []
     for name in ("scope", "quality", *JOBS):
