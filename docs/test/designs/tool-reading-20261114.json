@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner; self-review, not independent approval",
-    "date": "2026-11-15",
+    "date": "2026-11-22",
     "decision": "Simplify existing tool inspector from screenshot: command and result first, one header row, raw arguments on demand",
-    "notes": "User sees duplicate nested labels/JSON and one-command outline plus ANSI remnants. Reuse bounded existing static command extraction; compact presentation only for tool sections, not a global formatter default. Preserve exact full input/result/raw copy and pagination, lossless numbers, truncation identity, disabled actions and provider-neutral schema. Do not execute code or infer success. Raw view never cleans output. Real access/data policy unchanged. New screenshot drives existing-source refinement, not a new prototype. Synthetic rendered tests only; no live input/device operation. New cases and existing browser CAS004 review precede their first edits in this branch. Layer review before first committed tool tests: split the real browser scenario into TSV-003/L3; RN renderer remains TSV-001/L2. This corrects inventory classification only, without claiming installed-device acceptance or changing test behavior. A single recognized shell body uses one Original arguments toggle rather than a redundant two-tab row. This renewed layer/presentation review is recorded after midnight; earlier14th review and WIP results remain in history. Local preview follow-up review: the Web component fixture must set the stored pairing credential along with its in-memory identity, as production pairing does. Preserve its existing assertions and selectors."
+    "notes": "User sees duplicate nested labels/JSON and one-command outline plus ANSI remnants. Reuse bounded existing static command extraction; compact presentation only for tool sections, not a global formatter default. Preserve exact full input/result/raw copy and pagination, lossless numbers, truncation identity, disabled actions and provider-neutral schema. Do not execute code or infer success. Raw view never cleans output. Real access/data policy unchanged. New screenshot drives existing-source refinement, not a new prototype. Synthetic rendered tests only; no live input/device operation. New cases and existing browser CAS004 review precede their first edits in this branch. Layer review before first committed tool tests: split the real browser scenario into TSV-003/L3; RN renderer remains TSV-001/L2. This corrects inventory classification only, without claiming installed-device acceptance or changing test behavior. A single recognized shell body uses one Original arguments toggle rather than a redundant two-tab row. This renewed layer/presentation review is recorded after midnight; earlier14th review and WIP results remain in history. Local preview follow-up review: the Web component fixture must set the stored pairing credential along with its in-memory identity, as production pairing does. Preserve its existing assertions and selectors. Fresh review on main at 48f13d3f for the Web conversation header migration. CRX-007 retains its pairing, label, retry and read authority assertions. The shared test file also verifies the new header against independently deferred roster and capture responses. Existing read and credential fixtures keep their assertions and selectors."
   },
   "cases": [
     {
@@ -53,5 +53,5 @@
       ]
     }
   ],
-  "seal": "ad90680be3ece4d124a406f43eaab58912091ef509e5ef2e28b9b6094f5eba1a"
+  "seal": "b9b8c231200cd6b5ec0dda75fdc3844318a52975437abd44bffadba42423ec9c"
 }

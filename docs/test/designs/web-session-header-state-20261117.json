@@ -1,0 +1,68 @@
+{
+  "id": "web-session-header-state-20261117",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (fresh self-review)",
+    "date": "2026-11-22",
+    "decision": "Port the full Web conversation header to the current main branch",
+    "notes": "Reviewed against main at 48f13d3f. Web alone owns these headers. Terminal/attach, menu bar, phone and iPad keep their existing status presentation. The shared roster and badge meanings serve the whole header without adding a detector. Working is cyan, waiting red, idle green and running a quiet gray dot with the existing idle label. An explicit error takes precedence for agents and readable conversations. Plain terminals remain neutral. Unknown or missing roster state clears the last known tint and badge while the existing view and access rules continue to apply. Review confirmed that show and startWorkbench must retain document-reader retirement, request cancellation and epoch advancement in that order. Positioning stays with the current board code. Focused Terminal reuses the existing bounded roster lane and does not fetch or redraw hidden Chat. Synthetic fixture evidence uses the existing Node and Chromium tests, with compact results and no real pane or account. Preserve the existing capture ordering, association and rejected-code assertions. This review covers work on this branch."
+  },
+  "cases": [
+    {
+      "id": "WHS-001",
+      "layer": "L2",
+      "description": "Header presentation uses only the existing agent state and explicit error flag",
+      "setup": "Execute production state/render helpers with a small DOM boundary, canonical label/color maps and explicit conversation eligibility.",
+      "action": "Render waiting/working/idle/running, explicit error and clear-error transitions; unknown/prototype-shaped status, missing and plain terminal; repeat unchanged state and retire.",
+      "expected": "The visible localized label and glyph agree with the roster. Error wins for an agent or readable conversation. Plain terminals and unknown state are neutral. A missing roster entry clears old status and error without discarding identity. Unchanged polls preserve the label node and retirement removes its state.",
+      "planned_files": [
+        "internal/server/web/session-header.test.cjs"
+      ]
+    },
+    {
+      "id": "WHS-002",
+      "layer": "L4",
+      "description": "Side-by-side browser panels expose full-header status in both themes",
+      "setup": "Existing isolated synthetic browser fixture and genuine saved board layout with mixed roster states. No real sessions or sends.",
+      "action": "Open mixed panels in light and dark. Measure the actual full-header background, stripe and text. Change one roster state and an explicit error, then remove that row from the roster while retaining an unsent draft and reader.",
+      "expected": "Each panel has its own state and normal text contrast is at least 4.5:1. The removed agent turns neutral. Siblings, mounted content and the draft remain intact. Waiting has no standing pulse with normal motion. No send occurs.",
+      "planned_files": [
+        "tests/web/session-header.test.cjs"
+      ]
+    },
+    {
+      "id": "WHS-003",
+      "layer": "L4",
+      "description": "Narrow/maximized panels and focused Chat/Terminal share readable header semantics",
+      "setup": "Synthetic long titles, writable/readonly panels and browser widths 390/1440; existing genuine UI navigation.",
+      "action": "Inspect a 340px panel, maximize and restore it, use Tab to reach Open conversation and Enter to open it, then exercise focused Chat and Terminal as roster state and appearance change. Repeat with a read-only conversation header at 390px.",
+      "expected": "The keyboard outline is visible and distinct from state. The title, status and controls fit. Focused labels and ordinary text meet 4.5:1 in both themes. Drafts, reading nodes, tools and read-only boundaries remain. Terminal follows live roster state without transcript reads for hidden Chat.",
+      "planned_files": [
+        "tests/web/session-header.test.cjs"
+      ]
+    },
+    {
+      "id": "WHS-004",
+      "layer": "L4",
+      "description": "Header state retires on gate/home and does not add perpetual attention motion",
+      "setup": "Synthetic paired connection with delayed status reads, reduced-motion setting and explicit native/unknown/plain states.",
+      "action": "Compare neutral/unknown/plain presentation and reduced motion. Hold a roster request across return to home, release it and wait for the held read to settle and subsequent home work to complete. Exercise a read-only native conversation and credential denial.",
+      "expected": "Home and the gate have no conversation tint after the late request settles. Reduced motion stops decorative transitions and status animation. Native identity and access rules continue to apply. No send occurs.",
+      "planned_files": [
+        "tests/web/session-header.test.cjs"
+      ]
+    },
+    {
+      "id": "WHS-005",
+      "layer": "L2",
+      "description": "Focused Terminal keeps capture and roster reads independently bounded",
+      "setup": "Existing production VM harness with separately deferred capture and roster responses; exact synthetic pane identity.",
+      "action": "Poll twice with both requests pending, complete each lane, then complete a newer capture after view retirement before the old one.",
+      "expected": "The two in-flight lanes each issue one request. Roster completion paints the header without writing terminal content or fetching or drawing hidden Chat. Existing capture outputs remain first, second and newest, discarding the outdated capture. A deferred roster reply for a retired view cannot repaint it after completion.",
+      "planned_files": [
+        "internal/server/web/app.test.cjs"
+      ]
+    }
+  ],
+  "seal": "71e185f2d14a5deba77c4875013bfd70d9c3fbf6d18874e7dd7a824331cc6d3a"
+}
