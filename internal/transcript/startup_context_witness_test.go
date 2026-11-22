@@ -10,12 +10,33 @@ import (
 )
 
 func TestHSP004StartupContextRecordsKeepFirstInputUnambiguous(t *testing.T) {
+	const agents = "# AGENTS.md instructions\nsynthetic repository context"
+	const env = "<environment_context>\n<cwd>/synthetic</cwd>\n</environment_context>"
+	message, check := startupContextWitnessFixture(t, "/synthetic")
+	for _, tc := range []struct {
+		name, context string
+		wantProof     bool
+	}{
+		{"two known blocks and a known non-user message", message("user", "", agents, env) + message("developer", "", "synthetic developer context"), true},
+		{"known context mixed with human input", message("user", "", agents, "different synthetic input"), false},
+		{"context attached to another turn", message("user", "foreign-turn", agents, env), false},
+		{"message with no role", message("", "", "synthetic unclassified input"), false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			check(t, tc.context, tc.wantProof)
+		})
+	}
+}
+
+func startupContextWitnessFixture(t *testing.T, cwd string) (
+	message func(role, turnID string, texts ...string) string,
+	check func(t *testing.T, context string, wantProof bool),
+) {
+	t.Helper()
 	const (
 		session = "01a20000-0000-7000-8000-000000000031"
 		turn    = "01a20000-0000-7000-8000-000000000032"
 		prompt  = "» gtmux·startup │ synthetic briefing · #abc123"
-		agents  = "# AGENTS.md instructions\nsynthetic repository context"
-		env     = "<environment_context>\n<cwd>/synthetic</cwd>\n</environment_context>"
 	)
 	t.Setenv("CODEX_HOME", t.TempDir())
 	dir := filepath.Join(CodexHome(), "sessions", "2026", "11", "22")
@@ -33,7 +54,7 @@ func TestHSP004StartupContextRecordsKeepFirstInputUnambiguous(t *testing.T) {
 		}
 		return string(body) + "\n"
 	}
-	message := func(role, turnID string, texts ...string) string {
+	message = func(role, turnID string, texts ...string) string {
 		content := make([]map[string]string, 0, len(texts))
 		for _, text := range texts {
 			content = append(content, map[string]string{"type": "input_text", "text": text})
@@ -44,31 +65,26 @@ func TestHSP004StartupContextRecordsKeepFirstInputUnambiguous(t *testing.T) {
 		}
 		return row(delivered, "response_item", payload)
 	}
-	header := row(since, "session_meta", map[string]any{"id": session})
+	header := row(since, "session_meta", map[string]any{"id": session, "cwd": cwd})
 	start := row(started, "event_msg", map[string]any{"type": "task_started", "turn_id": turn})
 	input := message("user", turn, prompt)
 	padding := row(started, "world_state", map[string]any{"context": strings.Repeat("x", 240<<10)})
 	growth := row(delivered, "world_state", map[string]any{"context": strings.Repeat("x", 24<<10)})
-	proved := WakeWitness{Started: started, Delivered: delivered, StartupPrefix: true}
-	for _, tc := range []struct {
-		name, context string
-		want          WakeWitness
-	}{
-		{"two known blocks and a known non-user message", message("user", "", agents, env) + message("developer", "", "synthetic developer context"), proved},
-		{"known context mixed with human input", message("user", "", agents, "different synthetic input"), WakeWitness{}},
-		{"context attached to another turn", message("user", "foreign-turn", agents, env), WakeWitness{}},
-		{"message with no role", message("", "", "synthetic unclassified input"), WakeWitness{}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			if err := os.WriteFile(path, []byte(header+start+tc.context+padding+input+growth), 0600); err != nil {
-				t.Fatal(err)
-			}
-			if got := CodexWakeWitness(session, turn, prompt, since); got != (WakeWitness{}) {
-				t.Fatal("fixture did not displace the start out of the ordinary tail")
-			}
-			if got := CodexStartupWakeWitness(session, turn, prompt, since); got != tc.want {
-				t.Fatalf("proof mismatch: got %+v, want %+v", got, tc.want)
-			}
-		})
+	check = func(t *testing.T, context string, wantProof bool) {
+		t.Helper()
+		if err := os.WriteFile(path, []byte(header+start+context+padding+input+growth), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if got := CodexWakeWitness(session, turn, prompt, since); got != (WakeWitness{}) {
+			t.Fatal("fixture did not displace the start out of the ordinary tail")
+		}
+		want := WakeWitness{}
+		if wantProof {
+			want = WakeWitness{Started: started, Delivered: delivered, StartupPrefix: true}
+		}
+		if got := CodexStartupWakeWitness(session, turn, prompt, since); got != want {
+			t.Fatalf("proof mismatch: got %+v, want %+v", got, want)
+		}
 	}
+	return message, check
 }

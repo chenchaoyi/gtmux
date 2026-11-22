@@ -989,6 +989,14 @@
       "TestHSP004StartupContextRecordsKeepFirstInputUnambiguous"
     ]
   },
+  "internal/transcript/startup_directory_witness_test.go": {
+    "cases": [
+      "HSP-005"
+    ],
+    "selectors": [
+      "TestHSP005DirectoryQualifiedContextRequiresVerifiedMetadata"
+    ]
+  },
   "internal/hqnudge/startup_witness_test.go": {
     "cases": [
       "HSP-003"
