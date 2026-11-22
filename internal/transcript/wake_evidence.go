@@ -52,13 +52,18 @@ func codexWakeWitness(session, turn, prompt string, since time.Time, mode wakePr
 		return WakeWitness{}
 	}
 	var result WakeWitness
-	paths := historyPaths("codex", session)
-	if len(paths) != 1 {
-		mode = wakeTailOnly
-	} else if mode == wakeFirstTurnPrefix {
-		if base, _ := codexRolloutName(filepath.Base(paths[0]), session); !base {
+	var paths []string
+	if mode == wakeFirstTurnPrefix {
+		candidates := matchingCodexLogPaths(session, enumerateCodexCandidates())
+		if !unambiguousWakeOriginal(session, candidates) {
 			mode = wakeTailOnly
 		}
+		paths = foldCodexLogPaths(candidates)
+	} else {
+		paths = historyPaths("codex", session)
+	}
+	if len(paths) != 1 {
+		mode = wakeTailOnly
 	}
 	for _, path := range paths {
 		w := wakeWitnessInSession(path, session, turn, prompt, since, mode)
@@ -71,6 +76,35 @@ func codexWakeWitness(session, turn, prompt string, since time.Time, mode wakePr
 		result = w
 	}
 	return result
+}
+
+// Chat folds matching basenames for display. The workspace prefix needs one
+// original rollout, so same-name paths may coexist only as aliases of one file.
+func unambiguousWakeOriginal(session string, paths []string) bool {
+	if len(paths) == 0 {
+		return false
+	}
+	name := filepath.Base(paths[0])
+	if base, _ := codexRolloutName(name, session); !base {
+		return false
+	}
+	if len(paths) == 1 {
+		return true
+	}
+	first, err := os.Stat(paths[0])
+	if err != nil || !first.Mode().IsRegular() {
+		return false
+	}
+	for _, path := range paths[1:] {
+		if filepath.Base(path) != name {
+			return false
+		}
+		info, err := os.Stat(path)
+		if err != nil || !os.SameFile(first, info) {
+			return false
+		}
+	}
+	return true
 }
 
 func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {

@@ -21,10 +21,15 @@ func TestHSW001HSW002ObserveWorkspaceSuccessorReceipt(t *testing.T) {
 		"wrong receipt session", "wrong receipt turn", "unbound receipt", "nonworkspace tick", "mixed",
 		"old turn", "input before start", "different first input", "message without role", "assistant before echo",
 		"unrelated turn context", "wrong batch", "over budget", "continuation", "expired", "unknown",
+		"contradictory archived basename", "same-file archived basename", "ordinary tail with contradictory archived basename",
 	} {
 		t.Run(tc, func(t *testing.T) {
 			t.Setenv("HOME", t.TempDir())
 			t.Setenv("CODEX_HOME", t.TempDir())
+			tailProof := tc == "ordinary tail with contradictory archived basename"
+			conflictingArchive := tc == "contradictory archived basename" || tailProof
+			sameFileArchive := tc == "same-file archived basename"
+			wantDelivered := tc == "exact" || sameFileArchive || tailProof
 			const session = "01a20000-0000-7000-8000-000000000041"
 			const turn = "01a20000-0000-7000-8000-000000000042"
 			const oldSession = "01a20000-0000-7000-8000-000000000043"
@@ -85,7 +90,7 @@ func TestHSW001HSW002ObserveWorkspaceSuccessorReceipt(t *testing.T) {
 			case "stale rotation":
 				rotationAt = since.Add(-10 * time.Second)
 			}
-			if tc != "no rotation" {
+			if tc != "no rotation" && !tailProof {
 				events.AuditRotateConfirmed(rotationAgent, oldSession, rotationSession, "/new", rotationAt.Unix())
 			}
 
@@ -161,6 +166,21 @@ func TestHSW001HSW002ObserveWorkspaceSuccessorReceipt(t *testing.T) {
 				inputOffset = 31493 + (256 << 10) - 100
 			}
 			log.Write(sized(inputOffset-log.Len(), started, "world_state", map[string]any{}))
+			archiveRollout := filepath.Join(transcript.CodexHome(), "archived_sessions", name)
+			if conflictingArchive || sameFileArchive {
+				if err := os.MkdirAll(filepath.Dir(archiveRollout), 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if conflictingArchive {
+				other := append(bytes.Clone(log.Bytes()), sized(970, inputAt, "response_item", message("user", text("Different first input.")))...)
+				if !tailProof {
+					other = append(other, sized(70617, growthAt, "world_state", map[string]any{})...)
+				}
+				if err := os.WriteFile(archiveRollout, other, 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
 			input := payload
 			if tc == "wrong batch" {
 				input = payload[:strings.LastIndex(payload, " · #")] + " · #other0"
@@ -169,18 +189,25 @@ func TestHSW001HSW002ObserveWorkspaceSuccessorReceipt(t *testing.T) {
 			if err := os.WriteFile(path, log.Bytes(), 0600); err != nil {
 				t.Fatal(err)
 			}
-			if tc == "exact" {
+			if tc == "exact" || tailProof {
 				got := transcript.CodexWakeWitness(session, turn, payload, since)
 				if !got.Started.Equal(started) || !got.Delivered.Equal(inputAt) {
 					t.Fatal("the short tail did not prove the exact first input", got)
 				}
 			}
-			log.Write(sized(70617, growthAt, "world_state", map[string]any{}))
-			if err := os.WriteFile(path, log.Bytes(), 0600); err != nil {
-				t.Fatal(err)
-			}
-			if got := transcript.CodexWakeWitness(session, turn, payload, since); !got.Delivered.IsZero() {
-				t.Fatal("the fixture did not move the start out of the normal tail")
+			if !tailProof {
+				log.Write(sized(70617, growthAt, "world_state", map[string]any{}))
+				if err := os.WriteFile(path, log.Bytes(), 0600); err != nil {
+					t.Fatal(err)
+				}
+				if sameFileArchive {
+					if err := os.Link(path, archiveRollout); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if got := transcript.CodexWakeWitness(session, turn, payload, since); !got.Delivered.IsZero() {
+					t.Fatal("the fixture did not move the start out of the normal tail")
+				}
 			}
 			if tc == "exact" {
 				t.Logf("synthetic header_end=31493 input_end=%d grown_size=%d tail_offset=%d append_delay=%s",
@@ -211,15 +238,15 @@ func TestHSW001HSW002ObserveWorkspaceSuccessorReceipt(t *testing.T) {
 			}
 			ObserveWakeEvidence(now)
 			var archive []byte
-			switch tc {
-			case "exact":
+			switch {
+			case wantDelivered:
 				if _, err := os.Stat(receiptPath); !os.IsNotExist(err) {
 					t.Fatal("the accepted workspace tick remained unverified after the proven first input")
 				}
 				if err := os.WriteFile(receiptPath, original, 0600); err != nil {
 					t.Fatal(err)
 				}
-			case "expired":
+			case tc == "expired":
 				archive, err = os.ReadFile(acceptedArchivePath())
 				if err != nil {
 					t.Fatal(err)
@@ -232,12 +259,12 @@ func TestHSW001HSW002ObserveWorkspaceSuccessorReceipt(t *testing.T) {
 				if err != nil || !bytes.Equal(accepted, original) || record.Key != files[0].Name() || record.Reason != "proof-window-expired" {
 					t.Fatal("expiry lost the original receipt")
 				}
-			case "unknown":
+			case tc == "unknown":
 				files := readQueue()
 				if len(files) != 1 || !strings.HasSuffix(files[0].Name(), nativeUncertainSuffix) {
 					t.Fatal("unknown input was not protected")
 				}
-			case "unbound receipt":
+			case tc == "unbound receipt":
 			default:
 				if current, err := os.ReadFile(receiptPath); err != nil || !bytes.Equal(current, original) {
 					t.Fatal("observation changed unverified evidence")
@@ -246,7 +273,7 @@ func TestHSW001HSW002ObserveWorkspaceSuccessorReceipt(t *testing.T) {
 			ObserveWakeEvidence(now.Add(3 * time.Second))
 			drain(x, "%hq")
 			delivered := auditRecords(t, events.AuditEventWakeDelivered)
-			if tc == "exact" {
+			if wantDelivered {
 				if len(delivered) != 1 || delivered[0].OpID != strings.TrimSuffix(files[0].Name(), ".json") || delivered[0].Ts != inputAt.Unix() {
 					t.Fatal("delivery did not produce one audit bound to the receipt and native time")
 				}
