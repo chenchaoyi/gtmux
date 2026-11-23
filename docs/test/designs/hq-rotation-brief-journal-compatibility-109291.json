@@ -1,0 +1,35 @@
+{
+  "id": "hq-rotation-brief-journal-compatibility-109291",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review based on independent findings P1 and P2",
+    "date": "2026-11-23",
+    "decision": "Preserve the existing v2 native claim format and the original unavailable-target marker when admitting a bound rotation briefing.",
+    "notes": "Use separate offline processes for the writer and recovery on the v1.0.195 baseline and the candidate. Simulate an interrupted publication without a live receiver."
+  },
+  "cases": [
+    {
+      "id": "HRB-003",
+      "layer": "L2",
+      "description": "Interrupted bound briefing claims remain readable by the previous native journal reader",
+      "setup": "Queue an addressed synthetic briefing and persist real prepared, uncertain, and accepted-before-cleanup states in private homes. Use fake transport and separate baseline and candidate test processes.",
+      "action": "Drain a workspace tick and protected Relay using the baseline, then repeat with the candidate. Compare the original intent, pinned claim and exact receipt across recovery boundaries.",
+      "expected": "No briefing is submitted again. Prepared becomes uncertain, uncertain keeps the original batch, and accepted closes only after persisting the exact independent-proof receipt. The ordinary tick and protected Relay still submit separately from the briefing and no keys are sent.",
+      "planned_files": [
+        "internal/hqnudge/rotation_brief_recovery_test.go"
+      ]
+    },
+    {
+      "id": "HRB-004",
+      "layer": "L2",
+      "description": "A lone Relay opportunity still diagnoses an unavailable HQ target",
+      "setup": "Use a private queue with one true due Relay reservation and an identified idle-looking fake composer without a native route or verified legacy identity.",
+      "action": "Drain and inspect native and key counts, the Relay queue and the original target-unavailable issue.",
+      "expected": "The Relay is retained, no input runs, and the existing target-unavailable issue is recorded.",
+      "planned_files": [
+        "internal/hqnudge/rotation_brief_recovery_test.go"
+      ]
+    }
+  ],
+  "seal": "67b1ecf4d94d2493136a49ce93cc59cc3424dfb2c5d48ed1e2a1fe7f6a0e008b"
+}
