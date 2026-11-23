@@ -258,14 +258,14 @@ MAP-6752a622a3e4,L2,reviewed implementation,internal/hook/codex_completed_turn_t
 MAP-2dd42a3caeb8,L2,reviewed implementation,internal/hook/codex_completed_turn_test.go,114,reviewed-selector,TestCodexContinuationPreservesActiveStart,False,"CET-004,CET-005"
 MAP-7e65dd794cb9,L2,reviewed implementation,internal/hook/codex_cross_pane_stop_test.go,20,reviewed-selector,TestCPR005DetachedCodexStopUsesOnlyCurrentPaneBinding,False,CPR-005
 MAP-cce8e70a6d32,L2,reviewed implementation,internal/hook/codex_manual_compact_test.go,11,reviewed-selector,TestCompletedCodexTurnPreservesManualCompactReceipt,False,CET-006
+MAP-42114743aa82,L2,reviewed implementation,internal/hq/attention_decision_storage_test.go,14,reviewed-selector,TestHND012WorkspaceDecisionPreservesUnreadableLedger,False,HND-012
+MAP-dbb1dd0f67b1,L2,reviewed implementation,internal/hq/attention_decision_storage_test.go,52,reviewed-selector,TestHND012WorkspaceDecisionWaitsForDurableReservation,False,HND-012
+MAP-d0d26be36287,L2,reviewed implementation,internal/hq/attention_decision_storage_test.go,84,reviewed-selector,TestHND012WorkspaceDecisionRetainsReservationIfRefusalWriteFails,False,HND-012
 MAP-e2d0dede5632,L2,reviewed implementation,internal/hq/attention_decision_test.go,12,reviewed-selector,TestHND010WorkspaceDecisionStaysQuietAcrossCooldownAndRefresh,False,"HND-010,HND-011"
 MAP-e55252792eb2,L2,reviewed implementation,internal/hq/attention_decision_test.go,43,reviewed-selector,TestHND010WorkspaceDecisionReadsLegacyTimestampAfterRestart,False,"HND-010,HND-011"
 MAP-b5c0b2bce00a,L2,reviewed implementation,internal/hq/attention_decision_test.go,59,reviewed-selector,TestHND011WorkspaceDecisionRetriesKnownQueueRefusal,False,"HND-010,HND-011"
 MAP-1785f3b3f89e,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,34,reviewed-selector,TestHND001WorkspaceAttentionChangesCopyWithoutChangingIdentity,False,"HND-001,HND-002"
 MAP-40ff8e1d0e6e,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,60,reviewed-selector,TestHND002RelayAttentionReplacesStatusAndKeepsARealBlocker,False,"HND-001,HND-002"
-MAP-700c37a5b4d0,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,87,reviewed-selector,TestHND010WorkspaceDecisionStaysQuietAcrossCooldownAndRefresh,False,"HND-001,HND-002,HND-010,HND-011"
-MAP-f23bf0cbf634,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,118,reviewed-selector,TestHND010WorkspaceDecisionReadsLegacyTimestampAfterRestart,False,"HND-001,HND-002,HND-010,HND-011"
-MAP-af70dbb13b43,L2,reviewed implementation,internal/hq/attention_lifecycle_test.go,134,reviewed-selector,TestHND011WorkspaceDecisionRetriesKnownQueueRefusal,False,"HND-001,HND-002,HND-010,HND-011"
 MAP-6d2a56c8d3b3,L2,reviewed implementation,internal/hq/attention_publication_test.go,12,reviewed-selector,TestHND005SnapshotFailureDoesNotConsumeAlertOpportunity,False,HND-005
 MAP-20be41ebaa2b,L2,Go core / CLI / server,internal/hq/board_shape_test.go,8,reviewed-selector,TestRunbookSpecifiesTheBoardShape,False,"HQIL-001,HQIL-003"
 MAP-99b86a9378f3,L2,reviewed implementation,internal/hq/dreamdiagnostics_test.go,13,reviewed-selector,TestDreamDiagnosticsClassifiedBoundedAndPrivate,False,KBDREAM-DIAGNOSTICS

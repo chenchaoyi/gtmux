@@ -2,7 +2,7 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1446 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1447 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
@@ -369,6 +369,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HWA-016 | Pending work is preserved until an eligible idle composer. Exact terminal input reaches the identified fixture; the same authorized actions, ownership, durable continuation and no-replay checks still pass. |
 | HND-010 | The same active request remains in the workspace snapshot and consumes only its first admission. Loading the old timestamp also avoids a repeat. The independent blocker keeps its periodic opportunity and the genuinely new request uses the same matter notification identity. Verified resolution removes only that identity from the active snapshot. |
 | HND-011 | Both actual attempts are present in the independent journal. The retry is rate-limited and uses the same matter identity. Once a successful admission is persisted, future unchanged scans keep the request active without another desktop submission. |
+| HND-012 | An unreadable ledger is preserved and holds only question admissions while blockers continue to alert. A failed reservation produces no question admission, and a later successful reservation is present before the queue call. A durable refusal retains cooldown; a reservation that survives interrupted result recording preserves audit and holds automatic replay. Normal entries continue to publish their active notification identity. |
 | HSW-001 | The v1.0.193 tail proves the short capture and loses proof after growth. A single contiguous prefix after the verified metadata proves exact original times. The original receipt key gains one independent delivery audit and no extra input attempts, Paste or Enter. |
 | HSW-002 | Ineligible or ambiguous evidence cannot add a delivery audit. Active unverified and unknown input remain protected, expired evidence stays archived as its original receipt, and neither observation nor later drain resubmits it. The regular tail remains available for existing positive probes. |
 | HPC-006 | No early repeat. At the next eligible tick, the exact evidence remains pending and its second wake is enqueued without waiting for another full interval. |

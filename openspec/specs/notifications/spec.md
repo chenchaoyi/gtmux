@@ -242,6 +242,13 @@ notifications and the durable HQ audit remain independent.
 - **AND** a new question remains eligible under the same matter notification identity
 - **AND** a confirmed queue refusal retains the existing retry cooldown
 
+#### Scenario: The HQ question attempt ledger cannot establish the queue result
+
+- **WHEN** the attempt ledger is unreadable or the producer cannot durably reserve the question
+- **THEN** the current question remains visible and the producer holds its desktop request
+- **AND** independent verified blockers remain eligible
+- **AND** a reservation with no recorded result after an interruption prevents automatic replay
+
 #### Scenario: A managed request arrives during notification polling
 
 - **WHEN** the producer publishes a current scope snapshot and then its request

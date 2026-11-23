@@ -69619,33 +69619,6 @@
           "dynamic": false,
           "layer": "L2",
           "design": "HND-001,HND-002"
-        },
-        {
-          "id": "MAP-700c37a5b4d0",
-          "line": 87,
-          "kind": "reviewed-selector",
-          "name": "TestHND010WorkspaceDecisionStaysQuietAcrossCooldownAndRefresh",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HND-001,HND-002,HND-010,HND-011"
-        },
-        {
-          "id": "MAP-f23bf0cbf634",
-          "line": 118,
-          "kind": "reviewed-selector",
-          "name": "TestHND010WorkspaceDecisionReadsLegacyTimestampAfterRestart",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HND-001,HND-002,HND-010,HND-011"
-        },
-        {
-          "id": "MAP-af70dbb13b43",
-          "line": 134,
-          "kind": "reviewed-selector",
-          "name": "TestHND011WorkspaceDecisionRetriesKnownQueueRefusal",
-          "dynamic": false,
-          "layer": "L2",
-          "design": "HND-001,HND-002,HND-010,HND-011"
         }
       ],
       "sha256": "6bf2461d91e9e9798829d946f8351f203466cda9d04e565d0a3e3a0de75728db"
@@ -69722,6 +69695,40 @@
         }
       ],
       "sha256": "924f9f94ed5840581643c85477185851d6c06096b02ba7870687678b28a2ff83"
+    },
+    "internal/hq/attention_decision_storage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-42114743aa82",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestHND012WorkspaceDecisionPreservesUnreadableLedger",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-012"
+        },
+        {
+          "id": "MAP-dbb1dd0f67b1",
+          "line": 52,
+          "kind": "reviewed-selector",
+          "name": "TestHND012WorkspaceDecisionWaitsForDurableReservation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-012"
+        },
+        {
+          "id": "MAP-d0d26be36287",
+          "line": 84,
+          "kind": "reviewed-selector",
+          "name": "TestHND012WorkspaceDecisionRetainsReservationIfRefusalWriteFails",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-012"
+        }
+      ],
+      "sha256": "f5db47c5f641273a0e46bc9b8cd115f8f637930ec583a377ad7cc2b1eba47e47"
     },
     "internal/hq/attention_decision_test.go": {
       "layer": "L2",

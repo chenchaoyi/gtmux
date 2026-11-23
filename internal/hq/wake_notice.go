@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"sort"
@@ -27,12 +28,13 @@ type WorkspaceAttention struct {
 }
 
 var wakeDesktopNotice = notify.TrySend
+var writeWakeNoticeLedger = state.WritePrivateFile
 
 type wakeNotice struct {
-	message            string
-	desktopID          string
-	observedAt         int64 // zero for conditions without an occurrence timestamp
-	onceAfterAdmission bool  // unchanged workspace decisions stay visible without another desktop notice
+	message           string
+	desktopID         string
+	observedAt        int64 // zero for conditions without an occurrence timestamp
+	workspaceDecision bool
 }
 
 func watchWakeHealth(now int64, view hqnudge.Health) {
@@ -85,9 +87,9 @@ func WatchWorkspaceAttention(now int64, rows []WorkspaceAttention) {
 		}
 		key := row.MatterID + "@" + reason + "@" + row.EvidenceID
 		alerts[key] = wakeNotice{
-			desktopID:          "workspace/" + row.MatterID,
-			message:            fmt.Sprintf("%s in the HQ workspace for %s.", title, row.MatterID),
-			onceAfterAdmission: row.NeedsUser,
+			desktopID:         "workspace/" + row.MatterID,
+			message:           fmt.Sprintf("%s in the HQ workspace for %s.", title, row.MatterID),
+			workspaceDecision: row.NeedsUser,
 		}
 	}
 	publishWakeNotices("workspace", "HQ workspace needs attention", alerts, now, 8, "")
@@ -145,11 +147,8 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 		}
 	}
 	path := filepath.Join(state.Dir(), "hqwake", "notices-"+scope+".json")
-	previous, err := readWakeNotices(path)
-	if err != nil {
-		diag.ReportStoreFailure("hq-wake-notices", err)
-		// Continue through the durable diagnostic and desktop channel.
-	}
+	previous, readErr := readWakeNotices(path)
+	diag.ReportStoreFailure("hq-wake-notices", readErr)
 	next := make(map[string]int64, len(alerts))
 	type candidate struct {
 		key  string
@@ -157,12 +156,15 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 	}
 	var ready []candidate
 	for key, notice := range alerts {
+		if notice.workspaceDecision && readErr != nil {
+			continue // an unreadable record cannot authorize another attempt
+		}
 		last, attempted := previous[key]
 		if attempted {
 			next[key] = last
-			if notice.onceAfterAdmission {
-				// Nonnegative values also include legacy attempts. Reusing them
-				// avoids reposting old questions when upgrading.
+			if notice.workspaceDecision {
+				// A reservation still counts after a crash with no recorded
+				// result. Legacy attempts also lack a durable queue result.
 				if last >= 0 {
 					continue
 				}
@@ -185,6 +187,27 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 	})
 	changed := len(next) != len(previous)
 	selected := ready[:min(maxNew, len(ready))]
+	// Reserve questions before any queue publication. Only a confirmed queue
+	// refusal can reopen an attempt, after its retry time is recorded below.
+	var reservations map[string]int64
+	for _, item := range selected {
+		if alerts[item.key].workspaceDecision {
+			if reservations == nil {
+				reservations = maps.Clone(next)
+			}
+			reservations[item.key] = now
+		}
+	}
+	reserved := false
+	if reservations != nil {
+		err := saveWakeNotices(path, reservations)
+		diag.ReportStoreFailure("hq-wake-notices", err)
+		if err == nil {
+			next = reservations
+			changed = false
+			reserved = true
+		}
+	}
 	queued := false
 	if summary != "" && len(selected) > 0 {
 		lines := []string{summary}
@@ -195,8 +218,12 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 	}
 	for _, item := range selected {
 		key := item.key
+		notice := alerts[key]
+		if notice.workspaceDecision && !reserved {
+			continue
+		}
 		if summary == "" {
-			queued = sendWakeNotice(title, alerts[key].message, alerts[key].desktopID, now)
+			queued = sendWakeNotice(title, notice.message, notice.desktopID, now)
 		}
 		outcome := diag.OK
 		if !queued {
@@ -204,20 +231,26 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 		}
 		diag.For("hq").Act("act.wake.notice", "system", scope, outcome, "HQ independent notice",
 			"reason", key, "desktop_queued", queued)
-		next[key] = now
-		if !queued && alerts[key].onceAfterAdmission {
-			next[key] = -now
+		if !notice.workspaceDecision {
+			next[key] = now
+			changed = true
+		} else if !queued {
+			next[key] = -now // record the known refusal without losing its cooldown
+			changed = true
 		}
-		changed = true
 	}
-	if !changed {
+	if !changed || (scope == "workspace" && readErr != nil) {
 		return
 	}
-	data, err := json.Marshal(next)
-	if err == nil {
-		err = state.WritePrivateFile(path, data)
+	diag.ReportStoreFailure("hq-wake-notices", saveWakeNotices(path, next))
+}
+
+func saveWakeNotices(path string, notices map[string]int64) error {
+	data, err := json.Marshal(notices)
+	if err != nil {
+		return err
 	}
-	diag.ReportStoreFailure("hq-wake-notices", err)
+	return writeWakeNoticeLedger(path, data)
 }
 
 func sendWakeNotice(title, message, identity string, now int64) bool {
