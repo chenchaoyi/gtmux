@@ -120,16 +120,18 @@ type io struct {
 	receipt func(pane, needle string, since int64) driver.Verdict
 	// foreground names the pane's foreground command, so a drain can tell a shell
 	// waiting for an agent to start from the agent itself. nil → unknown → proceed.
-	nativePrepare func(pane string) func(payload, id string) (dispatch.Result, bool)
-	nativeSubmit  func(pane, payload, id string) (dispatch.Result, bool) // isolated legacy transport seam
-	foreground    func(pane string) string
-	identity      func(pane string) string
-	busy          func(pane string) bool
+	nativePrepare       func(pane string) func(payload, id string) (dispatch.Result, bool)
+	nativeSubmit        func(pane, payload, id string) (dispatch.Result, bool) // isolated legacy transport seam
+	foreground          func(pane string) string
+	identity            func(pane string) string
+	busy                func(pane string) bool
+	rotationBriefTarget func(pane string) rotationBriefTarget
 }
 
 var prod = io{
-	nativePrepare: prepareNativeWake,
-	identity:      liveWakeIdentity,
+	nativePrepare:       prepareNativeWake,
+	identity:            liveWakeIdentity,
+	rotationBriefTarget: liveRotationBriefTarget,
 	busy: func(pane string) bool {
 		for _, path := range []string{state.ActivePath(pane), state.WaitingPath(pane)} {
 			if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
@@ -647,9 +649,9 @@ func drainInto(x io, pane string) {
 	if wakeBusy(x, pane) {
 		return
 	}
-	if submit == nil && !validWakeTarget(wakeIdentity(x, pane)) {
+	targetUnavailable := submit == nil && !validWakeTarget(wakeIdentity(x, pane))
+	if targetUnavailable {
 		recordIssue(issueTargetUnavailable, x.nowNano())
-		return
 	}
 	// Never rename a queued replacement onto a held foreign/changed claim.
 	for _, n := range queuedNames(func(string) bool { return true }) {
@@ -661,6 +663,7 @@ func drainInto(x io, pane string) {
 	now := x.nowNano()
 	due := queuedNames(func(n string) bool { return !protected[n+sendingSuffix] && dueForAttempt(n) <= now })
 	regular, reserved := splitRelayAttention(due)
+	regular, brief := splitRotationBriefs(regular)
 	reservedTarget := ""
 	if reserved != "" && submit != nil && emptyRecognizedWakeBox(x, pane) {
 		reservedTarget = wakeIdentity(x, pane)
@@ -675,6 +678,12 @@ func drainInto(x io, pane string) {
 		first = regular[0]
 	}
 	if first == "" {
+		if brief != "" {
+			drainRotationBrief(x, pane, brief)
+		}
+		return
+	}
+	if targetUnavailable {
 		return
 	}
 	retry, _ := parseRetry(first)
@@ -832,6 +841,12 @@ func claimBatch(due []string) (claimed, msgs []string, held int) {
 			return nil, nil, 0
 		}
 		s := strings.TrimSpace(w.Line)
+		// Older rotations put this exact prompt in the ordinary text queue.
+		// Other startup flows call dispatch directly and have no such queue entry.
+		if wakeFileSuffix(n) == ".txt" && (s == hqwake.StartupBriefingEN || s == hqwake.StartupBriefingZH) {
+			refuseRotationBrief(dst, "rotation-brief-unbound")
+			continue
+		}
 		if retry, _ := parseRetry(n); retry.Number == 0 && strings.HasSuffix(n, waitingWakeSuffix) {
 			if reason := revalidateWaiting(w, roster); reason != "" {
 				err := events.AuditWaitingWakeDropped(reason, s, w.Source.Origin.Pane, w.Source.Origin.Loc,

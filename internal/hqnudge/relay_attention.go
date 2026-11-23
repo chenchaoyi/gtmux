@@ -25,7 +25,7 @@ func isPendingWake(name string) bool {
 }
 
 func wakeFileSuffix(name string) string {
-	for _, suffix := range []string{".txt", waitingWakeSuffix, relayAttentionSuffix} {
+	for _, suffix := range []string{".txt", waitingWakeSuffix, relayAttentionSuffix, rotationBriefSuffix} {
 		if strings.HasSuffix(name, suffix) {
 			return suffix
 		}

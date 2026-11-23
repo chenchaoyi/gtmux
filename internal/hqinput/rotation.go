@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -46,4 +47,43 @@ func RotationPending(pane string) (bool, error) {
 		return false, errors.New("HQ rotation reservation is unreadable")
 	}
 	return r.Pane == pane && r.SentAt == 0, nil
+}
+
+// RotationReadyWait is the existing confirmation window. The briefing may
+// use it as an input deadline without changing how rotation settles.
+const RotationReadyWait = 3 * time.Minute
+
+// RotationBrief binds a queued startup prompt to the sent rotation that
+// reserved it and to its one verified Codex successor.
+type RotationBrief struct {
+	Request, Pane, Agent, Home, Session, Stamp, Instance string
+	ClientPID                                            int
+	Deadline                                             int64
+}
+
+func (b RotationBrief) Valid() bool {
+	return b.Request != "" && b.Pane != "" && b.Agent == "codex" && b.Home != "" &&
+		b.Session != "" && b.Stamp != "" && b.Instance != "" && b.ClientPID > 0 && b.Deadline > 0
+}
+
+// MatchesRotationBrief checks the original reservation under the HQ input
+// lease. An absent, unreadable or superseded request cannot authorize a wake.
+func MatchesRotationBrief(brief RotationBrief) bool {
+	raw, err := ReadRotationFile()
+	if err != nil {
+		return false
+	}
+	var r struct {
+		Pane, Agent, Retiring, Successor, TargetStamp, BootstrapID, BootstrapHome, BootstrapInstance string
+		BootstrapPID                                                                                 int
+		SentAt, SwitchedAt, BootstrapAt                                                              int64
+	}
+	return json.Unmarshal(raw, &r) == nil &&
+		r.BootstrapID == brief.Request && r.BootstrapHome == brief.Home &&
+		r.BootstrapInstance == brief.Instance && r.BootstrapPID == brief.ClientPID &&
+		r.Pane == brief.Pane && r.Agent == brief.Agent && r.Successor == brief.Session &&
+		r.TargetStamp == brief.Stamp && r.Retiring != "" && r.Retiring != r.Successor &&
+		r.SentAt > 0 && r.SwitchedAt >= r.SentAt && r.BootstrapAt >= r.SwitchedAt &&
+		r.SwitchedAt == brief.Deadline-int64(RotationReadyWait/time.Second) &&
+		r.BootstrapAt < brief.Deadline
 }

@@ -54,7 +54,9 @@
     ]
   },
   "internal/hq/attention_decision_storage_test.go": {
-    "cases": ["HND-012"],
+    "cases": [
+      "HND-012"
+    ],
     "selectors": [
       "TestHND012WorkspaceDecisionPreservesUnreadableLedger",
       "TestHND012WorkspaceDecisionWaitsForDurableReservation",
@@ -62,7 +64,10 @@
     ]
   },
   "internal/hq/attention_decision_recovery_test.go": {
-    "cases": ["HND-013", "HND-014"],
+    "cases": [
+      "HND-013",
+      "HND-014"
+    ],
     "selectors": [
       "TestHND014WorkspaceDecisionWaitsForDurableReservation",
       "TestHND014WorkspaceDecisionRepairsKnownRefusal",
@@ -92,35 +97,87 @@
     ]
   },
   "internal/codexbridge/hq_title_test.go": {
-    "cases": ["HCO-001", "HCO-002"],
-    "selectors": ["TestHCOTitleFramesKeepNativeRenameAfterStaleRoot", "TestHCORetiredFrontendCannotReclaimDelayedRoot"]
+    "cases": [
+      "HCO-001",
+      "HCO-002"
+    ],
+    "selectors": [
+      "TestHCOTitleFramesKeepNativeRenameAfterStaleRoot",
+      "TestHCORetiredFrontendCannotReclaimDelayedRoot"
+    ]
   },
   "internal/codexrpc/thread_name_test.go": {
-    "cases": ["HCO-001"],
+    "cases": [
+      "HCO-001"
+    ],
     "removed": true,
     "reason": "The unconditional automatic title RPC is retired. The frontend frame regression and isolated native check exercise Codex ownership."
   },
   "internal/radar/hq_title_test.go": {
-    "cases": ["HCO-003"],
-    "selectors": ["TestHQAgentTaskUsesCurrentCodexName"]
+    "cases": [
+      "HCO-003"
+    ],
+    "selectors": [
+      "TestHQAgentTaskUsesCurrentCodexName"
+    ]
   },
   "internal/hqnudge/wake_restart_recovery_test.go": {
-    "cases": ["WNR-001", "WNR-002"],
+    "cases": [
+      "WNR-001",
+      "WNR-002"
+    ],
     "selectors": [
       "TestWNR001DeviceChangeKeepsParkedUnknownIntact",
       "TestWNR002DeviceChangeStillProtectsAmbiguousClaims"
     ]
   },
-  "internal/hqnudge/waiting_relay_retry_test.go": {"cases": ["HWW-004"], "selectors": ["TestHWW004ProtectedRelayUsesFirstWindowWithDueWaitingRetry"]},
-  "internal/hook/nudge_test.go": {"cases": ["HWW-001"], "selectors": ["TestNudgeSupervisorNoop"]},
-  "internal/hqnudge/waiting_test.go": {"cases": ["HWW-001", "HWW-002"], "selectors": ["TestHWW001FreshWaitingRevalidationWithProtectedRelay", "TestHWW002PreviouslyAttemptedWaitingKeepsRecoveryRules"]},
-  "internal/hqnudge/waiting_witness_test.go": {"cases": ["HWW-003"], "selectors": ["TestHWW003RealWakePromptGetsExactIndependentAudit"]},
+  "internal/hqnudge/waiting_relay_retry_test.go": {
+    "cases": [
+      "HWW-004"
+    ],
+    "selectors": [
+      "TestHWW004ProtectedRelayUsesFirstWindowWithDueWaitingRetry"
+    ]
+  },
+  "internal/hook/nudge_test.go": {
+    "cases": [
+      "HWW-001"
+    ],
+    "selectors": [
+      "TestNudgeSupervisorNoop"
+    ]
+  },
+  "internal/hqnudge/waiting_test.go": {
+    "cases": [
+      "HWW-001",
+      "HWW-002"
+    ],
+    "selectors": [
+      "TestHWW001FreshWaitingRevalidationWithProtectedRelay",
+      "TestHWW002PreviouslyAttemptedWaitingKeepsRecoveryRules"
+    ]
+  },
+  "internal/hqnudge/waiting_witness_test.go": {
+    "cases": [
+      "HWW-003"
+    ],
+    "selectors": [
+      "TestHWW003RealWakePromptGetsExactIndependentAudit"
+    ]
+  },
   "internal/app/testmain_test.go": {
-    "cases": ["CHI-001"],
-    "selectors": ["func TestMain"]
+    "cases": [
+      "CHI-001"
+    ],
+    "selectors": [
+      "func TestMain"
+    ]
   },
   "internal/app/doctor_agent_hooks_test.go": {
-    "cases": ["CHI-001", "CHI-002"],
+    "cases": [
+      "CHI-001",
+      "CHI-002"
+    ],
     "selectors": [
       "TestDoctorRejectsWrongDisabledAndScopedBindings",
       "TestAppHookFixturesIgnoreInheritedCodexHome",
@@ -128,8 +185,13 @@
     ]
   },
   "internal/app/hookcompleteness_test.go": {
-    "cases": ["CHI-002"],
-    "selectors": ["TestMissingAgentHookEvents", "TestCompleteHooksReportNothingMissing"]
+    "cases": [
+      "CHI-002"
+    ],
+    "selectors": [
+      "TestMissingAgentHookEvents",
+      "TestCompleteHooksReportNothingMissing"
+    ]
   },
   "internal/hq/relay_attention_review_test.go": {
     "cases": [
@@ -4979,7 +5041,8 @@
   },
   "internal/hq/wake_autorecovery_test.go": {
     "cases": [
-      "HWA-004", "WNR-003"
+      "HWA-004",
+      "WNR-003"
     ],
     "selectors": [
       "TestHWA004WakeNoticesRespondToChangedCauseAndOverdueMatter",
@@ -5247,6 +5310,34 @@
       "WHS-003 narrow board maximize restore and focused modes",
       "WHS-003 mobile readonly focused modes",
       "WHS-004 neutral native terminal reduced motion and retired delayed status"
+    ]
+  },
+  "internal/hqnudge/rotation_brief_test.go": {
+    "cases": [
+      "HRB-001",
+      "HRB-002"
+    ],
+    "selectors": [
+      "TestHRB001RotationBriefBindsOriginalRecipient",
+      "TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake"
+    ]
+  },
+  "internal/hq/rotation_durability_test.go": {
+    "cases": [
+      "HRB-001"
+    ],
+    "selectors": [
+      "TestRotationQueuesOneGuardedHandoffAfterReleasingInput"
+    ]
+  },
+  "internal/hqnudge/rotation_brief_recovery_test.go": {
+    "cases": [
+      "HRB-003",
+      "HRB-004"
+    ],
+    "selectors": [
+      "TestHRB003RotationBriefJournalReadableAfterRestart",
+      "TestHRB004LoneRelayReportsUnavailableTarget"
     ]
   }
 }

@@ -114,7 +114,7 @@ func admitQueuedContent(name, message, content string, now int64) bool {
 	path := filepath.Join(queueDir(), name)
 	if len(names) >= maxQueueEntries {
 		recordIssue(issueQueuePressure, now)
-		if prioOf(name) > prioOf(names[len(names)-1]) {
+		if isRotationBrief(name) || prioOf(name) > prioOf(names[len(names)-1]) {
 			events.AuditWakeDropped(events.DropQueueFull, message, time.Now().Unix())
 			wakeStage("act.wake.rejected", name, "", diag.Refused, events.DropQueueFull)
 			return false
