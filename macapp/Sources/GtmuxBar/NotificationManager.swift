@@ -29,6 +29,12 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     private var nextWatchAttempt = Date.distantPast
     private var waitingBanners: Set<String> = []
     private var waitingSnapshot: Set<String>?
+    private var hqAttention: [String: Set<String>] = [:]
+    private var pendingAttentionSweep: Set<String> = []
+    private var attentionSweepInFlight = false
+    private var nextAttentionSweep = Date.distantPast
+    private var replacedLegacyReports: Set<String> = []
+    private let hqAttentionPrefix = "gtmux-hq-attention-"
 
     init(center: DesktopNotificationCenter = SystemDesktopNotificationCenter(),
          queueDirectory: URL = URL(fileURLWithPath: Paths.data("notify"), isDirectory: true),
@@ -55,8 +61,12 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         var session = ""
         var icon = ""
         var ts = 0
+        var attentionID = ""
         // tolerate missing fields
-        enum CodingKeys: String, CodingKey { case kind, title, subtitle, body, pane, session, icon, ts }
+        enum CodingKeys: String, CodingKey {
+            case kind, title, subtitle, body, pane, session, icon, ts
+            case attentionID = "attention_id"
+        }
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             func s(_ k: CodingKeys) -> String { (try? c.decode(String.self, forKey: k)) ?? "" }
@@ -64,6 +74,7 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             title = s(.title); subtitle = s(.subtitle); body = s(.body)
             pane = s(.pane); session = s(.session); icon = s(.icon)
             ts = (try? c.decode(Int.self, forKey: .ts)) ?? 0
+            attentionID = s(.attentionID)
         }
     }
 
@@ -225,13 +236,17 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     }
 
     private func drain() {
-        guard !readingSettings, authorization.permission != .checking else { return }
         let fm = FileManager.default
-        guard let files = try? fm.contentsOfDirectory(
-            at: queueDir, includingPropertiesForKeys: nil,
-            options: [.skipsHiddenFiles]) else { return }
+        // The producer publishes state before each request. List first so the
+        // snapshot checked here cannot precede a request in this batch.
+        let files = try? fm.contentsOfDirectory(at: queueDir, includingPropertiesForKeys: nil,
+                                               options: [.skipsHiddenFiles])
+        let checkedAttentionScopes = refreshHQAttention()
+        sweepHQAttentionIfNeeded(checked: checkedAttentionScopes)
+        guard !readingSettings, authorization.permission != .checking, let files else { return }
         for f in files.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) where f.pathExtension == "json" {
-            defer { try? fm.removeItem(at: f) } // one-shot: always consume
+            var consume = true
+            defer { if consume { try? fm.removeItem(at: f) } }
             guard let data = try? Data(contentsOf: f),
                   let req = try? JSONDecoder().decode(Request.self, from: data) else {
                 DiagLog.act("act.notify.post", target: "", outcome: "refused",
@@ -243,6 +258,22 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
                 DiagLog.act("act.notify.post", target: req.pane, outcome: "refused",
                             "a notification was not shown", ["reason": "stale", "kind": req.kind])
                 continue
+            }
+            if req.kind == "attention" {
+                if !req.attentionID.isEmpty {
+                    guard let scope = attentionScope(req.attentionID) else { continue }
+                    if !checkedAttentionScopes.contains(scope) {
+                        consume = req.ts <= 0 // hold a fresh request while its state cannot be verified
+                        continue
+                    }
+                    guard attentionActive(req.attentionID) == true else {
+                        DiagLog.act("act.notify.post", target: req.attentionID, outcome: "refused",
+                                    "HQ attention was already resolved", ["reason": "resolved", "kind": req.kind])
+                        continue
+                    }
+                } else if req.pane.isEmpty, obsoleteLegacyAttention(req.title, req.body, checked: checkedAttentionScopes) {
+                    continue
+                }
             }
             guard enabled() else { // respect the toggle
                 DiagLog.act("act.notify.post", target: req.pane, outcome: "refused",
@@ -289,7 +320,11 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             content.categoryIdentifier = doneCategory
             content.sound = .default
             content.interruptionLevel = .active
-            id = req.pane.isEmpty ? UUID().uuidString : "gtmux-attention-\(req.pane)"
+            if req.attentionID.isEmpty {
+                id = req.pane.isEmpty ? UUID().uuidString : "gtmux-attention-\(req.pane)"
+            } else {
+                id = hqAttentionPrefix + req.attentionID
+            }
         } else {
             content.categoryIdentifier = doneCategory
             content.sound = nil // finished is calm
@@ -309,9 +344,99 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
                             self.center.removeDelivered([self.waitID(pane)])
                         } else { self.waitingBanners.insert(pane) }
                     }
+                    if kind == "attention", let scope = self.attentionScope(req.attentionID) {
+                        let checked = self.refreshHQAttention()
+                        if checked.contains(scope), self.attentionActive(req.attentionID) == false {
+                            self.center.removeDelivered([id])
+                        } else {
+                            // A success under unknown state can introduce a
+                            // notification after the last completed sweep.
+                            self.pendingAttentionSweep.insert(scope)
+                            if scope == "relay" { self.replacedLegacyReports.insert(req.attentionID) }
+                        }
+                        self.sweepHQAttentionIfNeeded(checked: checked)
+                    }
                     DiagLog.act("act.notify.post", target: pane, outcome: "ok",
                                 "submitted a notification to macOS", ["kind": kind])
                 }
+            }
+        }
+    }
+
+    private let attentionScopes = ["workspace", "relay"]
+
+    private func attentionScope(_ identity: String) -> String? {
+        attentionScopes.first { identity.hasPrefix($0 + "/") && identity.count > $0.count + 1 }
+    }
+
+    private func attentionActive(_ identity: String) -> Bool? {
+        guard let scope = attentionScope(identity) else { return nil }
+        return hqAttention[scope]?.contains(identity)
+    }
+
+    private func refreshHQAttention() -> Set<String> {
+        // A missing or unreadable snapshot is not evidence of resolution.
+        let limit = 128 * 1024
+        var checked = Set<String>()
+        for scope in attentionScopes {
+            let path = queueDir.appendingPathComponent("hq-\(scope).attention")
+            guard let handle = try? FileHandle(forReadingFrom: path) else { continue }
+            defer { try? handle.close() }
+            guard let data = try? handle.read(upToCount: limit + 1), data.count <= limit,
+                  let keys = try? JSONDecoder().decode(Set<String>.self, from: data),
+                  keys.allSatisfy({ attentionScope($0) == scope }) else { continue }
+            checked.insert(scope)
+            guard hqAttention[scope] != keys else { continue }
+            hqAttention[scope] = keys
+            pendingAttentionSweep.insert(scope)
+        }
+        return checked
+    }
+
+    private func obsoleteLegacyAttention(_ title: String, _ body: String, checked: Set<String>,
+                                         replacing: Set<String> = []) -> Bool {
+        switch title {
+        case "HQ workspace deadline overdue":
+            return checked.contains("workspace")
+        case "HQ report still needs attention":
+            guard checked.contains("relay"),
+                  let command = body.range(of: "gtmux relay show ", options: .backwards),
+                  let report = body[command.upperBound...].split(separator: " ").first else { return false }
+            let identity = "relay/" + String(report)
+            return attentionActive(identity) == false || replacing.contains(identity)
+        default:
+            return false
+        }
+    }
+
+    private func sweepHQAttentionIfNeeded(checked: Set<String>) {
+        // The OS may finish an old process's add after this process's first
+        // sweep. Recheck at a bounded cadence even with unchanged state.
+        let current = now()
+        if current >= nextAttentionSweep { pendingAttentionSweep.formUnion(checked) }
+        guard !attentionSweepInFlight, !pendingAttentionSweep.isDisjoint(with: checked) else { return }
+        attentionSweepInFlight = true
+        nextAttentionSweep = current.addingTimeInterval(60)
+        center.delivered { [weak self] notifications in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                let checked = self.refreshHQAttention()
+                let obsolete = notifications.filter { notification in
+                    if notification.identifier.hasPrefix(self.hqAttentionPrefix) {
+                        let identity = String(notification.identifier.dropFirst(self.hqAttentionPrefix.count))
+                        guard let scope = self.attentionScope(identity), checked.contains(scope) else { return false }
+                        return self.attentionActive(identity) == false
+                    }
+                    return notification.pane.isEmpty && UUID(uuidString: notification.identifier) != nil &&
+                        self.obsoleteLegacyAttention(notification.title, notification.body, checked: checked,
+                                                     replacing: self.replacedLegacyReports)
+                }
+                if !obsolete.isEmpty { self.center.removeDelivered(obsolete.map(\.identifier)) }
+                // An unreadable scope still owes a sweep, even if its next
+                // successful read matches a snapshot already in memory.
+                self.pendingAttentionSweep.subtract(checked)
+                if checked.contains("relay") { self.replacedLegacyReports.removeAll() }
+                self.attentionSweepInFlight = false
             }
         }
     }

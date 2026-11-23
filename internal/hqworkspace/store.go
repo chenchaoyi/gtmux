@@ -18,6 +18,7 @@ type Store struct {
 	dir               string
 	instructionCursor *int64
 	recordingPolicy   string
+	requireRecords    bool
 }
 
 // WithInstructionCursor attaches the original journal boundary only to a newly
@@ -31,9 +32,17 @@ func (s *Store) WithInstructionCursor(seq int64, recordingPolicy string) *Store 
 
 func New(home string) *Store { return &Store{dir: filepath.Join(home, "workspace")} }
 
+// ExistingOnly keeps reconciliation bound to an established record. A
+// temporarily missing snapshot cannot initialize a new workspace on a retry.
+func (s *Store) ExistingOnly() *Store {
+	copy := *s
+	copy.requireRecords = true
+	return &copy
+}
+
 func (s *Store) Read() (Database, error) {
 	f, err := os.Open(filepath.Join(s.dir, "records.json"))
-	if errors.Is(err, os.ErrNotExist) {
+	if !s.requireRecords && errors.Is(err, os.ErrNotExist) {
 		return Empty(), nil
 	}
 	if err != nil {

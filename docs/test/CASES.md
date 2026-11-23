@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1439 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1445 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2685 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2697 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 134 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -259,6 +259,15 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HRW-009 | A is never submitted under a new batch identity; original exact payload, ID and uncertainty remain inspectable. Accepted/uncertain spool state is not downgraded to unsent. B and legitimate fresh duplicate text can progress once. Journal precedes possible mutation; failure holds without mutation. Recovery never removes a foreign replacement; malformed evidence holds conservatively. Ordinary non-native transport retains its existing contract. |
 | HRW-010 | B remains byte-identical with original key/due/priority, A cannot overwrite it, no mutation while busy. No-clobber return preserves unexpected conflicts and normal retry. Existing latest-keyed coalescing is retained, not disabled. |
 | HRW-011 | One attention notification is submitted even with no waiting pane; it has Jump-only actions, no reply buttons or done/wait identity, active Focus-respecting delivery. Disabled, denied, stale and bare/headless hosts remain rejected. Ordinary resolved input remains suppressed and ordinary waiting still posts. Queue creation/center acceptance is not actual OS presentation or user-read proof. |
+| HND-001 | No desktop alert for the check time alone, one actionable notice per affected matter, stable identity across status changes, and no desktop notice after verified resolution. Existing goal data and scheduling remain intact. |
+| HND-002 | Stable report IDs update the copy when evidence changes. Confirmed claim, close or missing original remove only the corresponding alert. Unreadable state stays visible until verified; ongoing distinct blockers remain independent and periodically eligible. |
+| HND-003 | Repeated messages share one system ID, distinct objects stay independent, verified stale and matched legacy notifications withdraw, unknown snapshots do not clear notifications, and late completion cannot resurrect a removed banner. |
+| HND-008 | The unknown callback cannot revoke B or lose the cleanup obligation. A is withdrawn once after recovery and no new add occurs. |
+| HND-009 | No rapid additional cleanup loop. The bounded next sweep removes stale A, keeps B and does not post again. |
+| HND-004 | The new request is submitted exactly once; source-approved removal before callback withdraws it without requiring another external poll. |
+| HND-005 | No orphan request is issued while state cannot publish. Repair makes the still-active alert immediately eligible once; no duplicate follows. |
+| HND-006 | The active workspace cannot be implicitly initialized from an outage and the relay notices remain live while their parent is unavailable. A genuinely new workspace can initialize. Exact confirmed resolution only retracts its own notice. No delivery intent is executed. |
+| HND-007 | Unknown state does not clear either notice. Recovery retries cleanup and removes only the resolved notice. No extra alert is posted. |
 | MC-HQ-OVERVIEW-STATE | Overview groups exclude completed/closed/merged matters even with stale projection IDs; a stage-result body never changes an open goal. Valid saved rows fill a bounded three-item preview and hidden counts match unique displayed records. |
 | MC-HQ-OVERVIEW-MORE | At the bottom of each truncated native HQ section an explicit remaining/total control opens all matters and can select a hidden record without writes; no extra control when all records fit. Complete minimum/wide light/dark bilingual fixtures preserve text/viewport geometry. |
 | MC-HQ-OVERVIEW-BRIEF | The native row presents canonical current assessment before historical receipt text, explicitly names the unfinished goal state and never treats unavailable source metadata as an idle/completed worker; no guessed human decision or completion from titles, Stop or report prose. |
@@ -269,7 +278,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HRA-001 | One pending slot; second producer remains eligible. No decision evicted or trimmed. One original exact report ID and a full existing decision batch submit together. The old .txt queue reader ignores the protected slot. |
 | HRA-002 | Zero terminal input while unsafe. Unknown retains original evidence and cannot trigger a second scheduler publication of that report. Only proven refusals can use bounded retry at the exact target. |
 | HRA-003 | No old backlog is enrolled. Exact paired report wins, retains original source and claim state, and is dropped before submission after a genuine claim or closure. No report body is put in the wake. |
-| HRA-004 | One exact reference alert, independent of the queue or HQ presence. Limits apply to the reference, distinguish scheduling from acceptance, and clear on verified source or workspace claim. |
+| HRA-004 | Audits and scheduling semantics remain separate from desktop presentation. Only verified claim, close or invalidation withdraw the exact report notice. Independent outstanding sources and temporary read failures remain visible. |
 | HRS-001 | Only first exact prompt after lower bound matches. First record remains stable across append; rewrite/replacement/continuation changes invalidate. Complete lines only; no result bodies retained. Cancelled/error reads do not grant attribution. |
 | HRS-002 | Only accepted exact canonical HQ reply in correct Codex home/thread at its first source record gets from.kind=hq. Wrong identity, receipt state, body, missing clock/record or later human copy remains unattributed; existing sender preserved; no new sends or ledger writes. |
 | HRS-003 | App/Web API turn JSON exposes identical HQ sender; new receipt invalidates prior human snapshot, unchanged snapshot is cacheable; old pages keep correct first-only attribution; policy/ledger/source unchanged by reads; CLI-origin and desktop-origin both work. |
@@ -347,13 +356,13 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HWA-018 | Direct inspection and failed producers expose a queue I/O reason even without a drain or HQ. Healthy directory alone cannot erase the observed issue before confirmed progress. |
 | HWA-011 | The newer unclaimed generation retains its original deadline and remains eligible; a stale generation never overwrites or replays into it. |
 | HWA-003 | The warning is explicitly rejected and all prior decision entries survive. An equal-priority new entry may replace the oldest of its rank with a truthful eviction audit. Both pressure outcomes have distinct stages. |
-| HWA-004 | First and changed reasons alert even with the old down marker. A retained conflict and a recorded pressure event do not cause periodic reannouncement. Historical uncertainty remains separate. Pending work, quiet mode or absence of HQ cannot suppress the independent deadline alarm. Recovery requires an exact positive receipt or the tracked condition being conclusively settled. |
-| HWA-005 | Deadline and out-of-band report share the goal follow-up ID. Quiet/inactive HQ does not stop that report. Request handling stays open until workbench outcome exists and recovery emits no duplicate alert. |
+| HWA-004 | First and changed wake causes alert even with the old down marker. Recorded pressure or retained conflicts do not cause periodic reannouncement. Separately projected confirmed blockers alert independently, without changing the wake queue or treating a routine check as a user deadline. |
+| HWA-005 | A routine check stays owed in the workspace without a desktop alert. A real blocker and an unanswered explicit user question remain independently actionable. The notice projection changes no workbench state. |
 | HWA-009 | The two native inodes and pending replacement survive, and the previous receipt stays recoverable. Only the independent wake submits. |
 | HWA-010 | The mixed intent retains its evidence, the hard recovery failure prevents all new input, and the independent pending entry remains available after the storage issue is resolved. |
 | WNR-001 | There is no conflict for that parked claim. The journal, pin and parked bytes remain identical and no pending or sending file is created. |
 | WNR-002 | Every ambiguous original remains protected. Neither replacement nor submission is performed. A separately verified parked claim is still recognized. |
-| WNR-003 | Retained archives and refusals remain diagnosable without repeated desktop alerts. A new occurrence and newly active cause remain visible. Simultaneous channel reasons produce one desktop notice and one journal event. Active stalls and workspace deadlines keep their own rate-limited reminders. |
+| WNR-003 | Retained incidents stay quiet. Live or new causes produce the expected grouped wake notice, and an independently confirmed workspace blocker still produces its own stable desktop notice. |
 | HWA-014 | One submission per fresh batch, no replays or lost acknowledgement. Full or expired active proofs are retained with exact receipt provenance in a bounded private archive and independently discoverable. |
 | HWA-015 | One durable delivery audit for this batch, with no input mutation. Clean up the retained receipt only after observing the matching audit. |
 | HWA-019 | The initial held wake and the draft are protected. One terminal wake reaches the verified idle fixture after its deadline, exact ownership is retained, and no workspace authority is invented. |

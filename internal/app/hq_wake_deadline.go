@@ -1,47 +1,70 @@
 package app
 
 import (
-	"sort"
+	"errors"
+	"os"
 
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/hqworkspace"
+	"github.com/chenchaoyi/gtmux/internal/notify"
 )
 
-var workspaceWakeDeadlineNotice = hq.WatchWakeDeadlines
+var workspaceAttentionNotice = hq.WatchWorkspaceAttention
 
-const workspaceDeadlineGrace = 60
+const workspaceAttentionGrace = 60
 
-// workspaceWakeDeadlines only projects explicit clocks on durable obligations.
-// The read-only notice does not mark receipt, authorize work, or settle a matter.
-func workspaceWakeDeadlines(data hqworkspace.Database, now int64) {
-	var overdue []hq.WakeDeadline
+func workspaceForReconciliation(store *hqworkspace.Store, now int64) (*hqworkspace.Store, error) {
+	existing := store.ExistingOnly()
+	snapshot, err := existing.Read()
+	if err == nil {
+		workspaceAttention(snapshot, now)
+		return existing, nil
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return nil, err
+	}
+	// A new workspace can bootstrap. If existing desktop attention still
+	// refers to the lost source, wait for recovery rather than recreating it.
+	for _, scope := range []string{"workspace", "relay"} {
+		active, stateErr := notify.HasActiveAttention(scope)
+		if stateErr != nil {
+			return nil, stateErr
+		}
+		if active {
+			return nil, err
+		}
+	}
+	return store, nil
+}
+
+// A check time only schedules a recheck. An explicit question or a blocked
+// attempt for the exact current intent is evidence for an independent notice.
+func workspaceAttention(data hqworkspace.Database, now int64) {
+	var alerts []hq.WorkspaceAttention
 	for _, matter := range data.Matters {
-		owner := matter.Responsibility
-		if owner == nil {
+		if matter.State == "needs-input" && matter.UserInput != nil &&
+			hqworkspace.GoalResponsibility(data, matter, now).State == "waiting-user" {
+			alerts = append(alerts, hq.WorkspaceAttention{
+				MatterID: matter.ID, EvidenceID: matter.UserInput.ID, NeedsUser: true,
+			})
 			continue
 		}
-		var due int64
-		if owner.Hold != nil && owner.Hold.Kind == "external" {
-			due = owner.Hold.NextCheck
-		} else if owner.Drive != nil {
-			observation := data.Reconciliations[owner.Drive.ObservationID].Observation
-			if observation.DriveProof != nil {
-				due = observation.DriveProof.NextCheck
-			}
+		owner := matter.Responsibility
+		if owner == nil || owner.Intent == nil {
+			continue
 		}
-		if due <= 0 || now-due < workspaceDeadlineGrace {
+		attempt := data.IntentAttempts[owner.Intent.ID]
+		if attempt.MatterID != matter.ID || attempt.StepID != owner.StepID || attempt.Intent != *owner.Intent ||
+			(attempt.State != "held" && attempt.State != "uncertain") || attempt.At <= 0 ||
+			now-attempt.At < workspaceAttentionGrace {
 			continue
 		}
 		goal := hqworkspace.GoalResponsibility(data, matter, now)
 		if goal.State == "verify" || goal.State == "owes-hq" {
-			overdue = append(overdue, hq.WakeDeadline{FollowupID: goal.FollowupID, MatterID: matter.ID, Due: due})
+			alerts = append(alerts, hq.WorkspaceAttention{
+				MatterID: matter.ID, EvidenceID: owner.Intent.ID + "@" + attempt.State,
+			})
 		}
 	}
-	sort.Slice(overdue, func(i, j int) bool {
-		if overdue[i].Due == overdue[j].Due {
-			return overdue[i].FollowupID < overdue[j].FollowupID
-		}
-		return overdue[i].Due < overdue[j].Due
-	})
-	workspaceWakeDeadlineNotice(now, overdue)
+	workspaceAttentionNotice(now, alerts)
 }

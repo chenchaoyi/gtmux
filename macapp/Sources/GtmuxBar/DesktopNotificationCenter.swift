@@ -21,6 +21,13 @@ struct DesktopNotificationAuthorization: Equatable {
     }
 }
 
+struct DeliveredDesktopNotification {
+    let identifier: String
+    let title: String
+    let body: String
+    let pane: String
+}
+
 // Keep native authorization and posting injectable. Tests never register an app,
 // request real permission or submit a notification to the user's notification center.
 protocol DesktopNotificationCenter: AnyObject {
@@ -30,6 +37,11 @@ protocol DesktopNotificationCenter: AnyObject {
     func setCategories(_ categories: Set<UNNotificationCategory>)
     func add(_ request: UNNotificationRequest, completion: @escaping (Error?) -> Void)
     func removeDelivered(_ identifiers: [String])
+    func delivered(_ completion: @escaping ([DeliveredDesktopNotification]) -> Void)
+}
+
+extension DesktopNotificationCenter {
+    func delivered(_ completion: @escaping ([DeliveredDesktopNotification]) -> Void) { completion([]) }
 }
 
 final class SystemDesktopNotificationCenter: DesktopNotificationCenter {
@@ -57,4 +69,13 @@ final class SystemDesktopNotificationCenter: DesktopNotificationCenter {
         center.add(request, withCompletionHandler: completion)
     }
     func removeDelivered(_ identifiers: [String]) { center.removeDeliveredNotifications(withIdentifiers: identifiers) }
+    func delivered(_ completion: @escaping ([DeliveredDesktopNotification]) -> Void) {
+        center.getDeliveredNotifications { notifications in
+            completion(notifications.map { notification in
+                let request = notification.request
+                return DeliveredDesktopNotification(identifier: request.identifier, title: request.content.title,
+                    body: request.content.body, pane: request.content.userInfo["pane"] as? String ?? "")
+            })
+        }
+    }
 }

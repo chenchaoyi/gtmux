@@ -214,3 +214,47 @@ The menu-bar preferences SHALL group the desktop notification switch with its ex
 
 - **WHEN** macOS accepts a test notification
 - **THEN** feedback beside the test action reports submission without claiming that a banner appeared
+
+### Requirement: HQ desktop notices follow the exact outstanding condition
+
+The Mac app SHALL use stable, separate notification identities for actionable HQ
+matters and outstanding managed reports. Updated evidence SHALL replace the
+corresponding notice. When a verified current snapshot no longer includes that
+identity, the app SHALL withdraw its notice, including after restart. A missing
+or unreadable snapshot SHALL NOT be treated as resolution. Other desktop
+notifications and the durable HQ audit remain independent.
+
+#### Scenario: A review report is claimed or closed
+
+- **WHEN** HQ has a live claim or closes the exact original report
+- **THEN** its previous desktop notice is withdrawn while independent outstanding reports remain visible
+
+#### Scenario: HQ schedules another routine check
+
+- **WHEN** a matter is awaiting an external result and HQ moves the next check
+- **THEN** the workspace shows the check without creating a desktop alert
+- **AND** an unanswered user question or a verified continuing blockage can still generate an independent notice
+
+#### Scenario: A managed request arrives during notification polling
+
+- **WHEN** the producer publishes a current scope snapshot and then its request
+- **THEN** the consumer checks the snapshot after observing that request or checks it on a later poll
+- **AND** a failed snapshot write leaves the current alert eligible after recovery
+
+#### Scenario: An upstream attention source is unavailable
+
+- **WHEN** the workspace records or the entire relay store are temporarily unavailable
+- **THEN** the last verified active notice stays in place
+- **AND** a confirmed resolution or absence of a single report in an available store only withdraws that report
+
+#### Scenario: A cleanup scan encounters an unreadable snapshot
+
+- **WHEN** the live snapshot is temporarily unavailable while the app checks delivered notices
+- **THEN** that scope remains pending for cleanup
+- **AND** a later verified snapshot resumes cleanup even if its bytes match a previous read
+
+#### Scenario: The OS finishes a delivery after the app's last cleanup
+
+- **WHEN** a managed notification is added after its matter was resolved
+- **THEN** a late callback retains cleanup work when the source is unavailable
+- **AND** a bounded periodic sweep can withdraw a stale notice after an app restart, even when the old callback was lost

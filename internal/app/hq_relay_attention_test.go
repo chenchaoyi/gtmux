@@ -171,6 +171,50 @@ func TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim(t *testing.T
 	}
 }
 
+func TestHRA004ResolvedRelayWithdrawsWithoutReconciledClaim(t *testing.T) {
+	for _, final := range []string{"claimed", "closed", "missing"} {
+		t.Run(final, func(t *testing.T) {
+			t.Setenv("HOME", t.TempDir())
+			const at = int64(1000)
+			s := hqworkspace.New(t.TempDir())
+			prepareAttentionFixture(t, s, at-10)
+			r := relay.Request{ID: "review", Kind: "report", For: "hq", Agent: "codex", HomeID: "home", ThreadID: "thread",
+				TaskID: "task", Pane: "%12", PanePID: "101", State: "pending", CreatedAt: at}
+			o := hqworkspace.Observation{RelayAttention: true, ID: "relay-review", Kind: "relay-report", Ref: "relay:review",
+				OccurredAt: at, Conversation: hqworkspace.Conversation{Agent: "codex", HomeID: "home", SessionID: "thread"}}
+			if err := s.Ingest("fixture-relay", 0, 1, []hqworkspace.Observation{o}, at); err != nil {
+				t.Fatal(err)
+			}
+			oldGet, oldReserve := workspaceGetAttentionRelay, workspaceReserveRelayAttention
+			t.Cleanup(func() { workspaceGetAttentionRelay, workspaceReserveRelayAttention = oldGet, oldReserve })
+			workspaceReserveRelayAttention = func(string, func() (bool, error)) (bool, error) { return false, nil }
+			workspaceGetAttentionRelay = func(string) (relay.Request, error) {
+				if r.State == "missing" {
+					return relay.Request{}, relay.ErrMissing
+				}
+				return r, nil
+			}
+			d, err := s.Read()
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(state.NotifyDir(), "hq-relay.attention")
+			serviceWorkspaceRelayAttention(s, d, at+120)
+			if b, err := os.ReadFile(path); err != nil || string(b) != `["relay/review"]` {
+				t.Fatalf("pending report not surfaced: %s %v", b, err)
+			}
+			r.State, r.ClaimedAt = final, at+121
+			serviceWorkspaceRelayAttention(s, d, at+122)
+			if b, err := os.ReadFile(path); err != nil || string(b) != "[]" {
+				t.Fatalf("verified %s did not withdraw exact report: %s %v", final, b, err)
+			}
+			if d.Reconciliations[o.ID].State != "pending" {
+				t.Fatal("presentation mutated the reconciliation record")
+			}
+		})
+	}
+}
+
 func prepareAttentionFixture(t *testing.T, s *hqworkspace.Store, at int64) {
 	t.Helper()
 	if err := s.ActivateObservations(10, at-10); err != nil {

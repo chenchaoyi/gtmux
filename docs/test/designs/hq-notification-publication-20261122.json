@@ -1,0 +1,46 @@
+{
+  "id": "hq-notification-publication-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; prospective design self-review",
+    "date": "2026-11-22",
+    "decision": "Cover precise publication ordering and upstream source availability from independent review",
+    "notes": "Reviewed the two #1930 blocking findings and normal queue semantics. Drive one deterministic in-drain producer hook. Simulate missing source trees with isolated paths. No production probe."
+  },
+  "cases": [
+    {
+      "id": "HND-004",
+      "layer": "L2",
+      "description": "A request published during a Mac drain is admitted against a subsequent snapshot",
+      "setup": "Temporary queue, old empty snapshot, fake macOS notification center with a producer hook between state reading and enumeration under the old implementation.",
+      "action": "Publish new scope then its JSON request from the hook; drain again, then change the snapshot before returning a late posting callback.",
+      "expected": "The new request is submitted exactly once; source-approved removal before callback withdraws it without requiring another external poll.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/HQAttentionPublicationTests.swift"
+      ]
+    },
+    {
+      "id": "HND-005",
+      "layer": "L2",
+      "description": "Failed snapshot publication does not consume an alert opportunity",
+      "setup": "Make the scoped snapshot location unreadable in a temporary HOME and capture real notification requests with a fake desktop sink.",
+      "action": "Publish a new actionable alert, recover the snapshot location, rescan immediately and again during cooldown.",
+      "expected": "No orphan request is issued while state cannot publish. Repair makes the still-active alert immediately eligible once; no duplicate follows.",
+      "planned_files": [
+        "internal/hq/attention_publication_test.go"
+      ]
+    },
+    {
+      "id": "HND-006",
+      "layer": "L2",
+      "description": "Missing source trees preserve live alerts while exact verified endings withdraw them",
+      "setup": "Temporary HOME with a persisted workspace decision, ordinary new empty workspace, two canonical relay files and their outstanding observations.",
+      "action": "Temporarily move records.json and the relay directory out of view, restore them, then resolve the workspace decision and one precise relay file.",
+      "expected": "The active workspace cannot be implicitly initialized from an outage and the relay notices remain live while their parent is unavailable. A genuinely new workspace can initialize. Exact confirmed resolution only retracts its own notice. No delivery intent is executed.",
+      "planned_files": [
+        "internal/app/hq_notification_source_guard_test.go"
+      ]
+    }
+  ],
+  "seal": "3d8defcc2fa95e7a55e9df3af9d418fd2da096720f0f27e8917dc78f8b5e736e"
+}

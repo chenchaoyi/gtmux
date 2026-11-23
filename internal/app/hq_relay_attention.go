@@ -17,7 +17,7 @@ const workspaceRelayAttentionCursor = "relay-attention-start"
 const workspaceRelayAttentionHead = "workspace relay follow-up"
 
 var workspaceReserveRelayAttention = hqnudge.ReserveRelayAttention
-var workspaceGetAttentionRelay = relay.Get
+var workspaceGetAttentionRelay = relay.GetFromExistingStore
 var workspaceRelayAttentionNotice = hq.WatchRelayAttention
 
 // Transport metadata established at relay entry, never report prose.
@@ -55,6 +55,9 @@ func serviceWorkspaceRelayAttention(s *hqworkspace.Store, d hqworkspace.Database
 			continue
 		}
 		r, pending, verifyErr := readPendingAttention(q, now)
+		if errors.Is(verifyErr, relay.ErrMissing) {
+			continue
+		}
 		if verifyErr != nil {
 			diag.ReportStoreFailure("hq-relay-attention", verifyErr)
 			if late {

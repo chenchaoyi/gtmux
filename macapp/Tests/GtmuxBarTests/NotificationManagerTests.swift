@@ -7,6 +7,7 @@ private final class FixtureNotificationCenter: DesktopNotificationCenter {
     var requests: [UNNotificationRequest] = []
     var completions: [(Error?) -> Void] = []
     var removed: [String] = []
+    var presented: [DeliveredDesktopNotification] = []
     var holdSettings = false
     var settingsCompletion: ((DesktopNotificationAuthorization) -> Void)?
     var permissionRequests = 0
@@ -25,7 +26,11 @@ private final class FixtureNotificationCenter: DesktopNotificationCenter {
     func add(_ request: UNNotificationRequest, completion: @escaping (Error?) -> Void) {
         requests.append(request); completions.append(completion)
     }
-    func removeDelivered(_ identifiers: [String]) { removed += identifiers }
+    func removeDelivered(_ identifiers: [String]) {
+        removed += identifiers
+        presented.removeAll { identifiers.contains($0.identifier) }
+    }
+    func delivered(_ completion: @escaping ([DeliveredDesktopNotification]) -> Void) { completion(presented) }
 }
 
 final class NotificationManagerTests: XCTestCase {
@@ -44,11 +49,19 @@ final class NotificationManagerTests: XCTestCase {
         NotificationManager(center: center, queueDirectory: queue, enabled: enabled, options: { _ in [] },
                             bundleIdentifier: "com.example.gtmux.fixture", now: { Date(timeIntervalSince1970: 1000) })
     }
-    private func enqueue(_ name: String, kind: String = "done", ts: Int = 1000) throws {
+    private func enqueue(_ name: String, kind: String = "done", ts: Int = 1000,
+                         attentionID: String = "", body: String = "Turn finished.") throws {
         try FileManager.default.createDirectory(at: queue, withIntermediateDirectories: true)
-        let request: [String: Any] = ["kind": kind, "title": "Fixture", "subtitle": "%7 · Codex", "body": "Turn finished.", "pane": "%7", "session": "fixture", "ts": ts]
+        let request: [String: Any] = ["kind": kind, "title": "Fixture", "subtitle": "%7 · Codex", "body": body,
+                                      "pane": attentionID.isEmpty ? "%7" : "", "session": "fixture", "ts": ts,
+                                      "attention_id": attentionID]
         try JSONSerialization.data(withJSONObject: request).write(to: queue.appendingPathComponent(name + ".json"), options: .atomic)
     }
+    private func publishAttention(_ scope: String, _ keys: [String]) throws {
+        try FileManager.default.createDirectory(at: queue, withIntermediateDirectories: true)
+        try JSONEncoder().encode(keys).write(to: queue.appendingPathComponent("hq-\(scope).attention"), options: .atomic)
+    }
+
     @MainActor private func settle(_ condition: () -> Bool) async {
         for _ in 0..<200 {
             if condition() { return }
@@ -125,6 +138,62 @@ final class NotificationManagerTests: XCTestCase {
         try enqueue("new-question", kind: "input")
         subject.reconcile(waitingPanes: ["%7"])
         XCTAssertEqual(center.requests.count, 2)
+    }
+
+    @MainActor func testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance() async throws {
+        let center = FixtureNotificationCenter(), subject = manager(center)
+        await start(subject)
+        let first = "workspace/matter-a", second = "workspace/matter-b"
+        try publishAttention("workspace", [first, second])
+        try enqueue("a-before", kind: "attention", attentionID: first, body: "Check the saved attempt.")
+        try enqueue("b", kind: "attention", attentionID: second, body: "Answer the question.")
+        subject.reconcile(waitingPanes: [])
+        XCTAssertEqual(center.requests.count, 2)
+
+        try enqueue("a-after", kind: "attention", attentionID: first, body: "Answer the new question.")
+        subject.reconcile(waitingPanes: [])
+        let firstID = "gtmux-hq-attention-\(first)", secondID = "gtmux-hq-attention-\(second)"
+        XCTAssertEqual(center.requests.map(\.identifier), [firstID, secondID, firstID])
+        XCTAssertEqual(center.requests.last?.content.body, "Answer the new question.")
+
+        try publishAttention("workspace", [second])
+        subject.reconcile(waitingPanes: [])
+        for i in [0, 2] { center.completions[i](nil) }
+        await settle { center.removed.contains(firstID) }
+        XCTAssertFalse(center.removed.contains(secondID))
+        try enqueue("a-stale", kind: "attention", attentionID: first)
+        subject.reconcile(waitingPanes: [])
+        XCTAssertEqual(center.requests.count, 3, "closed work must not reappear from the queued alert")
+    }
+
+    @MainActor func testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly() async throws {
+        let center = FixtureNotificationCenter(), subject = manager(center, enabled: { false })
+        let legacyDesk = UUID().uuidString, legacyClaimed = UUID().uuidString, legacyPending = UUID().uuidString
+        let legacyNormal = UUID().uuidString, missing = "gtmux-hq-attention-relay/missing"
+        let good = "gtmux-hq-attention-relay/active", unknown = "gtmux-hq-attention-workspace/unverified"
+        center.presented = [
+            .init(identifier: legacyDesk, title: "HQ workspace deadline overdue", body: "old clock", pane: ""),
+            .init(identifier: legacyClaimed, title: "HQ report still needs attention", body: "gtmux relay show claimed and verify", pane: ""),
+            .init(identifier: legacyPending, title: "HQ report still needs attention", body: "gtmux relay show active and verify", pane: ""),
+            .init(identifier: legacyNormal, title: "Other notification", body: "must survive", pane: ""),
+            .init(identifier: missing, title: "HQ report", body: "", pane: ""),
+            .init(identifier: good, title: "HQ report", body: "", pane: ""),
+            .init(identifier: unknown, title: "HQ workspace", body: "", pane: ""),
+        ]
+        try publishAttention("relay", ["relay/active"])
+        try Data("not valid JSON".utf8).write(to: queue.appendingPathComponent("hq-workspace.attention"))
+        await start(subject)
+        await settle { Set(center.removed) == [legacyClaimed, missing] }
+        try enqueue("pending-check", kind: "attention", attentionID: "workspace/unverified")
+        subject.reconcile(waitingPanes: [])
+        let pending = queue.appendingPathComponent("pending-check.json")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: pending.path))
+        try publishAttention("workspace", [])
+        subject.reconcile(waitingPanes: [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: pending.path))
+        await settle { Set(center.removed) == [legacyClaimed, missing, legacyDesk, unknown] }
+        XCTAssertTrue(center.requests.isEmpty)
+        XCTAssertEqual(Set(center.presented.map(\.identifier)), [legacyNormal, legacyPending, good])
     }
 
     @MainActor func testStartupWaitsForPermissionAndDrainsEventsFromThatGap() async throws {

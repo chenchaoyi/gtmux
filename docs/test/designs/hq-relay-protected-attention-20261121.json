@@ -2,10 +2,10 @@
   "id": "hq-relay-protected-attention-20261121",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner, self-review",
-    "date": "2026-11-21",
-    "decision": "Add bounded native opportunity for prospective exact managed-task reports; keep affirmative claim and independent alerts separate from submission.",
-    "notes": "Reviewed real incident refs 6dab55c89b86095c1b511cbeb0a67fbc and events:109573. Both are unassigned in workspace; classification must not require matter ID or inspect untrusted report prose. Keep all production state untouched. Fixtures use isolated storage, synthetic timing and native I/O. Device acceptance and transition from v188 remain separate."
+    "reviewer": "Codex implementation owner; prospective design self-review",
+    "date": "2026-11-22",
+    "decision": "Review the existing regressions against the scoped desktop notification lifecycle",
+    "notes": "Follow-up for the installed Mac duplicate HQ alerts. Preserve durable scheduling, real urgency, read-only verification and recovery handling. Use only isolated synthetic fixtures and fake desktop output."
   },
   "cases": [
     {
@@ -47,12 +47,12 @@
       "layer": "L2",
       "description": "Independent report alert names the actual reference and stops after verified claim",
       "setup": "Unclaimed enrolled report, no delivery evidence, fake clock, independent notification path with stale other-scope notice.",
-      "action": "Pass the lateness threshold and rescan; then claim or close the source and rescan.",
-      "expected": "One exact reference alert, independent of the queue or HQ presence. Limits apply to the reference, distinguish scheduling from acceptance, and clear on verified source or workspace claim.",
+      "action": "Observe exact unclaimed and unverified sources, then verify a live claim, closed report and absent original individually.",
+      "expected": "Audits and scheduling semantics remain separate from desktop presentation. Only verified claim, close or invalidation withdraw the exact report notice. Independent outstanding sources and temporary read failures remain visible.",
       "planned_files": [
         "internal/app/hq_relay_attention_test.go"
       ]
     }
   ],
-  "seal": "40fc00a860db2a1c45bc560e7af565ff96c498279013bb59b1ff8697210015fe"
+  "seal": "3bf2c89dcbdab18e0c2ee2c8f66dc83f771dfade326b2e7a7a0629be55b401f4"
 }

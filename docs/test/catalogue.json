@@ -36935,13 +36935,13 @@
       ]
     },
     "macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift": {
-      "sha256": "c198d4a0fe0d220d7900c3c10f3499a89e34cd9e49e0a05e42bf8179a4b3c11d",
+      "sha256": "d044cf6d2d3dc2f6db17e0caaab43a3f745f1c186dba5d45173301689e1b2a34",
       "layer": "L1",
       "stack": "macOS / Widgets Swift",
       "cases": [
         {
           "id": "LEG-4da97fd3772c",
-          "line": 63,
+          "line": 77,
           "kind": "XCTest",
           "name": "testBareOrTestHostNeverStartsTheSystemDeliveryPath",
           "dynamic": false,
@@ -36949,7 +36949,7 @@
         },
         {
           "id": "LEG-a0ac61a80b4c",
-          "line": 77,
+          "line": 91,
           "kind": "XCTest",
           "name": "testLaterTurnsOnTheSamePaneAreNotSilenced",
           "dynamic": false,
@@ -36957,7 +36957,7 @@
         },
         {
           "id": "LEG-ca8398f9394e",
-          "line": 96,
+          "line": 110,
           "kind": "XCTest",
           "name": "testAnAsynchronousFailureDoesNotPoisonTheNextTurn",
           "dynamic": false,
@@ -36965,7 +36965,7 @@
         },
         {
           "id": "LEG-3f7e830cbf9e",
-          "line": 108,
+          "line": 122,
           "kind": "XCTest",
           "name": "testResolvedWaitsWithdrawEvenWhenAcceptanceIsLate",
           "dynamic": false,
@@ -36973,7 +36973,7 @@
         },
         {
           "id": "LEG-5256316b25fe",
-          "line": 129,
+          "line": 199,
           "kind": "XCTest",
           "name": "testStartupWaitsForPermissionAndDrainsEventsFromThatGap",
           "dynamic": false,
@@ -36981,7 +36981,7 @@
         },
         {
           "id": "LEG-a33a1fd43325",
-          "line": 142,
+          "line": 212,
           "kind": "XCTest",
           "name": "testPermissionCanRecoverWithoutRestartingTheApp",
           "dynamic": false,
@@ -36989,7 +36989,7 @@
         },
         {
           "id": "LEG-de67024e42e1",
-          "line": 158,
+          "line": 228,
           "kind": "XCTest",
           "name": "testPermissionRefreshKeepsTheQueueUntilTheFreshVerdict",
           "dynamic": false,
@@ -36997,7 +36997,7 @@
         },
         {
           "id": "LEG-66c4149c72a4",
-          "line": 173,
+          "line": 243,
           "kind": "XCTest",
           "name": "testAnUndecidedPermissionIsRequestedOnce",
           "dynamic": false,
@@ -37005,7 +37005,7 @@
         },
         {
           "id": "LEG-85ba98704b83",
-          "line": 183,
+          "line": 253,
           "kind": "XCTest",
           "name": "testOffAndStaleRequestsDoNotPost",
           "dynamic": false,
@@ -37013,11 +37013,29 @@
         },
         {
           "id": "LEG-563fd6673864",
-          "line": 193,
+          "line": 263,
           "kind": "XCTest",
           "name": "testExplicitTestHasNoAgentTargetAndReportsAcceptanceOnly",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-aed926f4a8fc",
+          "line": 143,
+          "kind": "reviewed-selector",
+          "name": "testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-003"
+        },
+        {
+          "id": "MAP-1a382996af6d",
+          "line": 169,
+          "kind": "reviewed-selector",
+          "name": "testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-003"
         }
       ]
     },
@@ -68408,7 +68426,7 @@
           "design": "HWA-005"
         }
       ],
-      "sha256": "54abc36823ff65de5fd250c54671dfa755ea760cb79e11a4294e3167555c5d2c"
+      "sha256": "84735901c00e5b2c4149d1152b7b0f3a2bf8d9925673483be48caa8b7fe92038"
     },
     "internal/hq/wake_autorecovery_test.go": {
       "layer": "L2",
@@ -68433,7 +68451,7 @@
           "design": "HWA-004,WNR-003"
         }
       ],
-      "sha256": "7579b1fc719071a10fe8b18cbce72c8b8f247c8eaffbd45b02b783f73f17f3c0"
+      "sha256": "666051aecf90f5bf23832aba7a97fa44190a4019f29638567f3fd222b63a9330"
     },
     "internal/hqnudge/pressure_health_test.go": {
       "layer": "L2",
@@ -68674,9 +68692,18 @@
           "dynamic": false,
           "layer": "L2",
           "design": "HRA-002,HRA-003,HRA-004"
+        },
+        {
+          "id": "MAP-9a2267e34534",
+          "line": 174,
+          "kind": "reviewed-selector",
+          "name": "TestHRA004ResolvedRelayWithdrawsWithoutReconciledClaim",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRA-002,HRA-003,HRA-004,HND-002"
         }
       ],
-      "sha256": "136ef0a9af8febd6ff9ebc03234c3ce0487627bc4207834a88f1c5d2169ee0b3"
+      "sha256": "1df52bc5a01482bf5995364a317ff8348b2a49842d8d2df53f4bb6ce5d5b1a15"
     },
     "internal/hqnudge/relay_attention_test.go": {
       "layer": "L2",
@@ -69545,6 +69572,129 @@
         }
       ],
       "sha256": "443b91d5b55f96352c4935226b50bc6f318b9d0e4fe9c7343e73cfb5c260b55f"
+    },
+    "internal/app/hq_notification_source_guard_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3763bc8a0204",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "TestHND006WorkspaceSourceOutageKeepsLiveAttentionAndPreventsReset",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-006"
+        },
+        {
+          "id": "MAP-3ebff329d8e2",
+          "line": 78,
+          "kind": "reviewed-selector",
+          "name": "TestHND006RelayParentOutageIsDistinctFromAnExactMissingReport",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-006"
+        }
+      ],
+      "sha256": "508dd8454404bf6b469233a482e87b8a10482720334a317bc5849d06aeb45b5c"
+    },
+    "internal/hq/attention_lifecycle_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1785f3b3f89e",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "TestHND001WorkspaceAttentionChangesCopyWithoutChangingIdentity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-001,HND-002"
+        },
+        {
+          "id": "MAP-40ff8e1d0e6e",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "TestHND002RelayAttentionReplacesStatusAndKeepsARealBlocker",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-001,HND-002"
+        }
+      ],
+      "sha256": "6bf2461d91e9e9798829d946f8351f203466cda9d04e565d0a3e3a0de75728db"
+    },
+    "internal/hq/attention_publication_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-6d2a56c8d3b3",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestHND005SnapshotFailureDoesNotConsumeAlertOpportunity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-005"
+        }
+      ],
+      "sha256": "06593f0b21c6e8b6b930337aef3491847b4eeb32812fc36896b24070021c0b6f"
+    },
+    "macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-ddc82854da4a",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "testUnknownLateSuccessRetriesCleanupAfterSameSnapshotRecovers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-008,HND-009"
+        },
+        {
+          "id": "MAP-53ff7f04ac68",
+          "line": 45,
+          "kind": "reviewed-selector",
+          "name": "testBoundedSweepRemovesLateDeliveryWithoutOldProcessCallback",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-008,HND-009"
+        }
+      ],
+      "sha256": "494c35932f4ec31ff80ecbf0954a817abda5372a95c2c3b967f7477345c4dfb6"
+    },
+    "macapp/Tests/GtmuxBarTests/HQAttentionPublicationTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-8d377a0cf158",
+          "line": 39,
+          "kind": "reviewed-selector",
+          "name": "testRequestPublishedDuringDrainAndLateCallbackUseCurrentSnapshot",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-004"
+        }
+      ],
+      "sha256": "bec8b632f0034086b6f2d7b52cab30fffef27c599bcaa7f42e03d20f802e32d5"
+    },
+    "macapp/Tests/GtmuxBarTests/HQAttentionSweepRecoveryTests.swift": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f5cf1e63f1e8",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "testSameSnapshotAfterReadOutageRetriesIncompleteSweep",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-007"
+        }
+      ],
+      "sha256": "924f9f94ed5840581643c85477185851d6c06096b02ba7870687678b28a2ff83"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

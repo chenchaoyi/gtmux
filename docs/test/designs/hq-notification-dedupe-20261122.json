@@ -1,0 +1,48 @@
+{
+  "id": "hq-notification-dedupe-20261122",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; prospective design self-review",
+    "date": "2026-11-22",
+    "decision": "Separate routine checks from actionable desktop notices and withdraw obsolete managed alerts",
+    "notes": "Read the shipped scheduling and macOS posting paths. Use synthetic workspaces and a fake desktop center. A transport reservation remains weaker than a claim. Missing or unreadable state must not clear unrelated notifications. Reason, delivery, and OS presentation are separate evidence."
+  },
+  "cases": [
+    {
+      "id": "HND-001",
+      "layer": "L2",
+      "description": "Routine workspace check changes remain in the workspace; requiring action still alerts",
+      "setup": "Synthetic external hold, known user question, an exact held or uncertain active intent, and two independent matters.",
+      "action": "Move the ordinary check time repeatedly; verify the workspace remains owed, then project confirmed blockers, a user question, and a verified resolution.",
+      "expected": "No desktop alert for the check time alone, one actionable notice per affected matter, stable identity across status changes, and no desktop notice after verified resolution. Existing goal data and scheduling remain intact.",
+      "planned_files": [
+        "internal/app/hq_wake_deadline_test.go",
+        "internal/hq/attention_lifecycle_test.go"
+      ]
+    },
+    {
+      "id": "HND-002",
+      "layer": "L2",
+      "description": "Only outstanding managed relay reports remain actionable",
+      "setup": "Exact managed reports, isolated HOME and workspace, reserved and unreserved attempts, temporary store failure, and two independent sources.",
+      "action": "Observe late pending, change evidence, claim or close one report while its workspace row is stale, and continue checking the other.",
+      "expected": "Stable report IDs update the copy when evidence changes. Confirmed claim, close or missing original remove only the corresponding alert. Unreadable state stays visible until verified; ongoing distinct blockers remain independent and periodically eligible.",
+      "planned_files": [
+        "internal/hq/attention_lifecycle_test.go",
+        "internal/app/hq_relay_attention_test.go"
+      ]
+    },
+    {
+      "id": "HND-003",
+      "layer": "L2",
+      "description": "Mac replaces and withdraws only owned HQ notifications, including after restart",
+      "setup": "Fake delivered center, managed active snapshots, legacy HQ notices, unrelated notices, and an asynchronous post completion.",
+      "action": "Update one notification twice, withdraw or invalidate its exact identity, observe late post completion, then read valid or unreadable restart snapshots.",
+      "expected": "Repeated messages share one system ID, distinct objects stay independent, verified stale and matched legacy notifications withdraw, unknown snapshots do not clear notifications, and late completion cannot resurrect a removed banner.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift"
+      ]
+    }
+  ],
+  "seal": "f39af61f3a83c36deca1725d1308dc9ff9a88761fe762d067d64370034f4ce72"
+}

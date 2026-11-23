@@ -1,4 +1,66 @@
 {
+  "macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift": {
+    "cases": [
+      "HND-003"
+    ],
+    "selectors": [
+      "testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance",
+      "testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQAttentionSweepRecoveryTests.swift": {
+    "cases": [
+      "HND-007"
+    ],
+    "selectors": [
+      "testSameSnapshotAfterReadOutageRetriesIncompleteSweep"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQAttentionPublicationTests.swift": {
+    "cases": [
+      "HND-004"
+    ],
+    "selectors": [
+      "testRequestPublishedDuringDrainAndLateCallbackUseCurrentSnapshot"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift": {
+    "cases": [
+      "HND-008",
+      "HND-009"
+    ],
+    "selectors": [
+      "testUnknownLateSuccessRetriesCleanupAfterSameSnapshotRecovers",
+      "testBoundedSweepRemovesLateDeliveryWithoutOldProcessCallback"
+    ]
+  },
+  "internal/hq/attention_publication_test.go": {
+    "cases": [
+      "HND-005"
+    ],
+    "selectors": [
+      "TestHND005SnapshotFailureDoesNotConsumeAlertOpportunity"
+    ]
+  },
+  "internal/hq/attention_lifecycle_test.go": {
+    "cases": [
+      "HND-001",
+      "HND-002"
+    ],
+    "selectors": [
+      "TestHND001WorkspaceAttentionChangesCopyWithoutChangingIdentity",
+      "TestHND002RelayAttentionReplacesStatusAndKeepsARealBlocker"
+    ]
+  },
+  "internal/app/hq_notification_source_guard_test.go": {
+    "cases": [
+      "HND-006"
+    ],
+    "selectors": [
+      "TestHND006WorkspaceSourceOutageKeepsLiveAttentionAndPreventsReset",
+      "TestHND006RelayParentOutageIsDistinctFromAnExactMissingReport"
+    ]
+  },
   "internal/codexbridge/hq_title_test.go": {
     "cases": ["HCO-001", "HCO-002"],
     "selectors": ["TestHCOTitleFramesKeepNativeRenameAfterStaleRoot", "TestHCORetiredFrontendCannotReclaimDelayedRoot"]
@@ -96,11 +158,13 @@
     "cases": [
       "HRA-002",
       "HRA-003",
-      "HRA-004"
+      "HRA-004",
+      "HND-002"
     ],
     "selectors": [
       "TestHRA003ProspectiveRelayAttentionUsesExactSourceAndRealClaim",
-      "TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim"
+      "TestHRA004BlockedExactRelayAlertsIndependentlyAndClearsOnClaim",
+      "TestHRA004ResolvedRelayWithdrawsWithoutReconciledClaim"
     ]
   },
   "internal/app/client_contract_test.go": {
@@ -4470,7 +4534,8 @@
   },
   "internal/app/hq_wake_deadline_test.go": {
     "cases": [
-      "HWA-005"
+      "HWA-005",
+      "HND-001"
     ],
     "selectors": [
       "TestHWA005DeadlineIsOwedUntilOriginalMatterSettles"

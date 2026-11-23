@@ -421,3 +421,17 @@ For a managed terminal conversation or an explicitly followed native conversatio
 - **WHEN** HQ misses the first wake and the worker has no unique matter
 - **THEN** the exact evidence remains claimable after global event consumption and a retry uses the existing wake path
 - **AND** an explicit verified handoff records the target goal responsibility separately from transport or action evidence
+
+### Requirement: Routine rechecks remain visible without requiring user attention
+
+A scheduled verification time SHALL remain visible in the workspace and SHALL
+preserve the existing follow-up and audit semantics. The time passing by itself
+SHALL NOT signal a missed user deadline. An unanswered explicit question or
+durable evidence that the exact current attempt cannot proceed MAY surface an
+independent desktop notice with the next action.
+
+#### Scenario: The CI result is still pending
+
+- **WHEN** HQ moves the next check for a running CI job
+- **THEN** it remains responsible for checking the same run
+- **AND** moving the check does not create another desktop alert

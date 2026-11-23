@@ -1,0 +1,35 @@
+{
+  "id": "hq-notification-late-delivery-20261123",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; prospective design self-review",
+    "date": "2026-11-23",
+    "decision": "Retain withdrawal owed by a late platform acceptance and cover unobservable old-process callbacks",
+    "notes": "Review #1930 v4 timing before implementation. Use fake delivered inventory, explicit Main Queue barriers, and a fake polling clock. Verify that cleanup never sends another add or hides live notice B."
+  },
+  "cases": [
+    {
+      "id": "HND-008",
+      "layer": "L2",
+      "description": "A late platform success under unknown state keeps cleanup owed",
+      "setup": "A pending system add for A; B already delivered. Publish a verified snapshot that resolves A and run cleanup before A appears in system inventory.",
+      "action": "Make the snapshot unreadable, let A's success callback arrive, and restore identical verified bytes.",
+      "expected": "The unknown callback cannot revoke B or lose the cleanup obligation. A is withdrawn once after recovery and no new add occurs.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift"
+      ]
+    },
+    {
+      "id": "HND-009",
+      "layer": "L2",
+      "description": "Bounded desktop housekeeping catches a late system notification after process restart",
+      "setup": "A new manager verifies a resolved A with only B visible. Inject a fake system-delivered A after that cleanup, without any observable old-process callback.",
+      "action": "Poll with unchanged authoritative bytes before and then at the minute boundary.",
+      "expected": "No rapid additional cleanup loop. The bounded next sweep removes stale A, keeps B and does not post again.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift"
+      ]
+    }
+  ],
+  "seal": "8329b458cd7193df32983eb019bcb4c06438d7232eac82859bac1f70272e56f1"
+}

@@ -2,10 +2,10 @@
   "id": "hq-wake-pressure-and-health-20261121",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner; design self-review",
-    "date": "2026-11-21",
-    "decision": "Make pressure and blocked delivery independently observable and keep workbench completion separate",
-    "notes": "Use private temporary state and injected time. An accepted native call or a paste is weaker than a confirmed conversation delivery. The desktop proof is a request in the existing independent notification channel, not OS presentation. The restart-notice follow-up reviewed HWA-004 against the new episode and incident notification policy in WNR-003."
+    "reviewer": "Codex implementation owner; prospective design self-review",
+    "date": "2026-11-22",
+    "decision": "Review the existing regressions against the scoped desktop notification lifecycle",
+    "notes": "Follow-up for the installed Mac duplicate HQ alerts. Preserve durable scheduling, real urgency, read-only verification and recovery handling. Use only isolated synthetic fixtures and fake desktop output."
   },
   "cases": [
     {
@@ -24,8 +24,8 @@
       "layer": "L2",
       "description": "Wake health reports independently and only clears after recovery evidence",
       "setup": "Use isolated HOME and a fake clock with an old down marker, exact staged conflict, no HQ or healthy pane states, and a later independently confirmed delivery.",
-      "action": "Evaluate duplicate, changed, overdue and recovered states, and inspect important journal and desktop request boundary.",
-      "expected": "First and changed reasons alert even with the old down marker. A retained conflict and a recorded pressure event do not cause periodic reannouncement. Historical uncertainty remains separate. Pending work, quiet mode or absence of HQ cannot suppress the independent deadline alarm. Recovery requires an exact positive receipt or the tracked condition being conclusively settled.",
+      "action": "Evaluate duplicate and changed wake incidents, an independently confirmed workspace blocker, and recovery.",
+      "expected": "First and changed wake causes alert even with the old down marker. Recorded pressure or retained conflicts do not cause periodic reannouncement. Separately projected confirmed blockers alert independently, without changing the wake queue or treating a routine check as a user deadline.",
       "planned_files": [
         "internal/hq/wake_autorecovery_test.go",
         "internal/hqnudge/pressure_health_test.go"
@@ -36,12 +36,12 @@
       "layer": "L2",
       "description": "An overdue workbench goal remains a durable obligation independent of wake admission",
       "setup": "An isolated workbench and scheduler with a fake time and an existing scheduled goal due without confirmed handling.",
-      "action": "Evaluate the overdue goal repeated times with no wake/delivery and after the ordinary workbench resolution.",
-      "expected": "Deadline and out-of-band report share the goal follow-up ID. Quiet/inactive HQ does not stop that report. Request handling stays open until workbench outcome exists and recovery emits no duplicate alert.",
+      "action": "Move the check time repeatedly, then exercise a verified blocker, explicit user question, and settled matter.",
+      "expected": "A routine check stays owed in the workspace without a desktop alert. A real blocker and an unanswered explicit user question remain independently actionable. The notice projection changes no workbench state.",
       "planned_files": [
         "internal/app/hq_wake_deadline_test.go"
       ]
     }
   ],
-  "seal": "fd5520e807ac647a9412c8f6de3e03b4e3e803b60483d0b36fb908dc0fcc2c6d"
+  "seal": "44c7577feef500713e78cc9232e9fa3f39e85c3160b175fe7413668382b027e0"
 }
