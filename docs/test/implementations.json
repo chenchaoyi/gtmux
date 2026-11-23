@@ -3344,7 +3344,10 @@
       "AOP006 real maximized header wide",
       "AOP006 real maximized header medium",
       "AOP006 real maximized header narrow board",
-      "AOP006 real maximized header plain terminal"
+      "AOP006 real maximized header plain terminal",
+      "AOP006 drag minimum desktop writable",
+      "AOP006 drag minimum desktop read-only",
+      "AOP006 drag minimum coarse pointer read-only"
     ]
   },
   "tests/web/presentation.test.cjs": {
@@ -3376,11 +3379,14 @@
   "tests/web/smoke.test.cjs": {
     "cases": [
       "AOP-005",
-      "DTV-003"
+      "DTV-003",
+      "WHS-008"
     ],
     "selectors": [
       "Structured activity at ${width}px",
-      "DTV003 Diff tree and worktree context at ${width}px"
+      "DTV003 Diff tree and worktree context at ${width}px",
+      "Compact tile controls stay readable in ${locale}",
+      "WHS-008 compact tile actions retire on layout switch"
     ]
   },
   "tests/web/tool-call-detail.test.cjs": {
@@ -5338,6 +5344,15 @@
     "selectors": [
       "TestHRB003RotationBriefJournalReadableAfterRestart",
       "TestHRB004LoneRelayReportsUnavailableTarget"
+    ]
+  },
+  "tests/web/short-tile-header.test.cjs": {
+    "cases": [
+      "WHS-007"
+    ],
+    "selectors": [
+      "WHS-007 diagonal minimum writable",
+      "WHS-007 diagonal minimum read-only touch"
     ]
   }
 }

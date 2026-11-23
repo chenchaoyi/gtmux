@@ -1,0 +1,24 @@
+{
+  "id": "short-tile-toolbar-lifecycle-291062",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review following independent reproduction",
+    "date": "2026-11-23",
+    "decision": "Check only rendered controls and retire the compact action sheet with its workbench.",
+    "notes": "The false CI failures measured a display-none button at normal height. Independent Chromium QA also confirmed the compact modal can remain above the radar after a viewport transition. Preserve real flows and use an isolated synthetic server."
+  },
+  "cases": [
+    {
+      "id": "WHS-008",
+      "layer": "L4",
+      "description": "Toolbar alternatives have distinct visibility and retire with the workbench",
+      "setup": "Synthetic code session in the real workbench. Exercise compact-width normal-height tiles in English and Chinese, and a short tile capable of showing the Pane actions dialog.",
+      "action": "Check the visible toolbar at normal height. From the short tile open Pane actions and cross the actual workbench-to-radar viewport breakpoint.",
+      "expected": "Normal height retains the direct controls and hides the compact entry. Visible controls keep their bounds and target sizes. Switching to radar retires the old modal, and no input is sent.",
+      "planned_files": [
+        "tests/web/smoke.test.cjs"
+      ]
+    }
+  ],
+  "seal": "20ce4448eec224319292a6d020fce9e53b2a5e334c99fe0bc339d61d925b1238"
+}

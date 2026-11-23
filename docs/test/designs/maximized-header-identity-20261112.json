@@ -3,23 +3,23 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner, self-review; not independent approval",
-    "date": "2026-11-12",
+    "date": "2026-11-23",
     "decision": "Keep the real tile identity wrapper in its own flexible maximized header column",
-    "notes": "A full production-page screenshot on main6b revealed avatar and .tile-identity both in column2, compressing title to36px. Earlier simplified fixture used a direct title child. New actual buildTile journeys must fail before the one-selector CSS fix; prior simplified screenshots are not production-header acceptance. No live service, session or install. Include the existing terminal-only direct .avatar branch of buildTile, not only the agent .speaker-avatar button. Review recorded before adding this fourth actual-page variant."
+    "notes": "A full production-page screenshot on main6b revealed avatar and .tile-identity both in column2, compressing title to36px. Earlier simplified fixture used a direct title child. New actual buildTile journeys must fail before the one-selector CSS fix; prior simplified screenshots are not production-header acceptance. No live service, session or install. Include the existing terminal-only direct .avatar branch of buildTile, not only the agent .speaker-avatar button. Review recorded before adding this fourth actual-page variant. Implementation-owner re-review for PR #1935. Preserve the column and restore checks, and replace the obsolete assumption that the title alone fills the identity column with a rendered title and complete ID check. Add real mouse resizing to the 180px limit with short and longer pane IDs, fine and coarse pointers, and a read-only capability. Measure the ID text range and control bounds. No live pane, real session, or device evidence."
   },
   "cases": [
     {
       "id": "AOP-006",
       "layer": "L4",
-      "description": "Production maximize header separates real avatar, identity wrapper and controls",
-      "setup": "Existing synthetic HTTP server loads unchanged embedded app/buildTile; long title and metadata; viewport960/1440 and actual board constrained480px, no custom header DOM. Correct the earlier isolated fixture to include the real identity wrapper. Include both agent profile-avatar and plain terminal-avatar production branches.",
-      "action": "Open a real fixture pane, maximize by its actual header, inspect bounds and identity text; restore by its real button, then check original dimensions.",
-      "expected": "Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control.",
+      "description": "Production pane headers preserve complete identity and separate controls at maximum and minimum widths",
+      "setup": "Existing synthetic HTTP server loads unchanged embedded app/buildTile; long title and metadata; viewport960/1440 and actual board constrained480px, no custom header DOM. Correct the earlier isolated fixture to include the real identity wrapper. Include both agent profile-avatar and plain terminal-avatar production branches. Exercise the real 180px drag-resize limit with writable and read-only fixtures, fine or coarse pointers and a long title.",
+      "action": "Open a real fixture pane, maximize by its actual header, inspect bounds and identity text; restore by its real button, then check original dimensions. At the resize limit measure the complete pane ID text range, title, visible capability and all main controls.",
+      "expected": "Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; the identity wrapper uses flexible remaining width (at least 180px in maximized fixtures), and the title and complete pane ID share one line. At the 180px resize limit the title can truncate, keeping the entire real pane ID, and the read-only chip and action controls all stay visible and clear of each other. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control.",
       "planned_files": [
         "tests/web/maximized-header.test.cjs",
         "internal/server/web/maximize-layout.test.cjs"
       ]
     }
   ],
-  "seal": "a2032b855bcddafa684817cd9fa1f575ea1a0e2c4005367ee36251c7b6045da7"
+  "seal": "56d072b8d2c63fd0b8203b8f0c5e09e450f532e5eaec48374d0a69591015e55f"
 }

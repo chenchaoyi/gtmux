@@ -1,0 +1,24 @@
+{
+  "id": "browser-short-tile-header-291062",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review after independent review",
+    "date": "2026-11-23",
+    "decision": "Keep the 180 by 120 resize floor and use a compact action entry when the full tile toolbar would be clipped.",
+    "notes": "A live Chromium fixture confirmed the trace and diff controls fail hit testing in a writable tile after diagonal drag. The simulated coarse read-only tile clips both modes and both tools. Use the existing modal and tile action handlers. No production or device access."
+  },
+  "cases": [
+    {
+      "id": "WHS-007",
+      "layer": "L4",
+      "description": "A tile at the minimum width and height exposes all pane actions",
+      "setup": "Isolated synthetic working Codex pane with a long title. Exercise a writable fine-pointer layout and a read-only coarse-pointer layout.",
+      "action": "Drag the real resize handle diagonally below the limits. At 180 by 120, measure the title, complete pane ID, visible read-only chip, and action button; use hit testing and a real click to open pane actions. Check keyboard Escape and restored focus. Click Terminal, Chat, Trace, Diff and the window actions. Resize a compact tile back up to exercise its normal toolbar.",
+      "expected": "The compact entry and all dialog buttons have the original target floor. The pane ID and read-only chip are fully in bounds. All modes and tools can be reached through their existing handlers. Resizing taller restores direct controls. Dimensions stay 180 by 120 at the floor, and no input is sent.",
+      "planned_files": [
+        "tests/web/short-tile-header.test.cjs"
+      ]
+    }
+  ],
+  "seal": "6ea05575de1976f5618cbe79f19f8437f5cdf1aec091dc81f1853eb0db13cc8f"
+}
