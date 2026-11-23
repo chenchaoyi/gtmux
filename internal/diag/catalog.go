@@ -86,6 +86,7 @@ var Catalog = []CatalogEntry{
 	{"act.wake.evicted", []string{"hq", "relay", "serve", "hook"}},
 	{"act.wake.merged", []string{"hq", "relay", "serve", "hook"}},
 	{"act.wake.notice", []string{"serve"}},
+	{"act.wake.notice.recovery", []string{"serve"}},
 	{"act.wake.observation.archived", []string{"serve", "hook"}},
 	{"act.wake.outcome.unknown", []string{"serve", "hook"}},
 	{"act.wake.pasted", []string{"serve", "hook"}},

@@ -1,0 +1,35 @@
+{
+  "id": "hq-workspace-decision-admission-20261123",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; prospective design self-review",
+    "date": "2026-11-23",
+    "decision": "Keep an unchanged workbench question visible without queuing another desktop notice after its recorded admission",
+    "notes": "Reviewed the shipped producer, durable attempt timestamps, snapshot publication, and desktop consumer. The regressions use a temporary HOME and fake queue admission. They establish producer behavior and continued scope publication. macOS presentation, withdrawal on a real device, and consumer acknowledgement after admission require separate evidence."
+  },
+  "cases": [
+    {
+      "id": "HND-010",
+      "layer": "L2",
+      "description": "An unchanged HQ workspace question has one recorded desktop admission",
+      "setup": "Synthetic HOME, one user question, a separate verified blocker, and a file containing a previously recorded v1.0.195 attempt for restart coverage.",
+      "action": "Admit the question, run fresh scans at and beyond the former cooldown, load the old-format timestamp using only files, then give the first matter a different request and resolve it.",
+      "expected": "The same active request remains in the workspace snapshot and consumes only its first admission. Loading the old timestamp also avoids a repeat. The independent blocker keeps its periodic opportunity and the genuinely new request uses the same matter notification identity. Verified resolution removes only that identity from the active snapshot.",
+      "planned_files": [
+        "internal/hq/attention_decision_test.go"
+      ]
+    },
+    {
+      "id": "HND-011",
+      "layer": "L2",
+      "description": "A confirmed HQ workspace queue refusal retains a timed retry",
+      "setup": "Synthetic HOME and a fake desktop queue admitting requests only after the first refusal.",
+      "action": "Refuse the first request, change the sender to success, scan just before and at the existing cooldown, then scan again after a later cooldown.",
+      "expected": "Both actual attempts are present in the independent journal. The retry is rate-limited and uses the same matter identity. Once a successful admission is persisted, future unchanged scans keep the request active without another desktop submission.",
+      "planned_files": [
+        "internal/hq/attention_decision_test.go"
+      ]
+    }
+  ],
+  "seal": "3b5113c0d7d64bb8a25be24f814a228b17e6134bc600e6214c5e0961763f131a"
+}
