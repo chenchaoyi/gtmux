@@ -69857,7 +69857,7 @@
           "design": "HRB-003,HRB-004"
         }
       ],
-      "sha256": "21d8cf65b0c3d577bd8a165205c46a1fbb7624a051d1750823c362326ee319c1"
+      "sha256": "a5ae3bddbff98f2003c46d21ae07928fed4dba0869cbdb3f14189a895fb4c0f7"
     },
     "internal/hqnudge/rotation_brief_test.go": {
       "layer": "L2",
@@ -69874,7 +69874,7 @@
         },
         {
           "id": "MAP-974764f4f5ce",
-          "line": 124,
+          "line": 129,
           "kind": "reviewed-selector",
           "name": "TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake",
           "dynamic": false,
@@ -69883,7 +69883,7 @@
         },
         {
           "id": "MAP-3e2e3fefb84f",
-          "line": 254,
+          "line": 259,
           "kind": "reviewed-selector",
           "name": "TestHRB005ReservedSuccessorPrecedesImmediateAndPeriodicWakes",
           "dynamic": false,
@@ -69892,7 +69892,7 @@
         },
         {
           "id": "MAP-d583da1c618e",
-          "line": 321,
+          "line": 326,
           "kind": "reviewed-selector",
           "name": "TestHRB005SentHandoffHoldsLegacyRepair",
           "dynamic": false,
@@ -69901,7 +69901,7 @@
         },
         {
           "id": "MAP-5b7f8ed801fa",
-          "line": 349,
+          "line": 354,
           "kind": "reviewed-selector",
           "name": "TestHRB006ComposerWaitPreservesBriefing",
           "dynamic": false,
@@ -69909,7 +69909,7 @@
           "design": "HRB-001,HRB-002,HRB-005,HRB-006"
         }
       ],
-      "sha256": "5b1e598ece83097c4ee467172a5b68853a46e8ca4914af32b3739a445659c832"
+      "sha256": "fc5339fb588a44ce777c226be0c5ffcc4e839c9c4db2eb1e4af4850d6825dd10"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

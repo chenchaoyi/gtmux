@@ -497,6 +497,7 @@ act.wake.rejected              hq, relay, serve, hook
 act.wake.retry.scheduled       serve, hook
 act.wake.scheduled             hq, relay, serve, hook
 act.wake.started               serve
+act.wake.waiting               serve, hook
 act.wait.suppressed            hook
 act.watch                      panes
 ```

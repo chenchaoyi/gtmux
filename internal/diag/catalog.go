@@ -96,6 +96,7 @@ var Catalog = []CatalogEntry{
 	{"act.wake.retry.scheduled", []string{"serve", "hook"}},
 	{"act.wake.scheduled", []string{"hq", "relay", "serve", "hook"}},
 	{"act.wake.started", []string{"serve"}},
+	{"act.wake.waiting", []string{"serve", "hook"}},
 	{"act.wait.suppressed", []string{"hook"}},
 	{"act.watch", []string{"panes"}},
 }

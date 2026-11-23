@@ -61,6 +61,11 @@ func TestHRB001RotationBriefBindsOriginalRecipient(t *testing.T) {
 			}
 			if name == "old unbound line" {
 				Enqueue(hqwake.StartupBriefingZH)
+				Drain(bind.Pane)
+				if !Pending() || calls != 0 || f.pastes != 0 || f.enters != 0 {
+					t.Fatal("the unbound line crossed the successor reservation")
+				}
+				f.nano += int64(3 * time.Second) // the old line is rejected after the handoff window
 			} else {
 				queueBoundBrief(t, bind)
 			}

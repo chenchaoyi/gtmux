@@ -123,6 +123,11 @@ func verifyRotationBriefRecovery(t *testing.T, original nativeIntent) {
 		return dispatch.Result{State: dispatch.StateQueued}, true
 	}
 	drain(x, original.Pane)
+	if calls != 0 || f.pastes != 0 || f.enters != 0 {
+		t.Fatal("restart crossed the current handoff reservation", calls)
+	}
+	f.nano += int64(3 * time.Second) // the original fixture's handoff deadline has passed
+	drain(x, original.Pane)
 	drain(x, original.Pane)
 	if calls != 1 || f.pastes != 0 || f.enters != 0 {
 		t.Errorf("recovery interrupted ordinary wakes or attempted keys: native=%d paste=%d enter=%d", calls, f.pastes, f.enters)
