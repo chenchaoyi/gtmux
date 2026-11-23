@@ -1,0 +1,35 @@
+{
+  "id": "hq-workspace-decision-storage-recovery-20261123",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner; prospective design self-review after incremental review",
+    "date": "2026-11-23",
+    "decision": "Record a single question reservation, repair known results, and preserve independent blocker delivery",
+    "notes": "The first candidate could publish before a failed write. Batching reservations also tied independent blockers to question failures. Exercise a rename followed by sync failure, a known refusal whose record could not be written, and a restart that only has durable state. These fixtures prove queue behavior and audit retention. They do not prove native notification display."
+  },
+  "cases": [
+    {
+      "id": "HND-014",
+      "layer": "L2",
+      "description": "An HQ workspace question keeps its known queue result through a ledger failure",
+      "setup": "Synthetic HOME, an independent blocker, a fake desktop queue, and failures reading or writing the private attempt ledger.",
+      "action": "Corrupt a saved ledger, fail preparation before and after rename, or refuse the queue and fail result recording. Restore writes and scan once with known in-process facts and once using only the persisted state.",
+      "expected": "An unreadable ledger holds question admission without overwriting earlier evidence. A confirmed unsubmitted question recovers early eligibility. A known refusal recovers the original retry time. With only a durable unfinished reservation, the system keeps the question visible, records that its queue result is unknown, and holds replay. Each admission has its own reservation.",
+      "planned_files": [
+        "internal/hq/attention_decision_recovery_test.go"
+      ]
+    },
+    {
+      "id": "HND-013",
+      "layer": "L2",
+      "description": "Workspace storage faults leave room for genuine HQ blocker notices",
+      "setup": "An isolated workspace fixture with eight new unanswered questions, an existing blocker past its cooldown, and a failing or unreadable decision ledger.",
+      "action": "Run normal scans with a failed reservation and during an unreadable ledger, and exercise the persistent size boundary.",
+      "expected": "The failed preparations consume no sending slots, so the blocker still alerts. Its local cooldown limits repetitions until storage recovery. The writer preserves its readable byte limit rather than publishing an unreadable ledger.",
+      "planned_files": [
+        "internal/hq/attention_decision_recovery_test.go"
+      ]
+    }
+  ],
+  "seal": "4c98760b5f2c83a32c898024150b69735dcfb5cc0c04183353a38d2b9552c7ad"
+}

@@ -2,34 +2,23 @@
   "id": "hq-workspace-decision-storage-20261123",
   "status": "reviewed",
   "review": {
-    "reviewer": "Codex implementation owner; prospective design self-review after incremental review",
+    "reviewer": "Codex implementation owner; prospective design self-review",
     "date": "2026-11-23",
-    "decision": "Record a single question reservation, repair known results, and preserve independent blocker delivery",
-    "notes": "The first candidate could publish before a failed write. Batching reservations also tied independent blockers to question failures. Exercise a rename followed by sync failure, a known refusal whose record could not be written, and a restart that only has durable state. These fixtures prove queue behavior and audit retention. They do not prove native notification display."
+    "decision": "Require a durable workspace question reservation before queue admission",
+    "notes": "The first joint candidate could queue with an unreadable attempt ledger or before a failed write. Test the exact publication boundary with a synthetic HOME and deterministic storage failures. A reservation left without a durable result proves neither admission nor refusal, and remains held. Independent blocker delivery and notification scope withdrawal remain separate."
   },
   "cases": [
     {
       "id": "HND-012",
       "layer": "L2",
-      "description": "An HQ workspace question keeps its known queue result through a ledger failure",
-      "setup": "Synthetic HOME, an independent blocker, a fake desktop queue, and failures reading or writing the private attempt ledger.",
-      "action": "Corrupt a saved ledger, fail preparation before and after rename, or refuse the queue and fail result recording. Restore writes and scan once with known in-process facts and once using only the persisted state.",
-      "expected": "An unreadable ledger holds question admission without overwriting earlier evidence. A confirmed unsubmitted question recovers early eligibility. A known refusal recovers the original retry time. With only a durable unfinished reservation, the system keeps the question visible, records that its queue result is unknown, and holds replay. Each admission has its own reservation.",
-      "planned_files": [
-        "internal/hq/attention_decision_storage_test.go"
-      ]
-    },
-    {
-      "id": "HND-013",
-      "layer": "L2",
-      "description": "Workspace storage faults leave room for genuine HQ blocker notices",
-      "setup": "An isolated workspace fixture with eight new unanswered questions, an existing blocker past its cooldown, and a failing or unreadable decision ledger.",
-      "action": "Run normal scans with a failed reservation and during an unreadable ledger, and exercise the persistent size boundary.",
-      "expected": "The failed preparations consume no sending slots, so the blocker still alerts. Its local cooldown limits repetitions until storage recovery. The writer preserves its readable byte limit rather than publishing an unreadable ledger.",
+      "description": "Workspace question storage failures preserve queue admission and retry evidence",
+      "setup": "Synthetic HOME, a fake desktop queue, an independent blocker, and failed reads or writes of the persistent workspace attempt timestamps.",
+      "action": "Corrupt a prior readable ledger, fail a new reservation before publishing, and fail the write of a confirmed refusal after publishing an attempt. Restore storage and run subsequent scans using only the retained ledger.",
+      "expected": "An unreadable ledger is preserved and holds only question admissions while blockers continue to alert. A failed reservation produces no question admission, and a later successful reservation is present before the queue call. A durable refusal retains cooldown; a reservation that survives interrupted result recording preserves audit and holds automatic replay. Normal entries continue to publish their active notification identity.",
       "planned_files": [
         "internal/hq/attention_decision_storage_test.go"
       ]
     }
   ],
-  "seal": "164d307d6f7876d0e5ee2b08274cb597973fda174a2f64ca54a7e7c2fe7f9134"
+  "seal": "ca81865bdea30ade47ed417d6ed54147ad02d2fc4c34cc8ae72cf7e8d18819aa"
 }
