@@ -1,0 +1,36 @@
+{
+  "id": "hq-rotation-brief-binding-109291",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review informed by independent T3/T5 design",
+    "date": "2026-11-23",
+    "decision": "Bind the automatic rotation briefing to the persisted request and its exact original successor, and submit it at most once through the guarded native wake path.",
+    "notes": "Keep rotation success timing as it is. Restrict this change to the rotation briefing. Test with a private HOME and receivers that never contact a real agent or terminal. The independent design and this pre-implementation review do not establish the cause of any live missed handoff."
+  },
+  "cases": [
+    {
+      "id": "HRB-001",
+      "layer": "L2",
+      "description": "A queued rotation briefing preserves the original request, recipient and deadline at the native boundary",
+      "setup": "Persist a synthetic sent rotation, queue a briefing under the shared lease, and replace the recipient before later drain. Use fixed time, a fake pane and a fake receiver with an observable final guard. Compare the matching recipient, exact deadline, missing or replaced request, changed agent, Home, SID, or pane instance. Include a change inside native preparation and unusable composer or native route.",
+      "action": "Drain with the existing automatic wake entry after releasing the lease. Inspect exact receiver options and count native input, paste, Enter and final queue states.",
+      "expected": "The exact still-current successor before the original deadline can receive one idle wake. Mismatches or unavailable evidence cannot mutate input. The existing user draft and active/idle gate remain authoritative. A definite refusal is retained separately from possible submission; neither case retries or falls back to keys.",
+      "planned_files": [
+        "internal/hqnudge/rotation_brief_test.go",
+        "internal/hq/rotation_durability_test.go"
+      ]
+    },
+    {
+      "id": "HRB-002",
+      "layer": "L2",
+      "description": "The bound briefing cannot replay an unknown submission or contaminate ordinary notifications",
+      "setup": "Return a positive refusal or unknown result from the fake native receiver; queue an ordinary workspace reminder and a protected Relay notice. Repeatedly observe, recover, and drain the private queue.",
+      "action": "Count receiver calls and check stored claim, receipt and batch contents across the original attempt and subsequent drains.",
+      "expected": "The original unknown claim remains protected under its own batch identity. A definite refusal does not become unknown or authorize automatic retry. Independent ordinary notifications and protected Relay retain their own normal submission opportunity.",
+      "planned_files": [
+        "internal/hqnudge/rotation_brief_test.go"
+      ]
+    }
+  ],
+  "seal": "0d654c81276fe7ed996130377c7b072cf5f4f7bda287d03c330942559960b63b"
+}
