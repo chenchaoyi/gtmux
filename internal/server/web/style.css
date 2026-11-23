@@ -1276,10 +1276,11 @@ button.trace-turn { margin: 5px 0; padding: 10px 12px; border: 1px solid var(--d
 /* Identity and actions keep separate columns; modes get a complete second row. */
 .tile-head { display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px 36px; gap: 4px 6px; padding: 6px 8px; }
 .tile-head > .speaker-avatar { grid-column: 1; grid-row: 1; }
-.tile-identity { grid-column: 2; grid-row: 1; position: relative; display: flex; align-items: baseline; min-width: 0; gap: 6px; }
-.tile-identity .tile-name { flex: 0 1 auto; line-height: 20px; font-size: 13px; }
-.tile-identity .tile-id { flex: 0 0 auto; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 16px; }
-.tile-identity .cap-chip { flex: 0 0 auto; }
+.tile-identity { grid-column: 2; grid-row: 1; position: relative; display: flex; flex-wrap: wrap; align-items: baseline; min-width: 0; gap: 2px 6px; }
+.tile-heading { display: flex; align-items: baseline; min-width: 0; max-width: 100%; gap: 6px; }
+.tile-heading .tile-name { flex: 0 1 auto; line-height: 20px; font-size: 13px; }
+.tile-heading .tile-id { flex: 0 0 auto; white-space: nowrap; font-size: 11px; line-height: 16px; }
+.tile-heading .tile-id:not(.tile-pane-id) { max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
 /* Keep the roster label available to assistive readers without a second visual line. */
 .tile-identity .session-state { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
 .tile-head > .tile-controls { display: contents; }
@@ -1384,6 +1385,12 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 @container (max-width: 340px) {
   .tile-controls .session-actions .ui-icon { display: none; }
   .tile-controls .session-actions button { gap: 0; }
+}
+@container (max-width: 260px) {
+  .tile:not(.max) > .tile-head { grid-template-columns: 36px minmax(0, 1fr); }
+  .tile:not(.max) > .tile-head > .tile-window-controls { grid-column: 1 / -1; grid-row: 2; justify-self: end; }
+  .tile:not(.max) > .tile-head > .tile-controls { grid-row: 3; }
+  .tile-controls > .session-actions { margin-left: 0; }
 }
 #bar:has(#back:not([hidden])) .bar-inner { flex-wrap: wrap; }
 #session-toolbar { display: flex; align-items: center; flex: 0 0 100%; gap: 0; order: 10; padding-top: 6px; }

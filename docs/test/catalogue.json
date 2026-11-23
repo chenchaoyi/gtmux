@@ -63205,9 +63205,36 @@
           "dynamic": false,
           "layer": "L4",
           "design": "AOP-006"
+        },
+        {
+          "id": "MAP-b50a8230101a",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "AOP006 drag minimum desktop writable",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-006"
+        },
+        {
+          "id": "MAP-a66387ee3cdf",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "AOP006 drag minimum desktop read-only",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-006"
+        },
+        {
+          "id": "MAP-bc9bac833279",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "AOP006 drag minimum coarse pointer read-only",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-006"
         }
       ],
-      "sha256": "916fa4007e8ea08bb45baae910f3d3c0bf9a8570b85a5dac2d2fe11b1db2a6e3"
+      "sha256": "a746868c00f6a898fe3ab582f4687bb0799dee555cee3650cb51b3dca0bb0495"
     },
     "tests/web/presentation.test.cjs": {
       "sha256": "05bb286087d996de0f913e54eabb29bc4d75d87909f852cdc2b02ea55b9d4f8f",

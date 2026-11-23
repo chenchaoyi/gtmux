@@ -9,7 +9,7 @@
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2713 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 134 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 137 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
 
@@ -468,7 +468,7 @@
 | LAP-012 | The pending change is saved in the old profile when the switch is processed, never in the new profile. |
 | LAP-013 | The mark and page-only feedback survive the redraw, removal works, and no bookmark is persisted. |
 | LAP-011 | No private composer data or bookmarks are restored. Normal credential changes still save drafts only for their original identity. |
-| AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
+| AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; the identity wrapper uses flexible remaining width (at least 180px in maximized fixtures), and the title and complete pane ID share one line. At the 180px resize limit the title can truncate, keeping the entire real pane ID, and the read-only chip and action controls all stay visible and clear of each other. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
 | AHP-001 | Each summary exposes operation, target, source, time and outcome. Only one record can be expanded. Full details are available in the expanded row. A filter reset clears the open identity while preserving the existing request path. |
 | AHP-002 | Short category labels remain visible and the complete active value is readable outside the control. The full accessible control names, existing exact device selection, companion filters and clear action remain available. Controls can wrap as font scale grows. |
 | AHP-003 | Full identity and IP appear unchanged, fields have localized labels, HTTP 200 is selectable separately, and the failure is still identified as failed. |

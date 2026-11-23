@@ -409,7 +409,7 @@ Copy SHALL use an icon-only control with an accessible name; Quote SHALL NOT be 
 
 ### Requirement: Readable workbench tile controls
 
-A narrow workbench tile SHALL wrap its header controls as a group while retaining single-line mode labels, the pane identity and input capability. Header controls SHALL stay inside the tile at supported widths in both languages.
+A narrow workbench tile SHALL wrap header controls while retaining single-line mode labels, the complete pane ID beside the title, and visible input capability. Window controls and the read-only label MAY move to another row as the tile narrows. Title truncation SHALL leave the pane ID readable. Controls and identity SHALL stay inside the tile without overlap at supported widths in both languages, including the 180px resize floor.
 
 #### Scenario: Resize a compact tile
 

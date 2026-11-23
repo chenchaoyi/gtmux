@@ -3344,7 +3344,10 @@
       "AOP006 real maximized header wide",
       "AOP006 real maximized header medium",
       "AOP006 real maximized header narrow board",
-      "AOP006 real maximized header plain terminal"
+      "AOP006 real maximized header plain terminal",
+      "AOP006 drag minimum desktop writable",
+      "AOP006 drag minimum desktop read-only",
+      "AOP006 drag minimum coarse pointer read-only"
     ]
   },
   "tests/web/presentation.test.cjs": {

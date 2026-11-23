@@ -3883,8 +3883,9 @@
     var head = document.createElement('div'); head.className = 'tile-head';
     head.appendChild(t.agent.agent ? speakerAvatar('agent', t.agent, avatarEl(t.agent, 24, true)) : avatarEl(t.agent, 24, false));
     var identity = document.createElement('div'); identity.className = 'tile-identity'; head.appendChild(identity);
-    var nm = document.createElement('span'); nm.className = 'tile-name'; identity.appendChild(nm);
-    var id = document.createElement('span'); id.className = 'tile-id'; identity.appendChild(id);
+    var heading = document.createElement('div'); heading.className = 'tile-heading'; identity.appendChild(heading);
+    var nm = document.createElement('span'); nm.className = 'tile-name'; heading.appendChild(nm);
+    var id = document.createElement('span'); id.className = 'tile-id'; heading.appendChild(id);
     var state = document.createElement('span'); state.className = 'session-state'; identity.appendChild(state);
     // Read-only capabilities remain visible when there is no composer.
     var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; identity.appendChild(cap);
@@ -3934,7 +3935,9 @@
     var state = paintSessionHeader(t.head, t.headState, t.agent, readableConversation(t.agent));
     t.el.classList.toggle('waiting', state === 'waiting');
     var name = primary(t.agent);
-    var id = hasPane(t.agent) ? t.agent.pane_id : nativeSourceLabel(t.agent);
+    var pane = hasPane(t.agent);
+    var id = pane ? t.agent.pane_id : nativeSourceLabel(t.agent);
+    t.headId.classList.toggle('tile-pane-id', pane);
     t.headNm.textContent = t.headNm.title = name;
     t.headId.textContent = t.headId.title = id || '';
     t.headId.hidden = !id || id === name;
