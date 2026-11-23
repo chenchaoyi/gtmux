@@ -42,6 +42,36 @@
       "TestHND005SnapshotFailureDoesNotConsumeAlertOpportunity"
     ]
   },
+  "internal/hq/attention_decision_test.go": {
+    "cases": [
+      "HND-010",
+      "HND-011"
+    ],
+    "selectors": [
+      "TestHND010WorkspaceDecisionStaysQuietAcrossCooldownAndRefresh",
+      "TestHND010WorkspaceDecisionReadsLegacyTimestampAfterRestart",
+      "TestHND011WorkspaceDecisionRetriesKnownQueueRefusal"
+    ]
+  },
+  "internal/hq/attention_decision_storage_test.go": {
+    "cases": ["HND-012"],
+    "selectors": [
+      "TestHND012WorkspaceDecisionPreservesUnreadableLedger",
+      "TestHND012WorkspaceDecisionWaitsForDurableReservation",
+      "TestHND012WorkspaceDecisionRetainsReservationIfRefusalWriteFails"
+    ]
+  },
+  "internal/hq/attention_decision_recovery_test.go": {
+    "cases": ["HND-013", "HND-014"],
+    "selectors": [
+      "TestHND014WorkspaceDecisionWaitsForDurableReservation",
+      "TestHND014WorkspaceDecisionRepairsKnownRefusal",
+      "TestHND014WorkspaceDecisionRepairsKnownAdmission",
+      "TestHND014WorkspaceDecisionHoldsOnlyUnknownRequestAfterRestart",
+      "TestHND013WorkspaceBlockerRetainsSlotAfterReservationFailure",
+      "TestHND013WakeNoticeWriterKeepsLedgerWithinReadBudget"
+    ]
+  },
   "internal/hq/attention_lifecycle_test.go": {
     "cases": [
       "HND-001",

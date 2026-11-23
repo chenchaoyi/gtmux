@@ -69695,6 +69695,135 @@
         }
       ],
       "sha256": "924f9f94ed5840581643c85477185851d6c06096b02ba7870687678b28a2ff83"
+    },
+    "internal/hq/attention_decision_recovery_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9b9c261b96f9",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestHND014WorkspaceDecisionWaitsForDurableReservation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        },
+        {
+          "id": "MAP-f2c4dd204e5a",
+          "line": 52,
+          "kind": "reviewed-selector",
+          "name": "TestHND014WorkspaceDecisionRepairsKnownRefusal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        },
+        {
+          "id": "MAP-e11f6a361946",
+          "line": 102,
+          "kind": "reviewed-selector",
+          "name": "TestHND014WorkspaceDecisionRepairsKnownAdmission",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        },
+        {
+          "id": "MAP-2be6649828f3",
+          "line": 129,
+          "kind": "reviewed-selector",
+          "name": "TestHND014WorkspaceDecisionHoldsOnlyUnknownRequestAfterRestart",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        },
+        {
+          "id": "MAP-6c79913cf01c",
+          "line": 184,
+          "kind": "reviewed-selector",
+          "name": "TestHND013WorkspaceBlockerRetainsSlotAfterReservationFailure",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        },
+        {
+          "id": "MAP-545311a78572",
+          "line": 208,
+          "kind": "reviewed-selector",
+          "name": "TestHND013WakeNoticeWriterKeepsLedgerWithinReadBudget",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        }
+      ],
+      "sha256": "a3df83fbf3c0b808d482eb9f3504e95cb4e1d0021e4dc553040189d05baedf43"
+    },
+    "internal/hq/attention_decision_storage_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-42114743aa82",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestHND012WorkspaceDecisionPreservesUnreadableLedger",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-012"
+        },
+        {
+          "id": "MAP-dbb1dd0f67b1",
+          "line": 52,
+          "kind": "reviewed-selector",
+          "name": "TestHND012WorkspaceDecisionWaitsForDurableReservation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-012"
+        },
+        {
+          "id": "MAP-d0d26be36287",
+          "line": 84,
+          "kind": "reviewed-selector",
+          "name": "TestHND012WorkspaceDecisionRetainsReservationIfRefusalWriteFails",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-012"
+        }
+      ],
+      "sha256": "14856514d4b55fbb31659152b9334abe4d1bbad91f236db7f4c7c22a72b07560"
+    },
+    "internal/hq/attention_decision_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e2d0dede5632",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestHND010WorkspaceDecisionStaysQuietAcrossCooldownAndRefresh",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-010,HND-011"
+        },
+        {
+          "id": "MAP-e55252792eb2",
+          "line": 43,
+          "kind": "reviewed-selector",
+          "name": "TestHND010WorkspaceDecisionReadsLegacyTimestampAfterRestart",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-010,HND-011"
+        },
+        {
+          "id": "MAP-b5c0b2bce00a",
+          "line": 59,
+          "kind": "reviewed-selector",
+          "name": "TestHND011WorkspaceDecisionRetriesKnownQueueRefusal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-010,HND-011"
+        }
+      ],
+      "sha256": "c91c973ab3da3cb89f571a557b4ecd03c10f2feede355766aba42aaf775e6339"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

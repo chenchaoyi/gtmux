@@ -487,6 +487,7 @@ act.wake.entered               serve, hook
 act.wake.evicted               hq, relay, serve, hook
 act.wake.merged                hq, relay, serve, hook
 act.wake.notice                serve
+act.wake.notice.recovery       serve
 act.wake.observation.archived  serve, hook
 act.wake.outcome.unknown       serve, hook
 act.wake.pasted                serve, hook

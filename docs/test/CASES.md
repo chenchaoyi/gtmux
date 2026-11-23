@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1445 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1448 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2697 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2709 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 134 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -367,6 +367,11 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HWA-015 | One durable delivery audit for this batch, with no input mutation. Clean up the retained receipt only after observing the matching audit. |
 | HWA-019 | The initial held wake and the draft are protected. One terminal wake reaches the verified idle fixture after its deadline, exact ownership is retained, and no workspace authority is invented. |
 | HWA-016 | Pending work is preserved until an eligible idle composer. Exact terminal input reaches the identified fixture; the same authorized actions, ownership, durable continuation and no-replay checks still pass. |
+| HND-010 | The same active request remains in the workspace snapshot and consumes only its first admission. Loading the old timestamp also avoids a repeat. The independent blocker keeps its periodic opportunity and the genuinely new request uses the same matter notification identity. Verified resolution removes only that identity from the active snapshot. |
+| HND-011 | Both actual attempts are present in the independent journal. The retry is rate-limited and uses the same matter identity. Once a successful admission is persisted, future unchanged scans keep the request active without another desktop submission. |
+| HND-012 | An unreadable ledger is preserved and holds only question admissions while blockers continue to alert. A failed reservation produces no question admission, and a later successful reservation is present before the queue call. A durable refusal retains cooldown; a reservation that survives interrupted result recording preserves audit and holds automatic replay. Normal entries continue to publish their active notification identity. |
+| HND-014 | An unreadable ledger holds question admission without overwriting earlier evidence. A confirmed unsubmitted question recovers early eligibility. A known refusal recovers the original retry time. With only a durable unfinished reservation, the system keeps the question visible, records that its queue result is unknown, and holds replay. Each admission has its own reservation. |
+| HND-013 | The failed preparations consume no sending slots, so the blocker still alerts. Its local cooldown limits repetitions until storage recovery. The writer preserves its readable byte limit rather than publishing an unreadable ledger. |
 | HSW-001 | The v1.0.193 tail proves the short capture and loses proof after growth. A single contiguous prefix after the verified metadata proves exact original times. The original receipt key gains one independent delivery audit and no extra input attempts, Paste or Enter. |
 | HSW-002 | Ineligible or ambiguous evidence cannot add a delivery audit. Active unverified and unknown input remain protected, expired evidence stays archived as its original receipt, and neither observation nor later drain resubmits it. The regular tail remains available for existing positive probes. |
 | HPC-006 | No early repeat. At the next eligible tick, the exact evidence remains pending and its second wake is enqueued without waiting for another full interval. |
