@@ -1,27 +1,19 @@
 {
-  "macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift": {
-    "cases": ["HND-008", "HND-009"],
-    "selectors": ["testUnknownLateSuccessRetriesCleanupAfterSameSnapshotRecovers", "testBoundedSweepRemovesLateDeliveryWithoutOldProcessCallback"]
-  },
-  "macapp/Tests/GtmuxBarTests/HQAttentionSweepRecoveryTests.swift": {
-    "cases": ["HND-007"],
-    "selectors": ["testSameSnapshotAfterReadOutageRetriesIncompleteSweep"]
-  },
-  "internal/hq/attention_publication_test.go": {
+  "macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift": {
     "cases": [
-      "HND-005"
+      "HND-003"
     ],
     "selectors": [
-      "TestHND005SnapshotFailureDoesNotConsumeAlertOpportunity"
+      "testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance",
+      "testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly"
     ]
   },
-  "internal/app/hq_notification_source_guard_test.go": {
+  "macapp/Tests/GtmuxBarTests/HQAttentionSweepRecoveryTests.swift": {
     "cases": [
-      "HND-006"
+      "HND-007"
     ],
     "selectors": [
-      "TestHND006WorkspaceSourceOutageKeepsLiveAttentionAndPreventsReset",
-      "TestHND006RelayParentOutageIsDistinctFromAnExactMissingReport"
+      "testSameSnapshotAfterReadOutageRetriesIncompleteSweep"
     ]
   },
   "macapp/Tests/GtmuxBarTests/HQAttentionPublicationTests.swift": {
@@ -30,6 +22,24 @@
     ],
     "selectors": [
       "testRequestPublishedDuringDrainAndLateCallbackUseCurrentSnapshot"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift": {
+    "cases": [
+      "HND-008",
+      "HND-009"
+    ],
+    "selectors": [
+      "testUnknownLateSuccessRetriesCleanupAfterSameSnapshotRecovers",
+      "testBoundedSweepRemovesLateDeliveryWithoutOldProcessCallback"
+    ]
+  },
+  "internal/hq/attention_publication_test.go": {
+    "cases": [
+      "HND-005"
+    ],
+    "selectors": [
+      "TestHND005SnapshotFailureDoesNotConsumeAlertOpportunity"
     ]
   },
   "internal/hq/attention_lifecycle_test.go": {
@@ -42,13 +52,13 @@
       "TestHND002RelayAttentionReplacesStatusAndKeepsARealBlocker"
     ]
   },
-  "macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift": {
+  "internal/app/hq_notification_source_guard_test.go": {
     "cases": [
-      "HND-003"
+      "HND-006"
     ],
     "selectors": [
-      "testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance",
-      "testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly"
+      "TestHND006WorkspaceSourceOutageKeepsLiveAttentionAndPreventsReset",
+      "TestHND006RelayParentOutageIsDistinctFromAnExactMissingReport"
     ]
   },
   "internal/codexbridge/hq_title_test.go": {
@@ -1758,13 +1768,15 @@
   "internal/server/web/app.test.cjs": {
     "cases": [
       "CAS-004",
-      "CRX-007"
+      "CRX-007",
+      "WHS-005"
     ],
     "selectors": [
       "CAS004 focused and tile chats disclose association failures and recover without losing messages",
       "CAS004 stale tile association failure cannot repaint a changed target",
       "rejected code stays editable and shows a clear error",
-      "the rejected-code message also applies to the owner pairing a browser"
+      "the rejected-code message also applies to the owner pairing a browser",
+      "slow reads coalesce and a later completed read replaces them"
     ]
   },
   "internal/server/web/argv-reading.test.cjs": {
@@ -5181,6 +5193,30 @@
     ],
     "selectors": [
       "MCE-007 requires strict external protocols before either opener"
+    ]
+  },
+  "internal/server/web/session-header.test.cjs": {
+    "cases": [
+      "WHS-001"
+    ],
+    "selectors": [
+      "WHS-001 canonical states",
+      "WHS-001 unchanged polls",
+      "WHS-001 focused state",
+      "WHS-001 calibrated header"
+    ]
+  },
+  "tests/web/session-header.test.cjs": {
+    "cases": [
+      "WHS-002",
+      "WHS-003",
+      "WHS-004"
+    ],
+    "selectors": [
+      "WHS-002 mixed panels",
+      "WHS-003 narrow board maximize restore and focused modes",
+      "WHS-003 mobile readonly focused modes",
+      "WHS-004 neutral native terminal reduced motion and retired delayed status"
     ]
   }
 }

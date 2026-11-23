@@ -865,36 +865,36 @@ LEG-04e0b94ddc07,L2,Browser,internal/server/web/app.test.cjs,812,test,IME confir
 LEG-0954effc37e5,L2,Browser,internal/server/web/app.test.cjs,837,test,`a delayed terminal ${status} response cannot affect another pane`,True,legacy-not-retrospectively-reviewed
 LEG-8ad4e27cd013,L2,Browser,internal/server/web/app.test.cjs,852,test,returning to the same pane and mode still discards its previous request,False,legacy-not-retrospectively-reviewed
 LEG-78d9a99fd201,L2,Browser,internal/server/web/app.test.cjs,862,test,slow reads coalesce and a later completed read replaces them,False,legacy-not-retrospectively-reviewed
-LEG-e469d5ea47b9,L2,Browser,internal/server/web/app.test.cjs,879,test,a delayed transcript body cannot replace the new pane conversation,False,legacy-not-retrospectively-reviewed
-LEG-33eb40895081,L2,Browser,internal/server/web/app.test.cjs,890,test,chat refreshes step details and segment text without a turn/count change,False,legacy-not-retrospectively-reviewed
-LEG-ee73b8700d57,L2,Browser,internal/server/web/app.test.cjs,901,test,tile chat refreshes segments even when prompt and response stay unchanged,False,legacy-not-retrospectively-reviewed
-LEG-2923dc925823,L2,Browser,internal/server/web/app.test.cjs,912,test,revocation clears focus and capability chrome and allows a fresh code,False,legacy-not-retrospectively-reviewed
-LEG-fbe14661bcac,L2,Browser,internal/server/web/app.test.cjs,928,test,revocation disposes cached tiles while retaining layout for scoped restoration,False,legacy-not-retrospectively-reviewed
-LEG-ae2f8264ea02,L2,Browser,internal/server/web/app.test.cjs,942,test,a late roster authorization failure cannot replace a focused view with a gate,False,legacy-not-retrospectively-reviewed
-LEG-ecafb173782a,L2,Browser,internal/server/web/app.test.cjs,952,test,a late tile transcript cannot repaint a removed tile or a later mode instance,False,legacy-not-retrospectively-reviewed
-LEG-9eaa37420614,L2,Browser,internal/server/web/app.test.cjs,964,test,radar polls coalesce slow reads; a view change aborts the old scope,False,legacy-not-retrospectively-reviewed
-LEG-1a02b7edcb57,L2,Browser,internal/server/web/app.test.cjs,976,test,read deadline releases its slot even when the transport ignores abort,False,legacy-not-retrospectively-reviewed
-LEG-b4d5158372c5,L2,Browser,internal/server/web/app.test.cjs,990,test,busy delivery feedback expires without an idle transition and never dismisses a later failure,False,legacy-not-retrospectively-reviewed
-LEG-9c73b34c2255,L2,Browser,internal/server/web/app.test.cjs,1022,test,"DSH external history has scoped requests, read-only chrome and independent grants",False,legacy-not-retrospectively-reviewed
-LEG-db8c43aad41a,L2,Browser,internal/server/web/app.test.cjs,1039,test,a late external conversation cannot repaint another home or a closed reader,False,legacy-not-retrospectively-reviewed
-LEG-22477449e996,L2,Browser,internal/server/web/app.test.cjs,1050,test,external reader retries a failed body without accepting its validator,False,legacy-not-retrospectively-reviewed
-LEG-e01f783f4f7b,L2,Browser,internal/server/web/app.test.cjs,1060,test,native host presentation retains uncertainty and read-only routing in both languages,False,legacy-not-retrospectively-reviewed
-LEG-3477972cf0a2,L2,Browser,internal/server/web/app.test.cjs,1074,test,`neutral and completed agents share the existing quiet group in ${language}`,True,legacy-not-retrospectively-reviewed
-LEG-0933790bc2ef,L2,Browser,internal/server/web/app.test.cjs,1095,test,single-pane input sync uses the composer created during focus setup,False,legacy-not-retrospectively-reviewed
-LEG-2c216599ada0,L2,Browser,internal/server/web/app.test.cjs,1104,test,activity counts repeated tools and renders ordered plain-text details,False,legacy-not-retrospectively-reviewed
-LEG-cfa9ad3db0dd,L2,Browser,internal/server/web/app.test.cjs,1127,test,focused radar buttons keep Enter even when a different row is selected,False,legacy-not-retrospectively-reviewed
-LEG-52bff5800956,L2,Browser,internal/server/web/app.test.cjs,1143,test,"chat shortcuts leave modified keys, composition and interactive targets alone",False,legacy-not-retrospectively-reviewed
-LEG-c02806f0a60c,L2,Browser,internal/server/web/app.test.cjs,1168,test,the explicit workbench palette shortcut stays available without taking other combinations,False,legacy-not-retrospectively-reviewed
-LEG-9c5790923661,L2,Browser,internal/server/web/app.test.cjs,1189,test,'copy uses its fallback when the Clipboard API is ' + failure,True,legacy-not-retrospectively-reviewed
-LEG-b04978c9c0ea,L2,Browser,internal/server/web/app.test.cjs,1202,test,clipboard failure never reports copied and repeated pending clicks are coalesced,False,legacy-not-retrospectively-reviewed
-LEG-ad4977637db7,L2,Browser,internal/server/web/app.test.cjs,1217,test,a focused composer keeps a separate draft per pane and restores failures to their original pane,False,legacy-not-retrospectively-reviewed
-LEG-b2734f8d8149,L2,Browser,internal/server/web/app.test.cjs,1237,test,resetting a composer clears every pane draft and ignores a late send failure,False,legacy-not-retrospectively-reviewed
-LEG-fbaa0fe75e31,L2,Browser,internal/server/web/app.test.cjs,1254,test,live preview uses the last fourteen captured rows and removes terminal control sequences,False,legacy-not-retrospectively-reviewed
-LEG-db13d973fbff,L2,Browser,internal/server/web/app.test.cjs,1262,test,composer persists a scoped draft and isolates another credential on the same pane,False,legacy-not-retrospectively-reviewed
-LEG-4fd9f327715a,L2,Browser,internal/server/web/app.test.cjs,1276,test,Return sends only after opting in; composition and repeated keys cannot double-submit,False,legacy-not-retrospectively-reviewed
-LEG-3eddecec9a49,L2,Browser,internal/server/web/app.test.cjs,1289,test,"pending prompts require a newly recorded occurrence, including identical messages without clocks",False,legacy-not-retrospectively-reviewed
-LEG-46dcc46b1b27,L2,Browser,internal/server/web/app.test.cjs,1299,test,an unchanged retry keeps its send id while a new acknowledged message gets a new id,False,legacy-not-retrospectively-reviewed
-LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1313,test,radar keyboard selection skips rows inside a collapsed section,False,legacy-not-retrospectively-reviewed
+LEG-e469d5ea47b9,L2,Browser,internal/server/web/app.test.cjs,893,test,a delayed transcript body cannot replace the new pane conversation,False,legacy-not-retrospectively-reviewed
+LEG-33eb40895081,L2,Browser,internal/server/web/app.test.cjs,904,test,chat refreshes step details and segment text without a turn/count change,False,legacy-not-retrospectively-reviewed
+LEG-ee73b8700d57,L2,Browser,internal/server/web/app.test.cjs,915,test,tile chat refreshes segments even when prompt and response stay unchanged,False,legacy-not-retrospectively-reviewed
+LEG-2923dc925823,L2,Browser,internal/server/web/app.test.cjs,926,test,revocation clears focus and capability chrome and allows a fresh code,False,legacy-not-retrospectively-reviewed
+LEG-fbe14661bcac,L2,Browser,internal/server/web/app.test.cjs,942,test,revocation disposes cached tiles while retaining layout for scoped restoration,False,legacy-not-retrospectively-reviewed
+LEG-ae2f8264ea02,L2,Browser,internal/server/web/app.test.cjs,956,test,a late roster authorization failure cannot replace a focused view with a gate,False,legacy-not-retrospectively-reviewed
+LEG-ecafb173782a,L2,Browser,internal/server/web/app.test.cjs,966,test,a late tile transcript cannot repaint a removed tile or a later mode instance,False,legacy-not-retrospectively-reviewed
+LEG-9eaa37420614,L2,Browser,internal/server/web/app.test.cjs,978,test,radar polls coalesce slow reads; a view change aborts the old scope,False,legacy-not-retrospectively-reviewed
+LEG-1a02b7edcb57,L2,Browser,internal/server/web/app.test.cjs,990,test,read deadline releases its slot even when the transport ignores abort,False,legacy-not-retrospectively-reviewed
+LEG-b4d5158372c5,L2,Browser,internal/server/web/app.test.cjs,1004,test,busy delivery feedback expires without an idle transition and never dismisses a later failure,False,legacy-not-retrospectively-reviewed
+LEG-9c73b34c2255,L2,Browser,internal/server/web/app.test.cjs,1036,test,"DSH external history has scoped requests, read-only chrome and independent grants",False,legacy-not-retrospectively-reviewed
+LEG-db8c43aad41a,L2,Browser,internal/server/web/app.test.cjs,1053,test,a late external conversation cannot repaint another home or a closed reader,False,legacy-not-retrospectively-reviewed
+LEG-22477449e996,L2,Browser,internal/server/web/app.test.cjs,1064,test,external reader retries a failed body without accepting its validator,False,legacy-not-retrospectively-reviewed
+LEG-e01f783f4f7b,L2,Browser,internal/server/web/app.test.cjs,1074,test,native host presentation retains uncertainty and read-only routing in both languages,False,legacy-not-retrospectively-reviewed
+LEG-3477972cf0a2,L2,Browser,internal/server/web/app.test.cjs,1088,test,`neutral and completed agents share the existing quiet group in ${language}`,True,legacy-not-retrospectively-reviewed
+LEG-0933790bc2ef,L2,Browser,internal/server/web/app.test.cjs,1109,test,single-pane input sync uses the composer created during focus setup,False,legacy-not-retrospectively-reviewed
+LEG-2c216599ada0,L2,Browser,internal/server/web/app.test.cjs,1118,test,activity counts repeated tools and renders ordered plain-text details,False,legacy-not-retrospectively-reviewed
+LEG-cfa9ad3db0dd,L2,Browser,internal/server/web/app.test.cjs,1141,test,focused radar buttons keep Enter even when a different row is selected,False,legacy-not-retrospectively-reviewed
+LEG-52bff5800956,L2,Browser,internal/server/web/app.test.cjs,1157,test,"chat shortcuts leave modified keys, composition and interactive targets alone",False,legacy-not-retrospectively-reviewed
+LEG-c02806f0a60c,L2,Browser,internal/server/web/app.test.cjs,1182,test,the explicit workbench palette shortcut stays available without taking other combinations,False,legacy-not-retrospectively-reviewed
+LEG-9c5790923661,L2,Browser,internal/server/web/app.test.cjs,1203,test,'copy uses its fallback when the Clipboard API is ' + failure,True,legacy-not-retrospectively-reviewed
+LEG-b04978c9c0ea,L2,Browser,internal/server/web/app.test.cjs,1216,test,clipboard failure never reports copied and repeated pending clicks are coalesced,False,legacy-not-retrospectively-reviewed
+LEG-ad4977637db7,L2,Browser,internal/server/web/app.test.cjs,1231,test,a focused composer keeps a separate draft per pane and restores failures to their original pane,False,legacy-not-retrospectively-reviewed
+LEG-b2734f8d8149,L2,Browser,internal/server/web/app.test.cjs,1251,test,resetting a composer clears every pane draft and ignores a late send failure,False,legacy-not-retrospectively-reviewed
+LEG-fbaa0fe75e31,L2,Browser,internal/server/web/app.test.cjs,1268,test,live preview uses the last fourteen captured rows and removes terminal control sequences,False,legacy-not-retrospectively-reviewed
+LEG-db13d973fbff,L2,Browser,internal/server/web/app.test.cjs,1276,test,composer persists a scoped draft and isolates another credential on the same pane,False,legacy-not-retrospectively-reviewed
+LEG-4fd9f327715a,L2,Browser,internal/server/web/app.test.cjs,1290,test,Return sends only after opting in; composition and repeated keys cannot double-submit,False,legacy-not-retrospectively-reviewed
+LEG-3eddecec9a49,L2,Browser,internal/server/web/app.test.cjs,1303,test,"pending prompts require a newly recorded occurrence, including identical messages without clocks",False,legacy-not-retrospectively-reviewed
+LEG-46dcc46b1b27,L2,Browser,internal/server/web/app.test.cjs,1313,test,an unchanged retry keeps its send id while a new acknowledged message gets a new id,False,legacy-not-retrospectively-reviewed
+LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1327,test,radar keyboard selection skips rows inside a collapsed section,False,legacy-not-retrospectively-reviewed
 MAP-837adcf0e185,L2,reviewed implementation,internal/server/web/artifact-open.test.cjs,5,reviewed-selector,LAP-003 canonical startup keeps the original scope and pairing stays separate,False,LAP-003
 MAP-e4b832555966,L2,reviewed implementation,internal/server/web/artifact-open.test.cjs,10,reviewed-selector,LAP-003 rejects ambiguous or malformed ,False,LAP-003
 MAP-82ccdde7a852,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,114,reviewed-selector,actual XHR byte stages stay on the thumbnail,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
@@ -906,6 +906,10 @@ MAP-700b6c8e3834,L2,reviewed implementation,internal/server/web/design-consisten
 MAP-5b5110a4affc,L2,reviewed implementation,internal/server/web/design-consistency.test.cjs,173,reviewed-selector,generated document contract offers,False,"DFC-002,DFC-003,DFC-004,DFC-007,DFC-009"
 MAP-92676feada09,L2,reviewed implementation,internal/server/web/design-recovery.test.cjs,46,reviewed-selector,DFR-001,False,DFR-001
 MAP-e63e89176901,L2,reviewed implementation,internal/server/web/execution-chain.test.cjs,8,reviewed-selector,"CRX-005 adjacent equal process presentations retain count, order and distinct arguments",False,CRX-005
+MAP-9ae55673f21a,L2,reviewed implementation,internal/server/web/session-header.test.cjs,21,reviewed-selector,WHS-001 canonical states,False,WHS-001
+MAP-b9a18ce7b270,L2,reviewed implementation,internal/server/web/session-header.test.cjs,37,reviewed-selector,WHS-001 unchanged polls,False,WHS-001
+MAP-f83b75552847,L2,reviewed implementation,internal/server/web/session-header.test.cjs,52,reviewed-selector,WHS-001 focused state,False,WHS-001
+MAP-5c9f2b1f6d63,L2,reviewed implementation,internal/server/web/session-header.test.cjs,60,reviewed-selector,WHS-001 calibrated header,False,WHS-001
 MAP-ec276ea47d43,L2,reviewed implementation,internal/server/web/state-duration.test.cjs,19,reviewed-selector,CSR-004 browser row,False,CSR-004
 LEG-3f958826505e,L2,Browser,internal/server/web/terminal-keys.test.cjs,26,test,unsupported combinations are not fabricated,False,legacy-not-retrospectively-reviewed
 LEG-7b336ba3e7c5,L2,Browser,internal/server/web/terminal-keys.test.cjs,31,test,legacy fallback stops after an uncertain response and cannot chain a digit or Enter,False,legacy-not-retrospectively-reviewed

@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1443 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1445 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2693 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2697 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 130 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 134 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
 
@@ -627,5 +627,10 @@
 | UR-001 | The 34-second HTTP-200-equivalent report is shown; the stalled read is classified as timeout, the next valid report is shown, and the late old report cannot overwrite it. |
 | UR-002 | Valid empty reports remain data, 404 is unsupported, other failures throw typed causes; no failure becomes zero usage or a fabricated report. |
 | UR-003 | Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels. |
+| WHS-001 | The visible localized label and glyph agree with the roster. Error wins for an agent or readable conversation. Plain terminals and unknown state are neutral. A missing roster entry clears old status and error without discarding identity. Unchanged polls preserve the label node and retirement removes its state. |
+| WHS-002 | Each panel has its own state and normal text contrast is at least 4.5:1. The removed agent turns neutral. Siblings, mounted content and the draft remain intact. Waiting has no standing pulse with normal motion. No send occurs. |
+| WHS-003 | The keyboard outline is visible and distinct from state. The title, status and controls fit. Focused labels and ordinary text meet 4.5:1 in both themes. Drafts, reading nodes, tools and read-only boundaries remain. Terminal follows live roster state without transcript reads for hidden Chat. |
+| WHS-004 | Home and the gate have no conversation tint after the late request settles. Reduced motion stops decorative transitions and status animation. Native identity and access rules continue to apply. No send occurs. |
+| WHS-005 | The two in-flight lanes each issue one request. Roster completion paints the header without writing terminal content or fetching or drawing hidden Chat. Existing capture outputs remain first, second and newest, discarding the outdated capture. A deferred roster reply for a retired view cannot repaint it after completion. |
 | WWP-001 | Both panels remain visible and separate without moving the first. The 1024-pixel layout uses the room below. Chat histories and drafts stay with their own pane. The fixture receives exactly one request for the selected pane. |
 | WWP-002 | The two saved geometries stay exact while a third tile chooses open space. The fixture receives no message. |

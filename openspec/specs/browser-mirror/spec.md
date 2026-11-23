@@ -937,3 +937,29 @@ independent targets; multi-image selection SHALL stage the batch without serial 
 #### Scenario: HQ changes status on a narrow browser
 - **WHEN** the supervisor changes between waiting, working and idle
 - **THEN** it remains in Headquarters and ordinary groups/counts exclude that role
+
+### Requirement: Full conversation header state
+Workbench panels and focused Chat/Terminal SHALL present the existing roster state
+across the full conversation header using an opaque low-saturation background, a
+semantic top edge, a visible localized label and a non-color symbol. Working SHALL
+use cyan, waiting red, idle green and running gray with the idle label. An explicit
+error SHALL take precedence in amber for agents and readable conversations. Plain
+terminals and unavailable states SHALL remain neutral. Light and dark backgrounds
+and inks SHALL be calibrated separately with normal header text contrast at least
+4.5:1. Waiting SHALL NOT add perpetual attention motion. Header state SHALL remain
+distinct from keyboard focus and SHALL NOT infer status from prompt text or alter
+capabilities, drafts, reading position or tools.
+
+#### Scenario: One of several conversations changes state
+- **WHEN** the existing bounded roster read reports a state or explicit error change
+- **THEN** only the corresponding header updates its fill, edge, label and symbol
+- **AND** focused Terminal updates without fetching or redrawing hidden Chat
+
+#### Scenario: A pane has no current roster status
+- **WHEN** the roster has no state for an open agent pane
+- **THEN** the header uses the neutral unavailable state and preserves the view
+
+#### Scenario: A focused conversation is retired
+- **WHEN** the user returns home, changes credentials or loses access
+- **THEN** the conversation header state is cleared
+- **AND** a delayed response cannot restore that retired state
