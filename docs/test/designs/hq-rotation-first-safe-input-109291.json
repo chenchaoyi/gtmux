@@ -1,0 +1,36 @@
+{
+  "id": "hq-rotation-first-safe-input-109291",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review",
+    "date": "2026-11-23",
+    "decision": "Keep the original Codex rotation deadlines and reserve the first safe automatic input for the exact successor while handoff is pending.",
+    "notes": "Live logs show the already-enqueued briefing lost to a regular keyed wake. The exact cause of the unavailable composer and the missing history criterion remain unknown. Use isolated HOME, a fake clock and fake input transport. The on-disk proof for an accepted or unknown submission must never authorize replay."
+  },
+  "cases": [
+    {
+      "id": "HRB-005",
+      "layer": "L2",
+      "description": "A Codex handoff keeps regular and protected Relay wakes behind its first safe input opportunity",
+      "setup": "Persist a sent rotation before the successor or its briefing is published. Exercise immediate keyed delivery, ordinary draining and a previously repaired legacy draft in an isolated HOME. Then bind the exact successor and publish a briefing with both types of wake present.",
+      "action": "Drain before and after briefing publication, expire or settle the reservation, and drain again. Also exercise a sent rotation with the briefing disabled and a different pane.",
+      "expected": "No automatic wake or legacy repair enters the reserved successor during the publication gap. The briefing submits alone once, and ordinary and protected entries resume with original priority when the reservation ends. Other panes and disabled or expired reservations gain no new hold.",
+      "planned_files": [
+        "internal/hqinput/rotation_test.go",
+        "internal/hqnudge/rotation_brief_test.go"
+      ]
+    },
+    {
+      "id": "HRB-006",
+      "layer": "L2",
+      "description": "A busy or drafted successor can wait within its original deadline without replaying a possible submission",
+      "setup": "Prepare the exact bound briefing and simulate active, waiting, draft, copy mode and an unreadable composer. Include a composer change during the final native guard, identity drift, expiry, accepted input, definite refusal unrelated to the composer, and ACK loss.",
+      "action": "Advance the fake clock, reopen the same composer, repeat drains and invoke native recovery. Observe the original queued name and intent, native submit counts, key calls, and accepted and delivered audits.",
+      "expected": "Composer unavailability before submission keeps the same briefing waiting with zero terminal key operations. Only positive evidence of no submission allows recovery from a late composer refusal. Changed identity and expiry send nothing. Accepted, unknown and unrelated terminal refusals do not replay, including across native recovery. Acceptance alone does not assert independent delivery.",
+      "planned_files": [
+        "internal/hqnudge/rotation_brief_test.go"
+      ]
+    }
+  ],
+  "seal": "4c160c2b552c28d4d2194553f4bd12a2a287239943f7803174c6f429900aa8ee"
+}
