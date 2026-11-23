@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1450 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1451 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2713 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 137 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 139 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
 
@@ -67,6 +67,7 @@
 | STOR-004 | At most 256 new lock files outside the data root top level. Old per-session lock and profile bytes are untouched by new writes. New observations stay isolated during contention, mixed reads retain independent facts, stale model options or cleared mode do not reappear, and a new identity is never attached to foreign data. |
 | STOR-005 | Refuse before writing or verifying/downloading. Reuse existing successful task-owned staging tests and preserve old output on rejection. |
 | AOP-004 | Restore button belongs to tile header and precedes its other children, never floats over the title or terminal. Header grid reserves its column; narrow layout shows a named return icon and leaves title/actions usable. Only one restore control exists. Restoring removes it and restores prior tile dimensions; other tiles and existing terminal-fit/Escape behavior are unchanged. No real user session or service is driven. |
+| WHS-007 | The compact entry and all dialog buttons have the original target floor. The pane ID and read-only chip are fully in bounds. All modes and tools can be reached through their existing handlers. Resizing taller restores direct controls. Dimensions stay 180 by 120 at the floor, and no input is sent. |
 | CAR-001 | Text, bubble, markdown, activity/code/reader chrome and avatars use matching palette; transcript/bubble/expansion identity survives; actual terminal Live output remains on its dark terminal canvas |
 | CAR-002 | Only gtmux.themePref is used; overrides ignore system changes, system follows; saved choice survives; no per-chat preference or transport reset Compact and expanded composer keyboards resolve the same effective light/dark preference; no draft or send is changed. |
 | CAR-003 | Sending/accepted/submitted use small accessible marks in the existing avatar footprint, no standalone Received line; pending and confirmed user row, avatar footprint and bubble remain mounted with same geometry; recorded aliases have no receipt; queued text stays explicit; old prompt cannot acknowledge new send; no fabricated execution or transport retry Successful mark hides after 2.5 seconds without removing the optimistic bubble or changing queue/send state; later source preserves mounted row. |

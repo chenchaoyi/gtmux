@@ -5342,5 +5342,14 @@
       "TestHRB003RotationBriefJournalReadableAfterRestart",
       "TestHRB004LoneRelayReportsUnavailableTarget"
     ]
+  },
+  "tests/web/short-tile-header.test.cjs": {
+    "cases": [
+      "WHS-007"
+    ],
+    "selectors": [
+      "WHS-007 diagonal minimum writable",
+      "WHS-007 diagonal minimum read-only touch"
+    ]
   }
 }

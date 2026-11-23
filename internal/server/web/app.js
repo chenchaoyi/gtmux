@@ -3910,7 +3910,10 @@
     var windowControls = document.createElement('div'); windowControls.className = 'tile-window-controls';
     var max = document.createElement('button'); max.type = 'button'; max.className = 'tile-btn'; max.dataset.action = 'focus'; max.innerHTML = uiIcon('focus'); max.title = T('Open conversation', '打开会话'); max.setAttribute('aria-label', max.title); max.onclick = function (e) { e.stopPropagation(); openAgent(t.agent, t.mode); }; windowControls.appendChild(max);
     var cl = document.createElement('button'); cl.type = 'button'; cl.className = 'tile-btn'; cl.innerHTML = uiIcon('close'); cl.title = T('Close panel', '关闭面板'); cl.setAttribute('aria-label', cl.title); cl.onclick = function (e) { e.stopPropagation(); removeTile(t); }; windowControls.appendChild(cl);
-    head.appendChild(windowControls); head.appendChild(controls);
+    var actions = document.createElement('button'); actions.type = 'button'; actions.className = 'dialog-secondary tile-actions-menu';
+    actions.textContent = T('Pane actions', '窗格操作'); actions.setAttribute('aria-haspopup', 'dialog');
+    actions.onclick = function (e) { e.stopPropagation(); openTileActions(t, actions); };
+    head.appendChild(windowControls); head.appendChild(controls); head.appendChild(actions);
     el.appendChild(head);
     var body = document.createElement('div'); body.className = 'tile-body'; t.body = body; el.appendChild(body);
     // shared-input row (web-shared-input): the SAME composer as the single-pane view,
@@ -3929,6 +3932,21 @@
     $('board').appendChild(el);
     t.head = head; t.headState = state; t.headNm = nm; t.headId = id; t.headBadge = head.querySelector('.avatar .badge');
     updateTileHead(t);
+  }
+  function openTileActions(t, opener) {
+    var sheet = browserDialog(opener.textContent); sheet.el.classList.add('tile-actions-dialog');
+    t.head.querySelectorAll('.tile-window-controls button, .tile-controls button').forEach(function (source) {
+      var label = source.getAttribute('aria-label') || source.textContent;
+      var action = el('button', 'dialog-secondary', label); action.type = 'button'; action.disabled = source.disabled;
+      if (source.hasAttribute('aria-pressed')) action.setAttribute('aria-pressed', source.getAttribute('aria-pressed'));
+      action.onclick = function () {
+        sheet.el.retire();
+        if (t.removed || !source.isConnected) return;
+        opener.focus();
+        source.click();
+      };
+      sheet.body.appendChild(action);
+    });
   }
   function updateTileHead(t) {
     var previous = t.head.dataset.sessionState;

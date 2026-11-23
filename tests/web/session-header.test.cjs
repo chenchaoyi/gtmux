@@ -112,7 +112,7 @@ scenario('WHS-003 narrow board maximize restore and focused modes',{viewport:{wi
     const box=n=>{const r=n.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
     return {head:box(e), identity:box(e.querySelector('.tile-identity')), name:box(e.querySelector('.tile-name')),
       id:box(e.querySelector('.tile-id')), caption:box(e.querySelector('.session-state')),
-      controls:box(e.querySelector('.tile-window-controls')), buttons:[...e.querySelectorAll('button')].map(box)};
+      controls:box(e.querySelector('.tile-window-controls')), buttons:[...e.querySelectorAll('button')].filter(n=>n.getClientRects().length).map(box)};
   });
   assert.equal(await head.locator('.tile-id').innerText(), '%901');
   assert.ok(boxes.id.x >= boxes.name.right && boxes.id.top < boxes.name.bottom && boxes.name.top < boxes.id.bottom,
