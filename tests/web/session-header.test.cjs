@@ -32,6 +32,27 @@ async function board(page, fixture, rows) {
   await page.goto(fixture.url+'/#code=TEST-1234');
   await page.locator('.tile-head[data-session-state]').first().waitFor();
 }
+async function verifyCompactCopy(page, reader, chinese) {
+  await reader.getByText('Initial finding', {exact:true}).waitFor();
+  const copy = reader.locator('.assistant-message .bub-act').getByRole('button', {
+    name:chinese?'复制':'Copy', exact:true,
+  }).first();
+  const icon = await copy.locator('svg').boundingBox(), button = await copy.boundingBox();
+  assert.equal(icon.width, 15);
+  assert.equal(icon.height, 15);
+  const minimum = chinese ? 44 : 36;
+  assert.ok(button.width >= minimum && button.height >= minimum, 'copy retains its hit target');
+  await page.evaluate(() => {
+    window.copiedMessage = '';
+    Object.defineProperty(navigator, 'clipboard', {configurable:true, value:{
+      writeText(value) { window.copiedMessage = value; return Promise.resolve(); }
+    }});
+  });
+  await copy.click();
+  await copy.locator('svg').waitFor();
+  assert.equal(await page.evaluate(() => window.copiedMessage), 'Initial finding');
+  assert.equal(await copy.getAttribute('title'), chinese?'已复制':'Copied');
+}
 async function state(element, value) {await element.locator('.tile-head').evaluate((e,s)=>{if(e.dataset.sessionState!==s)throw new Error('unexpected initial header state '+e.dataset.sessionState);},value);}
 async function waitState(page, selector, value) {await page.waitForFunction(([s,v])=>document.querySelector(s)?.dataset.sessionState===v,[selector,value]);}
 async function contrast(head) {
@@ -87,8 +108,19 @@ scenario('WHS-003 narrow board maximize restore and focused modes',{viewport:{wi
   await board(page,fixture,[{task:name,status:'working'}]);
   const panel=page.locator('.tile'),head=panel.locator('.tile-head');
   const original=await panel.evaluate(e=>({width:e.style.width,height:e.style.height}));
-  const boxes=await head.evaluate(e=>{const box=n=>{const r=n.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};return {head:box(e),identity:box(e.querySelector('.tile-identity')),caption:box(e.querySelector('.session-state')),controls:box(e.querySelector('.tile-window-controls')),buttons:[...e.querySelectorAll('button')].map(box)};});
-  assert.ok(boxes.caption.right<=boxes.identity.right+.5); assert.ok(boxes.identity.right<=boxes.controls.x+.5);
+  const boxes=await head.evaluate(e=>{
+    const box=n=>{const r=n.getBoundingClientRect();return {x:r.x,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
+    return {head:box(e), identity:box(e.querySelector('.tile-identity')), name:box(e.querySelector('.tile-name')),
+      id:box(e.querySelector('.tile-id')), caption:box(e.querySelector('.session-state')),
+      controls:box(e.querySelector('.tile-window-controls')), buttons:[...e.querySelectorAll('button')].map(box)};
+  });
+  assert.equal(await head.locator('.tile-id').innerText(), '%901');
+  assert.ok(boxes.id.x >= boxes.name.right && boxes.id.top < boxes.name.bottom && boxes.name.top < boxes.id.bottom,
+    'pane ID stays beside even a long title');
+  assert.ok(boxes.caption.width <= 1 && boxes.caption.height <= 1, 'the repeated status is visually hidden');
+  assert.equal(await head.locator('.session-state').textContent(), 'working');
+  assert.ok(boxes.id.right <= boxes.identity.right + .5 && boxes.identity.right <= boxes.controls.x + .5);
+  await verifyCompactCopy(page, panel, false);
   assert.ok(boxes.buttons.every(b=>b.x>=boxes.head.x && b.right<=boxes.head.right+.5 && b.height>=32));
   await head.locator('.tile-name').click();await page.locator('.tile.max').waitFor();await state(panel,'working');
   await head.getByRole('button',{name:'Restore layout'}).click();
@@ -136,6 +168,7 @@ for (const theme of ['light','dark']) scenario('WHS-003 mobile readonly focused 
   assert.equal(await page.locator('#pane-input').isVisible(),false);
   await contrast(page.locator('#bar'));
   const mode=page.locator('#mode [data-mode="chat"]');await mode.click();await page.locator('#chat').waitFor({state:'visible'});
+  await verifyCompactCopy(page, page.locator('#chat'), true);
   fixture.state.agents[0].status='waiting';await waitState(page,'#bar','waiting');assert.equal(await caption.innerText(),'待处理');
   await page.locator('#chat-ro').waitFor({state:'visible'});
   assert.equal(await page.locator('#chat-input .cx-input').isVisible(),false);

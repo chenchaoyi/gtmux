@@ -7214,10 +7214,10 @@ LEG-76a130aa8589,L3,Browser,tests/web/prompt-echo.test.cjs,5,scenario,'Recorded 
 LEG-b945c9c2c6ea,L3,Browser,tests/web/reading-controls.test.cjs,20,scenario,"`Diff preserves recorded layout, syntax and original copy at ${width}`",True,legacy-not-retrospectively-reviewed
 LEG-d86159318241,L3,Browser,tests/web/reading-controls.test.cjs,44,scenario,`Trace defaults to folded turns and preserves manual disclosure at ${width}`,True,legacy-not-retrospectively-reviewed
 MAP-f023f66b7dac,L4,Browser,tests/web/reading-controls.test.cjs,20,reviewed-selector,"Diff preserves recorded layout, syntax and original copy at ${width}",False,DTV-003
-MAP-4b4cdb04628b,L4,reviewed implementation,tests/web/session-header.test.cjs,60,reviewed-selector,WHS-002 mixed panels,False,"WHS-002,WHS-003,WHS-004"
-MAP-77508a69c382,L4,reviewed implementation,tests/web/session-header.test.cjs,85,reviewed-selector,WHS-003 narrow board maximize restore and focused modes,False,"WHS-002,WHS-003,WHS-004"
-MAP-08c4a2d06abf,L4,reviewed implementation,tests/web/session-header.test.cjs,129,reviewed-selector,WHS-003 mobile readonly focused modes,False,"WHS-002,WHS-003,WHS-004"
-MAP-a8c8b16f2977,L4,reviewed implementation,tests/web/session-header.test.cjs,145,reviewed-selector,WHS-004 neutral native terminal reduced motion and retired delayed status,False,"WHS-002,WHS-003,WHS-004"
+MAP-4b4cdb04628b,L4,reviewed implementation,tests/web/session-header.test.cjs,81,reviewed-selector,WHS-002 mixed panels,False,"WHS-002,WHS-003,WHS-004"
+MAP-77508a69c382,L4,reviewed implementation,tests/web/session-header.test.cjs,106,reviewed-selector,WHS-003 narrow board maximize restore and focused modes,False,"WHS-002,WHS-003,WHS-004"
+MAP-08c4a2d06abf,L4,reviewed implementation,tests/web/session-header.test.cjs,161,reviewed-selector,WHS-003 mobile readonly focused modes,False,"WHS-002,WHS-003,WHS-004"
+MAP-a8c8b16f2977,L4,reviewed implementation,tests/web/session-header.test.cjs,178,reviewed-selector,WHS-004 neutral native terminal reduced motion and retired delayed status,False,"WHS-002,WHS-003,WHS-004"
 LEG-053ee45ae83a,L3,Browser,tests/web/shared-code.test.cjs,9,scenario,`Shared code and nested trace calls ${width} ${colorScheme}`,True,legacy-not-retrospectively-reviewed
 LEG-3e130ccd4ec6,L3,Browser,tests/web/smoke.test.cjs,10,scenario,"Desktop enrollment, sidebar, restore and live chat",False,legacy-not-retrospectively-reviewed
 LEG-8d3affad6fad,L3,Browser,tests/web/smoke.test.cjs,83,scenario,Narrow Chinese read-only share and shell layout,False,legacy-not-retrospectively-reviewed

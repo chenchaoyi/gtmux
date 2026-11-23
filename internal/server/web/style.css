@@ -985,6 +985,7 @@ button.appr-opt:disabled {opacity: .45; cursor: default;}
 .message-meta .sender-note { margin: 0; font-size: inherit; }
 .message-meta time { font-variant-numeric: tabular-nums; }
 .message-meta .bub-act { margin: 0; }
+.message-meta .bub-act .ui-icon { width: 15px; height: 15px; }
 
 /* Shared icon and target metrics. Dense tiles never shrink the actual controls. */
 .ui-icon { display: block; flex: 0 0 auto; width: var(--icon-size); height: var(--icon-size); }
@@ -1273,12 +1274,14 @@ button.trace-turn { margin: 5px 0; padding: 10px 12px; border: 1px solid var(--d
 }
 .trace-list[hidden], .trace-inspector[hidden], .trace-detail-modes[hidden], .trace-session[hidden] { display: none; }
 /* Identity and actions keep separate columns; modes get a complete second row. */
-.tile-head { display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px 36px; gap: 6px; padding: 8px; }
+.tile-head { display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px 36px; gap: 4px 6px; padding: 6px 8px; }
 .tile-head > .speaker-avatar { grid-column: 1; grid-row: 1; }
-.tile-identity { grid-column: 2; grid-row: 1; min-width: 0; }
-.tile-identity .tile-name { display: block; line-height: 20px; font-size: 13px; }
-.tile-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 16px; }
-.tile-meta .tile-id { font-size: 11px; line-height: 16px; }
+.tile-identity { grid-column: 2; grid-row: 1; position: relative; display: flex; align-items: baseline; min-width: 0; gap: 6px; }
+.tile-identity .tile-name { flex: 0 1 auto; line-height: 20px; font-size: 13px; }
+.tile-identity .tile-id { flex: 0 0 auto; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; line-height: 16px; }
+.tile-identity .cap-chip { flex: 0 0 auto; }
+/* Keep the roster label available to assistive readers without a second visual line. */
+.tile-identity .session-state { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
 .tile-head > .tile-controls { display: contents; }
 .tile-controls > .tile-modes { display: flex; grid-column: 1 / -1; grid-row: 2; justify-self: stretch; margin: 0; min-width: 0; }
 .tile-controls > .tile-modes button { flex: 1 1 auto; min-height: 36px; padding: 4px 7px; font-size: 12px; }
@@ -1373,6 +1376,10 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .tile-controls > .session-actions { margin-right: auto; }
 .session-actions { display: inline-flex; align-items: center; flex: 0 0 auto; gap: 4px; margin-left: 8px; }
 .session-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 6px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--fg2); cursor: pointer; font: inherit; font-size: 13px; }
+@media (pointer: fine) {
+  .tile-window-controls > .tile-btn { min-width: 36px; height: 36px; }
+  .tile-controls > .tile-modes button, .tile-controls > .session-actions button { min-height: 36px; }
+}
 .session-actions button:hover { color: var(--fg); background: var(--hover); }
 @container (max-width: 340px) {
   .tile-controls .session-actions .ui-icon { display: none; }

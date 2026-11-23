@@ -69536,7 +69536,7 @@
       "cases": [
         {
           "id": "MAP-4b4cdb04628b",
-          "line": 60,
+          "line": 81,
           "kind": "reviewed-selector",
           "name": "WHS-002 mixed panels",
           "dynamic": false,
@@ -69545,7 +69545,7 @@
         },
         {
           "id": "MAP-77508a69c382",
-          "line": 85,
+          "line": 106,
           "kind": "reviewed-selector",
           "name": "WHS-003 narrow board maximize restore and focused modes",
           "dynamic": false,
@@ -69554,7 +69554,7 @@
         },
         {
           "id": "MAP-08c4a2d06abf",
-          "line": 129,
+          "line": 161,
           "kind": "reviewed-selector",
           "name": "WHS-003 mobile readonly focused modes",
           "dynamic": false,
@@ -69563,7 +69563,7 @@
         },
         {
           "id": "MAP-a8c8b16f2977",
-          "line": 145,
+          "line": 178,
           "kind": "reviewed-selector",
           "name": "WHS-004 neutral native terminal reduced motion and retired delayed status",
           "dynamic": false,
@@ -69571,7 +69571,7 @@
           "design": "WHS-002,WHS-003,WHS-004"
         }
       ],
-      "sha256": "443b91d5b55f96352c4935226b50bc6f318b9d0e4fe9c7343e73cfb5c260b55f"
+      "sha256": "3dfe6d0395d1ae89fab041268aea2d4b21d1ec84f18966ab1723f93116d8f501"
     },
     "internal/app/hq_notification_source_guard_test.go": {
       "layer": "L2",

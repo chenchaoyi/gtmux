@@ -3883,12 +3883,11 @@
     var head = document.createElement('div'); head.className = 'tile-head';
     head.appendChild(t.agent.agent ? speakerAvatar('agent', t.agent, avatarEl(t.agent, 24, true)) : avatarEl(t.agent, 24, false));
     var identity = document.createElement('div'); identity.className = 'tile-identity'; head.appendChild(identity);
-    var nm = document.createElement('span'); nm.className = 'tile-name'; nm.textContent = primary(t.agent); identity.appendChild(nm);
-    var meta = document.createElement('div'); meta.className = 'tile-meta'; identity.appendChild(meta);
-    var state = document.createElement('span'); state.className = 'session-state'; meta.appendChild(state);
-    var id = document.createElement('span'); id.className = 'tile-id'; id.textContent = hasPane(t.agent) ? t.agent.pane_id : nativeSourceLabel(t.agent); meta.appendChild(id);
+    var nm = document.createElement('span'); nm.className = 'tile-name'; identity.appendChild(nm);
+    var id = document.createElement('span'); id.className = 'tile-id'; identity.appendChild(id);
+    var state = document.createElement('span'); state.className = 'session-state'; identity.appendChild(state);
     // Read-only capabilities remain visible when there is no composer.
-    var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; meta.appendChild(cap);
+    var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; identity.appendChild(cap);
     var controls = document.createElement('div'); controls.className = 'tile-controls';
     var modes = document.createElement('span'); modes.className = 'tile-modes';
     // "diff" stays a developer's word in both languages, as git and every review tool use
@@ -3927,14 +3926,18 @@
     el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
     dragMove(t, head); dragResize(t, rz);
     $('board').appendChild(el);
-    t.head = head; t.headState = state; t.headNm = nm; t.headBadge = head.querySelector('.avatar .badge');
+    t.head = head; t.headState = state; t.headNm = nm; t.headId = id; t.headBadge = head.querySelector('.avatar .badge');
     updateTileHead(t);
   }
   function updateTileHead(t) {
     var previous = t.head.dataset.sessionState;
     var state = paintSessionHeader(t.head, t.headState, t.agent, readableConversation(t.agent));
     t.el.classList.toggle('waiting', state === 'waiting');
-    if (t.headNm) t.headNm.textContent = primary(t.agent);
+    var name = primary(t.agent);
+    var id = hasPane(t.agent) ? t.agent.pane_id : nativeSourceLabel(t.agent);
+    t.headNm.textContent = t.headNm.title = name;
+    t.headId.textContent = t.headId.title = id || '';
+    t.headId.hidden = !id || id === name;
     if (t.composer && !t.inputEl.hidden) t.composer.sync();
     if (t.headBadge && state !== previous) {
       t.headBadge.hidden = state === 'unknown' || state === 'terminal';
