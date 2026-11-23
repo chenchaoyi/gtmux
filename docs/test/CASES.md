@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1445 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1446 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2697 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2699 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 134 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -296,6 +296,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HRC-005 | A consumed pause cannot slip past the reviewed boundary; an explicit fresh review is needed. The coordination echo produces no instruction goal; real user prose still does. |
 | HRC-011 | Neither later availability nor an ordinary Stop revives the old authority. Failed counter persistence is observable and the old reference remains unsafe; an explicit newer confirmed step can use the same action once. No disabled event or private input is recorded. |
 | HRC-012 | Old direct and workspace authority cannot cross the enabled outage. A fresh explicit instruction can recover. A durable zero-submission receipt survives recovery and only a later authority can drive the original ID once. Unknown, prior, and submitted attempts remain reserved for reconciliation. |
+| HRB-001 | The exact still-current successor before the original deadline can receive one idle wake. Mismatches or unavailable evidence cannot mutate input. The existing user draft and active/idle gate remain authoritative. A definite refusal is retained separately from possible submission; neither case retries or falls back to keys. |
+| HRB-002 | The original unknown claim remains protected under its own batch identity. A definite refusal does not become unknown or authorize automatic retry. Independent ordinary notifications and protected Relay retain their own normal submission opportunity. |
 | HRW-012 | Unknown is not falsely reported as session changed and never authorizes reset. First unavailable time survives repeat ticks and reason changes; unresolved management evidence yields one precise attention failure within 60 seconds/original deadline. Exact recovery still respects drafts/active/waiting/boundary guards, while real changed SID/agent refuses immediately. Sent requests never repeat input. Reasons are bounded value-free known codes or explicit unknown; no fabricated cause. |
 | HRW-013 | Original record and live boolean remain identical to the original predicate; unavailable/conflict codes are value-free and precise only where actually observed. No new binding, input, retry or authority from a code, and no source PID/home/SID borrowed from another location. |
 | HRW-001 | Fresh verified idle metadata is required before at most one normal turn/start attempt. Known busy/unknown/unloaded/approval states refuse before claim; no steer, queue/add, resume, retry or fallback. Sample-to-submit external race is explicitly possible: a valid response records acceptance and an observed turn ID only, not proof of a newly caused turn. Missing acknowledgement remains uncertain, never automatically resubmitted. Explicit user/image/legacy queue unchanged. |

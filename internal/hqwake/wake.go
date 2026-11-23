@@ -85,6 +85,12 @@ const (
 // hostile-locale class of mangling that once ate ✳ (see tmux-utf8 fix v0.11.3).
 const Sigil = "»"
 
+// Startup briefing texts are also recognized when retiring old rotation queue entries.
+const (
+	StartupBriefingEN = "» gtmux·startup │ your first turn — produce your STARTUP BRIEFING per AGENTS.md."
+	StartupBriefingZH = "» gtmux·startup │ 你的第一轮 —— 按 AGENTS.md 产出你的启动简报。"
+)
+
 // Wake priorities (hq-wake-reliability): the delivery queue drains highest priority
 // first, oldest-first within a priority, so a decision-dense knock never waits behind
 // a backlog of standing warnings — and, at the queue cap, a standing warning (which

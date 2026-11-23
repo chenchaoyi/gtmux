@@ -20,6 +20,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/notify"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
@@ -36,6 +37,10 @@ type rotationRequest struct {
 	Successor             string `json:"successor,omitempty"`
 	SwitchedAt            int64  `json:"switchedAt,omitempty"`
 	BootstrapAt           int64  `json:"bootstrapAt,omitempty"`
+	BootstrapID           string `json:"bootstrapID,omitempty"`
+	BootstrapHome         string `json:"bootstrapHome,omitempty"`
+	BootstrapInstance     string `json:"bootstrapInstance,omitempty"`
+	BootstrapPID          int    `json:"bootstrapPID,omitempty"`
 	Pane                  string `json:"pane"`
 	Agent                 string `json:"agent"`
 	Retiring              string `json:"retiring"`
@@ -48,20 +53,19 @@ const (
 	rotationReadyDelay   = 3 * time.Second
 	rotationSettleWait   = 45 * time.Second
 	rotationQueueLimit   = 30 * time.Minute
-	rotationReadyWait    = 3 * time.Minute
+	rotationReadyWait    = hqinput.RotationReadyWait
 	rotationIdentityWait = time.Minute
 )
 
 // Use the existing guarded HQ startup channel, after releasing the shared input
 // lock. This is the rotation's handoff, not an invented user task or a second /new.
-var rotationBootstrap = func(pane, sid, stamp string) {
-	_, current := hqSessionRef(pane)
-	if current == sid && rotationTargetMatches(stamp, rotationTargetStamp(pane)) {
-		hqnudge.Deliver(pane, hqBriefingPrompt())
-	}
+var rotationBootstrap = func(brief hqinput.RotationBrief) {
+	hqnudge.DeliverRotationBrief(brief, hqBriefingPrompt())
 }
 
-func rotationTargetStamp(pane string) string {
+var rotationBriefFrontend = resume.CodexFrontendForPane
+
+var rotationTargetStamp = func(pane string) string {
 	return strings.TrimSpace(tmux.Display(pane, "#{pid}:#{session_created}:#{pane_pid}"))
 }
 
@@ -225,11 +229,11 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 	if !acquired {
 		return // keep the durable request while another HQ input channel is active
 	}
-	bootstrap := ""
+	var bootstrap hqinput.RotationBrief
 	defer func() {
 		release()
-		if bootstrap != "" {
-			rotationBootstrap(pane, bootstrap, r.TargetStamp)
+		if bootstrap.Request != "" {
+			rotationBootstrap(bootstrap)
 		}
 	}()
 	// A prior tick may have settled or sent this request while we waited for input.
@@ -284,12 +288,23 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 					}
 					if r.BootstrapAt == 0 && kind == "" && hqBriefingEnabled() &&
 						!state.Exists(state.ActivePath(pane)) && !state.Exists(state.WaitingPath(pane)) && dispatch.BoxEmpty(io) {
+						frontend, bound := rotationBriefFrontend(pane)
+						if !bound || frontend.SessionID != sid || frontend.HomeID != transcript.CodexHomeID() ||
+							frontend.Instance == "" || frontend.PID <= 0 {
+							return
+						}
 						r.BootstrapAt = now.Unix()
+						r.BootstrapID, r.BootstrapHome = diag.NewOpID(), frontend.HomeID
+						r.BootstrapInstance, r.BootstrapPID = frontend.Instance, frontend.PID
 						if err := writeRotationFile(r, false); err != nil {
 							diag.ReportStoreFailure("hq-rotation", err)
 							return
 						}
-						bootstrap = sid
+						bootstrap = hqinput.RotationBrief{
+							Request: r.BootstrapID, Pane: r.Pane, Agent: r.Agent, Home: r.BootstrapHome,
+							Session: r.Successor, Stamp: r.TargetStamp, Instance: r.BootstrapInstance,
+							ClientPID: r.BootstrapPID, Deadline: r.SwitchedAt + int64(rotationReadyWait/time.Second),
+						}
 					}
 					return
 				}

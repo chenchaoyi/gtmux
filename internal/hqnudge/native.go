@@ -16,6 +16,10 @@ var nativeWakeIdentity = liveWakeIdentity
 
 // Preparation performs no input mutation; journal admission happens before submit.
 func prepareNativeWake(pane string) func(payload, id string) (dispatch.Result, bool) {
+	return prepareNativeWakeFor(pane, dispatch.Opts{}, nil)
+}
+
+func prepareNativeWakeFor(pane string, opts dispatch.Opts, hold func() string) func(payload, id string) (dispatch.Result, bool) {
 	io := nativeWakeIO(pane, "codex")
 	if io.SubmitNative == nil {
 		return nil
@@ -25,10 +29,16 @@ func prepareNativeWake(pane string) func(payload, id string) (dispatch.Result, b
 		if nativeWakeTarget() != pane || (expected != "" && nativeWakeIdentity(pane) != expected) {
 			return "hq-target-changed"
 		}
+		if hold != nil {
+			return hold()
+		}
 		return ""
 	}
+	opts.Pane, opts.HasComposer, opts.IdleWakeInput = pane, true, true
 	return func(payload, id string) (dispatch.Result, bool) {
-		return dispatch.Deliver(io, dispatch.Opts{Pane: pane, HasComposer: true, DeliveryID: "hq-wake-" + id, IdleWakeInput: true}, payload), true
+		delivery := opts
+		delivery.DeliveryID = "hq-wake-" + id
+		return dispatch.Deliver(io, delivery, payload), true
 	}
 }
 

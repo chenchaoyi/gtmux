@@ -1131,6 +1131,13 @@ Automatic Codex wakes SHALL freshly verify an exact loaded idle thread before at
 - **THEN** no new automatic batch is claimed, pasted or submitted until the reservation ends
 - **AND** existing exact stranded-batch repair and all identity/draft guards remain
 
+#### Scenario: A queued rotation briefing outlives its recipient
+- **GIVEN** a sent rotation reserves one startup briefing for its verified Codex successor
+- **WHEN** the queue drains, and again at the native submission boundary
+- **THEN** the original request, Codex Home, successor session, frontend and pane instance SHALL match and the original confirmation deadline SHALL still be in the future
+- **AND** an unbound legacy rotation briefing or a definite refusal SHALL remain unsent, a possible submission SHALL remain uncertain, and neither SHALL be replayed or use keyboard fallback
+- **AND** other wakes and Relay attention retain their own ordinary submission opportunities, and rotation confirmation retains its existing timing rules
+
 #### Scenario: No safe maintenance window arrives
 - **WHEN** the existing rotation deadline expires
 - **THEN** the original routine failure audit and one independent attention notification request report failure without repeating reset or removing old native queue entries

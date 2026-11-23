@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1445 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1446 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2697 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2699 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 134 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -296,6 +296,8 @@
 | HRC-005 | A consumed pause cannot slip past the reviewed boundary; an explicit fresh review is needed. The coordination echo produces no instruction goal; real user prose still does. |
 | HRC-011 | Neither later availability nor an ordinary Stop revives the old authority. Failed counter persistence is observable and the old reference remains unsafe; an explicit newer confirmed step can use the same action once. No disabled event or private input is recorded. |
 | HRC-012 | Old direct and workspace authority cannot cross the enabled outage. A fresh explicit instruction can recover. A durable zero-submission receipt survives recovery and only a later authority can drive the original ID once. Unknown, prior, and submitted attempts remain reserved for reconciliation. |
+| HRB-001 | The exact still-current successor before the original deadline can receive one idle wake. Mismatches or unavailable evidence cannot mutate input. The existing user draft and active/idle gate remain authoritative. A definite refusal is retained separately from possible submission; neither case retries or falls back to keys. |
+| HRB-002 | The original unknown claim remains protected under its own batch identity. A definite refusal does not become unknown or authorize automatic retry. Independent ordinary notifications and protected Relay retain their own normal submission opportunity. |
 | HRW-012 | Unknown is not falsely reported as session changed and never authorizes reset. First unavailable time survives repeat ticks and reason changes; unresolved management evidence yields one precise attention failure within 60 seconds/original deadline. Exact recovery still respects drafts/active/waiting/boundary guards, while real changed SID/agent refuses immediately. Sent requests never repeat input. Reasons are bounded value-free known codes or explicit unknown; no fabricated cause. |
 | HRW-013 | Original record and live boolean remain identical to the original predicate; unavailable/conflict codes are value-free and precise only where actually observed. No new binding, input, retry or authority from a code, and no source PID/home/SID borrowed from another location. |
 | HRW-001 | Fresh verified idle metadata is required before at most one normal turn/start attempt. Known busy/unknown/unloaded/approval states refuse before claim; no steer, queue/add, resume, retry or fallback. Sample-to-submit external race is explicitly possible: a valid response records acceptance and an observed turn ID only, not proof of a newly caused turn. Missing acknowledgement remains uncertain, never automatically resubmitted. Explicit user/image/legacy queue unchanged. |

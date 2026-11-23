@@ -8,6 +8,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/hqinput"
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
@@ -58,17 +59,26 @@ func TestRotationQueuesOneGuardedHandoffAfterReleasingInput(t *testing.T) {
 	now := time.Now()
 	r := testRotationRequest(t, now)
 	t.Setenv("GTMUX_HQ_BRIEF", "on")
-	r.SentAt = now.Unix()
+	t.Setenv("CODEX_HOME", t.TempDir())
+	r.SentAt, r.TargetStamp = now.Unix(), "17:300:19"
 	if err := writeRotationFile(r, false); err != nil {
 		t.Fatal(err)
 	}
-	prior := rotationBootstrap
-	t.Cleanup(func() { rotationBootstrap = prior })
+	prior, priorFrontend, priorStamp := rotationBootstrap, rotationBriefFrontend, rotationTargetStamp
+	t.Cleanup(func() {
+		rotationBootstrap, rotationBriefFrontend, rotationTargetStamp = prior, priorFrontend, priorStamp
+	})
+	rotationTargetStamp = func(string) string { return r.TargetStamp }
+	rotationBriefFrontend = func(string) (resume.CodexFrontend, bool) {
+		return resume.CodexFrontend{Instance: "synthetic-frontend", HomeID: transcript.CodexHomeID(),
+			SessionID: "empty-thread", CodexBindingTarget: resume.CodexBindingTarget{PID: 19}}, true
+	}
 	calls := 0
-	rotationBootstrap = func(pane, sid, stamp string) {
+	rotationBootstrap = func(brief hqinput.RotationBrief) {
 		calls++
-		if pane != "%6" || sid != "empty-thread" {
-			t.Fatal(pane, sid)
+		if !brief.Valid() || !hqinput.MatchesRotationBrief(brief) || brief.Pane != "%6" ||
+			brief.Session != "empty-thread" || brief.Deadline != now.Add(time.Second+rotationReadyWait).Unix() {
+			t.Fatal("bootstrap was not bound to its persisted request and initial switch", brief)
 		}
 		release, ok, err := hqinput.Acquire()
 		if err != nil || !ok {

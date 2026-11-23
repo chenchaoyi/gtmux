@@ -333,6 +333,8 @@ MAP-ac1ffa61f5b2,L2,reviewed implementation,internal/hqnudge/pressure_health_tes
 MAP-392ca77cfaeb,L2,reviewed implementation,internal/hqnudge/pressure_health_test.go,38,reviewed-selector,TestHWA004ConflictNeedsCleanScanAndPositiveReceipt,False,"HWA-003,HWA-004"
 MAP-d0379fef758d,L2,reviewed implementation,internal/hqnudge/relay_attention_test.go,13,reviewed-selector,TestHRA001ReservedRelaySharesFullDecisionBatch,False,"HRA-001,HRA-002"
 MAP-50abbb3e7060,L2,reviewed implementation,internal/hqnudge/relay_attention_test.go,57,reviewed-selector,TestHRA002ProtectedRelayRequiresGuardedNativeWindow,False,"HRA-001,HRA-002"
+MAP-a93d800b6c1d,L2,reviewed implementation,internal/hqnudge/rotation_brief_test.go,18,reviewed-selector,TestHRB001RotationBriefBindsOriginalRecipient,False,"HRB-001,HRB-002"
+MAP-974764f4f5ce,L2,reviewed implementation,internal/hqnudge/rotation_brief_test.go,124,reviewed-selector,TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake,False,"HRB-001,HRB-002"
 MAP-2f393b4dfbb1,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,29,reviewed-selector,TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority,False,"HRW-004,HRW-005,HRW-008"
 MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,89,reviewed-selector,TestHRW004RotationDoesNotSubmitOrRepairUserDraft,False,"HRW-004,HRW-005,HRW-008"
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,103,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"

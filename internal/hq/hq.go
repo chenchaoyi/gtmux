@@ -31,6 +31,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hostplatform"
 	"github.com/chenchaoyi/gtmux/internal/hqpane"
+	"github.com/chenchaoyi/gtmux/internal/hqwake"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"github.com/chenchaoyi/gtmux/internal/panefocus"
@@ -1009,9 +1010,7 @@ func hqBriefingEnabled() bool {
 // ANY agent — not just Claude Code — acts on it per its playbook. It reuses the wake
 // signal register (`» gtmux·<class>`) the playbook already teaches.
 func hqBriefingPrompt() string {
-	return i18n.Tr(
-		"» gtmux·startup │ your first turn — produce your STARTUP BRIEFING per AGENTS.md.",
-		"» gtmux·startup │ 你的第一轮 —— 按 AGENTS.md 产出你的启动简报。")
+	return i18n.Tr(hqwake.StartupBriefingEN, hqwake.StartupBriefingZH)
 }
 
 // deliverHQBriefing types the startup briefing into a freshly-spawned HQ pane so its

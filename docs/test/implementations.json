@@ -5218,5 +5218,23 @@
       "WHS-003 mobile readonly focused modes",
       "WHS-004 neutral native terminal reduced motion and retired delayed status"
     ]
+  },
+  "internal/hqnudge/rotation_brief_test.go": {
+    "cases": [
+      "HRB-001",
+      "HRB-002"
+    ],
+    "selectors": [
+      "TestHRB001RotationBriefBindsOriginalRecipient",
+      "TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake"
+    ]
+  },
+  "internal/hq/rotation_durability_test.go": {
+    "cases": [
+      "HRB-001"
+    ],
+    "selectors": [
+      "TestRotationQueuesOneGuardedHandoffAfterReleasingInput"
+    ]
   }
 }

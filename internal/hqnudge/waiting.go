@@ -260,6 +260,11 @@ func observedWaitClear(w waitingWake) bool {
 }
 
 func readWakeLine(path string, data []byte) (waitingWake, error) {
+	if isRotationBrief(claimBase(path)) {
+		var w rotationBriefWake
+		err := json.Unmarshal(data, &w)
+		return waitingWake{Line: w.Line}, err
+	}
 	if !strings.HasSuffix(claimBase(path), waitingWakeSuffix) {
 		return waitingWake{Line: strings.TrimSpace(string(data))}, nil
 	}
