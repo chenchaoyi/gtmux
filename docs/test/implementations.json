@@ -5236,5 +5236,15 @@
     "selectors": [
       "TestRotationQueuesOneGuardedHandoffAfterReleasingInput"
     ]
+  },
+  "internal/hqnudge/rotation_brief_recovery_test.go": {
+    "cases": [
+      "HRB-003",
+      "HRB-004"
+    ],
+    "selectors": [
+      "TestHRB003RotationBriefJournalReadableAfterRestart",
+      "TestHRB004LoneRelayReportsUnavailableTarget"
+    ]
   }
 }

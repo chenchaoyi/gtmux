@@ -649,6 +649,10 @@ func drainInto(x io, pane string) {
 	if wakeBusy(x, pane) {
 		return
 	}
+	targetUnavailable := submit == nil && !validWakeTarget(wakeIdentity(x, pane))
+	if targetUnavailable {
+		recordIssue(issueTargetUnavailable, x.nowNano())
+	}
 	// Never rename a queued replacement onto a held foreign/changed claim.
 	for _, n := range queuedNames(func(string) bool { return true }) {
 		if _, valid := parseRetry(n); !valid {
@@ -679,8 +683,7 @@ func drainInto(x io, pane string) {
 		}
 		return
 	}
-	if submit == nil && !validWakeTarget(wakeIdentity(x, pane)) {
-		recordIssue(issueTargetUnavailable, x.nowNano())
+	if targetUnavailable {
 		return
 	}
 	retry, _ := parseRetry(first)

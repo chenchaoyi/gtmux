@@ -74,7 +74,9 @@ func splitRotationBriefs(names []string) (ordinary []string, brief string) {
 
 func drainRotationBrief(x io, pane, name string) {
 	path := filepath.Join(queueDir(), name)
-	claim := path + sendingSuffix
+	// Publish only the claim under the existing v2 journal format. The bound
+	// envelope never becomes an ordinary pending text entry, even on rollback.
+	claim := strings.TrimSuffix(path, rotationBriefSuffix) + ".txt" + sendingSuffix
 	if !takeQueued(path, claim) {
 		return
 	}
