@@ -138,3 +138,5 @@ MAP-17bafeec6a86,L4,reviewed implementation,tests/web/short-tile-header.test.cjs
 MAP-1e4014a69252,L4,reviewed implementation,tests/web/short-tile-header.test.cjs,6,reviewed-selector,WHS-007 diagonal minimum read-only touch,False,WHS-007
 MAP-be17f88f3a1c,L4,Browser,tests/web/smoke.test.cjs,190,reviewed-selector,Structured activity at ${width}px,False,AOP-005
 MAP-57dbbd511453,L4,Browser,tests/web/smoke.test.cjs,48,reviewed-selector,DTV003 Diff tree and worktree context at ${width}px,False,"AOP-005,DTV-003"
+MAP-47f4ffb1700f,L4,Browser,tests/web/smoke.test.cjs,310,reviewed-selector,Compact tile controls stay readable in ${locale},False,"AOP-005,DTV-003,WHS-008"
+MAP-756a48ad34a9,L4,Browser,tests/web/smoke.test.cjs,940,reviewed-selector,WHS-008 compact tile actions retire on layout switch,False,"AOP-005,DTV-003,WHS-008"

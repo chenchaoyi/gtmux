@@ -60,7 +60,7 @@ for extraction and privacy limits. The observation can be old; it is not current
 - Multiple panes = multiple concurrent `/api/pane?id` mounts; `diff` uses `/api/diff?id`; `chat` uses `/api/transcript?id`.
 - Tiles use absolute positions: resizing one does not reflow the others. Clicking anywhere in its header except a button, without dragging, maximizes it within the board; `f` and `1–9` also maximize tiles. The workbench-only command palette adds or finds a tile, flashes it, and maximizes it in the board. Use Restore or Esc to return. This board maximization is distinct from the ⤢ focus view.
 
-Tile headers keep the complete pane ID beside the title at the 180px resize floor. The title can truncate, and controls and the visible read-only chip can wrap into their own rows. Mode labels stay on one line. In a short tile, Pane actions opens a dialog with the same mode, tool and window actions, keeping them reachable at 180 × 120px.
+Tile headers keep the complete pane ID beside the title at the 180px resize floor. The title can truncate, and controls and the visible read-only chip can wrap into their own rows. Mode labels stay on one line. In a short tile, Pane actions opens a dialog with the same mode, tool and window actions, keeping them reachable at 180 × 120px. The action dialog closes when the workbench is retired.
 
 ## 4. Full-screen focus (single-pane close reading, mockup §02)
 

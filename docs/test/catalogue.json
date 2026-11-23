@@ -63467,7 +63467,7 @@
       ]
     },
     "tests/web/smoke.test.cjs": {
-      "sha256": "2ed0f6ea48cc2b6336effa35ae477bd014d263b4016746ab838c1df96ed54b7d",
+      "sha256": "4aa23185eee1bed608519309d6b48460414b2198037c3acf84ec3adf38af8807",
       "layer": "L3",
       "stack": "Browser",
       "cases": [
@@ -63545,7 +63545,7 @@
         },
         {
           "id": "LEG-9fb6fb4f5960",
-          "line": 330,
+          "line": 331,
           "kind": "scenario",
           "name": "Chat operates an unparsed picker without visiting Terminal",
           "dynamic": false,
@@ -63553,7 +63553,7 @@
         },
         {
           "id": "LEG-3e1421f2c918",
-          "line": 356,
+          "line": 357,
           "kind": "scenario",
           "name": "Chat shows choices only while waiting and folds an answered prompt",
           "dynamic": false,
@@ -63561,7 +63561,7 @@
         },
         {
           "id": "LEG-338a1654affd",
-          "line": 373,
+          "line": 374,
           "kind": "scenario",
           "name": "`View question reveals the picker without submitting a draft at ${width}px`",
           "dynamic": true,
@@ -63569,7 +63569,7 @@
         },
         {
           "id": "LEG-e526198ccd27",
-          "line": 392,
+          "line": 393,
           "kind": "scenario",
           "name": "Workspace conversation keeps drafts, shows identities and inspectable calls",
           "dynamic": false,
@@ -63577,7 +63577,7 @@
         },
         {
           "id": "LEG-a88f9e388b83",
-          "line": 477,
+          "line": 478,
           "kind": "scenario",
           "name": "Narrow chat supports input and touch copy while trace remains within viewport",
           "dynamic": false,
@@ -63585,7 +63585,7 @@
         },
         {
           "id": "LEG-eb05aa918933",
-          "line": 511,
+          "line": 512,
           "kind": "scenario",
           "name": "Workspace controls support keyboard access and truthful copy feedback",
           "dynamic": false,
@@ -63593,7 +63593,7 @@
         },
         {
           "id": "LEG-b946e51a9044",
-          "line": 566,
+          "line": 567,
           "kind": "scenario",
           "name": "Live chat shows current work, retains disclosure state and clears after completion or revocation",
           "dynamic": false,
@@ -63601,7 +63601,7 @@
         },
         {
           "id": "LEG-fb1c9cc17ccb",
-          "line": 643,
+          "line": 644,
           "kind": "scenario",
           "name": "Appearance follows the system and persists an explicit choice without recoloring terminals",
           "dynamic": false,
@@ -63609,7 +63609,7 @@
         },
         {
           "id": "LEG-b055e62dee7c",
-          "line": 687,
+          "line": 688,
           "kind": "scenario",
           "name": "Trace tool closes details and returns to the original panel draft",
           "dynamic": false,
@@ -63617,7 +63617,7 @@
         },
         {
           "id": "LEG-00a1f7cbea36",
-          "line": 710,
+          "line": 711,
           "kind": "scenario",
           "name": "Composer stages files, annotates images, recalls input and matches app send controls",
           "dynamic": false,
@@ -63625,7 +63625,7 @@
         },
         {
           "id": "LEG-f0e15e31d7c2",
-          "line": 829,
+          "line": 830,
           "kind": "scenario",
           "name": "Mobile composer and speaker profiles expose identity without redundant writable badges",
           "dynamic": false,
@@ -63633,7 +63633,7 @@
         },
         {
           "id": "LEG-f81adc301549",
-          "line": 885,
+          "line": 886,
           "kind": "scenario",
           "name": "Clipboard images and dropped files stay staged until an explicit send",
           "dynamic": false,
@@ -63641,7 +63641,7 @@
         },
         {
           "id": "LEG-05c9e13ce4c2",
-          "line": 914,
+          "line": 915,
           "kind": "scenario",
           "name": "'Native file actions keep readable labels and recorded changes at ' + width",
           "dynamic": true,
@@ -63664,6 +63664,24 @@
           "dynamic": false,
           "layer": "L4",
           "design": "AOP-005,DTV-003"
+        },
+        {
+          "id": "MAP-47f4ffb1700f",
+          "line": 310,
+          "kind": "reviewed-selector",
+          "name": "Compact tile controls stay readable in ${locale}",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-005,DTV-003,WHS-008"
+        },
+        {
+          "id": "MAP-756a48ad34a9",
+          "line": 940,
+          "kind": "reviewed-selector",
+          "name": "WHS-008 compact tile actions retire on layout switch",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-005,DTV-003,WHS-008"
         }
       ]
     },

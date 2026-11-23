@@ -259,7 +259,11 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { if (activeSessionTool) activeSessionTool.sheet.el.retire(); $('session-toolbar').hidden = which !== 'chat' && which !== 'pane'; $('session-trace').hidden = !(curAgent && (curAgent.agent || readableConversation(curAgent))); $('session-diff').hidden = !hasPane(curAgent); if (which !== 'chat') $('chat-interaction').hidden = true; retireDocumentReaders(); cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); syncFocusSessionHeader(which === 'chat' || which === 'pane'); }
+  function show(which) {
+    if (which !== 'workbench') {
+      document.querySelectorAll('.tile-actions-dialog').forEach(function (dialog) { dialog.retire(); });
+    }
+    if (activeSessionTool) activeSessionTool.sheet.el.retire(); $('session-toolbar').hidden = which !== 'chat' && which !== 'pane'; $('session-trace').hidden = !(curAgent && (curAgent.agent || readableConversation(curAgent))); $('session-diff').hidden = !hasPane(curAgent); if (which !== 'chat') $('chat-interaction').hidden = true; retireDocumentReaders(); cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); syncFocusSessionHeader(which === 'chat' || which === 'pane'); }
   function updatePageTitle(view) {
     view = view || ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].find(function (id) { return !$(id).hidden; });
     var title = T('Agent workspace', 'Agent 工作台');

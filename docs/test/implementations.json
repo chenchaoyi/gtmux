@@ -3379,11 +3379,14 @@
   "tests/web/smoke.test.cjs": {
     "cases": [
       "AOP-005",
-      "DTV-003"
+      "DTV-003",
+      "WHS-008"
     ],
     "selectors": [
       "Structured activity at ${width}px",
-      "DTV003 Diff tree and worktree context at ${width}px"
+      "DTV003 Diff tree and worktree context at ${width}px",
+      "Compact tile controls stay readable in ${locale}",
+      "WHS-008 compact tile actions retire on layout switch"
     ]
   },
   "tests/web/tool-call-detail.test.cjs": {
