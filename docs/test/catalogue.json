@@ -29058,7 +29058,7 @@
       ]
     },
     "internal/server/web/app.test.cjs": {
-      "sha256": "0c02ea469c9fa360a019931d7d575134adf73bfe456abe3a13405c1679106817",
+      "sha256": "ef684d9f7bc74a51d695352277f7916b8455597c79fcb04ba7ad6301bbf1df48",
       "layer": "L2",
       "stack": "Browser",
       "cases": [
@@ -29424,7 +29424,7 @@
         },
         {
           "id": "LEG-e469d5ea47b9",
-          "line": 879,
+          "line": 893,
           "kind": "test",
           "name": "a delayed transcript body cannot replace the new pane conversation",
           "dynamic": false,
@@ -29432,7 +29432,7 @@
         },
         {
           "id": "LEG-33eb40895081",
-          "line": 890,
+          "line": 904,
           "kind": "test",
           "name": "chat refreshes step details and segment text without a turn/count change",
           "dynamic": false,
@@ -29440,7 +29440,7 @@
         },
         {
           "id": "LEG-ee73b8700d57",
-          "line": 901,
+          "line": 915,
           "kind": "test",
           "name": "tile chat refreshes segments even when prompt and response stay unchanged",
           "dynamic": false,
@@ -29448,7 +29448,7 @@
         },
         {
           "id": "LEG-2923dc925823",
-          "line": 912,
+          "line": 926,
           "kind": "test",
           "name": "revocation clears focus and capability chrome and allows a fresh code",
           "dynamic": false,
@@ -29456,7 +29456,7 @@
         },
         {
           "id": "LEG-fbe14661bcac",
-          "line": 928,
+          "line": 942,
           "kind": "test",
           "name": "revocation disposes cached tiles while retaining layout for scoped restoration",
           "dynamic": false,
@@ -29464,7 +29464,7 @@
         },
         {
           "id": "LEG-ae2f8264ea02",
-          "line": 942,
+          "line": 956,
           "kind": "test",
           "name": "a late roster authorization failure cannot replace a focused view with a gate",
           "dynamic": false,
@@ -29472,7 +29472,7 @@
         },
         {
           "id": "LEG-ecafb173782a",
-          "line": 952,
+          "line": 966,
           "kind": "test",
           "name": "a late tile transcript cannot repaint a removed tile or a later mode instance",
           "dynamic": false,
@@ -29480,7 +29480,7 @@
         },
         {
           "id": "LEG-9eaa37420614",
-          "line": 964,
+          "line": 978,
           "kind": "test",
           "name": "radar polls coalesce slow reads; a view change aborts the old scope",
           "dynamic": false,
@@ -29488,7 +29488,7 @@
         },
         {
           "id": "LEG-1a02b7edcb57",
-          "line": 976,
+          "line": 990,
           "kind": "test",
           "name": "read deadline releases its slot even when the transport ignores abort",
           "dynamic": false,
@@ -29496,7 +29496,7 @@
         },
         {
           "id": "LEG-b4d5158372c5",
-          "line": 990,
+          "line": 1004,
           "kind": "test",
           "name": "busy delivery feedback expires without an idle transition and never dismisses a later failure",
           "dynamic": false,
@@ -29504,7 +29504,7 @@
         },
         {
           "id": "LEG-9c73b34c2255",
-          "line": 1022,
+          "line": 1036,
           "kind": "test",
           "name": "DSH external history has scoped requests, read-only chrome and independent grants",
           "dynamic": false,
@@ -29512,7 +29512,7 @@
         },
         {
           "id": "LEG-db8c43aad41a",
-          "line": 1039,
+          "line": 1053,
           "kind": "test",
           "name": "a late external conversation cannot repaint another home or a closed reader",
           "dynamic": false,
@@ -29520,7 +29520,7 @@
         },
         {
           "id": "LEG-22477449e996",
-          "line": 1050,
+          "line": 1064,
           "kind": "test",
           "name": "external reader retries a failed body without accepting its validator",
           "dynamic": false,
@@ -29528,7 +29528,7 @@
         },
         {
           "id": "LEG-e01f783f4f7b",
-          "line": 1060,
+          "line": 1074,
           "kind": "test",
           "name": "native host presentation retains uncertainty and read-only routing in both languages",
           "dynamic": false,
@@ -29536,7 +29536,7 @@
         },
         {
           "id": "LEG-3477972cf0a2",
-          "line": 1074,
+          "line": 1088,
           "kind": "test",
           "name": "`neutral and completed agents share the existing quiet group in ${language}`",
           "dynamic": true,
@@ -29544,7 +29544,7 @@
         },
         {
           "id": "LEG-0933790bc2ef",
-          "line": 1095,
+          "line": 1109,
           "kind": "test",
           "name": "single-pane input sync uses the composer created during focus setup",
           "dynamic": false,
@@ -29552,7 +29552,7 @@
         },
         {
           "id": "LEG-2c216599ada0",
-          "line": 1104,
+          "line": 1118,
           "kind": "test",
           "name": "activity counts repeated tools and renders ordered plain-text details",
           "dynamic": false,
@@ -29560,7 +29560,7 @@
         },
         {
           "id": "LEG-cfa9ad3db0dd",
-          "line": 1127,
+          "line": 1141,
           "kind": "test",
           "name": "focused radar buttons keep Enter even when a different row is selected",
           "dynamic": false,
@@ -29568,7 +29568,7 @@
         },
         {
           "id": "LEG-52bff5800956",
-          "line": 1143,
+          "line": 1157,
           "kind": "test",
           "name": "chat shortcuts leave modified keys, composition and interactive targets alone",
           "dynamic": false,
@@ -29576,7 +29576,7 @@
         },
         {
           "id": "LEG-c02806f0a60c",
-          "line": 1168,
+          "line": 1182,
           "kind": "test",
           "name": "the explicit workbench palette shortcut stays available without taking other combinations",
           "dynamic": false,
@@ -29584,7 +29584,7 @@
         },
         {
           "id": "LEG-9c5790923661",
-          "line": 1189,
+          "line": 1203,
           "kind": "test",
           "name": "'copy uses its fallback when the Clipboard API is ' + failure",
           "dynamic": true,
@@ -29592,7 +29592,7 @@
         },
         {
           "id": "LEG-b04978c9c0ea",
-          "line": 1202,
+          "line": 1216,
           "kind": "test",
           "name": "clipboard failure never reports copied and repeated pending clicks are coalesced",
           "dynamic": false,
@@ -29600,7 +29600,7 @@
         },
         {
           "id": "LEG-ad4977637db7",
-          "line": 1217,
+          "line": 1231,
           "kind": "test",
           "name": "a focused composer keeps a separate draft per pane and restores failures to their original pane",
           "dynamic": false,
@@ -29608,7 +29608,7 @@
         },
         {
           "id": "LEG-b2734f8d8149",
-          "line": 1237,
+          "line": 1251,
           "kind": "test",
           "name": "resetting a composer clears every pane draft and ignores a late send failure",
           "dynamic": false,
@@ -29616,7 +29616,7 @@
         },
         {
           "id": "LEG-fbaa0fe75e31",
-          "line": 1254,
+          "line": 1268,
           "kind": "test",
           "name": "live preview uses the last fourteen captured rows and removes terminal control sequences",
           "dynamic": false,
@@ -29624,7 +29624,7 @@
         },
         {
           "id": "LEG-db13d973fbff",
-          "line": 1262,
+          "line": 1276,
           "kind": "test",
           "name": "composer persists a scoped draft and isolates another credential on the same pane",
           "dynamic": false,
@@ -29632,7 +29632,7 @@
         },
         {
           "id": "LEG-4fd9f327715a",
-          "line": 1276,
+          "line": 1290,
           "kind": "test",
           "name": "Return sends only after opting in; composition and repeated keys cannot double-submit",
           "dynamic": false,
@@ -29640,7 +29640,7 @@
         },
         {
           "id": "LEG-3eddecec9a49",
-          "line": 1289,
+          "line": 1303,
           "kind": "test",
           "name": "pending prompts require a newly recorded occurrence, including identical messages without clocks",
           "dynamic": false,
@@ -29648,7 +29648,7 @@
         },
         {
           "id": "LEG-46dcc46b1b27",
-          "line": 1299,
+          "line": 1313,
           "kind": "test",
           "name": "an unchanged retry keeps its send id while a new acknowledged message gets a new id",
           "dynamic": false,
@@ -29656,7 +29656,7 @@
         },
         {
           "id": "LEG-1307ca617db3",
-          "line": 1313,
+          "line": 1327,
           "kind": "test",
           "name": "radar keyboard selection skips rows inside a collapsed section",
           "dynamic": false,
@@ -29664,7 +29664,7 @@
         },
         {
           "id": "MAP-e2feefc515a3",
-          "line": 1324,
+          "line": 1338,
           "kind": "reviewed-selector",
           "name": "CAS004 focused and tile chats disclose association failures and recover without losing messages",
           "dynamic": false,
@@ -29673,7 +29673,7 @@
         },
         {
           "id": "MAP-328002d4dfc3",
-          "line": 1351,
+          "line": 1365,
           "kind": "reviewed-selector",
           "name": "CAS004 stale tile association failure cannot repaint a changed target",
           "dynamic": false,
@@ -69459,6 +69459,92 @@
         }
       ],
       "sha256": "f5051143806bb9540082e126d2c2564db246248b253566ab1f9c1755fdc600af"
+    },
+    "internal/server/web/session-header.test.cjs": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9ae55673f21a",
+          "line": 21,
+          "kind": "reviewed-selector",
+          "name": "WHS-001 canonical states",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WHS-001"
+        },
+        {
+          "id": "MAP-b9a18ce7b270",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "WHS-001 unchanged polls",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WHS-001"
+        },
+        {
+          "id": "MAP-f83b75552847",
+          "line": 52,
+          "kind": "reviewed-selector",
+          "name": "WHS-001 focused state",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WHS-001"
+        },
+        {
+          "id": "MAP-5c9f2b1f6d63",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "WHS-001 calibrated header",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WHS-001"
+        }
+      ],
+      "sha256": "c4880d08b4fcdb676c932e9622188fc7160a115663cf9911c62e8d00c9f60507"
+    },
+    "tests/web/session-header.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4b4cdb04628b",
+          "line": 60,
+          "kind": "reviewed-selector",
+          "name": "WHS-002 mixed panels",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "WHS-002,WHS-003,WHS-004"
+        },
+        {
+          "id": "MAP-77508a69c382",
+          "line": 85,
+          "kind": "reviewed-selector",
+          "name": "WHS-003 narrow board maximize restore and focused modes",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "WHS-002,WHS-003,WHS-004"
+        },
+        {
+          "id": "MAP-08c4a2d06abf",
+          "line": 129,
+          "kind": "reviewed-selector",
+          "name": "WHS-003 mobile readonly focused modes",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "WHS-002,WHS-003,WHS-004"
+        },
+        {
+          "id": "MAP-a8c8b16f2977",
+          "line": 145,
+          "kind": "reviewed-selector",
+          "name": "WHS-004 neutral native terminal reduced motion and retired delayed status",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "WHS-002,WHS-003,WHS-004"
+        }
+      ],
+      "sha256": "443b91d5b55f96352c4935226b50bc6f318b9d0e4fe9c7343e73cfb5c260b55f"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

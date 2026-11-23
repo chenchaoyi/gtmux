@@ -259,7 +259,7 @@
   }
 
   // ---- helpers ----------------------------------------------------------
-  function show(which) { if (activeSessionTool) activeSessionTool.sheet.el.retire(); $('session-toolbar').hidden = which !== 'chat' && which !== 'pane'; $('session-trace').hidden = !(curAgent && (curAgent.agent || readableConversation(curAgent))); $('session-diff').hidden = !hasPane(curAgent); if (which !== 'chat') $('chat-interaction').hidden = true; retireDocumentReaders(); cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); }
+  function show(which) { if (activeSessionTool) activeSessionTool.sheet.el.retire(); $('session-toolbar').hidden = which !== 'chat' && which !== 'pane'; $('session-trace').hidden = !(curAgent && (curAgent.agent || readableConversation(curAgent))); $('session-diff').hidden = !hasPane(curAgent); if (which !== 'chat') $('chat-interaction').hidden = true; retireDocumentReaders(); cancelReads(); viewEpoch++; ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].forEach(function (id) { $(id).hidden = id !== which; }); if ($('chat-input')) $('chat-input').hidden = true; if (which !== 'workbench') WB.on = false; updatePageTitle(which); syncFocusSessionHeader(which === 'chat' || which === 'pane'); }
   function updatePageTitle(view) {
     view = view || ['gate', 'radar', 'panes', 'pane', 'chat', 'workbench'].find(function (id) { return !$(id).hidden; });
     var title = T('Agent workspace', 'Agent 工作台');
@@ -448,6 +448,41 @@
       else glyph = '<circle cx="8" cy="8" r="1.9" fill="' + W + '"/>';
     }
     return '<svg width="14" height="14" viewBox="0 0 16 16">' + shape + glyph + '</svg>';
+  }
+  // Conversation headers share the roster's badge language.
+  function sessionHeaderState(agent, conversation) {
+    if (!agent) return 'unknown';
+    if (!agent.agent && !conversation) return 'terminal';
+    if (agent.error) return 'errored';
+    return Object.prototype.hasOwnProperty.call(COLORS, agent.status) ? agent.status : 'unknown';
+  }
+  function withoutRosterState(agent) {
+    return Object.assign({}, agent, {status: '', error: false});
+  }
+  function paintSessionHeader(root, caption, agent, conversation) {
+    if (!root || !caption) return;
+    if (!agent) {
+      delete root.dataset.sessionState;
+      delete caption.dataset.sessionState;
+      caption.hidden = true;
+      caption.textContent = ''; caption.title = '';
+      return;
+    }
+    var state = sessionHeaderState(agent, conversation);
+    var label = state === 'terminal' ? T('terminal', '终端') : state === 'unknown' ? T('status unavailable', '状态未知') : LABEL[state];
+    root.dataset.sessionState = state;
+    caption.hidden = false;
+    if (caption.dataset.sessionState !== state || caption.textContent !== label) {
+      caption.dataset.sessionState = state;
+      caption.textContent = label;
+      var symbol = document.createElement('i'); symbol.className = 'session-state-symbol'; symbol.setAttribute('aria-hidden', 'true'); caption.appendChild(symbol);
+      caption.title = T('Session status: ', '会话状态：') + label;
+    }
+    return state;
+  }
+  function syncFocusSessionHeader(active) {
+    var agent = active ? curAgent : null;
+    paintSessionHeader($('bar'), $('session-state'), agent, readableConversation(agent));
   }
   // official icon via /api/icon (authed → blob), cached; falls back to a monogram.
   function loadIcon(name, img, mono) {
@@ -1615,6 +1650,7 @@
   }
 
   function pollPane() {
+    if (curAgent && (curAgent.agent || readableConversation(curAgent))) pollConversationStatus();
     runRead('pane', function (signal) {
       if (!curPane) return;
       var current = currentRead('pane', signal);
@@ -2165,6 +2201,7 @@
       });
   }
   function pollConversationStatus() {
+    if (!curAgent) return;
     runRead('conversation-status', function (signal) {
       var current = currentRead('conversation-status', signal), a = curAgent;
       return api('/api/agents', {signal: signal}).then(function (r) {
@@ -2173,14 +2210,22 @@
       }).then(function (rows) {
         if (!current(true) || !Array.isArray(rows)) return;
         var next = rows.find(function (row) {return isNative(a) ? row.source === 'native' && row.session_id === a.session_id && row.home_id === a.home_id : row.pane_id === a.pane_id;});
-        if (!next) return;
+        if (!next) {
+          curAgent = withoutRosterState(a);
+          syncFocusSessionHeader(true);
+          return;
+        }
         var changed = next.status !== a.status || next.task !== a.task || next.can_read_conversation !== a.can_read_conversation || next.current_client !== a.current_client || JSON.stringify(next.observed_conversation) !== JSON.stringify(a.observed_conversation) || JSON.stringify(next.launch_host) !== JSON.stringify(a.launch_host);
         if (chatScope(next) === chatScope(a)) next.history_read_only = a.history_read_only;
-        curAgent = next;
+        curAgent = next; syncFocusSessionHeader(true);
         if (isNative(next) && !readableConversation(next)) {lastTurns = []; externalSettings = null;}
-        if (changed) {$('title').textContent = primary(next) || next.agent; $('sub').textContent = isNative(next) ? nativeSourceLabel(next) : (next.agent ? next.agent + ' · ' : '') + secondary(next); drawChat(lastTurns);updateInputBar();}
-        var main = $('chat').querySelector('.conversation-main');
-        if (curPane && paneMode === 'chat' && main) syncChatLive(main, next, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === next.pane_id && curAgent && curAgent.status === 'working'; });
+        if (changed) {
+          $('title').textContent = primary(next) || next.agent;
+          $('sub').textContent = isNative(next) ? nativeSourceLabel(next) : (next.agent ? next.agent + ' · ' : '') + secondary(next);
+          if (paneMode === 'chat') { drawChat(lastTurns); updateInputBar(); }
+        }
+        var main = curPane && paneMode === 'chat' && $('chat').querySelector('.conversation-main');
+        if (main) syncChatLive(main, next, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === next.pane_id && curAgent && curAgent.status === 'working'; });
       }).catch(function () {});
     });
   }
@@ -2746,7 +2791,7 @@
       }).then(function (agents) {
         if (!Array.isArray(agents) || !current(true) || asked !== curPane) return;
         var next = byId(agents, asked), changed = !next || next.status !== curAgent.status || next.since !== curAgent.since;
-        lastAgents = agents; curAgent = next || Object.assign({}, curAgent, {status: ''});
+        lastAgents = agents; curAgent = next || withoutRosterState(curAgent); syncFocusSessionHeader(true);
         if (paneMode === 'chat') {
           if (changed && $('chat').querySelector('.conversation-main')) drawChat(lastTurns);
           else { var host = $('chat').querySelector('.conversation-main'); if (host) syncChatLive(host, curAgent, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === asked && curAgent.status === 'working'; }); }
@@ -3587,6 +3632,7 @@
 
   function startWorkbench() {
     retireDocumentReaders(); cancelReads(); viewEpoch++;
+    syncFocusSessionHeader(false);
     WB.on = true; updatePageTitle('workbench');
     ['gate', 'radar', 'panes', 'pane', 'chat', 'chat-input'].forEach(function (id) { $(id).hidden = true; });
     clearInterval(panesTimer); panesTimer = null;
@@ -3617,8 +3663,14 @@
         if (!agents || !current(true)) return; setWbConn(true); WB.agents = agents; lastAgents = agents;
         if (WB.saved) { restoreTiles(agents); WB.saved = null; }
         renderTree(agents); fetchShare();
-        // refresh each tile's header status + waiting border
-        WB.tiles.forEach(function (t) { var a = byId(agents, t.id); if (a) { t.agent = a; updateTileHead(t); } else if (readableConversation(t.agent)) removeTile(t); });
+        WB.tiles.forEach(function (t) {
+          var a = byId(agents, t.id);
+          if (a) t.agent = a;
+          else if (readableConversation(t.agent)) { removeTile(t); return; }
+          else if (t.agent.agent && (t.agent.status || t.agent.error)) t.agent = withoutRosterState(t.agent);
+          else return;
+          updateTileHead(t);
+        });
       }).catch(function () { if (current()) setWbConn(false); });
     }, 15000, function () { setWbConn(false); });
   }
@@ -3833,6 +3885,7 @@
     var identity = document.createElement('div'); identity.className = 'tile-identity'; head.appendChild(identity);
     var nm = document.createElement('span'); nm.className = 'tile-name'; nm.textContent = primary(t.agent); identity.appendChild(nm);
     var meta = document.createElement('div'); meta.className = 'tile-meta'; identity.appendChild(meta);
+    var state = document.createElement('span'); state.className = 'session-state'; meta.appendChild(state);
     var id = document.createElement('span'); id.className = 'tile-id'; id.textContent = hasPane(t.agent) ? t.agent.pane_id : nativeSourceLabel(t.agent); meta.appendChild(id);
     // Read-only capabilities remain visible when there is no composer.
     var cap = document.createElement('span'); cap.className = 'cap-chip'; cap.hidden = true; t.capEl = cap; meta.appendChild(cap);
@@ -3874,16 +3927,22 @@
     el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
     dragMove(t, head); dragResize(t, rz);
     $('board').appendChild(el);
-    t.headNm = nm; t.headAv = head.querySelector('.avatar');
+    t.head = head; t.headState = state; t.headNm = nm; t.headBadge = head.querySelector('.avatar .badge');
     updateTileHead(t);
   }
   function updateTileHead(t) {
-    var st = COLORS[t.agent.status] ? t.agent.status : 'running';
-    t.el.classList.toggle('waiting', st === 'waiting');
+    var previous = t.head.dataset.sessionState;
+    var state = paintSessionHeader(t.head, t.headState, t.agent, readableConversation(t.agent));
+    t.el.classList.toggle('waiting', state === 'waiting');
     if (t.headNm) t.headNm.textContent = primary(t.agent);
     if (t.composer && !t.inputEl.hidden) t.composer.sync();
-    var bdg = t.headAv && t.headAv.querySelector('.badge');
-    if (bdg) { bdg.innerHTML = badgeSVG(st, t.agent.error); bdg.setAttribute('aria-label', t.agent.error ? LABEL.errored : LABEL[st]); }
+    if (t.headBadge && state !== previous) {
+      t.headBadge.hidden = state === 'unknown' || state === 'terminal';
+      if (!t.headBadge.hidden) {
+        t.headBadge.innerHTML = badgeSVG(state, state === 'errored');
+        t.headBadge.setAttribute('aria-label', LABEL[state]);
+      }
+    }
     var host = t.body && t.body.querySelector('.conversation-main');
     if (t.mode === 'chat' && host) syncChatLive(host, t.agent, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
   }

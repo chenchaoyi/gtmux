@@ -33,6 +33,10 @@
   --running: #8E8E93;
   --amber: #b57509;
   --waiting-tint: rgba(239,68,68,.07);
+  --session-working-bg: #edf9fc; --session-working-ink: #0d6476;
+  --session-waiting-bg: #fff1f2; --session-waiting-ink: #a52a38;
+  --session-idle-bg: #eff9f2; --session-idle-ink: #176038;
+  --session-errored-bg: #fff7e9; --session-errored-ink: #875615;
   --terminal-bg: #17171a;
   --col: 900px;
   --icon-size: 20px;
@@ -55,6 +59,10 @@
   --trace-tool: #c5b897;
   --shadow: rgba(0,0,0,.35);
   --amber: #F59E0B;
+  --session-working-bg: #162b31; --session-working-ink: #6dd9e8;
+  --session-waiting-bg: #321f24; --session-waiting-ink: #f4a1aa;
+  --session-idle-bg: #1b2c24; --session-idle-ink: #8bd5a4;
+  --session-errored-bg: #32291c; --session-errored-ink: #e8c483;
 }
 
 * { box-sizing: border-box; }
@@ -74,6 +82,7 @@ body { display: flex; flex-direction: column; }
   max-width: var(--col); margin: 0 auto; width: 100%; padding: 11px 16px;
 }
 #bar #title { font-weight: 600; }
+#session-meta { display: inline-flex; align-items: center; min-width: 0; gap: 8px; }
 #bar #sub { color: var(--fg3); font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* connection indicator: server name + status dot (no "live" text). 3 states. */
 #bar .conn { margin-left: auto; }
@@ -600,11 +609,9 @@ body:has(#gate:not([hidden])) #gear { margin-left: auto; }
 
 /* tile */
 .tile { position: absolute; display: flex; flex-direction: column; border-radius: 10px; background: var(--bg); border: 1px solid var(--divider); overflow: hidden; box-shadow: 0 10px 30px var(--shadow); }
-.tile.waiting { border-color: rgba(239,68,68,0.45); animation: tile-pulse 2.4s ease-in-out infinite; }
-@keyframes tile-pulse { 0%,100% { box-shadow: 0 10px 30px var(--shadow), 0 0 0 0 rgba(239,68,68,0); } 50% { box-shadow: 0 10px 30px var(--shadow), 0 0 0 3px rgba(239,68,68,0.26); } }
+.tile.waiting { border-color: rgba(239,68,68,0.45); }
 .tile.focused { z-index: 50; }
 .tile-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 9px; border-bottom: 1px solid var(--divider); cursor: move; flex: 0 0 auto; }
-.tile.waiting .tile-head { background: var(--waiting-tint); }
 .tile-head .avatar { width: 20px; height: 20px; border-radius: 5px; }
 .tile-head .avatar .mono { font-size: 8px; }
 .tile-name { flex: 1 1 80px; min-width: 0; font-size: 12px; font-weight: 600; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -693,7 +700,6 @@ body:has(#gate:not([hidden])) #gear { margin-left: auto; }
   #bar:has(#back:not([hidden])) .bar-inner { flex-wrap: wrap; row-gap: 4px; column-gap: 8px; padding: 8px 12px; }
   #bar:has(#back:not([hidden])) .bar-inner::after { content: ""; order: 1; flex: 0 0 100%; height: 0; }
   #bar:has(#back:not([hidden])) #title { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #bar:has(#back:not([hidden])) #sub { flex: 1 1 0; }
   #bar:has(#back:not([hidden])) .conn { max-width: 40%; }
   #bar:has(#back:not([hidden])) :is(#identity, #cap, #focus-nav, #mode, #focus-ctl, #gear) { order: 2; }
   #bar:has(#back:not([hidden])) #identity { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -991,6 +997,7 @@ button.appr-opt:disabled {opacity: .45; cursor: default;}
 .bub-act button[data-state="done"] { color: var(--accent-ink); }
 .bub-act button[data-state="error"] { color: var(--amber); }
 button:focus-visible, .pm-name:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+#mode button:focus-visible { outline-offset: -3px; }
 [role="link"]:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -2px; border-radius: 6px; }
 button:disabled { cursor: default; }
 .tile-btn { color: var(--fg2); }
@@ -1256,7 +1263,7 @@ button.trace-turn { margin: 5px 0; padding: 10px 12px; border: 1px solid var(--d
   #bar:has(#back:not([hidden])) .bar-inner { display: grid; grid-template-columns: 40px minmax(0, 1fr) 12px 40px; grid-template-rows: auto auto auto; column-gap: 6px; row-gap: 0; padding: 8px 12px; }
   #bar:has(#back:not([hidden])) #back { grid-column: 1; grid-row: 1 / 3; min-height: 44px; margin: 0; }
   #bar:has(#back:not([hidden])) #title { grid-column: 2; grid-row: 1; max-width: none; line-height: 24px; font-size: 15px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-  #bar:has(#back:not([hidden])) #sub { display: block; grid-column: 2; grid-row: 2; max-width: none; margin: 0; line-height: 18px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  #bar:has(#back:not([hidden])) #session-meta { grid-column: 2; grid-row: 2; line-height: 18px; overflow: hidden; }
   #bar:has(#back:not([hidden])) #conn { grid-column: 3; grid-row: 1 / 3; max-width: 12px; overflow: hidden; white-space: nowrap; margin: 0; }
   #bar:has(#back:not([hidden])) #gear { grid-column: 4; grid-row: 1 / 3; min-width: 40px; min-height: 44px; margin: 0; }
   #bar:has(#back:not([hidden])) :is(#identity, #focus-nav, #cap) { display: none; }
@@ -1686,3 +1693,25 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .document-html{display:block;width:100%;height:68vh;min-height:240px;border:0;background:var(--bg)}
 .document-preview-note{font-size:12px;color:var(--fg2);margin:12px 0 0}
 .document-pdf{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border:1px solid var(--divider);border-radius:10px;color:var(--accent-ink)}
+
+/* The complete conversation header carries state; focus remains an independent cue. */
+[data-session-state] { --session-bg: var(--surface); --session-ink: var(--fg2); --session-accent: var(--running); }
+[data-session-state="working"] { --session-bg: var(--session-working-bg); --session-ink: var(--session-working-ink); --session-accent: var(--working); }
+[data-session-state="waiting"] { --session-bg: var(--session-waiting-bg); --session-ink: var(--session-waiting-ink); --session-accent: var(--waiting); }
+[data-session-state="idle"] { --session-bg: var(--session-idle-bg); --session-ink: var(--session-idle-ink); --session-accent: var(--idle); }
+[data-session-state="errored"] { --session-bg: var(--session-errored-bg); --session-ink: var(--session-errored-ink); --session-accent: var(--amber); }
+.tile-head[data-session-state], #bar[data-session-state] {
+  --fg3: var(--fg2); background: var(--session-bg); box-shadow: inset 0 3px 0 var(--session-accent);
+  transition: box-shadow .16s ease;
+}
+.session-state { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 5px; color: var(--session-ink); font-size: 12px; font-weight: 600; line-height: 18px; white-space: nowrap; }
+.session-state-symbol { display: inline-block; position: relative; order: -1; width: 12px; height: 12px; flex: 0 0 12px; font-style: normal; }
+.session-state-symbol::before { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: currentColor; }
+[data-session-state="working"] > .session-state-symbol::before { inset: 1px; border: 2px solid currentColor; border-right-color: transparent; background: none; }
+[data-session-state="waiting"] > .session-state-symbol::before { inset: 1px 2px; border-left: 2px solid currentColor; border-right: 2px solid currentColor; border-radius: 0; background: none; }
+[data-session-state="idle"] > .session-state-symbol::before { content: '✓'; inset: 0; background: none; font-size: 14px; line-height: 12px; text-align: center; }
+[data-session-state="errored"] > .session-state-symbol::before { content: '!'; inset: -1px 0; border: 1.5px solid currentColor; background: none; font-size: 10px; line-height: 11px; text-align: center; }
+[data-session-state="unknown"] > .session-state-symbol::before { content: '?'; inset: 0; background: none; font-size: 13px; line-height: 12px; text-align: center; }
+@media (prefers-reduced-motion: reduce) {
+  .tile-head[data-session-state], #bar[data-session-state] { transition: none; }
+}
