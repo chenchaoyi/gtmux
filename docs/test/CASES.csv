@@ -2013,7 +2013,8 @@ LEG-299a386d0b2e,L1,Go core / CLI / server,internal/hq/watchdog_test.go,64,Test,
 LEG-b69f5d669218,L1,Go core / CLI / server,internal/hq/workspace_playbook_test.go,11,Test,TestBothChartersTeachUsableExistingGoalRegistration,False,legacy-not-retrospectively-reviewed
 LEG-e3fbf38a42ec,L1,Go core / CLI / server,internal/hqinput/lease_test.go,9,Test,TestCompetingChannelsHoldRatherThanOverwriteAndResumeAfterRelease,False,legacy-not-retrospectively-reviewed
 LEG-fdd84b1b101f,L1,Go core / CLI / server,internal/hqinput/lease_test.go,29,Test,TestInputLeaseFailureIsExplicit,False,legacy-not-retrospectively-reviewed
-MAP-e4cfa47e623e,L2,reviewed implementation,internal/hqinput/rotation_test.go,13,reviewed-selector,TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize,False,HRW-003
+MAP-e4cfa47e623e,L2,reviewed implementation,internal/hqinput/rotation_test.go,14,reviewed-selector,TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize,False,HRW-003
+MAP-e492c26b62e3,L2,reviewed implementation,internal/hqinput/rotation_test.go,72,reviewed-selector,TestHRB005SentRotationWindowIsBoundedAndOptIn,False,"HRW-003,HRB-005"
 MAP-23d161981468,L2,reviewed implementation,internal/hqnudge/autorecovery_review_test.go,35,reviewed-selector,TestHWA009LateReceiptRespectsProtectedClaim,False,"HWA-009,HWA-010"
 MAP-f684d0fb5b52,L2,reviewed implementation,internal/hqnudge/autorecovery_review_test.go,99,reviewed-selector,TestHWA010MixedRecoveryFaultHoldsAdmission,False,"HWA-009,HWA-010"
 MAP-73f59a730485,L2,reviewed implementation,internal/hqnudge/autorecovery_test.go,14,reviewed-selector,TestHWA001AttributableParkCollisionKeepsIndependentDelivery,False,"HWA-001,HWA-002"
@@ -2106,6 +2107,9 @@ MAP-e18928535cdf,L2,reviewed implementation,internal/hqnudge/rotation_brief_reco
 MAP-ade5c027fb08,L2,reviewed implementation,internal/hqnudge/rotation_brief_recovery_test.go,28,reviewed-selector,TestHRB004LoneRelayReportsUnavailableTarget,False,"HRB-003,HRB-004"
 MAP-a93d800b6c1d,L2,reviewed implementation,internal/hqnudge/rotation_brief_test.go,18,reviewed-selector,TestHRB001RotationBriefBindsOriginalRecipient,False,"HRB-001,HRB-002"
 MAP-974764f4f5ce,L2,reviewed implementation,internal/hqnudge/rotation_brief_test.go,124,reviewed-selector,TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake,False,"HRB-001,HRB-002"
+MAP-3e2e3fefb84f,L2,reviewed implementation,internal/hqnudge/rotation_brief_test.go,254,reviewed-selector,TestHRB005ReservedSuccessorPrecedesImmediateAndPeriodicWakes,False,"HRB-001,HRB-002,HRB-005,HRB-006"
+MAP-d583da1c618e,L2,reviewed implementation,internal/hqnudge/rotation_brief_test.go,321,reviewed-selector,TestHRB005SentHandoffHoldsLegacyRepair,False,"HRB-001,HRB-002,HRB-005,HRB-006"
+MAP-5b7f8ed801fa,L2,reviewed implementation,internal/hqnudge/rotation_brief_test.go,349,reviewed-selector,TestHRB006ComposerWaitPreservesBriefing,False,"HRB-001,HRB-002,HRB-005,HRB-006"
 MAP-2f393b4dfbb1,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,29,reviewed-selector,TestHRW004PublicChannelsHoldBehindRotationAndPreservePriority,False,"HRW-004,HRW-005,HRW-008"
 MAP-89ffb5925672,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,89,reviewed-selector,TestHRW004RotationDoesNotSubmitOrRepairUserDraft,False,"HRW-004,HRW-005,HRW-008"
 MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,103,reviewed-selector,TestHRW004ExactOwnStrandedRepairPrecedesReservation,False,"HRW-004,HRW-005,HRW-008"

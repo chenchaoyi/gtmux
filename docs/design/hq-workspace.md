@@ -167,9 +167,12 @@ including input-method and explicit-send handling.
 
 Workspace delivery, automatic HQ wakes, rotation and startup briefing share a nonblocking input lease
 (`internal/hqinput`). Competing channels keep their saved queue instead of writing
-over one another. Startup briefing retains its existing best-effort refusal and reports
-contention. Rotation re-reads its durable attempt after acquiring the lease, so a stale
-unsent snapshot cannot repeat a reset. Human typing still relies on existing draft/submit guards.
+over one another. When a Codex rotation enables the startup briefing, the durable reset
+reserves the successor's first safe automatic input through the existing handoff deadline.
+The addressed briefing waits through temporary composer use. An accepted or uncertain
+attempt cannot be replayed. Ordinary wakes and protected Relay attention resume after the
+reservation. Rotation re-reads its durable attempt under the lease, so a stale unsent
+snapshot cannot repeat a reset. Existing draft and submit guards protect human input.
 
 ## 6. Enrollment of existing work
 

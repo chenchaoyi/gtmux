@@ -47,11 +47,12 @@ type rotationRequest struct {
 	Input                 string `json:"input"`
 	CreatedAt             int64  `json:"createdAt"`
 	SentAt                int64  `json:"sentAt,omitempty"`
+	ReserveBrief          bool   `json:"reserveBrief,omitempty"`
 }
 
 const (
 	rotationReadyDelay   = 3 * time.Second
-	rotationSettleWait   = 45 * time.Second
+	rotationSettleWait   = hqinput.RotationSettleWait
 	rotationQueueLimit   = 30 * time.Minute
 	rotationReadyWait    = hqinput.RotationReadyWait
 	rotationIdentityWait = time.Minute
@@ -367,6 +368,7 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 	// reset after Codex discards or submits the first draft. An uncertain attempt
 	// may time out as failed, but it is never retried automatically.
 	r.SentAt = now.Unix()
+	r.ReserveBrief = r.Agent == "codex" && hqBriefingEnabled()
 	if err := writeRotationFile(r, false); err != nil {
 		failRotation(r, "could not record reset attempt; no keys were sent", now.Unix())
 		return

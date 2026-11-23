@@ -1131,12 +1131,20 @@ Automatic Codex wakes SHALL freshly verify an exact loaded idle thread before at
 - **THEN** no new automatic batch is claimed, pasted or submitted until the reservation ends
 - **AND** existing exact stranded-batch repair and all identity/draft guards remain
 
+#### Scenario: Automatic wakes compete with a Codex successor briefing
+- **GIVEN** a Codex reset has been recorded with its startup briefing enabled
+- **WHEN** an immediate or periodic drain runs before the existing rotation deadlines
+- **THEN** regular wakes, protected Relay attention, and legacy repair input SHALL remain local while the successor is being resolved or its handoff is pending
+- **AND** the addressed briefing gets the first safe opportunity, its own native batch and the existing original deadline
+- **AND** temporary composer unavailability SHALL keep the briefing pending; once a native attempt has begun, only definite evidence of non-submission due to the composer can return that same briefing to the queue
+- **AND** terminal acceptance or uncertainty SHALL NOT authorize replays, and expiry or completed rotation SHALL release the input reservation without repeating reset
+
 #### Scenario: A queued rotation briefing outlives its recipient
 - **GIVEN** a sent rotation reserves one startup briefing for its verified Codex successor
 - **WHEN** the queue drains, and again at the native submission boundary
 - **THEN** the original request, Codex Home, successor session, frontend and pane instance SHALL match and the original confirmation deadline SHALL still be in the future
-- **AND** an unbound legacy rotation briefing or a definite refusal SHALL remain unsent, a possible submission SHALL remain uncertain, and neither SHALL be replayed or use keyboard fallback
-- **AND** other wakes and Relay attention retain their own ordinary submission opportunities, and rotation confirmation retains its existing timing rules
+- **AND** an unbound legacy rotation briefing or a terminal refusal SHALL remain unsent, a possible submission SHALL remain uncertain, and none SHALL be replayed or use keyboard fallback
+- **AND** other wakes and Relay attention resume their ordinary submission rules when the reservation ends, and rotation confirmation retains its existing timing rules
 
 #### Scenario: No safe maintenance window arrives
 - **WHEN** the existing rotation deadline expires

@@ -13,6 +13,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
+	"github.com/chenchaoyi/gtmux/internal/hqinput"
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
@@ -255,6 +256,10 @@ func repairStranded(x io, pane string) {
 		return
 	}
 	if targetMatches && !m.InFlight && len(claims) > 0 && m.Attempts < enterRepairMaxAttempts {
+		window, err := hqinput.RotationWindow(pane, x.nowNano()/int64(time.Second))
+		if err != nil || window == hqinput.RotationHandoff {
+			return
+		}
 		if !readyLegacyTarget(x, pane, m.Target) {
 			return
 		}

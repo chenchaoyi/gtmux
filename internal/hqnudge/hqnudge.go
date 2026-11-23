@@ -208,13 +208,7 @@ func deliver(x io, pane, msg string) {
 		return
 	}
 	enqueue(x, msg) // to disk; nothing typed yet
-	if !agentUp(x, pane) {
-		return // held: the pane is a shell, the agent is not up — the next drain retries
-	}
-	repairStranded(x, pane)
-	if boxEmpty(x, pane) {
-		drainInto(x, pane) // one coalesced send — the only place a batch is typed
-	}
+	drain(x, pane)
 }
 
 // Enqueue queues msg for a LATER drain without attempting delivery — the no-HQ-right-
@@ -256,13 +250,7 @@ func deliverKeyedAt(x io, pane, key, msg string, dueNano int64) {
 		return
 	}
 	enqueueKeyed(x, key, msg, dueNano)
-	if !agentUp(x, pane) {
-		return // held until the agent holds the pane (agentUp)
-	}
-	repairStranded(x, pane)
-	if boxEmpty(x, pane) {
-		drainInto(x, pane) // flushes whatever is DUE (this entry only once due)
-	}
+	drain(x, pane)
 }
 
 // Drain flushes any queued nudges into the HQ pane when its box is empty (coalesced).
@@ -606,12 +594,12 @@ func batchID(claims []string, payload string) string {
 // A claim is REMOVED only once the delivery is acked; otherwise it is returned to the
 // queue for a later attempt.
 func drainInto(x io, pane string) {
-	pending, err := hqinput.RotationPending(pane)
+	window, err := hqinput.RotationWindow(pane, x.nowNano()/int64(time.Second))
 	if err != nil {
 		recordIssue(issueRecoveryUnsafe, x.nowNano())
 		return
 	}
-	if pending {
+	if window == hqinput.RotationReset {
 		return // an unsent maintenance request reserves a safe input window
 	}
 	// Recover possible native submissions before ordinary orphan handling, even
@@ -664,6 +652,12 @@ func drainInto(x io, pane string) {
 	due := queuedNames(func(n string) bool { return !protected[n+sendingSuffix] && dueForAttempt(n) <= now })
 	regular, reserved := splitRelayAttention(due)
 	regular, brief := splitRotationBriefs(regular)
+	if window == hqinput.RotationHandoff {
+		if brief != "" {
+			drainRotationBrief(x, pane, brief)
+		}
+		return // even the gap before publication belongs to the handoff
+	}
 	reservedTarget := ""
 	if reserved != "" && submit != nil && emptyRecognizedWakeBox(x, pane) {
 		reservedTarget = wakeIdentity(x, pane)

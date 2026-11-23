@@ -6,6 +6,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -49,7 +50,8 @@ func TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize(t *testing.T) 
 				}
 			}
 			before, bErr := os.Lstat(path)
-			hold, err := RotationPending("%6")
+			window, err := RotationWindow("%6", 2)
+			hold := window == RotationReset
 			if hold != tc.hold || (err != nil) != tc.bad {
 				t.Fatal("reservation verdict", hold, err)
 			}
@@ -62,6 +64,37 @@ func TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize(t *testing.T) 
 				if string(b) != tc.body {
 					t.Fatal("reservation bytes changed")
 				}
+			}
+		})
+	}
+}
+
+func TestHRB005SentRotationWindowIsBoundedAndOptIn(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	path := filepath.Join(state.Dir(), "hqwake", "rotate-pending.json")
+	if err := state.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		t.Fatal(err)
+	}
+	const reset = `{"pane":"%6","agent":"codex","retiring":"old","input":"/new","createdAt":1,"sentAt":2`
+	for _, tc := range []struct {
+		name, fields, pane string
+		now                int64
+		want               RotationOpportunity
+	}{
+		{"publication gap", `,"reserveBrief":true`, "%6", 3, RotationHandoff},
+		{"other pane", `,"reserveBrief":true`, "%7", 3, RotationUnreserved},
+		{"disabled", "", "%6", 3, RotationUnreserved},
+		{"switch missing at deadline", `,"reserveBrief":true`, "%6", 2 + int64(RotationSettleWait/time.Second), RotationUnreserved},
+		{"successor window", `,"reserveBrief":true,"switchedAt":4`, "%6", 46, RotationHandoff},
+		{"legacy bound briefing", `,"switchedAt":4,"bootstrapAt":4`, "%6", 46, RotationHandoff},
+		{"successor deadline", `,"reserveBrief":true,"switchedAt":4`, "%6", 4 + int64(RotationReadyWait/time.Second), RotationUnreserved},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := state.WriteFile(path, []byte(reset+tc.fields+"}"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if got, err := RotationWindow(tc.pane, tc.now); err != nil || got != tc.want {
+				t.Fatalf("input window = %v, %v; want %v", got, err, tc.want)
 			}
 		})
 	}

@@ -982,10 +982,12 @@
   },
   "internal/hqinput/rotation_test.go": {
     "cases": [
-      "HRW-003"
+      "HRW-003",
+      "HRB-005"
     ],
     "selectors": [
-      "TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize"
+      "TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize",
+      "TestHRB005SentRotationWindowIsBoundedAndOptIn"
     ]
   },
   "internal/hqnudge/relay_attention_test.go": {
@@ -5315,11 +5317,16 @@
   "internal/hqnudge/rotation_brief_test.go": {
     "cases": [
       "HRB-001",
-      "HRB-002"
+      "HRB-002",
+      "HRB-005",
+      "HRB-006"
     ],
     "selectors": [
       "TestHRB001RotationBriefBindsOriginalRecipient",
-      "TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake"
+      "TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake",
+      "TestHRB005ReservedSuccessorPrecedesImmediateAndPeriodicWakes",
+      "TestHRB005SentHandoffHoldsLegacyRepair",
+      "TestHRB006ComposerWaitPreservesBriefing"
     ]
   },
   "internal/hq/rotation_durability_test.go": {
