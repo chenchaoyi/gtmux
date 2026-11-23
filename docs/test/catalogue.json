@@ -69696,6 +69696,67 @@
       ],
       "sha256": "924f9f94ed5840581643c85477185851d6c06096b02ba7870687678b28a2ff83"
     },
+    "internal/hq/attention_decision_recovery_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9b9c261b96f9",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestHND014WorkspaceDecisionWaitsForDurableReservation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        },
+        {
+          "id": "MAP-f2c4dd204e5a",
+          "line": 52,
+          "kind": "reviewed-selector",
+          "name": "TestHND014WorkspaceDecisionRepairsKnownRefusal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        },
+        {
+          "id": "MAP-e11f6a361946",
+          "line": 102,
+          "kind": "reviewed-selector",
+          "name": "TestHND014WorkspaceDecisionRepairsKnownAdmission",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        },
+        {
+          "id": "MAP-2be6649828f3",
+          "line": 129,
+          "kind": "reviewed-selector",
+          "name": "TestHND014WorkspaceDecisionHoldsOnlyUnknownRequestAfterRestart",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        },
+        {
+          "id": "MAP-6c79913cf01c",
+          "line": 184,
+          "kind": "reviewed-selector",
+          "name": "TestHND013WorkspaceBlockerRetainsSlotAfterReservationFailure",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        },
+        {
+          "id": "MAP-545311a78572",
+          "line": 208,
+          "kind": "reviewed-selector",
+          "name": "TestHND013WakeNoticeWriterKeepsLedgerWithinReadBudget",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HND-013,HND-014"
+        }
+      ],
+      "sha256": "a3df83fbf3c0b808d482eb9f3504e95cb4e1d0021e4dc553040189d05baedf43"
+    },
     "internal/hq/attention_decision_storage_test.go": {
       "layer": "L2",
       "stack": "reviewed implementation",
@@ -69728,7 +69789,7 @@
           "design": "HND-012"
         }
       ],
-      "sha256": "f5db47c5f641273a0e46bc9b8cd115f8f637930ec583a377ad7cc2b1eba47e47"
+      "sha256": "14856514d4b55fbb31659152b9334abe4d1bbad91f236db7f4c7c22a72b07560"
     },
     "internal/hq/attention_decision_test.go": {
       "layer": "L2",

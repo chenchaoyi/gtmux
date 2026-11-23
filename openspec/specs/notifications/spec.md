@@ -246,8 +246,9 @@ notifications and the durable HQ audit remain independent.
 
 - **WHEN** the attempt ledger is unreadable or the producer cannot durably reserve the question
 - **THEN** the current question remains visible and the producer holds its desktop request
-- **AND** independent verified blockers remain eligible
-- **AND** a reservation with no recorded result after an interruption prevents automatic replay
+- **AND** failed reservations leave sending slots and cooldowns available for independent verified blockers
+- **AND** the running producer records known unsubmitted or refused attempts after storage recovers
+- **AND** an interrupted request with an unknown queue result is reported and held while other requests can proceed
 
 #### Scenario: A managed request arrives during notification polling
 

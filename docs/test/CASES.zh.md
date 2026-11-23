@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1447 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1448 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2703 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2709 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 134 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -370,6 +370,8 @@
 | HND-010 | The same active request remains in the workspace snapshot and consumes only its first admission. Loading the old timestamp also avoids a repeat. The independent blocker keeps its periodic opportunity and the genuinely new request uses the same matter notification identity. Verified resolution removes only that identity from the active snapshot. |
 | HND-011 | Both actual attempts are present in the independent journal. The retry is rate-limited and uses the same matter identity. Once a successful admission is persisted, future unchanged scans keep the request active without another desktop submission. |
 | HND-012 | An unreadable ledger is preserved and holds only question admissions while blockers continue to alert. A failed reservation produces no question admission, and a later successful reservation is present before the queue call. A durable refusal retains cooldown; a reservation that survives interrupted result recording preserves audit and holds automatic replay. Normal entries continue to publish their active notification identity. |
+| HND-014 | An unreadable ledger holds question admission without overwriting earlier evidence. A confirmed unsubmitted question recovers early eligibility. A known refusal recovers the original retry time. With only a durable unfinished reservation, the system keeps the question visible, records that its queue result is unknown, and holds replay. Each admission has its own reservation. |
+| HND-013 | The failed preparations consume no sending slots, so the blocker still alerts. Its local cooldown limits repetitions until storage recovery. The writer preserves its readable byte limit rather than publishing an unreadable ledger. |
 | HSW-001 | The v1.0.193 tail proves the short capture and loses proof after growth. A single contiguous prefix after the verified metadata proves exact original times. The original receipt key gains one independent delivery audit and no extra input attempts, Paste or Enter. |
 | HSW-002 | Ineligible or ambiguous evidence cannot add a delivery audit. Active unverified and unknown input remain protected, expired evidence stays archived as its original receipt, and neither observation nor later drain resubmits it. The regular tail remains available for existing positive probes. |
 | HPC-006 | No early repeat. At the next eligible tick, the exact evidence remains pending and its second wake is enqueued without waiting for another full interval. |

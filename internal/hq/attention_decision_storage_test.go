@@ -109,6 +109,7 @@ func TestHND012WorkspaceDecisionRetainsReservationIfRefusalWriteFails(t *testing
 		t.Fatalf("the reservation should survive a failed result write: %v, %v", ledger, err)
 	}
 	writeWakeNoticeLedger = writer
+	workspaceNoticeDelivery.path = "" // Only persisted state remains after restart.
 	WatchWorkspaceAttention(now+2*wakeNoticeInterval, rows)
 	if len(*sent) != 1 {
 		t.Fatalf("a reservation with an unrecorded result should hold replay: %#v", *sent)

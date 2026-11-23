@@ -1694,6 +1694,12 @@ LEG-618e86c9a264,L1,Go core / CLI / server,internal/hq/archive_small_records_tes
 LEG-01098dda3d23,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,127,Benchmark,BenchmarkSmallRecordArchive7000,False,legacy-not-retrospectively-reviewed
 LEG-8ad77d3c1573,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,128,Benchmark,BenchmarkSmallRecordArchive10000,False,legacy-not-retrospectively-reviewed
 LEG-29886f95fa14,L1,Go core / CLI / server,internal/hq/archive_small_records_test.go,138,Test,TestArchivePreflightIncludesTarOverhead,False,legacy-upstream-PR1814
+MAP-9b9c261b96f9,L2,reviewed implementation,internal/hq/attention_decision_recovery_test.go,17,reviewed-selector,TestHND014WorkspaceDecisionWaitsForDurableReservation,False,"HND-013,HND-014"
+MAP-f2c4dd204e5a,L2,reviewed implementation,internal/hq/attention_decision_recovery_test.go,52,reviewed-selector,TestHND014WorkspaceDecisionRepairsKnownRefusal,False,"HND-013,HND-014"
+MAP-e11f6a361946,L2,reviewed implementation,internal/hq/attention_decision_recovery_test.go,102,reviewed-selector,TestHND014WorkspaceDecisionRepairsKnownAdmission,False,"HND-013,HND-014"
+MAP-2be6649828f3,L2,reviewed implementation,internal/hq/attention_decision_recovery_test.go,129,reviewed-selector,TestHND014WorkspaceDecisionHoldsOnlyUnknownRequestAfterRestart,False,"HND-013,HND-014"
+MAP-6c79913cf01c,L2,reviewed implementation,internal/hq/attention_decision_recovery_test.go,184,reviewed-selector,TestHND013WorkspaceBlockerRetainsSlotAfterReservationFailure,False,"HND-013,HND-014"
+MAP-545311a78572,L2,reviewed implementation,internal/hq/attention_decision_recovery_test.go,208,reviewed-selector,TestHND013WakeNoticeWriterKeepsLedgerWithinReadBudget,False,"HND-013,HND-014"
 MAP-42114743aa82,L2,reviewed implementation,internal/hq/attention_decision_storage_test.go,14,reviewed-selector,TestHND012WorkspaceDecisionPreservesUnreadableLedger,False,HND-012
 MAP-dbb1dd0f67b1,L2,reviewed implementation,internal/hq/attention_decision_storage_test.go,52,reviewed-selector,TestHND012WorkspaceDecisionWaitsForDurableReservation,False,HND-012
 MAP-d0d26be36287,L2,reviewed implementation,internal/hq/attention_decision_storage_test.go,84,reviewed-selector,TestHND012WorkspaceDecisionRetainsReservationIfRefusalWriteFails,False,HND-012

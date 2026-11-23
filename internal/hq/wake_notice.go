@@ -20,6 +20,9 @@ import (
 )
 
 const wakeNoticeInterval = int64((15 * time.Minute) / time.Second)
+const wakeNoticeLedgerLimit = 128 << 10
+
+var errWakeNoticeLedgerTooLarge = errors.New("wake notice state exceeds the size limit")
 
 type WorkspaceAttention struct {
 	MatterID   string
@@ -148,7 +151,12 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 	}
 	path := filepath.Join(state.Dir(), "hqwake", "notices-"+scope+".json")
 	previous, readErr := readWakeNotices(path)
+	workspace := scope == "workspace"
+	if workspace {
+		previous, readErr = reconcileWorkspaceNoticeLedger(path, previous, alerts, readErr)
+	}
 	diag.ReportStoreFailure("hq-wake-notices", readErr)
+	ledgerWritable := !workspace || readErr == nil
 	next := make(map[string]int64, len(alerts))
 	type candidate struct {
 		key  string
@@ -156,15 +164,29 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 	}
 	var ready []candidate
 	for key, notice := range alerts {
-		if notice.workspaceDecision && readErr != nil {
+		if notice.workspaceDecision && !ledgerWritable {
 			continue // an unreadable record cannot authorize another attempt
 		}
 		last, attempted := previous[key]
+		if workspace && !notice.workspaceDecision {
+			if recent, ok := workspaceNoticeDelivery.blockers[key]; ok {
+				last, attempted = recent, true
+			}
+		}
+		if notice.workspaceDecision {
+			marker := workspaceNoticePendingPrefix + key
+			if at, pending := previous[marker]; pending {
+				next[marker] = at
+				if attempted {
+					next[key] = last
+				}
+				continue
+			}
+		}
 		if attempted {
 			next[key] = last
 			if notice.workspaceDecision {
-				// A reservation still counts after a crash with no recorded
-				// result. Legacy attempts also lack a durable queue result.
+				// Legacy positive timestamps are reused across upgrade.
 				if last >= 0 {
 					continue
 				}
@@ -185,28 +207,10 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 		}
 		return a.last < b.last
 	})
-	changed := len(next) != len(previous)
+	changed := !maps.Equal(next, previous)
 	selected := ready[:min(maxNew, len(ready))]
-	// Reserve questions before any queue publication. Only a confirmed queue
-	// refusal can reopen an attempt, after its retry time is recorded below.
-	var reservations map[string]int64
-	for _, item := range selected {
-		if alerts[item.key].workspaceDecision {
-			if reservations == nil {
-				reservations = maps.Clone(next)
-			}
-			reservations[item.key] = now
-		}
-	}
-	reserved := false
-	if reservations != nil {
-		err := saveWakeNotices(path, reservations)
-		diag.ReportStoreFailure("hq-wake-notices", err)
-		if err == nil {
-			next = reservations
-			changed = false
-			reserved = true
-		}
+	if workspace {
+		selected = ready // Skipped reservations do not use a sending slot.
 	}
 	queued := false
 	if summary != "" && len(selected) > 0 {
@@ -216,11 +220,29 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 		}
 		queued = sendWakeNotice(title, strings.Join(lines, "\n"), "", now)
 	}
+	sent := 0
 	for _, item := range selected {
+		if sent >= maxNew {
+			break
+		}
 		key := item.key
 		notice := alerts[key]
-		if notice.workspaceDecision && !reserved {
-			continue
+		if notice.workspaceDecision {
+			if !ledgerWritable {
+				continue
+			}
+			old, exists := next[key]
+			reserveWorkspaceNotice(next, key, now)
+			if err := saveWakeNotices(path, next); err != nil {
+				repair := workspaceNoticeRepair{key: key, reservedAt: now, value: old, keep: exists}
+				repair.apply(next)
+				if !errors.Is(err, errWakeNoticeLedgerTooLarge) {
+					workspaceNoticeDelivery.repair = &repair
+				}
+				diag.ReportStoreFailure("hq-wake-notices", err)
+				ledgerWritable = false
+				continue
+			}
 		}
 		if summary == "" {
 			queued = sendWakeNotice(title, notice.message, notice.desktopID, now)
@@ -231,15 +253,28 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 		}
 		diag.For("hq").Act("act.wake.notice", "system", scope, outcome, "HQ independent notice",
 			"reason", key, "desktop_queued", queued)
+		sent++
 		if !notice.workspaceDecision {
 			next[key] = now
 			changed = true
-		} else if !queued {
-			next[key] = -now // record the known refusal without losing its cooldown
-			changed = true
+			if workspace {
+				workspaceNoticeDelivery.blockers[key] = now
+			}
+			continue
 		}
+		result := workspaceNoticeRepair{key: key, reservedAt: now, value: now, keep: true}
+		if !queued {
+			result.value = -now // a known refusal keeps the original retry time
+		}
+		result.apply(next)
+		if err := saveWakeNotices(path, next); err != nil {
+			workspaceNoticeDelivery.repair = &result
+			diag.ReportStoreFailure("hq-wake-notices", err)
+			ledgerWritable = false
+		}
+		changed = false // the decision write includes any earlier blocker attempts
 	}
-	if !changed || (scope == "workspace" && readErr != nil) {
+	if !changed || !ledgerWritable {
 		return
 	}
 	diag.ReportStoreFailure("hq-wake-notices", saveWakeNotices(path, next))
@@ -249,6 +284,9 @@ func saveWakeNotices(path string, notices map[string]int64) error {
 	data, err := json.Marshal(notices)
 	if err != nil {
 		return err
+	}
+	if len(data) > wakeNoticeLedgerLimit {
+		return errWakeNoticeLedgerTooLarge
 	}
 	return writeWakeNoticeLedger(path, data)
 }
@@ -267,13 +305,12 @@ func readWakeNotices(path string) (map[string]int64, error) {
 		return nil, err
 	}
 	defer f.Close()
-	const budget = 128 << 10
-	data, err := io.ReadAll(io.LimitReader(f, budget+1))
+	data, err := io.ReadAll(io.LimitReader(f, wakeNoticeLedgerLimit+1))
 	if err != nil {
 		return nil, err
 	}
-	if len(data) > budget {
-		return nil, errors.New("wake notice state exceeds the size limit")
+	if len(data) > wakeNoticeLedgerLimit {
+		return nil, errWakeNoticeLedgerTooLarge
 	}
 	var previous map[string]int64
 	err = json.Unmarshal(data, &previous)
