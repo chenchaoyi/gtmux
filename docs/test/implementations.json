@@ -42,6 +42,17 @@
       "TestHND005SnapshotFailureDoesNotConsumeAlertOpportunity"
     ]
   },
+  "internal/hq/attention_decision_test.go": {
+    "cases": [
+      "HND-010",
+      "HND-011"
+    ],
+    "selectors": [
+      "TestHND010WorkspaceDecisionStaysQuietAcrossCooldownAndRefresh",
+      "TestHND010WorkspaceDecisionReadsLegacyTimestampAfterRestart",
+      "TestHND011WorkspaceDecisionRetriesKnownQueueRefusal"
+    ]
+  },
   "internal/hq/attention_lifecycle_test.go": {
     "cases": [
       "HND-001",

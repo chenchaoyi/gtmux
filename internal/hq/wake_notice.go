@@ -29,9 +29,10 @@ type WorkspaceAttention struct {
 var wakeDesktopNotice = notify.TrySend
 
 type wakeNotice struct {
-	message    string
-	desktopID  string
-	observedAt int64 // zero keeps the periodic reminder for a live condition
+	message            string
+	desktopID          string
+	observedAt         int64 // zero for conditions without an occurrence timestamp
+	onceAfterAdmission bool  // unchanged workspace decisions stay visible without another desktop notice
 }
 
 func watchWakeHealth(now int64, view hqnudge.Health) {
@@ -83,8 +84,11 @@ func WatchWorkspaceAttention(now int64, rows []WorkspaceAttention) {
 			reason = "decision"
 		}
 		key := row.MatterID + "@" + reason + "@" + row.EvidenceID
-		alerts[key] = wakeNotice{desktopID: "workspace/" + row.MatterID, message: fmt.Sprintf(
-			"%s in the HQ workspace for %s.", title, row.MatterID)}
+		alerts[key] = wakeNotice{
+			desktopID:          "workspace/" + row.MatterID,
+			message:            fmt.Sprintf("%s in the HQ workspace for %s.", title, row.MatterID),
+			onceAfterAdmission: row.NeedsUser,
+		}
 	}
 	publishWakeNotices("workspace", "HQ workspace needs attention", alerts, now, 8, "")
 }
@@ -147,37 +151,50 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 		// Continue through the durable diagnostic and desktop channel.
 	}
 	next := make(map[string]int64, len(alerts))
-	var ready []string
+	type candidate struct {
+		key  string
+		last int64
+	}
+	var ready []candidate
 	for key, notice := range alerts {
-		last, shown := previous[key]
-		if shown {
+		last, attempted := previous[key]
+		if attempted {
 			next[key] = last
+			if notice.onceAfterAdmission {
+				// Nonnegative values also include legacy attempts. Reusing them
+				// avoids reposting old questions when upgrading.
+				if last >= 0 {
+					continue
+				}
+				last = -last // a recorded queue refusal can retry after cooldown
+			}
 			if notice.observedAt > 0 && notice.observedAt <= last && now >= last {
 				continue
 			}
 		}
-		if !shown || now < last || now-last >= wakeNoticeInterval {
-			ready = append(ready, key)
+		if !attempted || now < last || now-last >= wakeNoticeInterval {
+			ready = append(ready, candidate{key: key, last: last})
 		}
 	}
 	sort.Slice(ready, func(i, j int) bool {
 		a, b := ready[i], ready[j]
-		if previous[a] == previous[b] {
-			return a < b
+		if a.last == b.last {
+			return a.key < b.key
 		}
-		return previous[a] < previous[b]
+		return a.last < b.last
 	})
 	changed := len(next) != len(previous)
 	selected := ready[:min(maxNew, len(ready))]
 	queued := false
 	if summary != "" && len(selected) > 0 {
 		lines := []string{summary}
-		for _, key := range selected {
-			lines = append(lines, alerts[key].message)
+		for _, item := range selected {
+			lines = append(lines, alerts[item.key].message)
 		}
 		queued = sendWakeNotice(title, strings.Join(lines, "\n"), "", now)
 	}
-	for _, key := range selected {
+	for _, item := range selected {
+		key := item.key
 		if summary == "" {
 			queued = sendWakeNotice(title, alerts[key].message, alerts[key].desktopID, now)
 		}
@@ -188,6 +205,9 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 		diag.For("hq").Act("act.wake.notice", "system", scope, outcome, "HQ independent notice",
 			"reason", key, "desktop_queued", queued)
 		next[key] = now
+		if !queued && alerts[key].onceAfterAdmission {
+			next[key] = -now
+		}
 		changed = true
 	}
 	if !changed {

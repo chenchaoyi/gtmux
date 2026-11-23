@@ -235,6 +235,13 @@ notifications and the durable HQ audit remain independent.
 - **THEN** the workspace shows the check without creating a desktop alert
 - **AND** an unanswered user question or a verified continuing blockage can still generate an independent notice
 
+#### Scenario: The same HQ question remains unanswered
+
+- **WHEN** the same workspace question stays active after its desktop request was admitted, including after a refresh, restart, or cooldown
+- **THEN** the workspace keeps the question visible without queuing another desktop request
+- **AND** a new question remains eligible under the same matter notification identity
+- **AND** a confirmed queue refusal retains the existing retry cooldown
+
 #### Scenario: A managed request arrives during notification polling
 
 - **WHEN** the producer publishes a current scope snapshot and then its request
