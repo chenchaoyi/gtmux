@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner (Codex self-review)",
     "date": "2026-11-24",
     "decision": "Use opt-in grouped routing with an offline, journaled and reversible transition.",
-    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting. The remaining independent findings cover admission against a loaded manager, an interrupted atomic write, misleading transition preview, and housekeeping following the active store. Delta review requires an installed macOS LaunchAgent to be persistently disabled as well as unloaded, and flatten must use directory-only cleanup against late conflicting paths. Systemd evidence must be complete and the CLI alias follows the same admission."
+    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting. The remaining independent findings cover admission against a loaded manager, an interrupted atomic write, misleading transition preview, and housekeeping following the active store. Delta review requires an installed macOS LaunchAgent to be persistently disabled as well as unloaded, and flatten must use directory-only cleanup against late conflicting paths. Systemd evidence must be complete and the CLI alias follows the same admission. The native wake lifecycle uses hard links between parked input and identity anchors. Keep the complete wake protocol at its existing paths so the layout can be adopted with retained uncertain evidence."
   },
   "cases": [
     {
@@ -130,7 +130,18 @@
         "internal/app/doctor_layout_alias_test.go",
         "internal/userservice/storage_persistent_test.go"
       ]
+    },
+    {
+      "id": "GSS-012",
+      "layer": "L1",
+      "description": "Both layouts preserve the stable HQ wake protocol paths",
+      "setup": "Disposable home with a real native claim parked as uncertain, its hard-link pin and original batch journal, plus an unrelated movable store.",
+      "action": "Group and flatten with the original wake evidence still present. Read the parked item, pin and journal in each mode.",
+      "expected": "Uncertain state and the exact link, journal bytes and identities remain at their original paths. No pending item is produced, and unrelated storage still moves.",
+      "planned_files": [
+        "internal/hqnudge/storage_layout_test.go"
+      ]
     }
   ],
-  "seal": "f17e50f58b4ddf9da94132392a87d1ac2a0ac4a3d5ceb7b71f3b65eb28d9e70e"
+  "seal": "7516383d211790a9a9565f93669e0cb60ee1c678b9bb34cd54f2201a4b381b29"
 }
