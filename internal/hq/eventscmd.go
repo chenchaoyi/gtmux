@@ -457,9 +457,16 @@ func noteHiddenEcho(hidden int) {
 // knocked again". A rule that a careful reader loses to seven times is not a discipline,
 // it is a trap; gtmux already knew whose read it was.
 func consumeHQRead(from, to int64) {
-	if isHQRead() {
-		hqwake.ConsumeRead(from, to)
+	if !isHQRead() {
+		return
 	}
+	if cursor := hqwake.Consumed(); cursor != hqwake.WatermarkUnset && from > cursor {
+		retry := "`gtmux events --since-seq " + strconv.FormatInt(cursor, 10) + " --json`"
+		i18n.Sae("HQ event preview started ahead of the saved read position. It did not advance the watermark. Read the full delta with "+retry,
+			"本次预览从 HQ 已读水位之后开始，未推进水位。请用 "+retry+" 读取完整增量。")
+		return
+	}
+	hqwake.ConsumeRead(from, to)
 }
 
 // cmdEventsAck implements `gtmux events --ack <seq>`: the EXPLICIT writeback, for when HQ
