@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1462 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1463 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3800 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2736 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 156 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 144 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
 
@@ -654,6 +654,8 @@
 | UR-001 | The 34-second HTTP-200-equivalent report is shown; the stalled read is classified as timeout, the next valid report is shown, and the late old report cannot overwrite it. |
 | UR-002 | Valid empty reports remain data, 404 is unsupported, other failures throw typed causes; no failure becomes zero usage or a fabricated report. |
 | UR-003 | Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels. |
+| WLC-001 | Terminal text has usable visible height at both sizes. Upward drag extends the overlay without shifting its bottom, transcript, composer or tile. The overlay remains inside its tile. The draft and reading position survive and no send is issued. |
+| WLC-002 | The capture remains readable and identifies its actual pane and pending history association. The read-only boundary and zero sends are preserved. |
 | WLV-001 | The panel grows upward and shrinks toward the same bottom edge. The transcript viewport and input stay in place; the draft is intact. An ongoing drag survives transcript repaint. Reopening restores the selected height. |
 | WLV-002 | Older rows are scrollable with original columns. The displayed capture and scroll offsets stay fixed while reading. The new output indication appears and the return action takes the reader to the latest output without sending any input. |
 | WLV-003 | Only Live resizes, bounded by the chat region. Navigation and the input stay available; normal height restores the chosen size. Escape collapses and focuses the disclosure. The draft is unchanged and no request sends it. |

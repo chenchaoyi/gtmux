@@ -2731,11 +2731,22 @@
     return lines.slice(-2000).join('\n');
   }
   function liveBounds(panel) {
-    var max = panel.parentElement.clientHeight;
-    return {min: Math.min(max, LIVE_MIN_HEIGHT), max: max};
+    var host = panel.parentElement, body = host.parentElement, tile = body.closest('.tile');
+    var bodyHeight = tile ? body.clientHeight : host.clientHeight;
+    // Short tiles can use the header's space above the composer, inside the card.
+    var compact = !!tile && bodyHeight < LIVE_MIN_HEIGHT;
+    var max = compact ? Math.max(0, Math.floor(body.getBoundingClientRect().bottom - tile.getBoundingClientRect().top) - tile.clientTop) : bodyHeight;
+    var min = compact ? (panel.source.hidden ? 58 : 76) : LIVE_MIN_HEIGHT;
+    return {min: Math.min(max, min), max: max, compact: compact, bodyHeight: bodyHeight};
   }
   function paintLiveHeight(panel, state) {
-    var height = state.height || LIVE_DEFAULT_HEIGHT, bounds = liveBounds(panel);
+    var bounds = liveBounds(panel), height = state.height || LIVE_DEFAULT_HEIGHT;
+    panel.classList.toggle('live-compact', bounds.compact);
+    if (bounds.compact) {
+      height = Math.max(bounds.min, state.compactHeight || Math.round(bounds.min + (bounds.max - bounds.min) / 3));
+      panel.style.setProperty('--live-available-height', bounds.max + 'px');
+      panel.parentElement.style.setProperty('--live-body-height', bounds.bodyHeight + 'px');
+    }
     panel.style.setProperty('--live-height', height + 'px');
     panel.grip.setAttribute('aria-valuemin', bounds.min);
     panel.grip.setAttribute('aria-valuemax', bounds.max);
@@ -2747,7 +2758,8 @@
     var grip = panel.grip, drag = null;
     function resize(target, bounds) {
       if (bounds.min === bounds.max) return;
-      state.height = Math.round(Math.min(bounds.max, Math.max(bounds.min, target)));
+      var height = Math.round(Math.min(bounds.max, Math.max(bounds.min, target)));
+      if (bounds.compact) state.compactHeight = height; else state.height = height;
       paintLiveHeight(panel, state);
       if (!state.frozen) panel.output.scrollTop = panel.output.scrollHeight;
     }
@@ -2817,6 +2829,7 @@
       panel.source = el('p', 'live-source');
       panel.update = el('span', 'live-update', T('New output', '有新输出')); panel.update.setAttribute('role', 'status');
       panel.resume = el('button', 'live-resume', T('Return to live', '回到实时')); panel.resume.type = 'button'; panel.resume.dataset.chatFocus = 'live-resume';
+      panel.resume.title = panel.resume.textContent;
       panel.tools.append(panel.source, panel.update, panel.resume);
       panel.output = el('pre', 'live-output'); panel.output.id = 'live-output-' + (++livePanelSequence);
       panel.output.tabIndex = 0; panel.output.dataset.chatFocus = 'live-output';
@@ -2865,6 +2878,7 @@
     var pendingHistory = !!(state.agent.observed_conversation || state.agent.history_read_only);
     panel.source.hidden = !pendingHistory;
     panel.source.textContent = pendingHistory ? T('Current pane ', '当前 pane ') + state.agent.pane_id + T(' · History association unconfirmed', ' · 历史对话关联待确认') : '';
+    panel.source.title = panel.source.textContent;
     panel.resume.hidden = !state.frozen;
     panel.update.hidden = !state.frozen || state.text === state.frozen.text;
     panel.tools.hidden = !pendingHistory && !state.frozen;
@@ -2872,10 +2886,10 @@
   function paintLive(panel, state) {
     panel.clock.textContent = liveDuration(state.agent);
     panel.action.textContent = state.open ? T('Collapse', '收起') : T('Live output', '展开实时输出');
-    if (!panel.open) { panel.wasClosed = true; return; }
-    paintLiveHeight(panel, state);
     if (!state.frozen && state.text && panel.captureRevision === state.revision && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
     paintLiveTools(panel, state);
+    paintLiveHeight(panel, state);
+    if (!panel.open) { panel.wasClosed = true; return; }
     var captured = state.frozen ? state.frozen.text : state.text;
     var text = captured || (state.error ? T('Live output is unavailable.', '暂时无法读取实时输出。') : state.loading ? T('Loading live output…', '正在加载实时输出…') : T('Waiting for output…', '等待实时输出…'));
     var changed = panel.displayedText !== text;
@@ -4234,7 +4248,13 @@
     handle.addEventListener('mousedown', function (e) {
       e.preventDefault(); e.stopPropagation();
       var sx = e.clientX, sy = e.clientY, ow = t.w, oh = t.h;
-      function mv(ev) { t.w = Math.max(180, snapv(ow + ev.clientX - sx)); t.h = Math.max(120, snapv(oh + ev.clientY - sy)); t.el.style.width = t.w + 'px'; t.el.style.height = t.h + 'px'; if (t.fit && t.mode === 'term') { try { t.fit.fit(); } catch (e2) {} } }
+      function mv(ev) {
+        t.w = Math.max(180, snapv(ow + ev.clientX - sx)); t.h = Math.max(120, snapv(oh + ev.clientY - sy));
+        t.el.style.width = t.w + 'px'; t.el.style.height = t.h + 'px';
+        var live = t.body.querySelector('.chat-live');
+        if (live) paintLiveHeight(live, chatLive[live.dataset.pane]);
+        if (t.fit && t.mode === 'term') { try { t.fit.fit(); } catch (e2) {} }
+      }
       function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); if (t.fit && t.mode === 'term' && t.lastText) { var x = t.lastText; t.lastText = ''; tileWrite(t, x); } wbSave(); }
       document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
     });

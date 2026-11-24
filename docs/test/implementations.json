@@ -5461,5 +5461,15 @@
       "WHS-007 diagonal minimum writable",
       "WHS-007 diagonal minimum read-only touch"
     ]
+  },
+  "tests/web/live-short-tiles.test.cjs": {
+    "cases": [
+      "WLC-001",
+      "WLC-002"
+    ],
+    "selectors": [
+      "WLC-001 Live is readable and draggable on ordinary short workbench cards",
+      "WLC-002 Short workbench Live identifies its current pane and preserves read-only history"
+    ]
   }
 }

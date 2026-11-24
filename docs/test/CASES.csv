@@ -7209,6 +7209,8 @@ MAP-7fb866f795f7,L3,reviewed implementation,tests/web/harness-isolation.test.cjs
 MAP-eda764da861f,G,reviewed implementation,tests/web/harness.cjs,13,reviewed-selector,function scenario,False,"CT-TIMING,CT-BROWSER"
 MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
 MAP-e9c53ab15ef5,L4,reviewed implementation,tests/web/live-pending.test.cjs,4,reviewed-selector,LPV003,False,LPV-003
+MAP-0e14f41b41ee,L4,reviewed implementation,tests/web/live-short-tiles.test.cjs,42,reviewed-selector,WLC-001 Live is readable and draggable on ordinary short workbench cards,False,"WLC-001,WLC-002"
+MAP-043f15e52152,L4,reviewed implementation,tests/web/live-short-tiles.test.cjs,99,reviewed-selector,WLC-002 Short workbench Live identifies its current pane and preserves read-only history,False,"WLC-001,WLC-002"
 MAP-acb408cef5bd,L4,reviewed implementation,tests/web/live-view-resize.test.cjs,40,reviewed-selector,WLV-001 Desktop Live drag overlays the chat and survives transcript refresh,False,"WLV-001,WLV-002,WLV-003"
 MAP-3cde9309a19e,L4,reviewed implementation,tests/web/live-view-resize.test.cjs,93,reviewed-selector,WLV-002 Web Live freezes the readable capture until returning to live,False,"WLV-001,WLV-002,WLV-003"
 MAP-e418eea66fce,L4,reviewed implementation,tests/web/live-view-resize.test.cjs,124,reviewed-selector,"WLV-003 Narrow focused Live supports touch, keyboard and a shorter viewport",False,"WLV-001,WLV-002,WLV-003"
