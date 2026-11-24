@@ -7236,6 +7236,7 @@ MAP-7fb866f795f7,L3,reviewed implementation,tests/web/harness-isolation.test.cjs
 MAP-eda764da861f,G,reviewed implementation,tests/web/harness.cjs,13,reviewed-selector,function scenario,False,"CT-TIMING,CT-BROWSER"
 MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
 MAP-0ad7a9de59d7,L3,reviewed implementation,tests/web/live-equivalent-colors.test.cjs,4,reviewed-selector,WLI-008 Equivalent ANSI and RGB styles do not report new output,False,WLI-008
+MAP-058769c23d4a,L3,reviewed implementation,tests/web/live-late-theme.test.cjs,5,reviewed-selector,WLI-009 Late host theme reconciles the,False,WLI-009
 MAP-e9c53ab15ef5,L4,reviewed implementation,tests/web/live-pending.test.cjs,4,reviewed-selector,LPV003,False,LPV-003
 MAP-0e14f41b41ee,L4,reviewed implementation,tests/web/live-short-tiles.test.cjs,42,reviewed-selector,WLC-001 Live is readable and draggable on ordinary short workbench cards,False,"WLC-001,WLC-002"
 MAP-043f15e52152,L4,reviewed implementation,tests/web/live-short-tiles.test.cjs,99,reviewed-selector,WLC-002 Short workbench Live identifies its current pane and preserves read-only history,False,"WLC-001,WLC-002"

@@ -1194,6 +1194,10 @@
     return api('/api/theme').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       if (!j) return;
       theme = j; applyAppearance(); syncSettings();
+      document.querySelectorAll('.chat-live[open]').forEach(function (panel) {
+        var state = chatLive[panel.dataset.pane];
+        if (state) paintLive(panel, state);
+      });
     }).catch(function () {});
   }
 
@@ -2940,7 +2944,9 @@
     return selection && !selection.isCollapsed && panel.output.contains(selection.anchorNode) && panel.output.contains(selection.focusNode);
   }
   function freezeLive(panel, state) {
-    if (!state.frozen && panel.shownCapture) state.frozen = {capture: panel.shownCapture};
+    // An equal capture can reuse already-painted nodes under the current
+    // theme. Freeze the capture those nodes represent, even if a newer one was skipped.
+    if (!state.frozen && panel.displayedCapture) state.frozen = {capture: panel.displayedCapture};
     if (state.frozen) {
       state.frozen.top = panel.output.scrollTop;
       state.frozen.left = panel.output.scrollLeft;
@@ -2989,7 +2995,7 @@
       panel.append(summary, panel.grip, content);
       installLiveResize(panel, state);
       panel.output.onscroll = function () {
-        if (!panel.open || !panel.shownCapture || !panel.output.clientHeight) return;
+        if (!panel.open || !panel.displayedCapture || !panel.output.clientHeight) return;
         if (state.frozen || panel.output.scrollHeight - panel.output.scrollTop - panel.output.clientHeight > 32) {
           freezeLive(panel, state);
           paintLiveTools(panel, state);
@@ -3047,7 +3053,7 @@
       if (captured) renderLiveCapture(panel.output, captured); else panel.output.textContent = text;
       panel.displayedCapture = captured; panel.displayedText = text;
     }
-    panel.shownCapture = captured; panel.captureRevision = state.revision;
+    panel.captureRevision = state.revision;
     panel.note.hidden = !state.error; panel.note.textContent = state.error ? (captured ? T('Update failed. Showing the last capture; retrying…', '更新失败，显示上次内容，正在重试…') : T('Retrying automatically…', '正在自动重试…')) : '';
     if (!state.frozen) panel.output.scrollTop = panel.output.scrollHeight;
     else if (changed || panel.wasClosed) {

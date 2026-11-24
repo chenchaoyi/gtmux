@@ -70748,6 +70748,22 @@
         }
       ],
       "sha256": "ea131386a8a16b8fb183739e2f425e235050fcbd3ca7d3f3db8e1da32684684d"
+    },
+    "tests/web/live-late-theme.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-058769c23d4a",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "WLI-009 Late host theme reconciles the",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-009"
+        }
+      ],
+      "sha256": "34b245b0ec865559b575de80940079a655cdad515c17544a6631d1da724f7885"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

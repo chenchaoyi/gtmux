@@ -2,13 +2,13 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1487 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1488 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2739 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 163 | [L3.csv](cases/L3.csv) |
+| L3 · 运行时集成 | 164 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
@@ -684,6 +684,7 @@
 | WLI-006 | The tile is fully inside the board when it has room for the minimum, keeps its composer draft, and reloads with the usable geometry. |
 | WLI-007 | Ignored-only changes do not repaint or indicate new output. The blank frame does indicate new output, leaving the frozen view readable until return, then displaying the empty state. |
 | WLI-008 | Equivalent colors preserve the existing rendered nodes and produce no new-output indication. A genuinely different color still prompts while paused and appears on returning. |
+| WLI-009 | Following Live updates to the correct host palette. The frozen literal RGB frame preserves its color, DOM nodes, selection, and reading position. Returning to the original visible color clears the update indicator. |
 | WLC-001 | Terminal text has usable visible height at both sizes. Upward drag extends the overlay without shifting its bottom, transcript, composer or tile. The overlay remains inside its tile. The draft and reading position survive and no send is issued. |
 | WLC-002 | The capture remains readable and identifies its actual pane and pending history association. The read-only boundary and zero sends are preserved. |
 | WLV-001 | The panel grows upward and shrinks toward the same bottom edge. The transcript viewport and input stay in place; the draft is intact. An ongoing drag survives transcript repaint. Reopening restores the selected height. |

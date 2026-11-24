@@ -5669,5 +5669,13 @@
     "selectors": [
       "WLI-008 Equivalent ANSI and RGB styles do not report new output"
     ]
+  },
+  "tests/web/live-late-theme.test.cjs": {
+    "cases": [
+      "WLI-009"
+    ],
+    "selectors": [
+      "WLI-009 Late host theme reconciles the"
+    ]
   }
 }
