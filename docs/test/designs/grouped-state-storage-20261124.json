@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner (Codex self-review)",
     "date": "2026-11-24",
     "decision": "Use opt-in grouped routing with an offline, journaled and reversible transition.",
-    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched."
+    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting."
   },
   "cases": [
     {
@@ -40,7 +40,18 @@
       "planned_files": [
         "internal/app/doctor_layout_test.go"
       ]
+    },
+    {
+      "id": "GSS-004",
+      "layer": "L1",
+      "description": "Grouped storage opens the actual DSH plugin registration at the stable input boundary",
+      "setup": "Grouped synthetic HOME, the embedded DSH bridge, fake tmux epoch and hook executable, and isolated DSH session discovery.",
+      "action": "Register a real plugin attachment, read it through the Go attachment store with synthetic process facts, then check ordinary CLI readiness.",
+      "expected": "One attachment is visible on the existing terminal-clients path, and registering it does not create an unexpected flat copy of a grouped store or gate normal commands.",
+      "planned_files": [
+        "internal/app/doctor_layout_dsh_test.go"
+      ]
     }
   ],
-  "seal": "6244d2ccca35ead6d1891814c85c545c7c7e7db3f9df81ad94ca90e3ca9b404a"
+  "seal": "a2a6fad1ad263dc1d88f262a61147f60b2bb293e3d6adb02cd696e58f12e0d81"
 }
