@@ -70156,6 +70156,31 @@
         }
       ],
       "sha256": "d85d005a2467be4cc74af3e55bbbfa435c78213f3ae6575057cf4f031fc1aff1"
+    },
+    "internal/hq/rotation_evidence_window_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9192fb7864f6",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestLegacyRotationWitnessRequiresMatchingGenerationAndSendOrder",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-012"
+        },
+        {
+          "id": "MAP-88042fd021cb",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-012"
+        }
+      ],
+      "sha256": "59d6e46d875469c022f4444f687231ae5848f67290291e05cc65aa2e9a066633"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

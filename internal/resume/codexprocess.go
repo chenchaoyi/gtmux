@@ -129,9 +129,16 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 		}
 	}
 	// Recheck native incarnation AND the old receipt while the publication lease is held.
+	generation := ""
+	if hqpane.SameDir(target.Cwd, state.HQHome()) {
+		generation = tmux.PaneGeneration(target.Pane)
+	}
 	fresh, ok = processTarget(r, codexProcessPanes())
 	if !ok || fresh != target {
 		return errors.New("terminal changed under publication lease")
+	}
+	if generation != "" && generation == tmux.PaneGeneration(target.Pane) {
+		record.HQObservation = HQObservation{Generation: generation, ObservedAt: r.UpdatedAt}
 	}
 	frontend, migrate, err := processFrontendForSameSession(target.Loc, incumbent, r, target)
 	if err != nil || frontend != oldFrontend || migrate != migrateFrontend {

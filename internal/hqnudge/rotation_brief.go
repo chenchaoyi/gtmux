@@ -39,7 +39,7 @@ func liveRotationBriefTarget(pane string) rotationBriefTarget {
 		return rotationBriefTarget{}
 	}
 	f, err := resume.CodexFrontendForPaneReadiness(pane)
-	stamp := strings.TrimSpace(tmux.Display(pane, "#{pid}:#{session_created}:#{pane_pid}"))
+	stamp := tmux.PaneGeneration(pane)
 	var missing *resume.FrontendBindingError
 	target := rotationBriefTarget{
 		Home: f.HomeID, Session: f.SessionID, Instance: f.Instance, PID: f.PID,

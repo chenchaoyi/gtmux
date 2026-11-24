@@ -65,9 +65,7 @@ var rotationBootstrap = func(brief hqinput.RotationBrief) {
 
 var rotationBriefFrontend = resume.CodexFrontendForPane
 
-var rotationTargetStamp = func(pane string) string {
-	return strings.TrimSpace(tmux.Display(pane, "#{pid}:#{session_created}:#{pane_pid}"))
-}
+var rotationTargetStamp = tmux.PaneGeneration
 
 func rotationTargetMatches(expected, actual string) bool {
 	if expected == "" || actual != expected {
@@ -215,9 +213,14 @@ func ProcessPendingHQRotation() {
 		failQueuedRotation(r, "HQ target changed or its pre-reboot identity is unavailable; no input sent", time.Now().Unix())
 		return
 	}
-	agent, sid, reason := hqSessionEvidence(pane, true)
+	agent, sid, reason := hqSessionEvidence(pane, &r)
 	if reason == "agent-driver-unavailable" {
 		agent, sid = "", "" // a historical direct-client record alone is not live evidence
+	}
+	if pane == r.Pane && r.SentAt == 0 && sid != "" && sid != r.Retiring {
+		// A sample from the unsent phase cannot settle a concurrent reset.
+		failQueuedRotation(r, "HQ session changed before reset was sent", time.Now().Unix())
+		return
 	}
 	advanceHQRotation(r, pane, agent, sid, dispatchbridge.DispatchIO(pane), transcript.CodexLastTurnBoundary, time.Now(), reason)
 }
@@ -263,10 +266,7 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 		reason = rotationIdentityCode(identityReason[0])
 	}
 	if r.SentAt != 0 {
-		deadline := r.SentAt + int64(rotationSettleWait/time.Second)
-		if r.SwitchedAt != 0 {
-			deadline = r.SwitchedAt + int64(rotationReadyWait/time.Second)
-		}
+		deadline := rotationDeadline(r)
 		// Lifecycle events carry neither a pane generation nor send order within
 		// a second. Only the current pane's live evidence can establish a successor.
 		if agent != "" && sid != "" && sid != r.Retiring {
@@ -279,7 +279,8 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 			if !ready {
 				var at time.Time
 				kind, at = boundary(sid)
-				ready = transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" && !at.Before(time.Unix(r.SentAt, 0)) && !at.After(now)
+				ready = transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" && !at.Before(time.Unix(r.SentAt, 0)) &&
+					!at.After(now) && !at.After(time.Unix(deadline, 0))
 			}
 			if ready {
 				events.AuditRotateConfirmed(r.Agent, r.Retiring, sid, r.Input, now.Unix())
@@ -292,7 +293,7 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 			}
 			if r.Successor == "" {
 				r.Successor, r.SwitchedAt = sid, now.Unix()
-				deadline = r.SwitchedAt + int64(rotationReadyWait/time.Second)
+				deadline = rotationDeadline(r)
 				if err := writeRotationFile(r, false); err != nil {
 					diag.ReportStoreFailure("hq-rotation", err)
 					return
@@ -385,6 +386,18 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 	}
 }
 
+func rotationDeadline(r rotationRequest) int64 {
+	if r.SwitchedAt != 0 {
+		return r.SwitchedAt + int64(rotationReadyWait/time.Second)
+	}
+	return r.SentAt + int64(rotationSettleWait/time.Second)
+}
+
+func legacyRotationObservation(proof resume.HQObservation, r rotationRequest, now int64) bool {
+	return r.SentAt > 0 && rotationTargetMatches(r.TargetStamp, proof.Generation) &&
+		proof.ObservedAt > r.SentAt && proof.ObservedAt <= now && proof.ObservedAt <= rotationDeadline(r)
+}
+
 func rotationTurnFinished(r rotationRequest, boundary func(string) (string, time.Time), now time.Time) bool {
 	if state.Exists(state.WaitingPath(r.Pane)) || state.Exists(state.ActivePath(r.Pane)) {
 		return false
@@ -454,7 +467,7 @@ func rotationIdentityCode(reason string) string {
 	case "", "pane-location-unavailable", "agent-driver-unavailable", "resume-record-unavailable",
 		"frontend-record-unavailable", "frontend-index-mismatch", "frontend-proof-unknown",
 		"proof-expired", "bridge-proof-unavailable", "bridge-changed", "pane-proof-unavailable", "pane-changed",
-		"backend-proof-unavailable", "backend-changed", "terminal-proof-unavailable", "terminal-changed", "frontend-retired":
+		"backend-proof-unavailable", "backend-changed", "terminal-proof-unavailable", "terminal-changed", "frontend-retired", "legacy-pane-proof-unavailable":
 		return reason
 	default:
 		return "unknown"

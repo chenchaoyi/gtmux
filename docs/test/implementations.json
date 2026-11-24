@@ -1,4 +1,8 @@
 {
+  "internal/hq/rotation_evidence_window_test.go": {
+    "cases": ["HRB-012"],
+    "selectors": ["TestLegacyRotationWitnessRequiresMatchingGenerationAndSendOrder", "TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow"]
+  },
   "internal/dispatchbridge/rotation_brief_admission_test.go": {
     "cases": [
       "HRB-011"

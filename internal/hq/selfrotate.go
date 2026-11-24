@@ -223,12 +223,12 @@ func breachSet(bs []rotateBreach) string {
 // when the pane has not run a turn yet (a just-launched HQ), which is not an error: there is
 // simply no session to judge.
 func hqSessionRef(pane string) (agent, sessionID string) {
-	agent, sessionID, _ = hqSessionEvidence(pane, false)
+	agent, sessionID, _ = hqSessionEvidence(pane, nil)
 	return agent, sessionID
 }
 
 // Diagnostic evidence never replaces the existing session/driver predicates.
-func hqSessionEvidence(pane string, strictFrontend bool) (agent, sessionID, reason string) {
+func hqSessionEvidence(pane string, rotation *rotationRequest) (agent, sessionID, reason string) {
 	loc := strings.TrimSpace(tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"))
 	if loc == "" {
 		return "", "", "pane-location-unavailable"
@@ -244,7 +244,7 @@ func hqSessionEvidence(pane string, strictFrontend bool) (agent, sessionID, reas
 		}
 	}
 	rec, ok, reason := resume.LoadLiveDiagnostic(loc)
-	if strictFrontend && ok && rec.Agent == "codex" && rec.Frontend != "" {
+	if rotation != nil && ok && rec.Agent == "codex" && rec.Frontend != "" {
 		frontend, err := resume.CodexFrontendForPaneReadiness(pane)
 		switch {
 		case err != nil:
@@ -256,6 +256,10 @@ func hqSessionEvidence(pane string, strictFrontend bool) (agent, sessionID, reas
 		case frontend.Instance != rec.Frontend || frontend.SessionID != rec.SessionID || frontend.HomeID != rec.HomeID:
 			ok, reason = false, "frontend-index-mismatch"
 		}
+	}
+	if rotation != nil && rotation.SentAt != 0 && ok && rec.Frontend == "" && rec.SessionID != rotation.Retiring &&
+		!legacyRotationObservation(rec.HQObservation, *rotation, time.Now().Unix()) {
+		ok, reason = false, "legacy-pane-proof-unavailable"
 	}
 	agent, sessionID = sessionRefForLiveAgent(live, rec, ok)
 	if live == "" && reason == "" && (!ok || rec.Frontend == "") {

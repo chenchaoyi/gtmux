@@ -611,6 +611,7 @@ func notifyAgentIcon(agentKey string) string {
 }
 
 func Run(stdin io.Reader, args []string) int {
+	observedAt := time.Now().Unix()
 	diag.SetProcess("hook", "system")
 	var raw []byte
 	agentKey := "claude"
@@ -988,7 +989,16 @@ func Run(stdin io.Reader, args []string) int {
 			// letting one of those claim the record pointed restore at a command stub
 			// instead of the work session. See resumeowner.go.
 			if sid != "" && (terminalAttachment.Client != "" || ownsPane(loc, agentKey, sid)) {
+				var hqObservation resume.HQObservation
+				if agentKey == "claude" && (event == "SessionStart" || event == "UserPromptSubmit") &&
+					hqpane.SameDir(cwd, state.HQHome()) {
+					generation := tmux.PaneGeneration(pane)
+					if generation != "" && paneFromAncestry() == pane && generation == tmux.PaneGeneration(pane) {
+						hqObservation = resume.HQObservation{Generation: generation, ObservedAt: observedAt}
+					}
+				}
 				_ = resume.SaveObserved(loc, resume.Record{
+					HQObservation:  hqObservation,
 					HomeID:         homeID,
 					TerminalClient: terminalAttachment.Client,
 					Agent:          agentKey, SessionID: sid, Cwd: cwd,
