@@ -44,12 +44,13 @@ import (
 
 // Bump the version when the shipped entry or any runbook changes. History is
 // available in git; the fingerprint test covers both languages and every file.
-const hqPlaybookVersion = 68
+const hqPlaybookVersion = 69
 
 // playbookFingerprints files the charter text under the version that carries it, so an
 // edit that forgets to bump the number fails instead of shipping to nobody (see
 // playbook_version_test.go for why the floors above cannot catch that).
 var playbookFingerprints = map[int]string{
+	69: "326b7154eda2c1b4",
 	68: "b2f95bcc1ea2ac4b",
 	67: "2cb3afde152fce06",
 	66: "035a6dd5a27e114a",
