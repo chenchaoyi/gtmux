@@ -37,6 +37,13 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     },
     set innerHTML(value) { this.html = value; this.children = []; },
     appendChild(child) { child.parentElement = this; this.children.push(child); return child; },
+    prepend(child) { child.parentElement = this; this.children.unshift(child); },
+    replaceWith(child) {
+      const parent = this.parentElement;
+      parent.children[parent.children.indexOf(this)] = child;
+      child.parentElement = parent;
+      this.parentElement = null;
+    },
     replaceChildren(...children) { this.children = []; this.textContent = ''; for(const child of children)this.appendChild(child); },
     closest(selector) { for (let node = this; node; node = node.parentElement) { if (selector === "[hidden]" && node.hidden) return node; } return null; },
     addEventListener(name, fn) { this[name] = fn; },
@@ -49,7 +56,14 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
     getBoundingClientRect() { return {x: 0, y: 0, width: 1200, height: 800}; },
     getAttribute(k) { return this.attrs[k]; },
     querySelectorAll() { return []; },
-    querySelector(sel) { if (!this.parts.has(sel)) this.parts.set(sel, element()); return this.parts.get(sel); },
+    querySelector(sel) {
+      if (sel.startsWith(':scope > .')) {
+        const classes = sel.split(', ').map(selector => selector.slice(':scope > .'.length));
+        return this.children.find(child => classes.includes(child.className)) || null;
+      }
+      if (!this.parts.has(sel)) this.parts.set(sel, element());
+      return this.parts.get(sel);
+    },
     classList: (() => {
       const set = new Set();
       return {add: c => set.add(c), remove: c => set.delete(c), contains: c => set.has(c),
@@ -1265,10 +1279,10 @@ test('resetting a composer clears every pane draft and ignores a late send failu
   assert.equal(c.input.value, '');
 });
 
-test('live preview uses the last fourteen captured rows and removes terminal control sequences', () => {
+test('live preview keeps up to 2,000 captured rows and removes terminal control sequences', () => {
   const h = harness({});
-  const rows = Array.from({length: 20}, (_, i) => 'line ' + i);
-  assert.equal(h.api.liveTail(rows.join('\n') + '\n\n'), rows.slice(-14).join('\n'));
+  const rows = Array.from({length: 2050}, (_, i) => 'line ' + i);
+  assert.equal(h.api.liveTail(rows.join('\n') + '\n\n'), rows.slice(-2000).join('\n'));
   assert.equal(h.api.liveTail('\u001b[32mCurrent output\u001b[0m\n\u001b]8;;https://example.com\u0007Link\u001b]8;;\u0007\n'), 'Current output\nLink');
   assert.equal(h.api.liveTail('\n \n'), '');
 });

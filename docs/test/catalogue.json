@@ -29067,7 +29067,7 @@
       ]
     },
     "internal/server/web/app.test.cjs": {
-      "sha256": "ef684d9f7bc74a51d695352277f7916b8455597c79fcb04ba7ad6301bbf1df48",
+      "sha256": "1e071595e22bca2195dc5e43be9ae08472d1cb934806d880e89dcf919c922045",
       "layer": "L2",
       "stack": "Browser",
       "cases": [
@@ -29081,7 +29081,7 @@
         },
         {
           "id": "LEG-927e0ef77975",
-          "line": 124,
+          "line": 138,
           "kind": "test",
           "name": "stale share reaches guest scope and every empty radar, then recovers on a roster poll",
           "dynamic": false,
@@ -29089,7 +29089,7 @@
         },
         {
           "id": "LEG-914a035f442f",
-          "line": 163,
+          "line": 177,
           "kind": "test",
           "name": "owner and ordinary empty guest scopes do not claim expired access",
           "dynamic": false,
@@ -29097,7 +29097,7 @@
         },
         {
           "id": "LEG-367af905ddd6",
-          "line": 175,
+          "line": 189,
           "kind": "test",
           "name": "manual code uses the Mac path prefix, enrolls, and clears the code",
           "dynamic": false,
@@ -29105,7 +29105,7 @@
         },
         {
           "id": "LEG-2775e91b17b6",
-          "line": 187,
+          "line": 201,
           "kind": "test",
           "name": "browser entry resolves every asset and API inside the same Mac path",
           "dynamic": false,
@@ -29113,7 +29113,7 @@
         },
         {
           "id": "LEG-9f03db7b4523",
-          "line": 223,
+          "line": 237,
           "kind": "test",
           "name": "rejected code stays editable and shows a clear error",
           "dynamic": false,
@@ -29121,7 +29121,7 @@
         },
         {
           "id": "LEG-7c5b615be7de",
-          "line": 233,
+          "line": 247,
           "kind": "test",
           "name": "the rejected-code message also applies to the owner pairing a browser",
           "dynamic": false,
@@ -29129,7 +29129,7 @@
         },
         {
           "id": "LEG-b1dd8dd77e02",
-          "line": 240,
+          "line": 254,
           "kind": "test",
           "name": "connection badge distinguishes one retry from offline",
           "dynamic": false,
@@ -29137,7 +29137,7 @@
         },
         {
           "id": "LEG-476be0e7250e",
-          "line": 250,
+          "line": 264,
           "kind": "test",
           "name": "composer restores a refused message and shows the server reason",
           "dynamic": false,
@@ -29145,7 +29145,7 @@
         },
         {
           "id": "LEG-0314700bd33d",
-          "line": 266,
+          "line": 280,
           "kind": "test",
           "name": "attachments name the pane and preserve the input refusal",
           "dynamic": false,
@@ -29153,7 +29153,7 @@
         },
         {
           "id": "LEG-6664266b2957",
-          "line": 295,
+          "line": 309,
           "kind": "test",
           "name": "pane browser HQ identity uses role, preserves custom names and raw targets",
           "dynamic": false,
@@ -29161,7 +29161,7 @@
         },
         {
           "id": "LEG-3ec6e796e605",
-          "line": 312,
+          "line": 326,
           "kind": "test",
           "name": "real pane renderer marks HQ groups and rows, including a filtered sibling",
           "dynamic": false,
@@ -29169,7 +29169,7 @@
         },
         {
           "id": "LEG-f299b6edf339",
-          "line": 348,
+          "line": 362,
           "kind": "test",
           "name": "the header counts every non-zero agent state, running included",
           "dynamic": false,
@@ -29177,7 +29177,7 @@
         },
         {
           "id": "LEG-0057ed494fc4",
-          "line": 358,
+          "line": 372,
           "kind": "test",
           "name": "before the first read the browser says it is reading, and a failed read is not an empty Mac",
           "dynamic": false,
@@ -29185,7 +29185,7 @@
         },
         {
           "id": "LEG-49e15db0851c",
-          "line": 377,
+          "line": 391,
           "kind": "test",
           "name": "a failed refresh keeps the rows and says they were not refreshed; an empty list is still empty",
           "dynamic": false,
@@ -29193,7 +29193,7 @@
         },
         {
           "id": "LEG-2973273ca39b",
-          "line": 390,
+          "line": 404,
           "kind": "test",
           "name": "agent rows carry their real radar status, and the header rolls it up",
           "dynamic": false,
@@ -29201,7 +29201,7 @@
         },
         {
           "id": "LEG-6f7fb92603c6",
-          "line": 409,
+          "line": 423,
           "kind": "test",
           "name": "a folded session keeps its rollup, the fold is remembered, and a search looks inside it",
           "dynamic": false,
@@ -29225,7 +29225,7 @@
         },
         {
           "id": "LEG-cffde14bf2aa",
-          "line": 471,
+          "line": 485,
           "kind": "test",
           "name": "the pane view moves a recognised row into the bar and leaves everything else alone",
           "dynamic": false,
@@ -29233,7 +29233,7 @@
         },
         {
           "id": "LEG-d77851769356",
-          "line": 490,
+          "line": 504,
           "kind": "test",
           "name": "an unexplained cut row asks the log, at most once per 4 s, then shows the bar",
           "dynamic": false,
@@ -29241,7 +29241,7 @@
         },
         {
           "id": "LEG-c733bada1237",
-          "line": 507,
+          "line": 521,
           "kind": "test",
           "name": "chat mode never takes the row",
           "dynamic": false,
@@ -29249,7 +29249,7 @@
         },
         {
           "id": "LEG-188a56d517ad",
-          "line": 518,
+          "line": 532,
           "kind": "test",
           "name": "the bar is two real buttons, and each does its own thing",
           "dynamic": false,
@@ -29257,7 +29257,7 @@
         },
         {
           "id": "LEG-25ff00791f7b",
-          "line": 550,
+          "line": 564,
           "kind": "test",
           "name": "a taller bar moves the terminal down",
           "dynamic": false,
@@ -29265,7 +29265,7 @@
         },
         {
           "id": "LEG-8cb281e187d0",
-          "line": 563,
+          "line": 577,
           "kind": "test",
           "name": "the log is asked again only with the ETag it last gave",
           "dynamic": false,
@@ -29273,7 +29273,7 @@
         },
         {
           "id": "LEG-cb3890d2c3e4",
-          "line": 580,
+          "line": 594,
           "kind": "test",
           "name": "a refused or unanswered send keeps the text and says why, without resending",
           "dynamic": false,
@@ -29281,7 +29281,7 @@
         },
         {
           "id": "LEG-225b8df3d1dc",
-          "line": 609,
+          "line": 623,
           "kind": "test",
           "name": "no parsed choices, no number buttons",
           "dynamic": false,
@@ -29289,7 +29289,7 @@
         },
         {
           "id": "LEG-3b7282184433",
-          "line": 632,
+          "line": 646,
           "kind": "test",
           "name": "a failed options request clears the choices it had shown",
           "dynamic": false,
@@ -29297,7 +29297,7 @@
         },
         {
           "id": "LEG-e1c0c2cb31db",
-          "line": 655,
+          "line": 669,
           "kind": "test",
           "name": "desktop work conversations have a distinct group and saved follow badge",
           "dynamic": false,
@@ -29305,7 +29305,7 @@
         },
         {
           "id": "LEG-006018049aa3",
-          "line": 668,
+          "line": 682,
           "kind": "test",
           "name": "`pane browser icon retains its accessible name and SVG in ${language}`",
           "dynamic": true,
@@ -29313,7 +29313,7 @@
         },
         {
           "id": "LEG-6f5d411e6e12",
-          "line": 680,
+          "line": 694,
           "kind": "test",
           "name": "`conversation controls match app order and omit Chat for shell panes in ${language}`",
           "dynamic": true,
@@ -29321,7 +29321,7 @@
         },
         {
           "id": "LEG-123b7c39e2f4",
-          "line": 694,
+          "line": 708,
           "kind": "test",
           "name": "opening a shell hides Chat without overwriting the saved agent layout",
           "dynamic": false,
@@ -29329,7 +29329,7 @@
         },
         {
           "id": "LEG-5f74591b0b97",
-          "line": 705,
+          "line": 719,
           "kind": "test",
           "name": "a plain pane keeps its roster label when opened in focus",
           "dynamic": false,
@@ -29337,7 +29337,7 @@
         },
         {
           "id": "LEG-867e608e0fae",
-          "line": 714,
+          "line": 728,
           "kind": "test",
           "name": "focus HTML preserves Chat before Terminal alongside the real tile controls",
           "dynamic": false,
@@ -29345,7 +29345,7 @@
         },
         {
           "id": "LEG-6781c16bf8da",
-          "line": 721,
+          "line": 735,
           "kind": "test",
           "name": "`pane status accessible names match shared labels in ${language}`",
           "dynamic": true,
@@ -29353,7 +29353,7 @@
         },
         {
           "id": "LEG-214216561ba3",
-          "line": 732,
+          "line": 746,
           "kind": "test",
           "name": "both Chat surfaces render user markdown without altering transcript or executing HTML",
           "dynamic": false,
@@ -29361,7 +29361,7 @@
         },
         {
           "id": "LEG-1613974e808a",
-          "line": 750,
+          "line": 764,
           "kind": "test",
           "name": "nested Markdown links retain their destination and emphasis in the composed DOM",
           "dynamic": false,
@@ -29369,7 +29369,7 @@
         },
         {
           "id": "LEG-bb9e09d0bab2",
-          "line": 760,
+          "line": 774,
           "kind": "test",
           "name": "markdown links only allow web and email destinations",
           "dynamic": false,
@@ -29377,7 +29377,7 @@
         },
         {
           "id": "LEG-16f233c82355",
-          "line": 766,
+          "line": 780,
           "kind": "test",
           "name": "native rows are status-only on the workbench and cannot create a tile or focus",
           "dynamic": false,
@@ -29385,7 +29385,7 @@
         },
         {
           "id": "LEG-404d4ad0ae04",
-          "line": 788,
+          "line": 802,
           "kind": "test",
           "name": "previous and next pane navigation skips native sessions",
           "dynamic": false,
@@ -29393,7 +29393,7 @@
         },
         {
           "id": "LEG-1be9d2260ef7",
-          "line": 800,
+          "line": 814,
           "kind": "test",
           "name": "cycling focused panes preserves the workbench return destination",
           "dynamic": false,
@@ -29401,7 +29401,7 @@
         },
         {
           "id": "LEG-04e0b94ddc07",
-          "line": 812,
+          "line": 826,
           "kind": "test",
           "name": "IME confirmation and Return preserve the draft; modified Enter sends once",
           "dynamic": false,
@@ -29409,7 +29409,7 @@
         },
         {
           "id": "LEG-0954effc37e5",
-          "line": 837,
+          "line": 851,
           "kind": "test",
           "name": "`a delayed terminal ${status} response cannot affect another pane`",
           "dynamic": true,
@@ -29417,7 +29417,7 @@
         },
         {
           "id": "LEG-8ad4e27cd013",
-          "line": 852,
+          "line": 866,
           "kind": "test",
           "name": "returning to the same pane and mode still discards its previous request",
           "dynamic": false,
@@ -29425,7 +29425,7 @@
         },
         {
           "id": "LEG-78d9a99fd201",
-          "line": 862,
+          "line": 876,
           "kind": "test",
           "name": "slow reads coalesce and a later completed read replaces them",
           "dynamic": false,
@@ -29433,7 +29433,7 @@
         },
         {
           "id": "LEG-e469d5ea47b9",
-          "line": 893,
+          "line": 907,
           "kind": "test",
           "name": "a delayed transcript body cannot replace the new pane conversation",
           "dynamic": false,
@@ -29441,7 +29441,7 @@
         },
         {
           "id": "LEG-33eb40895081",
-          "line": 904,
+          "line": 918,
           "kind": "test",
           "name": "chat refreshes step details and segment text without a turn/count change",
           "dynamic": false,
@@ -29449,7 +29449,7 @@
         },
         {
           "id": "LEG-ee73b8700d57",
-          "line": 915,
+          "line": 929,
           "kind": "test",
           "name": "tile chat refreshes segments even when prompt and response stay unchanged",
           "dynamic": false,
@@ -29457,7 +29457,7 @@
         },
         {
           "id": "LEG-2923dc925823",
-          "line": 926,
+          "line": 940,
           "kind": "test",
           "name": "revocation clears focus and capability chrome and allows a fresh code",
           "dynamic": false,
@@ -29465,7 +29465,7 @@
         },
         {
           "id": "LEG-fbe14661bcac",
-          "line": 942,
+          "line": 956,
           "kind": "test",
           "name": "revocation disposes cached tiles while retaining layout for scoped restoration",
           "dynamic": false,
@@ -29473,7 +29473,7 @@
         },
         {
           "id": "LEG-ae2f8264ea02",
-          "line": 956,
+          "line": 970,
           "kind": "test",
           "name": "a late roster authorization failure cannot replace a focused view with a gate",
           "dynamic": false,
@@ -29481,7 +29481,7 @@
         },
         {
           "id": "LEG-ecafb173782a",
-          "line": 966,
+          "line": 980,
           "kind": "test",
           "name": "a late tile transcript cannot repaint a removed tile or a later mode instance",
           "dynamic": false,
@@ -29489,7 +29489,7 @@
         },
         {
           "id": "LEG-9eaa37420614",
-          "line": 978,
+          "line": 992,
           "kind": "test",
           "name": "radar polls coalesce slow reads; a view change aborts the old scope",
           "dynamic": false,
@@ -29497,7 +29497,7 @@
         },
         {
           "id": "LEG-1a02b7edcb57",
-          "line": 990,
+          "line": 1004,
           "kind": "test",
           "name": "read deadline releases its slot even when the transport ignores abort",
           "dynamic": false,
@@ -29505,7 +29505,7 @@
         },
         {
           "id": "LEG-b4d5158372c5",
-          "line": 1004,
+          "line": 1018,
           "kind": "test",
           "name": "busy delivery feedback expires without an idle transition and never dismisses a later failure",
           "dynamic": false,
@@ -29513,7 +29513,7 @@
         },
         {
           "id": "LEG-9c73b34c2255",
-          "line": 1036,
+          "line": 1050,
           "kind": "test",
           "name": "DSH external history has scoped requests, read-only chrome and independent grants",
           "dynamic": false,
@@ -29521,7 +29521,7 @@
         },
         {
           "id": "LEG-db8c43aad41a",
-          "line": 1053,
+          "line": 1067,
           "kind": "test",
           "name": "a late external conversation cannot repaint another home or a closed reader",
           "dynamic": false,
@@ -29529,7 +29529,7 @@
         },
         {
           "id": "LEG-22477449e996",
-          "line": 1064,
+          "line": 1078,
           "kind": "test",
           "name": "external reader retries a failed body without accepting its validator",
           "dynamic": false,
@@ -29537,7 +29537,7 @@
         },
         {
           "id": "LEG-e01f783f4f7b",
-          "line": 1074,
+          "line": 1088,
           "kind": "test",
           "name": "native host presentation retains uncertainty and read-only routing in both languages",
           "dynamic": false,
@@ -29545,7 +29545,7 @@
         },
         {
           "id": "LEG-3477972cf0a2",
-          "line": 1088,
+          "line": 1102,
           "kind": "test",
           "name": "`neutral and completed agents share the existing quiet group in ${language}`",
           "dynamic": true,
@@ -29553,7 +29553,7 @@
         },
         {
           "id": "LEG-0933790bc2ef",
-          "line": 1109,
+          "line": 1123,
           "kind": "test",
           "name": "single-pane input sync uses the composer created during focus setup",
           "dynamic": false,
@@ -29561,7 +29561,7 @@
         },
         {
           "id": "LEG-2c216599ada0",
-          "line": 1118,
+          "line": 1132,
           "kind": "test",
           "name": "activity counts repeated tools and renders ordered plain-text details",
           "dynamic": false,
@@ -29569,7 +29569,7 @@
         },
         {
           "id": "LEG-cfa9ad3db0dd",
-          "line": 1141,
+          "line": 1155,
           "kind": "test",
           "name": "focused radar buttons keep Enter even when a different row is selected",
           "dynamic": false,
@@ -29577,7 +29577,7 @@
         },
         {
           "id": "LEG-52bff5800956",
-          "line": 1157,
+          "line": 1171,
           "kind": "test",
           "name": "chat shortcuts leave modified keys, composition and interactive targets alone",
           "dynamic": false,
@@ -29585,7 +29585,7 @@
         },
         {
           "id": "LEG-c02806f0a60c",
-          "line": 1182,
+          "line": 1196,
           "kind": "test",
           "name": "the explicit workbench palette shortcut stays available without taking other combinations",
           "dynamic": false,
@@ -29593,7 +29593,7 @@
         },
         {
           "id": "LEG-9c5790923661",
-          "line": 1203,
+          "line": 1217,
           "kind": "test",
           "name": "'copy uses its fallback when the Clipboard API is ' + failure",
           "dynamic": true,
@@ -29601,7 +29601,7 @@
         },
         {
           "id": "LEG-b04978c9c0ea",
-          "line": 1216,
+          "line": 1230,
           "kind": "test",
           "name": "clipboard failure never reports copied and repeated pending clicks are coalesced",
           "dynamic": false,
@@ -29609,7 +29609,7 @@
         },
         {
           "id": "LEG-ad4977637db7",
-          "line": 1231,
+          "line": 1245,
           "kind": "test",
           "name": "a focused composer keeps a separate draft per pane and restores failures to their original pane",
           "dynamic": false,
@@ -29617,7 +29617,7 @@
         },
         {
           "id": "LEG-b2734f8d8149",
-          "line": 1251,
+          "line": 1265,
           "kind": "test",
           "name": "resetting a composer clears every pane draft and ignores a late send failure",
           "dynamic": false,
@@ -29633,7 +29633,7 @@
         },
         {
           "id": "LEG-db13d973fbff",
-          "line": 1276,
+          "line": 1290,
           "kind": "test",
           "name": "composer persists a scoped draft and isolates another credential on the same pane",
           "dynamic": false,
@@ -29641,7 +29641,7 @@
         },
         {
           "id": "LEG-4fd9f327715a",
-          "line": 1290,
+          "line": 1304,
           "kind": "test",
           "name": "Return sends only after opting in; composition and repeated keys cannot double-submit",
           "dynamic": false,
@@ -29649,7 +29649,7 @@
         },
         {
           "id": "LEG-3eddecec9a49",
-          "line": 1303,
+          "line": 1317,
           "kind": "test",
           "name": "pending prompts require a newly recorded occurrence, including identical messages without clocks",
           "dynamic": false,
@@ -29657,7 +29657,7 @@
         },
         {
           "id": "LEG-46dcc46b1b27",
-          "line": 1313,
+          "line": 1327,
           "kind": "test",
           "name": "an unchanged retry keeps its send id while a new acknowledged message gets a new id",
           "dynamic": false,
@@ -29665,7 +29665,7 @@
         },
         {
           "id": "LEG-1307ca617db3",
-          "line": 1327,
+          "line": 1341,
           "kind": "test",
           "name": "radar keyboard selection skips rows inside a collapsed section",
           "dynamic": false,
@@ -29673,7 +29673,7 @@
         },
         {
           "id": "MAP-e2feefc515a3",
-          "line": 1338,
+          "line": 1352,
           "kind": "reviewed-selector",
           "name": "CAS004 focused and tile chats disclose association failures and recover without losing messages",
           "dynamic": false,
@@ -29682,7 +29682,7 @@
         },
         {
           "id": "MAP-328002d4dfc3",
-          "line": 1365,
+          "line": 1379,
           "kind": "reviewed-selector",
           "name": "CAS004 stale tile association failure cannot repaint a changed target",
           "dynamic": false,
@@ -70064,6 +70064,40 @@
         }
       ],
       "sha256": "c42efddbbffa75c828f76c91772f1605411488368fc72fe97c8626af5055ad9d"
+    },
+    "tests/web/live-view-resize.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-acb408cef5bd",
+          "line": 40,
+          "kind": "reviewed-selector",
+          "name": "WLV-001 Desktop Live drag overlays the chat and survives transcript refresh",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "WLV-001,WLV-002,WLV-003"
+        },
+        {
+          "id": "MAP-3cde9309a19e",
+          "line": 93,
+          "kind": "reviewed-selector",
+          "name": "WLV-002 Web Live freezes the readable capture until returning to live",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "WLV-001,WLV-002,WLV-003"
+        },
+        {
+          "id": "MAP-e418eea66fce",
+          "line": 124,
+          "kind": "reviewed-selector",
+          "name": "WLV-003 Narrow focused Live supports touch, keyboard and a shorter viewport",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "WLV-001,WLV-002,WLV-003"
+        }
+      ],
+      "sha256": "765585cc1112b8370839e179e3e2f310b866fea09714c2f1f527647d7eccee7f"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",
