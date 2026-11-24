@@ -1,4 +1,8 @@
 {
+  "internal/hqinput/rotation_brief_witness_test.go": {
+    "cases": ["HRB-015"],
+    "selectors": ["TestBoundBriefRequiresDurableResetCompletion"]
+  },
   "internal/launchhost/agent_test.go": {
     "cases": ["HRB-014"],
     "selectors": ["TestAgentHandoffPreservesPreciseObservationTime"]

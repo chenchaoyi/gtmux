@@ -1020,7 +1020,7 @@ query instead of information destroyed at every handoff.
 - **WHEN** the sent reset's original pane and generation still match but current agent or session evidence is missing
 - **THEN** the request SHALL remain pending in the existing 45-second successor window, or in the existing three-minute handoff window after a verified successor is first observed
 - **AND** a deadline tick SHALL consider available current evidence before recording a failure. For Codex, an observed history boundary after the applicable deadline SHALL NOT settle the request. Incomplete evidence SHALL record the phase and available identity reason, with no second reset or new briefing at an expired deadline. Briefing reservation SHALL recheck the clock after any target or composer probe
-- **AND** a changed pane, generation or observed different agent SHALL fail immediately
+- **AND** a changed pane, generation or observed different agent SHALL fail immediately. An unavailable generation sample for the original pane may wait within the same deadline and grants no authority
 
 #### Scenario: Rotation never submits what the user is typing
 
@@ -1144,7 +1144,7 @@ Automatic Codex wakes SHALL freshly verify an exact loaded idle thread before at
 #### Scenario: A queued rotation briefing outlives its recipient
 - **GIVEN** a sent rotation reserves one startup briefing for its verified Codex successor
 - **WHEN** the queue drains, and again at the native submission boundary
-- **THEN** the original request, Codex Home, successor session, frontend and pane instance SHALL match and the original confirmation deadline SHALL still be in the future
+- **THEN** the original request SHALL include the recorded completion of the reset keys. The Codex Home, successor session, frontend and pane instance SHALL match and the original confirmation deadline SHALL still be in the future
 - **AND** an unbound legacy rotation briefing or a terminal refusal SHALL remain unsent, a possible submission SHALL remain uncertain, and none SHALL be replayed or use keyboard fallback
 - **AND** other wakes and Relay attention resume their ordinary submission rules when the reservation ends, and rotation confirmation retains its existing timing rules
 

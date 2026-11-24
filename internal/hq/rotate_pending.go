@@ -210,7 +210,7 @@ func ProcessPendingHQRotation() {
 		failQueuedRotation(r, "HQ pane disappeared", time.Now().Unix())
 		return
 	}
-	if !rotationTargetMatches(r.TargetStamp, rotationTargetStamp(pane)) {
+	if !rotationTargetMatches(r.TargetStamp, r.TargetStamp) {
 		failQueuedRotation(r, "HQ target changed or its pre-reboot identity is unavailable; no input sent", time.Now().Unix())
 		return
 	}
@@ -255,13 +255,22 @@ func advanceHQRotationWithClock(r rotationRequest, pane, agent, sid string, io d
 		return
 	}
 	r = current
-	if r.TargetStamp != "" && !rotationTargetMatches(r.TargetStamp, rotationTargetStamp(pane)) {
-		failRotation(r, "HQ target changed while waiting for input; no input sent", now.Unix())
-		return
-	}
 	if pane != r.Pane || agent != "" && agent != r.Agent {
 		failRotation(r, "HQ pane or agent changed", now.Unix())
 		return
+	}
+	if r.TargetStamp != "" {
+		stamp := rotationTargetStamp(pane)
+		if stamp == "" && r.SentAt != 0 {
+			if now.Unix() >= rotationDeadline(r) {
+				failSentRotationTimeout(r, "", "", "pane-generation-unavailable", now.Unix())
+			}
+			return
+		}
+		if !rotationTargetMatches(r.TargetStamp, stamp) {
+			failRotation(r, "HQ target changed while waiting for input; no input sent", now.Unix())
+			return
+		}
 	}
 	reason := ""
 	if len(identityReason) > 0 {
@@ -469,6 +478,8 @@ func failSentRotationTimeout(r rotationRequest, agent, sid, code string, now int
 		reason = "HQ successor was observed without recoverable history at the settle deadline"
 	}
 	switch {
+	case code == "pane-generation-unavailable":
+		reason += " (HQ pane generation unavailable)"
 	case agent == "":
 		if code == "" {
 			code = "agent-evidence-unavailable"

@@ -12,7 +12,7 @@ import (
 )
 
 func TestSentRotationWaitsThroughTransientIdentityGaps(t *testing.T) {
-	for _, mode := range []string{"recover", "settle-complete", "settle-incomplete", "settle-timeout", "session-timeout", "handoff-timeout", "wrong-pane", "reused-pane"} {
+	for _, mode := range []string{"recover", "generation-recover", "generation-timeout", "settle-complete", "settle-incomplete", "settle-timeout", "session-timeout", "handoff-timeout", "wrong-pane", "reused-pane"} {
 		t.Run(mode, func(t *testing.T) {
 			now := time.Now().Truncate(time.Second)
 			r := testRotationRequest(t, now)
@@ -57,18 +57,23 @@ func TestSentRotationWaitsThroughTransientIdentityGaps(t *testing.T) {
 			deadline := now.Add(rotationSettleWait)
 			successor, reason := "", "no new session ID appeared (HQ agent identity unavailable: proof-expired)"
 			var switchedAt int64
-			if mode == "recover" || mode == "handoff-timeout" {
+			recovered := mode == "recover" || mode == "generation-recover"
+			if recovered || mode == "handoff-timeout" {
 				successor = "successor"
 				switched := now.Add(2 * time.Second)
 				switchedAt, deadline = switched.Unix(), switched.Add(rotationReadyWait)
 				advance(r.Pane, r.Agent, successor, switched, false)
+				if mode == "generation-recover" {
+					stamp = ""
+				}
 				advance(r.Pane, "", "", now.Add(50*time.Second), false)
 				checkPending(successor, switchedAt, now.Add(50*time.Second))
+				stamp = r.TargetStamp
 				reason = "handoff/history was not confirmed (HQ agent identity unavailable: proof-expired)"
 			}
 			pane, agent, sid := r.Pane, "", ""
 			switch mode {
-			case "recover":
+			case "recover", "generation-recover":
 				writeRotationHistory(t, successor)
 				agent, sid = r.Agent, successor
 			case "settle-complete":
@@ -79,6 +84,8 @@ func TestSentRotationWaitsThroughTransientIdentityGaps(t *testing.T) {
 				agent, sid, reason = r.Agent, "late-successor", "without recoverable history at the settle deadline"
 			case "session-timeout":
 				agent, reason = r.Agent, "HQ session identity unavailable: proof-expired"
+			case "generation-timeout":
+				stamp, reason = "", "HQ pane generation unavailable"
 			case "wrong-pane":
 				pane, deadline, reason = "%7", now.Add(3*time.Second), "HQ pane or agent changed"
 			case "reused-pane":
@@ -93,7 +100,7 @@ func TestSentRotationWaitsThroughTransientIdentityGaps(t *testing.T) {
 					checkPending(successor, switchedAt, before)
 				}
 			}
-			confirmed := mode == "recover" || mode == "settle-complete"
+			confirmed := recovered || mode == "settle-complete"
 			advance(pane, agent, sid, deadline, confirmed)
 			advance(r.Pane, r.Agent, r.Retiring, deadline.Add(time.Second), false)
 			if _, ok, err := readRotationRequest(); err != nil || ok || !slices.Equal(p.pasted, []string{"/new"}) || p.enters != 1 {

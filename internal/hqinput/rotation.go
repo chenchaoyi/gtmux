@@ -103,8 +103,11 @@ func MatchesRotationBrief(brief RotationBrief) bool {
 		Pane, Agent, Retiring, Successor, TargetStamp, BootstrapID, BootstrapHome, BootstrapInstance string
 		BootstrapPID                                                                                 int
 		SentAt, SwitchedAt, BootstrapAt                                                              int64
+		SubmittedAtNS                                                                                int64
 	}
 	return json.Unmarshal(raw, &r) == nil &&
+		r.SubmittedAtNS > 0 && time.Unix(0, r.SubmittedAtNS).Unix() >= r.SentAt &&
+		time.Unix(0, r.SubmittedAtNS).Unix() <= r.BootstrapAt &&
 		r.BootstrapID == brief.Request && r.BootstrapHome == brief.Home &&
 		r.BootstrapInstance == brief.Instance && r.BootstrapPID == brief.ClientPID &&
 		r.Pane == brief.Pane && r.Agent == brief.Agent && r.Successor == brief.Session &&

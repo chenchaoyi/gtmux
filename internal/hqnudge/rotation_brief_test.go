@@ -220,7 +220,8 @@ func rotationBriefFixture(t *testing.T) (hqinput.RotationBrief, map[string]any, 
 	switched := b.Deadline - int64(hqinput.RotationReadyWait/time.Second)
 	request := map[string]any{
 		"pane": b.Pane, "agent": b.Agent, "retiring": "old-session", "input": "/new", "createdAt": switched - 2,
-		"sentAt": switched - 1, "switchedAt": switched, "successor": b.Session, "targetStamp": b.Stamp,
+		"sentAt": switched - 1, "submittedAtNS": time.Unix(switched-1, 0).UnixNano(),
+		"switchedAt": switched, "successor": b.Session, "targetStamp": b.Stamp,
 		"bootstrapAt": switched, "bootstrapID": b.Request, "bootstrapHome": b.Home, "bootstrapInstance": b.Instance, "bootstrapPID": b.ClientPID,
 	}
 	writeBriefRotation(t, request)
@@ -303,7 +304,9 @@ func TestHRB005ReservedSuccessorPrecedesImmediateAndPeriodicWakes(t *testing.T) 
 			if ok, err := ReserveRelayAttention(relay, func() (bool, error) { return true, nil }); !ok || err != nil {
 				t.Fatal(ok, err)
 			}
-			f.nano += int64(time.Second) // ensure Relay's real admission time is due in this clock
+			// Relay admission uses the real clock. Keep the fake drain clock
+			// after that admission even if the fixture takes over a second.
+			f.nano = max(f.nano+int64(time.Second), time.Now().UnixNano()-f.base)
 			DeliverKeyedAt(bind.Pane, "workspace-reconciliation", tick, 0)
 			Drain(bind.Pane)
 			if !publishFirst {
@@ -341,6 +344,7 @@ func TestHRB005SentHandoffHoldsLegacyRepair(t *testing.T) {
 	}
 	now := f.base / int64(time.Second)
 	request["sentAt"], request["switchedAt"], request["bootstrapAt"] = now-1, now, now
+	request["submittedAtNS"] = time.Unix(now-1, 0).UnixNano()
 	writeBriefRotation(t, request)
 	f.swallow = false
 	f.nano += int64(enterRepairBackoff)

@@ -10,7 +10,7 @@ import (
 )
 
 func TestBoundRotationBriefWaitsOnlyForMissingOriginalProof(t *testing.T) {
-	for _, mode := range []string{"preflight", "native-routing", "routing-recovered", "routing-draft", "native-lookup", "final-guard", "changed", "wrong-stamp", "expired", "uncertain"} {
+	for _, mode := range []string{"preflight", "missing-stamp", "native-routing", "routing-recovered", "routing-draft", "native-lookup", "final-guard", "changed", "wrong-stamp", "expired", "uncertain"} {
 		t.Run(mode, func(t *testing.T) {
 			bind, _, f, target := rotationBriefFixture(t)
 			original := *target
@@ -65,12 +65,14 @@ func TestBoundRotationBriefWaitsOnlyForMissingOriginalProof(t *testing.T) {
 			queueBoundBrief(t, bind)
 			before := queuedNames(isRotationBrief)
 			switch mode {
-			case "preflight", "expired", "changed", "wrong-stamp":
+			case "preflight", "missing-stamp", "expired", "changed", "wrong-stamp":
 				*target = missing
 				if mode == "changed" {
 					target.Session = "different-session"
 				} else if mode == "wrong-stamp" {
 					target.Stamp = "10:20:31"
+				} else if mode == "missing-stamp" {
+					target.Stamp = ""
 				}
 			}
 			Drain(bind.Pane)
@@ -85,7 +87,7 @@ func TestBoundRotationBriefWaitsOnlyForMissingOriginalProof(t *testing.T) {
 				f.nano += int64(3 * time.Second)
 			}
 			Drain(bind.Pane)
-			wantRecover := mode == "preflight" || mode == "native-routing" || mode == "routing-draft" || mode == "native-lookup" || mode == "final-guard"
+			wantRecover := mode == "preflight" || mode == "missing-stamp" || mode == "native-routing" || mode == "routing-draft" || mode == "native-lookup" || mode == "final-guard"
 			after := queuedNames(isRotationBrief)
 			if accepted != 0 || wantRecover && !slices.Equal(before, after) || !wantRecover && len(after) != 0 {
 				t.Fatalf("incorrect pending disposition: %v -> %v, accepted=%d", before, after, accepted)

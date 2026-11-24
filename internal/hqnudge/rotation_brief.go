@@ -43,7 +43,7 @@ func liveRotationBriefTarget(pane string) rotationBriefTarget {
 	var missing *resume.FrontendBindingError
 	target := rotationBriefTarget{
 		Home: f.HomeID, Session: f.SessionID, Instance: f.Instance, PID: f.PID,
-		Stamp: stamp, MissingProof: errors.As(err, &missing) && missing.Retryable,
+		Stamp: stamp, MissingProof: err == nil && stamp == "" || errors.As(err, &missing) && missing.Retryable,
 	}
 	if err != nil && !target.MissingProof {
 		return rotationBriefTarget{} // a known conflicting observation is terminal
@@ -52,7 +52,7 @@ func liveRotationBriefTarget(pane string) rotationBriefTarget {
 }
 
 func rotationBriefTargetHold(b hqinput.RotationBrief, target rotationBriefTarget) string {
-	if target.Stamp != b.Stamp ||
+	if target.Stamp != "" && target.Stamp != b.Stamp ||
 		target.Home != "" && target.Home != b.Home || target.Session != "" && target.Session != b.Session ||
 		target.Instance != "" && target.Instance != b.Instance || target.PID != 0 && target.PID != b.ClientPID {
 		return "rotation-brief-target-changed"
@@ -60,7 +60,7 @@ func rotationBriefTargetHold(b hqinput.RotationBrief, target rotationBriefTarget
 	if target.MissingProof {
 		return briefTargetWaiting
 	}
-	if target.Home != b.Home || target.Session != b.Session || target.Instance != b.Instance || target.PID != b.ClientPID {
+	if target.Stamp != b.Stamp || target.Home != b.Home || target.Session != b.Session || target.Instance != b.Instance || target.PID != b.ClientPID {
 		return "rotation-brief-target-changed"
 	}
 	return ""
