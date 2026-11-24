@@ -38,7 +38,7 @@
   --session-idle-bg: #eff9f2; --session-idle-ink: #176038;
   --session-errored-bg: #fff7e9; --session-errored-ink: #875615;
   --terminal-bg: #17171a;
-  --terminal-fg: #d4d2cc;
+  --live-terminal-fg: #d6d6da;
   --col: 900px;
   --icon-size: 20px;
   --control-size: 36px;
@@ -1125,7 +1125,7 @@ button.appr-opt { width: 100%; background: transparent; color: inherit; text-ali
 .live-tools { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 0 18px; color: rgba(235,235,245,.7); font-size: 12px; }
 .live-source { flex: 1 0 100%; margin: 0; overflow-wrap: anywhere; }
 .live-resume { margin-left: auto; min-height: 32px; border: 0; border-radius: 8px; background: rgba(39,199,230,.12); color: #81e7f7; padding: 4px 10px; font: inherit; cursor: pointer; }
-.live-output { flex: 1 1 auto; min-height: 0; margin: 0; padding: 8px 18px 16px; overflow: auto; overscroll-behavior: contain; white-space: pre; color: var(--terminal-fg); background: var(--terminal-bg); font: 12px/1.4 ui-monospace, Menlo, monospace; tab-size: 4; }
+.live-output { flex: 1 1 auto; min-height: 0; margin: 0; padding: 8px 18px 16px; overflow: auto; overscroll-behavior: contain; white-space: pre; color: var(--live-terminal-fg); background: var(--terminal-bg); font: 12px/1.4 ui-monospace, Menlo, monospace; tab-size: 4; }
 .live-note { margin: 0; padding: 0 18px 8px; color: #f6c975; font-size: 12px; }
 /* The compact sheet can cover the tile header; the reading map stays inside the chat body. */
 .tile-body:has(.chat-live.live-compact) { overflow: visible; }

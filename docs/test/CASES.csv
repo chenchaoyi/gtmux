@@ -7243,6 +7243,7 @@ MAP-6331f9eadc58,L3,reviewed implementation,tests/web/live-terminal-colors.test.
 MAP-acb408cef5bd,L4,reviewed implementation,tests/web/live-view-resize.test.cjs,40,reviewed-selector,WLV-001 Desktop Live drag overlays the chat and survives transcript refresh,False,"WLV-001,WLV-002,WLV-003"
 MAP-3cde9309a19e,L4,reviewed implementation,tests/web/live-view-resize.test.cjs,93,reviewed-selector,WLV-002 Web Live freezes the readable capture until returning to live,False,"WLV-001,WLV-002,WLV-003"
 MAP-e418eea66fce,L4,reviewed implementation,tests/web/live-view-resize.test.cjs,124,reviewed-selector,"WLV-003 Narrow focused Live supports touch, keyboard and a shorter viewport",False,"WLV-001,WLV-002,WLV-003"
+MAP-79ee3a4d450d,L3,reviewed implementation,tests/web/live-visible-updates.test.cjs,4,reviewed-selector,WLI-007 Live only announces visible changes and does announce an empty capture,False,WLI-007
 MAP-ce9e69e4a686,L4,reviewed implementation,tests/web/maximized-header.test.cjs,4,reviewed-selector,AOP006 real maximized header wide,False,AOP-006
 MAP-5e76ed85dc75,L4,reviewed implementation,tests/web/maximized-header.test.cjs,5,reviewed-selector,AOP006 real maximized header medium,False,AOP-006
 MAP-1752da0e5a5c,L4,reviewed implementation,tests/web/maximized-header.test.cjs,6,reviewed-selector,AOP006 real maximized header narrow board,False,AOP-006
@@ -7331,6 +7332,7 @@ LEG-c8529da6a00a,L3,Browser,tests/web/trace.test.cjs,302,scenario,`Trace keeps r
 LEG-e39e092eb399,L3,Browser,tests/web/trace.test.cjs,316,scenario,"iPad portrait, landscape and multitasking resize keep the selected tool and distinct navigation",False,legacy-not-retrospectively-reviewed
 MAP-7c302e814600,L2,reviewed implementation,tests/web/workbench-placement.test.cjs,15,reviewed-selector,WWP001 Opens two actionable workbench tiles,False,"WWP-001,WWP-002"
 MAP-6967230278b1,L2,reviewed implementation,tests/web/workbench-placement.test.cjs,57,reviewed-selector,WWP002 Preserves saved freeform geometry while placing a new tile,False,"WWP-001,WWP-002"
+MAP-60efa59b6d67,L3,reviewed implementation,tests/web/workbench-recover-resize.test.cjs,8,reviewed-selector,WLI-006 Resizing recovers a clipped saved workbench tile,False,WLI-006
 MAP-9f47acacb889,L3,reviewed implementation,tests/web/workbench-resize-edges.test.cjs,41,reviewed-selector,WLI-003 The workbench panel resizes on eight edges and corners,False,"WLI-003,WLI-004"
 MAP-82b85f45b6f1,L3,reviewed implementation,tests/web/workbench-resize-edges.test.cjs,89,reviewed-selector,WLI-004 A touch drags the top-left corner without moving the header,False,"WLI-003,WLI-004"
 LEG-69563fe32201,L2,Worker,tunnel-worker/src/direct.test.ts,36,test,the port formula is the client's: Go's crc32.ChecksumIEEE over the id,False,legacy-not-retrospectively-reviewed

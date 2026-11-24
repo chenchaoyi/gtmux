@@ -93,6 +93,7 @@ MAP-31ae43976a8b,L3,reviewed implementation,tests/web/harness-isolation.test.cjs
 MAP-7fb866f795f7,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,25,reviewed-selector,shared browser next case,False,CT-BROWSER
 MAP-20853857fc63,L3,reviewed implementation,tests/web/live-terminal-colors.test.cjs,37,reviewed-selector,WLI-001 Live renders the terminal palette,False,"WLI-001,WLI-002"
 MAP-6331f9eadc58,L3,reviewed implementation,tests/web/live-terminal-colors.test.cjs,85,reviewed-selector,WLI-002 Frozen Live preserves colors until returning to live,False,"WLI-001,WLI-002"
+MAP-79ee3a4d450d,L3,reviewed implementation,tests/web/live-visible-updates.test.cjs,4,reviewed-selector,WLI-007 Live only announces visible changes and does announce an empty capture,False,WLI-007
 LEG-9543b7b6751c,L3,Browser,tests/web/presentation.test.cjs,5,scenario,`Session section casing matches App headings at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-ba614971d0a3,L3,Browser,tests/web/presentation.test.cjs,37,scenario,Empty workspace has a clear first action and a scene-specific attributed excerpt,False,legacy-not-retrospectively-reviewed
 LEG-54719aa9487c,L3,Browser,tests/web/presentation.test.cjs,49,scenario,Only the actual supervisor is pinned above status groups,False,legacy-not-retrospectively-reviewed
@@ -157,5 +158,6 @@ LEG-8045fa8cae9a,L3,Browser,tests/web/trace.test.cjs,237,scenario,Idle Trace jum
 LEG-db8aed8f1fc2,L3,Browser,tests/web/trace.test.cjs,268,scenario,`Trace preserves modified shortcuts at ${width}`,True,legacy-not-retrospectively-reviewed
 LEG-c8529da6a00a,L3,Browser,tests/web/trace.test.cjs,302,scenario,`Trace keeps repeated clockless calls on their original turn (record IDs ${recordIDs})`,True,legacy-not-retrospectively-reviewed
 LEG-e39e092eb399,L3,Browser,tests/web/trace.test.cjs,316,scenario,"iPad portrait, landscape and multitasking resize keep the selected tool and distinct navigation",False,legacy-not-retrospectively-reviewed
+MAP-60efa59b6d67,L3,reviewed implementation,tests/web/workbench-recover-resize.test.cjs,8,reviewed-selector,WLI-006 Resizing recovers a clipped saved workbench tile,False,WLI-006
 MAP-9f47acacb889,L3,reviewed implementation,tests/web/workbench-resize-edges.test.cjs,41,reviewed-selector,WLI-003 The workbench panel resizes on eight edges and corners,False,"WLI-003,WLI-004"
 MAP-82b85f45b6f1,L3,reviewed implementation,tests/web/workbench-resize-edges.test.cjs,89,reviewed-selector,WLI-004 A touch drags the top-left corner without moving the header,False,"WLI-003,WLI-004"

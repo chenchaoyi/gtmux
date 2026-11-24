@@ -1155,7 +1155,7 @@
     document.documentElement.style.setProperty('--chat-text-size', chatSizePref + 'px');
     var preview = document.querySelector('.terminal-font-preview'); if (preview) { preview.style.fontFamily = resolveFont(); preview.style.fontSize = termSize() + 'px'; }
     document.documentElement.style.setProperty('--terminal-bg', (theme && theme.background) || GHOSTTY.bg);
-    document.documentElement.style.setProperty('--terminal-fg', (theme && theme.foreground) || GHOSTTY.fg);
+    document.documentElement.style.setProperty('--live-terminal-fg', (theme && theme.foreground) || '#d6d6da');
     LIVE_ANSI_PALETTE.forEach(function (fallback, i) {
       var color = theme && theme.palette && theme.palette[i];
       document.documentElement.style.setProperty('--terminal-ansi-' + i, /^#[0-9a-f]{6}$/i.test(color) ? color : fallback);
@@ -2737,12 +2737,28 @@
   // turning terminal bytes into markup, browser links or cursor commands.
   var LIVE_CONTROL = /\x1b\[([0-9;:]*)m|\x1b\[[0-?]*[ -\/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\|$)|\x1b[PX^_][^\x1b]*(?:\x1b\\|$)|\x1b\[[0-?]*[ -\/]*$|\x1b[ -\/]*[@-~]|[\x00-\x08\x0b-\x1f\x7f-\x9f]/g;
   function liveTail(value) {
-    var rows = String(value || '').split('\n');
+    var raw = String(value || ''), rows = raw.split('\n');
     var plain = rows.map(function (row) { return row.replace(LIVE_CONTROL, ''); });
     var end = plain.length;
     while (end && !plain[end - 1].trim()) end--;
-    var start = Math.max(0, end - 2000);
-    return {text: plain.slice(start, end).join('\n'), raw: rows.slice(0, end).join('\n'), start: start};
+    var start = Math.max(0, end - 2000), text = plain.slice(start, end).join('\n');
+    var spans = [], style = {}, offset = 0;
+    if (text && raw.includes('\x1b')) {
+      // Discarded rows and controls can advance the SGR state, but only
+      // rendered spans decide whether a snapshot changed.
+      for (var index = 0; index < end; index++) {
+        var row = rows[index], visible = index >= start, m, last = 0;
+        if (index > start) offset++;
+        LIVE_CONTROL.lastIndex = 0;
+        while ((m = LIVE_CONTROL.exec(row))) {
+          if (visible) offset = recordLiveSpan(spans, offset, m.index - last, style);
+          if (m[1] !== undefined) style = liveStyle(style, m[1]);
+          last = LIVE_CONTROL.lastIndex;
+        }
+        if (visible) offset = recordLiveSpan(spans, offset, row.length - last, style);
+      }
+    }
+    return {text: text, spans: spans, styles: spans.length ? JSON.stringify(spans) : ''};
   }
   function livePaletteColor(index) {
     if (index < 16) return 'var(--terminal-ansi-' + index + ', ' + LIVE_ANSI_PALETTE[index] + ')';
@@ -2793,35 +2809,42 @@
     // The existing xterm surface draws a bold 0–7 foreground with the bright palette.
     return typeof value === 'number' ? livePaletteColor(bold && value < 8 ? value + 8 : value) : value || '';
   }
-  function appendLiveText(fragment, text, style) {
-    if (!text) return;
-    if (style.fg === undefined && style.bg === undefined && !style.bold && !style.dim && !style.underline && !style.inverse) {
-      fragment.append(text);
-      return;
+  function recordLiveSpan(spans, offset, size, style) {
+    if (!size) return offset;
+    var fg = liveColor(style.fg, style.bold), bg = liveColor(style.bg, false);
+    if (style.inverse) {
+      var front = fg;
+      fg = bg || 'var(--terminal-bg)';
+      bg = front || 'var(--live-terminal-fg)';
     }
-    var span = el('span', '', text), foreground = liveColor(style.fg, style.bold), background = liveColor(style.bg, false);
-    span.style.color = style.inverse ? background || 'var(--terminal-bg)' : foreground;
-    span.style.backgroundColor = style.inverse ? foreground || 'var(--terminal-fg)' : background;
-    if (style.bold) span.style.fontWeight = 'bold';
-    if (style.dim) span.style.opacity = '0.68';
-    if (style.underline) span.style.textDecoration = 'underline';
-    fragment.appendChild(span);
+    if (fg || bg || style.bold || style.dim || style.underline) {
+      var appearance = [fg, bg, !!style.bold, !!style.dim, !!style.underline];
+      var last = spans[spans.length - 1];
+      if (last && last.end === offset && appearance.every(function (value, i) { return value === last.appearance[i]; })) last.end += size;
+      else spans.push({start: offset, end: offset + size, appearance: appearance});
+    }
+    return offset + size;
   }
   function renderLiveCapture(output, capture) {
-    if (!capture.raw.includes('\x1b')) { output.textContent = capture.text; return; }
-    var fragment = document.createDocumentFragment(), style = {};
-    capture.raw.split('\n').forEach(function (row, index) {
-      var visible = index >= capture.start, m, end = 0;
-      if (index > capture.start) fragment.append('\n');
-      LIVE_CONTROL.lastIndex = 0;
-      while ((m = LIVE_CONTROL.exec(row))) {
-        if (visible) appendLiveText(fragment, row.slice(end, m.index), style);
-        if (m[1] !== undefined) style = liveStyle(style, m[1]);
-        end = LIVE_CONTROL.lastIndex;
-      }
-      if (visible) appendLiveText(fragment, row.slice(end), style);
+    if (!capture.spans.length) { output.textContent = capture.text; return; }
+    var fragment = document.createDocumentFragment(), offset = 0;
+    capture.spans.forEach(function (run) {
+      if (run.start > offset) fragment.append(capture.text.slice(offset, run.start));
+      var [foreground, background, bold, dim, underline] = run.appearance;
+      var span = el('span', '', capture.text.slice(run.start, run.end));
+      span.style.color = foreground;
+      span.style.backgroundColor = background;
+      if (bold) span.style.fontWeight = 'bold';
+      if (dim) span.style.opacity = '0.68';
+      if (underline) span.style.textDecoration = 'underline';
+      fragment.appendChild(span);
+      offset = run.end;
     });
+    if (capture.text.length > offset) fragment.append(capture.text.slice(offset));
     output.replaceChildren(fragment);
+  }
+  function sameLiveCapture(a, b) {
+    return a && b && a.text === b.text && a.styles === b.styles;
   }
   function liveBounds(panel) {
     var host = panel.parentElement, body = host.parentElement, tile = body.closest('.tile');
@@ -2973,22 +2996,23 @@
     panel.source.textContent = pendingHistory ? T('Current pane ', '当前 pane ') + state.agent.pane_id + T(' · History association unconfirmed', ' · 历史对话关联待确认') : '';
     panel.source.title = panel.source.textContent;
     panel.resume.hidden = !state.frozen;
-    panel.update.hidden = !state.frozen || !state.capture || state.capture.raw === state.frozen.capture.raw;
+    panel.update.hidden = !state.frozen || !state.capture || sameLiveCapture(state.capture, state.frozen.capture);
     panel.tools.hidden = !pendingHistory && !state.frozen;
   }
   function paintLive(panel, state) {
     panel.clock.textContent = liveDuration(state.agent);
     panel.action.textContent = state.open ? T('Collapse', '收起') : T('Live output', '展开实时输出');
-    if (!state.frozen && state.capture && panel.captureRevision === state.revision && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
+    if (!state.frozen && state.capture && state.capture.text && panel.captureRevision === state.revision && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
     paintLiveTools(panel, state);
     paintLiveHeight(panel, state);
     if (!panel.open) { panel.wasClosed = true; return; }
-    var captured = state.frozen ? state.frozen.capture : state.capture;
+    var capture = state.frozen ? state.frozen.capture : state.capture;
+    var captured = capture && capture.text ? capture : null;
     var text = captured ? captured.text : (state.error ? T('Live output is unavailable.', '暂时无法读取实时输出。') : state.loading ? T('Loading live output…', '正在加载实时输出…') : T('Waiting for output…', '等待实时输出…'));
-    var raw = captured ? captured.raw : '', changed = panel.displayedRaw !== raw || panel.displayedText !== text;
+    var styles = captured ? captured.styles : '', changed = panel.displayedStyles !== styles || panel.displayedText !== text;
     if (changed) {
       if (captured) renderLiveCapture(panel.output, captured); else panel.output.textContent = text;
-      panel.displayedRaw = raw; panel.displayedText = text;
+      panel.displayedStyles = styles; panel.displayedText = text;
     }
     panel.shownCapture = captured; panel.captureRevision = state.revision;
     panel.note.hidden = !state.error; panel.note.textContent = state.error ? (captured ? T('Update failed. Showing the last capture; retrying…', '更新失败，显示上次内容，正在重试…') : T('Retrying automatically…', '正在自动重试…')) : '';
@@ -3016,7 +3040,7 @@
         if (!r.ok) throw new Error('live capture'); return r.json();
       }).then(function (capture) {
         if (!capture || !active()) return;
-        var styled = liveTail(capture.text); state.capture = styled.text ? styled : null; state.error = false;
+        state.capture = liveTail(capture.text); state.error = false;
       }).catch(function () { if (active()) state.error = true; }).finally(function () {
         if (state.revision === revision) state.loading = false;
         if (active()) paintLivePanels(id, state);
@@ -4340,11 +4364,22 @@
     });
   }
   function resizeTileAxis(start, size, delta, side, bound, minimum) {
+    size = Math.max(minimum, Math.min(size, bound));
+    start = Math.max(0, Math.min(start, bound - size));
     if (!side || !delta) return [start, size];
     var end = start + size;
     if (side < 0) start = Math.max(0, Math.min(end - minimum, snapv(start + delta)));
     else end = Math.max(start + minimum, Math.min(bound, snapv(end + delta)));
     return [start, end - start];
+  }
+  function paintTileBounds(t, x, y) {
+    if (t.x === x[0] && t.w === x[1] && t.y === y[0] && t.h === y[1]) return;
+    t.x = x[0]; t.w = x[1]; t.y = y[0]; t.h = y[1];
+    t.el.style.left = t.x + 'px'; t.el.style.top = t.y + 'px';
+    t.el.style.width = t.w + 'px'; t.el.style.height = t.h + 'px';
+    var live = t.body.querySelector('.chat-live');
+    if (live) paintLiveHeight(live, chatLive[live.dataset.pane]);
+    if (t.fit && t.mode === 'term') { try { t.fit.fit(); } catch (e) {} }
   }
   function installTileResize(t) {
     var drag = null, board = $('board');
@@ -4367,6 +4402,9 @@
         if (event.button !== 0 || drag || maxedTile || t.removed) return;
         event.preventDefault(); event.stopPropagation();
         t.el.style.zIndex = ++zTop;
+        // A saved frame can outlive the board dimensions it was placed in.
+        paintTileBounds(t, resizeTileAxis(t.x, t.w, 0, 0, board.clientWidth, 180),
+          resizeTileAxis(t.y, t.h, 0, 0, board.clientHeight, 120));
         drag = {id: event.pointerId, sx: event.clientX, sy: event.clientY, x: t.x, y: t.y, w: t.w, h: t.h};
         handle.setPointerCapture(event.pointerId);
       };
@@ -4374,13 +4412,7 @@
         if (!drag || drag.id !== event.pointerId || t.removed || maxedTile) return;
         var x = resizeTileAxis(drag.x, drag.w, event.clientX - drag.sx, horizontal, board.clientWidth, 180);
         var y = resizeTileAxis(drag.y, drag.h, event.clientY - drag.sy, vertical, board.clientHeight, 120);
-        if (t.x === x[0] && t.w === x[1] && t.y === y[0] && t.h === y[1]) return;
-        t.x = x[0]; t.w = x[1]; t.y = y[0]; t.h = y[1];
-        t.el.style.left = t.x + 'px'; t.el.style.top = t.y + 'px';
-        t.el.style.width = t.w + 'px'; t.el.style.height = t.h + 'px';
-        var live = t.body.querySelector('.chat-live');
-        if (live) paintLiveHeight(live, chatLive[live.dataset.pane]);
-        if (t.fit && t.mode === 'term') { try { t.fit.fit(); } catch (e) {} }
+        paintTileBounds(t, x, y);
       };
       handle.onpointerup = handle.onpointercancel = handle.onlostpointercapture = finish;
     });

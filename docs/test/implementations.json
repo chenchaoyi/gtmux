@@ -5645,5 +5645,21 @@
       "WLI-003 The workbench panel resizes on eight edges and corners",
       "WLI-004 A touch drags the top-left corner without moving the header"
     ]
+  },
+  "tests/web/workbench-recover-resize.test.cjs": {
+    "cases": [
+      "WLI-006"
+    ],
+    "selectors": [
+      "WLI-006 Resizing recovers a clipped saved workbench tile"
+    ]
+  },
+  "tests/web/live-visible-updates.test.cjs": {
+    "cases": [
+      "WLI-007"
+    ],
+    "selectors": [
+      "WLI-007 Live only announces visible changes and does announce an empty capture"
+    ]
   }
 }

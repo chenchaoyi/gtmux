@@ -94,9 +94,9 @@ scenario('WLI-004 A touch drags the top-left corner without moving the header', 
   await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
   assert.deepEqual(await geometry(tile), {x: initial.x - 36, y: initial.y - 32, w: initial.w + 36, h: initial.h + 32});
   assert.equal(await tile.evaluate(el => el.classList.contains('max')), false);
-  await tile.locator('.cx-keyboard').tap();
   const input = tile.locator('.cx-input');
-  await input.tap();
+  if (!(await input.isVisible())) await tile.locator('.cx-keyboard').click();
+  await input.waitFor();
   await input.fill('A draft after touch resize');
   assert.equal(await input.inputValue(), 'A draft after touch resize');
   assert.equal(fixture.state.sends.length, 0);
