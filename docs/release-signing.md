@@ -1,24 +1,17 @@
 # Release signing & notarization (macOS app) — one-time setup
 
-The tagged release workflow is set up for **Developer ID signing + notarization**. A local `make app`
-without `GTMUX_SIGN_ID`, or a CI snapshot without signing credentials, instead uses
-ad-hoc signing; that build is not a notarized distributable. This guide covers the
-credentials and checks for the release path.
+The tagged release workflow uses **Developer ID signing and notarization**. A local
+`make app` without `GTMUX_SIGN_ID` and an ad-hoc CI snapshot are for testing.
 
 Two ways to do it. Both need the same one-time credentials (§1 cert + §2 API key):
 
-- **CI (the path in use):** the macOS runner signs, notarizes and uploads the app.
-  On a tag it checks all five signing secrets (§3) before touching a keychain and
-  fails with the missing names. It sets `GTMUX_REQUIRE_NOTARIZE=1`, so the build
-  fails if notarization cannot run; `xcrun stapler validate` also checks the app
-  before it is zipped and uploaded. The cask is updated when `HOMEBREW_TAP_TOKEN`
-  is configured. Supply the build gates below too. The Mac build runs alongside the CLI gate/build. A separate publication job waits
-  for both to succeed, verifies the same run/source/build-attempt ZIP and SHA256,
-  then uploads the App and updates its cask. The official mirror waits for that
-  publication too. A CLI release can still exist if the Mac build fails; inspect
-  all build/publication jobs before calling the release complete.
-  Before the 2026-10-06 gate fix, missing Key ID or Issuer could skip notarization;
-  `internal/releasecheck` now exercises these failure paths with command stubs.
+- **CI:** the macOS runner checks all five signing secrets (§3) before creating a
+  keychain. `GTMUX_REQUIRE_NOTARIZE=1` makes notarization mandatory. The runner
+  validates the staple before packaging the app. Mac and CLI build in parallel.
+  A separate job waits for both, checks the staged ZIP's source, run, attempt
+  and digest, then uploads it and updates the cask using `HOMEBREW_TAP_TOKEN`.
+  The signed mirror advances stable after both origins return the exact assets.
+  A GitHub CLI release can exist while the Mac app and official mirrors are pending.
 - **Local (manual fallback):** notarize from your Mac with `make app-release` (see
   "Local release" below) — for a CI outage or a hotfix. It accepts the API-key
   environment variables or a keychain profile; the latter can stall if the login keychain is locked in a

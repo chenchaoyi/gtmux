@@ -4,7 +4,9 @@ description: Read Web histories and manage verified DeepSeek Harness terminal se
 order: 18
 ---
 
-gtmux reads saved DeepSeek Harness Web conversations and manages verified terminal sessions through dst. Both appear as DeepSeek Harness with its official whale icon. For other agents, see the [integration guide](agent-integrations.md).
+**English** · [中文](deepseek-harness.zh.md)
+
+gtmux reads saved DeepSeek Harness Web conversations and manages verified terminal sessions through dst. Both appear as DeepSeek Harness. For other agents, see the [integration guide](agent-integrations.md).
 
 ## Web histories
 

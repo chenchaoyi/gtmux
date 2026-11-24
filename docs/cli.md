@@ -1347,7 +1347,7 @@ distill requested 3d ago; awaiting HQ completion
   [pitfalls] wrangler TLS-resets from the office network — retry
 ```
 
-Any worker, not just HQ, can drop a one-line candidate into the pending-distill spool
+HQ and workers can both add a one-line candidate to the pending distillation queue
 (`~/.config/gtmux/hq/knowledge/.pending-distill.jsonl`). Each line carries the lesson,
 its topic tag, a dedup key (`<topic>/<lesson-slug>`, so the distill pass merges same-key
 candidates), and auto-collected context (the current pane, the event high-water mark, a

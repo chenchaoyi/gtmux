@@ -1122,35 +1122,19 @@ nothing).
 ## Driving a pane (dispatch / `gtmux send`)
 
 ### An "is there a draft?" check MUST read the COLOR capture (2026-08-09)
-**Symptom:** `gtmux send` refuses with "that pane has unsent text in its input box" against
-a pane whose box is visibly EMPTY. Shipped in v0.46.2, fixed in v0.46.3.
-**Root cause:** Claude Code renders its suggested-next-command as FAINT (SGR 2) ghost text
-inside the input box. `tmux capture-pane` WITHOUT `-e` strips the SGR markers, so the ghost
-comes back as ordinary text and every "is the box empty?" caller reads it as a half-typed
-draft. Measured live on pane `%7`: the plain read returned `把评论里 273 改成 265` ("change
-273 to 265 in the comment"), the color read correctly returned nothing.
-**Rule:** a caller asking *"is there an unsubmitted draft?"* uses `dispatch.DraftOfColored`
-on a `tmux.CaptureFullColor` capture — never plain `SplitInputRegion`. This is written at
-`internal/dispatch/region.go`'s `DraftOfColored` doc comment, which names the exact failure
-("a stuck `waiting`, a suppressed `done`, a held HQ nudge") — the draft guard became its
-fourth instance. Callers matching a SPECIFIC payload (Deliver's verify, the wake-ack `#id`)
-are exempt: a ghost can never equal their target.
-**Also:** refuse only on TWO agreeing frames. One frame mid-repaint can show a phantom, and
-a refusal — unlike the wake channel's queue-and-retry — cannot be taken back.
-**Must-check when adding any such gate:** run it against a LIVE Claude pane that is showing
-its ghost suggestion, not just against test fixtures. Fixtures carry no SGR, so
-`DraftOfColored` and `SplitInputRegion` agree on them and the bug is invisible in CI.
-**Second false positive, same gate (fixed in the same round):** a pane running neither a
-known agent nor a bare shell (vim, ssh, a TUI — routing fails SAFE to the agent pipeline for
-those) has NO composer, so `SplitInputRegion`'s no-box degrade path returns the TRANSCRIPT as
-a draft — measured live at 347 characters of log output on a pane running `worker`. Any
-"is there a draft?" gate must therefore ALSO be scoped to panes a known agent drives
-(`Opts.HasComposer`, from `radar.AgentDriverKey`), not merely to "not a shell".
-**And the shape of the gate matters as much as its inputs:** it must fail OPEN on every
-condition it cannot judge (unreadable capture, copy-mode, no input region) and be bounded —
-a pre-check on the send path may cost a known amount, it may never loop or hang. The live
-probe to reproduce all of this: build `DeliverOpts` for a pane, call the guard read-only,
-and print `driverKey / hasComposer / refused` across an agent pane, a TUI pane and a shell.
+
+In v0.46.2, `gtmux send` could mistake Claude Code's faint input suggestion for a
+draft. A plain `tmux capture-pane` drops SGR 2, so the suggestion looks like typed
+text. The fix in v0.46.3 uses `dispatch.DraftOfColored` with `tmux.CaptureFullColor`.
+Use a colored fixture and check a real pane showing a suggestion when changing the guard.
+
+The guard checks known agent composers (`Opts.HasComposer`) with at most two
+captures. This avoids reading a regular TUI's scrollback as its draft and lets a
+transient repaint settle. Explicit `gtmux send` uses its existing fallback when it
+cannot read a composer. Automatic HQ wake input uses a stricter check. It holds the
+wake while the pane is in copy mode or its composer cannot be verified empty.
+Check each path with an agent pane, a regular TUI and a shell. Keep actual sends
+inside a disposable test environment.
 
 ### A screen check matched what the pane was QUOTING, not what it was drawing (2026-08-10)
 **Symptom:** HQ is knocked `» ◆ gtmux·waiting … stuck before running — startup` for a pane
@@ -1243,8 +1227,8 @@ This is an interface problem, not a memory problem.
 **Rule (same root as the base64 one)** — whenever a piece of text has to pass through a
 shell, ask whether it contains backticks, newlines, quotes or `$`; if it does, keep it off
 argv. Giving the tool a **file channel** is more reliable than giving callers a discipline.
-Tests must assert a **byte-for-byte round trip**, not just that the command didn't error:
-quoting that "looks right" fools people.
+Tests should compare the returned bytes with the input. A successful exit leaves
+changes to quoting or line breaks undetected.
 
 ---
 

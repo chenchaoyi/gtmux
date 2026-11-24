@@ -123,7 +123,7 @@ On iPhone and iPad, **Copy reply** below a reply copies the whole turn's text, i
 
 ### Browser controls
 
-On a wide screen, double-click a session or drag it from the sidebar onto the board. Each panel can be moved, resized and viewed beside other sessions. New panels opened from the session list use available room beside or below the panels already open. Readable external conversations use the same layout with read-only Chat and Trace; they do not gain Terminal, Diff or input. Entries without a readable conversation remain **Status only**. On phones, tap a readable session to open it. The narrow toolbar keeps controls within the screen.
+On a wide screen, double-click a session or drag it from the sidebar onto the workbench. Drag a panel by its title to move it, or drag any edge or corner to resize it. The opposite edge stays in place. New panels use space beside or below the panels already open. External conversations with readable history offer read-only Chat and Trace. Entries without readable history show **Status only**. On a phone, tap the session to open it.
 
 In the Chat and Terminal composers, Enter starts a new line and Ctrl/Cmd+Enter sends. You can enable Return-to-send in Settings. When an input method is composing text, Enter confirms the word without sending. Chat refreshes intermediate reply text and tool details as they arrive.
 
@@ -133,7 +133,7 @@ Use **Load earlier messages** above Chat to read earlier recorded windows. Loadi
 
 Copy icons sit below each message with its recorded time and sender. Layout actions and session rows support keyboard access; Escape closes layout and settings panels.
 
-While an agent is working, Chat shows a **Working** strip above the composer. Open **Live output** and drag the top handle up to see more or down to shrink it. The pane covers the conversation and stays above the input. Scroll inside it to review earlier terminal output, then choose **Return to live** to follow the newest output. Your draft and chat position stay in place. Each pane remembers its height while you switch views.
+While an agent is working, open **Live output** above the composer. Drag the top handle up for more room or down to shrink it. The panel covers the conversation, keeping the composer and your reading position in place. It shows up to 2,000 lines available from the terminal capture, with terminal colors and highlighting. Scroll up or select text to hold the current frame and its colors. Choose **Return to live** to follow fresh output. Each pane remembers its height as you switch views.
 
 In the browser, select **Trace** beside Chat / Terminal; in the App, open **Session tools → Trace** to inspect the recorded sequence of user prompts, agent replies and tool calls. Search the contents, filter by event type, then select an event to read or copy its detail. The overview marks follow event order. Tool details show the recorded input when available, with a summary or partial label for limited records. Model request timing, token counts and tool output are not recorded here. Run command also recognizes recorded interpreter argument arrays: Preview keeps Full call first, then the shell command and explicitly identified Python or JavaScript scripts. Choose a script for syntax colors and compact formatting. Copy and Raw content keep the complete original call; ordinary arguments are not guessed to be Python.
 

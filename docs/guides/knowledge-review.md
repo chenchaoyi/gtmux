@@ -1,8 +1,14 @@
+---
+title: Using and reviewing knowledge
+description: Find rules before acting and review proposed changes to the knowledge base.
+order: 19
+---
+
 # Using and reviewing knowledge
 
-[中文](knowledge-review.zh.md)
+**English** · [中文](knowledge-review.zh.md)
 
-The append-only ledger remains authoritative. This version adds CLI review and a local Markdown workspace, with resumable reviews through the existing model CLI, without another service, scheduler, database or sync plugin.
+Look up the rules that apply before acting. Use the CLI or a local Markdown workspace to propose changes and review them against the knowledge ledger. HQ can resume longer reviews from a saved run.
 
 ## Consult before an action
 

@@ -281,9 +281,10 @@ Where the base lives, the commands, and what you can change yourself:
 
 ## Your own rules: LOCAL.md
 
-`~/.config/gtmux/hq/LOCAL.md` is yours. It is imported at the end of the charter, so what
-you write there extends and overrides what gtmux ships, and no upgrade overwrites it. For
-example:
+`~/.config/gtmux/hq/LOCAL.md` holds your standing instructions. The managed charter
+points to it after its own rules, and updates preserve the file. A new HQ session needs
+to read it through to the end if its agent does not follow file imports. Keep rules that
+apply to every session here.
 
 ```markdown
 - I mostly work on the api and web repos; the mobile app can wait.
@@ -291,22 +292,25 @@ example:
 - Quiet hours 22:00–08:00: interrupt me only for something blocked.
 ```
 
-If you want HQ to always do something, write it in `LOCAL.md`. If you want it to remember
-something it worked out, that is the knowledge base: a correction you give HQ in
-conversation becomes an entry there, and one that should govern HQ from then on can be
-promoted into `LOCAL.md` as a marked section.
+Store reusable lessons in the knowledge base with their source and scope. An applicable
+lesson can be promoted into `LOCAL.md` as a marked section. Review which audience should
+receive it before publishing it to instruction files.
 
 ## Self-check and self-rotation
 
-HQ has no clock, so gtmux raises its housekeeping:
+gtmux schedules two kinds of HQ maintenance.
 
-- `self-check`, about daily: HQ tidies its own records (stale entries in its ledger, the
-  event log's health, the knowledge base's lint report) and says nothing unless it did
-  real work.
-- `distill`, about weekly, sooner once five captures are queued: it folds the period's
-  lessons into the knowledge base and prunes stale ones.
+- `self-check`, about daily. HQ checks pending decisions, its board, event progress
+  and knowledge diagnostics.
+- `distill`, about weekly or earlier when five capture candidates accumulate. HQ
+  reviews the authorized candidates, records useful lessons with evidence and gives
+  a reason for dismissals.
 
-`gtmux doctor` flags either one when it is overdue.
+HQ records a completion for the specific request, including a completed pass with no
+changes. In `gtmux doctor`, check **HQ event follow-up**, **HQ self-check** and **Knowledge
+distillation** separately. A requested pass stays pending until its completion receipt
+is recorded. A preview that starts ahead of the saved read position leaves it unchanged.
+To catch up, read from the saved position using `gtmux events --since-seq N --json`.
 
 **Self-rotation.** To limit the effects of long sessions and accumulated context, gtmux monitors HQ’s session. It triggers `self-rotate` at 75% context use, 12 hours or 300 turns. HQ updates the board and knowledge base, writes a handover and runs `gtmux hq --rotate`.
 

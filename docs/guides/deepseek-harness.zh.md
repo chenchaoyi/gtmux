@@ -4,7 +4,9 @@ description: 读取 Web 历史，管理已核验的 DeepSeek Harness 终端会�
 order: 18
 ---
 
-gtmux 可以读取 DeepSeek Harness 的 Web 历史，并管理通过 dst 接入、已核验的终端会话。两种入口都显示为 DeepSeek Harness，使用官方鲸鱼图标。各 agent 的接入方式见[接入说明](agent-integrations.zh.md)。
+[English](deepseek-harness.md) · **中文**
+
+gtmux 可以读取 DeepSeek Harness 的 Web 历史，也可以管理通过 dst 接入并已核验的终端会话。两类会话都显示为 DeepSeek Harness。其他 agent 的接入方式见[接入说明](agent-integrations.zh.md)。
 
 ## Web 历史
 
