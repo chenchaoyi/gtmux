@@ -27,6 +27,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Socket paths default to the host layout. Entry-point tests isolate both
+// listeners before calling Run in a subprocess.
+var (
+	frontendSocketDirectory = defaultFrontendSocketDirectory
+	frontendSyslogSockets   []string
+)
+
 // Run launches an admitted interactive client. Admission happens before this
 // function; no fallback or second launch is permitted after the child starts.
 func Run(bin string, args []string, pane string) int {
@@ -35,6 +42,10 @@ func Run(bin string, args []string, pane string) int {
 		return -1 // the caller can execute the original launch unchanged
 	}
 	defer cleanup()
+	// The child owns the terminal. A background diagnostic write failure must
+	// not draw over the client's composer through the inherited stderr.
+	restoreWarnings := diag.RouteStoreFailuresToSystemLog(frontendSyslogSockets...)
+	defer restoreWarnings()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	var connections sync.WaitGroup
@@ -250,12 +261,11 @@ func frontendListener() (string, net.Listener, func(), error) {
 		return "", nil, nil, err
 	}
 	alias := filepath.Join(canonical, "frontend.sock")
-	tmp, err := filepath.EvalSymlinks("/tmp")
+	protectedDir, err := frontendSocketDirectory()
 	if err != nil {
 		cleanup()
 		return "", nil, nil, err
 	}
-	protectedDir := filepath.Join(tmp, "codex-daemon-"+strconv.Itoa(os.Geteuid()))
 	info, err := os.Lstat(protectedDir)
 	if err != nil || !info.IsDir() || info.Mode().Perm() != 0700 || info.Sys().(*syscall.Stat_t).Uid != uint32(os.Geteuid()) {
 		cleanup()
@@ -276,4 +286,12 @@ func frontendListener() (string, net.Listener, func(), error) {
 		return "", nil, nil, err
 	}
 	return alias, l, func() { l.Close(); cleanup() }, nil
+}
+
+func defaultFrontendSocketDirectory() (string, error) {
+	tmp, err := filepath.EvalSymlinks("/tmp")
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(tmp, "codex-daemon-"+strconv.Itoa(os.Geteuid())), nil
 }

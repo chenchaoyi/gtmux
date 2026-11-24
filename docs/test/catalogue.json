@@ -63214,9 +63214,36 @@
           "dynamic": false,
           "layer": "L4",
           "design": "AOP-006"
+        },
+        {
+          "id": "MAP-b50a8230101a",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "AOP006 drag minimum desktop writable",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-006"
+        },
+        {
+          "id": "MAP-a66387ee3cdf",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "AOP006 drag minimum desktop read-only",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-006"
+        },
+        {
+          "id": "MAP-bc9bac833279",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "AOP006 drag minimum coarse pointer read-only",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-006"
         }
       ],
-      "sha256": "916fa4007e8ea08bb45baae910f3d3c0bf9a8570b85a5dac2d2fe11b1db2a6e3"
+      "sha256": "a746868c00f6a898fe3ab582f4687bb0799dee555cee3650cb51b3dca0bb0495"
     },
     "tests/web/presentation.test.cjs": {
       "sha256": "05bb286087d996de0f913e54eabb29bc4d75d87909f852cdc2b02ea55b9d4f8f",
@@ -63449,7 +63476,7 @@
       ]
     },
     "tests/web/smoke.test.cjs": {
-      "sha256": "2ed0f6ea48cc2b6336effa35ae477bd014d263b4016746ab838c1df96ed54b7d",
+      "sha256": "4aa23185eee1bed608519309d6b48460414b2198037c3acf84ec3adf38af8807",
       "layer": "L3",
       "stack": "Browser",
       "cases": [
@@ -63527,7 +63554,7 @@
         },
         {
           "id": "LEG-9fb6fb4f5960",
-          "line": 330,
+          "line": 331,
           "kind": "scenario",
           "name": "Chat operates an unparsed picker without visiting Terminal",
           "dynamic": false,
@@ -63535,7 +63562,7 @@
         },
         {
           "id": "LEG-3e1421f2c918",
-          "line": 356,
+          "line": 357,
           "kind": "scenario",
           "name": "Chat shows choices only while waiting and folds an answered prompt",
           "dynamic": false,
@@ -63543,7 +63570,7 @@
         },
         {
           "id": "LEG-338a1654affd",
-          "line": 373,
+          "line": 374,
           "kind": "scenario",
           "name": "`View question reveals the picker without submitting a draft at ${width}px`",
           "dynamic": true,
@@ -63551,7 +63578,7 @@
         },
         {
           "id": "LEG-e526198ccd27",
-          "line": 392,
+          "line": 393,
           "kind": "scenario",
           "name": "Workspace conversation keeps drafts, shows identities and inspectable calls",
           "dynamic": false,
@@ -63559,7 +63586,7 @@
         },
         {
           "id": "LEG-a88f9e388b83",
-          "line": 477,
+          "line": 478,
           "kind": "scenario",
           "name": "Narrow chat supports input and touch copy while trace remains within viewport",
           "dynamic": false,
@@ -63567,7 +63594,7 @@
         },
         {
           "id": "LEG-eb05aa918933",
-          "line": 511,
+          "line": 512,
           "kind": "scenario",
           "name": "Workspace controls support keyboard access and truthful copy feedback",
           "dynamic": false,
@@ -63575,7 +63602,7 @@
         },
         {
           "id": "LEG-b946e51a9044",
-          "line": 566,
+          "line": 567,
           "kind": "scenario",
           "name": "Live chat shows current work, retains disclosure state and clears after completion or revocation",
           "dynamic": false,
@@ -63583,7 +63610,7 @@
         },
         {
           "id": "LEG-fb1c9cc17ccb",
-          "line": 643,
+          "line": 644,
           "kind": "scenario",
           "name": "Appearance follows the system and persists an explicit choice without recoloring terminals",
           "dynamic": false,
@@ -63591,7 +63618,7 @@
         },
         {
           "id": "LEG-b055e62dee7c",
-          "line": 687,
+          "line": 688,
           "kind": "scenario",
           "name": "Trace tool closes details and returns to the original panel draft",
           "dynamic": false,
@@ -63599,7 +63626,7 @@
         },
         {
           "id": "LEG-00a1f7cbea36",
-          "line": 710,
+          "line": 711,
           "kind": "scenario",
           "name": "Composer stages files, annotates images, recalls input and matches app send controls",
           "dynamic": false,
@@ -63607,7 +63634,7 @@
         },
         {
           "id": "LEG-f0e15e31d7c2",
-          "line": 829,
+          "line": 830,
           "kind": "scenario",
           "name": "Mobile composer and speaker profiles expose identity without redundant writable badges",
           "dynamic": false,
@@ -63615,7 +63642,7 @@
         },
         {
           "id": "LEG-f81adc301549",
-          "line": 885,
+          "line": 886,
           "kind": "scenario",
           "name": "Clipboard images and dropped files stay staged until an explicit send",
           "dynamic": false,
@@ -63623,7 +63650,7 @@
         },
         {
           "id": "LEG-05c9e13ce4c2",
-          "line": 914,
+          "line": 915,
           "kind": "scenario",
           "name": "'Native file actions keep readable labels and recorded changes at ' + width",
           "dynamic": true,
@@ -63646,6 +63673,24 @@
           "dynamic": false,
           "layer": "L4",
           "design": "AOP-005,DTV-003"
+        },
+        {
+          "id": "MAP-47f4ffb1700f",
+          "line": 310,
+          "kind": "reviewed-selector",
+          "name": "Compact tile controls stay readable in ${locale}",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-005,DTV-003,WHS-008"
+        },
+        {
+          "id": "MAP-756a48ad34a9",
+          "line": 940,
+          "kind": "reviewed-selector",
+          "name": "WHS-008 compact tile actions retire on layout switch",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-005,DTV-003,WHS-008"
         }
       ]
     },
@@ -69545,7 +69590,7 @@
       "cases": [
         {
           "id": "MAP-4b4cdb04628b",
-          "line": 60,
+          "line": 81,
           "kind": "reviewed-selector",
           "name": "WHS-002 mixed panels",
           "dynamic": false,
@@ -69554,7 +69599,7 @@
         },
         {
           "id": "MAP-77508a69c382",
-          "line": 85,
+          "line": 106,
           "kind": "reviewed-selector",
           "name": "WHS-003 narrow board maximize restore and focused modes",
           "dynamic": false,
@@ -69563,7 +69608,7 @@
         },
         {
           "id": "MAP-08c4a2d06abf",
-          "line": 129,
+          "line": 161,
           "kind": "reviewed-selector",
           "name": "WHS-003 mobile readonly focused modes",
           "dynamic": false,
@@ -69572,7 +69617,7 @@
         },
         {
           "id": "MAP-a8c8b16f2977",
-          "line": 145,
+          "line": 178,
           "kind": "reviewed-selector",
           "name": "WHS-004 neutral native terminal reduced motion and retired delayed status",
           "dynamic": false,
@@ -69580,7 +69625,7 @@
           "design": "WHS-002,WHS-003,WHS-004"
         }
       ],
-      "sha256": "443b91d5b55f96352c4935226b50bc6f318b9d0e4fe9c7343e73cfb5c260b55f"
+      "sha256": "672841b53133f584b31a2f0418c66f639ddef6db563357ef252dbe000cfcdb28"
     },
     "internal/app/hq_notification_source_guard_test.go": {
       "layer": "L2",
@@ -69910,6 +69955,115 @@
         }
       ],
       "sha256": "fc5339fb588a44ce777c226be0c5ffcc4e839c9c4db2eb1e4af4850d6825dd10"
+    },
+    "tests/web/short-tile-header.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-17bafeec6a86",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "WHS-007 diagonal minimum writable",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "WHS-007"
+        },
+        {
+          "id": "MAP-1e4014a69252",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "WHS-007 diagonal minimum read-only touch",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "WHS-007"
+        }
+      ],
+      "sha256": "9c34c7e2884562c53c26162757752ef22e27bf1f2da24159c72ace4e01ccb573"
+    },
+    "internal/diag/failure_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-745f693c3a09",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestInteractiveStoreFailureLeavesStderrAlone",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
+        },
+        {
+          "id": "MAP-58b2325d5509",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "TestInteractiveDiskFullWarningRearmsAfterWrite",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
+        },
+        {
+          "id": "MAP-7cdc6cd87843",
+          "line": 102,
+          "kind": "reviewed-selector",
+          "name": "TestSystemStoreWarningUsesLocalSocket",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
+        },
+        {
+          "id": "MAP-8617ecb8335d",
+          "line": 103,
+          "kind": "reviewed-selector",
+          "name": "TestRetentionMarkerRearmsDiskFullWarning",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003,DIAG-TERM-005"
+        }
+      ],
+      "sha256": "a7a1b41f16b01174bf3f2713be41055e883559d2c73c113fb5db46ef43b67965"
+    },
+    "internal/codexbridge/run_unix_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0976e4db3084",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "TestRunKeepsStoreFailureOffTerminal",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "DIAG-TERM-004,DIAG-TERM-006"
+        },
+        {
+          "id": "MAP-5af249f51e98",
+          "line": 111,
+          "kind": "reviewed-selector",
+          "name": "TestProtectedSendKeepsManuallyTypedComposerBytes",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "DIAG-TERM-004,DIAG-TERM-006"
+        }
+      ],
+      "sha256": "defb83d3380996ed065e666d302b50379d5d12e0d66068d36b8dcf44f99ef505"
+    },
+    "internal/diag/retention_warning_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2dc03996e486",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestRetentionMarkerRearmsDiskFullWarning",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "DIAG-TERM-005"
+        }
+      ],
+      "sha256": "c42efddbbffa75c828f76c91772f1605411488368fc72fe97c8626af5055ad9d"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

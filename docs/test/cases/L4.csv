@@ -124,12 +124,19 @@ MAP-ce9e69e4a686,L4,reviewed implementation,tests/web/maximized-header.test.cjs,
 MAP-5e76ed85dc75,L4,reviewed implementation,tests/web/maximized-header.test.cjs,5,reviewed-selector,AOP006 real maximized header medium,False,AOP-006
 MAP-1752da0e5a5c,L4,reviewed implementation,tests/web/maximized-header.test.cjs,6,reviewed-selector,AOP006 real maximized header narrow board,False,AOP-006
 MAP-dd8842bbedae,L4,reviewed implementation,tests/web/maximized-header.test.cjs,7,reviewed-selector,AOP006 real maximized header plain terminal,False,AOP-006
+MAP-b50a8230101a,L4,reviewed implementation,tests/web/maximized-header.test.cjs,34,reviewed-selector,AOP006 drag minimum desktop writable,False,AOP-006
+MAP-a66387ee3cdf,L4,reviewed implementation,tests/web/maximized-header.test.cjs,35,reviewed-selector,AOP006 drag minimum desktop read-only,False,AOP-006
+MAP-bc9bac833279,L4,reviewed implementation,tests/web/maximized-header.test.cjs,36,reviewed-selector,AOP006 drag minimum coarse pointer read-only,False,AOP-006
 MAP-1d1a8964b720,L4,Browser,tests/web/presentation.test.cjs,159,reviewed-selector,Compact settings expose direct appearance choices and bounded call rows at ${width},False,AOP-005
 MAP-fa13c1acffbc,L4,Browser,tests/web/presentation.test.cjs,59,reviewed-selector,Focused Chat is a conversation with session tools at ${width},False,"AOP-005,DTV-003"
 MAP-f023f66b7dac,L4,Browser,tests/web/reading-controls.test.cjs,20,reviewed-selector,"Diff preserves recorded layout, syntax and original copy at ${width}",False,DTV-003
-MAP-4b4cdb04628b,L4,reviewed implementation,tests/web/session-header.test.cjs,60,reviewed-selector,WHS-002 mixed panels,False,"WHS-002,WHS-003,WHS-004"
-MAP-77508a69c382,L4,reviewed implementation,tests/web/session-header.test.cjs,85,reviewed-selector,WHS-003 narrow board maximize restore and focused modes,False,"WHS-002,WHS-003,WHS-004"
-MAP-08c4a2d06abf,L4,reviewed implementation,tests/web/session-header.test.cjs,129,reviewed-selector,WHS-003 mobile readonly focused modes,False,"WHS-002,WHS-003,WHS-004"
-MAP-a8c8b16f2977,L4,reviewed implementation,tests/web/session-header.test.cjs,145,reviewed-selector,WHS-004 neutral native terminal reduced motion and retired delayed status,False,"WHS-002,WHS-003,WHS-004"
+MAP-4b4cdb04628b,L4,reviewed implementation,tests/web/session-header.test.cjs,81,reviewed-selector,WHS-002 mixed panels,False,"WHS-002,WHS-003,WHS-004"
+MAP-77508a69c382,L4,reviewed implementation,tests/web/session-header.test.cjs,106,reviewed-selector,WHS-003 narrow board maximize restore and focused modes,False,"WHS-002,WHS-003,WHS-004"
+MAP-08c4a2d06abf,L4,reviewed implementation,tests/web/session-header.test.cjs,161,reviewed-selector,WHS-003 mobile readonly focused modes,False,"WHS-002,WHS-003,WHS-004"
+MAP-a8c8b16f2977,L4,reviewed implementation,tests/web/session-header.test.cjs,178,reviewed-selector,WHS-004 neutral native terminal reduced motion and retired delayed status,False,"WHS-002,WHS-003,WHS-004"
+MAP-17bafeec6a86,L4,reviewed implementation,tests/web/short-tile-header.test.cjs,5,reviewed-selector,WHS-007 diagonal minimum writable,False,WHS-007
+MAP-1e4014a69252,L4,reviewed implementation,tests/web/short-tile-header.test.cjs,6,reviewed-selector,WHS-007 diagonal minimum read-only touch,False,WHS-007
 MAP-be17f88f3a1c,L4,Browser,tests/web/smoke.test.cjs,190,reviewed-selector,Structured activity at ${width}px,False,AOP-005
 MAP-57dbbd511453,L4,Browser,tests/web/smoke.test.cjs,48,reviewed-selector,DTV003 Diff tree and worktree context at ${width}px,False,"AOP-005,DTV-003"
+MAP-47f4ffb1700f,L4,Browser,tests/web/smoke.test.cjs,310,reviewed-selector,Compact tile controls stay readable in ${locale},False,"AOP-005,DTV-003,WHS-008"
+MAP-756a48ad34a9,L4,Browser,tests/web/smoke.test.cjs,940,reviewed-selector,WHS-008 compact tile actions retire on layout switch,False,"AOP-005,DTV-003,WHS-008"

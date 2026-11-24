@@ -314,10 +314,11 @@ for (const locale of ['en-US','zh-CN']) {
     for(const width of [360,280,600]) {
       await page.locator('.tile').evaluate((e,w)=>{e.style.width=w+'px';},width);
       const bounds=await head.evaluate(e=>{
-        const r=e.getBoundingClientRect();return{width:e.clientWidth,scroll:e.scrollWidth,height:r.height,buttons:[...e.querySelectorAll('button')].map(b=>{const x=b.getBoundingClientRect();return{x:x.left-r.left,right:x.right-r.left,height:x.height,centerY:(x.top+x.bottom)/2,text:b.textContent};})};
+        const r=e.getBoundingClientRect();return{width:e.clientWidth,scroll:e.scrollWidth,height:r.height,buttons:[...e.querySelectorAll('button')].filter(b=>b.getClientRects().length).map(b=>{const x=b.getBoundingClientRect();return{x:x.left-r.left,right:x.right-r.left,height:x.height,centerY:(x.top+x.bottom)/2,text:b.textContent};})};
       });
       assert.ok(bounds.scroll<=bounds.width+1,JSON.stringify(bounds));
       assert.ok(bounds.height<=120,JSON.stringify(bounds));
+      assert.equal(await head.locator('.tile-actions-menu').isVisible(),false,'normal height retains direct tile actions');
       for(const b of bounds.buttons){assert.ok(b.x>=0&&b.right<=bounds.width+1,JSON.stringify(b));assert.ok(b.height>=32&&b.height<=44,'controls keep usable targets: '+JSON.stringify(b));}
       const modeCenters=await head.locator('.tile-modes button').evaluateAll(bs=>bs.map(b=>b.getBoundingClientRect().top));
       assert.ok(modeCenters.every(y=>Math.abs(y-modeCenters[0])<=1),'all mode choices share one row');
@@ -934,4 +935,19 @@ for (const width of [1280, 390]) scenario('Native file actions keep readable lab
   assert.deepEqual(JSON.parse(await changes.textContent()), JSON.parse(input));
   assert.equal(await page.locator('.step-inspector .code-language').textContent(), 'JSON');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+});
+
+scenario('WHS-008 compact tile actions retire on layout switch',{viewport:{width:1440,height:900},locale:'en-US'},async(page,fixture)=>{
+  await page.goto(fixture.url+'/#code=TEST-1234');
+  await page.locator('#tree').getByText('Investigate retries',{exact:true}).dblclick();
+  const tile=page.locator('.tile');
+  await tile.evaluate(el=>{el.style.width='180px';el.style.height='120px';});
+  await tile.getByRole('button',{name:'Pane actions',exact:true}).click();
+  const actions=page.getByRole('dialog',{name:'Pane actions',exact:true});
+  await actions.waitFor();
+  await page.setViewportSize({width:899,height:900});
+  await page.locator('#radar').waitFor({state:'visible'});
+  await actions.waitFor({state:'detached'});
+  assert.equal(await page.locator('#workbench').isVisible(),false);
+  assert.equal(fixture.state.sends.length,0);
 });

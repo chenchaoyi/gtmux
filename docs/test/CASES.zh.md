@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1450 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1454 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2717 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 134 | [L4.csv](cases/L4.csv) |
+| L2 · 组件/契约 | 2722 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 156 | [L3.csv](cases/L3.csv) |
+| L4 · 应用操作流程 | 141 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
 
@@ -67,6 +67,7 @@
 | STOR-004 | At most 256 new lock files outside the data root top level. Old per-session lock and profile bytes are untouched by new writes. New observations stay isolated during contention, mixed reads retain independent facts, stale model options or cleared mode do not reappear, and a new identity is never attached to foreign data. |
 | STOR-005 | Refuse before writing or verifying/downloading. Reuse existing successful task-owned staging tests and preserve old output on rejection. |
 | AOP-004 | Restore button belongs to tile header and precedes its other children, never floats over the title or terminal. Header grid reserves its column; narrow layout shows a named return icon and leaves title/actions usable. Only one restore control exists. Restoring removes it and restores prior tile dimensions; other tiles and existing terminal-fit/Escape behavior are unchanged. No real user session or service is driven. |
+| WHS-007 | The compact entry and all dialog buttons have the original target floor. The pane ID and read-only chip are fully in bounds. All modes and tools can be reached through their existing handlers. Resizing taller restores direct controls. Dimensions stay 180 by 120 at the floor, and no input is sent. |
 | CAR-001 | Text, bubble, markdown, activity/code/reader chrome and avatars use matching palette; transcript/bubble/expansion identity survives; actual terminal Live output remains on its dark terminal canvas |
 | CAR-002 | Only gtmux.themePref is used; overrides ignore system changes, system follows; saved choice survives; no per-chat preference or transport reset Compact and expanded composer keyboards resolve the same effective light/dark preference; no draft or send is changed. |
 | CAR-003 | Sending/accepted/submitted use small accessible marks in the existing avatar footprint, no standalone Received line; pending and confirmed user row, avatar footprint and bubble remain mounted with same geometry; recorded aliases have no receipt; queued text stays explicit; old prompt cannot acknowledge new send; no fabricated execution or transport retry Successful mark hides after 2.5 seconds without removing the optimistic bubble or changing queue/send state; later source preserves mounted row. |
@@ -125,6 +126,12 @@
 | CPR-003 | A valid other-home receipt elsewhere does not interfere. A viable competitor at the same location or unreadable record prevents recovery without changing either index. |
 | CPR-004 | Each failure preserves the incumbent and no receipt upgrade occurs. The retry executes durability work despite visible equal bytes, then recovers the current thread with one exact private archive. |
 | CPR-005 | Unassociated Stop stays pane-less, updates only its native thread, and changes neither pane. The recovered owner gets exactly its own completion and event even with a wrong inherited pane. The peer stays active. |
+| DIAG-TERM-001 | The primary operation continues. Bridge mode keeps stderr empty and reports only the store and a safe cause to the local sink, even when that sink is unavailable. After the bridge the normal command still warns on stderr. No entry body or home path reaches the system log. |
+| DIAG-TERM-002 | The continuing incident sends one accepted warning. A failed handoff is retried only at a bounded cadence. A successful diagnostic append re-arms the warning for a later fault, while a failure in a different store can still be reported. |
+| DIAG-TERM-003 | The local receiver sees a warning-priority gtmux record. The unavailable endpoint returns failure within the bounded budget; neither path relies on a log file in the diagnostic directory. |
+| DIAG-TERM-004 | Each child starts once and returns its original normal exit code. Its own stderr is preserved. With a listener, a diagnostic warning reaches the socket. Neither case adds a gtmux warning to shared stderr. Removing the route installation from Run fails this test. |
+| DIAG-TERM-005 | An unsuccessful append does not re-arm the existing warning. The marker is actually appended without the dropped debug entry. The next disk-full incident emits a second warning. The old retention write path fails this test. |
+| DIAG-TERM-006 | The empty composer receives the exact payload and one Enter. The draft is refused before any paste, Enter or clear. Its input bytes remain unchanged. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
 | CFL-006 | Unmodified exact R must fail a real production-package target assertion for empty first root/move/index IO/same-root retry while controls are meaningful. Fixed same owner completes with same nonce, correct current location/root and live association, no second root operation/input. Existing-root and proof-failure behavior stay intact. Conflicting, unknown, stale/future, canceled or retired evidence cannot authorize or resurrect publication. Bridge positive controller controls may pass R and are not called an old-red guard; they verify pending/suspended/attachment and later ticks. Full source maps and command evidence distinguish this production-package coverage from independent extracted model and from actual TTY/runtime acceptance |
@@ -470,7 +477,7 @@
 | LAP-012 | The pending change is saved in the old profile when the switch is processed, never in the new profile. |
 | LAP-013 | The mark and page-only feedback survive the redraw, removal works, and no bookmark is persisted. |
 | LAP-011 | No private composer data or bookmarks are restored. Normal credential changes still save drafts only for their original identity. |
-| AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; title wrapper uses flexible remaining width (at least180px in these fixtures), metadata remains visible. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
+| AOP-006 | Return button, avatar, tile-identity and window controls occupy separate columns with no overlap; the identity wrapper uses flexible remaining width (at least 180px in maximized fixtures), and the title and complete pane ID share one line. At the 180px resize limit the title can truncate, keeping the entire real pane ID, and the read-only chip and action controls all stay visible and clear of each other. Narrow actual board keeps the named return control. Restore removes maximized state and returns original dimensions. Production strings/source/raw records unchanged. No device/VO or real-session acceptance claimed. Both direct avatar forms occupy column2 without covering the return control. |
 | AHP-001 | Each summary exposes operation, target, source, time and outcome. Only one record can be expanded. Full details are available in the expanded row. A filter reset clears the open identity while preserving the existing request path. |
 | AHP-002 | Short category labels remain visible and the complete active value is readable outside the control. The full accessible control names, existing exact device selection, companion filters and clear action remain available. Controls can wrap as font scale grows. |
 | AHP-003 | Full identity and IP appear unchanged, fields have localized labels, HTTP 200 is selectable separately, and the failure is still identified as failed. |
@@ -596,6 +603,7 @@
 | SID-006 | Show bilingual last-known/read-only guidance, preserve visible turns, disable relevant chat send controls while this state applies and restore normal verified behavior afterward. Keep identity-scoped late-result guards and unchanged-poll memo behavior. No automatic resend, rebind or restore. |
 | SID-007 | One server conversation projection stays one row; association-pending and last-known-history labels are consistent and never described as confirmed external ownership. Unconfirmed history is visibly read-only and cannot dispatch send. Verified recovery removes the restriction; stale responses cannot affect a new target. Normal external and existing owner/guest boundaries stay unchanged. |
 | SID-008 | A missing verified session ID stays missing. Pending relation is labeled as such, distinct from confirmed external placement, and source row keys/targets retain existing meaning. No focus, input, installation or real screenshot is performed. |
+| WHS-008 | Normal height retains the direct controls and hides the compact entry. Visible controls keep their bounds and target sizes. Switching to radar retires the old modal, and no input is sent. |
 | STOR-008 | Protected files and links stay unchanged; normal archives and logs are written and checkpoints remain readable. A failed archive write leaves its previous bytes. |
 | STOR-009 | An effort at or before the reset is not reused. A genuinely later effort is available for matching model identities, including two model-less records. Options from different models never fill the chosen model. |
 | STOR-006 | Each writer rejects the output before simulator setup, provider reads or destination creation. Existing successful capture/render tests exercise legitimate task-owned output. |
@@ -640,7 +648,7 @@
 | UR-003 | Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels. |
 | WHS-001 | The visible localized label and glyph agree with the roster. Error wins for an agent or readable conversation. Plain terminals and unknown state are neutral. A missing roster entry clears old status and error without discarding identity. Unchanged polls preserve the label node and retirement removes its state. |
 | WHS-002 | Each panel has its own state and normal text contrast is at least 4.5:1. The removed agent turns neutral. Siblings, mounted content and the draft remain intact. Waiting has no standing pulse with normal motion. No send occurs. |
-| WHS-003 | The keyboard outline is visible and distinct from state. The title, status and controls fit. Focused labels and ordinary text meet 4.5:1 in both themes. Drafts, reading nodes, tools and read-only boundaries remain. Terminal follows live roster state without transcript reads for hidden Chat. |
+| WHS-003 | The keyboard outline is visible and distinct from state. The title and pane ID share one line inside the narrow tile; the status remains available to assistive readers and through the existing tint and badge. Controls fit. Message copy uses a 15-pixel icon with the existing desktop and touch hit targets; clicking copies the complete synthetic reply and reports success. Focused labels and ordinary text meet 4.5:1 in both themes. Drafts, reading nodes, tools and read-only boundaries remain. Terminal follows live roster state without transcript reads for hidden Chat. |
 | WHS-004 | Home and the gate have no conversation tint after the late request settles. Reduced motion stops decorative transitions and status animation. Native identity and access rules continue to apply. No send occurs. |
 | WHS-005 | The two in-flight lanes each issue one request. Roster completion paints the header without writing terminal content or fetching or drawing hidden Chat. Existing capture outputs remain first, second and newest, discarding the outdated capture. A deferred roster reply for a retired view cannot repaint it after completion. |
 | WWP-001 | Both panels remain visible and separate without moving the first. The 1024-pixel layout uses the room below. Chat histories and drafts stay with their own pane. The fixture receives exactly one request for the selected pane. |

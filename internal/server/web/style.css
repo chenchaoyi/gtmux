@@ -985,6 +985,7 @@ button.appr-opt:disabled {opacity: .45; cursor: default;}
 .message-meta .sender-note { margin: 0; font-size: inherit; }
 .message-meta time { font-variant-numeric: tabular-nums; }
 .message-meta .bub-act { margin: 0; }
+.message-meta .bub-act .ui-icon { width: 15px; height: 15px; }
 
 /* Shared icon and target metrics. Dense tiles never shrink the actual controls. */
 .ui-icon { display: block; flex: 0 0 auto; width: var(--icon-size); height: var(--icon-size); }
@@ -1032,7 +1033,7 @@ button.appr-opt { width: 100%; background: transparent; color: inherit; text-ali
 .tree-group { text-transform: none; }
 #jump { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: var(--control-size); }
 /* A board panel responds to its own width, independent of the browser width. */
-.tile { container-type: inline-size; }
+.tile { container-type: size; }
 @container (max-width: 600px) {
   .trace-body { flex-direction: column; }
   .trace-list, .trace-inspector { flex-basis: 50%; }
@@ -1273,12 +1274,15 @@ button.trace-turn { margin: 5px 0; padding: 10px 12px; border: 1px solid var(--d
 }
 .trace-list[hidden], .trace-inspector[hidden], .trace-detail-modes[hidden], .trace-session[hidden] { display: none; }
 /* Identity and actions keep separate columns; modes get a complete second row. */
-.tile-head { display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px 36px; gap: 6px; padding: 8px; }
+.tile-head { display: grid; grid-template-columns: 36px minmax(0, 1fr) 36px 36px; gap: 4px 6px; padding: 6px 8px; }
 .tile-head > .speaker-avatar { grid-column: 1; grid-row: 1; }
-.tile-identity { grid-column: 2; grid-row: 1; min-width: 0; }
-.tile-identity .tile-name { display: block; line-height: 20px; font-size: 13px; }
-.tile-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 16px; }
-.tile-meta .tile-id { font-size: 11px; line-height: 16px; }
+.tile-identity { grid-column: 2; grid-row: 1; position: relative; display: flex; flex-wrap: wrap; align-items: baseline; min-width: 0; gap: 2px 6px; }
+.tile-heading { display: flex; align-items: baseline; min-width: 0; max-width: 100%; gap: 6px; }
+.tile-heading .tile-name { flex: 0 1 auto; line-height: 20px; font-size: 13px; }
+.tile-heading .tile-id { flex: 0 0 auto; white-space: nowrap; font-size: 11px; line-height: 16px; }
+.tile-heading .tile-id:not(.tile-pane-id) { max-width: 45%; overflow: hidden; text-overflow: ellipsis; }
+/* Keep the roster label available to assistive readers without a second visual line. */
+.tile-identity .session-state { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
 .tile-head > .tile-controls { display: contents; }
 .tile-controls > .tile-modes { display: flex; grid-column: 1 / -1; grid-row: 2; justify-self: stretch; margin: 0; min-width: 0; }
 .tile-controls > .tile-modes button { flex: 1 1 auto; min-height: 36px; padding: 4px 7px; font-size: 12px; }
@@ -1373,10 +1377,30 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .tile-controls > .session-actions { margin-right: auto; }
 .session-actions { display: inline-flex; align-items: center; flex: 0 0 auto; gap: 4px; margin-left: 8px; }
 .session-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 6px 10px; border: 0; border-radius: 7px; background: transparent; color: var(--fg2); cursor: pointer; font: inherit; font-size: 13px; }
+@media (pointer: fine) {
+  .tile-window-controls > .tile-btn { min-width: 36px; height: 36px; }
+  .tile-controls > .tile-modes button, .tile-controls > .session-actions button { min-height: 36px; }
+}
 .session-actions button:hover { color: var(--fg); background: var(--hover); }
 @container (max-width: 340px) {
   .tile-controls .session-actions .ui-icon { display: none; }
   .tile-controls .session-actions button { gap: 0; }
+}
+.tile-actions-menu { display: none; justify-self: end; grid-column: 3; grid-row: 1; padding: 4px 9px; font-size: 12px; white-space: nowrap; }
+.tile-actions-dialog { width: min(340px, calc(100vw - 40px)); }
+.tile-actions-dialog .dialog-body { display: grid; gap: 6px; }
+.tile-actions-dialog .dialog-secondary { text-align: left; }
+.tile-actions-dialog .dialog-secondary[aria-pressed="true"] { border-color: var(--accent-ink); }
+@container (max-width: 260px) {
+  .tile:not(.max) > .tile-head { grid-template-columns: 36px minmax(0, 1fr); }
+  .tile:not(.max) > .tile-head > :is(.tile-window-controls, .tile-actions-menu) { grid-column: 1 / -1; grid-row: 2; }
+  .tile:not(.max) > .tile-head > .tile-window-controls { justify-self: end; }
+  .tile:not(.max) > .tile-head > .tile-controls { grid-row: 3; }
+  .tile-controls > .session-actions { margin-left: 0; }
+}
+@container (max-height: 160px), (max-width: 260px) and (max-height: 224px) {
+  .tile:not(.max) > .tile-head > :is(.tile-window-controls, .tile-controls) { display: none; }
+  .tile:not(.max) > .tile-head > .tile-actions-menu { display: block; }
 }
 #bar:has(#back:not([hidden])) .bar-inner { flex-wrap: wrap; }
 #session-toolbar { display: flex; align-items: center; flex: 0 0 100%; gap: 0; order: 10; padding-top: 6px; }

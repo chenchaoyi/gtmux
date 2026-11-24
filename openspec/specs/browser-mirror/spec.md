@@ -409,7 +409,7 @@ Copy SHALL use an icon-only control with an accessible name; Quote SHALL NOT be 
 
 ### Requirement: Readable workbench tile controls
 
-A narrow workbench tile SHALL wrap its header controls as a group while retaining single-line mode labels, the pane identity and input capability. Header controls SHALL stay inside the tile at supported widths in both languages.
+A narrow workbench tile SHALL wrap header controls while retaining single-line mode labels, the complete pane ID beside the title, and visible input capability. Window controls and the read-only label MAY move to another row as the tile narrows. Title truncation SHALL leave the pane ID readable. Controls and identity SHALL stay inside the tile without overlap at supported widths in both languages, including the 180px resize floor. At the 180 × 120px diagonal resize floor, a compact named action opens the same modes, tools and window actions above the tile, preserving their pointer and touch targets. Leaving the workbench SHALL retire the action dialog.
 
 #### Scenario: Resize a compact tile
 
@@ -544,7 +544,7 @@ The browser SHALL use a shared icon system for action controls, with 20px action
 - **THEN** controls remain legible, touch targets retain their size and authorized actions can be reached by keyboard
 
 ### Requirement: Message footer and truthful clipboard feedback
-Conversation actions SHALL appear outside the message background in a separate footer. Recorded prompt timestamps and sender attribution SHALL appear in that footer; absent or invalid times SHALL be omitted. Clipboard actions for messages, pinned prompts, pane commands and terminal captures SHALL indicate the actual copy result, including failure of the fallback copy path.
+Conversation actions SHALL appear outside the message background in a separate footer. Message copy SHALL use a compact icon with a touch target of at least 44px on coarse pointers. Recorded prompt timestamps and sender attribution SHALL appear in that footer; absent or invalid times SHALL be omitted. Clipboard actions for messages, pinned prompts, pane commands and terminal captures SHALL indicate the actual copy result, including failure of the fallback copy path.
 
 #### Scenario: Clipboard access fails
 - **WHEN** both the clipboard API and fallback copy fail
@@ -941,8 +941,10 @@ independent targets; multi-image selection SHALL stage the batch without serial 
 ### Requirement: Full conversation header state
 Workbench panels and focused Chat/Terminal SHALL present the existing roster state
 across the full conversation header using an opaque low-saturation background, a
-semantic top edge, a visible localized label and a non-color symbol. Working SHALL
-use cyan, waiting red, idle green and running gray with the idle label. An explicit
+semantic top edge and a non-color symbol for known agent states. Focused Chat/Terminal
+SHALL also show the localized status label. Workbench panels SHALL expose that label
+to assistive readers without taking another line and keep the pane ID beside the title.
+Working SHALL use cyan, waiting red, idle green and running gray with the idle label. An explicit
 error SHALL take precedence in amber for agents and readable conversations. Plain
 terminals and unavailable states SHALL remain neutral. Light and dark backgrounds
 and inks SHALL be calibrated separately with normal header text contrast at least
@@ -952,7 +954,7 @@ capabilities, drafts, reading position or tools.
 
 #### Scenario: One of several conversations changes state
 - **WHEN** the existing bounded roster read reports a state or explicit error change
-- **THEN** only the corresponding header updates its fill, edge, label and symbol
+- **THEN** only the corresponding header updates its fill, edge, localized status and symbol
 - **AND** focused Terminal updates without fetching or redrawing hidden Chat
 
 #### Scenario: A pane has no current roster status
