@@ -18,6 +18,7 @@ import (
 // Old drains ignore this suffix. A bound briefing is always a standalone
 // native batch and never lends its recipient or retry policy to another wake.
 const rotationBriefSuffix = ".hqbrief"
+const briefComposerUnavailable = "rotation-brief-composer-unavailable"
 
 type rotationBriefWake struct {
 	Line string                `json:"line"`
@@ -73,6 +74,9 @@ func splitRotationBriefs(names []string) (ordinary []string, brief string) {
 }
 
 func drainRotationBrief(x io, pane, name string) {
+	if !emptyRecognizedWakeBox(x, pane) {
+		return
+	}
 	path := filepath.Join(queueDir(), name)
 	// Publish only the claim under the existing v2 journal format. The bound
 	// envelope never becomes an ordinary pending text entry, even on rollback.
@@ -108,7 +112,7 @@ func drainRotationBrief(x io, pane, name string) {
 			x.rotationBriefTarget(pane) != target:
 			return "rotation-brief-target-changed"
 		case wakeBusy(x, pane) || !emptyRecognizedWakeBox(x, pane):
-			return "rotation-brief-composer-unavailable"
+			return briefComposerUnavailable
 		case x.nowNano()/int64(time.Second) >= w.Bind.Deadline:
 			return "rotation-brief-expired"
 		default:
@@ -116,7 +120,11 @@ func drainRotationBrief(x io, pane, name string) {
 		}
 	}
 	if reason := hold(); reason != "" {
-		refuseRotationBrief(claim, reason)
+		if reason == briefComposerUnavailable {
+			waitRotationBrief(claim, path, name)
+		} else {
+			refuseRotationBrief(claim, reason)
+		}
 		return
 	}
 	ctx, cancel := context.WithDeadline(context.Background(), time.Unix(w.Bind.Deadline, 0))
@@ -157,8 +165,13 @@ func drainRotationBrief(x io, pane, name string) {
 		recordIssue(issueRecoveryUnsafe, x.nowNano())
 		return
 	}
-	recordWakeOutcome(intent, x.nowNano())
-	if intent.Outcome == "held" {
+	wait := intent.Outcome == "held" && result.Submission == dispatch.SubmissionNotSubmitted &&
+		(lastHold == briefComposerUnavailable || result.Evidence == "wake-loaded-idle-required" ||
+			result.FailureCode == dispatch.InputDraftPresent || result.FailureCode == dispatch.InputQuestion)
+	if !wait {
+		recordWakeOutcome(intent, x.nowNano())
+	}
+	if intent.Outcome == "held" && !wait {
 		if lastHold == "" {
 			lastHold = nativeRefusalReason(result)
 		}
@@ -174,11 +187,26 @@ func drainRotationBrief(x io, pane, name string) {
 		recordIssue(issueRecoveryUnsafe, x.nowNano())
 		return
 	}
+	if wait {
+		// The native journal has settled a definite non-submission. If the
+		// process stops before publication, retain its held claim, never infer
+		// permission to resend from an orphan or an unknown result.
+		waitRotationBrief(finalClaimPath(intent, claim), path, name)
+		return
+	}
 	switch intent.Outcome {
 	case "accepted":
 		finishAccepted(pane, payload, nil)
 	case "delivered":
 		finishDelivered(pane, payload, nil)
+	}
+}
+
+func waitRotationBrief(src, dst, name string) {
+	err := returnClaimAt(src, dst)
+	diag.ReportStoreFailure("hq-rotation-brief", err)
+	if err == nil {
+		wakeStage("act.wake.waiting", name, "", diag.OK, briefComposerUnavailable)
 	}
 }
 

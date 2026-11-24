@@ -61,6 +61,11 @@ func TestHRB001RotationBriefBindsOriginalRecipient(t *testing.T) {
 			}
 			if name == "old unbound line" {
 				Enqueue(hqwake.StartupBriefingZH)
+				Drain(bind.Pane)
+				if !Pending() || calls != 0 || f.pastes != 0 || f.enters != 0 {
+					t.Fatal("the unbound line crossed the successor reservation")
+				}
+				f.nano += int64(3 * time.Second) // the old line is rejected after the handoff window
 			} else {
 				queueBoundBrief(t, bind)
 			}
@@ -141,7 +146,7 @@ func TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake(t *testing.T) {
 						if unknown {
 							return dispatch.Result{State: dispatch.StateFailed, Submission: dispatch.SubmissionUnknown}
 						}
-						return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "wake-loaded-idle-required", Submission: dispatch.SubmissionNotSubmitted}
+						return dispatch.Result{State: dispatch.StateRefusedWaiting, Evidence: "codex-frontend-unavailable", Submission: dispatch.SubmissionNotSubmitted}
 					},
 				}
 			}
@@ -158,20 +163,21 @@ func TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake(t *testing.T) {
 				ordinary = append(ordinary, payload)
 				return dispatch.Result{State: dispatch.StateQueued}, true
 			}
-			// The protected Relay and workspace reminder get their existing window.
 			Drain(bind.Pane)
-			if calls != 0 || len(ordinary) != 1 || !strings.Contains(ordinary[0], tick) ||
-				!strings.Contains(ordinary[0], relay) || strings.Contains(ordinary[0], "STARTUP BRIEFING") {
-				t.Fatal("independent wakes lost their input window", calls, ordinary)
+			Drain(bind.Pane)
+			if calls != 1 || len(ordinary) != 0 {
+				t.Fatal("briefing did not get its window alone", calls, ordinary)
 			}
-			Drain(bind.Pane)
-			// A second independent workspace notice also drains after the bound attempt.
+			if err := recoverNativeIntents(); err != nil {
+				t.Fatal(err)
+			}
 			f.nano += int64(20 * time.Second)
-			EnqueueKeyed("workspace-reconciliation", tick)
 			Drain(bind.Pane)
 			Drain(bind.Pane)
-			if calls != 1 || len(ordinary) != 2 || f.pastes != 0 || f.enters != 0 {
-				t.Fatal("briefing replayed or interrupted independent input", calls, ordinary, f.pastes, f.enters)
+			if calls != 1 || len(ordinary) != 1 || !strings.Contains(ordinary[0], tick) ||
+				!strings.Contains(ordinary[0], relay) || strings.Contains(ordinary[0], "STARTUP BRIEFING") ||
+				f.pastes != 0 || f.enters != 0 {
+				t.Fatal("held wake replayed or consumed independent input", calls, ordinary, f.pastes, f.enters)
 			}
 			got := ReadHealth(time.Now().Unix())
 			if unknown {
@@ -247,5 +253,165 @@ func queueBoundBrief(t *testing.T, bind hqinput.RotationBrief) {
 	DeliverRotationBrief(bind, hqwake.StartupBriefingEN)
 	if !Pending() {
 		t.Fatal("briefing did not enter the durable queue while input was held")
+	}
+}
+
+func TestHRB005ReservedSuccessorPrecedesImmediateAndPeriodicWakes(t *testing.T) {
+	for _, publishFirst := range []bool{false, true} {
+		name := "before briefing publication"
+		if publishFirst {
+			name = "briefing already queued"
+		}
+		t.Run(name, func(t *testing.T) {
+			bind, bound, f, _ := rotationBriefFixture(t)
+			var inputs []string
+			prod.nativeSubmit = func(_, payload, _ string) (dispatch.Result, bool) {
+				inputs = append(inputs, payload)
+				return dispatch.Result{State: dispatch.StateQueued}, true
+			}
+			nativeWakeIO = func(string, ...string) dispatch.IO {
+				return dispatch.IO{
+					CaptureColor: func() string { return f.capture(bind.Pane) }, Sleep: func() {},
+					SubmitNative: func(opts dispatch.Opts, payload string, hold func() string) dispatch.Result {
+						if !opts.MatchesTarget(bind.Session, bind.Home, bind.Instance, bind.ClientPID) || hold() != "" {
+							t.Fatal("briefing lost its original successor", opts)
+						}
+						inputs = append(inputs, payload)
+						return dispatch.Result{State: dispatch.StateQueued, WakeReceipt: &dispatch.WakeReceipt{
+							Request: "receipt", Session: bind.Session, Home: bind.Home, Turn: "turn",
+						}}
+					},
+				}
+			}
+			if publishFirst {
+				queueBoundBrief(t, bind)
+			} else {
+				now := f.base / int64(time.Second)
+				writeBriefRotation(t, map[string]any{
+					"pane": bind.Pane, "agent": bind.Agent, "retiring": "old", "input": "/new",
+					"createdAt": now - 2, "sentAt": now - 1, "reserveBrief": true,
+				})
+			}
+			const tick = "» gtmux·tick │ workspace reconciliation"
+			const relay = "» gtmux·agent-relay │ protected relay"
+			if ok, err := ReserveRelayAttention(relay, func() (bool, error) { return true, nil }); !ok || err != nil {
+				t.Fatal(ok, err)
+			}
+			f.nano += int64(time.Second) // ensure Relay's real admission time is due in this clock
+			DeliverKeyedAt(bind.Pane, "workspace-reconciliation", tick, 0)
+			Drain(bind.Pane)
+			if !publishFirst {
+				if len(inputs) != 0 || len(queuedNames(func(string) bool { return true })) != 2 {
+					t.Fatal("an automatic wake crossed the publication gap", inputs)
+				}
+				writeBriefRotation(t, bound)
+				DeliverRotationBrief(bind, hqwake.StartupBriefingEN)
+			}
+			if len(inputs) != 1 || !strings.HasPrefix(inputs[0], hqwake.StartupBriefingEN+" · #") || len(queuedNames(func(string) bool { return true })) != 2 {
+				t.Fatal("briefing and independent wakes did not get separate opportunities", inputs)
+			}
+			if err := os.Remove(briefRotationPath()); err != nil {
+				t.Fatal(err)
+			}
+			Drain(bind.Pane)
+			Drain(bind.Pane)
+			if len(inputs) != 2 || !strings.Contains(inputs[1], tick) || !strings.Contains(inputs[1], relay) ||
+				f.pastes != 0 || f.enters != 0 {
+				t.Fatal("normal wakes did not resume, or a briefing replayed", inputs, f.pastes, f.enters)
+			}
+		})
+	}
+}
+
+func TestHRB005SentHandoffHoldsLegacyRepair(t *testing.T) {
+	bind, request, f, _ := rotationBriefFixture(t)
+	if err := os.Remove(briefRotationPath()); err != nil {
+		t.Fatal(err)
+	}
+	f.swallow = true
+	deliver(prod, bind.Pane, "» gtmux·waiting own stranded")
+	if f.pastes != 1 || f.enters != 1 || len(f.sent) != 0 {
+		t.Fatal("fixture did not strand an automatic draft", f)
+	}
+	now := f.base / int64(time.Second)
+	request["sentAt"], request["switchedAt"], request["bootstrapAt"] = now-1, now, now
+	writeBriefRotation(t, request)
+	f.swallow = false
+	f.nano += int64(enterRepairBackoff)
+	Drain(bind.Pane)
+	if f.enters != 1 || f.pastes != 1 || len(f.sent) != 0 {
+		t.Fatal("legacy repair sent input during the handoff", f)
+	}
+	if err := os.Remove(briefRotationPath()); err != nil {
+		t.Fatal(err)
+	}
+	Drain(bind.Pane)
+	if f.enters != 2 || len(f.sent) != 1 {
+		t.Fatal("existing exact legacy repair did not resume", f)
+	}
+}
+
+func TestHRB006ComposerWaitPreservesBriefing(t *testing.T) {
+	for _, name := range []string{"active", "waiting", "draft", "copy mode", "unreadable", "late draft", "receiver busy"} {
+		t.Run(name, func(t *testing.T) {
+			bind, _, f, _ := rotationBriefFixture(t)
+			calls, accepted := 0, 0
+			busy := name == "active" || name == "waiting"
+			prod.busy = func(string) bool { return busy }
+			f.inMode, f.unstructured = name == "copy mode", name == "unreadable"
+			if name == "draft" {
+				f.draft = "original draft"
+			}
+			nativeWakeIO = func(string, ...string) dispatch.IO {
+				return dispatch.IO{
+					CaptureColor: func() string { return f.capture(bind.Pane) }, Sleep: func() {},
+					SubmitNative: func(_ dispatch.Opts, _ string, hold func() string) dispatch.Result {
+						calls++
+						if calls == 1 && name == "late draft" {
+							f.draft = "new human draft"
+							if hold() == "" {
+								t.Fatal("final guard missed new human draft")
+							}
+							return dispatch.Result{State: dispatch.StateRefusedDraft, Submission: dispatch.SubmissionNotSubmitted}
+						}
+						if calls == 1 && name == "receiver busy" {
+							return dispatch.Result{State: dispatch.StateRefusedWaiting, Submission: dispatch.SubmissionNotSubmitted, Evidence: "wake-loaded-idle-required"}
+						}
+						if hold() != "" {
+							t.Fatal("briefing did not retain its safe destination")
+						}
+						accepted++
+						return dispatch.Result{State: dispatch.StateQueued, WakeReceipt: &dispatch.WakeReceipt{
+							Request: "receipt", Session: bind.Session, Home: bind.Home, Turn: "turn",
+						}}
+					},
+				}
+			}
+			queueBoundBrief(t, bind)
+			queued := queuedNames(isRotationBrief)
+			Drain(bind.Pane)
+			after := queuedNames(isRotationBrief)
+			if len(queued) != 1 || len(after) != 1 || after[0] != queued[0] || accepted != 0 || f.pastes != 0 || f.enters != 0 {
+				t.Fatalf("unsafe composer did not preserve the original briefing: %v %v %d %d", queued, after, calls, accepted)
+			}
+			if name == "draft" && f.draft != "original draft" || name == "late draft" && f.draft != "new human draft" {
+				t.Fatal("human draft changed")
+			}
+			wantFirstCalls := 0
+			if name == "late draft" || name == "receiver busy" {
+				wantFirstCalls = 1
+			}
+			if calls != wantFirstCalls {
+				t.Fatal("unexpected attempted dispatch in unsafe composer", calls)
+			}
+			busy, f.inMode, f.unstructured, f.draft = false, false, false, ""
+			f.nano += int64(time.Second)
+			Drain(bind.Pane)
+			Drain(bind.Pane)
+			if calls != wantFirstCalls+1 || accepted != 1 || Pending() || len(auditRecords(t, events.AuditEventWakeDelivered)) != 0 ||
+				len(auditRecords(t, events.AuditEventWakeAccepted)) != 1 || f.pastes != 0 || f.enters != 0 {
+				t.Fatal("safe reopening did not accept exactly once", calls, accepted)
+			}
+		})
 	}
 }

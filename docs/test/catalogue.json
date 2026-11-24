@@ -17792,15 +17792,24 @@
       "cases": [
         {
           "id": "MAP-e4cfa47e623e",
-          "line": 13,
+          "line": 14,
           "kind": "reviewed-selector",
           "name": "TestHRW003ReservationReadsAreBoundedPrivateAndDoNotAuthorize",
           "dynamic": false,
           "layer": "L2",
           "design": "HRW-003"
+        },
+        {
+          "id": "MAP-e492c26b62e3",
+          "line": 72,
+          "kind": "reviewed-selector",
+          "name": "TestHRB005SentRotationWindowIsBoundedAndOptIn",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRW-003,HRB-005"
         }
       ],
-      "sha256": "e1a0cb8223054accb0dd2424afe39723c271a9ff6d13febdce29c7157217ccda"
+      "sha256": "224d717308196ab44d4b8dfd5202d180e6a9c0d34737b02dc6f35382a62016a8"
     },
     "internal/hqnudge/hqinput_test.go": {
       "sha256": "175ef9125bc01dd558b29f53216cd0d29fda504130fab29a94f0f552e26f82bf",
@@ -69893,7 +69902,7 @@
           "design": "HRB-003,HRB-004"
         }
       ],
-      "sha256": "21d8cf65b0c3d577bd8a165205c46a1fbb7624a051d1750823c362326ee319c1"
+      "sha256": "a5ae3bddbff98f2003c46d21ae07928fed4dba0869cbdb3f14189a895fb4c0f7"
     },
     "internal/hqnudge/rotation_brief_test.go": {
       "layer": "L2",
@@ -69910,15 +69919,42 @@
         },
         {
           "id": "MAP-974764f4f5ce",
-          "line": 124,
+          "line": 129,
           "kind": "reviewed-selector",
           "name": "TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake",
           "dynamic": false,
           "layer": "L2",
           "design": "HRB-001,HRB-002"
+        },
+        {
+          "id": "MAP-3e2e3fefb84f",
+          "line": 259,
+          "kind": "reviewed-selector",
+          "name": "TestHRB005ReservedSuccessorPrecedesImmediateAndPeriodicWakes",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-001,HRB-002,HRB-005,HRB-006"
+        },
+        {
+          "id": "MAP-d583da1c618e",
+          "line": 326,
+          "kind": "reviewed-selector",
+          "name": "TestHRB005SentHandoffHoldsLegacyRepair",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-001,HRB-002,HRB-005,HRB-006"
+        },
+        {
+          "id": "MAP-5b7f8ed801fa",
+          "line": 354,
+          "kind": "reviewed-selector",
+          "name": "TestHRB006ComposerWaitPreservesBriefing",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-001,HRB-002,HRB-005,HRB-006"
         }
       ],
-      "sha256": "1866ece75246af88c8c73817516fa6ea54c067234f2b2c2deb2b613ec142ca54"
+      "sha256": "fc5339fb588a44ce777c226be0c5ffcc4e839c9c4db2eb1e4af4850d6825dd10"
     },
     "tests/web/short-tile-header.test.cjs": {
       "layer": "L4",

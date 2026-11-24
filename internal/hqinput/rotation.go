@@ -29,29 +29,55 @@ func ReadRotationFile() ([]byte, error) {
 	return b, nil
 }
 
-// RotationPending reads an input reservation, never authority to reset a session.
-// Callers hold Acquire to serialize this observation with request registration.
-func RotationPending(pane string) (bool, error) {
+type RotationOpportunity uint8
+
+const (
+	RotationUnreserved RotationOpportunity = iota
+	RotationReset
+	RotationHandoff
+)
+
+// RotationWindow reads a bounded input reservation. Callers hold Acquire.
+func RotationWindow(pane string, now int64) (RotationOpportunity, error) {
 	b, err := ReadRotationFile()
 	if errors.Is(err, os.ErrNotExist) {
-		return false, nil
+		return RotationUnreserved, nil
 	}
 	if err != nil {
-		return false, err
+		return RotationUnreserved, err
 	}
 	var r struct {
-		Pane, Agent, Retiring, Input string
-		CreatedAt, SentAt            int64
+		Pane, Agent, Retiring, Input               string
+		CreatedAt, SentAt, SwitchedAt, BootstrapAt int64
+		ReserveBrief                               bool
 	}
-	if json.Unmarshal(b, &r) != nil || r.Pane == "" || r.Agent == "" || r.Retiring == "" || r.Input == "" || r.CreatedAt <= 0 || r.SentAt < 0 {
-		return false, errors.New("HQ rotation reservation is unreadable")
+	if json.Unmarshal(b, &r) != nil || r.Pane == "" || r.Agent == "" || r.Retiring == "" || r.Input == "" || r.CreatedAt <= 0 || r.SentAt < 0 ||
+		r.SwitchedAt < 0 || r.SwitchedAt > 0 && (r.SentAt == 0 || r.SwitchedAt < r.SentAt) || r.BootstrapAt < 0 {
+		return RotationUnreserved, errors.New("HQ rotation reservation is unreadable")
 	}
-	return r.Pane == pane && r.SentAt == 0, nil
+	if r.Pane != pane {
+		return RotationUnreserved, nil
+	}
+	if r.SentAt == 0 {
+		return RotationReset, nil
+	}
+	if r.Agent != "codex" || !r.ReserveBrief && r.BootstrapAt == 0 {
+		return RotationUnreserved, nil
+	}
+	start, limit := r.SentAt, RotationSettleWait
+	if r.SwitchedAt > 0 {
+		start, limit = r.SwitchedAt, RotationReadyWait
+	}
+	if now-start < int64(limit/time.Second) {
+		return RotationHandoff, nil
+	}
+	return RotationUnreserved, nil
 }
 
-// RotationReadyWait is the existing confirmation window. The briefing may
-// use it as an input deadline without changing how rotation settles.
-const RotationReadyWait = 3 * time.Minute
+const (
+	RotationSettleWait = 45 * time.Second
+	RotationReadyWait  = 3 * time.Minute
+)
 
 // RotationBrief binds a queued startup prompt to the sent rotation that
 // reserved it and to its one verified Codex successor.
