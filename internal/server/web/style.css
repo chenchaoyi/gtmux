@@ -38,6 +38,7 @@
   --session-idle-bg: #eff9f2; --session-idle-ink: #176038;
   --session-errored-bg: #fff7e9; --session-errored-ink: #875615;
   --terminal-bg: #17171a;
+  --terminal-fg: #d4d2cc;
   --col: 900px;
   --icon-size: 20px;
   --control-size: 36px;
@@ -678,7 +679,33 @@ body:has(#gate:not([hidden])) #gear { margin-left: auto; }
 .tile-body .tile-diff { position: absolute; inset: 0; overflow: auto; margin: 0; padding: 10px 12px; font-family: Menlo, monospace; font-size: 11.5px; line-height: 1.5; white-space: pre; color: var(--fg2); }
 .tile-body .tile-diff .add { color: var(--idle); }
 .tile-body .tile-diff .del { color: var(--waiting); }
-.tile-resize { position: absolute; right: 1px; bottom: 1px; width: 16px; height: 16px; cursor: nwse-resize; color: var(--fg3); font-size: 11px; line-height: 16px; text-align: right; opacity: .5; }
+.tile {
+  --tile-resize-edge: 7px;
+  --tile-resize-corner: 16px;
+}
+.tile-resize-handle { position: absolute; z-index: 12; touch-action: none; user-select: none; }
+.tile-resize-handle[data-edge="n"], .tile-resize-handle[data-edge="s"] {
+  left: var(--tile-resize-corner); right: var(--tile-resize-corner);
+  height: var(--tile-resize-edge); cursor: ns-resize;
+}
+.tile-resize-handle[data-edge="e"], .tile-resize-handle[data-edge="w"] {
+  top: var(--tile-resize-corner); bottom: var(--tile-resize-corner);
+  width: var(--tile-resize-edge); cursor: ew-resize;
+}
+.tile-resize-handle[data-edge="ne"], .tile-resize-handle[data-edge="nw"],
+.tile-resize-handle[data-edge="se"], .tile-resize-handle[data-edge="sw"] {
+  width: var(--tile-resize-corner); height: var(--tile-resize-corner);
+}
+.tile-resize-handle[data-edge="nw"], .tile-resize-handle[data-edge="se"] { cursor: nwse-resize; }
+.tile-resize-handle[data-edge="ne"], .tile-resize-handle[data-edge="sw"] { cursor: nesw-resize; }
+.tile-resize-handle:is([data-edge="n"], [data-edge="ne"], [data-edge="nw"]) { top: 0; }
+.tile-resize-handle:is([data-edge="s"], [data-edge="se"], [data-edge="sw"]) { bottom: 0; }
+.tile-resize-handle:is([data-edge="w"], [data-edge="nw"], [data-edge="sw"]) { left: 0; }
+.tile-resize-handle:is([data-edge="e"], [data-edge="ne"], [data-edge="se"]) { right: 0; }
+.tile-resize { color: var(--fg3); font-size: 11px; line-height: 14px; text-align: right; padding-right: 2px; opacity: .5; }
+@media (pointer: coarse) {
+  .tile { --tile-resize-edge: 11px; --tile-resize-corner: 22px; }
+}
 .tile-offline { position: absolute; inset: 0; background: rgba(13,13,15,0.5); }
 
 /* show/hide single-column vs workbench is driven by JS toggling [hidden]. */
@@ -746,7 +773,7 @@ body:has(#gate:not([hidden])) #gear { margin-left: auto; }
 #board.maximized .tile:not(.max) { opacity: 0; pointer-events: none; }
 .tile.max { left: 8px !important; top: 8px !important; width: calc(100% - 16px) !important; height: calc(100% - 16px) !important; }
 #board.maximized .tile.max { z-index: 1 !important; } /* Restore stays above a repeatedly focused tile. */
-.tile.max .tile-resize { display: none; }
+.tile.max .tile-resize-handle { display: none; }
 .tile.max .tile-head { cursor: default; }
 .max-exit {
   position: absolute; left: 14px; top: 14px; z-index: 60;
@@ -1076,7 +1103,7 @@ button.appr-opt { width: 100%; background: transparent; color: inherit; text-ali
 .chat-live[open] {
   height: min(var(--live-height), 100%);
   border-top-color: rgba(6,182,212,.4);
-  border-radius: 12px 12px 0 0; background: var(--terminal-bg); color: #d6d6da;
+  border-radius: 12px 12px 0 0; background: #17171a; color: #d6d6da;
   box-shadow: 0 -8px 24px rgba(0,0,0,.16);
 }
 .chat-live[open] .live-chevron { transform: rotate(180deg); }
@@ -1098,7 +1125,7 @@ button.appr-opt { width: 100%; background: transparent; color: inherit; text-ali
 .live-tools { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 0 18px; color: rgba(235,235,245,.7); font-size: 12px; }
 .live-source { flex: 1 0 100%; margin: 0; overflow-wrap: anywhere; }
 .live-resume { margin-left: auto; min-height: 32px; border: 0; border-radius: 8px; background: rgba(39,199,230,.12); color: #81e7f7; padding: 4px 10px; font: inherit; cursor: pointer; }
-.live-output { flex: 1 1 auto; min-height: 0; margin: 0; padding: 8px 18px 16px; overflow: auto; overscroll-behavior: contain; white-space: pre; color: #d6d6da; font: 12px/1.4 ui-monospace, Menlo, monospace; tab-size: 4; }
+.live-output { flex: 1 1 auto; min-height: 0; margin: 0; padding: 8px 18px 16px; overflow: auto; overscroll-behavior: contain; white-space: pre; color: var(--terminal-fg); background: var(--terminal-bg); font: 12px/1.4 ui-monospace, Menlo, monospace; tab-size: 4; }
 .live-note { margin: 0; padding: 0 18px 8px; color: #f6c975; font-size: 12px; }
 /* The compact sheet can cover the tile header; the reading map stays inside the chat body. */
 .tile-body:has(.chat-live.live-compact) { overflow: visible; }

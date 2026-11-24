@@ -3377,6 +3377,7 @@ LEG-46dcc46b1b27,L2,Browser,internal/server/web/app.test.cjs,1327,test,an unchan
 LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1341,test,radar keyboard selection skips rows inside a collapsed section,False,legacy-not-retrospectively-reviewed
 MAP-e2feefc515a3,L3,Browser,internal/server/web/app.test.cjs,1352,reviewed-selector,CAS004 focused and tile chats disclose association failures and recover without losing messages,False,CAS-004
 MAP-328002d4dfc3,L3,Browser,internal/server/web/app.test.cjs,1379,reviewed-selector,CAS004 stale tile association failure cannot repaint a changed target,False,CAS-004
+MAP-58ebad908f81,L1,Browser,internal/server/web/app.test.cjs,1282,reviewed-selector,"live preview keeps up to 2,000 captured rows and removes terminal control sequences",False,"CAS-004,CRX-007,WHS-005,WLI-005"
 MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
 MAP-837adcf0e185,L2,reviewed implementation,internal/server/web/artifact-open.test.cjs,5,reviewed-selector,LAP-003 canonical startup keeps the original scope and pairing stays separate,False,LAP-003
 MAP-e4b832555966,L2,reviewed implementation,internal/server/web/artifact-open.test.cjs,10,reviewed-selector,LAP-003 rejects ambiguous or malformed ,False,LAP-003
@@ -7237,6 +7238,8 @@ MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.te
 MAP-e9c53ab15ef5,L4,reviewed implementation,tests/web/live-pending.test.cjs,4,reviewed-selector,LPV003,False,LPV-003
 MAP-0e14f41b41ee,L4,reviewed implementation,tests/web/live-short-tiles.test.cjs,42,reviewed-selector,WLC-001 Live is readable and draggable on ordinary short workbench cards,False,"WLC-001,WLC-002"
 MAP-043f15e52152,L4,reviewed implementation,tests/web/live-short-tiles.test.cjs,99,reviewed-selector,WLC-002 Short workbench Live identifies its current pane and preserves read-only history,False,"WLC-001,WLC-002"
+MAP-20853857fc63,L3,reviewed implementation,tests/web/live-terminal-colors.test.cjs,37,reviewed-selector,WLI-001 Live renders the terminal palette,False,"WLI-001,WLI-002"
+MAP-6331f9eadc58,L3,reviewed implementation,tests/web/live-terminal-colors.test.cjs,85,reviewed-selector,WLI-002 Frozen Live preserves colors until returning to live,False,"WLI-001,WLI-002"
 MAP-acb408cef5bd,L4,reviewed implementation,tests/web/live-view-resize.test.cjs,40,reviewed-selector,WLV-001 Desktop Live drag overlays the chat and survives transcript refresh,False,"WLV-001,WLV-002,WLV-003"
 MAP-3cde9309a19e,L4,reviewed implementation,tests/web/live-view-resize.test.cjs,93,reviewed-selector,WLV-002 Web Live freezes the readable capture until returning to live,False,"WLV-001,WLV-002,WLV-003"
 MAP-e418eea66fce,L4,reviewed implementation,tests/web/live-view-resize.test.cjs,124,reviewed-selector,"WLV-003 Narrow focused Live supports touch, keyboard and a shorter viewport",False,"WLV-001,WLV-002,WLV-003"
@@ -7328,6 +7331,8 @@ LEG-c8529da6a00a,L3,Browser,tests/web/trace.test.cjs,302,scenario,`Trace keeps r
 LEG-e39e092eb399,L3,Browser,tests/web/trace.test.cjs,316,scenario,"iPad portrait, landscape and multitasking resize keep the selected tool and distinct navigation",False,legacy-not-retrospectively-reviewed
 MAP-7c302e814600,L2,reviewed implementation,tests/web/workbench-placement.test.cjs,15,reviewed-selector,WWP001 Opens two actionable workbench tiles,False,"WWP-001,WWP-002"
 MAP-6967230278b1,L2,reviewed implementation,tests/web/workbench-placement.test.cjs,57,reviewed-selector,WWP002 Preserves saved freeform geometry while placing a new tile,False,"WWP-001,WWP-002"
+MAP-9f47acacb889,L3,reviewed implementation,tests/web/workbench-resize-edges.test.cjs,41,reviewed-selector,WLI-003 The workbench panel resizes on eight edges and corners,False,"WLI-003,WLI-004"
+MAP-82b85f45b6f1,L3,reviewed implementation,tests/web/workbench-resize-edges.test.cjs,89,reviewed-selector,WLI-004 A touch drags the top-left corner without moving the header,False,"WLI-003,WLI-004"
 LEG-69563fe32201,L2,Worker,tunnel-worker/src/direct.test.ts,36,test,the port formula is the client's: Go's crc32.ChecksumIEEE over the id,False,legacy-not-retrospectively-reviewed
 LEG-f3f8a76744ad,L2,Worker,tunnel-worker/src/direct.test.ts,49,test,"each device gets its own account, allowed its own port and nothing else",False,legacy-not-retrospectively-reviewed
 LEG-9986e056b831,L2,Worker,tunnel-worker/src/direct.test.ts,69,test,a device that redeems again gets the same account back,False,legacy-not-retrospectively-reviewed

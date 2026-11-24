@@ -174,6 +174,12 @@ the same authenticated `/api/pane` + `/api/transcript` data as the single-pane m
 - **THEN** each pane renders live and can be dragged/resized/arranged, with the
   arrangement applied via presets or manual placement; authorized panes may accept input
 
+#### Scenario: Resize a freeform workbench tile
+
+- **WHEN** the user drags any of the tile's four edges or corners with a pointer or touch
+- **THEN** the dragged edges move within board bounds and minimum dimensions while opposite edges stay anchored
+- **AND** window dimensions and position persist in this browser, with no change to the terminal or composer draft
+
 #### Scenario: Automatically opened panes use visible space
 
 - **WHEN** the user opens another pane without specifying its position
@@ -409,7 +415,7 @@ Copy SHALL use an icon-only control with an accessible name; Quote SHALL NOT be 
 
 ### Requirement: Readable workbench tile controls
 
-A narrow workbench tile SHALL wrap header controls while retaining single-line mode labels, the complete pane ID beside the title, and visible input capability. Window controls and the read-only label MAY move to another row as the tile narrows. Title truncation SHALL leave the pane ID readable. Controls and identity SHALL stay inside the tile without overlap at supported widths in both languages, including the 180px resize floor. At the 180 × 120px diagonal resize floor, a compact named action opens the same modes, tools and window actions above the tile, preserving their pointer and touch targets. Leaving the workbench SHALL retire the action dialog.
+A narrow workbench tile SHALL wrap header controls while retaining single-line mode labels, the complete pane ID beside the title, and visible input capability. Window controls and the read-only label MAY move to another row as the tile narrows. Title truncation SHALL leave the pane ID readable. Controls and identity SHALL stay inside the tile without overlap at supported widths in both languages, including the 180px resize floor. At the 180 × 120px resize floor, a compact named action opens the same modes, tools and window actions above the tile, preserving their pointer and touch targets. Leaving the workbench SHALL retire the action dialog.
 
 #### Scenario: Resize a compact tile
 
@@ -558,7 +564,7 @@ Browser routes and overlays SHALL use concise localized action labels, factual e
 - **THEN** the menu states that no saved layouts exist and offers a clearly named Save current layout action
 
 ### Requirement: Collapsible working conversation preview
-Chat SHALL show a collapsed-by-default Live strip while the current agent is working, shared by focused conversations and workspace panels. Expanding SHALL show up to 2,000 rows from the authorized pane capture, including available terminal scrollback. The open panel SHALL cover the chat from the composer edge and stay bounded to that conversation. In a short workspace tile it SHALL make room for readable terminal text inside the tile, while preserving its composer and transcript geometry. Its top handle SHALL resize by pointer, touch and keyboard. The panel SHALL retain its height and disclosure per pane across polling and mode switches, preserve the transcript viewport and drafts, and disappear when work stops. Runtime SHALL use the recorded current-state start and server clock when available, and be omitted when unknown. Capture errors SHALL identify unavailable or stale output and retry. Late responses SHALL not appear in a different pane, mode, turn or credential scope, and revoked access SHALL clear cached Live content.
+Chat SHALL show a collapsed-by-default Live strip while the current agent is working, shared by focused conversations and workspace panels. Expanding SHALL show up to 2,000 rows from the authorized pane capture, including available terminal scrollback. Live SHALL render supported ANSI colors and emphasis with the terminal palette while ordinary selection remains plain text. Terminal escape sequences SHALL NOT create HTML, change web navigation or send input. The open panel SHALL cover the chat from the composer edge and stay bounded to that conversation. In a short workspace tile it SHALL make room for readable terminal text inside the tile, while preserving its composer and transcript geometry. Its top handle SHALL resize by pointer, touch and keyboard. The panel SHALL retain its height and disclosure per pane across polling and mode switches, preserve the transcript viewport and drafts, and disappear when work stops. Runtime SHALL use the recorded current-state start and server clock when available, and be omitted when unknown. Capture errors SHALL identify unavailable or stale output and retry. Late responses SHALL not appear in a different pane, mode, turn or credential scope, and revoked access SHALL clear cached Live content.
 
 #### Scenario: Watch an active turn
 - **WHEN** the reader expands Live during a working conversation

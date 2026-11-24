@@ -1282,9 +1282,9 @@ test('resetting a composer clears every pane draft and ignores a late send failu
 test('live preview keeps up to 2,000 captured rows and removes terminal control sequences', () => {
   const h = harness({});
   const rows = Array.from({length: 2050}, (_, i) => 'line ' + i);
-  assert.equal(h.api.liveTail(rows.join('\n') + '\n\n'), rows.slice(-2000).join('\n'));
-  assert.equal(h.api.liveTail('\u001b[32mCurrent output\u001b[0m\n\u001b]8;;https://example.com\u0007Link\u001b]8;;\u0007\n'), 'Current output\nLink');
-  assert.equal(h.api.liveTail('\n \n'), '');
+  assert.equal(h.api.liveTail(rows.join('\n') + '\n\n').text, rows.slice(-2000).join('\n'));
+  assert.equal(h.api.liveTail('\u001b[32mCurrent output\u001b[0m\n\u001b]8;;https://example.com\u0007Link\u001b]8;;\u0007\n').text, 'Current output\nLink');
+  assert.equal(h.api.liveTail('\n \n').text, '');
 });
 
 test('composer persists a scoped draft and isolates another credential on the same pane', () => {

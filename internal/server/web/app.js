@@ -1155,6 +1155,11 @@
     document.documentElement.style.setProperty('--chat-text-size', chatSizePref + 'px');
     var preview = document.querySelector('.terminal-font-preview'); if (preview) { preview.style.fontFamily = resolveFont(); preview.style.fontSize = termSize() + 'px'; }
     document.documentElement.style.setProperty('--terminal-bg', (theme && theme.background) || GHOSTTY.bg);
+    document.documentElement.style.setProperty('--terminal-fg', (theme && theme.foreground) || GHOSTTY.fg);
+    LIVE_ANSI_PALETTE.forEach(function (fallback, i) {
+      var color = theme && theme.palette && theme.palette[i];
+      document.documentElement.style.setProperty('--terminal-ansi-' + i, /^#[0-9a-f]{6}$/i.test(color) ? color : fallback);
+    });
     if (term) {
       term.options.theme = xtermTheme();
       term.options.fontFamily = resolveFont();
@@ -2725,10 +2730,98 @@
     return minutes < 60 ? minutes + T('m ', '分') + seconds % 60 + T('s', '秒') : Math.floor(minutes / 60) + T('h ', '小时') + minutes % 60 + T('m', '分');
   }
   var LIVE_DEFAULT_HEIGHT = 272, LIVE_MIN_HEIGHT = 144, LIVE_HEIGHT_STEP = 56, livePanelSequence = 0;
+  // xterm's default ANSI entries. Appearance supplies the host palette where present.
+  var LIVE_ANSI_PALETTE = ['#2e3436', '#cc0000', '#4e9a06', '#c4a000', '#3465a4', '#75507b', '#06989a', '#d3d7cf',
+    '#555753', '#ef2929', '#8ae234', '#fce94f', '#729fcf', '#ad7fa8', '#34e2e2', '#eeeeec'];
+  // Only SGR carries style. Strip OSC, DCS and other terminal controls without
+  // turning terminal bytes into markup, browser links or cursor commands.
+  var LIVE_CONTROL = /\x1b\[([0-9;:]*)m|\x1b\[[0-?]*[ -\/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\|$)|\x1b[PX^_][^\x1b]*(?:\x1b\\|$)|\x1b\[[0-?]*[ -\/]*$|\x1b[ -\/]*[@-~]|[\x00-\x08\x0b-\x1f\x7f-\x9f]/g;
   function liveTail(value) {
-    var lines = String(value || '').split('\n').map(function (line) { return plainRow(line).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, ''); });
-    while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
-    return lines.slice(-2000).join('\n');
+    var rows = String(value || '').split('\n');
+    var plain = rows.map(function (row) { return row.replace(LIVE_CONTROL, ''); });
+    var end = plain.length;
+    while (end && !plain[end - 1].trim()) end--;
+    var start = Math.max(0, end - 2000);
+    return {text: plain.slice(start, end).join('\n'), raw: rows.slice(0, end).join('\n'), start: start};
+  }
+  function livePaletteColor(index) {
+    if (index < 16) return 'var(--terminal-ansi-' + index + ', ' + LIVE_ANSI_PALETTE[index] + ')';
+    var cube = [0, 95, 135, 175, 215, 255], n = index - 16;
+    var gray = 8 + (index - 232) * 10;
+    return index >= 232 ? liveRGB([gray, gray, gray]) : liveRGB([cube[Math.floor(n / 36)], cube[Math.floor(n / 6) % 6], cube[n % 6]]);
+  }
+  function liveRGB(rgb) { return 'rgb(' + rgb.join(', ') + ')'; }
+  function liveExtendedColor(mode, values) {
+    var size = mode === 5 ? 1 : mode === 2 ? 3 : 0;
+    if (!size || values.length !== size || values.some(function (part) { return !/^\d{1,3}$/.test(part) || Number(part) > 255; })) return undefined;
+    var colors = values.map(Number);
+    return size === 1 ? colors[0] : liveRGB(colors);
+  }
+  function liveStyle(style, params) {
+    var parts = params.split(';');
+    for (var i = 0; i < parts.length; i++) {
+      var sub = parts[i].split(':'), n = Number(sub[0]);
+      if (n === 38 || n === 48) {
+        var mode = Number(sub.length > 1 ? sub[1] : parts[i + 1]), values;
+        if (sub.length > 1) {
+          var hasSpace = mode === 2 && sub.length === 6 && (sub[2] === '' || sub[2] === '0');
+          values = sub.slice(hasSpace ? 3 : 2);
+        } else {
+          var size = mode === 2 ? 3 : mode === 5 ? 1 : 0;
+          values = parts.slice(i + 2, i + 2 + size);
+          i += 1 + size;
+        }
+        var color = liveExtendedColor(mode, values);
+        if (color !== undefined) style[n === 38 ? 'fg' : 'bg'] = color;
+      } else if (sub.length !== 1) continue;
+      else if (n === 0) style = {};
+      else if (n >= 30 && n <= 37) style.fg = n - 30;
+      else if (n >= 90 && n <= 97) style.fg = n - 90 + 8;
+      else if (n >= 40 && n <= 47) style.bg = n - 40;
+      else if (n >= 100 && n <= 107) style.bg = n - 100 + 8;
+      else if (n === 39) style.fg = undefined;
+      else if (n === 49) style.bg = undefined;
+      else if (n === 1) style.bold = true;
+      else if (n === 2) style.dim = true;
+      else if (n === 22) style.bold = style.dim = false;
+      else if (n === 4 || n === 24) style.underline = n === 4;
+      else if (n === 7 || n === 27) style.inverse = n === 7;
+    }
+    return style;
+  }
+  function liveColor(value, bold) {
+    // The existing xterm surface draws a bold 0–7 foreground with the bright palette.
+    return typeof value === 'number' ? livePaletteColor(bold && value < 8 ? value + 8 : value) : value || '';
+  }
+  function appendLiveText(fragment, text, style) {
+    if (!text) return;
+    if (style.fg === undefined && style.bg === undefined && !style.bold && !style.dim && !style.underline && !style.inverse) {
+      fragment.append(text);
+      return;
+    }
+    var span = el('span', '', text), foreground = liveColor(style.fg, style.bold), background = liveColor(style.bg, false);
+    span.style.color = style.inverse ? background || 'var(--terminal-bg)' : foreground;
+    span.style.backgroundColor = style.inverse ? foreground || 'var(--terminal-fg)' : background;
+    if (style.bold) span.style.fontWeight = 'bold';
+    if (style.dim) span.style.opacity = '0.68';
+    if (style.underline) span.style.textDecoration = 'underline';
+    fragment.appendChild(span);
+  }
+  function renderLiveCapture(output, capture) {
+    if (!capture.raw.includes('\x1b')) { output.textContent = capture.text; return; }
+    var fragment = document.createDocumentFragment(), style = {};
+    capture.raw.split('\n').forEach(function (row, index) {
+      var visible = index >= capture.start, m, end = 0;
+      if (index > capture.start) fragment.append('\n');
+      LIVE_CONTROL.lastIndex = 0;
+      while ((m = LIVE_CONTROL.exec(row))) {
+        if (visible) appendLiveText(fragment, row.slice(end, m.index), style);
+        if (m[1] !== undefined) style = liveStyle(style, m[1]);
+        end = LIVE_CONTROL.lastIndex;
+      }
+      if (visible) appendLiveText(fragment, row.slice(end), style);
+    });
+    output.replaceChildren(fragment);
   }
   function liveBounds(panel) {
     var host = panel.parentElement, body = host.parentElement, tile = body.closest('.tile');
@@ -2791,7 +2884,7 @@
     return selection && !selection.isCollapsed && panel.output.contains(selection.anchorNode) && panel.output.contains(selection.focusNode);
   }
   function freezeLive(panel, state) {
-    if (!state.frozen && panel.shownText) state.frozen = {text: panel.shownText};
+    if (!state.frozen && panel.shownCapture) state.frozen = {capture: panel.shownCapture};
     if (state.frozen) {
       state.frozen.top = panel.output.scrollTop;
       state.frozen.left = panel.output.scrollLeft;
@@ -2808,7 +2901,7 @@
       if (panel) { panel.remove(); panel = null; }
     }
     if (state.working !== working || state.since !== agent.since) {
-      state.revision++; state.text = ''; state.frozen = null; state.error = false; state.loading = false;
+      state.revision++; state.capture = null; state.frozen = null; state.error = false; state.loading = false;
       cancelRead('live:' + id);
     }
     state.working = working; state.since = agent.since; state.agent = agent; state.valid = valid;
@@ -2840,7 +2933,7 @@
       panel.append(summary, panel.grip, content);
       installLiveResize(panel, state);
       panel.output.onscroll = function () {
-        if (!panel.open || !panel.shownText || !panel.output.clientHeight) return;
+        if (!panel.open || !panel.shownCapture || !panel.output.clientHeight) return;
         if (state.frozen || panel.output.scrollHeight - panel.output.scrollTop - panel.output.clientHeight > 32) {
           freezeLive(panel, state);
           paintLiveTools(panel, state);
@@ -2880,21 +2973,24 @@
     panel.source.textContent = pendingHistory ? T('Current pane ', '当前 pane ') + state.agent.pane_id + T(' · History association unconfirmed', ' · 历史对话关联待确认') : '';
     panel.source.title = panel.source.textContent;
     panel.resume.hidden = !state.frozen;
-    panel.update.hidden = !state.frozen || state.text === state.frozen.text;
+    panel.update.hidden = !state.frozen || !state.capture || state.capture.raw === state.frozen.capture.raw;
     panel.tools.hidden = !pendingHistory && !state.frozen;
   }
   function paintLive(panel, state) {
     panel.clock.textContent = liveDuration(state.agent);
     panel.action.textContent = state.open ? T('Collapse', '收起') : T('Live output', '展开实时输出');
-    if (!state.frozen && state.text && panel.captureRevision === state.revision && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
+    if (!state.frozen && state.capture && panel.captureRevision === state.revision && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
     paintLiveTools(panel, state);
     paintLiveHeight(panel, state);
     if (!panel.open) { panel.wasClosed = true; return; }
-    var captured = state.frozen ? state.frozen.text : state.text;
-    var text = captured || (state.error ? T('Live output is unavailable.', '暂时无法读取实时输出。') : state.loading ? T('Loading live output…', '正在加载实时输出…') : T('Waiting for output…', '等待实时输出…'));
-    var changed = panel.displayedText !== text;
-    if (changed) { panel.output.textContent = text; panel.displayedText = text; }
-    panel.shownText = captured; panel.captureRevision = state.revision;
+    var captured = state.frozen ? state.frozen.capture : state.capture;
+    var text = captured ? captured.text : (state.error ? T('Live output is unavailable.', '暂时无法读取实时输出。') : state.loading ? T('Loading live output…', '正在加载实时输出…') : T('Waiting for output…', '等待实时输出…'));
+    var raw = captured ? captured.raw : '', changed = panel.displayedRaw !== raw || panel.displayedText !== text;
+    if (changed) {
+      if (captured) renderLiveCapture(panel.output, captured); else panel.output.textContent = text;
+      panel.displayedRaw = raw; panel.displayedText = text;
+    }
+    panel.shownCapture = captured; panel.captureRevision = state.revision;
     panel.note.hidden = !state.error; panel.note.textContent = state.error ? (captured ? T('Update failed. Showing the last capture; retrying…', '更新失败，显示上次内容，正在重试…') : T('Retrying automatically…', '正在自动重试…')) : '';
     if (!state.frozen) panel.output.scrollTop = panel.output.scrollHeight;
     else if (changed || panel.wasClosed) {
@@ -2915,12 +3011,12 @@
         if (!active()) return null;
         if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
         if (r.status === 403 || r.status === 404) {
-          state.text = ''; state.frozen = null; state.error = true; return null;
+          state.capture = null; state.frozen = null; state.error = true; return null;
         }
         if (!r.ok) throw new Error('live capture'); return r.json();
       }).then(function (capture) {
         if (!capture || !active()) return;
-        state.text = liveTail(capture.text); state.error = false;
+        var styled = liveTail(capture.text); state.capture = styled.text ? styled : null; state.error = false;
       }).catch(function () { if (active()) state.error = true; }).finally(function () {
         if (state.revision === revision) state.loading = false;
         if (active()) paintLivePanels(id, state);
@@ -4075,9 +4171,8 @@
     // read-only note — states WHY there's no input row instead of leaving a gap
     var ro = document.createElement('div'); ro.className = 'tile-ro'; ro.hidden = true;
     ro.textContent = readableConversation(t.agent) ? T('Read-only conversation', '只读对话') : T('🔒 Input is not allowed in this pane', '🔒 此窗格不允许输入'); t.roEl = ro; el.appendChild(ro);
-    var rz = document.createElement('div'); rz.className = 'tile-resize'; rz.textContent = '⌟'; el.appendChild(rz);
     el.addEventListener('mousedown', function () { el.style.zIndex = ++zTop; });
-    dragMove(t, head); dragResize(t, rz);
+    dragMove(t, head); installTileResize(t);
     $('board').appendChild(el);
     t.head = head; t.headState = state; t.headNm = nm; t.headId = id; t.headBadge = head.querySelector('.avatar .badge');
     updateTileHead(t);
@@ -4233,7 +4328,7 @@
     wrap.scrollTop = atBottom && !prepended ? wrap.scrollHeight : top;
     if(prepended || !atBottom)restoreReadingAnchor(wrap,anchor);
   }
-  // drag-move (head) + resize (corner), with optional snap-to-grid.
+  // Drag the header or resize the frame, with optional snap-to-grid.
   function dragMove(t, handle) {
     handle.addEventListener('mousedown', function (e) {
       if (e.target.closest('button')) return; e.preventDefault();
@@ -4244,19 +4339,50 @@
       document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
     });
   }
-  function dragResize(t, handle) {
-    handle.addEventListener('mousedown', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      var sx = e.clientX, sy = e.clientY, ow = t.w, oh = t.h;
-      function mv(ev) {
-        t.w = Math.max(180, snapv(ow + ev.clientX - sx)); t.h = Math.max(120, snapv(oh + ev.clientY - sy));
+  function resizeTileAxis(start, size, delta, side, bound, minimum) {
+    if (!side || !delta) return [start, size];
+    var end = start + size;
+    if (side < 0) start = Math.max(0, Math.min(end - minimum, snapv(start + delta)));
+    else end = Math.max(start + minimum, Math.min(bound, snapv(end + delta)));
+    return [start, end - start];
+  }
+  function installTileResize(t) {
+    var drag = null, board = $('board');
+    function finish(event) {
+      if (!drag || drag.id !== event.pointerId) return;
+      drag = null;
+      if (t.removed) return;
+      if (t.fit && t.mode === 'term' && t.lastText) { var text = t.lastText; t.lastText = ''; tileWrite(t, text); }
+      wbSave();
+    }
+    ['n', 'ne', 'e', 'se', 's', 'sw', 'w', 'nw'].forEach(function (edge) {
+      var handle = el('div', 'tile-resize-handle');
+      handle.dataset.edge = edge;
+      handle.setAttribute('aria-hidden', 'true');
+      if (edge === 'se') { handle.classList.add('tile-resize'); handle.textContent = '⌟'; }
+      t.el.appendChild(handle);
+      var horizontal = edge.includes('w') ? -1 : edge.includes('e') ? 1 : 0;
+      var vertical = edge.includes('n') ? -1 : edge.includes('s') ? 1 : 0;
+      handle.onpointerdown = function (event) {
+        if (event.button !== 0 || drag || maxedTile || t.removed) return;
+        event.preventDefault(); event.stopPropagation();
+        t.el.style.zIndex = ++zTop;
+        drag = {id: event.pointerId, sx: event.clientX, sy: event.clientY, x: t.x, y: t.y, w: t.w, h: t.h};
+        handle.setPointerCapture(event.pointerId);
+      };
+      handle.onpointermove = function (event) {
+        if (!drag || drag.id !== event.pointerId || t.removed || maxedTile) return;
+        var x = resizeTileAxis(drag.x, drag.w, event.clientX - drag.sx, horizontal, board.clientWidth, 180);
+        var y = resizeTileAxis(drag.y, drag.h, event.clientY - drag.sy, vertical, board.clientHeight, 120);
+        if (t.x === x[0] && t.w === x[1] && t.y === y[0] && t.h === y[1]) return;
+        t.x = x[0]; t.w = x[1]; t.y = y[0]; t.h = y[1];
+        t.el.style.left = t.x + 'px'; t.el.style.top = t.y + 'px';
         t.el.style.width = t.w + 'px'; t.el.style.height = t.h + 'px';
         var live = t.body.querySelector('.chat-live');
         if (live) paintLiveHeight(live, chatLive[live.dataset.pane]);
-        if (t.fit && t.mode === 'term') { try { t.fit.fit(); } catch (e2) {} }
-      }
-      function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); if (t.fit && t.mode === 'term' && t.lastText) { var x = t.lastText; t.lastText = ''; tileWrite(t, x); } wbSave(); }
-      document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+        if (t.fit && t.mode === 'term') { try { t.fit.fit(); } catch (e) {} }
+      };
+      handle.onpointerup = handle.onpointercancel = handle.onlostpointercapture = finish;
     });
   }
 
