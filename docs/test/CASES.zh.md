@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1465 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1466 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3800 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2738 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2739 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 156 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -321,6 +321,7 @@
 | HRB-014 | A precise same-second observation after Enter can qualify. Older, equal, and whole-second-only ambiguous observations have no authority. A missing fence permits bounded waiting and then an explicit failure. It authorizes neither success, briefing nor another reset. The detached process codec retains consistent precise observation time. |
 | HRB-015 | Only the current exact binding with a credible completed-key timestamp has native briefing authority. Incomplete older reservations retain the ordinary bounded reservation lifecycle but authorize no briefing input. |
 | HRB-016 | The hook persists the original pane generation, actual child PID and birth, and same pane TTY. The matching live incarnation confirms. Changed generation, changed TTY, lost foreground and the replacement process cannot confirm the previously witnessed session. |
+| HRB-017 | A versioned Linux foreground group leader may match tmux reporting claude. The alias does not identify a non-leader, background or unrelated process, a non-Linux mismatch, or redirected input. A Darwin client with an exact reported version remains valid. |
 | HRW-001 | Fresh verified idle metadata is required before at most one normal turn/start attempt. Known busy/unknown/unloaded/approval states refuse before claim; no steer, queue/add, resume, retry or fallback. Sample-to-submit external race is explicitly possible: a valid response records acceptance and an observed turn ID only, not proof of a newly caused turn. Missing acknowledgement remains uncertain, never automatically resubmitted. Explicit user/image/legacy queue unchanged. |
 | HRW-002 | Automatic wake uses only idle policy and retains exact target/send identity; busy refusal before claim retains authority and produces no accepted receipt. Ordinary user/CLI/screenshot selection remains unchanged. |
 | HRW-003 | A matching unsent request still reserves reset input; a sent handoff gains a distinct bounded reservation only when enabled or already bound. Other panes are unaffected. Read failures conservatively hold automatic delivery and never authorize/reset/repair config. Missing returns no hold, no writes or blocking special-file read. |

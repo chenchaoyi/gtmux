@@ -1093,6 +1093,7 @@ MAP-2f4616d9d325,L1,reviewed implementation,internal/codexrpc/screenshot_input_t
 MAP-7bcaec9ec776,L1,reviewed implementation,internal/codexrpc/screenshot_input_test.go,83,reviewed-selector,TestSSI001RefusalsAndUncertaintyNeverMutateOrReplay,False,SSI-001
 MAP-570ce9eacef7,L1,reviewed implementation,internal/codexrpc/screenshot_input_test.go,121,reviewed-selector,TestSSI001LastMomentHoldStopsActiveInput,False,SSI-001
 MAP-bf7d87f214f5,L1,reviewed implementation,internal/codexrpc/screenshot_workflow_test.go,9,reviewed-selector,TestSCW005UnknownFlagsRefuseWithoutInventingHumanApproval,False,SCW-005
+MAP-a1e5ccc33f3e,L2,reviewed implementation,internal/codexterminal/claude_foreground_test.go,5,reviewed-selector,TestClaudeVersionAliasRequiresLinuxForegroundGroupLeader,False,HRB-017
 LEG-a0e23aa15f05,L1,Go core / CLI / server,internal/codexterminal/client_test.go,16,Test,TestWrappedCodexRequiresForegroundTerminalInput,False,legacy-not-retrospectively-reviewed
 LEG-0c669bc678ef,L1,Go core / CLI / server,internal/codexterminal/client_test.go,18,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-e50166084b79,L1,Go core / CLI / server,internal/codexterminal/client_test.go,93,Test,TestWrappedCodexBoundsAndProcessParsing,False,legacy-not-retrospectively-reviewed

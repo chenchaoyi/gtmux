@@ -33,12 +33,19 @@ func TestHQClaudeHookFollowsForegroundShellChild(t *testing.T) {
 		Run(strings.NewReader(string(payload)), []string{"--agent", "claude", "SessionStart"})
 		return
 	case "client":
+		input := bufio.NewReader(os.Stdin)
+		fmt.Println("fixture-client-ready")
+		if _, err := input.ReadString('\n'); err != nil {
+			t.Fatal(err)
+		}
 		cmd := exec.Command(os.Args[0], "-test.run", "^TestHQClaudeHookFollowsForegroundShellChild$")
 		cmd.Env = append(os.Environ(), claudeForegroundFixture+"=hook")
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("fixture hook: %v\n%s", err, out)
 		}
-		fallthrough
+		fmt.Println("fixture-hook-returned")
+		_, _ = input.ReadString('\n')
+		return
 	case "replacement":
 		fmt.Println("fixture-client-ready")
 		_, _ = bufio.NewReader(os.Stdin).ReadString('\n')
@@ -101,9 +108,17 @@ func TestHQClaudeHookFollowsForegroundShellChild(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	wait("interactive shell", func() bool { return strings.Contains(tmux.CapturePane(pane), "$") })
+	wait("interactive shell", func() bool { return tmux.Display(pane, "#{pane_current_command}") == "bash" })
 	launch("client")
-	wait("fixture hook to return", func() bool { return strings.Contains(tmux.CapturePane(pane), "fixture-client-ready") })
+	wait("fixture client to own the foreground", func() bool {
+		command := tmux.Display(pane, "#{pane_current_command}")
+		return (command == "claude" || command == "2.1.123") &&
+			strings.Contains(tmux.CapturePane(pane), "fixture-client-ready")
+	})
+	if err := tmux.SendText(pane, "fixture-reset", true); err != nil {
+		t.Fatal(err)
+	}
+	wait("fixture hook to return", func() bool { return strings.Contains(tmux.CapturePane(pane), "fixture-hook-returned") })
 	rec, ok := resume.Load(loc)
 	if !ok || rec.SessionID != "hq-successor-fixture" {
 		t.Fatalf("hook did not save successor: %+v", rec)

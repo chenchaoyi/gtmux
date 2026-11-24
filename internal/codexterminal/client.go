@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -75,7 +76,7 @@ func ForegroundClaude(pane string, hookPID int) (Client, bool) {
 		return Client{}, false
 	}
 	inspect := func(p Pane, procs map[int]process) (process, []int, string) {
-		client, chain, code := inspectClaude(p, procs)
+		client, chain, code := inspectClaude(p, procs, runtime.GOOS)
 		if code == "" && hookPID != 0 {
 			missing, conflict := launchAncestryEvidence(procs, client.pid, 0, 0, hookPID)
 			if hookPID == client.pid || missing || conflict {
@@ -120,7 +121,7 @@ func inspectClient(p Pane, procs map[int]process) (process, []int, string) {
 	return inspectForeground(p, procs, func(proc process) bool { return filepath.Base(proc.command) == "codex" })
 }
 
-func inspectClaude(p Pane, procs map[int]process) (process, []int, string) {
+func inspectClaude(p Pane, procs map[int]process, platform string) (process, []int, string) {
 	reported := filepath.Base(p.Command)
 	if reported != "claude" && !agents.LooksLikeVersion(reported) {
 		return process{}, nil, "other-agent"
@@ -129,8 +130,9 @@ func inspectClaude(p Pane, procs map[int]process) (process, []int, string) {
 		command := filepath.Base(proc.command)
 		// On Linux tmux can report the group leader's argv[0] ("claude")
 		// while ps reports the versioned executable behind that launcher link.
+		linuxLauncher := platform == "linux" && reported == "claude" && proc.pid == proc.group
 		return command == "claude" || (agents.LooksLikeVersion(command) &&
-			(command == reported || (reported == "claude" && proc.pid == proc.group)))
+			(command == reported || linuxLauncher))
 	})
 }
 

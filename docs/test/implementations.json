@@ -1,4 +1,8 @@
 {
+  "internal/codexterminal/claude_foreground_test.go": {
+    "cases": ["HRB-017"],
+    "selectors": ["TestClaudeVersionAliasRequiresLinuxForegroundGroupLeader"]
+  },
   "internal/hook/hq_claude_foreground_test.go": {
     "cases": ["HRB-016"],
     "selectors": ["TestHQClaudeHookFollowsForegroundShellChild"]
