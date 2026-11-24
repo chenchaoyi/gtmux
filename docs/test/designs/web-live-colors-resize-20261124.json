@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner (Codex self-review)",
     "date": "2026-11-24",
     "decision": "Reuse the read-only capture and terminal palette. Extend the existing workbench drag rectangles.",
-    "notes": "Reviewed against 4c99206f. The screenshots are the Chat workbench tile, not the browser-dialog action sheets. Add no requests and no terminal input. Build spans as text DOM. Keep Live freeze, draft, authorization and view retirement. Add handles only to freely positioned tiles. Preserve the SE affordance, snap preference, size floor, saved layout and single-column behavior. Validate with the existing synthetic browser harness and cached Chromium. Fixed-head review requires a usable starting rectangle after a narrower board clips an older layout and visible-only snapshot comparison. Hosted consistency keeps the existing unthemed Live foreground. Exercise touch resize and use the specified composer disclosure before writing a local draft. Compare palette and numeric RGB using the colors actually displayed by the same host terminal theme. For touch, inspect current disclosure state so the test expands a collapsed composer and never toggles an already open one closed. Use real Chromium touch tapping for both disclosure and textarea focus. A theme may arrive after Live started. Freeze must retain the capture used to paint the visible nodes, and a host theme update must reconcile open live panels against what was actually painted. Fixed-head review of 0c10db76 identified the reverse sequence, with an ANSI first frame and literal RGB second frame. The paused panel must preserve the effective palette and default colors at freeze. A theme response by itself cannot create a new-output badge, including when a selection made before publication first triggers the freeze. The same comparison must still detect distinct output and resume under the current theme."
+    "notes": "Reviewed against 4c99206f. The screenshots are the Chat workbench tile, not the browser-dialog action sheets. Add no requests and no terminal input. Build spans as text DOM. Keep Live freeze, draft, authorization and view retirement. Add handles only to freely positioned tiles. Preserve the SE affordance, snap preference, size floor, saved layout and single-column behavior. Validate with the existing synthetic browser harness and cached Chromium. Fixed-head review requires a usable starting rectangle after a narrower board clips an older layout and visible-only snapshot comparison. Hosted consistency keeps the existing unthemed Live foreground. Exercise touch resize and use the specified composer disclosure before writing a local draft. Compare palette and numeric RGB using the colors actually displayed by the same host terminal theme. For touch, inspect current disclosure state so the test expands a collapsed composer and never toggles an already open one closed. Use real Chromium touch tapping for both disclosure and textarea focus. A theme may arrive after Live started. Freeze must retain the capture used to paint the visible nodes, and a host theme update must reconcile open live panels against what was actually painted. Fixed-head review of 0c10db76 identified the reverse sequence, with an ANSI first frame and literal RGB second frame. The paused panel must preserve the effective palette and default colors at freeze. A theme response by itself cannot create a new-output badge, including when a selection made before publication first triggers the freeze. The same comparison must still detect distinct output and resume under the current theme. Fixed-head review of 0e1a2d30 also requires clearing old selected output on denied/missing capture and remembering the result for each accepted capture while paused, so publishing a theme cannot change an existing badge."
   },
   "cases": [
     {
@@ -117,7 +117,29 @@
       "planned_files": [
         "tests/web/live-frozen-palette.test.cjs"
       ]
+    },
+    {
+      "id": "WLI-011",
+      "layer": "L3",
+      "description": "Denied or missing Live capture clears selected and paused output",
+      "setup": "Synthetic workbench shows granted Live output. A capture request is held while the reader selects output, with one branch already paused.",
+      "action": "Resolve the held request with 403 or 404. Inspect Live output, selection, pause controls and available retry feedback.",
+      "expected": "The old preview and selection disappear, palette overrides and pause controls clear, and Live shows its unavailable state. No previous successful output is reconstructed and no input is sent.",
+      "planned_files": [
+        "tests/web/live-access-loss.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-012",
+      "layer": "L3",
+      "description": "An equivalent capture received while paused stays equivalent when the theme arrives",
+      "setup": "Synthetic workbench begins with an ANSI-colored capture under fallback colors and holds the host theme response.",
+      "action": "Pause by scrolling. Receive the same output encoded as fixed RGB. Publish a changed color table and background, poll the same capture again, then receive a different color and resume.",
+      "expected": "The frozen frame and its colors are unchanged. No new-output indication occurs after the equivalent response, theme publication or repeated equivalent frame. The actual different capture triggers a badge and appears on resume. No input is sent.",
+      "planned_files": [
+        "tests/web/live-capture-badge.test.cjs"
+      ]
     }
   ],
-  "seal": "669baacae8262f58313eea59edc6f43b7d4888255f324ecc3414372eeb84c196"
+  "seal": "b78faecbda3bb6e85d8e6078b5ff72c877996d42f444b4e02297cfee319bfcee"
 }
