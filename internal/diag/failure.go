@@ -46,8 +46,13 @@ var systemWarnings atomic.Pointer[systemStoreWarnings]
 // Codex client from diagnostics emitted by its bridge goroutines. The bridge
 // installs the route before launching the client and restores it after joining
 // those goroutines. A failure to reach syslog never falls back to the terminal.
-func RouteStoreFailuresToSystemLog() func() {
-	return routeStoreFailuresToSystemLog(writeSystemStoreWarning)
+func RouteStoreFailuresToSystemLog(sockets ...string) func() {
+	if len(sockets) == 0 {
+		sockets = []string{"/dev/log", "/var/run/syslog", "/var/run/log"}
+	}
+	return routeStoreFailuresToSystemLog(func(message string) bool {
+		return sendSystemStoreWarning(message, sockets)
+	})
 }
 
 func routeStoreFailuresToSystemLog(emit func(string) bool) func() {

@@ -214,6 +214,12 @@ func write(e Entry) {
 		}
 		return
 	}
+	appendEncodedLine(path, line)
+}
+
+// A complete append, including successful close, proves recovery for both
+// client diagnostics and the store's own retention records.
+func appendEncodedLine(path string, line []byte) {
 	f, err := state.OpenPrivateAppend(path)
 	if err != nil {
 		ReportStoreFailure("diagnostics", err)

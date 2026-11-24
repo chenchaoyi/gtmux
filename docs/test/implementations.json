@@ -1,4 +1,22 @@
 {
+  "internal/diag/retention_warning_test.go": {
+    "cases": [
+      "DIAG-TERM-005"
+    ],
+    "selectors": [
+      "TestRetentionMarkerRearmsDiskFullWarning"
+    ]
+  },
+  "internal/codexbridge/run_unix_test.go": {
+    "cases": [
+      "DIAG-TERM-004",
+      "DIAG-TERM-006"
+    ],
+    "selectors": [
+      "TestRunKeepsStoreFailureOffTerminal",
+      "TestProtectedSendKeepsManuallyTypedComposerBytes"
+    ]
+  },
   "internal/diag/failure_test.go": {
     "cases": [
       "DIAG-TERM-001",

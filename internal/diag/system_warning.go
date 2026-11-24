@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-func writeSystemStoreWarning(message string) bool {
-	return sendSystemStoreWarning(message, []string{"/dev/log", "/var/run/syslog", "/var/run/log"})
-}
-
 // A local syslog socket avoids the failing log volume and the shared terminal.
 // Bound the whole handoff, including a listener that has stopped reading.
 func sendSystemStoreWarning(message string, sockets []string) bool {
