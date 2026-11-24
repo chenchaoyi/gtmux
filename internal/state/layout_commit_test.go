@@ -132,7 +132,11 @@ func TestGSS014CommitNeedsCompleteTargetLayout(t *testing.T) {
 				if err := WritePrivateFile(txPath, journal); err != nil {
 					t.Fatal(err)
 				}
-				var err error
+				current, err := readLayoutTransaction()
+				if err != nil || current == nil {
+					t.Fatalf("read re-created journal: %v", err)
+				}
+				tx = current
 				switch kind {
 				case "source returned":
 					err = os.Rename(grouped, flat)

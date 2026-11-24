@@ -3490,6 +3490,9 @@ LEG-47dec564c5d6,L1,Go core / CLI / server,internal/state/homeguard_test.go,115,
 MAP-76f334ae1390,L1,reviewed implementation,internal/state/layout_cleanup_test.go,10,reviewed-selector,TestGSS010RollbackPreservesLateConflict,False,GSS-010
 MAP-d90187c224b6,L1,reviewed implementation,internal/state/layout_commit_test.go,34,reviewed-selector,TestGSS013MarkerConflictPreservesOriginals,False,"GSS-013,GSS-014"
 MAP-b4b6649a8bcc,L1,reviewed implementation,internal/state/layout_commit_test.go,103,reviewed-selector,TestGSS014CommitNeedsCompleteTargetLayout,False,"GSS-013,GSS-014"
+MAP-d18deb0abdc1,L1,reviewed implementation,internal/state/layout_metadata_test.go,10,reviewed-selector,TestGSS016RejectsJournalReplacementBeforeMove,False,"GSS-016,GSS-017"
+MAP-9810dcacbc43,L1,reviewed implementation,internal/state/layout_metadata_test.go,47,reviewed-selector,TestGSS016RetirementPreservesReplacedJournal,False,"GSS-016,GSS-017"
+MAP-27e031b2480b,L1,reviewed implementation,internal/state/layout_metadata_test.go,107,reviewed-selector,TestGSS017RollbackPreservesReplacementEmptyGroup,False,"GSS-016,GSS-017"
 MAP-e290eae41f84,L1,reviewed implementation,internal/state/layout_safety_test.go,11,reviewed-selector,TestGSS006RollbackRetainsInterruptedWrite,False,GSS-006
 MAP-a2c23a591bec,L1,reviewed implementation,internal/state/layout_safety_test.go,63,reviewed-selector,TestGSS006RollbackRefusesUnknownOrUnsafeStage,False,GSS-006
 MAP-14013c47ea74,L1,reviewed implementation,internal/state/layout_test.go,40,reviewed-selector,TestGSS001GroupedLayoutRoundTrip,False,"GSS-001,GSS-002"
@@ -3797,6 +3800,7 @@ LEG-5eaf739c8372,L1,Go core / CLI / server,internal/userservice/service_test.go,
 LEG-cb98946c10d3,G,Go core / CLI / server,internal/userservice/service_test.go,137,Test,TestServiceDescriptorsPrepareManagedCapturePrivately,False,legacy-not-retrospectively-reviewed
 LEG-3d885eebe66a,L1,Go core / CLI / server,internal/userservice/service_test.go,139,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 MAP-d22b1d4ab4ee,L1,reviewed implementation,internal/userservice/storage_commit_test.go,5,reviewed-selector,TestGSS015StorageRejectsRuntimeOnlyMask,False,GSS-015
+MAP-4871e869da14,L1,reviewed implementation,internal/userservice/storage_metadata_test.go,5,reviewed-selector,TestGSS018LaunchdRejectsTruncatedDisabledTable,False,GSS-018
 MAP-9e9d8497dca2,L1,reviewed implementation,internal/userservice/storage_persistent_test.go,10,reviewed-selector,TestGSS009InstalledLaunchAgentRequiresPersistentDisable,False,"GSS-009,GSS-011"
 MAP-d8ac5b592064,L1,reviewed implementation,internal/userservice/storage_persistent_test.go,61,reviewed-selector,TestGSS011SystemdRejectsAmbiguousQuiescence,False,"GSS-009,GSS-011"
 MAP-40921fa09b25,L1,reviewed implementation,internal/userservice/storage_test.go,10,reviewed-selector,TestGSS005ManagerStorageReadiness,False,GSS-005

@@ -2,13 +2,13 @@ package state
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"slices"
 	"sort"
 	"strings"
 	"syscall"
@@ -17,12 +17,13 @@ import (
 )
 
 const (
-	layoutDir        = "layout-v2"
-	layoutMarker     = ".storage-layout-v2"
-	layoutTransition = ".storage-layout-transition.json"
-	layoutRecovery   = "layout-recovery"
-	layoutFlat       = "flat"
-	layoutGrouped    = "grouped"
+	layoutDir            = "layout-v2"
+	layoutMarker         = ".storage-layout-v2"
+	layoutTransition     = ".storage-layout-transition.json"
+	layoutRecovery       = "layout-recovery"
+	layoutFlat           = "flat"
+	layoutGrouped        = "grouped"
+	layoutJournalVersion = 2
 )
 
 var groupedStores = map[string]string{
@@ -204,8 +205,10 @@ type layoutTransaction struct {
 	Version  int
 	Target   string
 	Entries  []layoutEntry
-	Retained *layoutEntry `json:",omitempty"`
-	Marker   *layoutEntry `json:",omitempty"`
+	Retained *layoutEntry    `json:",omitempty"`
+	Marker   *layoutEntry    `json:",omitempty"`
+	Scaffold *layoutScaffold `json:",omitempty"`
+	proof    layoutJournalProof
 }
 
 func groupedRoot() string { return filepath.Join(Dir(), layoutDir) }
@@ -281,7 +284,8 @@ func readLayoutTransaction() (*layoutTransaction, error) {
 	if err != nil {
 		return nil, err
 	}
-	if st, ok := info.Sys().(*syscall.Stat_t); !ok || st.Nlink != 1 || info.Mode().Perm()&0077 != 0 {
+	st, ok := info.Sys().(*syscall.Stat_t)
+	if !ok || st.Nlink != 1 || info.Mode().Perm()&0077 != 0 {
 		return nil, errors.New("storage layout transition requires a private file")
 	}
 	const limit = 32 << 10
@@ -290,7 +294,7 @@ func readLayoutTransaction() (*layoutTransaction, error) {
 		return nil, errors.New("cannot read storage layout transition")
 	}
 	var t layoutTransaction
-	if json.Unmarshal(data, &t) != nil || t.Version != 1 ||
+	if json.Unmarshal(data, &t) != nil || t.Version != layoutJournalVersion ||
 		(t.Target != layoutFlat && t.Target != layoutGrouped) || len(t.Entries) > len(groupedStores) {
 		return nil, errors.New("invalid storage layout transition")
 	}
@@ -309,6 +313,20 @@ func readLayoutTransaction() (*layoutTransaction, error) {
 	if marker := t.Marker; (t.Target == layoutFlat) != (marker != nil) ||
 		marker != nil && (marker.Name != "" || marker.Inode == 0 || marker.Mode != uint32(os.ModeDir)) {
 		return nil, errors.New("invalid storage layout source marker")
+	}
+	if (t.Target == layoutFlat) != (t.Scaffold != nil) || t.Scaffold != nil && !t.Scaffold.valid() {
+		return nil, errors.New("invalid storage layout rollback scaffold")
+	}
+	if t.Retained != nil {
+		root := *t.Retained
+		root.Name = ""
+		if root != t.Scaffold.Root {
+			return nil, errors.New("invalid storage layout recovery scaffold")
+		}
+	}
+	t.proof = layoutJournalProof{
+		file: layoutEntry{Dev: uint64(st.Dev), Inode: uint64(st.Ino)},
+		hash: sha256.Sum256(data),
 	}
 	return &t, nil
 }
@@ -352,7 +370,7 @@ func ChangeStorageLayout(grouped bool, checkWriters func() error) error {
 	if err != nil {
 		return err
 	}
-	t := &layoutTransaction{Version: 1, Target: target}
+	t := &layoutTransaction{Version: layoutJournalVersion, Target: target}
 	if target == layoutFlat {
 		marker, present, err := readLayoutMarker()
 		if err != nil {
@@ -362,15 +380,19 @@ func ChangeStorageLayout(grouped bool, checkWriters func() error) error {
 			return errors.New("grouped storage layout marker disappeared before rollback")
 		}
 		t.Marker = &marker
+		t.Scaffold, err = readLayoutScaffold(groupedRoot())
+		if err != nil {
+			return err
+		}
+		if !t.Scaffold.valid() {
+			return errors.New("cannot record the grouped storage scaffold")
+		}
 	}
 	if staged > 0 {
 		if target != layoutFlat {
 			return errors.New("unmarked grouped storage contains staging files")
 		}
-		scaffold, present, err := layoutObject(groupedRoot())
-		if err != nil || !present || scaffold.Mode != uint32(os.ModeDir) {
-			return errors.New("cannot identify the grouped storage scaffold")
-		}
+		scaffold := t.Scaffold.Root
 		scaffold.Name = rand.Text()
 		t.Retained = &scaffold
 	}
@@ -395,7 +417,7 @@ func ChangeStorageLayout(grouped bool, checkWriters func() error) error {
 	if err != nil {
 		return err
 	}
-	if err = WritePrivateFile(filepath.Join(Dir(), layoutTransition), data); err != nil {
+	if err = publishLayoutTransaction(t, data); err != nil {
 		return err
 	}
 	if err := checkWriters(); err != nil {
@@ -489,6 +511,9 @@ func (t *layoutTransaction) retainedPath() string {
 // Verify every physical location before advancing. Doctor uses the same check
 // so it does not suggest retrying a conflicting or unverifiable transition.
 func verifyLayoutTransition(t *layoutTransaction) (map[string]bool, error) {
+	if err := verifyLayoutJournal(t); err != nil {
+		return nil, err
+	}
 	marker, marked, err := readLayoutMarker()
 	if err != nil {
 		return nil, err
@@ -513,14 +538,23 @@ func verifyLayoutTransition(t *layoutTransaction) (map[string]bool, error) {
 		if err != nil {
 			return nil, err
 		}
+		path := groupedRoot()
 		if archived {
-			staged, err = inspectGroupedPaths(t.retainedPath(), true)
+			path = t.retainedPath()
+			staged, err = inspectGroupedPaths(path, true)
 			if err != nil {
 				return nil, err
 			}
 		}
 		if staged == 0 {
 			return nil, errors.New("recorded storage staging files require review")
+		}
+		if err := t.Scaffold.verify(path, true); err != nil {
+			return nil, err
+		}
+	} else if t.Scaffold != nil {
+		if err := t.Scaffold.verify(groupedRoot(), marked); err != nil {
+			return nil, err
 		}
 	}
 	sourceMode := t.sourceMode()
@@ -603,7 +637,7 @@ func finishLayoutChange(t *layoutTransaction) error {
 	}
 	if t.Target == layoutFlat {
 		if t.Retained == nil {
-			if err := removeEmptyLayoutDirs(); err != nil {
+			if err := removeEmptyLayoutDirs(t.Scaffold); err != nil {
 				return err
 			}
 		} else {
@@ -656,13 +690,7 @@ func completeLayoutChange(t *layoutTransaction) error {
 			return errors.New("grouped storage root is still present after rollback")
 		}
 	}
-	if err := SyncPrivateDirectory(Dir()); err != nil {
-		return err
-	}
-	if err := os.Remove(filepath.Join(Dir(), layoutTransition)); err != nil {
-		return err
-	}
-	return SyncPrivateDirectory(Dir())
+	return retireLayoutJournal(t)
 }
 
 func layoutEntryLocation(expected layoutEntry, from, to string) (bool, error) {
@@ -720,7 +748,7 @@ func advanceLayoutEntry(entry layoutEntry, from, to string) error {
 
 // Rollback removes only empty, registered scaffold directories. A reappearing
 // file, symlink or foreign directory is never a cleanup target.
-func removeEmptyLayoutDirs() error {
+func removeEmptyLayoutDirs(scaffold *layoutScaffold) error {
 	parent, err := privateDirectory(Dir(), false)
 	if err != nil {
 		return err
@@ -738,7 +766,19 @@ func removeEmptyLayoutDirs() error {
 	if err := checkPrivateDirectory(fd, false); err != nil {
 		return err
 	}
-	groups := layoutGroups()
+	var opened unix.Stat_t
+	if err := unix.Fstat(fd, &opened); err != nil {
+		return err
+	}
+	if id, err := layoutDirectoryIdentity(opened); err != nil || id != scaffold.Root {
+		return errors.New("recorded storage scaffold changed before rollback")
+	}
+	expected := make(map[string]layoutEntry, len(scaffold.Groups))
+	for _, group := range scaffold.Groups {
+		id := group
+		id.Name = ""
+		expected[group.Name] = id
+	}
 	entries, err := root.ReadDir(-1)
 	if err != nil {
 		return err
@@ -746,16 +786,17 @@ func removeEmptyLayoutDirs() error {
 	identities := make(map[string]layoutEntry, len(entries))
 	for _, entry := range entries {
 		name := entry.Name()
-		if !entry.IsDir() || !slices.Contains(groups, name) {
+		id, recorded := expected[name]
+		if !entry.IsDir() || !recorded {
 			return fmt.Errorf("unexpected storage object during rollback: %s", filepath.Join(groupedRoot(), name))
 		}
-		id, err := layoutDirectoryAt(fd, name)
-		if err != nil {
-			return fmt.Errorf("storage group requires review: %s: %w", name, err)
+		if current, err := layoutDirectoryAt(fd, name); err != nil || current != id {
+			return fmt.Errorf("recorded storage group changed before rollback: %s", name)
 		}
 		identities[name] = id
 	}
-	for _, group := range groups {
+	for _, record := range scaffold.Groups {
+		group := record.Name
 		expected, listed := identities[group]
 		if !listed {
 			continue

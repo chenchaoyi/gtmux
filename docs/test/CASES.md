@@ -2,11 +2,11 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1479 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1481 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3818 | [L1.csv](cases/L1.csv) |
+| L1 · Unit / pure logic | 3822 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2739 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 156 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
@@ -249,6 +249,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | GSS-013 | A conflicting marker stays intact, no object is published or removed as a marker over it, and the journal remains. A legitimate interrupted layout can still finish. |
 | GSS-014 | The old direction journal is kept unless every expected identity is on the target side, retained staging is archived and marker and directory topology establish the requested layout. |
 | GSS-015 | Persistent stop can permit migration. A runtime-only mask needs persisted disable evidence. |
+| GSS-016 | Replacement identity, content and type block the operation. Ordinary journal recovery remains possible after a process restart. |
+| GSS-017 | The new group inode and original group are retained, and the rollback stops before moving live stores or retiring the journal. |
+| GSS-018 | A genuine full disabled-services block establishes evidence, while truncated or ambiguous replies are refused. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |
 | HQBC-001 | Exact language-specific titles are lifted. The original number, short first-line quote and group are retained. An explicit recommendation is recognized. Removal leaves the other item and its number intact. An empty decision section produces no actionable item. |
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |

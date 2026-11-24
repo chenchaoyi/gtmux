@@ -5596,5 +5596,24 @@
     "selectors": [
       "TestGSS015StorageRejectsRuntimeOnlyMask"
     ]
+  },
+  "internal/state/layout_metadata_test.go": {
+    "cases": [
+      "GSS-016",
+      "GSS-017"
+    ],
+    "selectors": [
+      "TestGSS016RejectsJournalReplacementBeforeMove",
+      "TestGSS016RetirementPreservesReplacedJournal",
+      "TestGSS017RollbackPreservesReplacementEmptyGroup"
+    ]
+  },
+  "internal/userservice/storage_metadata_test.go": {
+    "cases": [
+      "GSS-018"
+    ],
+    "selectors": [
+      "TestGSS018LaunchdRejectsTruncatedDisabledTable"
+    ]
   }
 }

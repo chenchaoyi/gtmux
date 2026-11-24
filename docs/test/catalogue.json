@@ -70492,7 +70492,7 @@
           "design": "GSS-010"
         }
       ],
-      "sha256": "8c6ef842789ad5d10cb127cb4f62e28e5ce18482cb7ad46d493187abe9e7e9a5"
+      "sha256": "7261a444a4463f2aaa81fc4c80536c33274462f3d3f02bd94c9cbc9d23918ae8"
     },
     "internal/userservice/storage_persistent_test.go": {
       "layer": "L1",
@@ -70558,7 +70558,7 @@
           "design": "GSS-013,GSS-014"
         }
       ],
-      "sha256": "94b6e11c1fd166fb396a0885c3f9a03818b0d3f69937645c7cc76c5cfe868ad9"
+      "sha256": "a15a898eb5f8913a1ff8a025a0307e20767a82e9e9549b579072b7ed100e7eb3"
     },
     "internal/userservice/storage_commit_test.go": {
       "layer": "L1",
@@ -70575,6 +70575,56 @@
         }
       ],
       "sha256": "b323f0393fa85cd3fa79b618902d2e21d85e8348e2c3a698245a780a881d125f"
+    },
+    "internal/state/layout_metadata_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d18deb0abdc1",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestGSS016RejectsJournalReplacementBeforeMove",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-016,GSS-017"
+        },
+        {
+          "id": "MAP-9810dcacbc43",
+          "line": 47,
+          "kind": "reviewed-selector",
+          "name": "TestGSS016RetirementPreservesReplacedJournal",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-016,GSS-017"
+        },
+        {
+          "id": "MAP-27e031b2480b",
+          "line": 107,
+          "kind": "reviewed-selector",
+          "name": "TestGSS017RollbackPreservesReplacementEmptyGroup",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-016,GSS-017"
+        }
+      ],
+      "sha256": "7200f5ed3215ad86ddc0997d5419c1ce258e37fe6ad96879d66667ab8ce4f977"
+    },
+    "internal/userservice/storage_metadata_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4871e869da14",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestGSS018LaunchdRejectsTruncatedDisabledTable",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-018"
+        }
+      ],
+      "sha256": "5c5c6ec486273f1c8338f68dfc19bcd5ff2e7f401921d35200b128ecb2c33b9e"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

@@ -59,7 +59,7 @@ func TestGSS010RollbackPreservesLateConflict(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := removeEmptyLayoutDirs(); err == nil {
+			if err := removeEmptyLayoutDirs(tx.Scaffold); err == nil {
 				t.Fatal("cleanup accepted a late conflicting object")
 			}
 			after, err := os.Lstat(source)
