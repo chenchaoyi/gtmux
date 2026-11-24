@@ -1053,12 +1053,18 @@ button.appr-opt { width: 100%; background: transparent; color: inherit; text-ali
   .tile-body .tile-chat { padding: 16px 12px; }
 }
 
-/* Live stays above the composer; expanding it never replaces the transcript. */
-.conversation-main { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; min-height: 0; height: 100%; }
+/* The collapsed strip reserves one row. The open pane covers the same chat region. */
+.conversation-main { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; min-height: 0; height: 100%; position: relative; --live-strip-height: 44px; }
+.conversation-main:has(> .chat-live) { padding-bottom: var(--live-strip-height); }
 .conversation-main > .conv-scroll { height: auto; min-height: 0; }
 .tile-body .conversation-main > .tile-chat { position: static; flex: 1 1 auto; min-height: 0; }
-.chat-live { flex: 0 0 auto; min-width: 0; max-height: 45%; overflow: auto; border-top: 1px solid var(--divider); background: var(--surface); }
-.live-summary { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 18px; cursor: pointer; list-style: none; color: var(--fg2); font-size: 12px; }
+.chat-live {
+  --live-grip-height: 22px;
+  position: absolute; inset: auto 0 0; z-index: 4; min-width: 0;
+  height: var(--live-strip-height); max-height: 100%; overflow: hidden;
+  border-top: 1px solid var(--divider); background: var(--surface);
+}
+.live-summary { display: flex; align-items: center; gap: 10px; height: var(--live-strip-height); padding: 8px 18px; cursor: pointer; list-style: none; color: var(--fg2); font-size: 12px; }
 .live-summary::-webkit-details-marker { display: none; }
 .live-summary:hover { background: var(--control); }
 .live-summary:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: -3px; }
@@ -1067,18 +1073,44 @@ button.appr-opt { width: 100%; background: transparent; color: inherit; text-ali
 .live-clock { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .live-action { margin-left: auto; white-space: nowrap; }
 .live-chevron { flex: none; }
+.chat-live[open] {
+  height: min(var(--live-height), 100%);
+  border-top-color: rgba(6,182,212,.4);
+  border-radius: 12px 12px 0 0; background: var(--terminal-bg); color: #d6d6da;
+  box-shadow: 0 -8px 24px rgba(0,0,0,.16);
+}
 .chat-live[open] .live-chevron { transform: rotate(180deg); }
-.chat-live[open] { background: var(--terminal-bg); color: #d6d6da; border-top-color: rgba(6,182,212,.35); }
-.chat-live[open] .live-summary { color: rgba(235,235,245,.65); }
+.chat-live[open] .live-summary { margin-top: var(--live-grip-height); color: rgba(235,235,245,.65); }
 .chat-live[open] .live-summary strong, .chat-live[open] .live-action, .chat-live[open] .live-chevron { color: #27c7e6; }
 .chat-live[open] .live-summary:hover { background: rgba(255,255,255,.04); }
-.chat-live[open] .live-output { color: #d6d6da; line-height: 1.4; white-space: pre; overflow-wrap: normal; max-height: 220px; padding-bottom: 18px; tab-size: 4; }
-.live-source { margin: 0; padding: 0 18px 4px; color: rgba(235,235,245,.65); font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }
-.live-output { margin: 0; padding: 12px 18px 16px; max-height: 210px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); font: 12px/1.65 ui-monospace, Menlo, monospace; }
-.live-note { margin: 0; padding: 0 18px 12px; color: var(--amber); font-size: 12px; }
+.live-resize {
+  position: absolute; inset: 0 0 auto; height: var(--live-grip-height);
+  display: grid; place-items: center; cursor: ns-resize; touch-action: none; user-select: none;
+}
+.live-resize::before { content: ''; width: 36px; height: 4px; border-radius: 4px; background: rgba(235,235,245,.42); }
+.live-resize:hover::before, .live-resize:focus-visible::before { background: #27c7e6; }
+.live-resize:focus-visible, .live-output:focus-visible, .live-resume:focus-visible { outline: 2px solid #27c7e6; outline-offset: -2px; }
+.live-resize[aria-disabled="true"] { cursor: default; }
+.live-contents {
+  position: absolute; inset: calc(var(--live-grip-height) + var(--live-strip-height)) 0 0;
+  display: flex; flex-direction: column; min-height: 0;
+}
+.live-tools { display: flex; flex: 0 0 auto; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 0 18px; color: rgba(235,235,245,.7); font-size: 12px; }
+.live-source { flex: 1 0 100%; margin: 0; overflow-wrap: anywhere; }
+.live-resume { margin-left: auto; min-height: 32px; border: 0; border-radius: 8px; background: rgba(39,199,230,.12); color: #81e7f7; padding: 4px 10px; font: inherit; cursor: pointer; }
+.live-output { flex: 1 1 auto; min-height: 0; margin: 0; padding: 8px 18px 16px; overflow: auto; overscroll-behavior: contain; white-space: pre; color: #d6d6da; font: 12px/1.4 ui-monospace, Menlo, monospace; tab-size: 4; }
+.live-note { margin: 0; padding: 0 18px 8px; color: #f6c975; font-size: 12px; }
+.chat-live:not([open]) > :not(summary) { display: none; }
 @keyframes live-pulse { 50% { opacity: .45; } }
 @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
-@media (max-width: 600px) { .live-summary { padding-left: 12px; padding-right: 12px; gap: 7px; } }
+@media (pointer: coarse) {
+  .chat-live { --live-grip-height: 44px; }
+  .live-resume { min-height: 44px; }
+}
+@media (max-width: 600px) {
+  .live-summary { padding-left: 12px; padding-right: 12px; gap: 7px; }
+  .live-tools, .live-output, .live-note { padding-left: 12px; padding-right: 12px; }
+}
 
 .speaker-avatar { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; width: var(--control-size); height: var(--control-size); padding: 3px; border: 0; border-radius: 10px; background: transparent; cursor: pointer; }
 .speaker-avatar:hover { background: var(--control); }
@@ -1613,7 +1645,6 @@ select:disabled { opacity: .55; cursor: not-allowed; }
 .trace-history-bar button:focus-visible {outline:2px solid var(--accent-ink);outline-offset:2px;border-radius:6px;}
 
 /* Compact conversation overview: proximity lens and explicit jump preview. */
-.conversation-main { position: relative; }
 .has-conversation-map .chat-col { padding-right: 48px; }
 .tile-body .has-conversation-map > .tile-chat { padding-right: 48px; }
 .conversation-map { position: absolute; right: 2px; top: 0; bottom: 0; width: 40px; pointer-events: none; z-index: 3; }
