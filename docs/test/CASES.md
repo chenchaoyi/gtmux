@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1464 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1465 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3800 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2737 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2738 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 156 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -320,6 +320,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HRB-013 | An attempted reset stays non-replayable, including without a completed evidence fence. A prior or same-second legacy observation cannot authorize a successor. A slow target check that reaches the original deadline cannot persist or enqueue a new briefing. One phase-specific failure is recorded. |
 | HRB-014 | A precise same-second observation after Enter can qualify. Older, equal, and whole-second-only ambiguous observations have no authority. A missing fence permits bounded waiting and then an explicit failure. It authorizes neither success, briefing nor another reset. The detached process codec retains consistent precise observation time. |
 | HRB-015 | Only the current exact binding with a credible completed-key timestamp has native briefing authority. Incomplete older reservations retain the ordinary bounded reservation lifecycle but authorize no briefing input. |
+| HRB-016 | The hook persists the original pane generation, actual child PID and birth, and same pane TTY. The matching live incarnation confirms. Changed generation, changed TTY, lost foreground and the replacement process cannot confirm the previously witnessed session. |
 | HRW-001 | Fresh verified idle metadata is required before at most one normal turn/start attempt. Known busy/unknown/unloaded/approval states refuse before claim; no steer, queue/add, resume, retry or fallback. Sample-to-submit external race is explicitly possible: a valid response records acceptance and an observed turn ID only, not proof of a newly caused turn. Missing acknowledgement remains uncertain, never automatically resubmitted. Explicit user/image/legacy queue unchanged. |
 | HRW-002 | Automatic wake uses only idle policy and retains exact target/send identity; busy refusal before claim retains authority and produces no accepted receipt. Ordinary user/CLI/screenshot selection remains unchanged. |
 | HRW-003 | A matching unsent request still reserves reset input; a sent handoff gains a distinct bounded reservation only when enabled or already bound. Other panes are unaffected. Read failures conservatively hold automatic delivery and never authorize/reset/repair config. Missing returns no hold, no writes or blocking special-file read. |

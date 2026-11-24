@@ -26,6 +26,10 @@ func (o Observation) Retryable() bool {
 }
 
 func (i inspector) observe(panes []Pane) map[string]Observation {
+	return i.observeWith(panes, inspectClient)
+}
+
+func (i inspector) observeWith(panes []Pane, inspect func(Pane, map[int]process) (process, []int, string)) map[string]Observation {
 	out := make(map[string]Observation, len(panes))
 	before := i.snapshot()
 	type candidate struct {
@@ -39,7 +43,7 @@ func (i inspector) observe(panes []Pane) map[string]Observation {
 			out[p.ID] = Observation{Code: "snapshot-unavailable"}
 			continue
 		}
-		c, chain, code := inspectClient(p, before)
+		c, chain, code := inspect(p, before)
 		if code != "" {
 			out[p.ID] = Observation{Code: code}
 			continue
@@ -85,7 +89,7 @@ func (i inspector) observe(panes []Pane) map[string]Observation {
 			}
 		}
 		if code == "" {
-			fresh, _, reason := inspectClient(c.pane, after)
+			fresh, _, reason := inspect(c.pane, after)
 			if reason != "" {
 				code = reason
 			} else if fresh != c.client {

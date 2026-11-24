@@ -1,21 +1,9 @@
 package resume
 
 import (
-	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/codexterminal"
-	"github.com/chenchaoyi/gtmux/internal/launchhost"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
-
-// HQClaudeClient identifies an unwrapped Claude process that itself owns the pane.
-// An unverified wrapper or detached host grants no client identity.
-func HQClaudeClient(pane string) (launchhost.AgentProcess, bool) {
-	pid, ok := codexterminal.ForegroundRoot(pane)
-	if !ok {
-		return launchhost.AgentProcess{}, false
-	}
-	p, ok := launchhost.ReadAgent(pid)
-	return p, ok && p.PID == pid && p.Start != "" && (p.Comm == "claude" || agents.LooksLikeVersion(p.Comm))
-}
 
 // MatchesLegacyHQClient rechecks the exact incarnation that supplied the witness.
 func MatchesLegacyHQClient(pane string, rec Record) bool {
@@ -24,8 +12,12 @@ func MatchesLegacyHQClient(pane string, rec Record) bool {
 	case "codex":
 		return VerifyDirectCodexCaller(pane, rec.HomeID, rec.SessionID, w.ClientPID, w.ClientBirth)
 	case "claude":
-		p, ok := HQClaudeClient(pane)
-		return ok && p.PID == w.ClientPID && p.Start == w.ClientBirth
+		if w.ClientTTY == "" || w.Generation == "" || tmux.PaneGeneration(pane) != w.Generation {
+			return false
+		}
+		p, ok := codexterminal.ForegroundClaude(pane, 0)
+		return ok && p.PID == w.ClientPID && p.Start == w.ClientBirth && p.TTY == w.ClientTTY &&
+			tmux.PaneGeneration(pane) == w.Generation
 	default:
 		return false
 	}

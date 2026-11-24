@@ -1,4 +1,4 @@
-// Package codexterminal verifies interactive Codex clients beneath generic launchers.
+// Package codexterminal verifies interactive agents beneath terminal launchers.
 // A process name or ancestry alone never authorizes terminal input.
 package codexterminal
 
@@ -45,7 +45,11 @@ func Resolve(panes []Pane) map[string]Client {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	i := inspector{
+	return liveInspector(ctx).resolve(panes)
+}
+
+func liveInspector(ctx context.Context) inspector {
+	return inspector{
 		snapshot: func() map[int]process {
 			return parseProcesses(run(ctx, "ps", "-axo", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="))
 		},
@@ -55,28 +59,33 @@ func Resolve(panes []Pane) map[string]Client {
 			return paneMatches(p, raw)
 		},
 	}
-	return i.resolve(panes)
 }
 
-// ForegroundRoot returns the pane's initial process only while it owns the tty's
-// foreground group. A shell wrapper with a child in front does not qualify.
-func ForegroundRoot(pane string) (int, bool) {
+// ForegroundClaude verifies the live interactive Claude process, including one
+// launched as a foreground child of the pane's shell. A nonzero hookPID must
+// descend from that same client in both snapshots.
+func ForegroundClaude(pane string, hookPID int) (Client, bool) {
 	if pane == "" {
-		return 0, false
-	}
-	parts := strings.Split(tmux.Display(pane, "#{pane_id}\t#{pane_pid}\t#{pane_tty}"), "\t")
-	if len(parts) != 3 || parts[0] != pane || tty(parts[2]) == "" {
-		return 0, false
-	}
-	pid, err := strconv.Atoi(parts[1])
-	if err != nil || pid <= 1 {
-		return 0, false
+		return Client{}, false
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	procs := parseProcesses(run(ctx, "ps", "-p", parts[1], "-o", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="))
-	p, ok := procs[pid]
-	return pid, ok && p.foreground > 0 && p.group == p.foreground && p.tty == tty(parts[2])
+	p, ok := ReadLaunchPane(ctx, pane)
+	if !ok {
+		return Client{}, false
+	}
+	inspect := func(p Pane, procs map[int]process) (process, []int, string) {
+		client, chain, code := inspectClaude(p, procs)
+		if code == "" && hookPID != 0 {
+			missing, conflict := launchAncestryEvidence(procs, client.pid, 0, 0, hookPID)
+			if hookPID == client.pid || missing || conflict {
+				return process{}, nil, "hook-ancestry-unverified"
+			}
+		}
+		return client, chain, code
+	}
+	o := liveInspector(ctx).observeWith([]Pane{p}, inspect)[pane]
+	return o.Client, o.Code == "" && o.PID > 1 && ctx.Err() == nil
 }
 
 func paneMatches(p Pane, raw string) bool {
@@ -108,6 +117,21 @@ func inspectClient(p Pane, procs map[int]process) (process, []int, string) {
 	if agents.LooksLikeVersion(filepath.Base(p.Command)) {
 		return process{}, nil, "other-agent"
 	}
+	return inspectForeground(p, procs, func(command string) bool { return command == "codex" })
+}
+
+func inspectClaude(p Pane, procs map[int]process) (process, []int, string) {
+	reported := filepath.Base(p.Command)
+	if reported != "claude" && !agents.LooksLikeVersion(reported) {
+		return process{}, nil, "other-agent"
+	}
+	return inspectForeground(p, procs, func(command string) bool {
+		// The native install reports its executable version, including in tmux.
+		return command == "claude" || (command == reported && agents.LooksLikeVersion(command))
+	})
+}
+
+func inspectForeground(p Pane, procs map[int]process, isClient func(string) bool) (process, []int, string) {
 	root, ok := procs[p.PID]
 	wantTTY := tty(p.TTY)
 	if !ok || root.start == "" || root.foreground <= 0 {
@@ -136,14 +160,14 @@ func inspectClient(p Pane, procs map[int]process) (process, []int, string) {
 			continue
 		}
 		chain := append(append([]int(nil), cur.chain...), cur.pid)
-		if filepath.Base(proc.command) == "codex" {
+		if isClient(filepath.Base(proc.command)) {
 			if proc.start != "" && tty(proc.tty) == wantTTY && proc.group == root.foreground && proc.foreground == root.foreground {
 				if found.pid != 0 {
 					return process{}, nil, "ambiguous-client"
 				}
 				found, path = proc, chain
 			}
-			continue // tools under another Codex process are not independent frontends
+			continue // tools under another client are not independent frontends
 		}
 		for pid, child := range procs {
 			if child.parent == cur.pid {

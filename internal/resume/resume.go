@@ -26,6 +26,7 @@ type HQObservation struct {
 	ObservedAtNS int64  `json:"observed_at_ns"`
 	ClientPID    int    `json:"client_pid"`
 	ClientBirth  string `json:"client_birth"`
+	ClientTTY    string `json:"client_tty,omitempty"`
 }
 
 // Record is one resumable agent session captured from a hook.

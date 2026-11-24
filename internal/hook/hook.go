@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -22,6 +21,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agentprofile"
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/codexterminal"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -994,12 +994,10 @@ func Run(stdin io.Reader, args []string) int {
 				if agentKey == "claude" && (event == "SessionStart" || event == "UserPromptSubmit") &&
 					hqpane.SameDir(cwd, state.HQHome()) {
 					generation := tmux.PaneGeneration(pane)
-					client, ok := resume.HQClaudeClient(pane)
-					if generation != "" && ok && slices.ContainsFunc(ancestry(os.Getpid(), maxAncestorWalk), func(a ancestor) bool {
-						return a.pid == client.PID
-					}) && generation == tmux.PaneGeneration(pane) {
+					client, ok := codexterminal.ForegroundClaude(pane, os.Getpid())
+					if generation != "" && ok && generation == tmux.PaneGeneration(pane) {
 						hqObservation = resume.HQObservation{Generation: generation, ObservedAtNS: observedAt,
-							ClientPID: client.PID, ClientBirth: client.Start}
+							ClientPID: client.PID, ClientBirth: client.Start, ClientTTY: client.TTY}
 					}
 				}
 				_ = resume.SaveObserved(loc, resume.Record{

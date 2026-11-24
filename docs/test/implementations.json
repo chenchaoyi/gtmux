@@ -1,4 +1,8 @@
 {
+  "internal/hook/hq_claude_foreground_test.go": {
+    "cases": ["HRB-016"],
+    "selectors": ["TestHQClaudeHookFollowsForegroundShellChild"]
+  },
   "internal/hqinput/rotation_brief_witness_test.go": {
     "cases": ["HRB-015"],
     "selectors": ["TestBoundBriefRequiresDurableResetCompletion"]

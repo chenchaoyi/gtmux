@@ -1014,6 +1014,7 @@ query instead of information destroyed at every handoff.
 - **THEN** gtmux queues the reset without typing, and reports pending; after the turn finishes and the input box is safe, the resident process sends the reset once
 - **AND** only a new session ID confirms rotation and restarts the health window
 - **AND** that ID SHALL come from the original pane and generation's current session evidence for the retiring agent's driver. Settlement requires a recorded reset-key completion timestamp. A legacy direct client requires the same live client incarnation that supplied an independently verified hook observation, for the original generation after the recorded completion of the reset keys and within the current window. An unbound lifecycle event SHALL NOT establish, extend or confirm the handoff
+- **AND** a Claude observation SHALL bind the hook's actual foreground ancestor, including a child launched by the pane shell, to its process birth and original pane terminal. Confirmation SHALL recheck the live foreground and require the same process, terminal and pane generation
 
 #### Scenario: The current agent or session evidence is temporarily unavailable after reset
 
