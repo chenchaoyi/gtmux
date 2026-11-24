@@ -1,0 +1,56 @@
+{
+  "id": "web-live-view-resize-20261124",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-24",
+    "decision": "Exercise the actual Web Chat overlay, touch resizing and bounded capture history",
+    "notes": "The current browser preview hard-cuts to 14 lines. The native App provides a separate resize grip. Reuse the pane capture and existing access scope. Test only synthetic pane data and layouts. Mobile Web emulation is separate from native App or keyboard acceptance."
+  },
+  "cases": [
+    {
+      "id": "WLV-001",
+      "layer": "L4",
+      "description": "Drag the working tile live overlay while reading a conversation",
+      "setup": "Open a working pane in a desktop workbench tile using synthetic transcript and capture, and type an unsent draft.",
+      "action": "Expand Live, drag its top resize handle up and down, and update the transcript during a drag. Collapse and reopen.",
+      "expected": "The panel grows upward and shrinks toward the same bottom edge. The transcript viewport and input stay in place; the draft is intact. An ongoing drag survives transcript repaint. Reopening restores the selected height.",
+      "planned_files": [
+        "tests/web/live-view-resize.test.cjs"
+      ],
+      "surfaces": [
+        "Desktop Web workbench"
+      ]
+    },
+    {
+      "id": "WLV-002",
+      "layer": "L4",
+      "description": "Read bounded terminal history and jump back to the latest capture",
+      "setup": "Use a capture with more than 14 rows, beginning near the server history limit, including a long terminal row.",
+      "action": "Open Live at the bottom, scroll to an earlier row, supply a new capture while reading, and choose the explicit return to live control.",
+      "expected": "Older rows are scrollable with original columns. The displayed capture and scroll offsets stay fixed while reading. The new output indication appears and the return action takes the reader to the latest output without sending any input.",
+      "planned_files": [
+        "tests/web/live-view-resize.test.cjs"
+      ],
+      "surfaces": [
+        "Web Live output"
+      ]
+    },
+    {
+      "id": "WLV-003",
+      "layer": "L4",
+      "description": "Resize focused Live on narrow Web with touch and keyboard",
+      "setup": "Open a working pane in focused Chat on a narrow, coarse-pointer Chromium viewport and use a synthetic draft.",
+      "action": "Use a real emulated touch gesture on the top handle, use resize keys, temporarily reduce available height, restore it, then close with Escape.",
+      "expected": "Only Live resizes, bounded by the chat region. Navigation and the input stay available; normal height restores the chosen size. Escape collapses and focuses the disclosure. The draft is unchanged and no request sends it.",
+      "planned_files": [
+        "tests/web/live-view-resize.test.cjs"
+      ],
+      "surfaces": [
+        "Narrow Web Chat",
+        "Keyboard"
+      ]
+    }
+  ],
+  "seal": "a75048e8d06efcb4691ad7a875f66984ff6eeb14afdff41ffb86705d3ef05583"
+}
