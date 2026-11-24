@@ -2,14 +2,14 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1455 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1456 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2722 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 156 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 144 | [L4.csv](cases/L4.csv) |
+| L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 509 | [G.csv](cases/G.csv) |
 
@@ -646,6 +646,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | UR-001 | The 34-second HTTP-200-equivalent report is shown; the stalled read is classified as timeout, the next valid report is shown, and the late old report cannot overwrite it. |
 | UR-002 | Valid empty reports remain data, 404 is unsupported, other failures throw typed causes; no failure becomes zero usage or a fabricated report. |
 | UR-003 | Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels. |
+| WLC-001 | Terminal text has usable visible height at both sizes. Upward drag extends the overlay without shifting its bottom, transcript, composer or tile. The overlay remains inside its tile. The draft and reading position survive and no send is issued. |
+| WLC-002 | The capture remains readable and identifies its actual pane and pending history association. The read-only boundary and zero sends are preserved. |
 | WLV-001 | The panel grows upward and shrinks toward the same bottom edge. The transcript viewport and input stay in place; the draft is intact. An ongoing drag survives transcript repaint. Reopening restores the selected height. |
 | WLV-002 | Older rows are scrollable with original columns. The displayed capture and scroll offsets stay fixed while reading. The new output indication appears and the return action takes the reader to the latest output without sending any input. |
 | WLV-003 | Only Live resizes, bounded by the chat region. Navigation and the input stay available; normal height restores the chosen size. Escape collapses and focuses the disclosure. The draft is unchanged and no request sends it. |
