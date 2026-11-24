@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/agents"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
 	"github.com/chenchaoyi/gtmux/internal/dispatchbridge"
@@ -217,6 +216,9 @@ func ProcessPendingHQRotation() {
 		return
 	}
 	agent, sid, reason := hqSessionEvidence(pane)
+	if reason == "agent-driver-unavailable" {
+		agent, sid = "", "" // a historical direct-client record alone is not live evidence
+	}
 	advanceHQRotation(r, pane, agent, sid, dispatchbridge.DispatchIO(pane), transcript.CodexLastTurnBoundary, time.Now(), reason)
 }
 
@@ -256,35 +258,37 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 		failRotation(r, "HQ pane or agent changed", now.Unix())
 		return
 	}
+	reason := ""
+	if len(identityReason) > 0 {
+		reason = rotationIdentityCode(identityReason[0])
+	}
 	if r.SentAt != 0 {
-		if agent == "" {
-			failRotation(r, "HQ agent identity unavailable after reset; no reset will be repeated", now.Unix())
-			return
+		deadline := r.SentAt + int64(rotationSettleWait/time.Second)
+		if r.SwitchedAt != 0 {
+			deadline = r.SwitchedAt + int64(rotationReadyWait/time.Second)
 		}
-		if sid == "" || sid == r.Retiring {
-			// Legacy hooks can precede the location record. Modern bridges also bind
-			// empty threads, so a changed ID alone is no durability acknowledgement.
-			sid = rotationSessionFromEvents(r, rotationEvents(now.Unix()-r.SentAt+5, now.Unix()))
-		}
-		if sid != "" && sid != r.Retiring {
+		// Lifecycle events carry neither a pane generation nor send order within
+		// a second. Only the current pane's live evidence can establish a successor.
+		if agent != "" && sid != "" && sid != r.Retiring {
 			if r.Successor != "" && sid != r.Successor {
 				failRotation(r, "HQ changed again before its successor became recoverable", now.Unix())
 				return
 			}
 			if r.Successor == "" {
 				r.Successor, r.SwitchedAt = sid, now.Unix()
+				deadline = r.SwitchedAt + int64(rotationReadyWait/time.Second)
 				if err := writeRotationFile(r, false); err != nil {
 					diag.ReportStoreFailure("hq-rotation", err)
 					return
 				}
-				diag.For("hq").Info("hq.rotation.switched", "HQ switched; waiting for durable handoff", "session", sid)
+				diag.For("hq").Info("hq.rotation.switched", "HQ successor observed; waiting for durable handoff", "session", sid)
 			}
 			if r.Agent == "codex" {
 				kind, at := boundary(sid)
 				ready := transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" && !at.Before(time.Unix(r.SentAt, 0)) && !at.After(now)
 				if !ready {
-					if now.Unix()-r.SwitchedAt >= int64(rotationReadyWait.Seconds()) {
-						failRotation(r, "HQ switched but its handoff/history was not confirmed; no reset will be retried", now.Unix())
+					if now.Unix() >= deadline {
+						failSentRotationTimeout(r, agent, sid, reason, now.Unix())
 						return
 					}
 					if r.BootstrapAt == 0 && kind == "" && hqBriefingEnabled() &&
@@ -304,7 +308,7 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 						bootstrap = hqinput.RotationBrief{
 							Request: r.BootstrapID, Pane: r.Pane, Agent: r.Agent, Home: r.BootstrapHome,
 							Session: r.Successor, Stamp: r.TargetStamp, Instance: r.BootstrapInstance,
-							ClientPID: r.BootstrapPID, Deadline: r.SwitchedAt + int64(rotationReadyWait/time.Second),
+							ClientPID: r.BootstrapPID, Deadline: deadline,
 						}
 					}
 					return
@@ -314,18 +318,14 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 			_ = os.Remove(rotationPendingPath())
 			return
 		}
-		if now.Unix()-r.SentAt >= int64(rotationSettleWait.Seconds()) {
-			failRotation(r, "reset was sent but no new session ID appeared", now.Unix())
+		if now.Unix() >= deadline {
+			failSentRotationTimeout(r, agent, sid, reason, now.Unix())
 		}
 		return
 	}
 	if sid != "" && sid != r.Retiring {
 		failRotation(r, "HQ session changed before reset was sent", now.Unix())
 		return
-	}
-	reason := ""
-	if len(identityReason) > 0 {
-		reason = rotationIdentityCode(identityReason[0])
 	}
 	if reason == "" && agent == "" {
 		reason = "agent-evidence-unavailable"
@@ -382,34 +382,6 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 	}
 }
 
-// rotationEvents reads the event stream for the confirmation; swappable in tests.
-var rotationEvents = events.Read
-
-// rotationSessionFromEvents returns the session a sent reset produced, from the event
-// stream: a SessionStart or UserPromptSubmit on the rotation's pane, from the same agent,
-// at or after the reset was sent, carrying a session id that is not the retiring one. ""
-// when there is none yet. Nothing older than the send, on another pane, from another
-// agent, or without a session id counts.
-func rotationSessionFromEvents(r rotationRequest, recs []events.Record) string {
-	if r.SentAt == 0 {
-		return ""
-	}
-	for i := len(recs) - 1; i >= 0; i-- {
-		e := recs[i]
-		if e.Ts < r.SentAt || e.Pane != r.Pane || (e.Event != "SessionStart" && e.Event != "UserPromptSubmit") {
-			continue
-		}
-		if e.Agent != r.Agent && agents.KeyForLabel(e.Agent) != r.Agent {
-			continue
-		}
-		if e.AgentSession == "" || e.AgentSession == r.Retiring {
-			continue
-		}
-		return e.AgentSession
-	}
-	return ""
-}
-
 func rotationTurnFinished(r rotationRequest, boundary func(string) (string, time.Time), now time.Time) bool {
 	if state.Exists(state.WaitingPath(r.Pane)) || state.Exists(state.ActivePath(r.Pane)) {
 		return false
@@ -451,12 +423,32 @@ func failRotation(r rotationRequest, reason string, now int64) {
 	diag.ReportStoreFailure("hq-rotation", os.Remove(rotationPendingPath()))
 }
 
+func failSentRotationTimeout(r rotationRequest, agent, sid, code string, now int64) {
+	reason := "reset was attempted but no new session ID appeared"
+	if r.Successor != "" {
+		reason = "HQ successor was observed but its handoff/history was not confirmed"
+	}
+	switch {
+	case agent == "":
+		if code == "" {
+			code = "agent-evidence-unavailable"
+		}
+		reason += " (HQ agent identity unavailable: " + code + ")"
+	case sid == "":
+		if code == "" {
+			code = "session-evidence-unavailable"
+		}
+		reason += " (HQ session identity unavailable: " + code + ")"
+	}
+	failRotation(r, reason+"; no reset will be retried", now)
+}
+
 // Only known, value-free observation codes enter persisted diagnostics or logs.
 func rotationIdentityCode(reason string) string {
 	switch reason {
 	case "", "pane-location-unavailable", "agent-driver-unavailable", "resume-record-unavailable",
 		"frontend-record-unavailable", "frontend-index-mismatch", "frontend-proof-unknown",
-		"proof-expired", "bridge-proof-unavailable", "bridge-changed", "pane-changed":
+		"proof-expired", "bridge-proof-unavailable", "bridge-changed", "pane-proof-unavailable", "pane-changed":
 		return reason
 	default:
 		return "unknown"

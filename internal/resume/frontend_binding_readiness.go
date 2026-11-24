@@ -46,7 +46,11 @@ func frontendProof(f CodexFrontend, strict bool) error {
 		}
 		return nil
 	}
-	if frontendPaneView(f.Pane, "#{pane_id}\t#{pane_pid}\t#{session_name}:#{window_index}.#{pane_index}") != f.Pane+"\t"+strconv.Itoa(f.PanePID)+"\t"+f.Loc {
+	pane := frontendPaneView(f.Pane, "#{pane_id}\t#{pane_pid}\t#{session_name}:#{window_index}.#{pane_index}")
+	if pane == "" {
+		return fail("pane-proof-unavailable", true)
+	}
+	if pane != f.Pane+"\t"+strconv.Itoa(f.PanePID)+"\t"+f.Loc {
 		return fail("pane-changed", false)
 	}
 	return nil

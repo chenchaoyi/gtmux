@@ -24,7 +24,14 @@ func prepareNativeWakeFor(pane string, opts dispatch.Opts, hold func() string) f
 	if io.SubmitNative == nil {
 		return nil
 	}
-	expected := nativeWakeIdentity(pane)
+	// An addressed briefing has its own exact binding and native admission.
+	// The generic fingerprint can switch to legacy during transient proof loss.
+	bound := hold != nil && opts.ExpectedHomeID != "" && opts.ExpectedSessionID != "" &&
+		opts.ExpectedInstance != "" && opts.ExpectedClientPID > 0
+	expected := ""
+	if !bound {
+		expected = nativeWakeIdentity(pane)
+	}
 	io.Hold = func() string {
 		if nativeWakeTarget() != pane || (expected != "" && nativeWakeIdentity(pane) != expected) {
 			return "hq-target-changed"

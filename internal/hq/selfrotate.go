@@ -244,7 +244,7 @@ func hqSessionEvidence(pane string) (agent, sessionID, reason string) {
 	}
 	rec, ok, reason := resume.LoadLiveDiagnostic(loc)
 	agent, sessionID = sessionRefForLiveAgent(live, rec, ok)
-	if live == "" && reason == "" {
+	if live == "" && reason == "" && (!ok || rec.Frontend == "") {
 		reason = "agent-driver-unavailable"
 	}
 	return agent, sessionID, reason

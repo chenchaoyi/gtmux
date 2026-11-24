@@ -16659,7 +16659,7 @@
       ]
     },
     "internal/hq/rotateguard_test.go": {
-      "sha256": "2681c28362b6330a4a4ac31616eedd47e5e4681c5291280097699cf81cbf00cd",
+      "sha256": "f4747f6585043cf5b03e9515949eeea05ba2a4831720c8173b06cf3184995719",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -16744,36 +16744,21 @@
           "layer": "L1"
         },
         {
-          "id": "LEG-2ece4eb7320e",
-          "line": 289,
-          "kind": "Test",
-          "name": "TestRotationConfirmsFromTheEventStream",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-6f4981876ca1",
-          "line": 291,
-          "kind": "subtest",
-          "name": "[dynamic subtest]",
-          "dynamic": true,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-81183b11a80b",
-          "line": 318,
-          "kind": "Test",
-          "name": "TestRotationEventsThatDoNotConfirm",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
           "id": "LEG-d4b834e4cf65",
-          "line": 347,
+          "line": 316,
           "kind": "Test",
           "name": "TestRotationNotSentIsNotConfirmedByEvents",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-8b86d8cef4d9",
+          "line": 277,
+          "kind": "reviewed-selector",
+          "name": "TestSentRotationRequiresCurrentEvidenceInsteadOfJournal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-007"
         }
       ]
     },
@@ -70098,6 +70083,79 @@
         }
       ],
       "sha256": "765585cc1112b8370839e179e3e2f310b866fea09714c2f1f527647d7eccee7f"
+    },
+    "internal/dispatchbridge/rotation_brief_admission_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d1887f5fcda5",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestBoundWakeFinalAdmissionPreservesTypedProofAndDraftGuard",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-011"
+        }
+      ],
+      "sha256": "a9948d0cd20b34991695001fb28cf924a35f7984ca0711a3c677e5c373682670"
+    },
+    "internal/hq/rotation_transient_identity_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-66c72832a3b6",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestSentRotationWaitsThroughTransientIdentityGaps",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-007,HRB-008"
+        }
+      ],
+      "sha256": "848e907b6c953ddcf6b63bd4153db15c8cb9851b79f06ba9c166cdfca90996ca"
+    },
+    "internal/hqnudge/rotation_brief_identity_gap_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-09aa1c3d8012",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestBoundRotationBriefWaitsOnlyForMissingOriginalProof",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-009"
+        },
+        {
+          "id": "MAP-46012b0cc511",
+          "line": 94,
+          "kind": "reviewed-selector",
+          "name": "TestBoundRotationBriefUsesExactProofAcrossGenericFingerprintGap",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-009"
+        }
+      ],
+      "sha256": "bc155ef2df902d6a7a2dbb37baa36dd4fb31e05c1437126afc8451cb0a149c6f"
+    },
+    "internal/resume/frontend_pane_readiness_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0d538b71f02b",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestStrictFrontendReadinessClassifiesMissingAndChangedProof",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-010"
+        }
+      ],
+      "sha256": "de252010e4b7da7c7b00a6fe09a58b0f887620ae74467bf41fc92da0e4da2bbf"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

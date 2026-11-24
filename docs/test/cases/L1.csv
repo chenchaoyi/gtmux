@@ -1474,10 +1474,7 @@ LEG-9a1bbe42b10b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,211,T
 LEG-1d0b91a2341c,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,228,Test,TestRotationRejectedResetTimesOutWithoutSuccess,False,legacy-not-retrospectively-reviewed
 LEG-f20c1831eba3,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,242,Test,TestRotationDraftExpiresWithoutSubmittingOrLosingFailureReceipt,False,legacy-not-retrospectively-reviewed
 LEG-db998607f792,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,262,Test,TestRotationChangedSessionBeforeDeliveryDoesNotResetSuccessor,False,legacy-not-retrospectively-reviewed
-LEG-2ece4eb7320e,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,289,Test,TestRotationConfirmsFromTheEventStream,False,legacy-not-retrospectively-reviewed
-LEG-6f4981876ca1,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,291,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-81183b11a80b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,318,Test,TestRotationEventsThatDoNotConfirm,False,legacy-not-retrospectively-reviewed
-LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,347,Test,TestRotationNotSentIsNotConfirmedByEvents,False,legacy-not-retrospectively-reviewed
+LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,316,Test,TestRotationNotSentIsNotConfirmedByEvents,False,legacy-not-retrospectively-reviewed
 LEG-9d15885fe97d,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,26,Test,TestRotationDoesNotConfirmAnUnsavedNewThread,False,legacy-not-retrospectively-reviewed
 LEG-a65be3d25bf9,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,58,Test,TestRotationQueuesOneGuardedHandoffAfterReleasingInput,False,legacy-not-retrospectively-reviewed
 LEG-974db74f29ef,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,103,Test,TestRotationDoesNotTrustReissuedPaneNumbers,False,legacy-not-retrospectively-reviewed

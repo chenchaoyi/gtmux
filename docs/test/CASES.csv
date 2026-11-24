@@ -1376,6 +1376,7 @@ MAP-8eab7f05e805,L2,reviewed implementation,internal/dispatchbridge/input_publis
 MAP-98c91aed6905,L2,reviewed implementation,internal/dispatchbridge/pending_retry_overlap_test.go,59,reviewed-selector,TestMSD011DelayedBridgeAndSameIDRetryCannotBothSubmit,False,MSD-011
 MAP-cdced80f8629,L2,reviewed implementation,internal/dispatchbridge/pending_retry_overlap_test.go,23,reviewed-selector,TestMSD011MismatchedPendingClockRefusesBeforeRPC,False,MSD-011
 MAP-d7bcff6e0143,L2,reviewed implementation,internal/dispatchbridge/pending_retry_target_test.go,14,reviewed-selector,TestMSD006PendingRetryCannotRetarget,False,MSD-006
+MAP-d1887f5fcda5,L2,reviewed implementation,internal/dispatchbridge/rotation_brief_admission_test.go,15,reviewed-selector,TestBoundWakeFinalAdmissionPreservesTypedProofAndDraftGuard,False,HRB-011
 MAP-95475cf33bca,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,19,reviewed-selector,TestSSI002NativeImageAcceptanceAndUncertainRetryKeepIdentity,False,SSI-002
 MAP-8691ea4c02c8,L2,reviewed implementation,internal/dispatchbridge/screenshot_input_test.go,103,reviewed-selector,TestSSI002OrdinaryTextKeepsExistingQueueSemantics,False,SSI-002
 MAP-ad8a60de1ec5,L2,reviewed implementation,internal/dispatchbridge/spool_capacity_test.go,18,reviewed-selector,TestSPL003CapacityRefusesBeforeRPC,False,"SPL-003,SPL-008,SPL-014"
@@ -1911,10 +1912,8 @@ LEG-9a1bbe42b10b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,211,T
 LEG-1d0b91a2341c,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,228,Test,TestRotationRejectedResetTimesOutWithoutSuccess,False,legacy-not-retrospectively-reviewed
 LEG-f20c1831eba3,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,242,Test,TestRotationDraftExpiresWithoutSubmittingOrLosingFailureReceipt,False,legacy-not-retrospectively-reviewed
 LEG-db998607f792,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,262,Test,TestRotationChangedSessionBeforeDeliveryDoesNotResetSuccessor,False,legacy-not-retrospectively-reviewed
-LEG-2ece4eb7320e,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,289,Test,TestRotationConfirmsFromTheEventStream,False,legacy-not-retrospectively-reviewed
-LEG-6f4981876ca1,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,291,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-81183b11a80b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,318,Test,TestRotationEventsThatDoNotConfirm,False,legacy-not-retrospectively-reviewed
-LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,347,Test,TestRotationNotSentIsNotConfirmedByEvents,False,legacy-not-retrospectively-reviewed
+LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,316,Test,TestRotationNotSentIsNotConfirmedByEvents,False,legacy-not-retrospectively-reviewed
+MAP-8b86d8cef4d9,L2,Go core / CLI / server,internal/hq/rotateguard_test.go,277,reviewed-selector,TestSentRotationRequiresCurrentEvidenceInsteadOfJournal,False,HRB-007
 MAP-fc5da55172ab,L2,reviewed implementation,internal/hq/rotation_admission_test.go,11,reviewed-selector,TestHRW007RegistrationSharesTheInputClaimLease,False,HRW-007
 MAP-5fb504a908e7,L2,reviewed implementation,internal/hq/rotation_attention_test.go,14,reviewed-selector,TestHRW011RotationFailureUsesNonWaitingAttention,False,HRW-011
 LEG-9d15885fe97d,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,26,Test,TestRotationDoesNotConfirmAnUnsavedNewThread,False,legacy-not-retrospectively-reviewed
@@ -1922,6 +1921,7 @@ LEG-a65be3d25bf9,L1,Go core / CLI / server,internal/hq/rotation_durability_test.
 LEG-974db74f29ef,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,103,Test,TestRotationDoesNotTrustReissuedPaneNumbers,False,legacy-not-retrospectively-reviewed
 MAP-5ca00611b9a2,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,8,reviewed-selector,TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity,False,HRW-012
 MAP-5c6873f6e524,L2,reviewed implementation,internal/hq/rotation_priority_test.go,13,reviewed-selector,TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert,False,HRW-006
+MAP-66c72832a3b6,L2,reviewed implementation,internal/hq/rotation_transient_identity_test.go,14,reviewed-selector,TestSentRotationWaitsThroughTransientIdentityGaps,False,"HRB-007,HRB-008"
 MAP-a7d7073f2ddc,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,52,reviewed-selector,TestHRW016WarningThenRecoveryKeepsRequestAndEveryGuard,False,HRW-016
 MAP-9e462ad3d392,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,132,reviewed-selector,TestHRW016RepeatedUnknownNeverExtendsExpiryOrRepeatsWarning,False,HRW-016
 MAP-17dec06ce996,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,189,reviewed-selector,TestHRW016FailedPublicationIsNotAReasonToReplayOrBlockRecovery,False,HRW-016
@@ -2110,6 +2110,8 @@ MAP-ac1ffa61f5b2,L2,reviewed implementation,internal/hqnudge/pressure_health_tes
 MAP-392ca77cfaeb,L2,reviewed implementation,internal/hqnudge/pressure_health_test.go,38,reviewed-selector,TestHWA004ConflictNeedsCleanScanAndPositiveReceipt,False,"HWA-003,HWA-004"
 MAP-d0379fef758d,L2,reviewed implementation,internal/hqnudge/relay_attention_test.go,13,reviewed-selector,TestHRA001ReservedRelaySharesFullDecisionBatch,False,"HRA-001,HRA-002"
 MAP-50abbb3e7060,L2,reviewed implementation,internal/hqnudge/relay_attention_test.go,57,reviewed-selector,TestHRA002ProtectedRelayRequiresGuardedNativeWindow,False,"HRA-001,HRA-002"
+MAP-09aa1c3d8012,L2,reviewed implementation,internal/hqnudge/rotation_brief_identity_gap_test.go,12,reviewed-selector,TestBoundRotationBriefWaitsOnlyForMissingOriginalProof,False,HRB-009
+MAP-46012b0cc511,L2,reviewed implementation,internal/hqnudge/rotation_brief_identity_gap_test.go,94,reviewed-selector,TestBoundRotationBriefUsesExactProofAcrossGenericFingerprintGap,False,HRB-009
 MAP-e18928535cdf,L2,reviewed implementation,internal/hqnudge/rotation_brief_recovery_test.go,16,reviewed-selector,TestHRB003RotationBriefJournalReadableAfterRestart,False,"HRB-003,HRB-004"
 MAP-ade5c027fb08,L2,reviewed implementation,internal/hqnudge/rotation_brief_recovery_test.go,28,reviewed-selector,TestHRB004LoneRelayReportsUnavailableTarget,False,"HRB-003,HRB-004"
 MAP-a93d800b6c1d,L2,reviewed implementation,internal/hqnudge/rotation_brief_test.go,18,reviewed-selector,TestHRB001RotationBriefBindsOriginalRecipient,False,"HRB-001,HRB-002"
@@ -2923,6 +2925,7 @@ MAP-9a1717e72629,L2,reviewed implementation,internal/resume/frontend_location_te
 MAP-27e3343f9bf5,L2,reviewed implementation,internal/resume/frontend_location_test.go,343,reviewed-selector,TestCFL003TwoLivePanesExchangePositionsWithoutLosingTheirOwners,False,"CFL-001,CFL-002,CFL-003"
 MAP-2803d4ff4366,L2,reviewed implementation,internal/resume/frontend_location_test.go,424,reviewed-selector,TestCFL003HistoryWriteFailureRefusesMigrationBeforeLivePublication,False,"CFL-001,CFL-002,CFL-003"
 MAP-79d8babbf0d2,L2,reviewed implementation,internal/resume/frontend_location_test.go,465,reviewed-selector,TestCFL003ObservedNewRootRetriesItsOwnPartialMovedPublication,False,"CFL-001,CFL-002,CFL-003"
+MAP-0d538b71f02b,L2,reviewed implementation,internal/resume/frontend_pane_readiness_test.go,13,reviewed-selector,TestStrictFrontendReadinessClassifiesMissingAndChangedProof,False,HRB-010
 MAP-e2be0f7a7658,L2,reviewed implementation,internal/resume/frontend_recovery_diagnostic_test.go,12,reviewed-selector,TestDPC003RecoveryEvidenceNeverGrantsRetryAuthority,False,DPC-003
 LEG-e73e8edb8618,L1,Go core / CLI / server,internal/resume/launcher_test.go,11,Test,TestResumeUsesTheRecordedLauncher,False,legacy-not-retrospectively-reviewed
 LEG-333f100efdb6,L1,Go core / CLI / server,internal/resume/launcher_test.go,26,Test,TestLauncherKeepsTheAgentsOwnFlags,False,legacy-not-retrospectively-reviewed

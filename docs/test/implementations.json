@@ -1,4 +1,46 @@
 {
+  "internal/dispatchbridge/rotation_brief_admission_test.go": {
+    "cases": [
+      "HRB-011"
+    ],
+    "selectors": [
+      "TestBoundWakeFinalAdmissionPreservesTypedProofAndDraftGuard"
+    ]
+  },
+  "internal/hq/rotateguard_test.go": {
+    "cases": [
+      "HRB-007"
+    ],
+    "selectors": [
+      "TestSentRotationRequiresCurrentEvidenceInsteadOfJournal"
+    ]
+  },
+  "internal/hq/rotation_transient_identity_test.go": {
+    "cases": [
+      "HRB-007",
+      "HRB-008"
+    ],
+    "selectors": [
+      "TestSentRotationWaitsThroughTransientIdentityGaps"
+    ]
+  },
+  "internal/hqnudge/rotation_brief_identity_gap_test.go": {
+    "cases": [
+      "HRB-009"
+    ],
+    "selectors": [
+      "TestBoundRotationBriefWaitsOnlyForMissingOriginalProof",
+      "TestBoundRotationBriefUsesExactProofAcrossGenericFingerprintGap"
+    ]
+  },
+  "internal/resume/frontend_pane_readiness_test.go": {
+    "cases": [
+      "HRB-010"
+    ],
+    "selectors": [
+      "TestStrictFrontendReadinessClassifiesMissingAndChangedProof"
+    ]
+  },
   "tests/web/live-view-resize.test.cjs": {
     "cases": [
       "WLV-001",

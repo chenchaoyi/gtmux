@@ -3,6 +3,7 @@ package hqnudge
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ import (
 // native batch and never lends its recipient or retry policy to another wake.
 const rotationBriefSuffix = ".hqbrief"
 const briefComposerUnavailable = "rotation-brief-composer-unavailable"
+const briefTargetWaiting = "rotation-brief-target-proof-unavailable"
 
 type rotationBriefWake struct {
 	Line string                `json:"line"`
@@ -28,20 +30,39 @@ type rotationBriefWake struct {
 type rotationBriefTarget struct {
 	Home, Session, Stamp, Instance string
 	PID                            int
+	MissingProof                   bool
 }
 
 func liveRotationBriefTarget(pane string) rotationBriefTarget {
 	if hqpane.Find() != pane {
 		return rotationBriefTarget{}
 	}
-	f, ok := resume.CodexFrontendForPane(pane)
-	if !ok {
-		return rotationBriefTarget{}
-	}
-	return rotationBriefTarget{
+	f, err := resume.CodexFrontendForPaneReadiness(pane)
+	stamp := strings.TrimSpace(tmux.Display(pane, "#{pid}:#{session_created}:#{pane_pid}"))
+	var missing *resume.FrontendBindingError
+	target := rotationBriefTarget{
 		Home: f.HomeID, Session: f.SessionID, Instance: f.Instance, PID: f.PID,
-		Stamp: strings.TrimSpace(tmux.Display(pane, "#{pid}:#{session_created}:#{pane_pid}")),
+		Stamp: stamp, MissingProof: errors.As(err, &missing) && missing.Retryable,
 	}
+	if err != nil && !target.MissingProof {
+		return rotationBriefTarget{} // a known conflicting observation is terminal
+	}
+	return target
+}
+
+func rotationBriefTargetHold(b hqinput.RotationBrief, target rotationBriefTarget) string {
+	if target.Stamp != b.Stamp ||
+		target.Home != "" && target.Home != b.Home || target.Session != "" && target.Session != b.Session ||
+		target.Instance != "" && target.Instance != b.Instance || target.PID != 0 && target.PID != b.ClientPID {
+		return "rotation-brief-target-changed"
+	}
+	if target.MissingProof {
+		return briefTargetWaiting
+	}
+	if target.Home != b.Home || target.Session != b.Session || target.Instance != b.Instance || target.PID != b.ClientPID {
+		return "rotation-brief-target-changed"
+	}
+	return ""
 }
 
 func DeliverRotationBrief(bind hqinput.RotationBrief, line string) {
@@ -100,28 +121,29 @@ func drainRotationBrief(x io, pane, name string) {
 		refuseRotationBrief(claim, "rotation-brief-target-unavailable")
 		return
 	}
-	target := x.rotationBriefTarget(pane)
 	hold := func() string {
 		switch {
 		case x.nowNano()/int64(time.Second) >= w.Bind.Deadline:
 			return "rotation-brief-expired"
 		case !hqinput.MatchesRotationBrief(w.Bind):
 			return "rotation-brief-request-changed"
-		case pane != w.Bind.Pane || target.Home != w.Bind.Home || target.Session != w.Bind.Session ||
-			target.Stamp != w.Bind.Stamp || target.Instance != w.Bind.Instance || target.PID != w.Bind.ClientPID ||
-			x.rotationBriefTarget(pane) != target:
+		case pane != w.Bind.Pane:
 			return "rotation-brief-target-changed"
-		case wakeBusy(x, pane) || !emptyRecognizedWakeBox(x, pane):
-			return briefComposerUnavailable
-		case x.nowNano()/int64(time.Second) >= w.Bind.Deadline:
-			return "rotation-brief-expired"
-		default:
-			return ""
 		}
+		if reason := rotationBriefTargetHold(w.Bind, x.rotationBriefTarget(pane)); reason != "" {
+			return reason
+		}
+		if wakeBusy(x, pane) || !emptyRecognizedWakeBox(x, pane) {
+			return briefComposerUnavailable
+		}
+		if x.nowNano()/int64(time.Second) >= w.Bind.Deadline {
+			return "rotation-brief-expired"
+		}
+		return ""
 	}
 	if reason := hold(); reason != "" {
-		if reason == briefComposerUnavailable {
-			waitRotationBrief(claim, path, name)
+		if reason == briefComposerUnavailable || reason == briefTargetWaiting {
+			waitRotationBrief(claim, path, name, reason)
 		} else {
 			refuseRotationBrief(claim, reason)
 		}
@@ -131,8 +153,8 @@ func drainRotationBrief(x io, pane, name string) {
 	defer cancel()
 	lastHold := ""
 	submit := prepareNativeWakeFor(pane, dispatch.Opts{
-		Context: ctx, ExpectedSessionID: target.Session, ExpectedHomeID: target.Home,
-		ExpectedInstance: target.Instance, ExpectedClientPID: target.PID,
+		Context: ctx, ExpectedSessionID: w.Bind.Session, ExpectedHomeID: w.Bind.Home,
+		ExpectedInstance: w.Bind.Instance, ExpectedClientPID: w.Bind.ClientPID,
 	}, func() string {
 		lastHold = hold()
 		return lastHold
@@ -153,8 +175,14 @@ func drainRotationBrief(x io, pane, name string) {
 	wakeStage("act.wake.claimed", name, id, diag.OK, "rotation-brief")
 	intent.SubmittedAt = x.nowNano()
 	result, _ := submit(payload, id)
+	if result.Submission == dispatch.SubmissionNotSubmitted && result.Evidence == "codex-frontend-proof-unavailable" {
+		switch hold() {
+		case "", briefTargetWaiting, briefComposerUnavailable:
+			lastHold = briefTargetWaiting
+		}
+	}
 	if receipt := result.WakeReceipt; receipt != nil &&
-		(receipt.Session != target.Session || receipt.Home != target.Home) {
+		(receipt.Session != w.Bind.Session || receipt.Home != w.Bind.Home) {
 		result = dispatch.Result{Submission: dispatch.SubmissionUnknown}
 	}
 	// An empty retry target preserves a definite refusal without scheduling
@@ -166,7 +194,7 @@ func drainRotationBrief(x io, pane, name string) {
 		return
 	}
 	wait := intent.Outcome == "held" && result.Submission == dispatch.SubmissionNotSubmitted &&
-		(lastHold == briefComposerUnavailable || result.Evidence == "wake-loaded-idle-required" ||
+		(lastHold == briefComposerUnavailable || lastHold == briefTargetWaiting || result.Evidence == "wake-loaded-idle-required" ||
 			result.FailureCode == dispatch.InputDraftPresent || result.FailureCode == dispatch.InputQuestion)
 	if !wait {
 		recordWakeOutcome(intent, x.nowNano())
@@ -191,7 +219,11 @@ func drainRotationBrief(x io, pane, name string) {
 		// The native journal has settled a definite non-submission. If the
 		// process stops before publication, retain its held claim, never infer
 		// permission to resend from an orphan or an unknown result.
-		waitRotationBrief(finalClaimPath(intent, claim), path, name)
+		reason := briefComposerUnavailable
+		if lastHold == briefTargetWaiting {
+			reason = lastHold
+		}
+		waitRotationBrief(finalClaimPath(intent, claim), path, name, reason)
 		return
 	}
 	switch intent.Outcome {
@@ -202,11 +234,11 @@ func drainRotationBrief(x io, pane, name string) {
 	}
 }
 
-func waitRotationBrief(src, dst, name string) {
+func waitRotationBrief(src, dst, name, reason string) {
 	err := returnClaimAt(src, dst)
 	diag.ReportStoreFailure("hq-rotation-brief", err)
 	if err == nil {
-		wakeStage("act.wake.waiting", name, "", diag.OK, briefComposerUnavailable)
+		wakeStage("act.wake.waiting", name, "", diag.OK, reason)
 	}
 }
 

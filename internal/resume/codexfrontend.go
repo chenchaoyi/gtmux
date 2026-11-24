@@ -526,13 +526,34 @@ func CodexFrontendForThread(home, sid string) (CodexFrontend, bool) {
 }
 
 func CodexFrontendForPane(pane string) (CodexFrontend, bool) {
+	f, err := CodexFrontendForPaneReadiness(pane)
+	return f, err == nil
+}
+
+// CodexFrontendForPaneReadiness also returns the observed identifiers on
+// failure. Only a nil error grants a live attachment. A caller may compare
+// partial identifiers with an existing binding before waiting for proof.
+func CodexFrontendForPaneReadiness(pane string) (CodexFrontend, error) {
 	loc := frontendPaneView(pane, "#{session_name}:#{window_index}.#{pane_index}")
-	r, ok := LoadLive(loc)
-	if !ok || r.Agent != "codex" || r.Frontend == "" {
-		return CodexFrontend{}, false
+	r, ok := Load(loc)
+	if !ok {
+		return CodexFrontend{}, &FrontendBindingError{Code: "resume-record-unavailable", Retryable: true}
 	}
-	f, ok := readFrontend(r.Frontend)
-	return f, ok && f.Pane == pane && f.SessionID == r.SessionID && freshFrontend(f, true)
+	observed := CodexFrontend{Instance: r.Frontend, HomeID: r.HomeID, SessionID: r.SessionID}
+	if r.FrontendRetired || r.Agent != "codex" || r.Frontend == "" {
+		return observed, &FrontendBindingError{Code: "frontend-index-mismatch"}
+	}
+	f, ok := readStoredFrontend(r.Frontend)
+	if !ok {
+		return observed, &FrontendBindingError{Code: "frontend-record-unavailable", Retryable: true}
+	}
+	if f.Pane != pane || f.Loc != loc || f.HomeID != r.HomeID || f.HomeID != transcript.CodexHomeID() || f.SessionID != r.SessionID {
+		return f, &FrontendBindingError{Code: "frontend-index-mismatch"}
+	}
+	if err := frontendProof(f, false); err != nil {
+		return f, err
+	}
+	return f, frontendProof(f, true)
 }
 
 // VerifyDirectCodexCaller preserves the legacy independent-client route. A
