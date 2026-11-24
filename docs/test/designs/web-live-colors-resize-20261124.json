@@ -1,0 +1,68 @@
+{
+  "change": "Preserve Web Live terminal color and resize workbench panes on every edge",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (Codex self-review)",
+    "date": "2026-11-24",
+    "decision": "Reuse the read-only capture and terminal palette. Extend the existing workbench drag rectangles.",
+    "notes": "Reviewed against 4c99206f. The screenshots are the Chat workbench tile, not the browser-dialog action sheets. Add no requests and no terminal input. Build spans as text DOM. Keep Live freeze, draft, authorization and view retirement. Add handles only to freely positioned tiles. Preserve the SE affordance, snap preference, size floor, saved layout and single-column behavior. Validate with the existing synthetic browser harness and cached Chromium."
+  },
+  "cases": [
+    {
+      "id": "WLI-001",
+      "layer": "L3",
+      "description": "Live restores terminal colors in focused and tile chat",
+      "setup": "Authorized synthetic terminal capture with SGR colors, default runs, extended colors and non-SGR controls. The fixture supplies a host palette.",
+      "action": "Open Live in focused Chat and a desktop workbench tile and inspect the text and computed colors.",
+      "expected": "The terminal palette, bright, 256 and RGB colors, and intended attributes survive. Resets work, earlier rows carry forward color into a bounded tail, and escape sequences and literal HTML do not create elements or active links. Browser chrome appearance remains independent.",
+      "planned_files": [
+        "tests/web/live-terminal-colors.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-002",
+      "layer": "L3",
+      "description": "Frozen Live retains its styles through an update",
+      "setup": "Authorized workbench chat with more than a viewport of synthetic terminal rows. The next capture changes a color while leaving visible text unchanged.",
+      "action": "Scroll up to freeze, observe the update, then return to live.",
+      "expected": "The old styled capture and reading position stay stable while frozen. Return shows the new color and follows the bottom. No write occurs.",
+      "planned_files": [
+        "tests/web/live-terminal-colors.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-003",
+      "layer": "L3",
+      "description": "A workbench pane resizes from all edges and corners",
+      "setup": "A synthetic workbench with one tile and a composer draft. Initial rectangle is clear of board edges.",
+      "action": "Drag each of the eight targets, verify anchors, shrink to the minimum, maximize and restore, then reload.",
+      "expected": "The far edge stays put, inactive axes stay put, the tile remains within bounds, existing minimums and saved geometry work, and the draft remains unchanged. Handle cursor and shell controls stay reachable.",
+      "planned_files": [
+        "tests/web/workbench-resize-edges.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-004",
+      "layer": "L3",
+      "description": "Resize accepts a touch pointer without moving the tile header",
+      "setup": "A desktop-sized browser context with a touch pointer, a workbench tile and a visible composer.",
+      "action": "Drag a corner using Chromium touch input, release, then tap the Chat composer.",
+      "expected": "The corner tracks the touch, the opposite corner remains fixed, there is no accidental maximize or send, and the composer can still accept a draft.",
+      "planned_files": [
+        "tests/web/workbench-resize-edges.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-005",
+      "layer": "L1",
+      "description": "The formatted capture exports a plain bounded text projection",
+      "setup": "A synthetic capture with plain and ANSI rows, OSC, and trailing blank lines.",
+      "action": "Run the fixed helper and inspect its plain projection.",
+      "expected": "The plain projection is still capped at 2,000 non-trailing-blank rows, with no terminal control bytes.",
+      "planned_files": [
+        "internal/server/web/app.test.cjs"
+      ]
+    }
+  ],
+  "seal": "f755b0fdde1659f0357457026e53e7eaed866440d5a42969f81aedbe409b8f88"
+}
