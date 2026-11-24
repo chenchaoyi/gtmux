@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner, design self-review",
-    "date": "2026-11-23",
+    "date": "2026-11-24",
     "decision": "Keep the original Codex rotation deadlines and reserve the first safe automatic input for the exact successor while handoff is pending.",
-    "notes": "Live logs show the already-enqueued briefing lost to a regular keyed wake. The exact cause of the unavailable composer and the missing history criterion remain unknown. Use isolated HOME, a fake clock and fake input transport. The on-disk proof for an accepted or unknown submission must never authorize replay."
+    "notes": "Implementation-owner re-review of the first safe input reservation and composer cases after adding a route-unavailable expiry control to HRB-001. Reservation duration, priority, known composer behavior and accepted or uncertain input handling are unchanged. Use isolated HOME, a fake clock and fake input transport. These tests do not identify the cause of a live failed handoff."
   },
   "cases": [
     {
@@ -32,5 +32,5 @@
       ]
     }
   ],
-  "seal": "4c160c2b552c28d4d2194553f4bd12a2a287239943f7803174c6f429900aa8ee"
+  "seal": "b62e2ecb8410f57937f467ba47f52aa9cdb152158e20e9ffbdfb93c2db36b8a6"
 }
