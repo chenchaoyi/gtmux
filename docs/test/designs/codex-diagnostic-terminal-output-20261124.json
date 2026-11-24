@@ -1,0 +1,57 @@
+{
+  "id": "codex-diagnostic-terminal-output-20261124",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review)",
+    "date": "2026-11-24",
+    "decision": "Exercise the write-error fallback, actual diagnostic recovery, and local system-log transport",
+    "notes": "An isolated tmux reproduction put stderr after the Codex prompt marker without sending any input. The installed parser refused that screen and a real draft, and accepted the empty composer when stderr was separated. Use disposable paths and a synthetic sink. Tests prove routing and rate limits, while OS log retention, banner display and production pane recovery are outside their evidence."
+  },
+  "cases": [
+    {
+      "id": "DIAG-TERM-001",
+      "layer": "L2",
+      "description": "Interactive bridge diagnostic failures use a separate channel",
+      "setup": "Disposable diagnostic directory with an unwritable active segment, captured terminal stderr, and a fake system log.",
+      "action": "Attempt the ordinary diagnostic append in bridge mode and after leaving that mode. Exercise the bridge mode with an unavailable system log as well.",
+      "expected": "The primary operation continues. Bridge mode keeps stderr empty and reports only the store and a safe cause to the local sink, even when that sink is unavailable. After the bridge the normal command still warns on stderr. No entry body or home path reaches the system log.",
+      "planned_files": [
+        "internal/diag/failure_test.go"
+      ],
+      "surfaces": [
+        "Codex terminal and attached clients",
+        "CLI diagnostics"
+      ]
+    },
+    {
+      "id": "DIAG-TERM-002",
+      "layer": "L2",
+      "description": "A continuing full diagnostic volume warns once in each bridge until proven recovery",
+      "setup": "Use a disposable home, synthetic ENOSPC, a fake system log and a controlled clock for warning retries.",
+      "action": "Repeat the full-volume fault beyond the retry interval. Simulate a failed handoff to the system logger and a retry. Then append a real diagnostic entry successfully and repeat the fault.",
+      "expected": "The continuing incident sends one accepted warning. A failed handoff is retried only at a bounded cadence. A successful diagnostic append re-arms the warning for a later fault, while a failure in a different store can still be reported.",
+      "planned_files": [
+        "internal/diag/failure_test.go"
+      ],
+      "surfaces": [
+        "Local system log",
+        "CLI diagnostics"
+      ]
+    },
+    {
+      "id": "DIAG-TERM-003",
+      "layer": "L2",
+      "description": "The separated warning uses the local OS logging interface",
+      "setup": "A task-private Unix datagram receiver, with a second deliberately missing address.",
+      "action": "Write through the system logger adapter to the receiver and then through an unavailable endpoint.",
+      "expected": "The local receiver sees a warning-priority gtmux record. The unavailable endpoint returns failure within the bounded budget; neither path relies on a log file in the diagnostic directory.",
+      "planned_files": [
+        "internal/diag/failure_test.go"
+      ],
+      "surfaces": [
+        "Local system log on macOS and Linux"
+      ]
+    }
+  ],
+  "seal": "79645d118f557817afd5c40db87b18f32f885a0b2d2f318befbd3345d328b164"
+}
