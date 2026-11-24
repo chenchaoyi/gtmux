@@ -113,8 +113,10 @@ image IDs and their placements. The Asset Library can review images separately f
 an app version. An `APPROVED` library image becomes eligible for use. Check the active
 placements on the published product page to see which images customers actually get.
 For a published version, use **Header and Search Results → Browse Assets** to pick
-the approved images, then publish the placement. Check the iPhone and iPad previews
-in both languages and read back the active image IDs after publishing. See
+the approved images. Check the iPhone and iPad previews in both languages before
+publishing. Then read the four live placement relations in App Store Connect and
+match each active ID to the approved image. `creative-status` checks the files in
+the current workspace by digest. Use the live placement read for the publishing check. See
 [Apple's instructions for updating a live placement](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-your-app-store-assets).
 Use the recorded asset IDs or content-hash names. The images under
 `fastlane/creative/` may be the archived art for an earlier app version.

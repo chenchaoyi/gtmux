@@ -128,6 +128,7 @@
 「Header and Search Results → Browse Assets」选已批准的图。发布前看两种语言的 iPhone
 和 iPad 预览，发布后核对四个位置实际关联的 ID。见
 [Apple 的线上素材更新说明](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-your-app-store-assets)。
+`creative-status` 按当前工作区图片的摘要检查。发布验收要从 App Store Connect 的四个线上位置读出实际关联，再逐项核对已批准的 ID。
 按原回执中的 ID 或带内容摘要的名称选择图片，`fastlane/creative/` 可能保存的是上个 App 版本的归档素材。
 单独提交的图片查素材审核，App 二进制版本查版本审核。
 

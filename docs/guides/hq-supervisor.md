@@ -310,7 +310,11 @@ HQ records a completion for the specific request, including a completed pass wit
 changes. In `gtmux doctor`, check **HQ event follow-up**, **HQ self-check** and **Knowledge
 distillation** separately. A requested pass stays pending until its completion receipt
 is recorded. A preview that starts ahead of the saved read position leaves it unchanged.
-To catch up, read from the saved position using `gtmux events --since-seq N --json`.
+To catch up, run `gtmux events --since-seq N --json` from the HQ directory or one of its
+subdirectories. Use the sequence in the unread reminder's `pull:` line or the preview
+warning. Leave out `--severity` and `--acts` so the read can advance the watermark. If
+gtmux reports a gap, reconcile a full `gtmux digest` before acknowledging the reconciled
+sequence. See [how the watermark works](../cli.md#the-watermark-why-nothing-goes-missing).
 
 **Self-rotation.** To limit the effects of long sessions and accumulated context, gtmux monitors HQ’s session. It triggers `self-rotate` at 75% context use, 12 hours or 300 turns. HQ updates the board and knowledge base, writes a handover and runs `gtmux hq --rotate`.
 

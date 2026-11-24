@@ -15,11 +15,11 @@ xcrun simctl launch SIMULATOR_ID com.gtmux.conversation-fixture \
   --server http://127.0.0.1:PORT --preview --transport-checks
 ```
 
-The fixture uses the synthetic `fixture-only` header. It tests partial Unicode
+The fixture only uses the synthetic `fixture-only` header. It tests partial Unicode
 copy, streaming pin/resume, HTML inline rendering and absence of an app bridge.
 `--transport-checks` also checks denied, unpublished, old-route, redirect, digest, server-500 and size-limit failures. Read its own `Documents/fixture-results.json` in the simulator data container.
 `GET /stats` on the fake server should show only metadata/content requests and **no
-`/beacon/` requests**. The fake server records the network traffic from WebKit.
+`/beacon/` requests**. This checks actual WebKit/network behavior, not just policy strings.
 
 Manually long-press the text, drag either handle across paragraphs and Copy. Check the
 clipboard contains the chosen substring rather than the full message. Check iPhone/iPad,
