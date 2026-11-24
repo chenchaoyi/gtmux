@@ -63173,7 +63173,7 @@
           "design": "LPV-003"
         }
       ],
-      "sha256": "354cb7992e57e7a1c75c1c955408183ced990f646d9a702297212a07c7592e1f"
+      "sha256": "08b1efd4e4912c865feea1b76697bb8e539775118ed360156ece3ab108e2006f"
     },
     "tests/web/maximized-header.test.cjs": {
       "layer": "L4",
