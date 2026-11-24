@@ -70780,6 +70780,38 @@
         }
       ],
       "sha256": "a15fcb8c80b8f607736a5dbb5b28c0b88014bf8af459a33e2d9d44e400b0c92f"
+    },
+    "tests/web/live-access-loss.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e2db0c25a320",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "WLI-011 Access loss clears old Live content after",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-011"
+        }
+      ],
+      "sha256": "ca11a1ef13e69e2c2d394dfec8f95a22064577850e0008b61dc0e2291edf9812"
+    },
+    "tests/web/live-capture-badge.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-67525aee818e",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "WLI-012 Theme publication does not reclassify an equivalent paused capture",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-012"
+        }
+      ],
+      "sha256": "0082ad667fcc9344298c2c7339d2dcf066ea80094ebb8a43015c3282eecb85b0"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

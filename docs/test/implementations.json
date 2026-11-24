@@ -5685,5 +5685,21 @@
     "selectors": [
       "WLI-010 Paused ANSI output keeps its palette after"
     ]
+  },
+  "tests/web/live-access-loss.test.cjs": {
+    "cases": [
+      "WLI-011"
+    ],
+    "selectors": [
+      "WLI-011 Access loss clears old Live content after"
+    ]
+  },
+  "tests/web/live-capture-badge.test.cjs": {
+    "cases": [
+      "WLI-012"
+    ],
+    "selectors": [
+      "WLI-012 Theme publication does not reclassify an equivalent paused capture"
+    ]
   }
 }

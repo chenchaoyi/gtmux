@@ -2963,22 +2963,23 @@
     return selection && !selection.isCollapsed && panel.output.contains(selection.anchorNode) && panel.output.contains(selection.focusNode);
   }
   function freezeLive(panel, state) {
+    if (!state.capture || !panel.displayedCapture || panel.captureRevision !== state.revision) return;
     // An equal capture can reuse already-painted nodes under the current
     // theme. Freeze the capture those nodes represent, even if a newer one was skipped.
-    if (!state.frozen && panel.displayedCapture) {
+    if (!state.frozen) {
       var capture = panel.displayedCapture;
-      var latest = sameLiveCapture(capture, state.capture, liveColors, liveColors) ? state.capture : capture;
-      state.frozen = {capture: capture, latest: latest, colors: liveColors};
+      state.frozen = {
+        capture: capture, latest: state.capture, colors: liveColors,
+        updated: !sameLiveCapture(state.capture, capture, liveColors, liveColors),
+      };
       applyLiveColors(panel.output, liveColors);
       panel.frozenColors = liveColors;
     }
-    if (state.frozen) {
-      state.frozen.top = panel.output.scrollTop;
-      state.frozen.left = panel.output.scrollLeft;
-    }
+    state.frozen.top = panel.output.scrollTop;
+    state.frozen.left = panel.output.scrollLeft;
   }
   function freezeLiveSelection(panel, state) {
-    if (!state.frozen && panel.captureRevision === state.revision && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
+    if (!state.frozen && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
   }
   function syncChatLive(host, agent, valid) {
     var id = agent && agent.pane_id, panel = host.querySelector('.chat-live');
@@ -3063,11 +3064,7 @@
     panel.source.textContent = pendingHistory ? T('Current pane ', '当前 pane ') + state.agent.pane_id + T(' · History association unconfirmed', ' · 历史对话关联待确认') : '';
     panel.source.title = panel.source.textContent;
     panel.resume.hidden = !state.frozen;
-    var frozen = state.frozen;
-    // A theme response changes presentation, not the latest captured output.
-    panel.update.hidden = !frozen || !state.capture ||
-      sameLiveCapture(state.capture, frozen.latest, liveColors, liveColors) ||
-      sameLiveCapture(state.capture, frozen.capture, liveColors, frozen.colors);
+    panel.update.hidden = !state.frozen || !state.frozen.updated;
     panel.tools.hidden = !pendingHistory && !state.frozen;
   }
   function paintLive(panel, state) {
@@ -3102,6 +3099,19 @@
   function paintLivePanels(id, state) {
     document.querySelectorAll('.chat-live').forEach(function (panel) { if (panel.dataset.pane === id) paintLive(panel, state); });
   }
+  function receiveLiveCapture(state, capture) {
+    var frozen = state.frozen;
+    // Only accepted captures change the update badge. Preserve the last
+    // comparison when the same output is polled under a different theme.
+    if (frozen) {
+      if (!sameLiveCapture(capture, frozen.latest, liveColors, liveColors)) {
+        frozen.updated = !sameLiveCapture(capture, frozen.capture, liveColors, frozen.colors);
+      }
+      frozen.latest = capture;
+    }
+    state.capture = capture;
+    state.error = false;
+  }
   function pollChatLive(id) {
     var state = chatLive[id]; if (!state || !state.open || !state.working || !state.valid()) return;
     runRead('live:' + id, function (signal) {
@@ -3117,7 +3127,7 @@
         if (!r.ok) throw new Error('live capture'); return r.json();
       }).then(function (capture) {
         if (!capture || !active()) return;
-        state.capture = liveTail(capture.text); state.error = false;
+        receiveLiveCapture(state, liveTail(capture.text));
       }).catch(function () { if (active()) state.error = true; }).finally(function () {
         if (state.revision === revision) state.loading = false;
         if (active()) paintLivePanels(id, state);

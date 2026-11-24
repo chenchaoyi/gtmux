@@ -91,6 +91,8 @@ LEG-c27b6d5dee1f,L3,Browser,tests/web/full-input.test.cjs,4,scenario,'Full tool 
 LEG-e24c4d62b6eb,L3,Browser,tests/web/full-input.test.cjs,35,scenario,'Diff file cards and independent hunks at '+width,True,legacy-not-retrospectively-reviewed
 MAP-31ae43976a8b,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,4,reviewed-selector,shared browser first case,False,CT-BROWSER
 MAP-7fb866f795f7,L3,reviewed implementation,tests/web/harness-isolation.test.cjs,25,reviewed-selector,shared browser next case,False,CT-BROWSER
+MAP-e2db0c25a320,L3,reviewed implementation,tests/web/live-access-loss.test.cjs,5,reviewed-selector,WLI-011 Access loss clears old Live content after,False,WLI-011
+MAP-67525aee818e,L3,reviewed implementation,tests/web/live-capture-badge.test.cjs,4,reviewed-selector,WLI-012 Theme publication does not reclassify an equivalent paused capture,False,WLI-012
 MAP-0ad7a9de59d7,L3,reviewed implementation,tests/web/live-equivalent-colors.test.cjs,4,reviewed-selector,WLI-008 Equivalent ANSI and RGB styles do not report new output,False,WLI-008
 MAP-21bb64aa8761,L3,reviewed implementation,tests/web/live-frozen-palette.test.cjs,5,reviewed-selector,WLI-010 Paused ANSI output keeps its palette after,False,WLI-010
 MAP-058769c23d4a,L3,reviewed implementation,tests/web/live-late-theme.test.cjs,5,reviewed-selector,WLI-009 Late host theme reconciles the,False,WLI-009
