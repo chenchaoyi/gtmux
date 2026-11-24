@@ -1155,10 +1155,9 @@
     document.documentElement.style.setProperty('--chat-text-size', chatSizePref + 'px');
     var preview = document.querySelector('.terminal-font-preview'); if (preview) { preview.style.fontFamily = resolveFont(); preview.style.fontSize = termSize() + 'px'; }
     document.documentElement.style.setProperty('--terminal-bg', (theme && theme.background) || GHOSTTY.bg);
-    document.documentElement.style.setProperty('--live-terminal-fg', (theme && theme.foreground) || '#d6d6da');
-    LIVE_ANSI_PALETTE.forEach(function (fallback, i) {
-      var color = theme && theme.palette && theme.palette[i];
-      document.documentElement.style.setProperty('--terminal-ansi-' + i, /^#[0-9a-f]{6}$/i.test(color) ? color : fallback);
+    document.documentElement.style.setProperty('--live-terminal-fg', liveDefaultForeground());
+    LIVE_ANSI_PALETTE.forEach(function (_, i) {
+      document.documentElement.style.setProperty('--terminal-ansi-' + i, liveThemePalette(i));
     });
     if (term) {
       term.options.theme = xtermTheme();
@@ -2760,8 +2759,12 @@
     }
     return {text: text, spans: spans, styles: spans.length ? JSON.stringify(spans) : ''};
   }
+  function liveDefaultForeground() { return (theme && theme.foreground) || '#d6d6da'; }
+  function liveThemePalette(index) {
+    var color = theme && theme.palette && theme.palette[index];
+    return /^#[0-9a-f]{6}$/i.test(color) ? color : LIVE_ANSI_PALETTE[index];
+  }
   function livePaletteColor(index) {
-    if (index < 16) return 'var(--terminal-ansi-' + index + ', ' + LIVE_ANSI_PALETTE[index] + ')';
     var cube = [0, 95, 135, 175, 215, 255], n = index - 16;
     var gray = 8 + (index - 232) * 10;
     return index >= 232 ? liveRGB([gray, gray, gray]) : liveRGB([cube[Math.floor(n / 36)], cube[Math.floor(n / 6) % 6], cube[n % 6]]);
@@ -2807,21 +2810,28 @@
   }
   function liveColor(value, bold) {
     // The existing xterm surface draws a bold 0–7 foreground with the bright palette.
-    return typeof value === 'number' ? livePaletteColor(bold && value < 8 ? value + 8 : value) : value || '';
+    if (typeof value !== 'number') return value || '';
+    if (value < 16) return bold && value < 8 ? value + 8 : value;
+    return livePaletteColor(value);
+  }
+  function liveCSSColor(value) {
+    return typeof value === 'number' ? 'var(--terminal-ansi-' + value + ', ' + LIVE_ANSI_PALETTE[value] + ')' : value;
+  }
+  function addLiveSpan(spans, start, end, appearance) {
+    var last = spans[spans.length - 1];
+    if (last && last.end === start && appearance.every(function (value, i) { return value === last.appearance[i]; })) last.end = end;
+    else spans.push({start: start, end: end, appearance: appearance});
   }
   function recordLiveSpan(spans, offset, size, style) {
     if (!size) return offset;
     var fg = liveColor(style.fg, style.bold), bg = liveColor(style.bg, false);
     if (style.inverse) {
       var front = fg;
-      fg = bg || 'var(--terminal-bg)';
-      bg = front || 'var(--live-terminal-fg)';
+      fg = bg === '' ? 'var(--terminal-bg)' : bg;
+      bg = front === '' ? 'var(--live-terminal-fg)' : front;
     }
-    if (fg || bg || style.bold || style.dim || style.underline) {
-      var appearance = [fg, bg, !!style.bold, !!style.dim, !!style.underline];
-      var last = spans[spans.length - 1];
-      if (last && last.end === offset && appearance.every(function (value, i) { return value === last.appearance[i]; })) last.end += size;
-      else spans.push({start: offset, end: offset + size, appearance: appearance});
+    if (fg !== '' || bg !== '' || style.bold || style.dim || style.underline) {
+      addLiveSpan(spans, offset, offset + size, [fg, bg, !!style.bold, !!style.dim, !!style.underline]);
     }
     return offset + size;
   }
@@ -2832,8 +2842,8 @@
       if (run.start > offset) fragment.append(capture.text.slice(offset, run.start));
       var [foreground, background, bold, dim, underline] = run.appearance;
       var span = el('span', '', capture.text.slice(run.start, run.end));
-      span.style.color = foreground;
-      span.style.backgroundColor = background;
+      span.style.color = liveCSSColor(foreground);
+      span.style.backgroundColor = liveCSSColor(background);
       if (bold) span.style.fontWeight = 'bold';
       if (dim) span.style.opacity = '0.68';
       if (underline) span.style.textDecoration = 'underline';
@@ -2843,8 +2853,31 @@
     if (capture.text.length > offset) fragment.append(capture.text.slice(offset));
     output.replaceChildren(fragment);
   }
+  function liveResolvedColor(color, background) {
+    if (typeof color === 'number') color = liveThemePalette(color);
+    if (color === 'var(--terminal-bg)') color = background;
+    if (color === 'var(--live-terminal-fg)') color = liveDefaultForeground();
+    if (!/^#[0-9a-f]{6}$/i.test(color)) return color;
+    return liveRGB([1, 3, 5].map(function (index) { return parseInt(color.slice(index, index + 2), 16); }));
+  }
+  function visibleLiveStyles(capture) {
+    var spans = [], background = (theme && theme.background) || GHOSTTY.bg;
+    var defaultFG = liveResolvedColor(liveDefaultForeground(), background);
+    var defaultBG = liveResolvedColor(background, background);
+    capture.spans.forEach(function (run) {
+      var [fg, bg, bold, dim, underline] = run.appearance;
+      fg = liveResolvedColor(fg, background);
+      bg = liveResolvedColor(bg, background);
+      if (fg === defaultFG) fg = '';
+      if (bg === defaultBG) bg = '';
+      if (fg || bg || bold || dim || underline) addLiveSpan(spans, run.start, run.end, [fg, bg, bold, dim, underline]);
+    });
+    return JSON.stringify(spans);
+  }
   function sameLiveCapture(a, b) {
-    return a && b && a.text === b.text && a.styles === b.styles;
+    if (a === b) return true;
+    if (!a || !b || a.text !== b.text) return false;
+    return a.styles === b.styles || visibleLiveStyles(a) === visibleLiveStyles(b);
   }
   function liveBounds(panel) {
     var host = panel.parentElement, body = host.parentElement, tile = body.closest('.tile');
@@ -3009,10 +3042,10 @@
     var capture = state.frozen ? state.frozen.capture : state.capture;
     var captured = capture && capture.text ? capture : null;
     var text = captured ? captured.text : (state.error ? T('Live output is unavailable.', '暂时无法读取实时输出。') : state.loading ? T('Loading live output…', '正在加载实时输出…') : T('Waiting for output…', '等待实时输出…'));
-    var styles = captured ? captured.styles : '', changed = panel.displayedStyles !== styles || panel.displayedText !== text;
+    var changed = panel.displayedText !== text || !sameLiveCapture(panel.displayedCapture, captured);
     if (changed) {
       if (captured) renderLiveCapture(panel.output, captured); else panel.output.textContent = text;
-      panel.displayedStyles = styles; panel.displayedText = text;
+      panel.displayedCapture = captured; panel.displayedText = text;
     }
     panel.shownCapture = captured; panel.captureRevision = state.revision;
     panel.note.hidden = !state.error; panel.note.textContent = state.error ? (captured ? T('Update failed. Showing the last capture; retrying…', '更新失败，显示上次内容，正在重试…') : T('Retrying automatically…', '正在自动重试…')) : '';
@@ -4386,6 +4419,8 @@
     function finish(event) {
       if (!drag || drag.id !== event.pointerId) return;
       drag = null;
+      var handle = event.currentTarget;
+      if (handle.hasPointerCapture(event.pointerId)) handle.releasePointerCapture(event.pointerId);
       if (t.removed) return;
       if (t.fit && t.mode === 'term' && t.lastText) { var text = t.lastText; t.lastText = ''; tileWrite(t, text); }
       wbSave();

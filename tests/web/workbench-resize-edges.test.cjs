@@ -90,13 +90,21 @@ scenario('WLI-004 A touch drags the top-left corner without moving the header', 
   const tile = await openTile(page, fixture), from = await handlePoint(tile, 'nw');
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [from]});
-  await cdp.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: from.x - 36, y: from.y - 32}]});
+  for (let step = 1; step <= 4; step++) {
+    await cdp.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: from.x - step * 9, y: from.y - step * 8}]});
+    await page.evaluate(() => new Promise(requestAnimationFrame));
+  }
   await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
   assert.deepEqual(await geometry(tile), {x: initial.x - 36, y: initial.y - 32, w: initial.w + 36, h: initial.h + 32});
   assert.equal(await tile.evaluate(el => el.classList.contains('max')), false);
-  const input = tile.locator('.cx-input');
-  if (!(await input.isVisible())) await tile.locator('.cx-keyboard').click();
-  await input.waitFor();
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const input = tile.locator('.cx-input'), keyboard = tile.locator('.cx-keyboard');
+  const expanded = await keyboard.getAttribute('aria-expanded');
+  assert.equal(expanded, String(await input.isVisible()));
+  if (expanded === 'false') await keyboard.tap();
+  await tile.locator('.cx-keyboard[aria-expanded="true"]').waitFor();
+  await input.tap();
+  assert.equal(await input.evaluate(el => document.activeElement === el), true);
   await input.fill('A draft after touch resize');
   assert.equal(await input.inputValue(), 'A draft after touch resize');
   assert.equal(fixture.state.sends.length, 0);
