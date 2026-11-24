@@ -1,0 +1,35 @@
+{
+  "change": "Keep browser Live View readable in short workbench tiles",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (Codex author self-review)",
+    "date": "2026-11-24",
+    "decision": "Use a compact overlay within the tile when the chat area cannot host the standard Live controls.",
+    "notes": "Independent review of the previous implementation identified clipping in non-maximized editable tiles. Reproduce on the already-merged version with the normal tile resize handle. Retain the input, transcript anchor, disclosure, exact current-pane source, and zero sends. Workbench only; synthetic rendered Chromium."
+  },
+  "cases": [
+    {
+      "id": "WLC-001",
+      "layer": "L4",
+      "description": "Non-maximized short editable workbench cards show usable Live output and preserve input",
+      "setup": "Isolated desktop browser workbench with an editable working pane, long capture, a scrollable conversation and a saved draft.",
+      "action": "Shrink the tile through the real corner handle to 200 px and then its 120 px minimum. Open Live, drag its grip upward at 200 px and inspect the rendered output at both heights. Close Live and check transcript and composer.",
+      "expected": "Terminal text has usable visible height at both sizes. Upward drag extends the overlay without shifting its bottom, transcript, composer or tile. The overlay remains inside its tile. The draft and reading position survive and no send is issued.",
+      "planned_files": [
+        "tests/web/live-short-tiles.test.cjs"
+      ]
+    },
+    {
+      "id": "WLC-002",
+      "layer": "L4",
+      "description": "Short read-only workbench cards show the current-pane source beside readable Live output",
+      "setup": "Isolated working tile with a last-known transcript and distinct captured terminal text.",
+      "action": "Shrink the ordinary tile to 120 px, open Live, read the source and terminal, then collapse.",
+      "expected": "The capture remains readable and identifies its actual pane and pending history association. The read-only boundary and zero sends are preserved.",
+      "planned_files": [
+        "tests/web/live-short-tiles.test.cjs"
+      ]
+    }
+  ],
+  "seal": "2d26376a99adc83643a2a41c0299a6a0333a52e0ecf9c8c20e49efd0f8b9b330"
+}
