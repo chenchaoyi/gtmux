@@ -29061,7 +29061,7 @@
       ]
     },
     "internal/server/web/app.test.cjs": {
-      "sha256": "1e071595e22bca2195dc5e43be9ae08472d1cb934806d880e89dcf919c922045",
+      "sha256": "445a9bc1b287a5e1f80e50099d2c684d0135a39537cd63daf1fbbecc773f410c",
       "layer": "L2",
       "stack": "Browser",
       "cases": [
@@ -29682,6 +29682,15 @@
           "dynamic": false,
           "layer": "L3",
           "design": "CAS-004"
+        },
+        {
+          "id": "MAP-58ebad908f81",
+          "line": 1282,
+          "kind": "reviewed-selector",
+          "name": "live preview keeps up to 2,000 captured rows and removes terminal control sequences",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "CAS-004,CRX-007,WHS-005,WLI-005"
         }
       ]
     },
@@ -70641,6 +70650,168 @@
         }
       ],
       "sha256": "7c933a01e91846e8c10d67f21327e013f0d3815f09ab743bf1baea8164c3cd31"
+    },
+    "tests/web/live-terminal-colors.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-20853857fc63",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "WLI-001 Live renders the terminal palette",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-001,WLI-002"
+        },
+        {
+          "id": "MAP-6331f9eadc58",
+          "line": 85,
+          "kind": "reviewed-selector",
+          "name": "WLI-002 Frozen Live preserves colors until returning to live",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-001,WLI-002"
+        }
+      ],
+      "sha256": "b57788428f0ffbd615c616c57ab2cdc69c624da34ac73e5cad6278214bc33387"
+    },
+    "tests/web/workbench-resize-edges.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9f47acacb889",
+          "line": 41,
+          "kind": "reviewed-selector",
+          "name": "WLI-003 The workbench panel resizes on eight edges and corners",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-003,WLI-004"
+        },
+        {
+          "id": "MAP-82b85f45b6f1",
+          "line": 89,
+          "kind": "reviewed-selector",
+          "name": "WLI-004 A touch drags the top-left corner without moving the header",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-003,WLI-004"
+        }
+      ],
+      "sha256": "4d45568f71018cc244017611958627f9766e31705ba75259c37877b4235cff44"
+    },
+    "tests/web/live-visible-updates.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-79ee3a4d450d",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "WLI-007 Live only announces visible changes and does announce an empty capture",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-007"
+        }
+      ],
+      "sha256": "02821be88267990a73ef53c0c1f3da15a9c283df424af7bcdd78f31801680f03"
+    },
+    "tests/web/workbench-recover-resize.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-60efa59b6d67",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "WLI-006 Resizing recovers a clipped saved workbench tile",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-006"
+        }
+      ],
+      "sha256": "4cb0991dab95a0ea880ce313c7f608013fe61306614cf312c6e4a488d2224d91"
+    },
+    "tests/web/live-equivalent-colors.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0ad7a9de59d7",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "WLI-008 Equivalent ANSI and RGB styles do not report new output",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-008"
+        }
+      ],
+      "sha256": "ea131386a8a16b8fb183739e2f425e235050fcbd3ca7d3f3db8e1da32684684d"
+    },
+    "tests/web/live-late-theme.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-058769c23d4a",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "WLI-009 Late host theme reconciles the",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-009"
+        }
+      ],
+      "sha256": "34b245b0ec865559b575de80940079a655cdad515c17544a6631d1da724f7885"
+    },
+    "tests/web/live-frozen-palette.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-21bb64aa8761",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "WLI-010 Paused ANSI output keeps its palette after",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-010"
+        }
+      ],
+      "sha256": "a15fcb8c80b8f607736a5dbb5b28c0b88014bf8af459a33e2d9d44e400b0c92f"
+    },
+    "tests/web/live-access-loss.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e2db0c25a320",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "WLI-011 Access loss clears old Live content after",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-011"
+        }
+      ],
+      "sha256": "ca11a1ef13e69e2c2d394dfec8f95a22064577850e0008b61dc0e2291edf9812"
+    },
+    "tests/web/live-capture-badge.test.cjs": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-67525aee818e",
+          "line": 4,
+          "kind": "reviewed-selector",
+          "name": "WLI-012 Theme publication does not reclassify an equivalent paused capture",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WLI-012"
+        }
+      ],
+      "sha256": "0082ad667fcc9344298c2c7339d2dcf066ea80094ebb8a43015c3282eecb85b0"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

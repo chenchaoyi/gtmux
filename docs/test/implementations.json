@@ -1975,14 +1975,16 @@
     "cases": [
       "CAS-004",
       "CRX-007",
-      "WHS-005"
+      "WHS-005",
+      "WLI-005"
     ],
     "selectors": [
       "CAS004 focused and tile chats disclose association failures and recover without losing messages",
       "CAS004 stale tile association failure cannot repaint a changed target",
       "rejected code stays editable and shows a clear error",
       "the rejected-code message also applies to the owner pairing a browser",
-      "slow reads coalesce and a later completed read replaces them"
+      "slow reads coalesce and a later completed read replaces them",
+      "live preview keeps up to 2,000 captured rows and removes terminal control sequences"
     ]
   },
   "internal/server/web/argv-reading.test.cjs": {
@@ -5622,6 +5624,82 @@
     ],
     "selectors": [
       "TestGSS019RollbackSyncsMarkerBeforeScaffold"
+    ]
+  },
+  "tests/web/live-terminal-colors.test.cjs": {
+    "cases": [
+      "WLI-001",
+      "WLI-002"
+    ],
+    "selectors": [
+      "WLI-001 Live renders the terminal palette",
+      "WLI-002 Frozen Live preserves colors until returning to live"
+    ]
+  },
+  "tests/web/workbench-resize-edges.test.cjs": {
+    "cases": [
+      "WLI-003",
+      "WLI-004"
+    ],
+    "selectors": [
+      "WLI-003 The workbench panel resizes on eight edges and corners",
+      "WLI-004 A touch drags the top-left corner without moving the header"
+    ]
+  },
+  "tests/web/workbench-recover-resize.test.cjs": {
+    "cases": [
+      "WLI-006"
+    ],
+    "selectors": [
+      "WLI-006 Resizing recovers a clipped saved workbench tile"
+    ]
+  },
+  "tests/web/live-visible-updates.test.cjs": {
+    "cases": [
+      "WLI-007"
+    ],
+    "selectors": [
+      "WLI-007 Live only announces visible changes and does announce an empty capture"
+    ]
+  },
+  "tests/web/live-equivalent-colors.test.cjs": {
+    "cases": [
+      "WLI-008"
+    ],
+    "selectors": [
+      "WLI-008 Equivalent ANSI and RGB styles do not report new output"
+    ]
+  },
+  "tests/web/live-late-theme.test.cjs": {
+    "cases": [
+      "WLI-009"
+    ],
+    "selectors": [
+      "WLI-009 Late host theme reconciles the"
+    ]
+  },
+  "tests/web/live-frozen-palette.test.cjs": {
+    "cases": [
+      "WLI-010"
+    ],
+    "selectors": [
+      "WLI-010 Paused ANSI output keeps its palette after"
+    ]
+  },
+  "tests/web/live-access-loss.test.cjs": {
+    "cases": [
+      "WLI-011"
+    ],
+    "selectors": [
+      "WLI-011 Access loss clears old Live content after"
+    ]
+  },
+  "tests/web/live-capture-badge.test.cjs": {
+    "cases": [
+      "WLI-012"
+    ],
+    "selectors": [
+      "WLI-012 Theme publication does not reclassify an equivalent paused capture"
     ]
   }
 }

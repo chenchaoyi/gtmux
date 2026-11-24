@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1482 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1491 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3823 | [L1.csv](cases/L1.csv) |
+| L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2739 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 156 | [L3.csv](cases/L3.csv) |
+| L3 · Runtime integration | 167 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 509 | [G.csv](cases/G.csv) |
@@ -676,6 +676,18 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | UR-001 | The 34-second HTTP-200-equivalent report is shown; the stalled read is classified as timeout, the next valid report is shown, and the late old report cannot overwrite it. |
 | UR-002 | Valid empty reports remain data, 404 is unsupported, other failures throw typed causes; no failure becomes zero usage or a fabricated report. |
 | UR-003 | Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels. |
+| WLI-001 | The terminal palette, bright, 256 and RGB colors, and intended attributes survive. Resets work, earlier rows carry forward color into a bounded tail, and escape sequences and literal HTML do not create elements or active links. Browser chrome appearance remains independent. |
+| WLI-002 | The old styled capture and reading position stay stable while frozen. Return shows the new color and follows the bottom. No write occurs. |
+| WLI-003 | The far edge stays put, inactive axes stay put, the tile remains within bounds, existing minimums and saved geometry work, and the draft remains unchanged. Handle cursor and shell controls stay reachable. |
+| WLI-004 | The corner tracks the touch, the opposite corner remains fixed, there is no accidental maximize or send, and the composer can still accept a draft. |
+| WLI-005 | The plain projection is still capped at 2,000 non-trailing-blank rows, with no terminal control bytes. |
+| WLI-006 | The tile is fully inside the board when it has room for the minimum, keeps its composer draft, and reloads with the usable geometry. |
+| WLI-007 | Ignored-only changes do not repaint or indicate new output. The blank frame does indicate new output, leaving the frozen view readable until return, then displaying the empty state. |
+| WLI-008 | Equivalent colors preserve the existing rendered nodes and produce no new-output indication. A genuinely different color still prompts while paused and appears on returning. |
+| WLI-009 | Following Live updates to the correct host palette. The frozen literal RGB frame preserves its color, DOM nodes, selection, and reading position. Returning to the original visible color clears the update indicator. |
+| WLI-010 | The paused frame keeps the original foreground, background, palette, node, selection and scroll position. No badge appears just because the theme arrives or the same equivalent frame is polled again. A distinct color still shows the badge, and returning to live displays the latest colors under the host theme. No input is sent. |
+| WLI-011 | The old preview and selection disappear, palette overrides and pause controls clear, and Live shows its unavailable state. No previous successful output is reconstructed and no input is sent. |
+| WLI-012 | The frozen frame and its colors are unchanged. No new-output indication occurs after the equivalent response, theme publication or repeated equivalent frame. The actual different capture triggers a badge and appears on resume. No input is sent. |
 | WLC-001 | Terminal text has usable visible height at both sizes. Upward drag extends the overlay without shifting its bottom, transcript, composer or tile. The overlay remains inside its tile. The draft and reading position survive and no send is issued. |
 | WLC-002 | The capture remains readable and identifies its actual pane and pending history association. The read-only boundary and zero sends are preserved. |
 | WLV-001 | The panel grows upward and shrinks toward the same bottom edge. The transcript viewport and input stay in place; the draft is intact. An ongoing drag survives transcript repaint. Reopening restores the selected height. |

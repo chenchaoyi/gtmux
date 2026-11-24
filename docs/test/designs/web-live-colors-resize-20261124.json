@@ -1,0 +1,145 @@
+{
+  "change": "Preserve Web Live terminal color and resize workbench panes on every edge",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (Codex self-review)",
+    "date": "2026-11-24",
+    "decision": "Reuse the read-only capture and terminal palette. Extend the existing workbench drag rectangles.",
+    "notes": "Reviewed against 4c99206f. The screenshots are the Chat workbench tile, not the browser-dialog action sheets. Add no requests and no terminal input. Build spans as text DOM. Keep Live freeze, draft, authorization and view retirement. Add handles only to freely positioned tiles. Preserve the SE affordance, snap preference, size floor, saved layout and single-column behavior. Validate with the existing synthetic browser harness and cached Chromium. Fixed-head review requires a usable starting rectangle after a narrower board clips an older layout and visible-only snapshot comparison. Hosted consistency keeps the existing unthemed Live foreground. Exercise touch resize and use the specified composer disclosure before writing a local draft. Compare palette and numeric RGB using the colors actually displayed by the same host terminal theme. For touch, inspect current disclosure state so the test expands a collapsed composer and never toggles an already open one closed. Use real Chromium touch tapping for both disclosure and textarea focus. A theme may arrive after Live started. Freeze must retain the capture used to paint the visible nodes, and a host theme update must reconcile open live panels against what was actually painted. Fixed-head review of 0c10db76 identified the reverse sequence, with an ANSI first frame and literal RGB second frame. The paused panel must preserve the effective palette and default colors at freeze. A theme response by itself cannot create a new-output badge, including when a selection made before publication first triggers the freeze. The same comparison must still detect distinct output and resume under the current theme. Fixed-head review of 0e1a2d30 also requires clearing old selected output on denied/missing capture and remembering the result for each accepted capture while paused, so publishing a theme cannot change an existing badge."
+  },
+  "cases": [
+    {
+      "id": "WLI-001",
+      "layer": "L3",
+      "description": "Live restores terminal colors in focused and tile chat",
+      "setup": "Authorized synthetic terminal capture with SGR colors, default runs, extended colors and non-SGR controls. The fixture supplies a host palette.",
+      "action": "Open Live in focused Chat and a desktop workbench tile and inspect the text and computed colors.",
+      "expected": "The terminal palette, bright, 256 and RGB colors, and intended attributes survive. Resets work, earlier rows carry forward color into a bounded tail, and escape sequences and literal HTML do not create elements or active links. Browser chrome appearance remains independent.",
+      "planned_files": [
+        "tests/web/live-terminal-colors.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-002",
+      "layer": "L3",
+      "description": "Frozen Live retains its styles through an update",
+      "setup": "Authorized workbench chat with more than a viewport of synthetic terminal rows. The next capture changes a color while leaving visible text unchanged.",
+      "action": "Scroll up to freeze, observe the update, then return to live.",
+      "expected": "The old styled capture and reading position stay stable while frozen. Return shows the new color and follows the bottom. No write occurs.",
+      "planned_files": [
+        "tests/web/live-terminal-colors.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-003",
+      "layer": "L3",
+      "description": "A workbench pane resizes from all edges and corners",
+      "setup": "A synthetic workbench with one tile and a composer draft. Initial rectangle is clear of board edges.",
+      "action": "Drag each of the eight targets, verify anchors, shrink to the minimum, maximize and restore, then reload.",
+      "expected": "The far edge stays put, inactive axes stay put, the tile remains within bounds, existing minimums and saved geometry work, and the draft remains unchanged. Handle cursor and shell controls stay reachable.",
+      "planned_files": [
+        "tests/web/workbench-resize-edges.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-004",
+      "layer": "L3",
+      "description": "Resize accepts a touch pointer without moving the tile header",
+      "setup": "A desktop-sized browser context with a touch pointer, a workbench tile and a visible composer.",
+      "action": "Drag a corner using Chromium touch input, release, then tap the Chat composer.",
+      "expected": "The corner tracks the touch, the opposite corner remains fixed, there is no accidental maximize or send, and the composer can still accept a draft.",
+      "planned_files": [
+        "tests/web/workbench-resize-edges.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-005",
+      "layer": "L1",
+      "description": "The formatted capture exports a plain bounded text projection",
+      "setup": "A synthetic capture with plain and ANSI rows, OSC, and trailing blank lines.",
+      "action": "Run the fixed helper and inspect its plain projection.",
+      "expected": "The plain projection is still capped at 2,000 non-trailing-blank rows, with no terminal control bytes.",
+      "planned_files": [
+        "internal/server/web/app.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-006",
+      "layer": "L3",
+      "description": "Resizing recovers the visible part of a clipped tile",
+      "setup": "An existing saved tile fits a wide workbench and is partly clipped after a narrower and shorter browser resize. Grid snap is enabled.",
+      "action": "Drag a remaining west/north corner into the board, inspect the new geometry, then reload the browser.",
+      "expected": "The tile is fully inside the board when it has room for the minimum, keeps its composer draft, and reloads with the usable geometry.",
+      "planned_files": [
+        "tests/web/workbench-recover-resize.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-007",
+      "layer": "L3",
+      "description": "Live alerts only for visible capture changes, including a successful blank screen",
+      "setup": "A colored capture with older rows outside the 2,000-row limit, then changes only to ignored OSC or discarded text. A later successful capture is empty.",
+      "action": "Observe unpaused node reuse, freeze the capture, receive ignored-only changes and a successful empty frame, then return to live.",
+      "expected": "Ignored-only changes do not repaint or indicate new output. The blank frame does indicate new output, leaving the frozen view readable until return, then displaying the empty state.",
+      "planned_files": [
+        "tests/web/live-visible-updates.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-008",
+      "layer": "L3",
+      "description": "Equivalent palette and RGB output reuses the visible Live snapshot",
+      "setup": "Synthetic browser session with a custom terminal palette and a Live capture that declares the same visible color in multiple SGR formats.",
+      "action": "Receive identical text using palette and literal RGB colors while following Live and while paused. Then receive a distinct RGB color.",
+      "expected": "Equivalent colors preserve the existing rendered nodes and produce no new-output indication. A genuinely different color still prompts while paused and appears on returning.",
+      "planned_files": [
+        "tests/web/live-equivalent-colors.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-009",
+      "layer": "L3",
+      "description": "Late terminal theme does not replace a frozen Live frame that was actually painted",
+      "setup": "Synthetic Web session starts Live before a delayed host theme. An initial literal RGB capture and a later ANSI capture agree under the fallback palette.",
+      "action": "Receive the equal ANSI capture, freeze or keep following, then deliver a host theme that changes the ANSI value. For the held capture, then receive the original literal RGB again.",
+      "expected": "Following Live updates to the correct host palette. The frozen literal RGB frame preserves its color, DOM nodes, selection, and reading position. Returning to the original visible color clears the update indicator.",
+      "planned_files": [
+        "tests/web/live-late-theme.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-010",
+      "layer": "L3",
+      "description": "Paused ANSI output keeps the palette used to paint it",
+      "setup": "Synthetic workbench starts before the host theme arrives. The first frame is ANSI, then an equivalent literal RGB frame is received. The delayed theme will change the palette and both default colors.",
+      "action": "In separate runs, pause by scrolling or select output while capture delivery is held. Deliver the new theme. Then deliver an actual color change and return to live.",
+      "expected": "The paused frame keeps the original foreground, background, palette, node, selection and scroll position. No badge appears just because the theme arrives or the same equivalent frame is polled again. A distinct color still shows the badge, and returning to live displays the latest colors under the host theme. No input is sent.",
+      "planned_files": [
+        "tests/web/live-frozen-palette.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-011",
+      "layer": "L3",
+      "description": "Denied or missing Live capture clears selected and paused output",
+      "setup": "Synthetic workbench shows granted Live output. A capture request is held while the reader selects output, with one branch already paused.",
+      "action": "Resolve the held request with 403 or 404. Inspect Live output, selection, pause controls and available retry feedback.",
+      "expected": "The old preview and selection disappear, palette overrides and pause controls clear, and Live shows its unavailable state. No previous successful output is reconstructed and no input is sent.",
+      "planned_files": [
+        "tests/web/live-access-loss.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-012",
+      "layer": "L3",
+      "description": "An equivalent capture received while paused stays equivalent when the theme arrives",
+      "setup": "Synthetic workbench begins with an ANSI-colored capture under fallback colors and holds the host theme response.",
+      "action": "Pause by scrolling. Receive the same output encoded as fixed RGB. Publish a changed color table and background, poll the same capture again, then receive a different color and resume.",
+      "expected": "The frozen frame and its colors are unchanged. No new-output indication occurs after the equivalent response, theme publication or repeated equivalent frame. The actual different capture triggers a badge and appears on resume. No input is sent.",
+      "planned_files": [
+        "tests/web/live-capture-badge.test.cjs"
+      ]
+    }
+  ],
+  "seal": "b78faecbda3bb6e85d8e6078b5ff72c877996d42f444b4e02297cfee319bfcee"
+}

@@ -2222,6 +2222,7 @@ LEG-b0a1825d3753,L1,Go core / CLI / server,internal/resume/resume_test.go,82,Tes
 LEG-ae717c54896f,L1,Go core / CLI / server,internal/resume/resume_test.go,95,Test,TestCommandNotResumable,False,legacy-not-retrospectively-reviewed
 LEG-8901edae106c,L1,Go core / CLI / server,internal/resume/resume_test.go,107,Test,TestCommandQuoteEscape,False,legacy-not-retrospectively-reviewed
 LEG-0c7cae9aa015,L1,Go core / CLI / server,internal/resume/resume_test.go,117,Test,TestAllLocatedRecoversLocator,False,legacy-not-retrospectively-reviewed
+MAP-58ebad908f81,L1,Browser,internal/server/web/app.test.cjs,1282,reviewed-selector,"live preview keeps up to 2,000 captured rows and removes terminal control sequences",False,"CAS-004,CRX-007,WHS-005,WLI-005"
 MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
 LEG-5c1b521b41b1,L1,Go core / CLI / server,internal/servermode/guard_test.go,16,Test,TestGuardHasNoPathThatDisablesSleep,False,legacy-not-retrospectively-reviewed
 LEG-c214b1666d5f,L1,Go core / CLI / server,internal/servermode/guard_test.go,36,Test,TestGuardOnlyRunsSystemBinaries,False,legacy-not-retrospectively-reviewed
