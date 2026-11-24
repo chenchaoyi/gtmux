@@ -123,7 +123,7 @@ On iPhone and iPad, **Copy reply** below a reply copies the whole turn's text, i
 
 ### Browser controls
 
-On a wide screen, double-click a session or drag it from the sidebar onto the workbench. Drag a panel by its title to move it, or drag any edge or corner to resize it. The opposite edge stays in place. New panels use space beside or below the panels already open. External conversations with readable history offer read-only Chat and Trace. Entries without readable history show **Status only**. On a phone, tap the session to open it.
+On a wide screen, double-click a session or drag it from the sidebar onto the workbench. Drag a panel by its title to move it, or drag any edge or corner to resize it. The opposite edge stays in place. New panels use space beside or below the panels already open. External conversations with readable history offer read-only Chat and Trace. On a phone, tap a session with a conversation to open it. Status-only rows have no Open action.
 
 In the Chat and Terminal composers, Enter starts a new line and Ctrl/Cmd+Enter sends. You can enable Return-to-send in Settings. When an input method is composing text, Enter confirms the word without sending. Chat refreshes intermediate reply text and tool details as they arrive.
 
