@@ -277,20 +277,21 @@ func advanceHQRotationWithClock(r rotationRequest, pane, agent, sid string, io d
 				return
 			}
 			kind := ""
+			var boundaryAt time.Time
 			ready := r.Agent != "codex"
 			if !ready {
-				var at time.Time
-				kind, at = boundary(sid)
-				ready = transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" && !at.Before(rotationSendBoundary(r)) &&
-					!at.After(now) && !at.After(time.Unix(deadline, 0))
+				kind, boundaryAt = boundary(sid)
+				ready = transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" &&
+					!boundaryAt.Before(rotationSendBoundary(r)) && !boundaryAt.After(time.Unix(deadline, 0))
 			}
-			if ready {
-				events.AuditRotateConfirmed(r.Agent, r.Retiring, sid, r.Input, now.Unix())
+			checkedAt := clock()
+			if ready && !boundaryAt.After(checkedAt) {
+				events.AuditRotateConfirmed(r.Agent, r.Retiring, sid, r.Input, checkedAt.Unix())
 				_ = os.Remove(rotationPendingPath())
 				return
 			}
-			if now.Unix() >= deadline {
-				failSentRotationTimeout(r, agent, sid, reason, now.Unix())
+			if checkedAt.Unix() >= deadline {
+				failSentRotationTimeout(r, agent, sid, reason, checkedAt.Unix())
 				return
 			}
 			if r.Successor == "" {
@@ -414,7 +415,8 @@ func rotationDeadline(r rotationRequest) int64 {
 }
 
 func legacyRotationObservation(proof resume.HQObservation, r rotationRequest, now int64) bool {
-	return r.SentAt > 0 && r.SubmittedAtNS > 0 && rotationTargetMatches(r.TargetStamp, proof.Generation) &&
+	return r.SentAt > 0 && r.SubmittedAtNS > 0 && proof.ClientPID > 1 && proof.ClientBirth != "" &&
+		rotationTargetMatches(r.TargetStamp, proof.Generation) &&
 		proof.ObservedAt > rotationSendBoundary(r).Unix() && proof.ObservedAt <= now && proof.ObservedAt <= rotationDeadline(r)
 }
 

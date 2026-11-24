@@ -1,7 +1,7 @@
 {
   "internal/hq/rotation_clock_boundaries_test.go": {
     "cases": ["HRB-013"],
-    "selectors": ["TestResetAttemptAndCompletedKeysHaveSeparateClocks", "TestBriefingTargetProbeCannotCrossItsOriginalDeadline"]
+    "selectors": ["TestResetAttemptAndCompletedKeysHaveSeparateClocks", "TestBriefingTargetProbeCannotCrossItsOriginalDeadline", "TestIncompleteHistoryProbeCannotOpenAHandoffAfterSettleDeadline"]
   },
   "internal/hq/rotation_evidence_window_test.go": {
     "cases": ["HRB-012"],

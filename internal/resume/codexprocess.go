@@ -138,7 +138,7 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 		return errors.New("terminal changed under publication lease")
 	}
 	if generation != "" && generation == tmux.PaneGeneration(target.Pane) {
-		record.HQObservation = HQObservation{Generation: generation, ObservedAt: r.UpdatedAt}
+		record.HQObservation = HQObservation{Generation: generation, ObservedAt: r.UpdatedAt, ClientPID: r.PID, ClientBirth: r.ProcessStart}
 	}
 	frontend, migrate, err := processFrontendForSameSession(target.Loc, incumbent, r, target)
 	if err != nil || frontend != oldFrontend || migrate != migrateFrontend {

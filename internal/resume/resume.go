@@ -22,8 +22,10 @@ import (
 
 // HQObservation records a legacy hook observation independently bound to a live pane.
 type HQObservation struct {
-	Generation string `json:"generation"`
-	ObservedAt int64  `json:"observed_at"`
+	Generation  string `json:"generation"`
+	ObservedAt  int64  `json:"observed_at"`
+	ClientPID   int    `json:"client_pid"`
+	ClientBirth string `json:"client_birth"`
 }
 
 // Record is one resumable agent session captured from a hook.

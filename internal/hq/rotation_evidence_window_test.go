@@ -23,14 +23,17 @@ func TestLegacyRotationWitnessRequiresMatchingGenerationAndSendOrder(t *testing.
 		{"after-deadline", r.TargetStamp, 146, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			proof := resume.HQObservation{Generation: tc.stamp, ObservedAt: tc.observed}
+			proof := resume.HQObservation{Generation: tc.stamp, ObservedAt: tc.observed, ClientPID: 91, ClientBirth: "birth"}
 			if got := legacyRotationObservation(proof, r, 147); got != tc.valid {
 				t.Fatalf("legacy witness accepted=%v, want %v", got, tc.valid)
 			}
 		})
 	}
-	if legacyRotationObservation(resume.HQObservation{Generation: r.TargetStamp, ObservedAt: 140}, r, 139) {
+	if legacyRotationObservation(resume.HQObservation{Generation: r.TargetStamp, ObservedAt: 140, ClientPID: 91, ClientBirth: "birth"}, r, 139) {
 		t.Fatal("accepted a future observation")
+	}
+	if legacyRotationObservation(resume.HQObservation{Generation: r.TargetStamp, ObservedAt: 140}, r, 147) {
+		t.Fatal("accepted an observation without the client incarnation")
 	}
 }
 

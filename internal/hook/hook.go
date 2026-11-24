@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -993,8 +994,12 @@ func Run(stdin io.Reader, args []string) int {
 				if agentKey == "claude" && (event == "SessionStart" || event == "UserPromptSubmit") &&
 					hqpane.SameDir(cwd, state.HQHome()) {
 					generation := tmux.PaneGeneration(pane)
-					if generation != "" && paneFromAncestry() == pane && generation == tmux.PaneGeneration(pane) {
-						hqObservation = resume.HQObservation{Generation: generation, ObservedAt: observedAt}
+					client, ok := resume.HQClaudeClient(pane)
+					if generation != "" && ok && slices.ContainsFunc(ancestry(os.Getpid(), maxAncestorWalk), func(a ancestor) bool {
+						return a.pid == client.PID
+					}) && generation == tmux.PaneGeneration(pane) {
+						hqObservation = resume.HQObservation{Generation: generation, ObservedAt: observedAt,
+							ClientPID: client.PID, ClientBirth: client.Start}
 					}
 				}
 				_ = resume.SaveObserved(loc, resume.Record{

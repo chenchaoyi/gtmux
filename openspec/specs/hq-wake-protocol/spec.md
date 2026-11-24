@@ -1013,7 +1013,7 @@ query instead of information destroyed at every handoff.
 - **WHEN** HQ has brought its board and knowledge base current and runs `gtmux hq --rotate` during its own active Codex turn
 - **THEN** gtmux queues the reset without typing, and reports pending; after the turn finishes and the input box is safe, the resident process sends the reset once
 - **AND** only a new session ID confirms rotation and restarts the health window
-- **AND** that ID SHALL come from the original pane and generation's current session evidence for the retiring agent's driver. A legacy direct client requires its live driver and an independently verified hook observation for the original generation made after the recorded completion of the reset keys and within the current window. An unbound lifecycle event SHALL NOT establish, extend or confirm the handoff
+- **AND** that ID SHALL come from the original pane and generation's current session evidence for the retiring agent's driver. A legacy direct client requires the same live client incarnation that supplied an independently verified hook observation, for the original generation after the recorded completion of the reset keys and within the current window. An unbound lifecycle event SHALL NOT establish, extend or confirm the handoff
 
 #### Scenario: The current agent or session evidence is temporarily unavailable after reset
 

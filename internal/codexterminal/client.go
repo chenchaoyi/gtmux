@@ -58,6 +58,27 @@ func Resolve(panes []Pane) map[string]Client {
 	return i.resolve(panes)
 }
 
+// ForegroundRoot returns the pane's initial process only while it owns the tty's
+// foreground group. A shell wrapper with a child in front does not qualify.
+func ForegroundRoot(pane string) (int, bool) {
+	if pane == "" {
+		return 0, false
+	}
+	parts := strings.Split(tmux.Display(pane, "#{pane_id}\t#{pane_pid}\t#{pane_tty}"), "\t")
+	if len(parts) != 3 || parts[0] != pane || tty(parts[2]) == "" {
+		return 0, false
+	}
+	pid, err := strconv.Atoi(parts[1])
+	if err != nil || pid <= 1 {
+		return 0, false
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	procs := parseProcesses(run(ctx, "ps", "-p", parts[1], "-o", "pid=,ppid=,pgid=,tpgid=,tty=,lstart=,comm="))
+	p, ok := procs[pid]
+	return pid, ok && p.foreground > 0 && p.group == p.foreground && p.tty == tty(parts[2])
+}
+
 func paneMatches(p Pane, raw string) bool {
 	f := strings.Split(raw, "\t")
 	return len(f) == 6 && f[0] == p.ID && f[1] == strconv.Itoa(p.PID) && tty(f[2]) == tty(p.TTY) && f[3] == p.Command && (p.Cwd == "" || f[4] == p.Cwd) && (p.Loc == "" || f[5] == p.Loc)
