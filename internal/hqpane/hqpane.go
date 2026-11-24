@@ -34,7 +34,7 @@ const HomeOption = "@gtmux_hq_home"
 const paneFmt = "#{pane_id}\t#{" + HomeOption + "}\t#{pane_current_path}\t#{pane_start_path}"
 
 // seenStampPath records the last time an HQ pane actually resolved.
-func seenStampPath() string { return state.StorePath("hqwake", "last-seen-hq") }
+func seenStampPath() string { return filepath.Join(state.Dir(), "hqwake", "last-seen-hq") }
 
 // lister is the injectable pane source (real tmux in production, a fixture in tests).
 var lister = func() []string { return tmux.Lines("list-panes", "-a", "-F", paneFmt) }

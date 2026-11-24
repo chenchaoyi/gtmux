@@ -5570,5 +5570,13 @@
     "selectors": [
       "TestGSS011DoctorAliasSharesLayoutAdmission"
     ]
+  },
+  "internal/hqnudge/storage_layout_test.go": {
+    "cases": [
+      "GSS-012"
+    ],
+    "selectors": [
+      "TestGSS012StorageLayoutKeepsNativeWakeEvidence"
+    ]
   }
 }

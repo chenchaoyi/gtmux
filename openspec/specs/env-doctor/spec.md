@@ -1034,7 +1034,7 @@ safety limit SHALL NOT be described as a directory quota or snapshot retention b
 
 ### Requirement: Inspect and change the data layout
 
-Doctor SHALL preview owned stores and their grouped locations without writing state. A layout change SHALL require explicit offline confirmation, reserve one transition, preserve object identity, refuse collisions and leave a durable direction for recovery. CLI commands that need storage SHALL hold shared admission until exit and refuse access while a transition is unfinished. Migration SHALL hold exclusive admission and reject a running or pending managed service, or a managed service that cannot be checked. An installed managed service SHALL be persistently disabled during the move. Desktop and native path contracts SHALL be preserved where their writers do not take part in the transition.
+Doctor SHALL preview owned stores and their grouped locations without writing state. A layout change SHALL require explicit offline confirmation, reserve one transition, preserve object identity, refuse collisions and leave a durable direction for recovery. CLI commands that need storage SHALL hold shared admission until exit and refuse access while a transition is unfinished. Migration SHALL hold exclusive admission and reject a running or pending managed service, or a managed service that cannot be checked. An installed managed service SHALL be persistently disabled during the move. Desktop and native path contracts SHALL be preserved where their writers do not take part in the transition. The HQ wake spool, protocol locks, claims and receipts SHALL keep their existing paths.
 
 #### Scenario: Repair an interrupted storage change
 

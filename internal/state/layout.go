@@ -47,9 +47,9 @@ var groupedStores = map[string]string{
 	"model-windows.json": "usage", "model-windows.scanned": "usage", "probe": "usage",
 	"usage": "usage", "usage-daily.json": "usage", "usage-daily.json.lock": "usage",
 
-	"hq-feed": "hq", "hq-nudge-attempts": "hq", "hq-nudge-native-batches": "hq",
-	"hq-nudge-native-claims": "hq", "hq-nudges": "hq", "hq-wake-accepted": "hq",
-	"hqwake": "hq", "knowledge-dream": "hq", "mine": "hq",
+	// The HQ wake spool, locks and receipts stay at the root. Parked
+	// payloads and their native claim pins can share one inode across stores.
+	"hq-feed": "hq", "knowledge-dream": "hq", "mine": "hq",
 
 	"dispatch": "inbox", "relay": "inbox", "tasks": "inbox",
 

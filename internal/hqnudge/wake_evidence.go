@@ -55,7 +55,7 @@ const (
 var wakeWitness = transcript.CodexWakeWitness
 var wakeTranscriptHome = transcript.CodexHomeID
 
-func acceptedWakeDir() string { return state.StorePath("hq-wake-accepted") }
+func acceptedWakeDir() string { return filepath.Join(state.Dir(), "hq-wake-accepted") }
 
 func validWakeReceipt(r dispatch.WakeReceipt) bool {
 	for _, field := range []string{r.Request, r.Session, r.Home, r.Turn} {
@@ -129,7 +129,7 @@ func ObserveWakeEvidence(now time.Time) {
 		recordIssue(issueRecoveryUnsafe, now.UnixNano())
 		return
 	}
-	lease, err := state.TryLeaseIn(state.StorePath("hqwake"), "wake-observations")
+	lease, err := state.TryLeaseIn(filepath.Join(state.Dir(), "hqwake"), "wake-observations")
 	if err != nil {
 		diag.ReportStoreFailure("hq-wake-evidence", err)
 		return

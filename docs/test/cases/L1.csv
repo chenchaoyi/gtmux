@@ -1617,6 +1617,7 @@ LEG-3d3b90b863d9,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1281
 LEG-5bf7aa693c7c,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1375,Test,TestRepair_UneditedBatch_IsSubmittedAtEveryWidth,False,legacy-not-retrospectively-reviewed
 LEG-0fe4e8035179,L1,Go core / CLI / server,internal/hqnudge/hqnudge_test.go,1392,Test,TestRepair_EditedBatch_IsNeverSubmittedAtAnyWidth,False,legacy-not-retrospectively-reviewed
 LEG-096a5372e6f5,L1,Go core / CLI / server,internal/hqnudge/native_test.go,12,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-385d256c3e24,L1,reviewed implementation,internal/hqnudge/storage_layout_test.go,12,reviewed-selector,TestGSS012StorageLayoutKeepsNativeWakeEvidence,False,GSS-012
 LEG-2a0fc9ba851d,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,49,Test,TestFind_ByCurrentPath,False,legacy-not-retrospectively-reviewed
 LEG-5978d4c88e2f,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,60,Test,TestFind_SymlinkedHomeStillResolves,False,legacy-not-retrospectively-reviewed
 LEG-612d23c91cb2,L1,Go core / CLI / server,internal/hqpane/hqpane_test.go,82,Test,TestFind_ByStampAfterACd,False,legacy-not-retrospectively-reviewed

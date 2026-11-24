@@ -8,6 +8,7 @@ package hq
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -333,7 +334,7 @@ func resolvedDecide(status, lastTracked, markerKind string, screenWaits bool) (r
 // waiting on — the state resolvedDecide compares against to detect a waiting→clear edge.
 // Single-writer (slow-tick only), so no read-modify-write race.
 func resolvedTrackPath(pane string) string {
-	return state.StorePath("hqwake", "resolved-track-"+pane)
+	return filepath.Join(state.Dir(), "hqwake", "resolved-track-"+pane)
 }
 
 // resolvedTransitionSweep fires a `resolved` wake when a pane LEAVES the waiting state

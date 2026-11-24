@@ -227,7 +227,7 @@ func WorkspaceReconciliationLine(pending int, repeated bool) string {
 }
 
 // dir is hqwake's private state home (markers + tally) under the gtmux state dir.
-func dir() string { return state.StorePath("hqwake") }
+func dir() string { return filepath.Join(state.Dir(), "hqwake") }
 
 // ── done per-pane merge window ────────────────────────────────────────────────
 

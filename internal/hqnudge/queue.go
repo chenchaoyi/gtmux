@@ -21,7 +21,7 @@ func lockQueue() (func(), error) {
 	if err := state.MkdirAll(queueDir(), 0700); err != nil {
 		return nil, err
 	}
-	lockDir := state.StorePath("hqwake")
+	lockDir := filepath.Join(state.Dir(), "hqwake")
 	if err := state.MkdirAll(lockDir, 0700); err != nil {
 		return nil, err
 	}

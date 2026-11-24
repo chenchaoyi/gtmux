@@ -86,12 +86,12 @@ and the recovery path are established.
 | `service/` | Service maintenance, resource and tunnel observation markers |
 | `sessions/` | Resume and restore records, profiles, conversation observations and external consent |
 | `usage/` | Usage counters, models and limits |
-| `hq/` | HQ wake queues, claims, recovery evidence and maintenance |
+| `hq/` | HQ bookkeeping, knowledge and maintenance |
 | `inbox/` | Relay and dispatch records |
 | `events/` | Current and rotated events with their sequence counter |
 | `backups/` | HQ snapshots and export receipts |
 
-The root path, desktop and launchd entry points, logs and icon cache, socket aliases, shell shims, input spool and terminal-client registration, global lock anchors and attachment URLs have their existing names. Unknown data and old project archives retain their original paths. The layout registry is the common Go routing table for moved stores. Native mobile and Web use the existing service contracts; the Mac app keeps its existing shared paths.
+The root path, desktop and launchd entry points, logs and icon cache, socket aliases, shell shims, input spool and terminal-client registration, HQ wake spool and its evidence, global lock anchors and attachment URLs have their existing names. Unknown data and old project archives retain their original paths. The HQ wake queue, locks, journals and receipts keep their paths. Parked wake payloads and claim pins can be two names for the same inode. The layout registry is the common Go routing table for moved stores. Native mobile and Web use the existing service contracts; the Mac app keeps its existing shared paths.
 
 ### Offline transition
 

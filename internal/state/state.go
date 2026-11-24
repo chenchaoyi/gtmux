@@ -322,7 +322,7 @@ func ReapDeadPaneState(live map[string]bool) int {
 		sweep(StorePath(d), "", ".json")
 	}
 	for _, fam := range hqwakePaneFamilies {
-		sweep(StorePath("hqwake"), fam, "")
+		sweep(filepath.Join(Dir(), "hqwake"), fam, "")
 	}
 	return removed
 }
