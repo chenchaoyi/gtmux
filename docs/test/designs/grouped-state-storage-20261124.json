@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner (Codex self-review)",
     "date": "2026-11-24",
     "decision": "Use opt-in grouped routing with an offline, journaled and reversible transition.",
-    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting. The remaining independent findings cover admission against a loaded manager, an interrupted atomic write, misleading transition preview, and housekeeping following the active store. Delta review requires an installed macOS LaunchAgent to be persistently disabled as well as unloaded, and flatten must use directory-only cleanup against late conflicting paths. Systemd evidence must be complete and the CLI alias follows the same admission. The native wake lifecycle uses hard links between parked input and identity anchors. Keep the complete wake protocol at its existing paths so the layout can be adopted with retained uncertain evidence. The commit boundary must prove every planned identity reached its target. Unexpected layout markers must survive, including after a restart. Cleanup verifies the scaffold directory identity before its directory-only removal. Bind publication and retirement to the actual journal inode and bounded bytes, record the original rollback scaffold identities, and require a complete launchd disabled-services block."
+    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting. The remaining independent findings cover admission against a loaded manager, an interrupted atomic write, misleading transition preview, and housekeeping following the active store. Delta review requires an installed macOS LaunchAgent to be persistently disabled as well as unloaded, and flatten must use directory-only cleanup against late conflicting paths. Systemd evidence must be complete and the CLI alias follows the same admission. The native wake lifecycle uses hard links between parked input and identity anchors. Keep the complete wake protocol at its existing paths so the layout can be adopted with retained uncertain evidence. The commit boundary must prove every planned identity reached its target. Unexpected layout markers must survive, including after a restart. Cleanup verifies the scaffold directory identity before its directory-only removal. Bind publication and retirement to the actual journal inode and bounded bytes, record the original rollback scaffold identities, and require a complete launchd disabled-services block. Recovery must durably remove the grouped marker from its parent before modifying the rollback scaffold. The sync is required on retry even if the marker is already absent."
   },
   "cases": [
     {
@@ -207,7 +207,18 @@
       "planned_files": [
         "internal/userservice/storage_metadata_test.go"
       ]
+    },
+    {
+      "id": "GSS-019",
+      "layer": "L1",
+      "description": "Rollback syncs marker removal before modifying groups",
+      "setup": "Grouped disposable home with an authoritative store, a recorded rollback, and optional retained atomic staging. Inject directory sync failure after the marker is removed.",
+      "action": "Attempt rollback twice with the parent sync failing, then retry via the ordinary recovery entry.",
+      "expected": "Both failed attempts leave each original group and the journal available. The retry sync is required even when the marker is absent. The ordinary retry finishes with intact store identity and any staging retained.",
+      "planned_files": [
+        "internal/state/layout_crash_order_test.go"
+      ]
     }
   ],
-  "seal": "d07866ed7498148e1cdefffce5bc4f0d8f98423572841cac092ed838903eb63c"
+  "seal": "738477733edeace2eb61b60500c63a4ee0501511aaa676728a7ceb46bff6352e"
 }
