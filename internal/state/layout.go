@@ -598,6 +598,10 @@ func verifyLayoutTransition(t *layoutTransaction) (map[string]bool, error) {
 }
 
 func finishLayoutChange(t *layoutTransaction) error {
+	return finishLayoutChangeWithSync(t, SyncPrivateDirectory)
+}
+
+func finishLayoutChangeWithSync(t *layoutTransaction, syncMarkerParent func(string) error) error {
 	if _, err := verifyLayoutTransition(t); err != nil {
 		return err
 	}
@@ -636,6 +640,12 @@ func finishLayoutChange(t *layoutTransaction) error {
 		return err
 	}
 	if t.Target == layoutFlat {
+		// Persist marker removal before changing the scaffold. A crash must
+		// not leave a visible grouped marker with a partially removed tree.
+		// A retry also runs this barrier when the marker is already absent.
+		if err := syncMarkerParent(Dir()); err != nil {
+			return fmt.Errorf("could not sync the rollback layout marker: %w", err)
+		}
 		if t.Retained == nil {
 			if err := removeEmptyLayoutDirs(t.Scaffold); err != nil {
 				return err

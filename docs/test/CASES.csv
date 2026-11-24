@@ -3490,6 +3490,7 @@ LEG-47dec564c5d6,L1,Go core / CLI / server,internal/state/homeguard_test.go,115,
 MAP-76f334ae1390,L1,reviewed implementation,internal/state/layout_cleanup_test.go,10,reviewed-selector,TestGSS010RollbackPreservesLateConflict,False,GSS-010
 MAP-d90187c224b6,L1,reviewed implementation,internal/state/layout_commit_test.go,34,reviewed-selector,TestGSS013MarkerConflictPreservesOriginals,False,"GSS-013,GSS-014"
 MAP-b4b6649a8bcc,L1,reviewed implementation,internal/state/layout_commit_test.go,103,reviewed-selector,TestGSS014CommitNeedsCompleteTargetLayout,False,"GSS-013,GSS-014"
+MAP-0f6adc306462,L1,reviewed implementation,internal/state/layout_crash_order_test.go,11,reviewed-selector,TestGSS019RollbackSyncsMarkerBeforeScaffold,False,GSS-019
 MAP-d18deb0abdc1,L1,reviewed implementation,internal/state/layout_metadata_test.go,10,reviewed-selector,TestGSS016RejectsJournalReplacementBeforeMove,False,"GSS-016,GSS-017"
 MAP-9810dcacbc43,L1,reviewed implementation,internal/state/layout_metadata_test.go,47,reviewed-selector,TestGSS016RetirementPreservesReplacedJournal,False,"GSS-016,GSS-017"
 MAP-27e031b2480b,L1,reviewed implementation,internal/state/layout_metadata_test.go,107,reviewed-selector,TestGSS017RollbackPreservesReplacementEmptyGroup,False,"GSS-016,GSS-017"

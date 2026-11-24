@@ -1047,4 +1047,5 @@ Doctor SHALL preview owned stores and their grouped locations without writing st
 - **WHEN** the operator restores the flat layout after pausing all writers
 - **THEN** the current grouped records return to the legacy paths without replacing an existing object
 - **AND** known owner-private, interrupted staging files are kept in an inactive recovery directory
+- **AND** the removal of the grouped marker is synced before cleaning or archiving the scaffold, including on retry
 - **AND** cleanup can remove only known empty scaffold directories and preserves objects that appear late

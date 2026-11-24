@@ -5615,5 +5615,13 @@
     "selectors": [
       "TestGSS018LaunchdRejectsTruncatedDisabledTable"
     ]
+  },
+  "internal/state/layout_crash_order_test.go": {
+    "cases": [
+      "GSS-019"
+    ],
+    "selectors": [
+      "TestGSS019RollbackSyncsMarkerBeforeScaffold"
+    ]
   }
 }
