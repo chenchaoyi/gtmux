@@ -63,7 +63,7 @@ tmux 未安装时先安装；没有运行中的服务时，用 `tmux new -s work
 ## Homebrew（macOS）
 
 ```sh
-brew install chenchaoyi/tap/gtmux
+brew install --cask chenchaoyi/tap/gtmux
 brew install --cask chenchaoyi/tap/gtmux-app
 ```
 
@@ -85,7 +85,9 @@ go install github.com/chenchaoyi/gtmux/cmd/gtmux@latest
 
 ## 更新或卸载
 
-`gtmux update` 更新 CLI 和菜单栏 App，并尝试重启已加载的 serve、Direct 隧道服务以使用新二进制。组件版本更高时保留，未知版本不自动替换。`GTMUX_VERSION` 可明确指定版本，包括降级。详见[更新规则](cli.zh.md#安装与更新命令)。
+`gtmux update` 更新 CLI 和菜单栏 App，并尝试让已加载的 serve 和 Direct 隧道服务用新版本重启。版本更高或无法识别的组件会保留。可以用 `GTMUX_VERSION` 指定某个已发布的版本，包括降级。只想查询有无更新时，运行 `gtmux update --check`。详见[安装与更新命令](cli.zh.md#安装与更新命令)。
+
+日常升级会沿用原有的数据目录布局。运行 `gtmux doctor --storage-layout` 可以预览哪些托管目录能分组。分组需要按步骤离线操作。已经分组的安装若要退回不支持分组的旧版，先恢复平铺。见[数据目录与回退](design/state-storage-lifecycle.zh.md#离线迁移)。
 
 CLI 安装后返回退出码 3，表示可选的 App 步骤失败。旧 App 可重试 `gtmux update`；未安装时用 `gtmux install app`。
 

@@ -1,9 +1,9 @@
 # Release preparation and timing
 
-This is a maintainer workflow, not another product release command. Keep the normal
-PR → latest candidate CI → merge → actual main CI → annotated tag sequence. Use the
-same reviewed source for CLI, Mac and any selected mobile delivery. Signing,
-notarization, private installer checks and actual installation are separate receipts.
+Open a PR and run the required checks on its final candidate. After merging, wait
+for checks on the resulting main commit before creating the annotated tag. The CLI,
+Mac app and any selected mobile package use the same reviewed source. Record signing,
+notarization, installer availability and actual installation separately.
 
 ## Prepare once, before the first release PR
 
@@ -98,6 +98,14 @@ costs. Keep candidate and actual-main checks. Do not promote a QA APK as a
 production build or reuse signed archives across changed source/version/profile
 inputs. Any compilation cache needs explicit input and trust boundaries before
 adoption; a faster warm sample alone does not establish equivalence.
+
+## Publish the website documentation
+
+The gtmux repository owns the README, reference and guides. Review the product site
+copy in the website repository. Preview generated documentation with the exact
+candidate commit. Sync the published site to the final release tag once the signed
+release is available. Check the docs source manifest, internal links and public
+pages on both website origins. Keep each site's existing access policy.
 
 ## Retrieve encrypted results consistently
 

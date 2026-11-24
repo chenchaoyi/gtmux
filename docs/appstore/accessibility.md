@@ -84,7 +84,7 @@ Fill the generated file; blank fields and `supported: null` deliberately fail:
   source review, simulator capture or physical acceptance; untested is not passed.
 - Each of the nine `capabilities`: choose a boolean `supported` and give `evidence`.
   For false, explain why support is not claimed (for example, not evaluated). True
-  requires evidence for Apple's whole-common-task standard, not just one control.
+  requires evidence that users can complete the common task with that capability.
 
 `status` checks the exact package-receipt hash, version/build and current live baseline:
 

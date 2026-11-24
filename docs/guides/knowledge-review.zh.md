@@ -1,8 +1,14 @@
+---
+title: 使用与审阅知识
+description: 行动前查找适用规则，并审阅知识库的修改提案。
+order: 19
+---
+
 # 使用与审阅知识
 
-[English](knowledge-review.md)
+[English](knowledge-review.md) · **中文**
 
-知识台账继续是唯一权威。先在计划或风险动作前读取少量适用知识，再由人或 HQ 审核修订。此版本提供 CLI 和 Markdown 工作台；Dreaming 复用现有模型 CLI，没有增加后台服务、调度器或自动同步插件。
+行动前先查适用规则。可以用 CLI 或本地 Markdown 工作区提出修改，再对照知识台账审核。耗时较长的审阅，HQ 可以从上次保存的进度继续。
 
 ## 动作前读取
 

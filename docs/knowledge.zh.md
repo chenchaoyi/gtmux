@@ -118,6 +118,16 @@ HQ 知识库里，不会自动进入所有 agent 的指令。安装 gtmux 或运
 
 ## 怎么看，怎么改
 
+遇到可能已有规则的决定，先用 `gtmux knowledge consult` 查当前任务和项目。HQ 自己做决定时可加
+`--role hq`，让结果按 HQ 的适用范围筛选。
+
+```sh
+gtmux knowledge consult --query "发布新版，沿用现有访问策略" --action release --repo .
+```
+
+采用之前先读条目正文和例外。某条规则对决定有实际影响时，在任务证据中留下条目 ID 和修订号。
+`gtmux knowledge usage summary` 显示近 30 天主动登记的使用情况。结果为空，表示这段时间没有使用回执。
+
 手机和 iPad 上打开 HQ，点「**知识库**」。
 
 ![iPad 的 HQ 页面：顶部的「知识库」卡片位于「态势板」与「用量」之间](guides/img/hq-supervisor-ipad-zh.jpg)

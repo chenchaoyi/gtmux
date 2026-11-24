@@ -128,6 +128,19 @@ a sync. Other agent types currently have no global knowledge distribution channe
 
 ## Reading it and changing it
 
+Use `gtmux knowledge consult` before making a decision that may be covered by an
+existing rule. Give it the task and your project directory. HQ can add `--role hq` so
+its results reflect the rules that apply to HQ.
+
+```sh
+gtmux knowledge consult --query "publish a new version using the existing access policy" --action release --repo .
+```
+
+Read the selected entry and its exceptions before applying it. Retain the entry ID
+and revision in the task's evidence when they affected a decision. The last 30 days
+of usage reports are available through `gtmux knowledge usage summary`. These are
+self-reports. An empty summary means no usage reports were recorded.
+
 On the phone and iPad, open HQ and tap **Knowledge**.
 
 ![HQ on iPad: the Knowledge card is at the top, between Board and Usage](guides/img/hq-supervisor-ipad-en.jpg)

@@ -63,7 +63,7 @@ For an intentional per-agent setup, use `gtmux install hooks --agent codex` (rep
 ## Homebrew (macOS)
 
 ```sh
-brew install chenchaoyi/tap/gtmux
+brew install --cask chenchaoyi/tap/gtmux
 brew install --cask chenchaoyi/tap/gtmux-app
 ```
 
@@ -85,7 +85,9 @@ Source builds install only the CLI and do not contain the official hosted-tunnel
 
 ## Update or uninstall
 
-`gtmux update` updates the CLI and menu-bar app and attempts to restart loaded serve and Direct tunnel services with the new binary. Higher component versions are preserved; unknown versions are left alone. A `GTMUX_VERSION` pin can explicitly select a version, including a downgrade. See the [update contract](cli.md#installation-and-update-commands).
+`gtmux update` updates the CLI and menu-bar app and attempts to restart loaded serve and Direct tunnel services with the new binary. It preserves components with a higher or unknown version. A `GTMUX_VERSION` pin can select a published version, including a downgrade. To check without installing, run `gtmux update --check`. See [installation and update commands](cli.md#installation-and-update-commands).
+
+Updates keep the existing data layout. Run `gtmux doctor --storage-layout` to see which managed paths can be grouped. Grouping has a separate offline procedure. If you have already grouped the directories, restore the flat layout before installing a version that predates grouping. See [storage layout and rollback](design/state-storage-lifecycle.md#offline-transition).
 
 Exit 3 after a CLI installation means the optional app step failed. For an old app retry `gtmux update`; for an absent one use `gtmux install app`.
 

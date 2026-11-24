@@ -108,10 +108,16 @@ Reuse unchanged bytes. If screens or captions change, render and visually inspec
 )
 ```
 
-Place before submission, while the version is editable. Library image existence alone
-is insufficient: both placements per locale must read back `ok`. Once submitted/live,
-the version's placements cannot be added through that API; separate asset review and
-product-page selection in ASC may be needed (the 1.0.97 recovery).
+Place both images for each locale while the app version is editable. Record the four
+image IDs and their placements. The Asset Library can review images separately from
+an app version. An `APPROVED` library image becomes eligible for use. Check the active
+placements on the published product page to see which images customers actually get.
+For a published version, use **Header and Search Results → Browse Assets** to pick
+the approved images, then publish the placement. Check the iPhone and iPad previews
+in both languages and read back the active image IDs after publishing. See
+[Apple's instructions for updating a live placement](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-your-app-store-assets).
+Use the recorded asset IDs or content-hash names. The images under
+`fastlane/creative/` may be the archived art for an earlier app version.
 
 ## 3. Build and upload the binary
 
