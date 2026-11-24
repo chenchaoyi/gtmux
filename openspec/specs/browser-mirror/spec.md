@@ -558,11 +558,17 @@ Browser routes and overlays SHALL use concise localized action labels, factual e
 - **THEN** the menu states that no saved layouts exist and offers a clearly named Save current layout action
 
 ### Requirement: Collapsible working conversation preview
-Chat SHALL show a collapsed-by-default Live strip while the current agent is working, shared by focused conversations and workspace panels. Expanding SHALL show the latest 14 non-trailing-blank rows from the current screen capture, not an earlier transcript reply. The strip SHALL retain its disclosure preference per pane across polling and mode switches, preserve drafts and reading position, and disappear when work stops. Runtime SHALL use the recorded current-state start and server clock when available, and be omitted when unknown. Capture errors SHALL identify unavailable or stale output and retry. Late responses SHALL not appear in a different pane, mode, turn or credential scope, and revoked access SHALL clear cached Live content.
+Chat SHALL show a collapsed-by-default Live strip while the current agent is working, shared by focused conversations and workspace panels. Expanding SHALL show up to 2,000 rows from the authorized pane capture, including available terminal scrollback. The open panel SHALL cover the chat from the composer edge and stay bounded to that conversation. Its top handle SHALL resize by pointer, touch and keyboard. The panel SHALL retain its height and disclosure per pane across polling and mode switches, preserve the transcript viewport and drafts, and disappear when work stops. Runtime SHALL use the recorded current-state start and server clock when available, and be omitted when unknown. Capture errors SHALL identify unavailable or stale output and retry. Late responses SHALL not appear in a different pane, mode, turn or credential scope, and revoked access SHALL clear cached Live content.
 
 #### Scenario: Watch an active turn
 - **WHEN** the reader expands Live during a working conversation
 - **THEN** current output updates without replacing transcript history or changing the draft, and the strip closes only when the reader chooses or work stops
+
+#### Scenario: Read earlier terminal output
+
+- **WHEN** the reader scrolls up in Live or selects terminal text and a new capture arrives
+- **THEN** the current reading position and capture remain available
+- **AND** returning to live displays the latest output and follows the bottom
 
 #### Scenario: Switch sessions during a slow capture
 - **WHEN** a capture response arrives after the reader switches to another session

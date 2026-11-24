@@ -735,7 +735,7 @@
       if (!$('workbench').hidden && (e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === 'k' || e.key === 'K') && !(e.target && e.target.closest && e.target.closest('[contenteditable]:not([contenteditable="false"]), [role="textbox"]'))) { e.preventDefault(); openCmdk(); return; }
       // Native controls own their activation keys; editable regions own typing.
       // Inspect ancestors too: focus can sit on a child inside a custom control.
-      if (e.target && e.target.closest && e.target.closest('button, summary, .step-input, a[href], [role="button"], [role="textbox"], [contenteditable]:not([contenteditable="false"])')) return;
+      if (e.target && e.target.closest && e.target.closest('button, summary, .step-input, .live-output, .live-resize, a[href], [role="button"], [role="textbox"], [contenteditable]:not([contenteditable="false"])')) return;
       if (!$('cmdk').hidden) { return; } // cmdk has its own input handler
       // Keep browser/OS combinations (especially Copy) out of plain-key navigation.
       // The workbench palette is the one explicit modified page shortcut.
@@ -2466,6 +2466,18 @@
     chatSig = sig;
     drawChat(turns);
   }
+  // Keep Live mounted when the transcript repaints, including during a drag.
+  function mountConversationScroll(root, scroll) {
+    var main = root.querySelector(':scope > .conversation-main');
+    if (!main) {
+      main = el('div', 'conversation-main');
+      root.replaceChildren(main);
+    }
+    var old = main.querySelector(':scope > .conv-scroll, :scope > .tile-chat');
+    if (old) old.replaceWith(scroll); else main.prepend(scroll);
+    return main;
+  }
+
   // §03 wide chat: a turn-outline rail (left) + a centered conversation column with
   // copy actions beside agent messages + a waiting approval card. Narrow: no rail.
   function drawChat(turns) {
@@ -2477,7 +2489,7 @@
     var anchor = readingAnchor(oldScroll), prepended = hasPrependedTurns(oldScroll, turns, curAgent);
     var mapState=root.conversationMapDispose && root.conversationMapDispose.snapshot && root.conversationMapDispose.snapshot();
     if(root.conversationMapDispose) root.conversationMapDispose();
-    root.innerHTML = ''; root.classList.remove('wide');
+    root.classList.remove('wide');
     var a = curAgent || {};
 
     var scroll = document.createElement('div'); scroll.className = 'conv-scroll';
@@ -2511,8 +2523,8 @@
     turns.forEach(function (t, idx) { col.appendChild(conversationTurn(t, a, idx, chatExpanded, seps[idx], true)); });
     appendPendingPrompts(col, curPane, a);
     // waiting → an inline approval card (read-only 1/2/3 from /api/options).
-    var main = document.createElement('div'); main.className = 'conversation-main';
-    scroll.appendChild(col); main.appendChild(scroll); root.appendChild(main);
+    scroll.appendChild(col);
+    var main = mountConversationScroll(root, scroll);
     renderChatInteraction();
     syncChatLive(main, a, function () { return !$('chat').hidden && paneMode === 'chat' && curPane === a.pane_id && curAgent && curAgent.status === 'working'; });
     restoreCodeState(root,preserved);
@@ -2712,53 +2724,169 @@
     var minutes = Math.floor(seconds / 60);
     return minutes < 60 ? minutes + T('m ', '分') + seconds % 60 + T('s', '秒') : Math.floor(minutes / 60) + T('h ', '小时') + minutes % 60 + T('m', '分');
   }
+  var LIVE_DEFAULT_HEIGHT = 272, LIVE_MIN_HEIGHT = 144, LIVE_HEIGHT_STEP = 56, livePanelSequence = 0;
   function liveTail(value) {
     var lines = String(value || '').split('\n').map(function (line) { return plainRow(line).replace(/[\x00-\x08\x0b-\x1f\x7f]/g, ''); });
     while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
-    return lines.slice(-14).join('\n');
+    return lines.slice(-2000).join('\n');
+  }
+  function liveBounds(panel) {
+    var max = panel.parentElement.clientHeight;
+    return {min: Math.min(max, LIVE_MIN_HEIGHT), max: max};
+  }
+  function paintLiveHeight(panel, state) {
+    var height = state.height || LIVE_DEFAULT_HEIGHT, bounds = liveBounds(panel);
+    panel.style.setProperty('--live-height', height + 'px');
+    panel.grip.setAttribute('aria-valuemin', bounds.min);
+    panel.grip.setAttribute('aria-valuemax', bounds.max);
+    panel.grip.setAttribute('aria-valuenow', Math.min(height, bounds.max));
+    panel.grip.setAttribute('aria-disabled', bounds.min === bounds.max);
+    panel.grip.tabIndex = bounds.min === bounds.max ? -1 : 0;
+  }
+  function installLiveResize(panel, state) {
+    var grip = panel.grip, drag = null;
+    function resize(target, bounds) {
+      if (bounds.min === bounds.max) return;
+      state.height = Math.round(Math.min(bounds.max, Math.max(bounds.min, target)));
+      paintLiveHeight(panel, state);
+      if (!state.frozen) panel.output.scrollTop = panel.output.scrollHeight;
+    }
+    grip.onpointerdown = function (event) {
+      var bounds = liveBounds(panel);
+      if (event.button !== 0 || drag || bounds.min === bounds.max) return;
+      drag = {id: event.pointerId, y: event.clientY, height: panel.getBoundingClientRect().height};
+      grip.setPointerCapture(event.pointerId);
+      grip.focus({preventScroll: true});
+      event.preventDefault();
+    };
+    grip.onpointermove = function (event) {
+      if (panel.open && drag && drag.id === event.pointerId) resize(drag.height + drag.y - event.clientY, liveBounds(panel));
+    };
+    grip.onlostpointercapture = function () { drag = null; };
+    grip.onkeydown = function (event) {
+      var bounds = liveBounds(panel), height = panel.getBoundingClientRect().height, next;
+      if (event.key === 'ArrowUp') next = height + LIVE_HEIGHT_STEP;
+      else if (event.key === 'ArrowDown') next = height - LIVE_HEIGHT_STEP;
+      else if (event.key === 'Home') next = bounds.min;
+      else if (event.key === 'End') next = bounds.max;
+      else return;
+      event.preventDefault();
+      event.stopPropagation();
+      resize(next, bounds);
+    };
+  }
+  function liveSelection(panel, selection) {
+    return selection && !selection.isCollapsed && panel.output.contains(selection.anchorNode) && panel.output.contains(selection.focusNode);
+  }
+  function freezeLive(panel, state) {
+    if (!state.frozen && panel.shownText) state.frozen = {text: panel.shownText};
+    if (state.frozen) {
+      state.frozen.top = panel.output.scrollTop;
+      state.frozen.left = panel.output.scrollLeft;
+    }
   }
   function syncChatLive(host, agent, valid) {
-    var id = agent && agent.pane_id; if (!id) return;
-    var state = chatLive[id] || (chatLive[id] = {open: false, revision: 0});
-    var panel = host.querySelector('.chat-live'), working = agent.status === 'working';
+    var id = agent && agent.pane_id, panel = host.querySelector('.chat-live');
+    if (panel && panel.dataset.pane !== id) { panel.remove(); panel = null; }
+    if (!id) return;
+    var scope = chatScope(agent), state = chatLive[id], working = agent.status === 'working';
+    if (!state || state.scope !== scope) {
+      cancelRead('live:' + id);
+      state = chatLive[id] = {open: false, revision: 0, scope: scope};
+      if (panel) { panel.remove(); panel = null; }
+    }
     if (state.working !== working || state.since !== agent.since) {
-      state.revision++; state.text = ''; state.error = false; state.loading = false;
+      state.revision++; state.text = ''; state.frozen = null; state.error = false; state.loading = false;
       cancelRead('live:' + id);
     }
     state.working = working; state.since = agent.since; state.agent = agent; state.valid = valid;
     if (!working) { if (panel) panel.remove(); return; }
     if (!panel) {
-      panel = document.createElement('details'); panel.className = 'chat-live'; panel.dataset.pane = id;
-      var summary = document.createElement('summary'); summary.className = 'live-summary';
-      var dot = document.createElement('span'); dot.className = 'live-dot'; dot.setAttribute('aria-hidden', 'true'); summary.appendChild(dot);
-      var title = document.createElement('strong'); title.textContent = LABEL.working; summary.appendChild(title);
-      panel.clock = document.createElement('span'); panel.clock.className = 'live-clock'; summary.appendChild(panel.clock);
-      panel.action = document.createElement('span'); panel.action.className = 'live-action'; summary.appendChild(panel.action);
-      var chevron = document.createElement('span'); chevron.className = 'live-chevron'; chevron.innerHTML = uiIcon('chevron'); summary.appendChild(chevron); panel.appendChild(summary);
-      panel.source = document.createElement('p'); panel.source.className = 'live-source'; panel.appendChild(panel.source);
-      panel.output = document.createElement('pre'); panel.output.className = 'live-output'; panel.output.setAttribute('aria-label', T('Live terminal output', '实时终端输出')); panel.appendChild(panel.output);
-      panel.note = document.createElement('p'); panel.note.className = 'live-note'; panel.note.setAttribute('role', 'status'); panel.appendChild(panel.note);
-      panel.viewport = host.querySelector('.conv-scroll, .tile-chat');
-      summary.addEventListener('click', function () { var view = panel.viewport; panel.followOnToggle = view && view.clientHeight > 0 && view.scrollHeight - view.scrollTop - view.clientHeight < 48; });
+      panel = el('details', 'chat-live'); panel.dataset.pane = id;
+      var summary = el('summary', 'live-summary'); summary.dataset.chatFocus = 'live-summary';
+      var dot = el('span', 'live-dot'); dot.setAttribute('aria-hidden', 'true'); summary.appendChild(dot);
+      summary.appendChild(el('strong', '', LABEL.working));
+      panel.clock = el('span', 'live-clock'); summary.appendChild(panel.clock);
+      panel.action = el('span', 'live-action'); summary.appendChild(panel.action);
+      var chevron = el('span', 'live-chevron'); chevron.innerHTML = uiIcon('chevron'); summary.appendChild(chevron);
+      panel.grip = el('div', 'live-resize'); panel.grip.dataset.chatFocus = 'live-resize';
+      panel.grip.setAttribute('role', 'separator'); panel.grip.setAttribute('aria-orientation', 'horizontal');
+      panel.grip.setAttribute('aria-label', T('Live terminal height', '实时终端高度'));
+      panel.grip.title = T('Drag up or down to resize', '向上拉高或向下缩小');
+      panel.tools = el('div', 'live-tools');
+      panel.source = el('p', 'live-source');
+      panel.update = el('span', 'live-update', T('New output', '有新输出')); panel.update.setAttribute('role', 'status');
+      panel.resume = el('button', 'live-resume', T('Return to live', '回到实时')); panel.resume.type = 'button'; panel.resume.dataset.chatFocus = 'live-resume';
+      panel.tools.append(panel.source, panel.update, panel.resume);
+      panel.output = el('pre', 'live-output'); panel.output.id = 'live-output-' + (++livePanelSequence);
+      panel.output.tabIndex = 0; panel.output.dataset.chatFocus = 'live-output';
+      panel.output.setAttribute('aria-label', T('Live terminal output', '实时终端输出'));
+      panel.grip.setAttribute('aria-controls', panel.output.id);
+      panel.note = el('p', 'live-note'); panel.note.setAttribute('role', 'status');
+      var content = el('div', 'live-contents'); content.append(panel.tools, panel.output, panel.note);
+      panel.append(summary, panel.grip, content);
+      installLiveResize(panel, state);
+      panel.output.onscroll = function () {
+        if (!panel.open || !panel.shownText || !panel.output.clientHeight) return;
+        if (state.frozen || panel.output.scrollHeight - panel.output.scrollTop - panel.output.clientHeight > 32) {
+          freezeLive(panel, state);
+          paintLiveTools(panel, state);
+        }
+      };
+      panel.resume.onclick = function () {
+        var selection = window.getSelection();
+        if (liveSelection(panel, selection)) selection.removeAllRanges();
+        state.frozen = null; paintLive(panel, state); panel.output.focus({preventScroll: true});
+      };
+      panel.output.onkeydown = function (event) {
+        if (event.key === 'End' && state.frozen && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+          event.preventDefault(); event.stopPropagation(); panel.resume.click();
+        }
+      };
+      function disclose(open) {
+        state.open = open; panel.open = open; paintLive(panel, state);
+        if (open) pollChatLive(id); else cancelRead('live:' + id);
+      }
+      summary.onclick = function (event) {
+        event.preventDefault(); disclose(!panel.open);
+      };
+      panel.onkeydown = function (event) {
+        if (event.key !== 'Escape' || !panel.open) return;
+        event.preventDefault(); event.stopPropagation(); disclose(false); summary.focus({preventScroll: true});
+      };
       panel.open = !!state.open;
-      panel.ontoggle = function () { state.open = panel.open; paintLive(panel, state); if (panel.followOnToggle && panel.viewport) panel.viewport.scrollTop = panel.viewport.scrollHeight; panel.followOnToggle = false; if (state.open) pollChatLive(id); else cancelRead('live:' + id); };
       host.appendChild(panel);
     }
     if (panel.open !== !!state.open) panel.open = !!state.open;
     paintLive(panel, state);
     if (state.open) pollChatLive(id);
   }
-  function paintLive(panel, state) {
-    var viewport = panel.viewport, following = viewport && viewport.clientHeight > 0 && viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 48;
+  function paintLiveTools(panel, state) {
     var pendingHistory = !!(state.agent.observed_conversation || state.agent.history_read_only);
     panel.source.hidden = !pendingHistory;
     panel.source.textContent = pendingHistory ? T('Current pane ', '当前 pane ') + state.agent.pane_id + T(' · History association unconfirmed', ' · 历史对话关联待确认') : '';
+    panel.resume.hidden = !state.frozen;
+    panel.update.hidden = !state.frozen || state.text === state.frozen.text;
+    panel.tools.hidden = !pendingHistory && !state.frozen;
+  }
+  function paintLive(panel, state) {
     panel.clock.textContent = liveDuration(state.agent);
     panel.action.textContent = state.open ? T('Collapse', '收起') : T('Live output', '展开实时输出');
-    var text = state.text || (state.error ? T('Live output is unavailable.', '暂时无法读取实时输出。') : state.loading ? T('Loading live output…', '正在加载实时输出…') : T('Waiting for output…', '等待实时输出…'));
-    if (panel.output.textContent !== text) { var atBottom = panel.output.scrollHeight - panel.output.scrollTop - panel.output.clientHeight < 32; panel.output.textContent = text; if (atBottom) panel.output.scrollTop = panel.output.scrollHeight; }
-    panel.note.hidden = !state.error; panel.note.textContent = state.error ? (state.text ? T('Update failed. Showing the last capture; retrying…', '更新失败，显示上次内容，正在重试…') : T('Retrying automatically…', '正在自动重试…')) : '';
-    if (following) viewport.scrollTop = viewport.scrollHeight;
+    if (!panel.open) { panel.wasClosed = true; return; }
+    paintLiveHeight(panel, state);
+    if (!state.frozen && state.text && panel.captureRevision === state.revision && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
+    paintLiveTools(panel, state);
+    var captured = state.frozen ? state.frozen.text : state.text;
+    var text = captured || (state.error ? T('Live output is unavailable.', '暂时无法读取实时输出。') : state.loading ? T('Loading live output…', '正在加载实时输出…') : T('Waiting for output…', '等待实时输出…'));
+    var changed = panel.displayedText !== text;
+    if (changed) { panel.output.textContent = text; panel.displayedText = text; }
+    panel.shownText = captured; panel.captureRevision = state.revision;
+    panel.note.hidden = !state.error; panel.note.textContent = state.error ? (captured ? T('Update failed. Showing the last capture; retrying…', '更新失败，显示上次内容，正在重试…') : T('Retrying automatically…', '正在自动重试…')) : '';
+    if (!state.frozen) panel.output.scrollTop = panel.output.scrollHeight;
+    else if (changed || panel.wasClosed) {
+      panel.output.scrollTop = state.frozen.top; panel.output.scrollLeft = state.frozen.left;
+    }
+    panel.wasClosed = false;
   }
   function paintLivePanels(id, state) {
     document.querySelectorAll('.chat-live').forEach(function (panel) { if (panel.dataset.pane === id) paintLive(panel, state); });
@@ -2772,6 +2900,9 @@
       return api('/api/pane?id=' + encodeURIComponent(id), {signal: signal}).then(function (r) {
         if (!active()) return null;
         if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+        if (r.status === 403 || r.status === 404) {
+          state.text = ''; state.frozen = null; state.error = true; return null;
+        }
         if (!r.ok) throw new Error('live capture'); return r.json();
       }).then(function (capture) {
         if (!capture || !active()) return;
@@ -4080,9 +4211,8 @@
     var seps = sepLabels(turns);
     turns.forEach(function (tn, idx) { wrap.appendChild(conversationTurn(tn, t.agent || {}, idx, t.expanded || (t.expanded = {}), seps[idx], false, function () { renderTileChat(t, t.lastTurns || []); })); });
     appendPendingPrompts(wrap, t.id, t.agent || {});
-    var main = document.createElement('div'); main.className = 'conversation-main'; main.appendChild(wrap);
     if(t.conversationMapDispose) t.conversationMapDispose();
-    t.body.innerHTML = ''; t.body.appendChild(main);
+    var main = mountConversationScroll(t.body, wrap);
     syncChatLive(main, t.agent || {}, function () { return WB.on && !t.removed && t.mode === 'chat' && t.agent.status === 'working'; });
     restoreToolState(t.body, preserved);
     t.conversationMapDispose = window.GtmuxConversationMap ? window.GtmuxConversationMap.mount(main,wrap,turns,T,mdPreview,mapOptions(t.agent,mapState)) : null;

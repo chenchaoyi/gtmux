@@ -1,4 +1,16 @@
 {
+  "tests/web/live-view-resize.test.cjs": {
+    "cases": [
+      "WLV-001",
+      "WLV-002",
+      "WLV-003"
+    ],
+    "selectors": [
+      "WLV-001 Desktop Live drag overlays the chat and survives transcript refresh",
+      "WLV-002 Web Live freezes the readable capture until returning to live",
+      "WLV-003 Narrow focused Live supports touch, keyboard and a shorter viewport"
+    ]
+  },
   "internal/diag/retention_warning_test.go": {
     "cases": [
       "DIAG-TERM-005"

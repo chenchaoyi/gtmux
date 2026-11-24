@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1454 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1455 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2722 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 156 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 141 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 144 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
 
@@ -463,7 +463,7 @@
 | PRIVATEWRITE-DIRECTORY-SYNC | EIO is returned after complete visible replacement, repeated same-byte writes reach directory synchronization again, successful directory fsync returns nil. No truncated inode, exposed permissions or leaked staging file. No hardware durability claim. |
 | LPV-001 | Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and remains bounded14lines/220pt. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain. |
 | LPV-002 | Old capture is absent immediately in the new Live scope; late A cannot replace B. Current B capture appears only after its read settles. Historical Chat send/keys/uploads remain disabled and no send is made. No additional poller is introduced. |
-| LPV-003 | Existing disclosure works and displays only the bounded current-pane tail, with explicit pane/association caption. Closing hides output. No send or authority promotion and no page/console errors. |
+| LPV-003 | Live displays exactly the 20 captured rows from the current pane and identifies the pending association. Closing hides output. No send or authority promotion and no page/console errors. |
 | LAP-007 | Only a verified local service yields an HTTP address. The published App reference survives unavailable service and the CLI reports how to retry. An explicit port cannot send a credential or select a foreign host. |
 | LAP-001 | Exact registered metadata and original scope are returned after byte/hash checks; source changes do not replace the snapshot. Missing/revoked/corrupt fail without source fallback or scanning. |
 | LAP-002 | Both App reference and local HTTP link name the registered bytes. The link contains only the original document/session/home and the browser must pair independently. |
@@ -646,6 +646,9 @@
 | UR-001 | The 34-second HTTP-200-equivalent report is shown; the stalled read is classified as timeout, the next valid report is shown, and the late old report cannot overwrite it. |
 | UR-002 | Valid empty reports remain data, 404 is unsupported, other failures throw typed causes; no failure becomes zero usage or a fabricated report. |
 | UR-003 | Loading and empty are distinct; retry is available only where it can help; prior usage remains visibly labelled; technical details begin folded; actions and alerts have accessible roles/labels. |
+| WLV-001 | The panel grows upward and shrinks toward the same bottom edge. The transcript viewport and input stay in place; the draft is intact. An ongoing drag survives transcript repaint. Reopening restores the selected height. |
+| WLV-002 | Older rows are scrollable with original columns. The displayed capture and scroll offsets stay fixed while reading. The new output indication appears and the return action takes the reader to the latest output without sending any input. |
+| WLV-003 | Only Live resizes, bounded by the chat region. Navigation and the input stay available; normal height restores the chosen size. Escape collapses and focuses the disclosure. The draft is unchanged and no request sends it. |
 | WHS-001 | The visible localized label and glyph agree with the roster. Error wins for an agent or readable conversation. Plain terminals and unknown state are neutral. A missing roster entry clears old status and error without discarding identity. Unchanged polls preserve the label node and retirement removes its state. |
 | WHS-002 | Each panel has its own state and normal text contrast is at least 4.5:1. The removed agent turns neutral. Siblings, mounted content and the draft remain intact. Waiting has no standing pulse with normal motion. No send occurs. |
 | WHS-003 | The keyboard outline is visible and distinct from state. The title and pane ID share one line inside the narrow tile; the status remains available to assistive readers and through the existing tint and badge. Controls fit. Message copy uses a 15-pixel icon with the existing desktop and touch hit targets; clicking copies the complete synthetic reply and reports success. Focused labels and ordinary text meet 4.5:1 in both themes. Drafts, reading nodes, tools and read-only boundaries remain. Terminal follows live roster state without transcript reads for hidden Chat. |

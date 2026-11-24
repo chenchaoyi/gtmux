@@ -185,10 +185,10 @@ LEG-6216dc04765e,G,Go core / CLI / server,internal/server/attach_flow_test.go,34
 LEG-9586890d355b,G,Go core / CLI / server,internal/server/attach_test.go,209,Test,TestAttach_LeavingAQuietPaneEndsItsTmuxClient,False,legacy-not-retrospectively-reviewed
 LEG-15be7b6d2905,G,Go core / CLI / server,internal/server/focusstatus_test.go,46,Test,TestUnsupportedFocusIsARefusalRatherThanAnOperationalError,False,legacy-not-retrospectively-reviewed
 LEG-6147f8559fe3,G,Browser,internal/server/web/activity.test.cjs,8,test,"browser activity tables match the phone labels, aliases and icon family",False,legacy-not-retrospectively-reviewed
-LEG-2775e91b17b6,G,Browser,internal/server/web/app.test.cjs,187,test,browser entry resolves every asset and API inside the same Mac path,False,legacy-not-retrospectively-reviewed
+LEG-2775e91b17b6,G,Browser,internal/server/web/app.test.cjs,201,test,browser entry resolves every asset and API inside the same Mac path,False,legacy-not-retrospectively-reviewed
 LEG-f091ef91ee97,G,Browser,internal/server/web/app.test.cjs,457,test,the browser costs characters with the phone's tmux-measured widths,False,legacy-not-retrospectively-reviewed
-LEG-188a56d517ad,G,Browser,internal/server/web/app.test.cjs,518,test,"the bar is two real buttons, and each does its own thing",False,legacy-not-retrospectively-reviewed
-LEG-867e608e0fae,G,Browser,internal/server/web/app.test.cjs,714,test,focus HTML preserves Chat before Terminal alongside the real tile controls,False,legacy-not-retrospectively-reviewed
+LEG-188a56d517ad,G,Browser,internal/server/web/app.test.cjs,532,test,"the bar is two real buttons, and each does its own thing",False,legacy-not-retrospectively-reviewed
+LEG-867e608e0fae,G,Browser,internal/server/web/app.test.cjs,728,test,focus HTML preserves Chat before Terminal alongside the real tile controls,False,legacy-not-retrospectively-reviewed
 LEG-a24ee8487c6a,G,Browser,internal/server/web/documents.test.cjs,7,test,browser document references and validation are generated from the App contract,False,legacy-not-retrospectively-reviewed
 LEG-dd62d73a080e,G,Browser,internal/server/web/reading.test.cjs,2,test,file+' follows its native model',True,legacy-not-retrospectively-reviewed
 LEG-25aecd2608d3,G,Browser,internal/server/web/reading.test.cjs,6,test,offline browser formatter and syntax reader retain complete inputs,False,legacy-not-retrospectively-reviewed
