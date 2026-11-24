@@ -1102,25 +1102,26 @@ button.appr-opt { width: 100%; background: transparent; color: inherit; text-ali
 .live-note { margin: 0; padding: 0 18px 8px; color: #f6c975; font-size: 12px; }
 /* The compact sheet can cover the tile header; the reading map stays inside the chat body. */
 .tile-body:has(.chat-live.live-compact) { overflow: visible; }
+.tile-body .conversation-main:has(.chat-live.live-compact) {
+  --live-strip-height: 24px;
+  padding-bottom: min(var(--live-strip-height), var(--live-body-height));
+}
+.conversation-main:has(.chat-live.live-compact) > .tile-chat { padding-block: 0; }
 .tile-body:has(.chat-live.live-compact) .conversation-map { clip-path: inset(0 0 0 -100vw); }
 .chat-live.live-compact {
   --live-grip-height: 12px;
-  --live-compact-summary-height: 24px;
-  bottom: max(0px, calc(100% - var(--live-body-height)));
-  height: clamp(var(--live-compact-summary-height), var(--live-body-height), var(--live-strip-height));
   max-height: none;
 }
 .chat-live[open].live-compact { height: min(var(--live-height), var(--live-available-height)); }
-.live-compact .live-summary { height: var(--live-compact-summary-height); padding: 0 10px; }
-.live-compact .live-contents { top: calc(var(--live-grip-height) + var(--live-compact-summary-height)); }
+.live-compact .live-summary { padding: 0 10px; }
 .live-compact .live-output { padding: 1px 10px; }
 .live-compact .live-tools { gap: 4px; padding: 0 10px; }
 .live-compact .live-source { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .live-compact .live-update { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .live-compact:has(.live-resume:not([hidden])) .live-clock { visibility: hidden; }
 .live-compact .live-resume {
-  position: absolute; right: 76px; top: calc(2px - var(--live-compact-summary-height)); z-index: 1;
-  min-height: 20px; max-width: calc(100% - 132px); padding: 1px 6px;
+  position: absolute; right: 94px; top: calc(2px - var(--live-strip-height)); z-index: 1;
+  min-height: 20px; max-width: calc(100% - 145px); padding: 1px 6px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .live-compact:has(.live-update:not([hidden])) .live-resume { background: rgba(39,199,230,.25); }

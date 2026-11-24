@@ -2745,7 +2745,7 @@
     if (bounds.compact) {
       height = Math.max(bounds.min, state.compactHeight || Math.round(bounds.min + (bounds.max - bounds.min) / 3));
       panel.style.setProperty('--live-available-height', bounds.max + 'px');
-      panel.style.setProperty('--live-body-height', bounds.bodyHeight + 'px');
+      panel.parentElement.style.setProperty('--live-body-height', bounds.bodyHeight + 'px');
     }
     panel.style.setProperty('--live-height', height + 'px');
     panel.grip.setAttribute('aria-valuemin', bounds.min);
@@ -4248,7 +4248,13 @@
     handle.addEventListener('mousedown', function (e) {
       e.preventDefault(); e.stopPropagation();
       var sx = e.clientX, sy = e.clientY, ow = t.w, oh = t.h;
-      function mv(ev) { t.w = Math.max(180, snapv(ow + ev.clientX - sx)); t.h = Math.max(120, snapv(oh + ev.clientY - sy)); t.el.style.width = t.w + 'px'; t.el.style.height = t.h + 'px'; if (t.fit && t.mode === 'term') { try { t.fit.fit(); } catch (e2) {} } }
+      function mv(ev) {
+        t.w = Math.max(180, snapv(ow + ev.clientX - sx)); t.h = Math.max(120, snapv(oh + ev.clientY - sy));
+        t.el.style.width = t.w + 'px'; t.el.style.height = t.h + 'px';
+        var live = t.body.querySelector('.chat-live');
+        if (live) paintLiveHeight(live, chatLive[live.dataset.pane]);
+        if (t.fit && t.mode === 'term') { try { t.fit.fit(); } catch (e2) {} }
+      }
       function up() { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); if (t.fit && t.mode === 'term' && t.lastText) { var x = t.lastText; t.lastText = ''; tileWrite(t, x); } wbSave(); }
       document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
     });

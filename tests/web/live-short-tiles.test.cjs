@@ -76,11 +76,15 @@ scenario('WLC-001 Live is readable and draggable on ordinary short workbench car
   await resizeTile(page, tile, 120);
   await summary.click();
   await assertOutput(panel, 1);
+  const compactChat = await chat.boundingBox(), compactComposer = await composer.boundingBox();
+  assert.ok(compactChat.y + compactChat.height <= compactComposer.y + 1, 'transcript stays above the composer');
   await panel.locator('.live-output').hover();
   await page.mouse.wheel(0, -180);
   const resume = panel.getByRole('button', {name: 'Return to live'});
   await resume.waitFor();
   await assertOutput(panel, 1);
+  const resumeBox = await resume.boundingBox(), collapseLabel = await panel.locator('.live-action').boundingBox();
+  assert.ok(resumeBox.x + resumeBox.width <= collapseLabel.x - 3, 'return and collapse controls have separate hit targets');
   await resume.click();
   assert.equal(await resume.isVisible(), false);
   await summary.click();
