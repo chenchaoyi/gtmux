@@ -117,7 +117,7 @@ func inspectClient(p Pane, procs map[int]process) (process, []int, string) {
 	if agents.LooksLikeVersion(filepath.Base(p.Command)) {
 		return process{}, nil, "other-agent"
 	}
-	return inspectForeground(p, procs, func(command string) bool { return command == "codex" })
+	return inspectForeground(p, procs, func(proc process) bool { return filepath.Base(proc.command) == "codex" })
 }
 
 func inspectClaude(p Pane, procs map[int]process) (process, []int, string) {
@@ -125,13 +125,16 @@ func inspectClaude(p Pane, procs map[int]process) (process, []int, string) {
 	if reported != "claude" && !agents.LooksLikeVersion(reported) {
 		return process{}, nil, "other-agent"
 	}
-	return inspectForeground(p, procs, func(command string) bool {
-		// The native install reports its executable version, including in tmux.
-		return command == "claude" || (command == reported && agents.LooksLikeVersion(command))
+	return inspectForeground(p, procs, func(proc process) bool {
+		command := filepath.Base(proc.command)
+		// On Linux tmux can report the group leader's argv[0] ("claude")
+		// while ps reports the versioned executable behind that launcher link.
+		return command == "claude" || (agents.LooksLikeVersion(command) &&
+			(command == reported || (reported == "claude" && proc.pid == proc.group)))
 	})
 }
 
-func inspectForeground(p Pane, procs map[int]process, isClient func(string) bool) (process, []int, string) {
+func inspectForeground(p Pane, procs map[int]process, isClient func(process) bool) (process, []int, string) {
 	root, ok := procs[p.PID]
 	wantTTY := tty(p.TTY)
 	if !ok || root.start == "" || root.foreground <= 0 {
@@ -160,7 +163,7 @@ func inspectForeground(p Pane, procs map[int]process, isClient func(string) bool
 			continue
 		}
 		chain := append(append([]int(nil), cur.chain...), cur.pid)
-		if isClient(filepath.Base(proc.command)) {
+		if isClient(proc) {
 			if proc.start != "" && tty(proc.tty) == wantTTY && proc.group == root.foreground && proc.foreground == root.foreground {
 				if found.pid != 0 {
 					return process{}, nil, "ambiguous-client"
