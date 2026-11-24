@@ -21,6 +21,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agentprofile"
 	"github.com/chenchaoyi/gtmux/internal/agents"
+	"github.com/chenchaoyi/gtmux/internal/codexterminal"
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/dsh"
 	"github.com/chenchaoyi/gtmux/internal/events"
@@ -611,6 +612,7 @@ func notifyAgentIcon(agentKey string) string {
 }
 
 func Run(stdin io.Reader, args []string) int {
+	observedAt := time.Now().UnixNano()
 	diag.SetProcess("hook", "system")
 	var raw []byte
 	agentKey := "claude"
@@ -988,7 +990,18 @@ func Run(stdin io.Reader, args []string) int {
 			// letting one of those claim the record pointed restore at a command stub
 			// instead of the work session. See resumeowner.go.
 			if sid != "" && (terminalAttachment.Client != "" || ownsPane(loc, agentKey, sid)) {
+				var hqObservation resume.HQObservation
+				if agentKey == "claude" && (event == "SessionStart" || event == "UserPromptSubmit") &&
+					hqpane.SameDir(cwd, state.HQHome()) {
+					generation := tmux.PaneGeneration(pane)
+					client, ok := codexterminal.ForegroundClaude(pane, os.Getpid())
+					if generation != "" && ok && generation == tmux.PaneGeneration(pane) {
+						hqObservation = resume.HQObservation{Generation: generation, ObservedAtNS: observedAt,
+							ClientPID: client.PID, ClientBirth: client.Start, ClientTTY: client.TTY}
+					}
+				}
 				_ = resume.SaveObserved(loc, resume.Record{
+					HQObservation:  hqObservation,
 					HomeID:         homeID,
 					TerminalClient: terminalAttachment.Client,
 					Agent:          agentKey, SessionID: sid, Cwd: cwd,
@@ -1073,7 +1086,8 @@ func Run(stdin io.Reader, args []string) int {
 					HomeID: homeID, CreationClient: creationClient, LaunchHost: host,
 					Event: event,
 					State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm, ProcessStart: processStart,
-					EndReason: turnOutcome(event), TurnID: nativeTurnID,
+					ProcessObservedAtNS: process.ObservedAtNS,
+					EndReason:           turnOutcome(event), TurnID: nativeTurnID,
 					// The hook runs under the agent, under the shell, under the terminal
 					// app — so its own env/ancestry names the hosting terminal (Warp,
 					// Ghostty, …) for the radar row's `terminal` field.

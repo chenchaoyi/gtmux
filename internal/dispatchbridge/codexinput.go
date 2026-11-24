@@ -17,10 +17,36 @@ import (
 )
 
 var codexInputTarget = resume.CodexFrontendForPane
+var codexInputTargetReadiness = resume.CodexFrontendForPaneReadiness
 var codexQueueInputs = codexrpc.QueueInputs
 var codexImageInputs = codexrpc.ImageInputs
 var codexUserInputs = codexrpc.UserInputs
 var codexIdleWakeInputs = codexrpc.IdleWakeInputs
+
+const codexFrontendProofUnavailable = "codex-frontend-proof-unavailable"
+
+func codexNativeTarget(pane string, opts dispatch.Opts) (resume.CodexFrontend, string) {
+	if !opts.IdleWakeInput || opts.ExpectedInstance == "" {
+		f, ok := codexInputTarget(pane)
+		if !ok {
+			return f, "codex-frontend-unavailable"
+		}
+		return f, ""
+	}
+	f, err := codexInputTargetReadiness(pane)
+	if err == nil {
+		return f, ""
+	}
+	if f.SessionID != "" && f.SessionID != opts.ExpectedSessionID || f.HomeID != "" && f.HomeID != opts.ExpectedHomeID ||
+		f.Instance != "" && f.Instance != opts.ExpectedInstance || f.PID != 0 && f.PID != opts.ExpectedClientPID {
+		return f, "expected-conversation-changed"
+	}
+	var why *resume.FrontendBindingError
+	if errors.As(err, &why) && why.Retryable {
+		return f, codexFrontendProofUnavailable
+	}
+	return f, "expected-conversation-changed"
+}
 
 func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) dispatch.Result {
 	return func(opts dispatch.Opts, text string, hold func() string) (result dispatch.Result) {
@@ -30,9 +56,9 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 		if opts.IdleWakeInput && (opts.DirectUserInput || opts.ActiveImageInput) {
 			return codexInputRefusal(dispatch.StateRefusedWaiting, "conflicting-native-input-policy", "conflicting-native-input-policy")
 		}
-		f, ok := codexInputTarget(pane)
-		if !ok {
-			return codexInputRefusal(dispatch.StateRefusedWaiting, "codex-frontend-unavailable", "codex-frontend-unavailable")
+		f, refusal := codexNativeTarget(pane, opts)
+		if refusal != "" {
+			return codexInputRefusal(dispatch.StateRefusedWaiting, refusal, refusal)
 		}
 		if !opts.MatchesTarget(f.SessionID, f.HomeID, f.Instance, f.PID) {
 			return codexInputRefusal(dispatch.StateRefusedWaiting, "expected-conversation-changed", "expected-conversation-changed")
@@ -60,12 +86,17 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 		defer cancel()
 		claimed := false
 		var claimErr, publishErr error
+		missingFinalProof := false
 		check := func() bool {
 			if ctx.Err() != nil {
 				return false
 			}
-			current, valid := codexInputTarget(pane)
-			if !r.MatchesTarget(a) || !valid || current.Instance != f.Instance || current.HomeID != f.HomeID || current.SessionID != f.SessionID || current.PID != f.PID || current.StartedAt != f.StartedAt || current.RootStart != f.RootStart || current.BackendPID != f.BackendPID || current.BackendStart != f.BackendStart || (hold != nil && hold() != "") {
+			current, refusal := codexNativeTarget(pane, opts)
+			if refusal != "" {
+				missingFinalProof = refusal == codexFrontendProofUnavailable
+				return false
+			}
+			if !r.MatchesTarget(a) || current.Instance != f.Instance || current.HomeID != f.HomeID || current.SessionID != f.SessionID || current.PID != f.PID || current.StartedAt != f.StartedAt || current.RootStart != f.RootStart || current.BackendPID != f.BackendPID || current.BackendStart != f.BackendStart || (hold != nil && hold() != "") {
 				return false
 			}
 			if claimed {
@@ -97,6 +128,9 @@ func codexNativeSubmit(pane string) func(dispatch.Opts, string, func() string) d
 			submit = codexImageInputs
 		}
 		outcome := submit(ctx, codexrpc.Target{HomeID: f.HomeID, ThreadID: f.SessionID, BackendPID: f.BackendPID, BackendStart: f.BackendStart}, r.ID, inputs, check)
+		if missingFinalProof && !claimed && !outcome.Attempted && outcome.Reason == "target-changed" {
+			return codexInputRefusal(dispatch.StateRefusedWaiting, codexFrontendProofUnavailable, codexFrontendProofUnavailable)
+		}
 		if publishErr != nil {
 			if errors.Is(publishErr, context.Canceled) || errors.Is(publishErr, context.DeadlineExceeded) {
 				return codexInputRefusal(dispatch.StateRefusedWaiting, "input-deadline", "input-deadline")
@@ -167,7 +201,7 @@ func codexInputRefusal(state dispatch.State, reason, evidence string) dispatch.R
 		code = dispatch.InputSpoolFull
 	case "input-awaiting-confirmation":
 		code = dispatch.InputQuestion
-	case "codex-frontend-unavailable":
+	case "codex-frontend-unavailable", codexFrontendProofUnavailable:
 		code = dispatch.InputAssociationMissing
 	case "expected-conversation-changed", "codex-input-target-changed", "target-changed", "backend-changed", "server-home-mismatch":
 		code = dispatch.InputTargetChanged

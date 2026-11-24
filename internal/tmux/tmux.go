@@ -280,6 +280,11 @@ func Display(target, format string) string {
 	return out
 }
 
+// PaneGeneration identifies a tmux pane incarnation within its server and session.
+func PaneGeneration(pane string) string {
+	return strings.TrimSpace(Display(pane, "#{pid}:#{session_created}:#{pane_pid}"))
+}
+
 // InTmux reports whether we are running inside a tmux client.
 func InTmux() bool { return os.Getenv("TMUX") != "" }
 

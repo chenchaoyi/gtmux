@@ -3,6 +3,7 @@ package launchhost
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain(t *testing.T) {
@@ -48,7 +49,7 @@ func TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain(t *testing.T) {
 			}}
 			got := i.agent(10, []string{"codex"}, 100)
 			if kind == "valid" || kind == "no host" {
-				if got != (AgentProcess{11, "codex", "born", 100}) {
+				if got != (AgentProcess{PID: 11, Comm: "codex", Start: "born", ObservedAt: 100}) {
 					t.Fatal(got)
 				}
 			} else if got != (AgentProcess{}) {
@@ -61,7 +62,7 @@ func TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain(t *testing.T) {
 	}
 }
 func TestAgentHandoffRejectsInvalidOrStaleEvidence(t *testing.T) {
-	p := AgentProcess{11, "codex", "born", 100}
+	p := AgentProcess{PID: 11, Comm: "codex", Start: "born", ObservedAt: 100}
 	raw := EncodeAgent(p)
 	if DecodeAgent(raw, 100) != p {
 		t.Fatal("handoff lost process")
@@ -75,5 +76,17 @@ func TestAgentHandoffRejectsInvalidOrStaleEvidence(t *testing.T) {
 		if DecodeAgent(raw, now) != (AgentProcess{}) {
 			t.Fatal("accepted stale/future evidence")
 		}
+	}
+}
+
+func TestAgentHandoffPreservesPreciseObservationTime(t *testing.T) {
+	p := AgentProcess{PID: 11, Comm: "codex", Start: "born", ObservedAt: 100, ObservedAtNS: time.Unix(100, 123).UnixNano()}
+	raw := EncodeAgent(p)
+	if raw == "" || DecodeAgent(raw, 100) != p {
+		t.Fatal("precise hook time did not survive detached handoff")
+	}
+	bad := strings.Replace(raw, `"observed_at_ns":100000000123`, `"observed_at_ns":101000000123`, 1)
+	if bad == raw || DecodeAgent(bad, 100) != (AgentProcess{}) {
+		t.Fatal("accepted inconsistent hook clock fields")
 	}
 }

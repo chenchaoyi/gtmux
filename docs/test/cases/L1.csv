@@ -1467,17 +1467,14 @@ LEG-8a52a851928f,L1,Go core / CLI / server,internal/hq/revalidate_test.go,198,su
 LEG-8bde7143a266,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,65,Test,TestRotationWillNotTypeOverADraft,False,legacy-not-retrospectively-reviewed
 LEG-1b926805a62a,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,84,Test,TestRotationHoldsWhenTheBoxCannotBeRead,False,legacy-not-retrospectively-reviewed
 LEG-6550dcaabc2a,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,101,Test,TestRotationProceedsOnAnEmptyBox,False,legacy-not-retrospectively-reviewed
-LEG-4c8b7b8e26a6,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,141,Test,TestRotationWaitsForTaskEndAndConfirmsSuccessor,False,legacy-not-retrospectively-reviewed
-LEG-ef340243f845,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,183,Test,TestRotationDuplicateRequestDoesNotDuplicateKeysOrAudit,False,legacy-not-retrospectively-reviewed
-LEG-ac624c92422b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,196,Test,TestRotationFailureReceiptAndNoBlindRetry,False,legacy-not-retrospectively-reviewed
-LEG-9a1bbe42b10b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,211,Test,TestRotationPersistsAttemptBeforeTyping,False,legacy-not-retrospectively-reviewed
-LEG-1d0b91a2341c,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,228,Test,TestRotationRejectedResetTimesOutWithoutSuccess,False,legacy-not-retrospectively-reviewed
-LEG-f20c1831eba3,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,242,Test,TestRotationDraftExpiresWithoutSubmittingOrLosingFailureReceipt,False,legacy-not-retrospectively-reviewed
-LEG-db998607f792,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,262,Test,TestRotationChangedSessionBeforeDeliveryDoesNotResetSuccessor,False,legacy-not-retrospectively-reviewed
-LEG-2ece4eb7320e,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,289,Test,TestRotationConfirmsFromTheEventStream,False,legacy-not-retrospectively-reviewed
-LEG-6f4981876ca1,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,291,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-81183b11a80b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,318,Test,TestRotationEventsThatDoNotConfirm,False,legacy-not-retrospectively-reviewed
-LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,347,Test,TestRotationNotSentIsNotConfirmedByEvents,False,legacy-not-retrospectively-reviewed
+LEG-4c8b7b8e26a6,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,146,Test,TestRotationWaitsForTaskEndAndConfirmsSuccessor,False,legacy-not-retrospectively-reviewed
+LEG-ef340243f845,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,188,Test,TestRotationDuplicateRequestDoesNotDuplicateKeysOrAudit,False,legacy-not-retrospectively-reviewed
+LEG-ac624c92422b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,201,Test,TestRotationFailureReceiptAndNoBlindRetry,False,legacy-not-retrospectively-reviewed
+LEG-9a1bbe42b10b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,216,Test,TestRotationPersistsAttemptBeforeTyping,False,legacy-not-retrospectively-reviewed
+LEG-1d0b91a2341c,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,233,Test,TestRotationRejectedResetTimesOutWithoutSuccess,False,legacy-not-retrospectively-reviewed
+LEG-f20c1831eba3,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,247,Test,TestRotationDraftExpiresWithoutSubmittingOrLosingFailureReceipt,False,legacy-not-retrospectively-reviewed
+LEG-db998607f792,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,267,Test,TestRotationChangedSessionBeforeDeliveryDoesNotResetSuccessor,False,legacy-not-retrospectively-reviewed
+LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,321,Test,TestRotationNotSentIsNotConfirmedByEvents,False,legacy-not-retrospectively-reviewed
 LEG-9d15885fe97d,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,26,Test,TestRotationDoesNotConfirmAnUnsavedNewThread,False,legacy-not-retrospectively-reviewed
 LEG-a65be3d25bf9,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,58,Test,TestRotationQueuesOneGuardedHandoffAfterReleasingInput,False,legacy-not-retrospectively-reviewed
 LEG-974db74f29ef,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,103,Test,TestRotationDoesNotTrustReissuedPaneNumbers,False,legacy-not-retrospectively-reviewed
@@ -1809,9 +1806,9 @@ LEG-cd7219eb16d3,L1,Go core / CLI / server,internal/knowledge/voice_test.go,50,T
 LEG-c6e04c876979,L1,Go core / CLI / server,internal/knowledge/voice_test.go,67,Test,TestVoiceCountsADoubleDashOnce,False,legacy-not-retrospectively-reviewed
 LEG-32bc165bd27b,L1,Go core / CLI / server,internal/knowledge/voice_test.go,75,Test,TestVoiceLeavesAPlainEntryAlone,False,legacy-not-retrospectively-reviewed
 MAP-25bce7c30ce2,L1,reviewed implementation,internal/launchhost/agent_readiness_test.go,9,reviewed-selector,TestCFR006AgentReadReturnsBeforeBlockedReaderSettles,False,CFR-006
-LEG-bd9336c63bfb,L1,Go core / CLI / server,internal/launchhost/agent_test.go,8,Test,TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain,False,legacy-not-retrospectively-reviewed
+LEG-bd9336c63bfb,L1,Go core / CLI / server,internal/launchhost/agent_test.go,9,Test,TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain,False,legacy-not-retrospectively-reviewed
 LEG-081c45c3897d,L1,Go core / CLI / server,internal/launchhost/agent_test.go,10,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-913821ce623a,L1,Go core / CLI / server,internal/launchhost/agent_test.go,63,Test,TestAgentHandoffRejectsInvalidOrStaleEvidence,False,legacy-not-retrospectively-reviewed
+LEG-913821ce623a,L1,Go core / CLI / server,internal/launchhost/agent_test.go,64,Test,TestAgentHandoffRejectsInvalidOrStaleEvidence,False,legacy-not-retrospectively-reviewed
 LEG-146596399a96,L1,Go core / CLI / server,internal/launchhost/app_darwin_test.go,10,Test,TestMacBundleNamePreferenceAndFallback,False,legacy-not-retrospectively-reviewed
 LEG-b3313024d235,L1,Go core / CLI / server,internal/launchhost/launchhost_test.go,19,Test,TestHostSnapshotAndAppPreference,False,legacy-not-retrospectively-reviewed
 LEG-7b3b51b5a5c7,L1,Go core / CLI / server,internal/launchhost/launchhost_test.go,33,Test,TestAmbiguousOrMissingAncestryStaysUnknown,False,legacy-not-retrospectively-reviewed

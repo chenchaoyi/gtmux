@@ -1013,12 +1013,15 @@ query instead of information destroyed at every handoff.
 - **WHEN** HQ has brought its board and knowledge base current and runs `gtmux hq --rotate` during its own active Codex turn
 - **THEN** gtmux queues the reset without typing, and reports pending; after the turn finishes and the input box is safe, the resident process sends the reset once
 - **AND** only a new session ID confirms rotation and restarts the health window
-- **AND** that ID is read from the pane's resume record or, after the reset was sent, from a `SessionStart` or `UserPromptSubmit` event on the HQ pane from the same agent carrying a session ID other than the retiring one (a fresh Codex session reaches the resume record only after its first finished turn); an event before the send, on another pane, from another agent, or naming the retiring session SHALL NOT confirm it
+- **AND** that ID SHALL come from the original pane and generation's current session evidence for the retiring agent's driver. Settlement requires a recorded reset-key completion timestamp. A legacy direct client requires the same live client incarnation that supplied an independently verified hook observation, for the original generation after the recorded completion of the reset keys and within the current window. An unbound lifecycle event SHALL NOT establish, extend or confirm the handoff
+- **AND** a Claude observation SHALL bind the hook's actual foreground ancestor, including a child launched by the pane shell, to its process birth and original pane terminal. Confirmation SHALL recheck the live foreground and require the same process, terminal and pane generation
 
-#### Scenario: The new session shows in the events before the resume record
+#### Scenario: The current agent or session evidence is temporarily unavailable after reset
 
-- **WHEN** a sent reset's new session has emitted its `SessionStart` on the HQ pane but has not finished a turn, so the resume record still names the retiring session
-- **THEN** the rotation is confirmed with the new session's ID, not recorded as failed at the settle deadline
+- **WHEN** the sent reset's original pane and generation still match but current agent or session evidence is missing
+- **THEN** the request SHALL remain pending in the existing 45-second successor window, or in the existing three-minute handoff window after a verified successor is first observed
+- **AND** a deadline tick SHALL consider available current evidence before recording a failure. For Codex, an observed history boundary after the applicable deadline SHALL NOT settle the request. Incomplete evidence SHALL record the phase and available identity reason, with no second reset or new briefing at an expired deadline. Briefing reservation SHALL recheck the clock after any target or composer probe
+- **AND** a changed pane, generation or observed different agent SHALL fail immediately. An unavailable generation sample for the original pane may wait within the same deadline and grants no authority
 
 #### Scenario: Rotation never submits what the user is typing
 
@@ -1136,13 +1139,13 @@ Automatic Codex wakes SHALL freshly verify an exact loaded idle thread before at
 - **WHEN** an immediate or periodic drain runs before the existing rotation deadlines
 - **THEN** regular wakes, protected Relay attention, and legacy repair input SHALL remain local while the successor is being resolved or its handoff is pending
 - **AND** the addressed briefing gets the first safe opportunity, its own native batch and the existing original deadline
-- **AND** temporary composer unavailability SHALL keep the briefing pending; once a native attempt has begun, only definite evidence of non-submission due to the composer can return that same briefing to the queue
+- **AND** a temporarily unavailable composer, missing frontend proof, or absent native route before submission SHALL keep the original briefing pending while the original pane generation and durable reservation still match. If the native path ran, only definite non-submission with an eligible hold SHALL return that same briefing to the queue
 - **AND** terminal acceptance or uncertainty SHALL NOT authorize replays, and expiry or completed rotation SHALL release the input reservation without repeating reset
 
 #### Scenario: A queued rotation briefing outlives its recipient
 - **GIVEN** a sent rotation reserves one startup briefing for its verified Codex successor
 - **WHEN** the queue drains, and again at the native submission boundary
-- **THEN** the original request, Codex Home, successor session, frontend and pane instance SHALL match and the original confirmation deadline SHALL still be in the future
+- **THEN** the original request SHALL include the recorded completion of the reset keys. The Codex Home, successor session, frontend and pane instance SHALL match and the original confirmation deadline SHALL still be in the future
 - **AND** an unbound legacy rotation briefing or a terminal refusal SHALL remain unsent, a possible submission SHALL remain uncertain, and none SHALL be replayed or use keyboard fallback
 - **AND** other wakes and Relay attention resume their ordinary submission rules when the reservation ends, and rotation confirmation retains its existing timing rules
 

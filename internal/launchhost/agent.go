@@ -12,10 +12,11 @@ import (
 // AgentProcess is private hook-to-worker process evidence, separate from the
 // display-only launch host. Backend liveness never establishes frontend control.
 type AgentProcess struct {
-	PID        int    `json:"pid"`
-	Comm       string `json:"comm"`
-	Start      string `json:"start"`
-	ObservedAt int64  `json:"observed_at"`
+	PID          int    `json:"pid"`
+	Comm         string `json:"comm"`
+	Start        string `json:"start"`
+	ObservedAt   int64  `json:"observed_at"`
+	ObservedAtNS int64  `json:"observed_at_ns,omitempty"`
 }
 
 // ObserveAgent captures the nearest recognized agent before a hook is detached.
@@ -25,7 +26,12 @@ func ObserveAgent(commands []string) AgentProcess {
 	ctx, cancel := context.WithTimeout(context.Background(), budget)
 	defer cancel()
 	i := inspector{read: func(pid int) (process, bool) { return readProcess(ctx, pid) }}
-	return i.agent(os.Getppid(), commands, time.Now().Unix())
+	observedAt := time.Now()
+	p := i.agent(os.Getppid(), commands, observedAt.Unix())
+	if p.PID > 1 {
+		p.ObservedAtNS = observedAt.UnixNano()
+	}
+	return p
 }
 
 func (i inspector) agent(pid int, commands []string, now int64) AgentProcess {
@@ -56,7 +62,7 @@ func (i inspector) agent(pid int, commands []string, now int64) AgentProcess {
 					return AgentProcess{}
 				}
 			}
-			return AgentProcess{p.PID, name, p.Start, now}
+			return AgentProcess{PID: p.PID, Comm: name, Start: p.Start, ObservedAt: now}
 		}
 		if !shell(name) {
 			return AgentProcess{}
@@ -101,7 +107,7 @@ func ReadAgentContext(parent context.Context, pid int) (AgentProcess, bool) {
 	if ctx.Err() != nil || !ok {
 		return AgentProcess{}, false
 	}
-	return AgentProcess{p.PID, filepath.Base(p.Command), p.Start, time.Now().Unix()}, true
+	return AgentProcess{PID: p.PID, Comm: filepath.Base(p.Command), Start: p.Start, ObservedAt: time.Now().Unix()}, true
 }
 
 func EncodeAgent(p AgentProcess) string {
@@ -119,5 +125,7 @@ func DecodeAgent(raw string, now int64) AgentProcess {
 	return p
 }
 func validAgent(p AgentProcess) bool {
-	return p.PID > 1 && validName(p.Comm, "process") && p.ObservedAt > 0 && len(p.Start) > 0 && len(p.Start) < 64 && !strings.ContainsAny(p.Start, "\r\n\x00")
+	return p.PID > 1 && validName(p.Comm, "process") && p.ObservedAt > 0 && len(p.Start) > 0 && len(p.Start) < 64 &&
+		!strings.ContainsAny(p.Start, "\r\n\x00") &&
+		(p.ObservedAtNS == 0 || time.Unix(0, p.ObservedAtNS).Unix() == p.ObservedAt)
 }

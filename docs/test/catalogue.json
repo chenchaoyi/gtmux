@@ -16659,7 +16659,7 @@
       ]
     },
     "internal/hq/rotateguard_test.go": {
-      "sha256": "2681c28362b6330a4a4ac31616eedd47e5e4681c5291280097699cf81cbf00cd",
+      "sha256": "0cb7dae5be3286b5510e77207d0feb41490e57369eb31edf9631273746b7a7fe",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -16689,7 +16689,7 @@
         },
         {
           "id": "LEG-4c8b7b8e26a6",
-          "line": 141,
+          "line": 146,
           "kind": "Test",
           "name": "TestRotationWaitsForTaskEndAndConfirmsSuccessor",
           "dynamic": false,
@@ -16697,7 +16697,7 @@
         },
         {
           "id": "LEG-ef340243f845",
-          "line": 183,
+          "line": 188,
           "kind": "Test",
           "name": "TestRotationDuplicateRequestDoesNotDuplicateKeysOrAudit",
           "dynamic": false,
@@ -16705,7 +16705,7 @@
         },
         {
           "id": "LEG-ac624c92422b",
-          "line": 196,
+          "line": 201,
           "kind": "Test",
           "name": "TestRotationFailureReceiptAndNoBlindRetry",
           "dynamic": false,
@@ -16713,7 +16713,7 @@
         },
         {
           "id": "LEG-9a1bbe42b10b",
-          "line": 211,
+          "line": 216,
           "kind": "Test",
           "name": "TestRotationPersistsAttemptBeforeTyping",
           "dynamic": false,
@@ -16721,7 +16721,7 @@
         },
         {
           "id": "LEG-1d0b91a2341c",
-          "line": 228,
+          "line": 233,
           "kind": "Test",
           "name": "TestRotationRejectedResetTimesOutWithoutSuccess",
           "dynamic": false,
@@ -16729,7 +16729,7 @@
         },
         {
           "id": "LEG-f20c1831eba3",
-          "line": 242,
+          "line": 247,
           "kind": "Test",
           "name": "TestRotationDraftExpiresWithoutSubmittingOrLosingFailureReceipt",
           "dynamic": false,
@@ -16737,43 +16737,28 @@
         },
         {
           "id": "LEG-db998607f792",
-          "line": 262,
+          "line": 267,
           "kind": "Test",
           "name": "TestRotationChangedSessionBeforeDeliveryDoesNotResetSuccessor",
           "dynamic": false,
           "layer": "L1"
         },
         {
-          "id": "LEG-2ece4eb7320e",
-          "line": 289,
-          "kind": "Test",
-          "name": "TestRotationConfirmsFromTheEventStream",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-6f4981876ca1",
-          "line": 291,
-          "kind": "subtest",
-          "name": "[dynamic subtest]",
-          "dynamic": true,
-          "layer": "L1"
-        },
-        {
-          "id": "LEG-81183b11a80b",
-          "line": 318,
-          "kind": "Test",
-          "name": "TestRotationEventsThatDoNotConfirm",
-          "dynamic": false,
-          "layer": "L1"
-        },
-        {
           "id": "LEG-d4b834e4cf65",
-          "line": 347,
+          "line": 321,
           "kind": "Test",
           "name": "TestRotationNotSentIsNotConfirmedByEvents",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-8b86d8cef4d9",
+          "line": 282,
+          "kind": "reviewed-selector",
+          "name": "TestSentRotationRequiresCurrentEvidenceInsteadOfJournal",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-007"
         }
       ]
     },
@@ -16810,7 +16795,7 @@
       "sha256": "522012d06c04b61d86ca2a5be109fd9357acda6801d5d9dad77232bfadafc963"
     },
     "internal/hq/rotation_durability_test.go": {
-      "sha256": "ec1971d8d29c8ab6564c6771583f9e96d0ff3b26f5cdd995527b71eef78c71d0",
+      "sha256": "31d95ea26eb01c7d9c16b40e84c3f72614db85af9bc1f74b03c4dd2a9f3f401c",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -21223,13 +21208,13 @@
       "sha256": "d44704759099a617510f9ac09efd8b585a0b2e66fba061cb84ff6a59659f6ba5"
     },
     "internal/launchhost/agent_test.go": {
-      "sha256": "c235c4a207c49422f5a48c0d384a72275b95941c77b3ae792ff31344eb01e041",
+      "sha256": "4da4124fc0869c224a234de1f9be221bf5bb826f577b4361682d106064c12edc",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-bd9336c63bfb",
-          "line": 8,
+          "line": 9,
           "kind": "Test",
           "name": "TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain",
           "dynamic": false,
@@ -21245,11 +21230,20 @@
         },
         {
           "id": "LEG-913821ce623a",
-          "line": 63,
+          "line": 64,
           "kind": "Test",
           "name": "TestAgentHandoffRejectsInvalidOrStaleEvidence",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-d4d6a13bd8e5",
+          "line": 82,
+          "kind": "reviewed-selector",
+          "name": "TestAgentHandoffPreservesPreciseObservationTime",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-014"
         }
       ]
     },
@@ -69919,7 +69913,7 @@
         },
         {
           "id": "MAP-974764f4f5ce",
-          "line": 129,
+          "line": 135,
           "kind": "reviewed-selector",
           "name": "TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake",
           "dynamic": false,
@@ -69928,7 +69922,7 @@
         },
         {
           "id": "MAP-3e2e3fefb84f",
-          "line": 259,
+          "line": 266,
           "kind": "reviewed-selector",
           "name": "TestHRB005ReservedSuccessorPrecedesImmediateAndPeriodicWakes",
           "dynamic": false,
@@ -69937,7 +69931,7 @@
         },
         {
           "id": "MAP-d583da1c618e",
-          "line": 326,
+          "line": 335,
           "kind": "reviewed-selector",
           "name": "TestHRB005SentHandoffHoldsLegacyRepair",
           "dynamic": false,
@@ -69946,7 +69940,7 @@
         },
         {
           "id": "MAP-5b7f8ed801fa",
-          "line": 354,
+          "line": 364,
           "kind": "reviewed-selector",
           "name": "TestHRB006ComposerWaitPreservesBriefing",
           "dynamic": false,
@@ -69954,7 +69948,7 @@
           "design": "HRB-001,HRB-002,HRB-005,HRB-006"
         }
       ],
-      "sha256": "fc5339fb588a44ce777c226be0c5ffcc4e839c9c4db2eb1e4af4850d6825dd10"
+      "sha256": "822588c6cd9b3f28535f04d25262e0f6a04daf2ba5c97d53775c3d29e503813d"
     },
     "tests/web/short-tile-header.test.cjs": {
       "layer": "L4",
@@ -70123,6 +70117,211 @@
         }
       ],
       "sha256": "f12e7b3d7571500b9719dbbcb9a028913b9b7ff0bc1fef7b80a82f4f9d9d0824"
+    },
+    "internal/dispatchbridge/rotation_brief_admission_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d1887f5fcda5",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestBoundWakeFinalAdmissionPreservesTypedProofAndDraftGuard",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-011"
+        }
+      ],
+      "sha256": "a9948d0cd20b34991695001fb28cf924a35f7984ca0711a3c677e5c373682670"
+    },
+    "internal/hq/rotation_clock_boundaries_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e2d7319b136b",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestResetAttemptAndCompletedKeysHaveSeparateClocks",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-013"
+        },
+        {
+          "id": "MAP-7f737db488d5",
+          "line": 79,
+          "kind": "reviewed-selector",
+          "name": "TestBriefingTargetProbeCannotCrossItsOriginalDeadline",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-013"
+        },
+        {
+          "id": "MAP-56767e9e4cce",
+          "line": 55,
+          "kind": "reviewed-selector",
+          "name": "TestIncompleteHistoryProbeCannotOpenAHandoffAfterSettleDeadline",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-013"
+        }
+      ],
+      "sha256": "37654579a44d57ec5265cffb25a67d2a1912fbf263e1e67fdcc95543376d1f6a"
+    },
+    "internal/hq/rotation_evidence_window_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9192fb7864f6",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestLegacyRotationWitnessRequiresMatchingGenerationAndSendOrder",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-012"
+        },
+        {
+          "id": "MAP-88042fd021cb",
+          "line": 40,
+          "kind": "reviewed-selector",
+          "name": "TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-012"
+        }
+      ],
+      "sha256": "b72e7deb73404524de6f68dab590848b9b3ba4c67b7f70f6b7c98105398c4180"
+    },
+    "internal/hq/rotation_submit_witness_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9456c2d5c416",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestLegacyRotationWitnessOrdersSameSecondPrecisely",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-014"
+        },
+        {
+          "id": "MAP-96f5ef1aaf3a",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "TestSentRotationWithNoCompletedKeyFenceFailsWithoutInput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-014"
+        }
+      ],
+      "sha256": "9253cc7d36840a782c7b248475f90ed1075977481fe1598b06f2275643bd0b4e"
+    },
+    "internal/hq/rotation_transient_identity_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-66c72832a3b6",
+          "line": 14,
+          "kind": "reviewed-selector",
+          "name": "TestSentRotationWaitsThroughTransientIdentityGaps",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-007,HRB-008"
+        }
+      ],
+      "sha256": "8c2f1a55e09aa76ccea6e2554b0c75f2bf1c5a5d86e715705ee10c02dd27dd4b"
+    },
+    "internal/hqnudge/rotation_brief_identity_gap_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-09aa1c3d8012",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestBoundRotationBriefWaitsOnlyForMissingOriginalProof",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-009"
+        },
+        {
+          "id": "MAP-46012b0cc511",
+          "line": 120,
+          "kind": "reviewed-selector",
+          "name": "TestBoundRotationBriefUsesExactProofAcrossGenericFingerprintGap",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-009"
+        }
+      ],
+      "sha256": "daaba0aa3b205e574020e22c13eb28070e2b5a5d8d4f044d5a3c61eba9ac8790"
+    },
+    "internal/resume/frontend_pane_readiness_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0d538b71f02b",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestStrictFrontendReadinessClassifiesMissingAndChangedProof",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-010"
+        }
+      ],
+      "sha256": "d85d005a2467be4cc74af3e55bbbfa435c78213f3ae6575057cf4f031fc1aff1"
+    },
+    "internal/hqinput/rotation_brief_witness_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-89b1f5a9ba9f",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestBoundBriefRequiresDurableResetCompletion",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-015"
+        }
+      ],
+      "sha256": "74ead0b5b44b117b30643f31dd2232d6327ce94c87771909b53fdfa9319225e6"
+    },
+    "internal/hook/hq_claude_foreground_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-90bde5daa0e7",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "TestHQClaudeHookFollowsForegroundShellChild",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-016"
+        }
+      ],
+      "sha256": "91b659e2cdb1919a2364126549b6d53bf44c76462377cf48c0e2e6c70d169524"
+    },
+    "internal/codexterminal/claude_foreground_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a1e5ccc33f3e",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestClaudeVersionAliasRequiresLinuxForegroundGroupLeader",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-017"
+        }
+      ],
+      "sha256": "6a1f1c4c881b143997d0e96c3a9a6cfdb00dbedfd8263999ef643eae82bc39c5"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

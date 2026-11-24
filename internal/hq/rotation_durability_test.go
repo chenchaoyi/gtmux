@@ -26,7 +26,7 @@ func writeRotationHistory(t *testing.T, id string) {
 func TestRotationDoesNotConfirmAnUnsavedNewThread(t *testing.T) {
 	now := time.Now()
 	r := testRotationRequest(t, now)
-	r.SentAt = now.Unix()
+	r.SentAt, r.SubmittedAtNS = now.Unix(), now.UnixNano()
 	if err := writeRotationFile(r, false); err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestRotationQueuesOneGuardedHandoffAfterReleasingInput(t *testing.T) {
 	r := testRotationRequest(t, now)
 	t.Setenv("GTMUX_HQ_BRIEF", "on")
 	t.Setenv("CODEX_HOME", t.TempDir())
-	r.SentAt, r.TargetStamp = now.Unix(), "17:300:19"
+	r.SentAt, r.SubmittedAtNS, r.TargetStamp = now.Unix(), now.UnixNano(), "17:300:19"
 	if err := writeRotationFile(r, false); err != nil {
 		t.Fatal(err)
 	}

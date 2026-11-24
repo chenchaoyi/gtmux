@@ -20,18 +20,28 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
 
+// HQObservation records a legacy hook observation independently bound to a live pane.
+type HQObservation struct {
+	Generation   string `json:"generation"`
+	ObservedAtNS int64  `json:"observed_at_ns"`
+	ClientPID    int    `json:"client_pid"`
+	ClientBirth  string `json:"client_birth"`
+	ClientTTY    string `json:"client_tty,omitempty"`
+}
+
 // Record is one resumable agent session captured from a hook.
 type Record struct {
-	RecoverySessionID string `json:"recovery_session_id,omitempty"`
-	RecoveryCwd       string `json:"recovery_cwd,omitempty"`
-	RecoveryAt        int64  `json:"recovery_at,omitempty"`
-	Frontend          string `json:"codex_frontend,omitempty"`
-	FrontendRetired   bool   `json:"codex_frontend_retired,omitempty"`
-	TerminalClient    string `json:"terminal_client,omitempty"`
-	HomeID            string `json:"home_id,omitempty"`
-	Agent             string `json:"agent"`     // the agent key (claude/codex/cursor/…)
-	SessionID         string `json:"sessionId"` // the agent's resumable conversation id
-	Cwd               string `json:"cwd,omitempty"`
+	HQObservation     HQObservation `json:"hq_observation,omitzero"`
+	RecoverySessionID string        `json:"recovery_session_id,omitempty"`
+	RecoveryCwd       string        `json:"recovery_cwd,omitempty"`
+	RecoveryAt        int64         `json:"recovery_at,omitempty"`
+	Frontend          string        `json:"codex_frontend,omitempty"`
+	FrontendRetired   bool          `json:"codex_frontend_retired,omitempty"`
+	TerminalClient    string        `json:"terminal_client,omitempty"`
+	HomeID            string        `json:"home_id,omitempty"`
+	Agent             string        `json:"agent"`     // the agent key (claude/codex/cursor/…)
+	SessionID         string        `json:"sessionId"` // the agent's resumable conversation id
+	Cwd               string        `json:"cwd,omitempty"`
 	// Launcher is the executable that actually started this agent, when it is not the
 	// agent's own name — a wrapper, an alias, an `npx`-style shim.
 	//
@@ -65,6 +75,9 @@ func Save(key string, r Record) error {
 	}
 	defer lease.Close()
 	previous, _ := Load(key)
+	if r.HQObservation.ObservedAtNS == 0 && r.Agent == previous.Agent && r.SessionID == previous.SessionID && r.HomeID == previous.HomeID {
+		r.HQObservation = previous.HQObservation
+	}
 	if previous.Frontend != "" && r.Agent == "codex" {
 		if previous.Agent == r.Agent && previous.SessionID == r.SessionID && previous.HomeID == r.HomeID {
 			r.Frontend, r.FrontendRetired = previous.Frontend, previous.FrontendRetired
