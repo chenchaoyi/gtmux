@@ -47,7 +47,7 @@ var ErrConflict = errors.New("request ID already belongs to different content")
 var ErrState = errors.New("request is not in that state")
 var ErrMissing = errors.New("request not found")
 
-func dir() string { return filepath.Join(state.Dir(), "relay") }
+func dir() string { return state.StorePath("relay") }
 func validID(id string) bool {
 	if len(id) < 3 || len(id) > 80 {
 		return false

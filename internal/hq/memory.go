@@ -48,7 +48,7 @@ const SnapshotKeep = 3
 // home going away — a deletion, a botched uninstall, a mistyped path — and a backup
 // stored inside the thing it backs up goes with it. Different tree, same disk: this
 // layer is about accidents, not about the disk failing.
-func snapshotDir() string { return filepath.Join(state.Dir(), "hq-snapshots") }
+func snapshotDir() string { return state.StorePath("hq-snapshots") }
 
 // MemoryRoot is the directory the archive covers: HQ's home.
 func MemoryRoot() string { return state.HQHome() }

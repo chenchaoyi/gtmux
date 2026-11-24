@@ -29,7 +29,7 @@ const frameStaleSec = 6
 const frameActiveSec = 4
 
 // FrameDir holds the per-pane content-frame records.
-func FrameDir() string { return filepath.Join(Dir(), "frame") }
+func FrameDir() string { return StorePath("frame") }
 
 func framePath(pane string) string { return filepath.Join(FrameDir(), pane) }
 

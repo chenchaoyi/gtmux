@@ -1031,3 +1031,21 @@ safety limit SHALL NOT be described as a directory quota or snapshot retention b
 - **THEN** doctor SHALL NOT claim an automatic retry from a missing or unverified producer
 - **AND** only confirmed OS absence or a changed process incarnation supports stopped guidance; unreadable metadata remains unknown
 - **AND** diagnostics SHALL NOT resend input, restart, rebind or infer ownership from transcript recency
+
+### Requirement: Inspect and change the data layout
+
+Doctor SHALL preview owned stores and their grouped locations without writing state. A layout change SHALL require explicit offline confirmation, reserve one transition, preserve object identity, refuse collisions and leave a durable direction for recovery. The running operation SHALL verify the journal identity and contents before moving data and before retirement. Transition metadata SHALL remain until all planned identities and any archive have reached their targets and the layout marker and group paths establish the selected layout. CLI commands that need storage SHALL hold shared admission until exit and refuse access while a transition is unfinished. Migration SHALL hold exclusive admission and reject a running or pending managed service, or a managed service that cannot be checked. An installed managed service SHALL be persistently disabled during the move. Desktop and native path contracts SHALL be preserved where their writers do not take part in the transition. The HQ wake spool, protocol locks, claims and receipts SHALL keep their existing paths.
+
+#### Scenario: Repair an interrupted storage change
+
+- **WHEN** an offline change is interrupted after moving one or more stores
+- **THEN** the inspector verifies the recorded store identities and reports the pending direction and per-store progress
+- **AND** an identity or destination conflict prevents both a clean inspection and continuation
+
+#### Scenario: Revert grouped storage
+
+- **WHEN** the operator restores the flat layout after pausing all writers
+- **THEN** the current grouped records return to the legacy paths without replacing an existing object
+- **AND** known owner-private, interrupted staging files are kept in an inactive recovery directory
+- **AND** the removal of the grouped marker is synced before cleaning or archiving the scaffold, including on retry
+- **AND** cleanup can remove only known empty scaffold directories and preserves objects that appear late

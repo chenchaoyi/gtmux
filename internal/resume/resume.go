@@ -59,7 +59,7 @@ type Record struct {
 }
 
 // Dir is where per-location resume records live.
-func Dir() string { return filepath.Join(state.Dir(), "resume") }
+func Dir() string { return state.StorePath("resume") }
 
 // fileFor maps a location key to its record file. The key is base64url-encoded so
 // arbitrary session names (spaces, slashes, colons) are always filesystem-safe.

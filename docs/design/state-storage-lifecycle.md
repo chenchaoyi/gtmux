@@ -74,3 +74,29 @@ generation durably, then test mixed-version behavior, crash recovery and
 rollback. Keep unknown files and duplicate candidates pending until ownership
 and the recovery path are established.
 [Input spool migration and recovery](input-spool-cutover-recovery.md)
+
+## Grouped data layout
+
+`gtmux doctor --storage-layout` lists known stores, their grouped paths and any inactive copy. The selected layout lives on disk. Existing installations with a flat root select flat routing. `layout-v2/` has these groups.
+
+| Group | Contents |
+| --- | --- |
+| `panes/` | Turn state, busy/idle samples, goal and pane appearance markers |
+| `clients/` | Native observations and capture requests |
+| `service/` | Service maintenance, resource and tunnel observation markers |
+| `sessions/` | Resume and restore records, profiles, conversation observations and external consent |
+| `usage/` | Usage counters, models and limits |
+| `hq/` | HQ bookkeeping, knowledge and maintenance |
+| `inbox/` | Relay and dispatch records |
+| `events/` | Current and rotated events with their sequence counter |
+| `backups/` | HQ snapshots and export receipts |
+
+The root path, desktop and launchd entry points, logs and icon cache, socket aliases, shell shims, input spool and terminal-client registration, HQ wake spool and its evidence, global lock anchors and attachment URLs have their existing names. Unknown data and old project archives retain their original paths. The HQ wake queue, locks, journals and receipts keep their paths. Parked wake payloads and claim pins can be two names for the same inode. The layout registry is the common Go routing table for moved stores. Native mobile and Web use the existing service contracts; the Mac app keeps its existing shared paths.
+
+### Offline transition
+
+Use a standalone shell. Stop admissions and let producers finish, then exit gtmux, tmux and the menu bar app, disable automatic relaunch and pause hooks that might invoke an older binary. `gtmux doctor --group-storage` asks for confirmation and checks for remaining local gtmux and tmux processes. Unload the managed launchd jobs and verify persistent disable for installed LaunchAgents in both domains. For systemd, stop and disable the user units, including any pending restart or start job. A manager that cannot be verified stops the move. Custom services, renamed programs and older hooks require operator review. Compatible commands hold shared admission for their lifetime. The transition takes exclusive admission, records the plan, rechecks writers and verifies device, inode, owner and file type before exclusive same-volume renames. An empty, private directory marks the grouped layout. Rollback records its identity and removes it only as a directory. The running operation binds the journal to its original inode and bytes. It clears the journal after the marker, all stores and any staging archive establish the target layout. Rollback records the original group identities before any move. It syncs removal of the marker before removing or archiving the scaffold, including on retries.
+
+An interruption keeps normal commands gated. Inspect `--storage-layout` for moved and pending stores. If inspection confirms all identities, repeat the same operation after verifying that writers are stopped. Recovery accepts exactly one location with the recorded identity for each entry. An occupied destination, incomplete evidence, symlink or foreign-owned object stops the operation. A flat store recreated by a legacy writer during grouped operation is surfaced as a conflict. The grouped installation requires compatible CLI and hooks.
+
+Before a binary downgrade, use the same maintenance procedure and `gtmux doctor --flatten-storage`. This returns all current grouped records to their flat paths, including records written since grouping. It rejects conflicting copies. If an interrupted atomic write left private staging files at the group level, rollback saves their original bytes in `layout-recovery/<id>/`. Those files never become live state. Unrecognized entries still require review. No state migration runs automatically after installation.

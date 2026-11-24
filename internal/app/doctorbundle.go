@@ -139,7 +139,7 @@ func bundleFiles(withEvents bool, secs []dsection) []bundleFile {
 	add("doctor.txt", []byte(doctorReportText(secs)))
 	add("versions.txt", []byte(versionsText()))
 	if withEvents {
-		if b, err := os.ReadFile(filepath.Join(state.Dir(), "events.jsonl")); err == nil {
+		if b, err := os.ReadFile(state.StorePath("events.jsonl")); err == nil {
 			add("events.jsonl", b)
 		}
 	}

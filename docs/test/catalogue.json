@@ -70322,6 +70322,325 @@
         }
       ],
       "sha256": "6a1f1c4c881b143997d0e96c3a9a6cfdb00dbedfd8263999ef643eae82bc39c5"
+    },
+    "internal/state/layout_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-14013c47ea74",
+          "line": 40,
+          "kind": "reviewed-selector",
+          "name": "TestGSS001GroupedLayoutRoundTrip",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-001,GSS-002"
+        },
+        {
+          "id": "MAP-ba54652c5c86",
+          "line": 118,
+          "kind": "reviewed-selector",
+          "name": "TestGSS002InterruptedLayoutAndConflicts",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-001,GSS-002"
+        }
+      ],
+      "sha256": "90848860a7044fe899872fb3b5cbc2a2a4b067eb6b97c15c67161cf4bd7a4173"
+    },
+    "internal/app/doctor_layout_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fde505a4f21f",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestGSS003CommandsGateInterruptedLayout",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-003"
+        }
+      ],
+      "sha256": "4ddb8e83076c86c7cca6687d24a7fa0311f77446edc55545db4325cd8ad5e85e"
+    },
+    "internal/app/doctor_layout_dsh_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e7f675c91bc6",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestGSS004GroupedLayoutPreservesDSHRegistration",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-004"
+        }
+      ],
+      "sha256": "e4efd110abf244ef8f6d3dd22a823121cce9e532e4d9d09c063dd4d1aad38163"
+    },
+    "internal/app/doctor_layout_safety_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fe12560cb15e",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestGSS005CLIStorageAdmission",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-005,GSS-007"
+        },
+        {
+          "id": "MAP-2bcc26841705",
+          "line": 49,
+          "kind": "reviewed-selector",
+          "name": "TestGSS007DoctorRejectsPendingLayoutConflict",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-005,GSS-007"
+        }
+      ],
+      "sha256": "fe0ecbe5edf7d94fcf1774416c634f47e3de9c4364bfbe1766ecc851913828da"
+    },
+    "internal/hq/housekeeping_layout_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-78bbee83426b",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestGSS008HousekeepingFollowsGroupedHQFeed",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-008"
+        }
+      ],
+      "sha256": "884dce3bfbd651eea1851b6a0068c7b9ffafdb92706a1934ee3e46069a4495a0"
+    },
+    "internal/state/layout_safety_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e290eae41f84",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestGSS006RollbackRetainsInterruptedWrite",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-006"
+        },
+        {
+          "id": "MAP-a2c23a591bec",
+          "line": 63,
+          "kind": "reviewed-selector",
+          "name": "TestGSS006RollbackRefusesUnknownOrUnsafeStage",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-006"
+        }
+      ],
+      "sha256": "7013965de98b9dd4cc0d7aea32eccaee0aff1d04c7d9b495c719fe09ceef394f"
+    },
+    "internal/userservice/storage_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-40921fa09b25",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestGSS005ManagerStorageReadiness",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-005"
+        }
+      ],
+      "sha256": "d8e34141c9c34b81bde1ce44875aa197fc0cf40b9ec004ddbaf733dc10c252a8"
+    },
+    "internal/app/doctor_layout_alias_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-20dc5264eacb",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestGSS011DoctorAliasSharesLayoutAdmission",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-011"
+        }
+      ],
+      "sha256": "f9e27e2386d451ba475a9f4ba7a5398e1fd1b29f6a5273c710d3cf9e2811a078"
+    },
+    "internal/state/layout_cleanup_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-76f334ae1390",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestGSS010RollbackPreservesLateConflict",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-010"
+        }
+      ],
+      "sha256": "7261a444a4463f2aaa81fc4c80536c33274462f3d3f02bd94c9cbc9d23918ae8"
+    },
+    "internal/userservice/storage_persistent_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9e9d8497dca2",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestGSS009InstalledLaunchAgentRequiresPersistentDisable",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-009,GSS-011"
+        },
+        {
+          "id": "MAP-d8ac5b592064",
+          "line": 61,
+          "kind": "reviewed-selector",
+          "name": "TestGSS011SystemdRejectsAmbiguousQuiescence",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-009,GSS-011"
+        }
+      ],
+      "sha256": "81d937d054a5280ae0e8292e1141cd776d13b5b8a9f2af3968c06534187fb9c7"
+    },
+    "internal/hqnudge/storage_layout_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-385d256c3e24",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestGSS012StorageLayoutKeepsNativeWakeEvidence",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-012"
+        }
+      ],
+      "sha256": "c757fa4e85fbb51f061b8afc8bf6885b63ebb829cdb51bed8a4a60afca896379"
+    },
+    "internal/state/layout_commit_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d90187c224b6",
+          "line": 34,
+          "kind": "reviewed-selector",
+          "name": "TestGSS013MarkerConflictPreservesOriginals",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-013,GSS-014"
+        },
+        {
+          "id": "MAP-b4b6649a8bcc",
+          "line": 103,
+          "kind": "reviewed-selector",
+          "name": "TestGSS014CommitNeedsCompleteTargetLayout",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-013,GSS-014"
+        }
+      ],
+      "sha256": "a15a898eb5f8913a1ff8a025a0307e20767a82e9e9549b579072b7ed100e7eb3"
+    },
+    "internal/userservice/storage_commit_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d22b1d4ab4ee",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestGSS015StorageRejectsRuntimeOnlyMask",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-015"
+        }
+      ],
+      "sha256": "b323f0393fa85cd3fa79b618902d2e21d85e8348e2c3a698245a780a881d125f"
+    },
+    "internal/state/layout_metadata_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d18deb0abdc1",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestGSS016RejectsJournalReplacementBeforeMove",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-016,GSS-017"
+        },
+        {
+          "id": "MAP-9810dcacbc43",
+          "line": 47,
+          "kind": "reviewed-selector",
+          "name": "TestGSS016RetirementPreservesReplacedJournal",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-016,GSS-017"
+        },
+        {
+          "id": "MAP-27e031b2480b",
+          "line": 107,
+          "kind": "reviewed-selector",
+          "name": "TestGSS017RollbackPreservesReplacementEmptyGroup",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-016,GSS-017"
+        }
+      ],
+      "sha256": "7200f5ed3215ad86ddc0997d5419c1ce258e37fe6ad96879d66667ab8ce4f977"
+    },
+    "internal/userservice/storage_metadata_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-4871e869da14",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestGSS018LaunchdRejectsTruncatedDisabledTable",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-018"
+        }
+      ],
+      "sha256": "5c5c6ec486273f1c8338f68dfc19bcd5ff2e7f401921d35200b128ecb2c33b9e"
+    },
+    "internal/state/layout_crash_order_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0f6adc306462",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestGSS019RollbackSyncsMarkerBeforeScaffold",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "GSS-019"
+        }
+      ],
+      "sha256": "7c933a01e91846e8c10d67f21327e013f0d3815f09ab743bf1baea8164c3cd31"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

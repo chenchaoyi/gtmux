@@ -40,7 +40,7 @@ import (
 )
 
 // windowSeenPath holds the per-model high-water marks.
-func windowSeenPath() string { return filepath.Join(state.Dir(), "model-windows.json") }
+func windowSeenPath() string { return state.StorePath("model-windows.json") }
 
 var windowSeenMu sync.Mutex
 
@@ -114,7 +114,7 @@ func evidencedWindow(agent, model string) int64 {
 // tokens. One pass over them, once, turns a self-defeating heuristic into a correct one.
 
 // backfillMarker records that the history has been read, so this happens once.
-func backfillMarker() string { return filepath.Join(state.Dir(), "model-windows.scanned") }
+func backfillMarker() string { return state.StorePath("model-windows.scanned") }
 
 // BackfillWindows scans the agent logs already on disk for each model's largest observed
 // context, once. Called from the resident tick — a periodic job with no resident trigger

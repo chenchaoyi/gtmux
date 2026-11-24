@@ -3,7 +3,6 @@ package events
 import (
 	"io"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
@@ -15,7 +14,7 @@ import (
 // decimal text). It backs the cursor + gap detection: every event carries a
 // strictly increasing Seq so a consumer has a total order and a durable cursor
 // position independent of file byte offsets (which rotation invalidates).
-func seqPath() string { return filepath.Join(state.Dir(), "events.seq") }
+func seqPath() string { return state.StorePath("events.seq") }
 
 // nextSeq atomically increments and returns the next sequence number, serialized
 // across concurrent hook processes with an advisory file lock (flock — cgo-free on

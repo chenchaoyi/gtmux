@@ -146,7 +146,7 @@ func HQHome() string { return filepath.Join(home(), ".config", "gtmux", "hq") }
 // opted a PLAIN (non-agent) pane onto the radar (tiered-pane-control). A marker's
 // presence is the whole signal; it is never auto-created, and is reaped when its
 // pane closes (see ReapOrphanTurnMarkers).
-func WatchedDir() string { return filepath.Join(Dir(), "watched") }
+func WatchedDir() string { return StorePath("watched") }
 
 // WatchedPath is the "watch this pane" marker for a pane id.
 func WatchedPath(pane string) string { return filepath.Join(WatchedDir(), pane) }
@@ -170,19 +170,19 @@ func WatchedPanes() []string {
 }
 
 // ActiveDir is the directory of per-pane "agent is mid-turn" markers.
-func ActiveDir() string { return filepath.Join(Dir(), "active") }
+func ActiveDir() string { return StorePath("active") }
 
 // ActivePath is the in-progress marker file for a pane.
 func ActivePath(pane string) string { return filepath.Join(ActiveDir(), pane) }
 
 // TurnOutcomePath retains an interrupted/failed turn for polling consumers.
-func TurnOutcomePath(pane string) string { return filepath.Join(Dir(), "turn-outcome", pane) }
+func TurnOutcomePath(pane string) string { return StorePath("turn-outcome", pane) }
 
 // TurnIDPath is the upstream turn identity, when its hooks supply one.
-func TurnIDPath(pane string) string { return filepath.Join(Dir(), "turn-id", pane) }
+func TurnIDPath(pane string) string { return StorePath("turn-id", pane) }
 
 // TerminalLifecycleDir holds native lifecycle snapshots, never inferred turn caches.
-func TerminalLifecycleDir() string             { return filepath.Join(Dir(), "terminal-lifecycle") }
+func TerminalLifecycleDir() string             { return StorePath("terminal-lifecycle") }
 func TerminalLifecyclePath(pane string) string { return filepath.Join(TerminalLifecycleDir(), pane) }
 
 // ReapOrphanTurnMarkers deletes the per-pane TURN-STATE markers (active / waiting /
@@ -197,7 +197,7 @@ func ReapOrphanTurnMarkers(live map[string]bool) int {
 	removed := 0
 	// watched/ is included: a watched plain pane is dropped from the radar the moment
 	// its pane closes (tiered-pane-control), the same lifecycle as the turn markers.
-	for _, dir := range []string{ActiveDir(), WaitingDir(), FinishedDir(), WatchedDir(), filepath.Join(Dir(), "turn-outcome"), filepath.Join(Dir(), "turn-id"), TerminalLifecycleDir()} {
+	for _, dir := range []string{ActiveDir(), WaitingDir(), FinishedDir(), WatchedDir(), StorePath("turn-outcome"), StorePath("turn-id"), TerminalLifecycleDir()} {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
 			continue
@@ -292,7 +292,6 @@ func ReapDeadPaneState(live map[string]bool) int {
 	if len(live) == 0 {
 		return 0
 	}
-	base := Dir()
 	removed := 0
 	sweep := func(dir, prefix, suffix string) {
 		entries, err := os.ReadDir(dir)
@@ -317,19 +316,19 @@ func ReapDeadPaneState(live map[string]bool) int {
 		}
 	}
 	for _, d := range panePlainDirs {
-		sweep(filepath.Join(base, d), "", "")
+		sweep(StorePath(d), "", "")
 	}
 	for _, d := range paneJSONDirs {
-		sweep(filepath.Join(base, d), "", ".json")
+		sweep(StorePath(d), "", ".json")
 	}
 	for _, fam := range hqwakePaneFamilies {
-		sweep(filepath.Join(base, "hqwake"), fam, "")
+		sweep(filepath.Join(Dir(), "hqwake"), fam, "")
 	}
 	return removed
 }
 
 // WaitingDir is the directory of per-pane "blocked on the user" markers.
-func WaitingDir() string { return filepath.Join(Dir(), "waiting") }
+func WaitingDir() string { return StorePath("waiting") }
 
 // WaitingPath is the "blocked on the user" marker file for a pane.
 func WaitingPath(pane string) string { return filepath.Join(WaitingDir(), pane) }
@@ -338,16 +337,16 @@ func WaitingPath(pane string) string { return filepath.Join(WaitingDir(), pane) 
 // markers (done-wake-keyed-on-awaited). A pane HQ dispatched work to (spawn or send)
 // gets a marker so its NEXT completion wakes HQ immediately even when the pane is
 // attended — the case a plain attended-defer would drop.
-func AwaitedDir() string { return filepath.Join(Dir(), "awaited") }
+func AwaitedDir() string { return StorePath("awaited") }
 
 // AwaitedPath is the "HQ awaits this pane's completion" marker file for a pane.
 func AwaitedPath(pane string) string { return filepath.Join(AwaitedDir(), pane) }
 
 // LastFinishedPath holds the pane id of the most-recently-finished turn.
-func LastFinishedPath() string { return filepath.Join(Dir(), "last-finished") }
+func LastFinishedPath() string { return StorePath("last-finished") }
 
 // FinishedDir is the directory of per-pane "turn finished at" markers.
-func FinishedDir() string { return filepath.Join(Dir(), "finished") }
+func FinishedDir() string { return StorePath("finished") }
 
 // FinishedPath is the "turn finished at" marker for a pane — its mtime is when
 // the agent's turn ended, i.e. how long the pane has been idle. `gtmux agents`
@@ -358,7 +357,7 @@ func FinishedDir() string { return filepath.Join(Dir(), "finished") }
 func FinishedPath(pane string) string { return filepath.Join(FinishedDir(), pane) }
 
 // BackgroundDir is the directory of per-pane "background work still running" markers.
-func BackgroundDir() string { return filepath.Join(Dir(), "bg") }
+func BackgroundDir() string { return StorePath("bg") }
 
 // BackgroundPath is the "background work still running" marker for a pane. Its
 // content is "<count>\t<label>" — the number of in-flight background tasks the
@@ -400,7 +399,7 @@ func ClearBackground(pane string) { Remove(BackgroundPath(pane)) }
 // UsageWarnDir is the directory of per-pane usage-warning markers (usage-watch):
 // content = the compact warn string (e.g. "ctx 86%"). Written/cleared by the
 // hook's evaluation; the radar reads it as an amber MODIFIER (like errored/bg).
-func UsageWarnDir() string { return filepath.Join(Dir(), "usagewarn") }
+func UsageWarnDir() string { return StorePath("usagewarn") }
 
 // UsageWarnPath is a pane's usage-warning marker.
 func UsageWarnPath(pane string) string { return filepath.Join(UsageWarnDir(), pane) }

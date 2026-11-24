@@ -5483,5 +5483,145 @@
       "WLC-001 Live is readable and draggable on ordinary short workbench cards",
       "WLC-002 Short workbench Live identifies its current pane and preserves read-only history"
     ]
+  },
+  "internal/state/layout_test.go": {
+    "cases": [
+      "GSS-001",
+      "GSS-002"
+    ],
+    "selectors": [
+      "TestGSS001GroupedLayoutRoundTrip",
+      "TestGSS002InterruptedLayoutAndConflicts"
+    ]
+  },
+  "internal/app/doctor_layout_test.go": {
+    "cases": [
+      "GSS-003"
+    ],
+    "selectors": [
+      "TestGSS003CommandsGateInterruptedLayout"
+    ]
+  },
+  "internal/app/doctor_layout_dsh_test.go": {
+    "cases": [
+      "GSS-004"
+    ],
+    "selectors": [
+      "TestGSS004GroupedLayoutPreservesDSHRegistration"
+    ]
+  },
+  "internal/userservice/storage_test.go": {
+    "cases": [
+      "GSS-005"
+    ],
+    "selectors": [
+      "TestGSS005ManagerStorageReadiness"
+    ]
+  },
+  "internal/app/doctor_layout_safety_test.go": {
+    "cases": [
+      "GSS-005",
+      "GSS-007"
+    ],
+    "selectors": [
+      "TestGSS005CLIStorageAdmission",
+      "TestGSS007DoctorRejectsPendingLayoutConflict"
+    ]
+  },
+  "internal/state/layout_safety_test.go": {
+    "cases": [
+      "GSS-006"
+    ],
+    "selectors": [
+      "TestGSS006RollbackRetainsInterruptedWrite",
+      "TestGSS006RollbackRefusesUnknownOrUnsafeStage"
+    ]
+  },
+  "internal/hq/housekeeping_layout_test.go": {
+    "cases": [
+      "GSS-008"
+    ],
+    "selectors": [
+      "TestGSS008HousekeepingFollowsGroupedHQFeed"
+    ]
+  },
+  "internal/userservice/storage_persistent_test.go": {
+    "cases": [
+      "GSS-009",
+      "GSS-011"
+    ],
+    "selectors": [
+      "TestGSS009InstalledLaunchAgentRequiresPersistentDisable",
+      "TestGSS011SystemdRejectsAmbiguousQuiescence"
+    ]
+  },
+  "internal/state/layout_cleanup_test.go": {
+    "cases": [
+      "GSS-010"
+    ],
+    "selectors": [
+      "TestGSS010RollbackPreservesLateConflict"
+    ]
+  },
+  "internal/app/doctor_layout_alias_test.go": {
+    "cases": [
+      "GSS-011"
+    ],
+    "selectors": [
+      "TestGSS011DoctorAliasSharesLayoutAdmission"
+    ]
+  },
+  "internal/hqnudge/storage_layout_test.go": {
+    "cases": [
+      "GSS-012"
+    ],
+    "selectors": [
+      "TestGSS012StorageLayoutKeepsNativeWakeEvidence"
+    ]
+  },
+  "internal/state/layout_commit_test.go": {
+    "cases": [
+      "GSS-013",
+      "GSS-014"
+    ],
+    "selectors": [
+      "TestGSS013MarkerConflictPreservesOriginals",
+      "TestGSS014CommitNeedsCompleteTargetLayout"
+    ]
+  },
+  "internal/userservice/storage_commit_test.go": {
+    "cases": [
+      "GSS-015"
+    ],
+    "selectors": [
+      "TestGSS015StorageRejectsRuntimeOnlyMask"
+    ]
+  },
+  "internal/state/layout_metadata_test.go": {
+    "cases": [
+      "GSS-016",
+      "GSS-017"
+    ],
+    "selectors": [
+      "TestGSS016RejectsJournalReplacementBeforeMove",
+      "TestGSS016RetirementPreservesReplacedJournal",
+      "TestGSS017RollbackPreservesReplacementEmptyGroup"
+    ]
+  },
+  "internal/userservice/storage_metadata_test.go": {
+    "cases": [
+      "GSS-018"
+    ],
+    "selectors": [
+      "TestGSS018LaunchdRejectsTruncatedDisabledTable"
+    ]
+  },
+  "internal/state/layout_crash_order_test.go": {
+    "cases": [
+      "GSS-019"
+    ],
+    "selectors": [
+      "TestGSS019RollbackSyncsMarkerBeforeScaffold"
+    ]
   }
 }

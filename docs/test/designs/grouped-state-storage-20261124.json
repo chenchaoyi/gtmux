@@ -1,0 +1,224 @@
+{
+  "change": "Group previously flat application state by lifecycle",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (Codex self-review)",
+    "date": "2026-11-24",
+    "decision": "Use opt-in grouped routing with an offline, journaled and reversible transition.",
+    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting. The remaining independent findings cover admission against a loaded manager, an interrupted atomic write, misleading transition preview, and housekeeping following the active store. Delta review requires an installed macOS LaunchAgent to be persistently disabled as well as unloaded, and flatten must use directory-only cleanup against late conflicting paths. Systemd evidence must be complete and the CLI alias follows the same admission. The native wake lifecycle uses hard links between parked input and identity anchors. Keep the complete wake protocol at its existing paths so the layout can be adopted with retained uncertain evidence. The commit boundary must prove every planned identity reached its target. Unexpected layout markers must survive, including after a restart. Cleanup verifies the scaffold directory identity before its directory-only removal. Bind publication and retirement to the actual journal inode and bounded bytes, record the original rollback scaffold identities, and require a complete launchd disabled-services block. Recovery must durably remove the grouped marker from its parent before modifying the rollback scaffold. The sync is required on retry even if the marker is already absent."
+  },
+  "cases": [
+    {
+      "id": "GSS-001",
+      "layer": "L1",
+      "description": "Grouped storage replaces flat routing reversibly and leaves other paths stable",
+      "setup": "Disposable home with pane state, a receipt, an event counter, a backup, a stable upload and unknown data.",
+      "action": "Inspect both layouts and move a sample in both directions, including a new receipt in the grouped layout.",
+      "expected": "Each owned source moves by inode to its declared group and back. No duplicate or regenerated receipt. Preview and legacy path lookup are side effect free. Stable and unknown entries are untouched.",
+      "planned_files": [
+        "internal/state/layout_test.go"
+      ]
+    },
+    {
+      "id": "GSS-002",
+      "layer": "L1",
+      "description": "Interrupted and conflicting layout changes protect both sides",
+      "setup": "Disposable home with a durable transition record and a subset already moved, or an occupied destination, replaced source, or symlink.",
+      "action": "Read layout readiness, continue from the durable record, and exercise identity or destination conflict.",
+      "expected": "A partial transition gates normal CLI access. The original direction resumes only with exact identity and a unique location. Conflict preserves both sides; completion is durable and idempotent.",
+      "planned_files": [
+        "internal/state/layout_test.go"
+      ]
+    },
+    {
+      "id": "GSS-003",
+      "layer": "L1",
+      "description": "CLI gates partial layout changes and reads events after relocation",
+      "setup": "Disposable HOME with real Go event storage and a simulated writer appearing after preparation.",
+      "action": "Call the production CLI entry for layout inspection, a normal command and the Codex entry. Resume the transition in the fixture and append another ordinary event.",
+      "expected": "Inspection remains available, entry points that can write are gated while pending, and the event journal and sequence advance in the canonical group without creating a flat event log.",
+      "planned_files": [
+        "internal/app/doctor_layout_test.go"
+      ]
+    },
+    {
+      "id": "GSS-004",
+      "layer": "L1",
+      "description": "Grouped storage opens the actual DSH plugin registration at the stable input boundary",
+      "setup": "Grouped synthetic HOME, the embedded DSH bridge, fake tmux epoch and hook executable, and isolated DSH session discovery.",
+      "action": "Register a real plugin attachment, read it through the Go attachment store with synthetic process facts, then check ordinary CLI readiness.",
+      "expected": "One attachment is visible on the existing terminal-clients path, and registering it does not create an unexpected flat copy of a grouped store or gate normal commands.",
+      "planned_files": [
+        "internal/app/doctor_layout_dsh_test.go"
+      ]
+    },
+    {
+      "id": "GSS-005",
+      "layer": "L1",
+      "description": "Background jobs and compatible processes hold storage admission",
+      "setup": "Disposable home, process and service-manager fixtures with a loaded launchd job or a restarting systemd job and no PID, plus a held shared CLI lease.",
+      "action": "Probe migration readiness, confirm normal CLI entry gates under the exclusive lease, and exercise both lease directions.",
+      "expected": "A loaded/restarting job or an unverifiable manager blocks the move. Shared leases coexist and stay held through the command. Migration requires exclusive admission before any move, while inspection remains available.",
+      "planned_files": [
+        "internal/userservice/storage_test.go",
+        "internal/app/doctor_layout_safety_test.go"
+      ]
+    },
+    {
+      "id": "GSS-006",
+      "layer": "L1",
+      "description": "Rollback preserves crash residue from an interrupted atomic writer",
+      "setup": "Grouped isolated home with authoritative usage data, an exact private staging-file shape, and separately an unknown or linked entry.",
+      "action": "Inspect, interrupt and resume rollback around archival, then group again.",
+      "expected": "Authoritative data retains its identity. Valid residue stays private and recoverable outside active storage across retry. Unknown, unsafe or unexpected entries block before further changes.",
+      "planned_files": [
+        "internal/state/layout_safety_test.go"
+      ]
+    },
+    {
+      "id": "GSS-007",
+      "layer": "L1",
+      "description": "Transition inspection verifies both physical locations",
+      "setup": "Pending isolated transition with one item already moved and, separately, two copies of another item.",
+      "action": "Inspect through doctor with the actual pending journal, then compare against the resume decision.",
+      "expected": "Inspection reports moved and pending stores and explicitly rejects the same conflict as resume, with both copies unchanged.",
+      "planned_files": [
+        "internal/app/doctor_layout_safety_test.go"
+      ]
+    },
+    {
+      "id": "GSS-008",
+      "layer": "L1",
+      "description": "Housekeeping follows the active HQ feed",
+      "setup": "Grouped isolated home with a known retired feed file, an active cadence marker, and an independent flat path.",
+      "action": "Check doctor inventory and run normal housekeeping.",
+      "expected": "Existing retirement policy sees and removes only the named retired file from the active store without deleting the cadence marker or flat copy.",
+      "planned_files": [
+        "internal/hq/housekeeping_layout_test.go"
+      ]
+    },
+    {
+      "id": "GSS-009",
+      "layer": "L1",
+      "description": "Offline migration requires persistent disable for installed LaunchAgents",
+      "setup": "Synthetic service descriptors and launchctl replies for a missing GUI domain, an enabled or disabled job and an absent standard install.",
+      "action": "Check the production LaunchAgent admission logic with no process running, then compare both domains and known installed service files.",
+      "expected": "Unloaded and installed needs persistent disable proof. Absent installation allows an unloaded job; unknown, enabled or conflicting proof stops before migration.",
+      "planned_files": [
+        "internal/userservice/storage_persistent_test.go"
+      ]
+    },
+    {
+      "id": "GSS-010",
+      "layer": "L1",
+      "description": "Rollback cleanup does not unlink objects that appear after verification",
+      "setup": "A grouped fixture with a durable rollback journal. After the transition verifies, a known group is replaced by a file or a symlink, or an unrelated entry is created.",
+      "action": "Call the actual cleanup boundary, then compare paths and the journal after it refuses.",
+      "expected": "Only fixed empty group directories can be removed. Conflicting files, links and unknown data survive and the journal remains.",
+      "planned_files": [
+        "internal/state/layout_cleanup_test.go"
+      ]
+    },
+    {
+      "id": "GSS-011",
+      "layer": "L1",
+      "description": "Offline alias and systemd require complete admission evidence",
+      "setup": "Pending transition fixture, plus systemd fixture replies with one missing or duplicate required property.",
+      "action": "Inspect pending layout through dr, confirm its migration flags are exempt from shared admission, and check invalid manager replies.",
+      "expected": "Doctor and dr remain available with the same behavior. Missing, malformed or duplicate properties cannot establish quiescence.",
+      "planned_files": [
+        "internal/app/doctor_layout_alias_test.go",
+        "internal/userservice/storage_persistent_test.go"
+      ]
+    },
+    {
+      "id": "GSS-012",
+      "layer": "L1",
+      "description": "Both layouts preserve the stable HQ wake protocol paths",
+      "setup": "Disposable home with a real native claim parked as uncertain, its hard-link pin and original batch journal, plus an unrelated movable store.",
+      "action": "Group and flatten with the original wake evidence still present. Read the parked item, pin and journal in each mode.",
+      "expected": "Uncertain state and the exact link, journal bytes and identities remain at their original paths. No pending item is produced, and unrelated storage still moves.",
+      "planned_files": [
+        "internal/hqnudge/storage_layout_test.go"
+      ]
+    },
+    {
+      "id": "GSS-013",
+      "layer": "L1",
+      "description": "Layout marker changes are safe across resumed transitions",
+      "setup": "Pending grouping or rollback in an isolated home. Replace the existing grouped marker with a regular file, link, nonempty directory or a different empty directory, or occupy the new marker path.",
+      "action": "Resume the actual transition. Compare the two stores, journal and the replacement marker.",
+      "expected": "A conflicting marker stays intact, no object is published or removed as a marker over it, and the journal remains. A legitimate interrupted layout can still finish.",
+      "planned_files": [
+        "internal/state/layout_commit_test.go"
+      ]
+    },
+    {
+      "id": "GSS-014",
+      "layer": "L1",
+      "description": "Migration retirement requires complete target evidence",
+      "setup": "Isolated interrupted transitions with a planned store in its original location, a missing target group, an unarchived staging scaffold or a reappearing grouped root.",
+      "action": "Exercise the actual final commit boundary after preparing the conflicting evidence.",
+      "expected": "The old direction journal is kept unless every expected identity is on the target side, retained staging is archived and marker and directory topology establish the requested layout.",
+      "planned_files": [
+        "internal/state/layout_commit_test.go"
+      ]
+    },
+    {
+      "id": "GSS-015",
+      "layer": "L1",
+      "description": "A temporary systemd mask does not establish persistent stop",
+      "setup": "Systemd fixture output for a quiet installed service under a persistent and a temporary mask.",
+      "action": "Apply the actual storage admission classifier.",
+      "expected": "Persistent stop can permit migration. A runtime-only mask needs persisted disable evidence.",
+      "planned_files": [
+        "internal/userservice/storage_commit_test.go"
+      ]
+    },
+    {
+      "id": "GSS-016",
+      "layer": "L1",
+      "description": "An active storage transition does not retire replacement journal objects",
+      "setup": "In-memory plan published by the real transition and held at the final boundary. Replace the journal with a new file of identical or different bytes, a symlink, or edit the existing inode.",
+      "action": "Resume within the existing writer check or call the actual final boundary; read both original and replacement evidence afterwards.",
+      "expected": "Replacement identity, content and type block the operation. Ordinary journal recovery remains possible after a process restart.",
+      "planned_files": [
+        "internal/state/layout_metadata_test.go"
+      ]
+    },
+    {
+      "id": "GSS-017",
+      "layer": "L1",
+      "description": "Rollback rejects a same-name replacement group",
+      "setup": "Pending rollback with originally empty group directories. Replace an allowed group name with a new owner-private empty directory between preparation and resume.",
+      "action": "Call the real rollback resume and inspect the existing directory and journal.",
+      "expected": "The new group inode and original group are retained, and the rollback stops before moving live stores or retiring the journal.",
+      "planned_files": [
+        "internal/state/layout_metadata_test.go"
+      ]
+    },
+    {
+      "id": "GSS-018",
+      "layer": "L1",
+      "description": "Launchd storage probe requires a complete disabled services table",
+      "setup": "Successful manager replies containing a complete matching table or only an isolated or truncated disabled line.",
+      "action": "Classify the installed label through the production persistent disable parser.",
+      "expected": "A genuine full disabled-services block establishes evidence, while truncated or ambiguous replies are refused.",
+      "planned_files": [
+        "internal/userservice/storage_metadata_test.go"
+      ]
+    },
+    {
+      "id": "GSS-019",
+      "layer": "L1",
+      "description": "Rollback syncs marker removal before modifying groups",
+      "setup": "Grouped disposable home with an authoritative store, a recorded rollback, and optional retained atomic staging. Inject directory sync failure after the marker is removed.",
+      "action": "Attempt rollback twice with the parent sync failing, then retry via the ordinary recovery entry.",
+      "expected": "Both failed attempts leave each original group and the journal available. The retry sync is required even when the marker is absent. The ordinary retry finishes with intact store identity and any staging retained.",
+      "planned_files": [
+        "internal/state/layout_crash_order_test.go"
+      ]
+    }
+  ],
+  "seal": "738477733edeace2eb61b60500c63a4ee0501511aaa676728a7ceb46bff6352e"
+}

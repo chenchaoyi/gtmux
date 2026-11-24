@@ -50,6 +50,7 @@ type Attachment struct {
 	InputStoreGeneration string `json:"input_store_generation,omitempty"`
 }
 
+// Dir is shared with the installed DSH plugin, including on grouped homes.
 func Dir() string { return filepath.Join(state.Dir(), "terminal-clients") }
 
 // Inspector supplies fresh process and tmux facts. Tests exercise the same

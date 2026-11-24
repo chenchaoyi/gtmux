@@ -12,7 +12,6 @@
 package hook
 
 import (
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -77,7 +76,7 @@ func watchUsage(agentKey, sessionID, pane string) {
 const usageRestateMinSec = int64(30 * 60)
 
 func usageGatePath(pane string) string {
-	return filepath.Join(state.Dir(), "usagewarn-gate", pane)
+	return state.StorePath("usagewarn-gate", pane)
 }
 
 // usageRestateOK reports whether this pane's usage warning may speak now.

@@ -46,7 +46,7 @@ func Housekeep() {
 	}
 	base := state.Dir()
 	for _, rel := range retiredFiles {
-		p := filepath.Join(base, rel)
+		p := retiredPath(rel)
 		if fi, err := os.Stat(p); err == nil && os.Remove(p) == nil {
 			lg.Act("act.cleanup", "system", rel, diag.OK, "removed a retired file",
 				"bytes", fi.Size(), "reason", "retired")
@@ -71,13 +71,20 @@ func Housekeep() {
 // RetiredPresent lists the retired files and moved caches still on disk, for doctor.
 func RetiredPresent() []string {
 	var out []string
-	base := state.Dir()
 	for _, rel := range append(append([]string{}, retiredFiles...), movedCaches...) {
-		if _, err := os.Stat(filepath.Join(base, rel)); err == nil {
+		if _, err := os.Stat(retiredPath(rel)); err == nil {
 			out = append(out, rel)
 		}
 	}
 	return out
+}
+
+func retiredPath(rel string) string {
+	dir, leaf := filepath.Split(rel)
+	if dir == "" {
+		return state.StorePath(leaf)
+	}
+	return state.StorePath(filepath.Clean(dir), leaf)
 }
 
 func dirBytes(dir string) int64 {

@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -183,7 +182,7 @@ type Config struct {
 var DefaultConfig = Config{Command: "claude -p /usage", TTLMin: 15, NearMin: 5, NearPct: 70, WarnPct: 85, TimeoutSec: 60}
 
 // path of the cache file.
-func cachePath() string { return filepath.Join(state.Dir(), "limits.json") }
+func cachePath() string { return state.StorePath("limits.json") }
 
 // Load returns the cached report (ok=false when there is no cache yet).
 func Load() (Report, bool) {
@@ -568,7 +567,7 @@ func runAndParse(command string, cfg Config, now time.Time) ([]Window, error) {
 // as a failure for the backoff: an empty Dir means the caller's directory, which is the
 // very thing this exists to avoid, and it used to be the fallback (%12, 2026-10-06).
 func probeDir() (string, error) {
-	d := filepath.Join(state.Dir(), "probe")
+	d := state.StorePath("probe")
 	if err := state.MkdirAll(d, 0o700); err != nil {
 		return "", err
 	}
@@ -583,7 +582,7 @@ const (
 	lockUnavailable
 )
 
-func refreshLockPath() string { return filepath.Join(state.Dir(), "limits.lock") }
+func refreshLockPath() string { return state.StorePath("limits.lock") }
 
 // lockRefresh tries the refresh lock without waiting. lockBusy means another caller is
 // refreshing; lockUnavailable means there is no lock to take at all.

@@ -19,7 +19,6 @@ package hq
 
 import (
 	"encoding/json"
-	"path/filepath"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -74,7 +73,7 @@ func tierStep(s tierState, obs string, now int64, confirm int, minRestate int64)
 }
 
 // tierGatePath is where a gated alert's state lives.
-func tierGatePath(name string) string { return filepath.Join(state.Dir(), name+"-gate") }
+func tierGatePath(name string) string { return state.StorePath(name + "-gate") }
 
 // tierGate runs one sample of the named alert through tierStep, persisting the state.
 // It reports whether to nudge — the single-writer serve tick is the only caller, so

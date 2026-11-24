@@ -118,7 +118,7 @@ type dailyLedger struct {
 	Days      map[string]map[string]*Count `json:"days"` // date → agent → count
 }
 
-func dailyPath() string { return filepath.Join(state.Dir(), "usage-daily.json") }
+func dailyPath() string { return state.StorePath("usage-daily.json") }
 
 func loadDaily() dailyLedger {
 	l := dailyLedger{V: 1, Files: map[string]fileMark{}, Days: map[string]map[string]*Count{}}

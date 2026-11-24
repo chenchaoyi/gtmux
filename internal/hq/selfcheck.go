@@ -9,7 +9,6 @@ package hq
 
 import (
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
-	"path/filepath"
 	"strconv"
 
 	"github.com/chenchaoyi/gtmux/internal/dispatch"
@@ -30,7 +29,7 @@ const (
 	selfCheckLedgerCap   = 200          // open-ledger threshold that triggers immediately
 )
 
-func selfCheckAtPath() string { return filepath.Join(state.Dir(), "hq-feed", "last-self-check") }
+func selfCheckAtPath() string { return state.StorePath("hq-feed", "last-self-check") }
 
 func readSelfCheckAt() int64 {
 	n, _ := strconv.ParseInt(state.ReadMarker(selfCheckAtPath()), 10, 64)

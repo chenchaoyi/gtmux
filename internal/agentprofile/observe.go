@@ -45,7 +45,7 @@ func observationPath(agent, session, home string) string {
 	}
 
 	h := sha256.Sum256([]byte(agent + "\x00" + home + "\x00" + session))
-	return filepath.Join(state.Dir(), "participant-profiles", hex.EncodeToString(h[:])+".json")
+	return state.StorePath("participant-profiles", hex.EncodeToString(h[:])+".json")
 }
 
 func loadObservation(agent, session, home string) observation {

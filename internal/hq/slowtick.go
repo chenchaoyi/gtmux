@@ -232,7 +232,7 @@ func resourceTierKey(m resource.Machine) string {
 // machine — the memory a sticky threshold needs (was 14.9 GB a fall out of red, or a
 // dither inside its exit band?). Distinct from the gate's own state, which tracks
 // belief and speech rather than the reading.
-func resourceHeldPath() string { return filepath.Join(state.Dir(), "resourcewarn-held") }
+func resourceHeldPath() string { return state.StorePath("resourcewarn-held") }
 
 // resourceTierGate runs one machine sample through the three anti-flap rules and
 // reports whether to nudge: hysteresis on the thresholds (internal/resource), then
@@ -430,7 +430,7 @@ func nudgeOnChange(marker, dedupKey, msg, extra string) {
 // persists the new key when it does. An empty key CLEARS the marker and returns false
 // (nothing to nudge). This is the by-TIER dedup core — testable without tmux.
 func markerChanged(marker, dedupKey string) bool {
-	path := filepath.Join(state.Dir(), marker)
+	path := state.StorePath(marker)
 	if dedupKey == state.ReadMarker(path) {
 		return false // unchanged tier → never re-nudge
 	}

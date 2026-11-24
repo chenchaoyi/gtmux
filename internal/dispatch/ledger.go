@@ -167,7 +167,7 @@ func deliversGoal(goal, text string) bool {
 func collapseSpace(s string) string { return strings.Join(strings.Fields(s), " ") }
 
 // tasksDir is where ledger entries live.
-func tasksDir() string { return filepath.Join(state.Dir(), "tasks") }
+func tasksDir() string { return state.StorePath("tasks") }
 
 func taskPath(id string) string { return filepath.Join(tasksDir(), sanitizeID(id)+".json") }
 

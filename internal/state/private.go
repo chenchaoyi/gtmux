@@ -69,7 +69,7 @@ func LegacyTunnelURLPath() string { return filepath.Join(ConfigDir(), "tunnel-ur
 // server it may use, the current one first. The tunnel writes it, serve hands it to
 // authenticated clients, and a phone keeps it so it can find this Mac again after it moves
 // to another server (openspec/changes/direct-server-choice).
-func TunnelAddressesPath() string { return filepath.Join(Dir(), "tunnel-addresses") }
+func TunnelAddressesPath() string { return StorePath("tunnel-addresses") }
 
 // WriteForeign writes a file gtmux edits but does not own: an agent's settings, the
 // user's instruction file, ~/.tmux.conf, a repository's AGENTS.md. An existing file keeps

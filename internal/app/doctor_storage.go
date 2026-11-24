@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
-	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -49,7 +48,7 @@ func measureStateStorage(root string) storageFootprint {
 			f.complete = false
 			return nil
 		}
-		group := strings.SplitN(rel, string(filepath.Separator), 2)[0]
+		group := state.StorageStoreName(rel)
 		switch group {
 		case "releases", "appstore":
 			f.releases += info.Size()
@@ -57,7 +56,7 @@ func measureStateStorage(root string) storageFootprint {
 			f.backups += info.Size()
 		case "reports", "reviews", "verification":
 			f.reports += info.Size()
-		case "active", "waiting", "finished", "bg", "native", "resume", "logs", "cache", "events", "mine", "usage", "notify", "uploads", "locks", "codex-frontends", "codex-processes":
+		case "active", "waiting", "finished", "bg", "native", "resume", "logs", "cache", "events", "mine", "usage", "notify", "uploads", "locks", "codex-frontends", "codex-processes", "events.jsonl", "events.1.jsonl", "events.seq":
 			f.working += info.Size()
 			groups[group] += info.Size()
 		default:

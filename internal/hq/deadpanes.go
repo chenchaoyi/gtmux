@@ -22,7 +22,7 @@ import (
 const deadPaneSweepInterval int64 = 5 * 60
 
 // deadPaneSweepLastPath records the last sweep (unix seconds).
-func deadPaneSweepLastPath() string { return state.Dir() + "/dead-pane-sweep-last" }
+func deadPaneSweepLastPath() string { return state.StorePath("dead-pane-sweep-last") }
 
 // deadPaneSweep drops pane-keyed state whose pane tmux no longer has. Time-gated, silent
 // housekeeping — it raises no wake: a reaped record is the absence of a problem, not one.

@@ -78,6 +78,15 @@ func statusGlyph(status int) (glyph, color string) {
 // With `--fix` it then walks the recommended fixes, explaining and confirming each
 // one (Layer 2, see doctorFix); `--yes` applies them all without prompting.
 func cmdDoctor(args []string) int {
+	for _, flag := range args {
+		if layoutDoctorFlag(flag) {
+			if len(args) != 1 {
+				i18n.Sae("doctor: each storage layout flag must be used alone", "doctor：数据布局参数必须单独使用")
+				return 2
+			}
+			return cmdDoctorLayout(flag)
+		}
+	}
 	fix, yes := false, false
 	jsonOut, noPrompt, inTerminal := false, false, false
 	bundle, bundlePath, withEvents := false, "", false

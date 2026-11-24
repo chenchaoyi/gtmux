@@ -3,7 +3,6 @@ package hq
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/chenchaoyi/gtmux/internal/hook"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
@@ -17,7 +16,7 @@ import (
 // being resolved escalates to HQ once (the roadmap's needs-you age/timeout). Seconds.
 const watchdogWaitTimeout int64 = 10 * 60
 
-func watchdogMarker(pane string) string { return filepath.Join(state.Dir(), "watchdog", pane) }
+func watchdogMarker(pane string) string { return state.StorePath("watchdog", pane) }
 
 // watchdogSweep escalates, to a live HQ, any pane stuck WAITING past the timeout — the
 // lifecycle watchdog (charter M5). It runs from the single-writer serve slow-tick, is

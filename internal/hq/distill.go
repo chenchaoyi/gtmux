@@ -10,7 +10,6 @@ package hq
 
 import (
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -42,7 +41,7 @@ const (
 	distillSpoolFloor = 5
 )
 
-func distillMarkPath() string { return filepath.Join(state.Dir(), "hq-feed", "last-distill") }
+func distillMarkPath() string { return state.StorePath("hq-feed", "last-distill") }
 
 // readDistillMark returns the last distill's (unix time, event seq watermark). A
 // missing/unparseable marker reads as (0, 0) — treated as "never distilled".
