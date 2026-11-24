@@ -406,16 +406,27 @@ quotes.
 
 ### Requirement: Failed diagnostic writes are visible
 
-A failed diagnostic append SHALL leave the primary action running, SHALL warn on
-stderr with the store and filesystem error but no entry body, and SHALL limit
-repeated warnings from one store. `gtmux doctor` SHALL probe whether the active
-diagnostic file and event journal can be opened for append and whether their
-directories can create files. It SHALL also probe an existing HQ knowledge ledger.
+A failed diagnostic append SHALL leave the primary action running and limit
+repeated warnings from one store. Ordinary commands SHALL warn on stderr with
+the store and filesystem error and exclude the entry body. The interactive Codex
+bridge SHALL use a bounded handoff to the local system log for background store
+failures. The warning SHALL include the store and a safe error reason and exclude
+paths and entry contents. `gtmux doctor` SHALL probe whether the active diagnostic
+file and event journal can be opened for append and whether their directories can
+create files. It SHALL also probe an existing HQ knowledge ledger.
 
 #### Scenario: Log path is unavailable
 
-- **WHEN** a diagnostic entry cannot be appended
+- **WHEN** an ordinary gtmux command cannot append a diagnostic entry
 - **THEN** the action continues and stderr reports that diagnostics could not be written
+
+#### Scenario: A background diagnostic write fails during an interactive Codex session
+
+- **WHEN** the bridge encounters a store write failure
+- **THEN** it attempts a local system-log warning without writing the warning to the
+  shared terminal, even if the system log is unavailable
+- **AND** for a full diagnostic volume it sends at most one accepted warning per
+  bridge process until a subsequent diagnostic append succeeds
 
 #### Scenario: A store has become unwritable
 

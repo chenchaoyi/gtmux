@@ -380,8 +380,11 @@ be inspected with `gtmux knowledge list --json`. A maintenance completion joins 
 request by `kind` and `request_at` in the event journal and by `request_at` in the
 diagnostic action. Audited actions share an `op_id` across event and diagnostic records;
 a knowledge mutation carries it in the ledger as well. Older records and ordinary
-agent lifecycle events have no such ID. A failed append warns on stderr without
-printing the entry text, at most once per store per minute.
+agent lifecycle events have no such ID. Ordinary commands warn on stderr when an
+append fails, at most once per store per minute. The interactive Codex bridge uses
+the local system log for background write failures. It omits paths and entry text,
+and warns once per detected full-volume incident in each bridge process. Use
+`gtmux doctor` to check current write access.
 
 <!-- gtmux:rendered log-lines -->
 ```

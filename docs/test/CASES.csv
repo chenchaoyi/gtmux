@@ -1056,6 +1056,8 @@ LEG-d876071a5552,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,
 LEG-878e735aba01,L1,Go core / CLI / server,internal/codexbridge/observe_test.go,114,Test,TestObserverKeepsSuccessfulRootWorkspace,False,legacy-not-retrospectively-reviewed
 MAP-4bb0cccd29ff,L2,reviewed implementation,internal/codexbridge/readiness_test.go,12,reviewed-selector,TestCFR003AdmissionRetriesOnlyTransientEvidence,False,CFR-003
 MAP-3cb7a6a952c7,L2,reviewed implementation,internal/codexbridge/readiness_test.go,68,reviewed-selector,TestCFR003LaunchPublicationAndCancellation,False,CFR-003
+MAP-0976e4db3084,L3,reviewed implementation,internal/codexbridge/run_unix_test.go,34,reviewed-selector,TestRunKeepsStoreFailureOffTerminal,False,"DIAG-TERM-004,DIAG-TERM-006"
+MAP-5af249f51e98,L3,reviewed implementation,internal/codexbridge/run_unix_test.go,111,reviewed-selector,TestProtectedSendKeepsManuallyTypedComposerBytes,False,"DIAG-TERM-004,DIAG-TERM-006"
 MAP-a35414decb85,L2,reviewed implementation,internal/codexbridge/trust_alias_policy_test.go,17,reviewed-selector,TestWTR005CanonicalProjectDecisionsKeepResponseUnchanged,False,WTR-005
 MAP-092a68c52730,L2,reviewed implementation,internal/codexbridge/trust_alias_policy_test.go,86,reviewed-selector,TestWTR005ActualUnixForwardingKeepsCanonicalDenyAndSameHomeGuards,False,WTR-005
 MAP-8c496a3dd18b,L2,reviewed implementation,internal/codexbridge/trust_alias_policy_test.go,150,reviewed-selector,TestWTR005CanonicalObservationsAreStableAndBounded,False,WTR-005
@@ -1171,6 +1173,11 @@ LEG-331027a8e577,L1,Go core / CLI / server,internal/diag/diag_test.go,307,Test,T
 LEG-7a15b6edd253,L1,Go core / CLI / server,internal/diag/diag_test.go,334,Test,TestParseLevelAndString,False,legacy-not-retrospectively-reviewed
 LEG-0b5ee0b6a36f,G,Go core / CLI / server,internal/diag/diag_test.go,348,Test,TestActiveSegmentIsWhereTheWriterAppends,False,legacy-not-retrospectively-reviewed
 LEG-a0eba6f3f480,L1,Go core / CLI / server,internal/diag/diag_test.go,350,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-745f693c3a09,L2,reviewed implementation,internal/diag/failure_test.go,17,reviewed-selector,TestInteractiveStoreFailureLeavesStderrAlone,False,"DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
+MAP-58b2325d5509,L2,reviewed implementation,internal/diag/failure_test.go,70,reviewed-selector,TestInteractiveDiskFullWarningRearmsAfterWrite,False,"DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
+MAP-7cdc6cd87843,L2,reviewed implementation,internal/diag/failure_test.go,102,reviewed-selector,TestSystemStoreWarningUsesLocalSocket,False,"DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
+MAP-8617ecb8335d,L2,reviewed implementation,internal/diag/failure_test.go,103,reviewed-selector,TestRetentionMarkerRearmsDiskFullWarning,False,"DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003,DIAG-TERM-005"
+MAP-2dc03996e486,L2,reviewed implementation,internal/diag/retention_warning_test.go,14,reviewed-selector,TestRetentionMarkerRearmsDiskFullWarning,False,DIAG-TERM-005
 LEG-5cad8d388db0,L1,Go core / CLI / server,internal/dispatch/attention_test.go,10,Test,TestDispositionRoundTripAndLegacy,False,legacy-not-retrospectively-reviewed
 LEG-11940cef4f3f,L1,Go core / CLI / server,internal/dispatch/attention_test.go,39,Test,TestSetDispositionRecordsHow,False,legacy-not-retrospectively-reviewed
 LEG-8a5e700e01f4,L1,Go core / CLI / server,internal/dispatch/attention_test.go,60,Test,TestRetiredFieldsStillLoad,False,legacy-not-retrospectively-reviewed

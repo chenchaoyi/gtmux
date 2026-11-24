@@ -2,13 +2,13 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1451 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1454 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2713 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 154 | [L3.csv](cases/L3.csv) |
+| L2 · 组件/契约 | 2718 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 156 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 141 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
@@ -126,6 +126,12 @@
 | CPR-003 | A valid other-home receipt elsewhere does not interfere. A viable competitor at the same location or unreadable record prevents recovery without changing either index. |
 | CPR-004 | Each failure preserves the incumbent and no receipt upgrade occurs. The retry executes durability work despite visible equal bytes, then recovers the current thread with one exact private archive. |
 | CPR-005 | Unassociated Stop stays pane-less, updates only its native thread, and changes neither pane. The recovered owner gets exactly its own completion and event even with a wrong inherited pane. The peer stays active. |
+| DIAG-TERM-001 | The primary operation continues. Bridge mode keeps stderr empty and reports only the store and a safe cause to the local sink, even when that sink is unavailable. After the bridge the normal command still warns on stderr. No entry body or home path reaches the system log. |
+| DIAG-TERM-002 | The continuing incident sends one accepted warning. A failed handoff is retried only at a bounded cadence. A successful diagnostic append re-arms the warning for a later fault, while a failure in a different store can still be reported. |
+| DIAG-TERM-003 | The local receiver sees a warning-priority gtmux record. The unavailable endpoint returns failure within the bounded budget; neither path relies on a log file in the diagnostic directory. |
+| DIAG-TERM-004 | Each child starts once and returns its original normal exit code. Its own stderr is preserved. With a listener, a diagnostic warning reaches the socket. Neither case adds a gtmux warning to shared stderr. Removing the route installation from Run fails this test. |
+| DIAG-TERM-005 | An unsuccessful append does not re-arm the existing warning. The marker is actually appended without the dropped debug entry. The next disk-full incident emits a second warning. The old retention write path fails this test. |
+| DIAG-TERM-006 | The empty composer receives the exact payload and one Enter. The draft is refused before any paste, Enter or clear. Its input bytes remain unchanged. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
 | CFL-006 | Unmodified exact R must fail a real production-package target assertion for empty first root/move/index IO/same-root retry while controls are meaningful. Fixed same owner completes with same nonce, correct current location/root and live association, no second root operation/input. Existing-root and proof-failure behavior stay intact. Conflicting, unknown, stale/future, canceled or retired evidence cannot authorize or resurrect publication. Bridge positive controller controls may pass R and are not called an old-red guard; they verify pending/suspended/attachment and later ticks. Full source maps and command evidence distinguish this production-package coverage from independent extracted model and from actual TTY/runtime acceptance |

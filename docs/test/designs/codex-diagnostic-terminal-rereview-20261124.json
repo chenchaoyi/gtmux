@@ -1,0 +1,56 @@
+{
+  "id": "codex-diagnostic-terminal-rereview-20261124",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner (self-review after independent findings)",
+    "date": "2026-11-24",
+    "decision": "Cover the actual bridge warning route, the protected compose behavior, and recovery after a retention append",
+    "notes": "Independent review reproduced stderr contamination by removing the Run wiring and reproduced lost re-arming after the debug ceiling marker. Exercise the public Run function with private socket addresses and a normally exiting fake frontend. Signals and new storage-probe behavior are outside this change. Use disposable HOME and tmux state, synthetic disk-full errors and a sparse segment with a bounded tail read."
+  },
+  "cases": [
+    {
+      "id": "DIAG-TERM-004",
+      "layer": "L3",
+      "description": "The real Codex bridge entry keeps diagnostic failures away from inherited stderr",
+      "setup": "Launch the test in a subprocess with a disposable HOME, short private listener directory, a fake frontend and an unusable diagnostic segment. Run with a listening system-log socket and a missing socket.",
+      "action": "Call the public Run entry point, collect shared stderr and the child exit status, and read the launch counter and any system warning.",
+      "expected": "Each child starts once and returns its original normal exit code. Its own stderr is preserved. With a listener, a diagnostic warning reaches the socket. Neither case adds a gtmux warning to shared stderr. Removing the route installation from Run fails this test.",
+      "planned_files": [
+        "internal/codexbridge/run_unix_test.go"
+      ],
+      "surfaces": [
+        "Codex bridge terminal"
+      ]
+    },
+    {
+      "id": "DIAG-TERM-005",
+      "layer": "L2",
+      "description": "An actual retention marker append re-arms a disk-full warning",
+      "setup": "Use a disposable store, a sparse segment at the debug ceiling and a synthetic ENOSPC warning.",
+      "action": "Report a full volume, try an unsuccessful internal append, then trigger the debug ceiling marker and verify its bounded on-disk tail before reporting ENOSPC again.",
+      "expected": "An unsuccessful append does not re-arm the existing warning. The marker is actually appended without the dropped debug entry. The next disk-full incident emits a second warning. The old retention write path fails this test.",
+      "planned_files": [
+        "internal/diag/retention_warning_test.go"
+      ],
+      "surfaces": [
+        "Local system log",
+        "Diagnostic retention"
+      ]
+    },
+    {
+      "id": "DIAG-TERM-006",
+      "layer": "L3",
+      "description": "Protected send distinguishes an empty composer from manually typed bytes",
+      "setup": "Use a private tmux server and a fake foreground composer that records the line actually submitted.",
+      "action": "Use the protected send flow on an empty pane and on a pane seeded with a manually typed draft.",
+      "expected": "The empty composer receives the exact payload and one Enter. The draft is refused before any paste, Enter or clear. Its input bytes remain unchanged.",
+      "planned_files": [
+        "internal/codexbridge/run_unix_test.go"
+      ],
+      "surfaces": [
+        "Protected Codex pane input"
+      ]
+    }
+  ],
+  "seal": "23353adb49baeb310b6b7fed195186e5cbd7efd813f561990be385a4dfbd90b2"
+}

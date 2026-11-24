@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1451 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1454 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2713 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 154 | [L3.csv](cases/L3.csv) |
+| L2 · Component / contract | 2718 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 156 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 141 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 509 | [G.csv](cases/G.csv) |
@@ -126,6 +126,12 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | CPR-003 | A valid other-home receipt elsewhere does not interfere. A viable competitor at the same location or unreadable record prevents recovery without changing either index. |
 | CPR-004 | Each failure preserves the incumbent and no receipt upgrade occurs. The retry executes durability work despite visible equal bytes, then recovers the current thread with one exact private archive. |
 | CPR-005 | Unassociated Stop stays pane-less, updates only its native thread, and changes neither pane. The recovered owner gets exactly its own completion and event even with a wrong inherited pane. The peer stays active. |
+| DIAG-TERM-001 | The primary operation continues. Bridge mode keeps stderr empty and reports only the store and a safe cause to the local sink, even when that sink is unavailable. After the bridge the normal command still warns on stderr. No entry body or home path reaches the system log. |
+| DIAG-TERM-002 | The continuing incident sends one accepted warning. A failed handoff is retried only at a bounded cadence. A successful diagnostic append re-arms the warning for a later fault, while a failure in a different store can still be reported. |
+| DIAG-TERM-003 | The local receiver sees a warning-priority gtmux record. The unavailable endpoint returns failure within the bounded budget; neither path relies on a log file in the diagnostic directory. |
+| DIAG-TERM-004 | Each child starts once and returns its original normal exit code. Its own stderr is preserved. With a listener, a diagnostic warning reaches the socket. Neither case adds a gtmux warning to shared stderr. Removing the route installation from Run fails this test. |
+| DIAG-TERM-005 | An unsuccessful append does not re-arm the existing warning. The marker is actually appended without the dropped debug entry. The next disk-full incident emits a second warning. The old retention write path fails this test. |
+| DIAG-TERM-006 | The empty composer receives the exact payload and one Enter. The draft is refused before any paste, Enter or clear. Its input bytes remain unchanged. |
 | CORE-CODEX-FOREIGN-ACTIVE | Only a verified current Codex home/session/cwd, a named foreign active marker, a completed/aborted own rollout and a ready nonworking nonapproval frame can contradict false working. Own/empty/unknown/stale binding or actual start/work/wait remains conservative. Reads never remove a foreign marker or mint a completion. |
 | CORE-CODEX-FOREIGN-GATHER | The real radar gather with isolated HOME, a completed own rollout, another session marker and recent window activity reports idle without changing marker content/mtime, binding or completion records; genuine own turns, approvals and legacy unknown ownership still work. |
 | CFL-006 | Unmodified exact R must fail a real production-package target assertion for empty first root/move/index IO/same-root retry while controls are meaningful. Fixed same owner completes with same nonce, correct current location/root and live association, no second root operation/input. Existing-root and proof-failure behavior stay intact. Conflicting, unknown, stale/future, canceled or retired evidence cannot authorize or resurrect publication. Bridge positive controller controls may pass R and are not called an old-red guard; they verify pending/suspended/attachment and later ticks. Full source maps and command evidence distinguish this production-package coverage from independent extracted model and from actual TTY/runtime acceptance |
