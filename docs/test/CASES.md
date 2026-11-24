@@ -2,11 +2,11 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1473 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1476 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3810 | [L1.csv](cases/L1.csv) |
+| L1 · Unit / pure logic | 3814 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2739 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 156 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
@@ -242,6 +242,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | GSS-006 | Authoritative data retains its identity. Valid residue stays private and recoverable outside active storage across retry. Unknown, unsafe or unexpected entries block before further changes. |
 | GSS-007 | Inspection reports moved and pending stores and explicitly rejects the same conflict as resume, with both copies unchanged. |
 | GSS-008 | Existing retirement policy sees and removes only the named retired file from the active store without deleting the cadence marker or flat copy. |
+| GSS-009 | Unloaded and installed needs persistent disable proof. Absent installation allows an unloaded job; unknown, enabled or conflicting proof stops before migration. |
+| GSS-010 | Only fixed empty group directories can be removed. Conflicting files, links and unknown data survive and the journal remains. |
+| GSS-011 | Doctor and dr remain available with the same behavior. Missing, malformed or duplicate properties cannot establish quiescence. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |
 | HQBC-001 | Exact language-specific titles are lifted. The original number, short first-line quote and group are retained. An explicit recommendation is recognized. Removal leaves the other item and its number intact. An empty decision section produces no actionable item. |
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |

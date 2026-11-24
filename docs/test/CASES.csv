@@ -293,6 +293,7 @@ LEG-a109448efbef,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go
 MAP-4f8292b157e5,L2,reviewed implementation,internal/app/doctor_frontend_recovery_test.go,16,reviewed-selector,TestDPC004DoctorDoesNotPromiseAutomaticRecovery,False,DPC-004
 MAP-6eef5ace4810,L2,reviewed implementation,internal/app/doctor_hq_storage_test.go,14,reviewed-selector,TestDPC002DoctorStorageExplainsScopeWithoutRemoval,False,DPC-002
 MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_test.go,48,reviewed-selector,TestDKC001DoctorPendingCountMatchesCaptureProjection,False,DKC-001
+MAP-20dc5264eacb,L1,reviewed implementation,internal/app/doctor_layout_alias_test.go,11,reviewed-selector,TestGSS011DoctorAliasSharesLayoutAdmission,False,GSS-011
 MAP-e7f675c91bc6,L1,reviewed implementation,internal/app/doctor_layout_dsh_test.go,17,reviewed-selector,TestGSS004GroupedLayoutPreservesDSHRegistration,False,GSS-004
 MAP-fe12560cb15e,L1,reviewed implementation,internal/app/doctor_layout_safety_test.go,13,reviewed-selector,TestGSS005CLIStorageAdmission,False,"GSS-005,GSS-007"
 MAP-2bcc26841705,L1,reviewed implementation,internal/app/doctor_layout_safety_test.go,49,reviewed-selector,TestGSS007DoctorRejectsPendingLayoutConflict,False,"GSS-005,GSS-007"
@@ -3485,6 +3486,7 @@ LEG-b848d9762125,L1,Go core / CLI / server,internal/state/homeguard_test.go,63,T
 LEG-c15d25c01b73,L1,Go core / CLI / server,internal/state/homeguard_test.go,75,Test,TestOnlyTheTempTreeCounts,False,legacy-not-retrospectively-reviewed
 LEG-5a2e2bdcdce1,L1,Go core / CLI / server,internal/state/homeguard_test.go,93,Test,TestAShortTmpHomeIsDisposable,False,legacy-not-retrospectively-reviewed
 LEG-47dec564c5d6,L1,Go core / CLI / server,internal/state/homeguard_test.go,115,Test,TestTheOperatorsHomeStaysUndisposable,False,legacy-not-retrospectively-reviewed
+MAP-76f334ae1390,L1,reviewed implementation,internal/state/layout_cleanup_test.go,10,reviewed-selector,TestGSS010RollbackPreservesLateConflict,False,GSS-010
 MAP-e290eae41f84,L1,reviewed implementation,internal/state/layout_safety_test.go,11,reviewed-selector,TestGSS006RollbackRetainsInterruptedWrite,False,GSS-006
 MAP-a2c23a591bec,L1,reviewed implementation,internal/state/layout_safety_test.go,63,reviewed-selector,TestGSS006RollbackRefusesUnknownOrUnsafeStage,False,GSS-006
 MAP-14013c47ea74,L1,reviewed implementation,internal/state/layout_test.go,40,reviewed-selector,TestGSS001GroupedLayoutRoundTrip,False,"GSS-001,GSS-002"
@@ -3791,6 +3793,8 @@ LEG-b62962745e7c,G,Go core / CLI / server,internal/userservice/service_test.go,9
 LEG-5eaf739c8372,L1,Go core / CLI / server,internal/userservice/service_test.go,120,Test,TestSystemdUnitPassesNativeVerifier,False,legacy-not-retrospectively-reviewed
 LEG-cb98946c10d3,G,Go core / CLI / server,internal/userservice/service_test.go,137,Test,TestServiceDescriptorsPrepareManagedCapturePrivately,False,legacy-not-retrospectively-reviewed
 LEG-3d885eebe66a,L1,Go core / CLI / server,internal/userservice/service_test.go,139,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-9e9d8497dca2,L1,reviewed implementation,internal/userservice/storage_persistent_test.go,10,reviewed-selector,TestGSS009InstalledLaunchAgentRequiresPersistentDisable,False,"GSS-009,GSS-011"
+MAP-d8ac5b592064,L1,reviewed implementation,internal/userservice/storage_persistent_test.go,61,reviewed-selector,TestGSS011SystemdRejectsAmbiguousQuiescence,False,"GSS-009,GSS-011"
 MAP-40921fa09b25,L1,reviewed implementation,internal/userservice/storage_test.go,10,reviewed-selector,TestGSS005ManagerStorageReadiness,False,GSS-005
 LEG-3bdc2df08ae7,G,Go core / CLI / server,internal/userservice/systemd_integration_test.go,15,Test,TestSystemdUserManagerLifecycle,False,legacy-not-retrospectively-reviewed
 LEG-d2741e68db99,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/AccessHistoryLayoutTests.swift,18,XCTest,testLogRowsStayCompactAndFullIdentityIsDrawnWithoutExpansion,False,legacy-not-retrospectively-reviewed

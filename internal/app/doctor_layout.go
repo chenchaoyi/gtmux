@@ -24,7 +24,7 @@ func layoutDoctorFlag(flag string) bool {
 func permitsLayoutTransition(command string, args []string) bool {
 	return command == "" || command == "help" || command == "-h" || command == "--help" ||
 		command == "version" || command == "-v" || command == "--version" ||
-		command == "doctor" && len(args) == 1 && (layoutDoctorFlag(args[0]) || args[0] == "--help" || args[0] == "-h")
+		(command == "doctor" || command == "dr") && len(args) == 1 && (layoutDoctorFlag(args[0]) || args[0] == "--help" || args[0] == "-h")
 }
 
 func enterCommandLayout(command string, args []string) (*state.Lease, bool) {

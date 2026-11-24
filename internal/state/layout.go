@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"syscall"
@@ -574,6 +575,9 @@ func finishLayoutChange(t *layoutTransaction) error {
 			}
 		}
 	}
+	if _, err := verifyLayoutTransition(t); err != nil {
+		return err
+	}
 	if err := SyncPrivateDirectory(Dir()); err != nil {
 		return err
 	}
@@ -636,24 +640,55 @@ func advanceLayoutEntry(entry layoutEntry, from, to string) error {
 	return nil
 }
 
+// Rollback removes only empty, registered scaffold directories. A reappearing
+// file, symlink or foreign directory is never a cleanup target.
 func removeEmptyLayoutDirs() error {
-	root := filepath.Join(Dir(), layoutDir)
-	groups, err := os.ReadDir(root)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
+	parent, err := privateDirectory(Dir(), false)
 	if err != nil {
 		return err
 	}
-	for _, group := range groups {
-		if err := os.Remove(filepath.Join(root, group.Name())); err != nil {
-			return err
-		}
+	defer unix.Close(parent)
+	fd, err := unix.Openat(parent, layoutDir, unix.O_RDONLY|unix.O_DIRECTORY|unix.O_NOFOLLOW|unix.O_CLOEXEC, 0)
+	if err == unix.ENOENT {
+		return nil
 	}
-	if err := SyncPrivateDirectory(root); err != nil {
+	if err != nil {
+		return fmt.Errorf("grouped storage root requires review: %w", err)
+	}
+	root := os.NewFile(uintptr(fd), groupedRoot())
+	defer root.Close()
+	if err := checkPrivateDirectory(fd, false); err != nil {
 		return err
 	}
-	return os.Remove(root)
+	groups := layoutGroups()
+	entries, err := root.ReadDir(-1)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() || !slices.Contains(groups, entry.Name()) {
+			return fmt.Errorf("unexpected storage object during rollback: %s", filepath.Join(groupedRoot(), entry.Name()))
+		}
+	}
+	for _, group := range groups {
+		if err := unix.Unlinkat(fd, group, unix.AT_REMOVEDIR); err != nil && err != unix.ENOENT {
+			return fmt.Errorf("storage group requires review: %s: %w", group, err)
+		}
+	}
+	if err := unix.Fsync(fd); err != nil {
+		return err
+	}
+	var held, named unix.Stat_t
+	if err := unix.Fstat(fd, &held); err != nil {
+		return err
+	}
+	if err := unix.Fstatat(parent, layoutDir, &named, unix.AT_SYMLINK_NOFOLLOW); err != nil {
+		return err
+	}
+	if held.Dev != named.Dev || held.Ino != named.Ino {
+		return errors.New("grouped storage root changed during rollback")
+	}
+	return unix.Unlinkat(parent, layoutDir, unix.AT_REMOVEDIR)
 }
 
 // FormatLayoutStore presents relative paths without revealing record names.

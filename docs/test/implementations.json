@@ -5544,5 +5544,31 @@
     "selectors": [
       "TestGSS008HousekeepingFollowsGroupedHQFeed"
     ]
+  },
+  "internal/userservice/storage_persistent_test.go": {
+    "cases": [
+      "GSS-009",
+      "GSS-011"
+    ],
+    "selectors": [
+      "TestGSS009InstalledLaunchAgentRequiresPersistentDisable",
+      "TestGSS011SystemdRejectsAmbiguousQuiescence"
+    ]
+  },
+  "internal/state/layout_cleanup_test.go": {
+    "cases": [
+      "GSS-010"
+    ],
+    "selectors": [
+      "TestGSS010RollbackPreservesLateConflict"
+    ]
+  },
+  "internal/app/doctor_layout_alias_test.go": {
+    "cases": [
+      "GSS-011"
+    ],
+    "selectors": [
+      "TestGSS011DoctorAliasSharesLayoutAdmission"
+    ]
   }
 }
