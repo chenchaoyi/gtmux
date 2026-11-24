@@ -70131,7 +70131,7 @@
         },
         {
           "id": "MAP-46012b0cc511",
-          "line": 94,
+          "line": 100,
           "kind": "reviewed-selector",
           "name": "TestBoundRotationBriefUsesExactProofAcrossGenericFingerprintGap",
           "dynamic": false,
@@ -70139,7 +70139,7 @@
           "design": "HRB-009"
         }
       ],
-      "sha256": "bc155ef2df902d6a7a2dbb37baa36dd4fb31e05c1437126afc8451cb0a149c6f"
+      "sha256": "0e1b720be79fff3c5f4cae0ba8f6bbfb6f11502e104b517446ba9f1c89370a59"
     },
     "internal/resume/frontend_pane_readiness_test.go": {
       "layer": "L2",

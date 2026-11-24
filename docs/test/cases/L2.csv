@@ -355,7 +355,7 @@ MAP-392ca77cfaeb,L2,reviewed implementation,internal/hqnudge/pressure_health_tes
 MAP-d0379fef758d,L2,reviewed implementation,internal/hqnudge/relay_attention_test.go,13,reviewed-selector,TestHRA001ReservedRelaySharesFullDecisionBatch,False,"HRA-001,HRA-002"
 MAP-50abbb3e7060,L2,reviewed implementation,internal/hqnudge/relay_attention_test.go,57,reviewed-selector,TestHRA002ProtectedRelayRequiresGuardedNativeWindow,False,"HRA-001,HRA-002"
 MAP-09aa1c3d8012,L2,reviewed implementation,internal/hqnudge/rotation_brief_identity_gap_test.go,12,reviewed-selector,TestBoundRotationBriefWaitsOnlyForMissingOriginalProof,False,HRB-009
-MAP-46012b0cc511,L2,reviewed implementation,internal/hqnudge/rotation_brief_identity_gap_test.go,94,reviewed-selector,TestBoundRotationBriefUsesExactProofAcrossGenericFingerprintGap,False,HRB-009
+MAP-46012b0cc511,L2,reviewed implementation,internal/hqnudge/rotation_brief_identity_gap_test.go,100,reviewed-selector,TestBoundRotationBriefUsesExactProofAcrossGenericFingerprintGap,False,HRB-009
 MAP-e18928535cdf,L2,reviewed implementation,internal/hqnudge/rotation_brief_recovery_test.go,16,reviewed-selector,TestHRB003RotationBriefJournalReadableAfterRestart,False,"HRB-003,HRB-004"
 MAP-ade5c027fb08,L2,reviewed implementation,internal/hqnudge/rotation_brief_recovery_test.go,28,reviewed-selector,TestHRB004LoneRelayReportsUnavailableTarget,False,"HRB-003,HRB-004"
 MAP-a93d800b6c1d,L2,reviewed implementation,internal/hqnudge/rotation_brief_test.go,18,reviewed-selector,TestHRB001RotationBriefBindsOriginalRecipient,False,"HRB-001,HRB-002"

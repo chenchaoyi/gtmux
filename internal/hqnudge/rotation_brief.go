@@ -160,6 +160,10 @@ func drainRotationBrief(x io, pane, name string) {
 		return lastHold
 	})
 	if submit == nil {
+		if hold() == briefTargetWaiting {
+			waitRotationBrief(claim, path, name, briefTargetWaiting)
+			return
+		}
 		refuseRotationBrief(claim, "rotation-brief-native-unavailable")
 		return
 	}
