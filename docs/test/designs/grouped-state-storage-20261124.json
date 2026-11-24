@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner (Codex self-review)",
     "date": "2026-11-24",
     "decision": "Use opt-in grouped routing with an offline, journaled and reversible transition.",
-    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting. The remaining independent findings cover admission against a loaded manager, an interrupted atomic write, misleading transition preview, and housekeeping following the active store. Delta review requires an installed macOS LaunchAgent to be persistently disabled as well as unloaded, and flatten must use directory-only cleanup against late conflicting paths. Systemd evidence must be complete and the CLI alias follows the same admission. The native wake lifecycle uses hard links between parked input and identity anchors. Keep the complete wake protocol at its existing paths so the layout can be adopted with retained uncertain evidence."
+    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting. The remaining independent findings cover admission against a loaded manager, an interrupted atomic write, misleading transition preview, and housekeeping following the active store. Delta review requires an installed macOS LaunchAgent to be persistently disabled as well as unloaded, and flatten must use directory-only cleanup against late conflicting paths. Systemd evidence must be complete and the CLI alias follows the same admission. The native wake lifecycle uses hard links between parked input and identity anchors. Keep the complete wake protocol at its existing paths so the layout can be adopted with retained uncertain evidence. The commit boundary must prove every planned identity reached its target. Unexpected layout markers must survive, including after a restart. Cleanup verifies the scaffold directory identity before its directory-only removal."
   },
   "cases": [
     {
@@ -141,7 +141,40 @@
       "planned_files": [
         "internal/hqnudge/storage_layout_test.go"
       ]
+    },
+    {
+      "id": "GSS-013",
+      "layer": "L1",
+      "description": "Layout marker changes are safe across resumed transitions",
+      "setup": "Pending grouping or rollback in an isolated home. Replace the existing grouped marker with a regular file, link, nonempty directory or a different empty directory, or occupy the new marker path.",
+      "action": "Resume the actual transition. Compare the two stores, journal and the replacement marker.",
+      "expected": "A conflicting marker stays intact, no object is published or removed as a marker over it, and the journal remains. A legitimate interrupted layout can still finish.",
+      "planned_files": [
+        "internal/state/layout_commit_test.go"
+      ]
+    },
+    {
+      "id": "GSS-014",
+      "layer": "L1",
+      "description": "Migration retirement requires complete target evidence",
+      "setup": "Isolated interrupted transitions with a planned store in its original location, a missing target group, an unarchived staging scaffold or a reappearing grouped root.",
+      "action": "Exercise the actual final commit boundary after preparing the conflicting evidence.",
+      "expected": "The old direction journal is kept unless every expected identity is on the target side, retained staging is archived and marker and directory topology establish the requested layout.",
+      "planned_files": [
+        "internal/state/layout_commit_test.go"
+      ]
+    },
+    {
+      "id": "GSS-015",
+      "layer": "L1",
+      "description": "A temporary systemd mask does not establish persistent stop",
+      "setup": "Systemd fixture output for a quiet installed service under a persistent and a temporary mask.",
+      "action": "Apply the actual storage admission classifier.",
+      "expected": "Persistent stop can permit migration. A runtime-only mask needs persisted disable evidence.",
+      "planned_files": [
+        "internal/userservice/storage_commit_test.go"
+      ]
     }
   ],
-  "seal": "7516383d211790a9a9565f93669e0cb60ee1c678b9bb34cd54f2201a4b381b29"
+  "seal": "5582362a3cb81468607acdbdf18b36898f6a3e088cc573eeb3812d31a56e481a"
 }
