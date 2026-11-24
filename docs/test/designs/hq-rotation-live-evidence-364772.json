@@ -97,7 +97,18 @@
         "internal/hq/rotation_submit_witness_test.go",
         "internal/launchhost/agent_test.go"
       ]
+    },
+    {
+      "id": "HRB-015",
+      "layer": "L2",
+      "description": "An existing briefing cannot bypass the same durable key-completion gate",
+      "setup": "Persist an otherwise exact legacy-bound briefing whose request has no completed-key timestamp, then compare a current request with that proof inside the recorded send and briefing bounds.",
+      "action": "Evaluate the shared durable reservation check used by the drainer and final native admission.",
+      "expected": "Only the current exact binding with a credible completed-key timestamp has native briefing authority. Incomplete older reservations retain the ordinary bounded reservation lifecycle but authorize no briefing input.",
+      "planned_files": [
+        "internal/hqinput/rotation_brief_witness_test.go"
+      ]
     }
   ],
-  "seal": "c0acb3dbd9d008a56a17c9e518729a273b4afb4b199f2104beb728f663bffae1"
+  "seal": "5c48f400740f25d9bba8e3924eab30cc1dcad295864b934245db9536ea4a303e"
 }
