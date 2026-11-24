@@ -269,6 +269,12 @@ func advanceHQRotationWithClock(r rotationRequest, pane, agent, sid string, io d
 	}
 	if r.SentAt != 0 {
 		deadline := rotationDeadline(r)
+		if r.SubmittedAtNS <= 0 {
+			if now.Unix() >= deadline {
+				failRotation(r, "HQ reset key completion was not recorded; no reset will be retried", now.Unix())
+			}
+			return
+		}
 		// Lifecycle events carry neither a pane generation nor send order within
 		// a second. Only the current pane's live evidence can establish a successor.
 		if agent != "" && sid != "" && sid != r.Retiring {
@@ -282,7 +288,7 @@ func advanceHQRotationWithClock(r rotationRequest, pane, agent, sid string, io d
 			if !ready {
 				kind, boundaryAt = boundary(sid)
 				ready = transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" &&
-					!boundaryAt.Before(rotationSendBoundary(r)) && !boundaryAt.After(time.Unix(deadline, 0))
+					boundaryAt.UnixNano() >= r.SubmittedAtNS && !boundaryAt.After(time.Unix(deadline, 0))
 			}
 			checkedAt := clock()
 			if ready && !boundaryAt.After(checkedAt) {
@@ -400,13 +406,6 @@ func advanceHQRotationWithClock(r rotationRequest, pane, agent, sid string, io d
 	diag.ReportStoreFailure("hq-rotation", writeRotationFile(r, false))
 }
 
-func rotationSendBoundary(r rotationRequest) time.Time {
-	if r.SubmittedAtNS != 0 {
-		return time.Unix(0, r.SubmittedAtNS)
-	}
-	return time.Unix(r.SentAt, 0)
-}
-
 func rotationDeadline(r rotationRequest) int64 {
 	if r.SwitchedAt != 0 {
 		return r.SwitchedAt + int64(rotationReadyWait/time.Second)
@@ -414,10 +413,11 @@ func rotationDeadline(r rotationRequest) int64 {
 	return r.SentAt + int64(rotationSettleWait/time.Second)
 }
 
-func legacyRotationObservation(proof resume.HQObservation, r rotationRequest, now int64) bool {
+func legacyRotationObservation(proof resume.HQObservation, r rotationRequest, now time.Time) bool {
 	return r.SentAt > 0 && r.SubmittedAtNS > 0 && proof.ClientPID > 1 && proof.ClientBirth != "" &&
 		rotationTargetMatches(r.TargetStamp, proof.Generation) &&
-		proof.ObservedAt > rotationSendBoundary(r).Unix() && proof.ObservedAt <= now && proof.ObservedAt <= rotationDeadline(r)
+		proof.ObservedAtNS > r.SubmittedAtNS && proof.ObservedAtNS <= now.UnixNano() &&
+		proof.ObservedAtNS <= time.Unix(rotationDeadline(r), 0).UnixNano()
 }
 
 func rotationTurnFinished(r rotationRequest, boundary func(string) (string, time.Time), now time.Time) bool {

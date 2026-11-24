@@ -258,7 +258,7 @@ func hqSessionEvidence(pane string, rotation *rotationRequest) (agent, sessionID
 		}
 	}
 	if rotation != nil && rotation.SentAt != 0 && ok && rec.Frontend == "" && rec.SessionID != rotation.Retiring &&
-		(!legacyRotationObservation(rec.HQObservation, *rotation, time.Now().Unix()) || !resume.MatchesLegacyHQClient(pane, rec)) {
+		(!legacyRotationObservation(rec.HQObservation, *rotation, time.Now()) || !resume.MatchesLegacyHQClient(pane, rec)) {
 		ok, reason = false, "legacy-pane-proof-unavailable"
 	}
 	agent, sessionID = sessionRefForLiveAgent(live, rec, ok)

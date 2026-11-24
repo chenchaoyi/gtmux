@@ -1,4 +1,12 @@
 {
+  "internal/launchhost/agent_test.go": {
+    "cases": ["HRB-014"],
+    "selectors": ["TestAgentHandoffPreservesPreciseObservationTime"]
+  },
+  "internal/hq/rotation_submit_witness_test.go": {
+    "cases": ["HRB-014"],
+    "selectors": ["TestLegacyRotationWitnessOrdersSameSecondPrecisely", "TestSentRotationWithNoCompletedKeyFenceFailsWithoutInput"]
+  },
   "internal/hq/rotation_clock_boundaries_test.go": {
     "cases": ["HRB-013"],
     "selectors": ["TestResetAttemptAndCompletedKeysHaveSeparateClocks", "TestBriefingTargetProbeCannotCrossItsOriginalDeadline", "TestIncompleteHistoryProbeCannotOpenAHandoffAfterSettleDeadline"]

@@ -137,8 +137,8 @@ func commitProcessBinding(r native.Record, target CodexBindingTarget, incumbent 
 	if !ok || fresh != target {
 		return errors.New("terminal changed under publication lease")
 	}
-	if generation != "" && generation == tmux.PaneGeneration(target.Pane) {
-		record.HQObservation = HQObservation{Generation: generation, ObservedAt: r.UpdatedAt, ClientPID: r.PID, ClientBirth: r.ProcessStart}
+	if r.ProcessObservedAtNS > 0 && generation != "" && generation == tmux.PaneGeneration(target.Pane) {
+		record.HQObservation = HQObservation{Generation: generation, ObservedAtNS: r.ProcessObservedAtNS, ClientPID: r.PID, ClientBirth: r.ProcessStart}
 	}
 	frontend, migrate, err := processFrontendForSameSession(target.Loc, incumbent, r, target)
 	if err != nil || frontend != oldFrontend || migrate != migrateFrontend {
@@ -168,7 +168,7 @@ func BindCodexHookProcess(sid, cwd, event string, process launchhost.AgentProces
 		return ""
 	}
 	r := native.Record{Agent: "codex", HomeID: transcript.CodexHomeID(), SessionID: sid, Cwd: cwd, PID: process.PID,
-		Comm: process.Comm, ProcessStart: process.Start, Event: event, UpdatedAt: process.ObservedAt}
+		Comm: process.Comm, ProcessStart: process.Start, Event: event, UpdatedAt: process.ObservedAt, ProcessObservedAtNS: process.ObservedAtNS}
 	if !processCLIIdentity(transcript.NewCodexPathScope(), r, now) {
 		return ""
 	}

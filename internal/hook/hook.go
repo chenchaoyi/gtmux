@@ -612,7 +612,7 @@ func notifyAgentIcon(agentKey string) string {
 }
 
 func Run(stdin io.Reader, args []string) int {
-	observedAt := time.Now().Unix()
+	observedAt := time.Now().UnixNano()
 	diag.SetProcess("hook", "system")
 	var raw []byte
 	agentKey := "claude"
@@ -998,7 +998,7 @@ func Run(stdin io.Reader, args []string) int {
 					if generation != "" && ok && slices.ContainsFunc(ancestry(os.Getpid(), maxAncestorWalk), func(a ancestor) bool {
 						return a.pid == client.PID
 					}) && generation == tmux.PaneGeneration(pane) {
-						hqObservation = resume.HQObservation{Generation: generation, ObservedAt: observedAt,
+						hqObservation = resume.HQObservation{Generation: generation, ObservedAtNS: observedAt,
 							ClientPID: client.PID, ClientBirth: client.Start}
 					}
 				}
@@ -1088,7 +1088,8 @@ func Run(stdin io.Reader, args []string) int {
 					HomeID: homeID, CreationClient: creationClient, LaunchHost: host,
 					Event: event,
 					State: st, UpdatedAt: time.Now().Unix(), PID: pid, Comm: comm, ProcessStart: processStart,
-					EndReason: turnOutcome(event), TurnID: nativeTurnID,
+					ProcessObservedAtNS: process.ObservedAtNS,
+					EndReason:           turnOutcome(event), TurnID: nativeTurnID,
 					// The hook runs under the agent, under the shell, under the terminal
 					// app — so its own env/ancestry names the hosting terminal (Warp,
 					// Ghostty, …) for the radar row's `terminal` field.

@@ -292,7 +292,7 @@ func TestSentRotationRequiresCurrentEvidenceInsteadOfJournal(t *testing.T) {
 		t.Run(rec.name, func(t *testing.T) {
 			now := time.Now().Truncate(time.Second)
 			r := testRotationRequest(t, now)
-			r.SentAt = now.Unix()
+			r.SentAt, r.SubmittedAtNS = now.Unix(), now.UnixNano()
 			if err := writeRotationFile(r, false); err != nil {
 				t.Fatal(err)
 			}

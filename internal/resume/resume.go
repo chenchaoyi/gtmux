@@ -22,10 +22,10 @@ import (
 
 // HQObservation records a legacy hook observation independently bound to a live pane.
 type HQObservation struct {
-	Generation  string `json:"generation"`
-	ObservedAt  int64  `json:"observed_at"`
-	ClientPID   int    `json:"client_pid"`
-	ClientBirth string `json:"client_birth"`
+	Generation   string `json:"generation"`
+	ObservedAtNS int64  `json:"observed_at_ns"`
+	ClientPID    int    `json:"client_pid"`
+	ClientBirth  string `json:"client_birth"`
 }
 
 // Record is one resumable agent session captured from a hook.
@@ -74,7 +74,7 @@ func Save(key string, r Record) error {
 	}
 	defer lease.Close()
 	previous, _ := Load(key)
-	if r.HQObservation.ObservedAt == 0 && r.Agent == previous.Agent && r.SessionID == previous.SessionID && r.HomeID == previous.HomeID {
+	if r.HQObservation.ObservedAtNS == 0 && r.Agent == previous.Agent && r.SessionID == previous.SessionID && r.HomeID == previous.HomeID {
 		r.HQObservation = previous.HQObservation
 	}
 	if previous.Frontend != "" && r.Agent == "codex" {

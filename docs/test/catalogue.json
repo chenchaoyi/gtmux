@@ -16659,7 +16659,7 @@
       ]
     },
     "internal/hq/rotateguard_test.go": {
-      "sha256": "db816f44ff60a15ec43c539484a47fb92f803317b93ac2b771a6116c997cb9c2",
+      "sha256": "0cb7dae5be3286b5510e77207d0feb41490e57369eb31edf9631273746b7a7fe",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -16795,7 +16795,7 @@
       "sha256": "522012d06c04b61d86ca2a5be109fd9357acda6801d5d9dad77232bfadafc963"
     },
     "internal/hq/rotation_durability_test.go": {
-      "sha256": "ec1971d8d29c8ab6564c6771583f9e96d0ff3b26f5cdd995527b71eef78c71d0",
+      "sha256": "31d95ea26eb01c7d9c16b40e84c3f72614db85af9bc1f74b03c4dd2a9f3f401c",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -21208,13 +21208,13 @@
       "sha256": "d44704759099a617510f9ac09efd8b585a0b2e66fba061cb84ff6a59659f6ba5"
     },
     "internal/launchhost/agent_test.go": {
-      "sha256": "c235c4a207c49422f5a48c0d384a72275b95941c77b3ae792ff31344eb01e041",
+      "sha256": "4da4124fc0869c224a234de1f9be221bf5bb826f577b4361682d106064c12edc",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-bd9336c63bfb",
-          "line": 8,
+          "line": 9,
           "kind": "Test",
           "name": "TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain",
           "dynamic": false,
@@ -21230,11 +21230,20 @@
         },
         {
           "id": "LEG-913821ce623a",
-          "line": 63,
+          "line": 64,
           "kind": "Test",
           "name": "TestAgentHandoffRejectsInvalidOrStaleEvidence",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-d4d6a13bd8e5",
+          "line": 82,
+          "kind": "reviewed-selector",
+          "name": "TestAgentHandoffPreservesPreciseObservationTime",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-014"
         }
       ]
     },
@@ -70180,7 +70189,7 @@
           "design": "HRB-012"
         }
       ],
-      "sha256": "1ae7605b977978113488708bcceaf40d70a805b8d3fdc713f397a05b1f75fd4f"
+      "sha256": "b72e7deb73404524de6f68dab590848b9b3ba4c67b7f70f6b7c98105398c4180"
     },
     "internal/hq/rotation_clock_boundaries_test.go": {
       "layer": "L2",
@@ -70214,7 +70223,32 @@
           "design": "HRB-013"
         }
       ],
-      "sha256": "3e7a03c92174fefec4dba6969f625e2204d0e2f15198508752075c9bbd918ca2"
+      "sha256": "37654579a44d57ec5265cffb25a67d2a1912fbf263e1e67fdcc95543376d1f6a"
+    },
+    "internal/hq/rotation_submit_witness_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9456c2d5c416",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestLegacyRotationWitnessOrdersSameSecondPrecisely",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-014"
+        },
+        {
+          "id": "MAP-96f5ef1aaf3a",
+          "line": 24,
+          "kind": "reviewed-selector",
+          "name": "TestSentRotationWithNoCompletedKeyFenceFailsWithoutInput",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-014"
+        }
+      ],
+      "sha256": "9253cc7d36840a782c7b248475f90ed1075977481fe1598b06f2275643bd0b4e"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

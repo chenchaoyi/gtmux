@@ -54,9 +54,10 @@ type Record struct {
 	// PID/Comm identify the agent PROCESS that fired the hook, so a "move to tmux"
 	// can exit the original once the resumed session is up. Comm guards against PID
 	// reuse (kill only if the pid is still that command). 0 = unknown (don't kill).
-	PID          int    `json:"pid,omitempty"`
-	Comm         string `json:"comm,omitempty"`
-	ProcessStart string `json:"process_start,omitempty"` // exact process birth captured before detach
+	PID                 int    `json:"pid,omitempty"`
+	Comm                string `json:"comm,omitempty"`
+	ProcessStart        string `json:"process_start,omitempty"` // exact process birth captured before detach
+	ProcessObservedAtNS int64  `json:"process_observed_at_ns,omitempty"`
 }
 
 // Dir is where per-session native records live.

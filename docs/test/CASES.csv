@@ -1926,6 +1926,8 @@ MAP-9192fb7864f6,L2,reviewed implementation,internal/hq/rotation_evidence_window
 MAP-88042fd021cb,L2,reviewed implementation,internal/hq/rotation_evidence_window_test.go,40,reviewed-selector,TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow,False,HRB-012
 MAP-5ca00611b9a2,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,8,reviewed-selector,TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity,False,HRW-012
 MAP-5c6873f6e524,L2,reviewed implementation,internal/hq/rotation_priority_test.go,13,reviewed-selector,TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert,False,HRW-006
+MAP-9456c2d5c416,L2,reviewed implementation,internal/hq/rotation_submit_witness_test.go,12,reviewed-selector,TestLegacyRotationWitnessOrdersSameSecondPrecisely,False,HRB-014
+MAP-96f5ef1aaf3a,L2,reviewed implementation,internal/hq/rotation_submit_witness_test.go,24,reviewed-selector,TestSentRotationWithNoCompletedKeyFenceFailsWithoutInput,False,HRB-014
 MAP-66c72832a3b6,L2,reviewed implementation,internal/hq/rotation_transient_identity_test.go,14,reviewed-selector,TestSentRotationWaitsThroughTransientIdentityGaps,False,"HRB-007,HRB-008"
 MAP-a7d7073f2ddc,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,52,reviewed-selector,TestHRW016WarningThenRecoveryKeepsRequestAndEveryGuard,False,HRW-016
 MAP-9e462ad3d392,L2,reviewed implementation,internal/hq/rotation_warning_recovery_test.go,132,reviewed-selector,TestHRW016RepeatedUnknownNeverExtendsExpiryOrRepeatsWarning,False,HRW-016
@@ -2442,9 +2444,10 @@ LEG-cd7219eb16d3,L1,Go core / CLI / server,internal/knowledge/voice_test.go,50,T
 LEG-c6e04c876979,L1,Go core / CLI / server,internal/knowledge/voice_test.go,67,Test,TestVoiceCountsADoubleDashOnce,False,legacy-not-retrospectively-reviewed
 LEG-32bc165bd27b,L1,Go core / CLI / server,internal/knowledge/voice_test.go,75,Test,TestVoiceLeavesAPlainEntryAlone,False,legacy-not-retrospectively-reviewed
 MAP-25bce7c30ce2,L1,reviewed implementation,internal/launchhost/agent_readiness_test.go,9,reviewed-selector,TestCFR006AgentReadReturnsBeforeBlockedReaderSettles,False,CFR-006
-LEG-bd9336c63bfb,L1,Go core / CLI / server,internal/launchhost/agent_test.go,8,Test,TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain,False,legacy-not-retrospectively-reviewed
+LEG-bd9336c63bfb,L1,Go core / CLI / server,internal/launchhost/agent_test.go,9,Test,TestAgentSnapshotDoesNotRequireHostAndRevalidatesChain,False,legacy-not-retrospectively-reviewed
 LEG-081c45c3897d,L1,Go core / CLI / server,internal/launchhost/agent_test.go,10,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-913821ce623a,L1,Go core / CLI / server,internal/launchhost/agent_test.go,63,Test,TestAgentHandoffRejectsInvalidOrStaleEvidence,False,legacy-not-retrospectively-reviewed
+LEG-913821ce623a,L1,Go core / CLI / server,internal/launchhost/agent_test.go,64,Test,TestAgentHandoffRejectsInvalidOrStaleEvidence,False,legacy-not-retrospectively-reviewed
+MAP-d4d6a13bd8e5,L2,Go core / CLI / server,internal/launchhost/agent_test.go,82,reviewed-selector,TestAgentHandoffPreservesPreciseObservationTime,False,HRB-014
 LEG-146596399a96,L1,Go core / CLI / server,internal/launchhost/app_darwin_test.go,10,Test,TestMacBundleNamePreferenceAndFallback,False,legacy-not-retrospectively-reviewed
 LEG-b3313024d235,L1,Go core / CLI / server,internal/launchhost/launchhost_test.go,19,Test,TestHostSnapshotAndAppPreference,False,legacy-not-retrospectively-reviewed
 LEG-7b3b51b5a5c7,L1,Go core / CLI / server,internal/launchhost/launchhost_test.go,33,Test,TestAmbiguousOrMissingAncestryStaysUnknown,False,legacy-not-retrospectively-reviewed

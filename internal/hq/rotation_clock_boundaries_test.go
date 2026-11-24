@@ -34,16 +34,16 @@ func TestResetAttemptAndCompletedKeysHaveSeparateClocks(t *testing.T) {
 		t.Fatalf("wrong state after Enter: %+v, %v, %v, keys=%d", sent, ok, err, p.enters)
 	}
 	sent.TargetStamp = "10:20:30"
-	proof := resume.HQObservation{Generation: sent.TargetStamp, ObservedAt: now.Add(time.Second).Unix(), ClientPID: 91, ClientBirth: "birth"}
-	if legacyRotationObservation(proof, sent, current.Unix()) {
+	proof := resume.HQObservation{Generation: sent.TargetStamp, ObservedAtNS: now.Add(time.Second).UnixNano(), ClientPID: 91, ClientBirth: "birth"}
+	if legacyRotationObservation(proof, sent, current) {
 		t.Fatal("observation between recording the attempt and Enter proved a successor")
 	}
-	proof.ObservedAt = now.Add(3 * time.Second).Unix()
-	if !legacyRotationObservation(proof, sent, proof.ObservedAt) {
+	proof.ObservedAtNS = now.Add(3 * time.Second).UnixNano()
+	if !legacyRotationObservation(proof, sent, time.Unix(0, proof.ObservedAtNS)) {
 		t.Fatal("post-Enter observation did not qualify")
 	}
 	sent.SubmittedAtNS = 0
-	if legacyRotationObservation(proof, sent, proof.ObservedAt) {
+	if legacyRotationObservation(proof, sent, time.Unix(0, proof.ObservedAtNS)) {
 		t.Fatal("an attempt with no completion fence proved legacy identity")
 	}
 	advanceHQRotation(r, r.Pane, "", "", p.io(), complete, current)
@@ -56,7 +56,7 @@ func TestIncompleteHistoryProbeCannotOpenAHandoffAfterSettleDeadline(t *testing.
 	now := time.Now().Truncate(time.Second)
 	r := testRotationRequest(t, now)
 	t.Setenv("CODEX_HOME", t.TempDir())
-	r.SentAt = now.Unix()
+	r.SentAt, r.SubmittedAtNS = now.Unix(), now.UnixNano()
 	if err := writeRotationFile(r, false); err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestBriefingTargetProbeCannotCrossItsOriginalDeadline(t *testing.T) {
 	r := testRotationRequest(t, now)
 	t.Setenv("GTMUX_HQ_BRIEF", "on")
 	t.Setenv("CODEX_HOME", t.TempDir())
-	r.SentAt, r.SwitchedAt, r.Successor = now.Unix(), now.Add(time.Second).Unix(), "successor"
+	r.SentAt, r.SubmittedAtNS, r.SwitchedAt, r.Successor = now.Unix(), now.UnixNano(), now.Add(time.Second).Unix(), "successor"
 	if err := writeRotationFile(r, false); err != nil {
 		t.Fatal(err)
 	}
