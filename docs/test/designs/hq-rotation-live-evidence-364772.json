@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, design self-review after independent findings",
     "date": "2026-11-24",
     "decision": "Use current same-generation pane evidence for rotation and preserve only an exactly bound, provably unsent briefing during transient observation loss.",
-    "notes": "Historical lifecycle records contain neither pane generation nor subsecond send ordering. They cannot prove the current rotation recipient. Preserve the direct-client path with current driver and resume evidence. A bound brief uses its exact proof and native target pin instead of the generic automatic wake fingerprint. An empty pane identity sample is unavailability; a nonempty mismatch remains a detectable change. Tests use isolated state, synthetic time and target proofs; they do not exercise a live HQ or establish incident causation. The default Claude launch is a foreground child of the pane shell. The hook and rotation confirmation must verify the same live client through that shell and compare its terminal and pane generation."
+    "notes": "Historical lifecycle records contain neither pane generation nor subsecond send ordering. They cannot prove the current rotation recipient. Preserve the direct-client path with current driver and resume evidence. A bound brief uses its exact proof and native target pin instead of the generic automatic wake fingerprint. An empty pane identity sample is unavailability; a nonempty mismatch remains a detectable change. Tests use isolated state, synthetic time and target proofs; they do not exercise a live HQ or establish incident causation. The default Claude launch is a foreground child of the pane shell. The hook and rotation confirmation must verify the same live client through that shell and compare its terminal and pane generation. The Linux tmux name comes from the foreground process-group leader argv, which may differ from the executable name in ps. Require the actual foreground group leader for this Linux-only alias and preserve the common process and terminal checks."
   },
   "cases": [
     {
@@ -119,7 +119,18 @@
       "planned_files": [
         "internal/hook/hq_claude_foreground_test.go"
       ]
+    },
+    {
+      "id": "HRB-017",
+      "layer": "L2",
+      "description": "The Linux Claude launcher alias names only the actual foreground group leader",
+      "setup": "Model a pane shell, two process snapshots and a version-named client with an open stdin on the pane TTY. Compare Linux tmux reporting the launcher name with Darwin tmux reporting the executable name.",
+      "action": "Probe Linux alias and Darwin exact name, then edit the OS, group leader, foreground group, process ancestry and stdin.",
+      "expected": "A versioned Linux foreground group leader may match tmux reporting claude. The alias does not identify a non-leader, background or unrelated process, a non-Linux mismatch, or redirected input. A Darwin client with an exact reported version remains valid.",
+      "planned_files": [
+        "internal/codexterminal/claude_foreground_test.go"
+      ]
     }
   ],
-  "seal": "07f2327fa12a6f009a538651a6f6c5ecba1899effcc16e4213959e0b066641f3"
+  "seal": "ef787ee0f644836f35eb926ed78eca6765507581e23664fc3123674387fbb1cd"
 }
