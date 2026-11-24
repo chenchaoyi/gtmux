@@ -1768,6 +1768,7 @@ LEG-c45be51af0b0,L1,Go core / CLI / server,internal/hq/eventsattr_test.go,88,Tes
 LEG-36ff1129e95a,L1,Go core / CLI / server,internal/hq/eventsattr_test.go,100,Test,TestAttributionMapSkipsUnboundPanes,False,legacy-not-retrospectively-reviewed
 LEG-ac83e171601f,L1,Go core / CLI / server,internal/hq/eventsauthor_test.go,19,Test,TestTheAuthorSurvivesTheViewThatHidesTheEvidence,False,legacy-not-retrospectively-reviewed
 LEG-8a9b2e711149,L1,Go core / CLI / server,internal/hq/eventsauthor_test.go,73,Test,TestTheViewStillOnlyAppliesToTheUnfilteredPull,False,legacy-not-retrospectively-reviewed
+MAP-0c5af6c31981,L3,reviewed implementation,internal/hq/eventscmd_cursor_test.go,14,reviewed-selector,TestHCR001SkipAheadReadProvidesSavedCursor,False,HCR-001
 LEG-dfae1dee9c42,L1,Go core / CLI / server,internal/hq/eventscmd_test.go,17,Test,TestParseSince,False,legacy-not-retrospectively-reviewed
 LEG-3ff65c1f9e73,L1,Go core / CLI / server,internal/hq/eventscmd_test.go,26,Test,TestValidSeverity,False,legacy-not-retrospectively-reviewed
 LEG-f1c006b2a954,L1,Go core / CLI / server,internal/hq/eventscmd_test.go,41,Test,TestEventsSeverityFilter,False,legacy-not-retrospectively-reviewed

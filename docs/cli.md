@@ -2686,6 +2686,8 @@ pane-less blinks, and gtmux's `gtmux:audit:*` trail) and says on stderr how many
 withheld. `--all` restores the raw view; both unfiltered forms consume. The
 subdirectory read counts as consumption but currently shows the raw view. Reads
 outside the HQ home also show the raw view and do not consume.
+An HQ read that starts ahead of the saved position previews the requested events.
+Stderr names the actual saved position and the command to read the full delta.
 
 `--severity <tier>` filters to that tier and above. The tiers rank urgency, so they are
 three different reads: the unfiltered `--since-seq` delta is what you reconcile with;

@@ -5701,5 +5701,9 @@
     "selectors": [
       "WLI-012 Theme publication does not reclassify an equivalent paused capture"
     ]
+  },
+  "internal/hq/eventscmd_cursor_test.go": {
+    "cases": ["HCR-001"],
+    "selectors": ["TestHCR001SkipAheadReadProvidesSavedCursor"]
   }
 }

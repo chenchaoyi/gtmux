@@ -2,13 +2,13 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1491 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1492 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2739 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 167 | [L3.csv](cases/L3.csv) |
+| L3 · 运行时集成 | 168 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
@@ -267,6 +267,7 @@
 | HPC-003 | Older claims and same-second siblings never suppress an unclaimed observation. An exact live lease suppresses itself, expiry restores eligibility, and a successor fences the old generation. |
 | HPC-004 | The draft stays intact. Revalidation drops the settled urgent wake and still delivers the standing wake. Neither path spends the other's scheduling interval. |
 | HPC-005 | Claim-only issues no work and leaves debt. Current owner and generation control the assessment. The authorized live worker receives and performs the exact action once and an independently produced exact progress receipt covers the step. A wrong target and external wait yield zero input. Unknown submission keeps its intent reserved without duplicate work. |
+| HCR-001 | The preview remains a successful parseable read. Stderr explains why the watermark did not advance and gives the exact safe retry command. Retrying reads the skipped records and advances through the retained tail. |
 | HGD-001 | One material goal debt remains, no dispatch, no duplicate debt; stale generation cannot commit. |
 | HGD-002 | Only one send per action ID; queued is not work started; exact receipt covers the step; stale SID, ambiguous interval, native/background coverage and unavailable evidence never cause duplicate delivery. |
 | HGD-003 | User pause/refusal never expire; external due time requests verification; only a real unanswered question is human debt; verified answer withdraws question and leaves next-step duty. |

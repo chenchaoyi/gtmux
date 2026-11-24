@@ -12,6 +12,7 @@ MAP-0976e4db3084,L3,reviewed implementation,internal/codexbridge/run_unix_test.g
 MAP-5af249f51e98,L3,reviewed implementation,internal/codexbridge/run_unix_test.go,111,reviewed-selector,TestProtectedSendKeepsManuallyTypedComposerBytes,False,"DIAG-TERM-004,DIAG-TERM-006"
 MAP-8b7815d10836,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,64,reviewed-selector,TestWTR003ActualUnixForwardingUsesVerifiedHomeAndPreservesOtherFrames,False,WTR-003
 MAP-f4e5b80196e1,L3,reviewed implementation,internal/codexbridge/trust_interop_test.go,165,reviewed-selector,TestWTR003NativeTUIGateway,False,WTR-003
+MAP-0c5af6c31981,L3,reviewed implementation,internal/hq/eventscmd_cursor_test.go,14,reviewed-selector,TestHCR001SkipAheadReadProvidesSavedCursor,False,HCR-001
 MAP-c49705115ac9,L3,reviewed implementation,internal/radar/codex_completed_marker_test.go,15,reviewed-selector,TestGatherCompletedOwnTurnSurvivesLateActiveMarker,False,"CET-002,CET-003"
 MAP-226227944e48,L3,reviewed implementation,internal/radar/codex_foreign_marker_gather_test.go,14,reviewed-selector,TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity,False,CORE-CODEX-FOREIGN-GATHER
 MAP-6de233bbcc8c,L3,reviewed implementation,internal/server/diff_privacy_test.go,10,reviewed-selector,TestDTV005WorktreePathIsOwnerOnlyAndPaneGateRunsFirst,False,DTV-005

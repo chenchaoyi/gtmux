@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1491 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1492 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2739 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 167 | [L3.csv](cases/L3.csv) |
+| L3 · Runtime integration | 168 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 509 | [G.csv](cases/G.csv) |
@@ -267,6 +267,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HPC-003 | Older claims and same-second siblings never suppress an unclaimed observation. An exact live lease suppresses itself, expiry restores eligibility, and a successor fences the old generation. |
 | HPC-004 | The draft stays intact. Revalidation drops the settled urgent wake and still delivers the standing wake. Neither path spends the other's scheduling interval. |
 | HPC-005 | Claim-only issues no work and leaves debt. Current owner and generation control the assessment. The authorized live worker receives and performs the exact action once and an independently produced exact progress receipt covers the step. A wrong target and external wait yield zero input. Unknown submission keeps its intent reserved without duplicate work. |
+| HCR-001 | The preview remains a successful parseable read. Stderr explains why the watermark did not advance and gives the exact safe retry command. Retrying reads the skipped records and advances through the retained tail. |
 | HGD-001 | One material goal debt remains, no dispatch, no duplicate debt; stale generation cannot commit. |
 | HGD-002 | Only one send per action ID; queued is not work started; exact receipt covers the step; stale SID, ambiguous interval, native/background coverage and unavailable evidence never cause duplicate delivery. |
 | HGD-003 | User pause/refusal never expire; external due time requests verification; only a real unanswered question is human debt; verified answer withdraws question and leaves next-step duty. |

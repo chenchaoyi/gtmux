@@ -1,0 +1,24 @@
+{
+  "change": "Show HQ the durable starting position after a skip-ahead event read",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (Codex self-review)",
+    "date": "2026-11-24",
+    "decision": "Keep a preview readable and report the safe retry start on stderr",
+    "notes": "The installed supervisor recovered from an ahead-of-watermark read by using the actual stored cursor. Preserve the existing receipt guard, JSON records and exit code. Show the diagnostic only for a contiguous, unfiltered HQ read that started ahead. No acknowledge, replay, producer state or cross-role change."
+  },
+  "cases": [
+    {
+      "id": "HCR-001",
+      "layer": "L3",
+      "description": "HQ reads ahead without skipping debt and receives the safe retry cursor",
+      "setup": "Synthetic HQ and retained event journal with a persisted cursor behind the requested sequence.",
+      "action": "Read an unfiltered JSON delta from the forward cursor, then retry from the documented durable value. Inspect stderr, JSON output, exit codes and the persisted cursor.",
+      "expected": "The preview remains a successful parseable read. Stderr explains why the watermark did not advance and gives the exact safe retry command. Retrying reads the skipped records and advances through the retained tail.",
+      "planned_files": [
+        "internal/hq/eventscmd_cursor_test.go"
+      ]
+    }
+  ],
+  "seal": "7251db48aef4a398944fb55549b1a3ad31be2ac7c544bb0983093af99a3c427d"
+}
