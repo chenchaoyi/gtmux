@@ -28,6 +28,7 @@
 package hq
 
 import (
+	"errors"
 	"fmt"
 	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"path/filepath"
@@ -222,12 +223,12 @@ func breachSet(bs []rotateBreach) string {
 // when the pane has not run a turn yet (a just-launched HQ), which is not an error: there is
 // simply no session to judge.
 func hqSessionRef(pane string) (agent, sessionID string) {
-	agent, sessionID, _ = hqSessionEvidence(pane)
+	agent, sessionID, _ = hqSessionEvidence(pane, false)
 	return agent, sessionID
 }
 
 // Diagnostic evidence never replaces the existing session/driver predicates.
-func hqSessionEvidence(pane string) (agent, sessionID, reason string) {
+func hqSessionEvidence(pane string, strictFrontend bool) (agent, sessionID, reason string) {
 	loc := strings.TrimSpace(tmux.Display(pane, "#{session_name}:#{window_index}.#{pane_index}"))
 	if loc == "" {
 		return "", "", "pane-location-unavailable"
@@ -243,6 +244,19 @@ func hqSessionEvidence(pane string) (agent, sessionID, reason string) {
 		}
 	}
 	rec, ok, reason := resume.LoadLiveDiagnostic(loc)
+	if strictFrontend && ok && rec.Agent == "codex" && rec.Frontend != "" {
+		frontend, err := resume.CodexFrontendForPaneReadiness(pane)
+		switch {
+		case err != nil:
+			ok, reason = false, "frontend-proof-unknown"
+			var why *resume.FrontendBindingError
+			if errors.As(err, &why) {
+				reason = why.Code
+			}
+		case frontend.Instance != rec.Frontend || frontend.SessionID != rec.SessionID || frontend.HomeID != rec.HomeID:
+			ok, reason = false, "frontend-index-mismatch"
+		}
+	}
 	agent, sessionID = sessionRefForLiveAgent(live, rec, ok)
 	if live == "" && reason == "" && (!ok || rec.Frontend == "") {
 		reason = "agent-driver-unavailable"

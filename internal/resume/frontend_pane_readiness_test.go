@@ -11,9 +11,9 @@ import (
 )
 
 func TestStrictFrontendReadinessClassifiesMissingAndChangedProof(t *testing.T) {
-	for _, mode := range []string{"fresh", "expired", "missing-record", "index-mismatch", "changed-bridge", "retired", "wrong-home", "missing-pane", "changed-pane"} {
+	for _, mode := range []string{"fresh", "expired", "missing-record", "index-mismatch", "changed-bridge", "changed-client", "retired", "wrong-home", "missing-pane", "changed-pane"} {
 		t.Run(mode, func(t *testing.T) {
-			f, _ := frontendFixture(t)
+			f, client := frontendFixture(t)
 			f, err := BindCodexFrontend(f, "root-a")
 			if err != nil {
 				t.Fatal(err)
@@ -37,6 +37,12 @@ func TestStrictFrontendReadinessClassifiesMissingAndChangedProof(t *testing.T) {
 				wantCode, retry = "pane-proof-unavailable", true
 			case "changed-pane":
 				wantCode = "pane-changed"
+			case "changed-client":
+				client.Start = "different-client-birth"
+				if _, ok, reason := LoadLiveDiagnostic(f.Loc); !ok {
+					t.Fatalf("weaker proof failed to model a fresh bridge: %q", reason)
+				}
+				wantCode = "terminal-changed"
 			case "expired":
 				f.StartedAt -= 20000
 				f.UpdatedAt = time.Now().Add(-10 * time.Second).UnixMilli()

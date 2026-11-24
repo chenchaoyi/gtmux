@@ -10,7 +10,7 @@ import (
 )
 
 func TestBoundRotationBriefWaitsOnlyForMissingOriginalProof(t *testing.T) {
-	for _, mode := range []string{"preflight", "native-routing", "native-lookup", "final-guard", "changed", "wrong-stamp", "expired", "uncertain"} {
+	for _, mode := range []string{"preflight", "native-routing", "routing-recovered", "native-lookup", "final-guard", "changed", "wrong-stamp", "expired", "uncertain"} {
 		t.Run(mode, func(t *testing.T) {
 			bind, _, f, target := rotationBriefFixture(t)
 			original := *target
@@ -22,11 +22,13 @@ func TestBoundRotationBriefWaitsOnlyForMissingOriginalProof(t *testing.T) {
 				return prod.identity(pane)
 			}
 			calls, accepted := 0, 0
-			routingGap := mode == "native-routing"
+			routingGap := mode == "native-routing" || mode == "routing-recovered"
 			nativeWakeIO = func(string, ...string) dispatch.IO {
 				if routingGap {
 					routingGap = false
-					*target = missing
+					if mode == "native-routing" {
+						*target = missing
+					}
 					return dispatch.IO{}
 				}
 				return dispatch.IO{
@@ -69,6 +71,13 @@ func TestBoundRotationBriefWaitsOnlyForMissingOriginalProof(t *testing.T) {
 				}
 			}
 			Drain(bind.Pane)
+			if mode == "routing-recovered" {
+				Drain(bind.Pane)
+				if accepted != 1 || calls != 1 || len(queuedNames(isRotationBrief)) != 0 || f.pastes != 0 || f.enters != 0 {
+					t.Fatalf("re-resolved the original route incorrectly: calls=%d, accepted=%d", calls, accepted)
+				}
+				return
+			}
 			if mode == "expired" {
 				f.nano += int64(3 * time.Second)
 			}

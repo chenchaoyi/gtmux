@@ -152,13 +152,20 @@ func drainRotationBrief(x io, pane, name string) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Unix(w.Bind.Deadline, 0))
 	defer cancel()
 	lastHold := ""
-	submit := prepareNativeWakeFor(pane, dispatch.Opts{
+	opts := dispatch.Opts{
 		Context: ctx, ExpectedSessionID: w.Bind.Session, ExpectedHomeID: w.Bind.Home,
 		ExpectedInstance: w.Bind.Instance, ExpectedClientPID: w.Bind.ClientPID,
-	}, func() string {
+	}
+	nativeHold := func() string {
 		lastHold = hold()
 		return lastHold
-	})
+	}
+	submit := prepareNativeWakeFor(pane, opts, nativeHold)
+	if submit == nil && hold() == "" {
+		// Routing may have missed the proof between two valid observations.
+		// Preparation cannot send input; re-resolve the same route once.
+		submit = prepareNativeWakeFor(pane, opts, nativeHold)
+	}
 	if submit == nil {
 		if hold() == briefTargetWaiting {
 			waitRotationBrief(claim, path, name, briefTargetWaiting)

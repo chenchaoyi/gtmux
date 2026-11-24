@@ -215,7 +215,7 @@ func ProcessPendingHQRotation() {
 		failQueuedRotation(r, "HQ target changed or its pre-reboot identity is unavailable; no input sent", time.Now().Unix())
 		return
 	}
-	agent, sid, reason := hqSessionEvidence(pane)
+	agent, sid, reason := hqSessionEvidence(pane, true)
 	if reason == "agent-driver-unavailable" {
 		agent, sid = "", "" // a historical direct-client record alone is not live evidence
 	}
@@ -448,7 +448,8 @@ func rotationIdentityCode(reason string) string {
 	switch reason {
 	case "", "pane-location-unavailable", "agent-driver-unavailable", "resume-record-unavailable",
 		"frontend-record-unavailable", "frontend-index-mismatch", "frontend-proof-unknown",
-		"proof-expired", "bridge-proof-unavailable", "bridge-changed", "pane-proof-unavailable", "pane-changed":
+		"proof-expired", "bridge-proof-unavailable", "bridge-changed", "pane-proof-unavailable", "pane-changed",
+		"backend-proof-unavailable", "backend-changed", "terminal-proof-unavailable", "terminal-changed", "frontend-retired":
 		return reason
 	default:
 		return "unknown"
