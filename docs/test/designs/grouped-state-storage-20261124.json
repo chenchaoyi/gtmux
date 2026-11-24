@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner (Codex self-review)",
     "date": "2026-11-24",
     "decision": "Use opt-in grouped routing with an offline, journaled and reversible transition.",
-    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting. The remaining independent findings cover admission against a loaded manager, an interrupted atomic write, misleading transition preview, and housekeeping following the active store."
+    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting. The remaining independent findings cover admission against a loaded manager, an interrupted atomic write, misleading transition preview, and housekeeping following the active store. Delta review requires an installed macOS LaunchAgent to be persistently disabled as well as unloaded, and flatten must use directory-only cleanup against late conflicting paths. Systemd evidence must be complete and the CLI alias follows the same admission."
   },
   "cases": [
     {
@@ -96,7 +96,41 @@
       "planned_files": [
         "internal/hq/housekeeping_layout_test.go"
       ]
+    },
+    {
+      "id": "GSS-009",
+      "layer": "L1",
+      "description": "Offline migration requires persistent disable for installed LaunchAgents",
+      "setup": "Synthetic service descriptors and launchctl replies for a missing GUI domain, an enabled or disabled job and an absent standard install.",
+      "action": "Check the production LaunchAgent admission logic with no process running, then compare both domains and known installed service files.",
+      "expected": "Unloaded and installed needs persistent disable proof. Absent installation allows an unloaded job; unknown, enabled or conflicting proof stops before migration.",
+      "planned_files": [
+        "internal/userservice/storage_persistent_test.go"
+      ]
+    },
+    {
+      "id": "GSS-010",
+      "layer": "L1",
+      "description": "Rollback cleanup does not unlink objects that appear after verification",
+      "setup": "A grouped fixture with a durable rollback journal. After the transition verifies, a known group is replaced by a file or a symlink, or an unrelated entry is created.",
+      "action": "Call the actual cleanup boundary, then compare paths and the journal after it refuses.",
+      "expected": "Only fixed empty group directories can be removed. Conflicting files, links and unknown data survive and the journal remains.",
+      "planned_files": [
+        "internal/state/layout_cleanup_test.go"
+      ]
+    },
+    {
+      "id": "GSS-011",
+      "layer": "L1",
+      "description": "Offline alias and systemd require complete admission evidence",
+      "setup": "Pending transition fixture, plus systemd fixture replies with one missing or duplicate required property.",
+      "action": "Inspect pending layout through dr, confirm its migration flags are exempt from shared admission, and check invalid manager replies.",
+      "expected": "Doctor and dr remain available with the same behavior. Missing, malformed or duplicate properties cannot establish quiescence.",
+      "planned_files": [
+        "internal/app/doctor_layout_alias_test.go",
+        "internal/userservice/storage_persistent_test.go"
+      ]
     }
   ],
-  "seal": "ce978bf05585387157ac85e23c025720dff0f2783a5c2038ef520c02ce913389"
+  "seal": "f17e50f58b4ddf9da94132392a87d1ac2a0ac4a3d5ceb7b71f3b65eb28d9e70e"
 }
