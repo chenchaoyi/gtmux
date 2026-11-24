@@ -175,12 +175,12 @@ func CheckStorageLayout() error {
 }
 
 func currentLayout() (string, error) {
-	info, err := os.Lstat(filepath.Join(Dir(), layoutMarker))
-	if errors.Is(err, os.ErrNotExist) {
-		return layoutFlat, nil
+	_, present, err := readLayoutMarker()
+	if err != nil {
+		return "", err
 	}
-	if err != nil || checkOwnedRegular(info) != nil || info.Size() != 0 || info.Mode().Perm()&0077 != 0 {
-		return "", errors.New("invalid grouped storage layout marker")
+	if !present {
+		return layoutFlat, nil
 	}
 	if err := checkLayoutDir(filepath.Join(Dir(), layoutDir)); err != nil {
 		return "", err
@@ -205,6 +205,7 @@ type layoutTransaction struct {
 	Target   string
 	Entries  []layoutEntry
 	Retained *layoutEntry `json:",omitempty"`
+	Marker   *layoutEntry `json:",omitempty"`
 }
 
 func groupedRoot() string { return filepath.Join(Dir(), layoutDir) }
@@ -305,6 +306,10 @@ func readLayoutTransaction() (*layoutTransaction, error) {
 		!randomLayoutSuffix(entry.Name) || entry.Inode == 0 || entry.Mode != uint32(os.ModeDir)) {
 		return nil, errors.New("invalid storage layout recovery path")
 	}
+	if marker := t.Marker; (t.Target == layoutFlat) != (marker != nil) ||
+		marker != nil && (marker.Name != "" || marker.Inode == 0 || marker.Mode != uint32(os.ModeDir)) {
+		return nil, errors.New("invalid storage layout source marker")
+	}
 	return &t, nil
 }
 
@@ -348,6 +353,16 @@ func ChangeStorageLayout(grouped bool, checkWriters func() error) error {
 		return err
 	}
 	t := &layoutTransaction{Version: 1, Target: target}
+	if target == layoutFlat {
+		marker, present, err := readLayoutMarker()
+		if err != nil {
+			return err
+		}
+		if !present {
+			return errors.New("grouped storage layout marker disappeared before rollback")
+		}
+		t.Marker = &marker
+	}
 	if staged > 0 {
 		if target != layoutFlat {
 			return errors.New("unmarked grouped storage contains staging files")
@@ -474,6 +489,13 @@ func (t *layoutTransaction) retainedPath() string {
 // Verify every physical location before advancing. Doctor uses the same check
 // so it does not suggest retrying a conflicting or unverifiable transition.
 func verifyLayoutTransition(t *layoutTransaction) (map[string]bool, error) {
+	marker, marked, err := readLayoutMarker()
+	if err != nil {
+		return nil, err
+	}
+	if marked && t.Target == layoutFlat && (t.Marker == nil || marker != *t.Marker) {
+		return nil, errors.New("grouped storage layout marker identity changed")
+	}
 	staged, err := inspectGroupedPaths(groupedRoot(), false)
 	if err != nil {
 		return nil, err
@@ -524,7 +546,19 @@ func verifyLayoutTransition(t *layoutTransaction) (map[string]bool, error) {
 		if err != nil {
 			return nil, err
 		}
+		location := from
+		if moved {
+			location = to
+		}
+		if err := checkLayoutTree(location); err != nil {
+			return nil, err
+		}
 		locations[entry.Name] = moved
+	}
+	if marked == (t.Target == layoutGrouped) {
+		if err := requireMovedStores(t, locations); err != nil {
+			return nil, err
+		}
 	}
 	return locations, nil
 }
@@ -553,12 +587,18 @@ func finishLayoutChange(t *layoutTransaction) error {
 			return err
 		}
 	}
-	marker := filepath.Join(Dir(), layoutMarker)
+	positions, err := verifyLayoutTransition(t)
+	if err != nil {
+		return err
+	}
+	if err := requireMovedStores(t, positions); err != nil {
+		return err
+	}
 	if t.Target == layoutGrouped {
-		if err := WritePrivateFile(marker, nil); err != nil {
+		if err := createLayoutMarker(); err != nil {
 			return err
 		}
-	} else if err := os.Remove(marker); err != nil && !errors.Is(err, os.ErrNotExist) {
+	} else if err := removeLayoutMarker(*t.Marker); err != nil {
 		return err
 	}
 	if t.Target == layoutFlat {
@@ -575,8 +615,46 @@ func finishLayoutChange(t *layoutTransaction) error {
 			}
 		}
 	}
-	if _, err := verifyLayoutTransition(t); err != nil {
+	return completeLayoutChange(t)
+}
+
+func requireMovedStores(t *layoutTransaction, positions map[string]bool) error {
+	for _, entry := range t.Entries {
+		if !positions[entry.Name] {
+			return fmt.Errorf("storage transition has not moved %s to its target", entry.Name)
+		}
+	}
+	return nil
+}
+
+func completeLayoutChange(t *layoutTransaction) error {
+	positions, err := verifyLayoutTransition(t)
+	if err != nil {
 		return err
+	}
+	if err := requireMovedStores(t, positions); err != nil {
+		return err
+	}
+	if t.Retained != nil {
+		archived, err := layoutEntryLocation(*t.Retained, groupedRoot(), t.retainedPath())
+		if err != nil {
+			return err
+		}
+		if !archived {
+			return errors.New("interrupted staging is not yet in its recovery directory")
+		}
+	}
+	mode, err := currentLayout()
+	if err != nil {
+		return err
+	}
+	if mode != t.Target {
+		return errors.New("storage marker does not establish the target layout")
+	}
+	if t.Target == layoutFlat {
+		if _, err := os.Lstat(groupedRoot()); !errors.Is(err, os.ErrNotExist) {
+			return errors.New("grouped storage root is still present after rollback")
+		}
 	}
 	if err := SyncPrivateDirectory(Dir()); err != nil {
 		return err
@@ -665,13 +743,27 @@ func removeEmptyLayoutDirs() error {
 	if err != nil {
 		return err
 	}
+	identities := make(map[string]layoutEntry, len(entries))
 	for _, entry := range entries {
-		if !entry.IsDir() || !slices.Contains(groups, entry.Name()) {
-			return fmt.Errorf("unexpected storage object during rollback: %s", filepath.Join(groupedRoot(), entry.Name()))
+		name := entry.Name()
+		if !entry.IsDir() || !slices.Contains(groups, name) {
+			return fmt.Errorf("unexpected storage object during rollback: %s", filepath.Join(groupedRoot(), name))
 		}
+		id, err := layoutDirectoryAt(fd, name)
+		if err != nil {
+			return fmt.Errorf("storage group requires review: %s: %w", name, err)
+		}
+		identities[name] = id
 	}
 	for _, group := range groups {
-		if err := unix.Unlinkat(fd, group, unix.AT_REMOVEDIR); err != nil && err != unix.ENOENT {
+		expected, listed := identities[group]
+		if !listed {
+			continue
+		}
+		if current, err := layoutDirectoryAt(fd, group); err != nil || current != expected {
+			return fmt.Errorf("storage group changed during rollback: %s", group)
+		}
+		if err := unix.Unlinkat(fd, group, unix.AT_REMOVEDIR); err != nil {
 			return fmt.Errorf("storage group requires review: %s: %w", group, err)
 		}
 	}

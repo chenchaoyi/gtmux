@@ -2,11 +2,11 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1477 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1479 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3815 | [L1.csv](cases/L1.csv) |
+| L1 · 单元/纯逻辑 | 3818 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2739 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 156 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
@@ -246,6 +246,9 @@
 | GSS-010 | Only fixed empty group directories can be removed. Conflicting files, links and unknown data survive and the journal remains. |
 | GSS-011 | Doctor and dr remain available with the same behavior. Missing, malformed or duplicate properties cannot establish quiescence. |
 | GSS-012 | Uncertain state and the exact link, journal bytes and identities remain at their original paths. No pending item is produced, and unrelated storage still moves. |
+| GSS-013 | A conflicting marker stays intact, no object is published or removed as a marker over it, and the journal remains. A legitimate interrupted layout can still finish. |
+| GSS-014 | The old direction journal is kept unless every expected identity is on the target side, retained staging is archived and marker and directory topology establish the requested layout. |
+| GSS-015 | Persistent stop can permit migration. A runtime-only mask needs persisted disable evidence. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |
 | HQBC-001 | Exact language-specific titles are lifted. The original number, short first-line quote and group are retained. An explicit recommendation is recognized. Removal leaves the other item and its number intact. An empty decision section produces no actionable item. |
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |

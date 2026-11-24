@@ -5578,5 +5578,23 @@
     "selectors": [
       "TestGSS012StorageLayoutKeepsNativeWakeEvidence"
     ]
+  },
+  "internal/state/layout_commit_test.go": {
+    "cases": [
+      "GSS-013",
+      "GSS-014"
+    ],
+    "selectors": [
+      "TestGSS013MarkerConflictPreservesOriginals",
+      "TestGSS014CommitNeedsCompleteTargetLayout"
+    ]
+  },
+  "internal/userservice/storage_commit_test.go": {
+    "cases": [
+      "GSS-015"
+    ],
+    "selectors": [
+      "TestGSS015StorageRejectsRuntimeOnlyMask"
+    ]
   }
 }

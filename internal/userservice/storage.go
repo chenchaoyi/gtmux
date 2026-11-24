@@ -131,7 +131,7 @@ func stoppedSystemdUnit(run storageManagerProbe, unit string) error {
 			}
 		case "loaded", "masked":
 			switch props["UnitFileState"] {
-			case "disabled", "masked", "masked-runtime":
+			case "disabled", "masked":
 				return nil
 			}
 		}
