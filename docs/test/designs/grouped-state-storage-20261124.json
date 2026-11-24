@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner (Codex self-review)",
     "date": "2026-11-24",
     "decision": "Use opt-in grouped routing with an offline, journaled and reversible transition.",
-    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting."
+    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched. Independent review found a shared DSH registration path that must remain flat. Exercise the shipped plugin and the production Go registration reader together before resubmitting. The remaining independent findings cover admission against a loaded manager, an interrupted atomic write, misleading transition preview, and housekeeping following the active store."
   },
   "cases": [
     {
@@ -51,7 +51,52 @@
       "planned_files": [
         "internal/app/doctor_layout_dsh_test.go"
       ]
+    },
+    {
+      "id": "GSS-005",
+      "layer": "L1",
+      "description": "Background jobs and compatible processes hold storage admission",
+      "setup": "Disposable home, process and service-manager fixtures with a loaded launchd job or a restarting systemd job and no PID, plus a held shared CLI lease.",
+      "action": "Probe migration readiness, confirm normal CLI entry gates under the exclusive lease, and exercise both lease directions.",
+      "expected": "A loaded/restarting job or an unverifiable manager blocks the move. Shared leases coexist and stay held through the command. Migration requires exclusive admission before any move, while inspection remains available.",
+      "planned_files": [
+        "internal/userservice/storage_test.go",
+        "internal/app/doctor_layout_safety_test.go"
+      ]
+    },
+    {
+      "id": "GSS-006",
+      "layer": "L1",
+      "description": "Rollback preserves crash residue from an interrupted atomic writer",
+      "setup": "Grouped isolated home with authoritative usage data, an exact private staging-file shape, and separately an unknown or linked entry.",
+      "action": "Inspect, interrupt and resume rollback around archival, then group again.",
+      "expected": "Authoritative data retains its identity. Valid residue stays private and recoverable outside active storage across retry. Unknown, unsafe or unexpected entries block before further changes.",
+      "planned_files": [
+        "internal/state/layout_safety_test.go"
+      ]
+    },
+    {
+      "id": "GSS-007",
+      "layer": "L1",
+      "description": "Transition inspection verifies both physical locations",
+      "setup": "Pending isolated transition with one item already moved and, separately, two copies of another item.",
+      "action": "Inspect through doctor with the actual pending journal, then compare against the resume decision.",
+      "expected": "Inspection reports moved and pending stores and explicitly rejects the same conflict as resume, with both copies unchanged.",
+      "planned_files": [
+        "internal/app/doctor_layout_safety_test.go"
+      ]
+    },
+    {
+      "id": "GSS-008",
+      "layer": "L1",
+      "description": "Housekeeping follows the active HQ feed",
+      "setup": "Grouped isolated home with a known retired feed file, an active cadence marker, and an independent flat path.",
+      "action": "Check doctor inventory and run normal housekeeping.",
+      "expected": "Existing retirement policy sees and removes only the named retired file from the active store without deleting the cadence marker or flat copy.",
+      "planned_files": [
+        "internal/hq/housekeeping_layout_test.go"
+      ]
     }
   ],
-  "seal": "a2a6fad1ad263dc1d88f262a61147f60b2bb293e3d6adb02cd696e58f12e0d81"
+  "seal": "ce978bf05585387157ac85e23c025720dff0f2783a5c2038ef520c02ce913389"
 }
