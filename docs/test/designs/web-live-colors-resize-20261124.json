@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner (Codex self-review)",
     "date": "2026-11-24",
     "decision": "Reuse the read-only capture and terminal palette. Extend the existing workbench drag rectangles.",
-    "notes": "Reviewed against 4c99206f. The screenshots are the Chat workbench tile, not the browser-dialog action sheets. Add no requests and no terminal input. Build spans as text DOM. Keep Live freeze, draft, authorization and view retirement. Add handles only to freely positioned tiles. Preserve the SE affordance, snap preference, size floor, saved layout and single-column behavior. Validate with the existing synthetic browser harness and cached Chromium. Fixed-head review requires a usable starting rectangle after a narrower board clips an older layout and visible-only snapshot comparison. Hosted consistency keeps the existing unthemed Live foreground. Exercise touch resize and use the specified composer disclosure before writing a local draft. Compare palette and numeric RGB using the colors actually displayed by the same host terminal theme. For touch, inspect current disclosure state so the test expands a collapsed composer and never toggles an already open one closed. Use real Chromium touch tapping for both disclosure and textarea focus. A theme may arrive after Live started. Freeze must retain the capture used to paint the visible nodes, and a host theme update must reconcile open live panels against what was actually painted."
+    "notes": "Reviewed against 4c99206f. The screenshots are the Chat workbench tile, not the browser-dialog action sheets. Add no requests and no terminal input. Build spans as text DOM. Keep Live freeze, draft, authorization and view retirement. Add handles only to freely positioned tiles. Preserve the SE affordance, snap preference, size floor, saved layout and single-column behavior. Validate with the existing synthetic browser harness and cached Chromium. Fixed-head review requires a usable starting rectangle after a narrower board clips an older layout and visible-only snapshot comparison. Hosted consistency keeps the existing unthemed Live foreground. Exercise touch resize and use the specified composer disclosure before writing a local draft. Compare palette and numeric RGB using the colors actually displayed by the same host terminal theme. For touch, inspect current disclosure state so the test expands a collapsed composer and never toggles an already open one closed. Use real Chromium touch tapping for both disclosure and textarea focus. A theme may arrive after Live started. Freeze must retain the capture used to paint the visible nodes, and a host theme update must reconcile open live panels against what was actually painted. Fixed-head review of 0c10db76 identified the reverse sequence, with an ANSI first frame and literal RGB second frame. The paused panel must preserve the effective palette and default colors at freeze. A theme response by itself cannot create a new-output badge, including when a selection made before publication first triggers the freeze. The same comparison must still detect distinct output and resume under the current theme."
   },
   "cases": [
     {
@@ -106,7 +106,18 @@
       "planned_files": [
         "tests/web/live-late-theme.test.cjs"
       ]
+    },
+    {
+      "id": "WLI-010",
+      "layer": "L3",
+      "description": "Paused ANSI output keeps the palette used to paint it",
+      "setup": "Synthetic workbench starts before the host theme arrives. The first frame is ANSI, then an equivalent literal RGB frame is received. The delayed theme will change the palette and both default colors.",
+      "action": "In separate runs, pause by scrolling or select output while capture delivery is held. Deliver the new theme. Then deliver an actual color change and return to live.",
+      "expected": "The paused frame keeps the original foreground, background, palette, node, selection and scroll position. No badge appears just because the theme arrives or the same equivalent frame is polled again. A distinct color still shows the badge, and returning to live displays the latest colors under the host theme. No input is sent.",
+      "planned_files": [
+        "tests/web/live-frozen-palette.test.cjs"
+      ]
     }
   ],
-  "seal": "d9a415ad71a3ce6b0d2494987524896ca9280b09365a91b8da3ddea3658b2a05"
+  "seal": "669baacae8262f58313eea59edc6f43b7d4888255f324ecc3414372eeb84c196"
 }
