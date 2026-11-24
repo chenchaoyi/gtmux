@@ -10,6 +10,8 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+const privateTempPrefix = ".private-"
+
 // WritePrivateFile publishes bytes atomically within a gtmux-managed root. Unlike
 // WriteFile, it cannot retain an existing public mode; unlike a filesystem copy,
 // it never imports the source mode. Temporary bytes are private from creation.
@@ -44,7 +46,7 @@ func writePrivateFileWithSync(path string, data []byte, publish func(int, string
 	}
 	// O_EXCL and the held parent fd also protect cleanup/publication from path
 	// replacement. No chmod or rename can follow a leaf into another tree.
-	tmp := ".private-" + rand.Text()
+	tmp := privateTempPrefix + rand.Text()
 	fd, err := unix.Openat(parent, tmp, unix.O_WRONLY|unix.O_CREAT|unix.O_EXCL|unix.O_CLOEXEC|unix.O_NOFOLLOW, uint32(PrivateFile))
 	if err != nil {
 		return err

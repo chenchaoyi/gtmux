@@ -5509,5 +5509,40 @@
     "selectors": [
       "TestGSS004GroupedLayoutPreservesDSHRegistration"
     ]
+  },
+  "internal/userservice/storage_test.go": {
+    "cases": [
+      "GSS-005"
+    ],
+    "selectors": [
+      "TestGSS005ManagerStorageReadiness"
+    ]
+  },
+  "internal/app/doctor_layout_safety_test.go": {
+    "cases": [
+      "GSS-005",
+      "GSS-007"
+    ],
+    "selectors": [
+      "TestGSS005CLIStorageAdmission",
+      "TestGSS007DoctorRejectsPendingLayoutConflict"
+    ]
+  },
+  "internal/state/layout_safety_test.go": {
+    "cases": [
+      "GSS-006"
+    ],
+    "selectors": [
+      "TestGSS006RollbackRetainsInterruptedWrite",
+      "TestGSS006RollbackRefusesUnknownOrUnsafeStage"
+    ]
+  },
+  "internal/hq/housekeeping_layout_test.go": {
+    "cases": [
+      "GSS-008"
+    ],
+    "selectors": [
+      "TestGSS008HousekeepingFollowsGroupedHQFeed"
+    ]
   }
 }

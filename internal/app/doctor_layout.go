@@ -10,6 +10,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/userservice"
 )
 
 func layoutDoctorFlag(flag string) bool {
@@ -26,15 +27,17 @@ func permitsLayoutTransition(command string, args []string) bool {
 		command == "doctor" && len(args) == 1 && (layoutDoctorFlag(args[0]) || args[0] == "--help" || args[0] == "-h")
 }
 
-func ensureCommandLayout(command string, args []string) bool {
+func enterCommandLayout(command string, args []string) (*state.Lease, bool) {
 	if permitsLayoutTransition(command, args) {
-		return true
+		return nil, true
 	}
-	if err := state.CheckStorageLayout(); err != nil {
-		i18n.Sae("gtmux: "+err.Error(), "gtmux：数据目录布局需核查，请运行 gtmux doctor --storage-layout。"+err.Error())
-		return false
+	lease, err := state.EnterStorageCommand()
+	if err != nil {
+		i18n.Sae("gtmux: storage unavailable. Run gtmux doctor --storage-layout. "+err.Error(),
+			"gtmux：数据目录暂不可用。请运行 gtmux doctor --storage-layout。"+err.Error())
+		return nil, false
 	}
-	return true
+	return lease, true
 }
 
 func cmdDoctorLayout(flag string) int {
@@ -56,6 +59,12 @@ func cmdDoctorLayout(flag string) int {
 			}
 			fmt.Println(i18n.Tr("Transition pending. Continue with", "迁移待继续，执行"), "gtmux doctor "+next)
 		}
+		if status.StagedFiles > 0 {
+			fmt.Println(i18n.Tr("Interrupted write staging files", "中断写入留下的暂存文件"), status.StagedFiles)
+		}
+		if status.RetainedPath != "" {
+			fmt.Println(i18n.Tr("Staging recovery path", "暂存文件保全位置"), status.RetainedPath)
+		}
 		conflict := status.UnmarkedGrouped
 		if status.UnmarkedGrouped {
 			fmt.Println(i18n.Tr("Grouped directory has no layout marker", "分组目录缺少布局标记"))
@@ -66,7 +75,11 @@ func cmdDoctorLayout(flag string) int {
 				conflict = true
 			}
 			if store.Present || store.Unexpected {
-				fmt.Printf("  %s → %s\n", store.Name, state.FormatLayoutStore(store))
+				if store.Progress != "" {
+					fmt.Printf("  %s → %s · %s\n", store.Name, state.FormatLayoutStore(store), layoutProgressText(store.Progress))
+				} else {
+					fmt.Printf("  %s → %s\n", store.Name, state.FormatLayoutStore(store))
+				}
 			}
 		}
 		if conflict {
@@ -92,8 +105,14 @@ func cmdDoctorLayout(flag string) int {
 	return 0
 }
 
-// The operator must pause admissions and restarts, including older hooks.
-// A process snapshot is an extra rejection check, not proof about old writers.
+func layoutProgressText(progress string) string {
+	if progress == "moved" {
+		return i18n.Tr("moved", "已迁移")
+	}
+	return i18n.Tr("pending", "待迁移")
+}
+
+// The operator still controls old hooks and custom or renamed writers.
 func checkStorageWriters() error {
 	output, err := exec.Command("ps", "-axo", "uid=,pid=,comm=").Output()
 	if err != nil {
@@ -112,5 +131,5 @@ func checkStorageWriters() error {
 			return fmt.Errorf("a gtmux or tmux process is still running (PID %s)", fields[1])
 		}
 	}
-	return nil
+	return userservice.CheckStorageStopped(state.Home(), serveAgentLabel, tunnelAgentLabel, selfTunnelAgentLabel)
 }

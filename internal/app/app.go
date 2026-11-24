@@ -84,9 +84,11 @@ func Run(argv []string) int {
 			}
 			i18n.SetLang(lang)
 		}
-		if !ensureCommandLayout("codex", nil) {
+		lease, ok := enterCommandLayout("codex", nil)
+		if !ok {
 			return 1
 		}
+		defer lease.Close()
 		return cmdCodex(argv[codexAt+1:])
 	}
 	var args []string
@@ -111,9 +113,11 @@ func Run(argv []string) int {
 		args = args[1:]
 	}
 
-	if !ensureCommandLayout(sub, args) {
+	lease, ok := enterCommandLayout(sub, args)
+	if !ok {
 		return 1
 	}
+	defer lease.Close()
 	if actor := commandDiagnosticActor(); actor != "" {
 		defer diag.PushProcess("cli", actor)()
 	}

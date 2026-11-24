@@ -2,11 +2,11 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1469 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1473 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3804 | [L1.csv](cases/L1.csv) |
+| L1 · 单元/纯逻辑 | 3810 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2739 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 156 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
@@ -238,6 +238,10 @@
 | GSS-002 | A partial transition gates normal CLI access. The original direction resumes only with exact identity and a unique location. Conflict preserves both sides; completion is durable and idempotent. |
 | GSS-003 | Inspection remains available, entry points that can write are gated while pending, and the event journal and sequence advance in the canonical group without creating a flat event log. |
 | GSS-004 | One attachment is visible on the existing terminal-clients path, and registering it does not create an unexpected flat copy of a grouped store or gate normal commands. |
+| GSS-005 | A loaded/restarting job or an unverifiable manager blocks the move. Shared leases coexist and stay held through the command. Migration requires exclusive admission before any move, while inspection remains available. |
+| GSS-006 | Authoritative data retains its identity. Valid residue stays private and recoverable outside active storage across retry. Unknown, unsafe or unexpected entries block before further changes. |
+| GSS-007 | Inspection reports moved and pending stores and explicitly rejects the same conflict as resume, with both copies unchanged. |
+| GSS-008 | Existing retirement policy sees and removes only the named retired file from the active store without deleting the cadence marker or flat copy. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |
 | HQBC-001 | Exact language-specific titles are lifted. The original number, short first-line quote and group are retained. An explicit recommendation is recognized. Removal leaves the other item and its number intact. An empty decision section produces no actionable item. |
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |

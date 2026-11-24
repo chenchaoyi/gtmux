@@ -1,6 +1,7 @@
 package state
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +19,7 @@ const (
 	layoutDir        = "layout-v2"
 	layoutMarker     = ".storage-layout-v2"
 	layoutTransition = ".storage-layout-transition.json"
+	layoutRecovery   = "layout-recovery"
 	layoutFlat       = "flat"
 	layoutGrouped    = "grouped"
 )
@@ -74,6 +76,8 @@ type StorageLayoutStatus struct {
 	Continuing      string
 	UnmarkedGrouped bool
 	Stores          []StorageLayoutStore
+	StagedFiles     int
+	RetainedPath    string
 }
 
 type StorageLayoutStore struct {
@@ -81,6 +85,7 @@ type StorageLayoutStore struct {
 	Group      string
 	Present    bool
 	Unexpected bool
+	Progress   string
 }
 
 // ReadStorageLayout inventories known stores without creating any paths.
@@ -103,8 +108,20 @@ func ReadStorageLayout() (StorageLayoutStatus, error) {
 			return status, err
 		}
 	}
-	if err := inspectGroupedPaths(); err != nil {
+	staged, err := inspectGroupedPaths(groupedRoot(), false)
+	if err != nil {
 		return status, err
+	}
+	status.StagedFiles = staged
+	var locations map[string]bool
+	if transition != nil {
+		locations, err = verifyLayoutTransition(transition)
+		if err != nil {
+			return status, err
+		}
+		if transition.Retained != nil {
+			status.RetainedPath = filepath.Join(layoutRecovery, transition.Retained.Name)
+		}
 	}
 	for _, name := range sortedLayoutStores() {
 		source, spare := layoutLocations(name, mode)
@@ -116,7 +133,14 @@ func ReadStorageLayout() (StorageLayoutStatus, error) {
 		if err != nil {
 			return status, err
 		}
-		status.Stores = append(status.Stores, StorageLayoutStore{name, groupedStores[name], present, unexpected})
+		store := StorageLayoutStore{Name: name, Group: groupedStores[name], Present: present, Unexpected: unexpected}
+		if moved, planned := locations[name]; planned {
+			store.Progress = "pending"
+			if moved {
+				store.Progress = "moved"
+			}
+		}
+		status.Stores = append(status.Stores, store)
 	}
 	return status, nil
 }
@@ -176,10 +200,13 @@ type layoutEntry struct {
 }
 
 type layoutTransaction struct {
-	Version int
-	Target  string
-	Entries []layoutEntry
+	Version  int
+	Target   string
+	Entries  []layoutEntry
+	Retained *layoutEntry `json:",omitempty"`
 }
+
+func groupedRoot() string { return filepath.Join(Dir(), layoutDir) }
 
 func sortedLayoutStores() []string {
 	names := make([]string, 0, len(groupedStores))
@@ -273,6 +300,10 @@ func readLayoutTransaction() (*layoutTransaction, error) {
 		}
 		seen[entry.Name] = true
 	}
+	if entry := t.Retained; entry != nil && (t.Target != layoutFlat ||
+		!randomLayoutSuffix(entry.Name) || entry.Inode == 0 || entry.Mode != uint32(os.ModeDir)) {
+		return nil, errors.New("invalid storage layout recovery path")
+	}
 	return &t, nil
 }
 
@@ -283,7 +314,7 @@ func ChangeStorageLayout(grouped bool, checkWriters func() error) error {
 	if grouped {
 		target = layoutGrouped
 	}
-	lease, err := TryLease("storage-layout")
+	lease, err := acquireLayoutLease(unix.LOCK_EX)
 	if err != nil {
 		return err
 	}
@@ -311,10 +342,22 @@ func ChangeStorageLayout(grouped bool, checkWriters func() error) error {
 	if err := checkWriters(); err != nil {
 		return err
 	}
-	if err := inspectGroupedPaths(); err != nil {
+	staged, err := inspectGroupedPaths(groupedRoot(), false)
+	if err != nil {
 		return err
 	}
 	t := &layoutTransaction{Version: 1, Target: target}
+	if staged > 0 {
+		if target != layoutFlat {
+			return errors.New("unmarked grouped storage contains staging files")
+		}
+		scaffold, present, err := layoutObject(groupedRoot())
+		if err != nil || !present || scaffold.Mode != uint32(os.ModeDir) {
+			return errors.New("cannot identify the grouped storage scaffold")
+		}
+		scaffold.Name = rand.Text()
+		t.Retained = &scaffold
+	}
 	for _, name := range sortedLayoutStores() {
 		from, to := layoutLocations(name, mode)
 		entry, present, err := layoutObject(from)
@@ -345,41 +388,65 @@ func ChangeStorageLayout(grouped bool, checkWriters func() error) error {
 	return finishLayoutChange(t)
 }
 
-func inspectGroupedPaths() error {
-	root := filepath.Join(Dir(), layoutDir)
+// Only the exact owner-private scratch shape published by WritePrivateFile is
+// eligible for retention. It is never used to reconstruct an active record.
+func randomLayoutSuffix(s string) bool {
+	if len(s) < 26 || len(s) > 64 {
+		return false
+	}
+	for _, c := range s {
+		if !(c >= 'A' && c <= 'Z' || c >= '2' && c <= '7') {
+			return false
+		}
+	}
+	return true
+}
+
+func inspectGroupedPaths(root string, scratchOnly bool) (int, error) {
 	if _, err := os.Lstat(root); errors.Is(err, os.ErrNotExist) {
-		return nil
+		return 0, nil
 	}
 	if err := checkLayoutDir(root); err != nil {
-		return err
+		return 0, err
 	}
 	groups := make(map[string]bool)
-	for _, group := range groupedStores {
+	for _, group := range layoutGroups() {
 		groups[group] = true
 	}
 	dirs, err := os.ReadDir(root)
 	if err != nil {
-		return err
+		return 0, err
 	}
+	staged := 0
 	for _, dir := range dirs {
 		groupPath := filepath.Join(root, dir.Name())
 		if !groups[dir.Name()] {
-			return fmt.Errorf("unknown grouped storage directory: %s", groupPath)
+			return 0, fmt.Errorf("unknown grouped storage directory: %s", groupPath)
 		}
 		if err := checkLayoutDir(groupPath); err != nil {
-			return err
+			return 0, err
 		}
 		stores, err := os.ReadDir(groupPath)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		for _, store := range stores {
-			if groupedStores[store.Name()] != dir.Name() {
-				return fmt.Errorf("unknown grouped storage entry: %s", filepath.Join(groupPath, store.Name()))
+			if !scratchOnly && groupedStores[store.Name()] == dir.Name() {
+				continue
 			}
+			path := filepath.Join(groupPath, store.Name())
+			suffix, prefixed := strings.CutPrefix(store.Name(), privateTempPrefix)
+			if !prefixed || !randomLayoutSuffix(suffix) {
+				return 0, fmt.Errorf("unknown grouped storage entry: %s", path)
+			}
+			info, err := os.Lstat(path)
+			if err != nil || checkOwnedRegular(info) != nil || info.Mode().Perm() != PrivateFile || info.Sys().(*syscall.Stat_t).Nlink != 1 {
+				return 0, fmt.Errorf("grouped staging entry requires review: %s", path)
+			}
+			staged++
 		}
 	}
-	return nil
+	return staged, nil
 }
 
 func checkLayoutTree(path string) error {
@@ -392,25 +459,48 @@ func checkLayoutTree(path string) error {
 	})
 }
 
-func finishLayoutChange(t *layoutTransaction) error {
-	if err := inspectGroupedPaths(); err != nil {
-		return err
-	}
-	sourceMode := layoutGrouped
+func (t *layoutTransaction) sourceMode() string {
 	if t.Target == layoutGrouped {
-		sourceMode = layoutFlat
-		for _, group := range layoutGroups() {
-			if err := MkdirAll(filepath.Join(Dir(), layoutDir, group), 0700); err != nil {
-				return err
+		return layoutFlat
+	}
+	return layoutGrouped
+}
+
+func (t *layoutTransaction) retainedPath() string {
+	return filepath.Join(Dir(), layoutRecovery, t.Retained.Name)
+}
+
+// Verify every physical location before advancing. Doctor uses the same check
+// so it does not suggest retrying a conflicting or unverifiable transition.
+func verifyLayoutTransition(t *layoutTransaction) (map[string]bool, error) {
+	staged, err := inspectGroupedPaths(groupedRoot(), false)
+	if err != nil {
+		return nil, err
+	}
+	if staged > 0 && t.Retained == nil {
+		return nil, errors.New("unplanned storage staging files require review")
+	}
+	if t.Retained != nil {
+		if _, err := os.Lstat(filepath.Dir(t.retainedPath())); !errors.Is(err, os.ErrNotExist) {
+			if err := checkLayoutDir(filepath.Dir(t.retainedPath())); err != nil {
+				return nil, err
 			}
 		}
-		if err := SyncPrivateDirectory(filepath.Join(Dir(), layoutDir)); err != nil {
-			return err
+		archived, err := layoutEntryLocation(*t.Retained, groupedRoot(), t.retainedPath())
+		if err != nil {
+			return nil, err
 		}
-		if err := SyncPrivateDirectory(Dir()); err != nil {
-			return err
+		if archived {
+			staged, err = inspectGroupedPaths(t.retainedPath(), true)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if staged == 0 {
+			return nil, errors.New("recorded storage staging files require review")
 		}
 	}
+	sourceMode := t.sourceMode()
 	planned := make(map[string]bool)
 	for _, entry := range t.Entries {
 		planned[entry.Name] = true
@@ -422,14 +512,37 @@ func finishLayoutChange(t *layoutTransaction) error {
 		from, to := layoutLocations(name, sourceMode)
 		for _, path := range []string{from, to} {
 			if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
-				return fmt.Errorf("unplanned storage object requires review: %s", path)
+				return nil, fmt.Errorf("unplanned storage object requires review: %s", path)
 			}
 		}
 	}
-	// Check all identities before advancing any further.
+	locations := make(map[string]bool, len(t.Entries))
 	for _, entry := range t.Entries {
 		from, to := layoutLocations(entry.Name, sourceMode)
-		if _, err := layoutEntryLocation(entry, from, to); err != nil {
+		moved, err := layoutEntryLocation(entry, from, to)
+		if err != nil {
+			return nil, err
+		}
+		locations[entry.Name] = moved
+	}
+	return locations, nil
+}
+
+func finishLayoutChange(t *layoutTransaction) error {
+	if _, err := verifyLayoutTransition(t); err != nil {
+		return err
+	}
+	sourceMode := t.sourceMode()
+	if t.Target == layoutGrouped {
+		for _, group := range layoutGroups() {
+			if err := MkdirAll(filepath.Join(groupedRoot(), group), 0700); err != nil {
+				return err
+			}
+		}
+		if err := SyncPrivateDirectory(groupedRoot()); err != nil {
+			return err
+		}
+		if err := SyncPrivateDirectory(Dir()); err != nil {
 			return err
 		}
 	}
@@ -448,8 +561,17 @@ func finishLayoutChange(t *layoutTransaction) error {
 		return err
 	}
 	if t.Target == layoutFlat {
-		if err := removeEmptyLayoutDirs(); err != nil {
-			return err
+		if t.Retained == nil {
+			if err := removeEmptyLayoutDirs(); err != nil {
+				return err
+			}
+		} else {
+			if _, err := inspectGroupedPaths(groupedRoot(), true); err != nil {
+				return err
+			}
+			if err := advanceLayoutEntry(*t.Retained, groupedRoot(), t.retainedPath()); err != nil {
+				return err
+			}
 		}
 	}
 	if err := SyncPrivateDirectory(Dir()); err != nil {

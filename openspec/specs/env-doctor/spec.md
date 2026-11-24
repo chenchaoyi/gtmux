@@ -1034,14 +1034,16 @@ safety limit SHALL NOT be described as a directory quota or snapshot retention b
 
 ### Requirement: Inspect and change the data layout
 
-Doctor SHALL preview owned stores and their grouped locations without writing state. A layout change SHALL require explicit offline confirmation, reserve one transition, preserve object identity, refuse collisions and leave a durable direction for recovery. CLI commands that need storage SHALL refuse access while a transition is unfinished. Desktop and native path contracts SHALL be preserved where their writers do not take part in the transition.
+Doctor SHALL preview owned stores and their grouped locations without writing state. A layout change SHALL require explicit offline confirmation, reserve one transition, preserve object identity, refuse collisions and leave a durable direction for recovery. CLI commands that need storage SHALL hold shared admission until exit and refuse access while a transition is unfinished. Migration SHALL hold exclusive admission and reject a running or pending managed service, or a managed service that cannot be checked. Desktop and native path contracts SHALL be preserved where their writers do not take part in the transition.
 
 #### Scenario: Repair an interrupted storage change
 
 - **WHEN** an offline change is interrupted after moving one or more stores
-- **THEN** the inspector identifies the pending direction and a repeated confirmed operation can continue only from the recorded store identities
+- **THEN** the inspector verifies the recorded store identities and reports the pending direction and per-store progress
+- **AND** an identity or destination conflict prevents both a clean inspection and continuation
 
 #### Scenario: Revert grouped storage
 
 - **WHEN** the operator restores the flat layout after pausing all writers
 - **THEN** the current grouped records return to the legacy paths without replacing an existing object
+- **AND** known owner-private, interrupted staging files are kept in an inactive recovery directory
