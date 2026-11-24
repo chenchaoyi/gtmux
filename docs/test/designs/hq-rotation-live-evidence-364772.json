@@ -85,7 +85,19 @@
       "planned_files": [
         "internal/hq/rotation_clock_boundaries_test.go"
       ]
+    },
+    {
+      "id": "HRB-014",
+      "layer": "L2",
+      "description": "Precise hook ordering and missing reset-completion evidence fail closed",
+      "setup": "Use a legacy hook observation with a nanosecond timestamp, and a sent Codex request with an attempt marker but no completed-key fence. Use synthetic history and a clock on both sides of expiry.",
+      "action": "Check before, exactly at, and after the recorded Enter completion within the same second. Restore a current Codex driver and qualifying history without a completed-key fence. Examine the original reservation and terminal outcome.",
+      "expected": "A precise same-second observation after Enter can qualify. Older, equal, and whole-second-only ambiguous observations have no authority. A missing fence permits bounded waiting and then an explicit failure. It authorizes neither success, briefing nor another reset. The detached process codec retains consistent precise observation time.",
+      "planned_files": [
+        "internal/hq/rotation_submit_witness_test.go",
+        "internal/launchhost/agent_test.go"
+      ]
     }
   ],
-  "seal": "066ec2f2e0e436f1709bc71adf9aba1729edbc2d69f3a13ad3b1912037514e2e"
+  "seal": "c0acb3dbd9d008a56a17c9e518729a273b4afb4b199f2104beb728f663bffae1"
 }
