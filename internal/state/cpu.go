@@ -38,7 +38,7 @@ const cpuActiveSec = 4
 const cpuBusyRate = 0.30
 
 // CPUDir holds the per-pane CPU-sample records.
-func CPUDir() string { return filepath.Join(Dir(), "cpu") }
+func CPUDir() string { return StorePath("cpu") }
 
 func cpuPath(pane string) string { return filepath.Join(CPUDir(), pane) }
 

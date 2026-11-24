@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -52,7 +51,7 @@ var backstopSaving atomic.Bool
 // A successful save.sh run can leave `last` untouched when the layout did not
 // change. The pointer's old mtime is therefore not evidence that the backstop
 // failed: remember the last attempt separately from the last changed snapshot.
-func backstopAttemptPath() string { return filepath.Join(state.Dir(), "restore-backstop-attempt") }
+func backstopAttemptPath() string { return state.StorePath("restore-backstop-attempt") }
 
 func readBackstopAttempt() (at int64, succeeded bool) {
 	r := readBackstopReceipt()

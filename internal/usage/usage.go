@@ -197,7 +197,7 @@ type counter struct {
 }
 
 // Dir holds the per-session usage counters.
-func Dir() string { return filepath.Join(state.Dir(), "usage") }
+func Dir() string { return state.StorePath("usage") }
 
 func counterPath(agent, sessionID string) string {
 	return filepath.Join(Dir(), base64.RawURLEncoding.EncodeToString([]byte(agent+"\x00"+sessionID))+".json")

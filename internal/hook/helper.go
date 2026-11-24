@@ -77,7 +77,7 @@ const helperMarkerTTL = 24 * time.Hour
 
 // helperDir is where helper-session markers live (one empty file per session id,
 // same FS-safe encoding as the native store).
-func helperDir() string { return filepath.Join(state.Dir(), "helper-sessions") }
+func helperDir() string { return state.StorePath("helper-sessions") }
 
 func helperMarkerFor(sessionID string) string {
 	return filepath.Join(helperDir(), base64.RawURLEncoding.EncodeToString([]byte(sessionID)))

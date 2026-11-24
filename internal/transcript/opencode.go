@@ -22,7 +22,7 @@ import (
 func OpencodeDir() string { return opencodeDir() }
 
 func opencodeDir() string {
-	return filepath.Join(state.Dir(), "octrans")
+	return state.StorePath("octrans")
 }
 
 // opencodeSessionFile flattens a session id into a filename. Session ids are opaque

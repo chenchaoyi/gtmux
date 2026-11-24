@@ -6,7 +6,6 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/humanize"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -34,7 +33,7 @@ const (
 	mineDefaultWindow = 30 * 24 * time.Hour
 )
 
-func mineDir() string { return filepath.Join(state.Dir(), "mine") }
+func mineDir() string { return state.StorePath("mine") }
 
 // mineSensor runs a pass from the serve slow tick once per interval, only when an HQ
 // home exists (the spool lives there). It raises no wake: the spool floor is the trigger.

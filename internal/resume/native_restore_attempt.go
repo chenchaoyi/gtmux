@@ -51,7 +51,7 @@ type NativeRestoreAttempt struct {
 
 func nativeRestoreAttemptPath(id NativeRestoreIdentity) string {
 	sum := sha256.Sum256([]byte(id.Home + "\x00" + id.SessionID))
-	return filepath.Join(state.Dir(), "restore-attempts", hex.EncodeToString(sum[:])+".json")
+	return state.StorePath("restore-attempts", hex.EncodeToString(sum[:])+".json")
 }
 
 func validNativeRestoreIdentity(id NativeRestoreIdentity) bool {

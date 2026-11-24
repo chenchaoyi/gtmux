@@ -84,7 +84,7 @@ func rotationTargetMatches(expected, actual string) bool {
 	return true
 }
 
-func rotationPendingPath() string { return filepath.Join(state.Dir(), "hqwake", "rotate-pending.json") }
+func rotationPendingPath() string { return state.StorePath("hqwake", "rotate-pending.json") }
 
 func readRotationRequest() (rotationRequest, bool, error) {
 	b, err := hqinput.ReadRotationFile()

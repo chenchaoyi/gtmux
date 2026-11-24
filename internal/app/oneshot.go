@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 	"unicode"
@@ -257,7 +256,7 @@ func stageGoalFile(goal string) (string, error) {
 	if len(goal) <= oneshotInlineMax && !strings.ContainsFunc(goal, unicode.IsControl) {
 		return "", errInlineGoal
 	}
-	dir := filepath.Join(state.Dir(), "dispatch", "goals")
+	dir := state.StorePath("dispatch", "goals")
 	if err := state.MkdirAll(dir, 0o700); err != nil {
 		return "", err
 	}

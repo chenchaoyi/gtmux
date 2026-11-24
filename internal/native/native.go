@@ -61,7 +61,7 @@ type Record struct {
 }
 
 // Dir is where per-session native records live.
-func Dir() string { return filepath.Join(state.Dir(), "native") }
+func Dir() string { return state.StorePath("native") }
 
 // fileFor maps a session id to its record file (base64url so any id is FS-safe).
 func fileFor(sessionID string) string {

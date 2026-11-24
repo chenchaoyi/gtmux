@@ -33,7 +33,7 @@ type progress struct {
 
 func progressPath(home, id string) string {
 	key := sha256.Sum256([]byte(home + "\x00" + id))
-	return filepath.Join(state.Dir(), "conversation-messages", hex.EncodeToString(key[:16])+".json")
+	return state.StorePath("conversation-messages", hex.EncodeToString(key[:16])+".json")
 }
 func readProgress(home, id string) (progress, error) {
 	p := progress{Version: 1, SourceSeq: -1, ReviewedThrough: -1}

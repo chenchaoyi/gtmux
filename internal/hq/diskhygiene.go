@@ -66,7 +66,7 @@ func LaunchdCaptures() []string {
 
 // hygieneLastPath records the last hygiene sweep time (unix seconds) so the sweep runs at
 // most once per hygieneInterval even though the slow-tick fires every 20 s.
-func hygieneLastPath() string { return filepath.Join(state.Dir(), "disk-hygiene-last") }
+func hygieneLastPath() string { return state.StorePath("disk-hygiene-last") }
 
 // diskHygieneSweep caps the never-rotated launchd logs and prunes the uploads dir. It is
 // time-gated (≤ 1/30 min), best-effort (every step tolerates a missing path / I/O error),
@@ -92,7 +92,7 @@ func diskHygieneSweep(now int64) {
 	// review of 83fae5d0).
 	if live, known := livePanes(); known {
 		for _, name := range churnMarkerDirs {
-			_ = pruneDir(filepath.Join(base, name), markerMaxAge, noSizeCap, nowT, func(file string) bool {
+			_ = pruneDir(state.StorePath(name), markerMaxAge, noSizeCap, nowT, func(file string) bool {
 				return live[strings.TrimSuffix(file, ".json")] // "%12", or the send record "%12.json"
 			})
 		}

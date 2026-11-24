@@ -154,7 +154,7 @@ type ExportRecord struct {
 	Encrypted bool  `json:"encrypted"`
 }
 
-func exportRecordPath() string { return filepath.Join(state.Dir(), "hq-export.json") }
+func exportRecordPath() string { return state.StorePath("hq-export.json") }
 
 func recordExport(encrypted bool) {
 	b, err := json.Marshal(ExportRecord{At: time.Now().Unix(), Encrypted: encrypted})

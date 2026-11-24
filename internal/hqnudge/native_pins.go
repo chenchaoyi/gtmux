@@ -16,7 +16,7 @@ import (
 
 const nativePinLimit = maxQueueEntries * maxBatchLines
 
-func nativePinDir() string               { return filepath.Join(state.Dir(), "hq-nudge-native-claims") }
+func nativePinDir() string               { return state.StorePath("hq-nudge-native-claims") }
 func nativePinPath(e nativeEntry) string { return filepath.Join(nativePinDir(), e.Pin) }
 
 // A live link prevents natural inode reuse even on coarse timestamp filesystems.

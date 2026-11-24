@@ -47,7 +47,7 @@ const nativeIntentLimit = 128 << 10
 // genuinely independent new entries from obtaining their own fresh admission.
 var errNativeClaimConflict = errors.New("native wake claim conflict")
 
-func nativeIntentDir() string { return filepath.Join(state.Dir(), "hq-nudge-native-batches") }
+func nativeIntentDir() string { return state.StorePath("hq-nudge-native-batches") }
 func nativeIntentPath(r nativeIntent) string {
 	b, _ := json.Marshal(struct {
 		ID, Payload string

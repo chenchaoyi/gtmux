@@ -50,7 +50,7 @@ type Attachment struct {
 	InputStoreGeneration string `json:"input_store_generation,omitempty"`
 }
 
-func Dir() string { return filepath.Join(state.Dir(), "terminal-clients") }
+func Dir() string { return state.StorePath("terminal-clients") }
 
 // Inspector supplies fresh process and tmux facts. Tests exercise the same
 // ownership rules with synthetic processes, without inspecting a real session.

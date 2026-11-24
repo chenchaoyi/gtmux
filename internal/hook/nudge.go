@@ -315,7 +315,7 @@ const crashBurstWindow = 5 * 60
 // pane is a different incident and is never suppressed by this.
 func crashBurstMarker(pane, errHead string) string {
 	sum := sha256.Sum256([]byte(errHead))
-	return filepath.Join(state.Dir(), "crashburst", pane+"-"+hex.EncodeToString(sum[:])[:12])
+	return state.StorePath("crashburst", pane+"-"+hex.EncodeToString(sum[:])[:12])
 }
 
 // nudgeCrash tells HQ a turn DIED on an agent/API failure (StopFailure) — which
@@ -374,7 +374,7 @@ func crashBurstCount(pane, errHead string, now int64) (n int, first bool) {
 // panes at start — its own fleet enrollment covers them — so only genuine
 // newcomers wake.
 func enrolledMarker(pane string) string {
-	return filepath.Join(state.Dir(), "enrolled", pane)
+	return state.StorePath("enrolled", pane)
 }
 
 // ensureEnrolled fires exactly one `new-session` wake the first time a pane is
@@ -430,13 +430,13 @@ func StampEnrolledAll() {
 // goalChangedMarker holds the goal-changed DEDUP record for a pane (a fingerprint of
 // the prompt plus when it was waked) — nothing else reads it.
 func goalChangedMarker(pane string) string {
-	return filepath.Join(state.Dir(), "goalchanged", pane)
+	return state.StorePath("goalchanged", pane)
 }
 
 // goalMarker holds the pane's last user-direct goal, which the done wake reads back.
 // It is deliberately SEPARATE from the dedup record (hq-wake-reliability): the two
 // were one file, so the dedup could not be given an expiry without churning the goal.
-func goalMarker(pane string) string { return filepath.Join(state.Dir(), "goal", pane) }
+func goalMarker(pane string) string { return state.StorePath("goal", pane) }
 
 // goalDedupTTL is how long an identical prompt is treated as a duplicate submission
 // rather than a new instruction. The dedup exists to absorb a hook firing twice for

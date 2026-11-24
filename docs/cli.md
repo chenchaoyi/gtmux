@@ -2772,3 +2772,7 @@ annotation are separate from explicit delivery. See the [screenshot guide](guide
 
 Long top-level command syntax is shown in full on a separate line when it would
 collide with its description; narrow terminals use stacked descriptions.
+
+### Data directory layout
+
+Run `gtmux doctor --storage-layout` to inspect the selected layout and see the known paths before changing them. `gtmux doctor --group-storage` groups supported stores after an offline confirmation. `gtmux doctor --flatten-storage` restores the flat paths before a downgrade. Run the [offline procedure](design/state-storage-lifecycle.md#offline-transition) before either write. If interrupted, inspect the pending direction and repeat the same operation.

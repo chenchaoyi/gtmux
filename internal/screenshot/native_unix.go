@@ -180,7 +180,7 @@ func PrivateDir() (string, error) {
 }
 
 func privateDir(create bool) (string, error) {
-	p := filepath.Join(state.Dir(), "capture-requests")
+	p := state.StorePath("capture-requests")
 	if create {
 		if err := state.MkdirAll(p, 0700); err != nil {
 			return "", err

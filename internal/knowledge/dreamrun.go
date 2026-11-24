@@ -124,7 +124,7 @@ type DreamRun struct {
 
 type DreamExecutor func(context.Context, DreamCall) (DreamReply, error)
 
-func dreamJournalPath() string { return filepath.Join(state.Dir(), "knowledge-dream", "actions.jsonl") }
+func dreamJournalPath() string { return state.StorePath("knowledge-dream", "actions.jsonl") }
 
 func withDreamLock(run func() error) error {
 	root := filepath.Dir(dreamJournalPath())

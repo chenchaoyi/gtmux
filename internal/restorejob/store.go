@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"time"
@@ -89,7 +88,7 @@ func (s Store) now() time.Time {
 	}
 	return time.Now()
 }
-func path() string { return filepath.Join(state.Dir(), "restore-jobs.json") }
+func path() string { return state.StorePath("restore-jobs.json") }
 func read() ([]Job, error) {
 	f, e := state.OpenPrivateRead(path())
 	if errors.Is(e, os.ErrNotExist) {

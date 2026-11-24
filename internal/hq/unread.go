@@ -20,7 +20,6 @@ package hq
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -36,7 +35,7 @@ import (
 
 // unreadStatePath holds the sensor's own memory: "<watermark> <since> <checkedAt>".
 // Single-writer (the serve slow tick), so it needs no locking.
-func unreadStatePath() string { return filepath.Join(state.Dir(), "hqwake", "unread-state") }
+func unreadStatePath() string { return state.StorePath("hqwake", "unread-state") }
 
 // unreadState is the standing-debt window the sensor tracks.
 type unreadState struct {

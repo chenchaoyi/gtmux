@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -14,7 +13,7 @@ import (
 // ReadRotationFile shares the bounded read-only private-file boundary with the
 // resident maintenance reader. It never follows or blocks on a special leaf.
 func ReadRotationFile() ([]byte, error) {
-	f, err := state.OpenPrivateRead(filepath.Join(state.Dir(), "hqwake", "rotate-pending.json"))
+	f, err := state.OpenPrivateRead(state.StorePath("hqwake", "rotate-pending.json"))
 	if err != nil {
 		return nil, err
 	}

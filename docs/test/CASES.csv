@@ -293,6 +293,7 @@ LEG-a109448efbef,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go
 MAP-4f8292b157e5,L2,reviewed implementation,internal/app/doctor_frontend_recovery_test.go,16,reviewed-selector,TestDPC004DoctorDoesNotPromiseAutomaticRecovery,False,DPC-004
 MAP-6eef5ace4810,L2,reviewed implementation,internal/app/doctor_hq_storage_test.go,14,reviewed-selector,TestDPC002DoctorStorageExplainsScopeWithoutRemoval,False,DPC-002
 MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_test.go,48,reviewed-selector,TestDKC001DoctorPendingCountMatchesCaptureProjection,False,DKC-001
+MAP-fde505a4f21f,L1,reviewed implementation,internal/app/doctor_layout_test.go,15,reviewed-selector,TestGSS003CommandsGateInterruptedLayout,False,GSS-003
 MAP-f167ee401a33,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,60,reviewed-selector,TestSTOR011DoctorReportsLegacyProfileLocksWithoutChanges,False,"STOR-011,STOR-012"
 MAP-e5e0b1ca236e,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,86,reviewed-selector,TestSTOR012DoctorPrunesOnlyConfirmedIdleLegacyProfileLocks,False,"STOR-011,STOR-012"
 MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
@@ -3480,6 +3481,8 @@ LEG-b848d9762125,L1,Go core / CLI / server,internal/state/homeguard_test.go,63,T
 LEG-c15d25c01b73,L1,Go core / CLI / server,internal/state/homeguard_test.go,75,Test,TestOnlyTheTempTreeCounts,False,legacy-not-retrospectively-reviewed
 LEG-5a2e2bdcdce1,L1,Go core / CLI / server,internal/state/homeguard_test.go,93,Test,TestAShortTmpHomeIsDisposable,False,legacy-not-retrospectively-reviewed
 LEG-47dec564c5d6,L1,Go core / CLI / server,internal/state/homeguard_test.go,115,Test,TestTheOperatorsHomeStaysUndisposable,False,legacy-not-retrospectively-reviewed
+MAP-14013c47ea74,L1,reviewed implementation,internal/state/layout_test.go,40,reviewed-selector,TestGSS001GroupedLayoutRoundTrip,False,"GSS-001,GSS-002"
+MAP-ba54652c5c86,L1,reviewed implementation,internal/state/layout_test.go,118,reviewed-selector,TestGSS002InterruptedLayoutAndConflicts,False,"GSS-001,GSS-002"
 LEG-b88159334c4d,L1,Go core / CLI / server,internal/state/lease_test.go,12,Test,TestLeaseChild,False,legacy-not-retrospectively-reviewed
 LEG-09533a4f4640,L1,Go core / CLI / server,internal/state/lease_test.go,27,Test,TestLeaseExcludesProcessesAndRecoversAfterExit,False,legacy-not-retrospectively-reviewed
 LEG-27dff7fef98a,L1,Go core / CLI / server,internal/state/private_test.go,24,Test,TestNarrowTakesGroupAndOtherAwayAndLeavesTheOwner,False,legacy-not-retrospectively-reviewed

@@ -44,7 +44,7 @@ type Health struct {
 }
 
 func wakeHealthPath(name string) string {
-	return filepath.Join(state.Dir(), "hqwake", "wake-health-"+name)
+	return state.StorePath("hqwake", "wake-health-"+name)
 }
 
 func readIssue(reason string) (WakeIssue, error) {

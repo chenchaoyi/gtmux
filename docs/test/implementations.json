@@ -5483,5 +5483,23 @@
       "WLC-001 Live is readable and draggable on ordinary short workbench cards",
       "WLC-002 Short workbench Live identifies its current pane and preserves read-only history"
     ]
+  },
+  "internal/state/layout_test.go": {
+    "cases": [
+      "GSS-001",
+      "GSS-002"
+    ],
+    "selectors": [
+      "TestGSS001GroupedLayoutRoundTrip",
+      "TestGSS002InterruptedLayoutAndConflicts"
+    ]
+  },
+  "internal/app/doctor_layout_test.go": {
+    "cases": [
+      "GSS-003"
+    ],
+    "selectors": [
+      "TestGSS003CommandsGateInterruptedLayout"
+    ]
   }
 }

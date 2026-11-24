@@ -20,7 +20,6 @@ package hq
 import (
 	"fmt"
 	"io"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -164,7 +163,7 @@ func openDirectEntry(pane string, now int64) bool {
 	if _, ok := dispatch.LoadTask(pane); ok {
 		return true
 	}
-	goal := strings.TrimSpace(state.ReadMarker(filepath.Join(state.Dir(), "goal", pane)))
+	goal := strings.TrimSpace(state.ReadMarker(state.StorePath("goal", pane)))
 	if goal == "" {
 		goal = i18n.Tr("(direct dispatch)", "（直发）")
 	}

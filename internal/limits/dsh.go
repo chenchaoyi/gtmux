@@ -47,7 +47,7 @@ var sourceHex = regexp.MustCompile(`^[a-f0-9]{32}$`)
 var moneyAmount = regexp.MustCompile(`^-?(?:0|[1-9][0-9]{0,19})(?:\.[0-9]{1,12})?$`)
 
 func accountPath() string {
-	return filepath.Join(state.Dir(), "account-usage", "dsh-"+dsh.HomeID()+".json")
+	return state.StorePath("account-usage", "dsh-"+dsh.HomeID()+".json")
 }
 
 func readAccountCache() accountCache {

@@ -1031,3 +1031,17 @@ safety limit SHALL NOT be described as a directory quota or snapshot retention b
 - **THEN** doctor SHALL NOT claim an automatic retry from a missing or unverified producer
 - **AND** only confirmed OS absence or a changed process incarnation supports stopped guidance; unreadable metadata remains unknown
 - **AND** diagnostics SHALL NOT resend input, restart, rebind or infer ownership from transcript recency
+
+### Requirement: Inspect and change the data layout
+
+Doctor SHALL preview owned stores and their grouped locations without writing state. A layout change SHALL require explicit offline confirmation, reserve one transition, preserve object identity, refuse collisions and leave a durable direction for recovery. CLI commands that need storage SHALL refuse access while a transition is unfinished. Desktop and native path contracts SHALL be preserved where their writers do not take part in the transition.
+
+#### Scenario: Repair an interrupted storage change
+
+- **WHEN** an offline change is interrupted after moving one or more stores
+- **THEN** the inspector identifies the pending direction and a repeated confirmed operation can continue only from the recorded store identities
+
+#### Scenario: Revert grouped storage
+
+- **WHEN** the operator restores the flat layout after pausing all writers
+- **THEN** the current grouped records return to the legacy paths without replacing an existing object

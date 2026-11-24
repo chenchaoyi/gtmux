@@ -27,7 +27,6 @@ package tabalert
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -50,7 +49,7 @@ const ownedPrefix = "#{" + SessionOption + "}"
 
 // savedPath remembers the user's ORIGINAL title format, so disabling restores exactly
 // what was there rather than a guess at a default.
-func savedPath() string { return filepath.Join(state.Dir(), "tabalert-saved-titles") }
+func savedPath() string { return state.StorePath("tabalert-saved-titles") }
 
 // Enabled reports whether gtmux currently owns the title format.
 func Enabled() bool {

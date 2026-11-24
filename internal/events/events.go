@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -197,10 +196,10 @@ func Severity(r Record) string {
 }
 
 // Path is the active event log.
-func Path() string { return filepath.Join(state.Dir(), "events.jsonl") }
+func Path() string { return state.StorePath("events.jsonl") }
 
 // rotatedPath is the single retained older generation.
-func rotatedPath() string { return filepath.Join(state.Dir(), "events.1.jsonl") }
+func rotatedPath() string { return state.StorePath("events.1.jsonl") }
 
 // defaultCapBytes is the active-file size cap (config eventsCapMB, default 20).
 const defaultCapMB = 20

@@ -2,7 +2,6 @@ package state
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -12,7 +11,7 @@ import (
 // tmux's alphabetical `list-sessions` order. Plain text, never a screenshot.
 
 // TabOrderPath is where the live tab→session order is recorded.
-func TabOrderPath() string { return filepath.Join(Dir(), "tab-order") }
+func TabOrderPath() string { return StorePath("tab-order") }
 
 // SaveTabOrder writes the ordered session names (one per line). Empty input is
 // ignored (don't clobber a good record with a transient empty read).

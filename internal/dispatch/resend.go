@@ -22,7 +22,7 @@ func PayloadHash(pane, text string) string {
 }
 
 // sendsDir is where per-pane recent-send records live.
-func sendsDir() string { return filepath.Join(state.Dir(), "sends") }
+func sendsDir() string { return state.StorePath("sends") }
 
 // sendRecord is the persisted last-delivery for a pane.
 type sendRecord struct {

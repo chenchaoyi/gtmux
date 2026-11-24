@@ -18,7 +18,6 @@ package hq
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -33,14 +32,14 @@ import (
 // A sensor marker records a request, not work completed by HQ. A separate receipt
 // references that request so a newer request cannot be mistaken for an older pass.
 func maintenanceReceiptPath(kind string) string {
-	return filepath.Join(state.Dir(), "hq-feed", "last-"+kind+"-complete")
+	return state.StorePath("hq-feed", "last-"+kind+"-complete")
 }
 
 // The version marker keeps old pre-receipt trigger files eligible for a fresh wake
 // after upgrade. New requests wait for their receipt instead of advancing the
 // distill sequence again and silently dropping an unprocessed event range.
 func maintenanceRequestVersionPath(kind string) string {
-	return filepath.Join(state.Dir(), "hq-feed", "last-"+kind+"-request-v2")
+	return state.StorePath("hq-feed", "last-"+kind+"-request-v2")
 }
 
 func maintenanceRequestPending(kind string, requestAt int64) bool {

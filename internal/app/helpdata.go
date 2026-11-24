@@ -348,7 +348,7 @@ var helpCommands = []command{
 	},
 
 	{
-		Name: "doctor", Args: "[--json | --fix | --bundle | --prune-profile-locks]", Group: "setup", Writes: true,
+		Name: "doctor", Args: "[--json | --fix | --bundle | --prune-profile-locks | --storage-layout | --group-storage | --flatten-storage]", Group: "setup", Writes: true,
 		EN: "check this host, then set up what is missing",
 		ZH: "检查本机环境和功能配置",
 		Flags: []cmdFlag{
@@ -358,6 +358,9 @@ var helpCommands = []command{
 			{Name: "--progress", EN: "show each check stage on stderr (also shown automatically in a terminal)", ZH: "在标准错误输出显示检查进度（终端中默认显示）"},
 			{Name: "--fix", EN: "set the rest up, explaining and asking before each change", ZH: "逐项确认并修复检查发现的问题"},
 			{Name: "--yes", EN: "apply every step without asking", ZH: "确认执行全部可用修复", Requires: []string{"--fix"}},
+			{Name: "--storage-layout", EN: "preview grouped storage or inspect the current layout", ZH: "预览或查看当前数据目录布局"},
+			{Name: "--group-storage", EN: "move managed stores into groups while all writers are stopped", ZH: "所有写入方停用后迁移到分组布局"},
+			{Name: "--flatten-storage", EN: "restore the flat layout while all writers are stopped", ZH: "所有写入方停用后恢复平铺布局"},
 			{Name: "--prune-profile-locks", EN: "remove old profile lock files after confirming all legacy writers have stopped", ZH: "确认旧版写入方均已停用后，清理旧资料锁文件"},
 			{Name: "--bundle [path]", EN: "pack logs, status, launchd output, this report and versions into one file for a bug report; tokens replaced, nothing sent", ZH: "把日志、状态、launchd 输出、这份报告和版本号打成一个文件，用于报告问题；token 已替换，不会发送"},
 			{Name: "--with-events", EN: "also pack the event journal, which holds prompt heads", ZH: "连事件流一起打包，里面有提示词开头", Requires: []string{"--bundle [path]"}},

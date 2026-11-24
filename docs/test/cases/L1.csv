@@ -185,6 +185,7 @@ LEG-59e77ab9e3c1,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go
 LEG-b2647ff53c45,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,79,Test,TestStorageDoesNotFollowExternalSymlinks,False,legacy-not-retrospectively-reviewed
 LEG-16ee1faeb7f9,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,93,Test,TestStorageMissingStateIsKnownEmpty,False,legacy-not-retrospectively-reviewed
 LEG-a109448efbef,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,100,Test,TestStorageCategoriesIncludeBackupAndEvidence,False,legacy-not-retrospectively-reviewed
+MAP-fde505a4f21f,L1,reviewed implementation,internal/app/doctor_layout_test.go,15,reviewed-selector,TestGSS003CommandsGateInterruptedLayout,False,GSS-003
 LEG-11f8f7133cba,L1,Go core / CLI / server,internal/app/doctor_test.go,16,Test,TestRenderSectionsTally,False,legacy-not-retrospectively-reviewed
 LEG-0f94dea29a8c,L1,Go core / CLI / server,internal/app/doctor_test.go,30,Test,TestAdvisoryRemaining,False,legacy-not-retrospectively-reviewed
 LEG-7a93b0f03c02,L1,Go core / CLI / server,internal/app/doctor_test.go,56,Test,TestIsUTF8Locale,False,legacy-not-retrospectively-reviewed
@@ -2273,6 +2274,8 @@ LEG-b848d9762125,L1,Go core / CLI / server,internal/state/homeguard_test.go,63,T
 LEG-c15d25c01b73,L1,Go core / CLI / server,internal/state/homeguard_test.go,75,Test,TestOnlyTheTempTreeCounts,False,legacy-not-retrospectively-reviewed
 LEG-5a2e2bdcdce1,L1,Go core / CLI / server,internal/state/homeguard_test.go,93,Test,TestAShortTmpHomeIsDisposable,False,legacy-not-retrospectively-reviewed
 LEG-47dec564c5d6,L1,Go core / CLI / server,internal/state/homeguard_test.go,115,Test,TestTheOperatorsHomeStaysUndisposable,False,legacy-not-retrospectively-reviewed
+MAP-14013c47ea74,L1,reviewed implementation,internal/state/layout_test.go,40,reviewed-selector,TestGSS001GroupedLayoutRoundTrip,False,"GSS-001,GSS-002"
+MAP-ba54652c5c86,L1,reviewed implementation,internal/state/layout_test.go,118,reviewed-selector,TestGSS002InterruptedLayoutAndConflicts,False,"GSS-001,GSS-002"
 LEG-b88159334c4d,L1,Go core / CLI / server,internal/state/lease_test.go,12,Test,TestLeaseChild,False,legacy-not-retrospectively-reviewed
 LEG-09533a4f4640,L1,Go core / CLI / server,internal/state/lease_test.go,27,Test,TestLeaseExcludesProcessesAndRecoversAfterExit,False,legacy-not-retrospectively-reviewed
 LEG-27dff7fef98a,L1,Go core / CLI / server,internal/state/private_test.go,24,Test,TestNarrowTakesGroupAndOtherAwayAndLeavesTheOwner,False,legacy-not-retrospectively-reviewed

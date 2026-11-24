@@ -37,8 +37,8 @@ func rowStoreWriteHealth() dcheck {
 		// The segment the writer appends to next, not day.jsonl: past SegmentCap the day
 		// continues in day.1.jsonl and later, and an unwritable later segment read as fine.
 		{"diagnostics", diag.ActiveSegment(state.LogsDir(), time.Now().Format("2006-01-02"))},
-		{"events", filepath.Join(state.Dir(), "events.jsonl")},
-		{"event sequence", filepath.Join(state.Dir(), "events.seq")},
+		{"events", state.StorePath("events.jsonl")},
+		{"event sequence", state.StorePath("events.seq")},
 	}
 	ledger := filepath.Join(state.HQHome(), "knowledge", ".ledger.jsonl")
 	if _, err := os.Stat(ledger); err == nil {
@@ -303,9 +303,8 @@ func rowFileModes() dcheck {
 // and reports retired files still on disk.
 func rowGrowth() dcheck {
 	label := i18n.Tr("other stores", "其他数据")
-	base := state.Dir()
 	var over []string
-	if fi, err := os.Stat(filepath.Join(base, "events.jsonl")); err == nil && fi.Size() > 40<<20 {
+	if fi, err := os.Stat(state.StorePath("events.jsonl")); err == nil && fi.Size() > 40<<20 {
 		over = append(over, "events.jsonl "+humanBytes(fi.Size()))
 	}
 	for _, p := range hq.LaunchdCaptures() {

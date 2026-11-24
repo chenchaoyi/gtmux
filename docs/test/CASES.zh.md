@@ -2,11 +2,11 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1466 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1468 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3800 | [L1.csv](cases/L1.csv) |
+| L1 · 单元/纯逻辑 | 3803 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2739 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 156 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
@@ -234,6 +234,9 @@
 | DPC-006 | Both source failures are observed; messages accurately mention size-or-file-count safety limits (128MiB/10000 files), rather than asserting a size-only cause. Snapshot64MiB retention budget and directory size are not substituted. Existing destination and source files remain unchanged; no production export/import occurs. |
 | FOCUS-001 | Literal and decorated versions of the complete session match; differently quoted, truncated, unrelated, wrong-separator and empty identities do not. Existing ordinary/decorated titles and bare trailing-whitespace tolerance remain supported. |
 | FOCUS-002 | A literal match wins across all tabs before tolerant decoration fallback. With only a decorated match it is selected. The chosen record, indices and trailing title bytes remain unchanged; no match and empty session return false. Multiple literal tabs retain first-match order. |
+| GSS-001 | Each owned source moves by inode to its declared group and back. No duplicate or regenerated receipt. Preview and legacy path lookup are side effect free. Stable and unknown entries are untouched. |
+| GSS-002 | A partial transition gates normal CLI access. The original direction resumes only with exact identity and a unique location. Conflict preserves both sides; completion is durable and idempotent. |
+| GSS-003 | Inspection remains available, entry points that can write are gated while pending, and the event journal and sequence advance in the canonical group without creating a flat event log. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |
 | HQBC-001 | Exact language-specific titles are lifted. The original number, short first-line quote and group are retained. An explicit recommendation is recognized. Removal leaves the other item and its number intact. An empty decision section produces no actionable item. |
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |

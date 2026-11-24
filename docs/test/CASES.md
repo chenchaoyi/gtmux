@@ -2,11 +2,11 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1466 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1468 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3800 | [L1.csv](cases/L1.csv) |
+| L1 · Unit / pure logic | 3803 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2739 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 156 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
@@ -234,6 +234,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DPC-006 | Both source failures are observed; messages accurately mention size-or-file-count safety limits (128MiB/10000 files), rather than asserting a size-only cause. Snapshot64MiB retention budget and directory size are not substituted. Existing destination and source files remain unchanged; no production export/import occurs. |
 | FOCUS-001 | Literal and decorated versions of the complete session match; differently quoted, truncated, unrelated, wrong-separator and empty identities do not. Existing ordinary/decorated titles and bare trailing-whitespace tolerance remain supported. |
 | FOCUS-002 | A literal match wins across all tabs before tolerant decoration fallback. With only a decorated match it is selected. The chosen record, indices and trailing title bytes remain unchanged; no match and empty session return false. Multiple literal tabs retain first-match order. |
+| GSS-001 | Each owned source moves by inode to its declared group and back. No duplicate or regenerated receipt. Preview and legacy path lookup are side effect free. Stable and unknown entries are untouched. |
+| GSS-002 | A partial transition gates normal CLI access. The original direction resumes only with exact identity and a unique location. Conflict preserves both sides; completion is durable and idempotent. |
+| GSS-003 | Inspection remains available, entry points that can write are gated while pending, and the event journal and sequence advance in the canonical group without creating a flat event log. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |
 | HQBC-001 | Exact language-specific titles are lifted. The original number, short first-line quote and group are retained. An explicit recommendation is recognized. Removal leaves the other item and its number intact. An empty decision section produces no actionable item. |
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |

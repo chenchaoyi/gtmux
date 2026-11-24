@@ -51,7 +51,7 @@ func path(id string) string { return pathFor("codex", id) }
 
 func pathFor(agent, id string) string {
 	sum := sha256.Sum256([]byte(agent + "\x00" + conversation.HomeID(agent) + "\x00" + id))
-	return filepath.Join(state.Dir(), "session-follow", hex.EncodeToString(sum[:])+".json")
+	return state.StorePath("session-follow", hex.EncodeToString(sum[:])+".json")
 }
 
 func readFor(agent, id string) (Settings, error) {
@@ -60,7 +60,7 @@ func readFor(agent, id string) (Settings, error) {
 	// alternate home with a copied thread ID cannot inherit them.
 	if os.IsNotExist(err) && agent == "codex" && transcript.DefaultCodexHome() {
 		sum := sha256.Sum256([]byte("codex\x00" + id))
-		b, err = os.ReadFile(filepath.Join(state.Dir(), "session-follow", hex.EncodeToString(sum[:])+".json"))
+		b, err = os.ReadFile(state.StorePath("session-follow", hex.EncodeToString(sum[:])+".json"))
 	}
 	if os.IsNotExist(err) {
 		return Settings{}, nil

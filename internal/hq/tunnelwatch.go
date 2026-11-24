@@ -2,7 +2,6 @@ package hq
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -40,7 +39,7 @@ func tunnelWatch(now int64) {
 	default:
 		return // connecting: not yet a verdict
 	}
-	prev := state.ReadMarker(filepath.Join(state.Dir(), tunnelMarker))
+	prev := state.ReadMarker(state.StorePath(tunnelMarker))
 	if !markerChanged(tunnelMarker, key) || (prev == "" && key == "up") {
 		return
 	}

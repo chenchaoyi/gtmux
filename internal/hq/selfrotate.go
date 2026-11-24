@@ -31,7 +31,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/chenchaoyi/gtmux/internal/humanize"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -52,7 +51,7 @@ import (
 // rotateStatePath holds the sensor's memory of the session it is currently watching:
 // "<session> <startedAt> <turns> <cursor> <checkedAt> <knockedAt>". Single-writer (the serve
 // slow tick), so it needs no locking. A session id has no spaces; "-" stands in for empty.
-func rotateStatePath() string { return filepath.Join(state.Dir(), "hqwake", "selfrotate-state") }
+func rotateStatePath() string { return state.StorePath("hqwake", "selfrotate-state") }
 
 // rotateState is the health window for ONE HQ session. Everything in it is scoped to
 // Session: when that changes, the whole window is discarded rather than migrated, because a

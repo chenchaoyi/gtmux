@@ -2338,3 +2338,7 @@ HQ 界面可使用 `gtmux hq workspace list --overview --stored --json` 读取�
 ## 给 agent 使用的截图
 
 `gtmux screenshot` 提供能力查询、来源选择、区域截取、导入、结构化标注、编辑及准确会话投递。详见[截图工作流](guides/agent-screenshots.zh.md)。本地 CLI 即可，不要求 MCP。
+
+### 数据目录布局
+
+运行 `gtmux doctor --storage-layout` 查看当前布局及可分组路径。`gtmux doctor --group-storage` 在离线确认后分组已知存储。`gtmux doctor --flatten-storage` 在软件回退前恢复平铺路径。写入前按[离线迁移步骤](design/state-storage-lifecycle.zh.md#离线迁移)暂停写入。若中断，先查看待继续的方向，再重复同一操作。
