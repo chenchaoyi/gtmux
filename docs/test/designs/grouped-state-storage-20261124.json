@@ -1,0 +1,35 @@
+{
+  "change": "Group previously flat application state by lifecycle",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (Codex self-review)",
+    "date": "2026-11-24",
+    "decision": "Use opt-in grouped routing with an offline, journaled and reversible transition.",
+    "notes": "Legacy routing is the default. Both layouts use the same contents and inode for each moved store. Known external path contracts remain stable. The CLI blocks during a partial transition. Tests write only an isolated HOME, so disk state, sockets and queues in the running installation are untouched."
+  },
+  "cases": [
+    {
+      "id": "GSS-001",
+      "layer": "L1",
+      "description": "Grouped storage replaces flat routing reversibly and leaves other paths stable",
+      "setup": "Disposable home with pane state, a receipt, an event counter, a backup, a stable upload and unknown data.",
+      "action": "Inspect both layouts and move a sample in both directions, including a new receipt in the grouped layout.",
+      "expected": "Each owned source moves by inode to its declared group and back. No duplicate or regenerated receipt. Preview and legacy path lookup are side effect free. Stable and unknown entries are untouched.",
+      "planned_files": [
+        "internal/state/layout_test.go"
+      ]
+    },
+    {
+      "id": "GSS-002",
+      "layer": "L1",
+      "description": "Interrupted and conflicting layout changes protect both sides",
+      "setup": "Disposable home with a durable transition record and a subset already moved, or an occupied destination, replaced source, or symlink.",
+      "action": "Read layout readiness, continue from the durable record, and exercise identity or destination conflict.",
+      "expected": "A partial transition gates normal CLI access. The original direction resumes only with exact identity and a unique location. Conflict preserves both sides; completion is durable and idempotent.",
+      "planned_files": [
+        "internal/state/layout_test.go"
+      ]
+    }
+  ],
+  "seal": "f7226b7c243782088bb2199bc1aa1b599aff4e4acd0a5b530bf1465de969685b"
+}
