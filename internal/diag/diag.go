@@ -227,6 +227,8 @@ func write(e Entry) {
 		ReportStoreFailure("diagnostics", fmt.Errorf("short write: %d/%d bytes", n, len(line)))
 	} else if cerr != nil {
 		ReportStoreFailure("diagnostics", cerr)
+	} else {
+		noteDiagnosticWriteSuccess()
 	}
 }
 

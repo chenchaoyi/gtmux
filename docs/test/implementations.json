@@ -1,4 +1,16 @@
 {
+  "internal/diag/failure_test.go": {
+    "cases": [
+      "DIAG-TERM-001",
+      "DIAG-TERM-002",
+      "DIAG-TERM-003"
+    ],
+    "selectors": [
+      "TestInteractiveStoreFailureLeavesStderrAlone",
+      "TestInteractiveDiskFullWarningRearmsAfterWrite",
+      "TestSystemStoreWarningUsesLocalSocket"
+    ]
+  },
   "macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift": {
     "cases": [
       "HND-003"

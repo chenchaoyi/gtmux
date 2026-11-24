@@ -35,6 +35,10 @@ func Run(bin string, args []string, pane string) int {
 		return -1 // the caller can execute the original launch unchanged
 	}
 	defer cleanup()
+	// The child owns the terminal. A background diagnostic write failure must
+	// not draw over the client's composer through the inherited stderr.
+	restoreWarnings := diag.RouteStoreFailuresToSystemLog()
+	defer restoreWarnings()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	var connections sync.WaitGroup

@@ -234,6 +234,9 @@ MAP-0457021e01bc,L2,reviewed implementation,internal/codexrpc/idle_wake_test.go,
 MAP-980af6c817a4,L2,reviewed implementation,internal/codexrpc/input_cancel_test.go,8,reviewed-selector,TestSPL022WireChecksCancellationAroundFinalGuard,False,SPL-022
 LEG-5eb1eb0e8cd5,L2,Go core / CLI / server,internal/connect/remotes_test.go,38,Test,TestAHostThatMovedIsFoundThroughTheAddressesItGave,False,legacy-not-retrospectively-reviewed
 LEG-953eea56e22d,L2,Go core / CLI / server,internal/connect/remotes_test.go,85,Test,TestAnAddressThatAnswersToSomeoneElseIsNotThisHost,False,legacy-not-retrospectively-reviewed
+MAP-745f693c3a09,L2,reviewed implementation,internal/diag/failure_test.go,17,reviewed-selector,TestInteractiveStoreFailureLeavesStderrAlone,False,"DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
+MAP-58b2325d5509,L2,reviewed implementation,internal/diag/failure_test.go,70,reviewed-selector,TestInteractiveDiskFullWarningRearmsAfterWrite,False,"DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
+MAP-7cdc6cd87843,L2,reviewed implementation,internal/diag/failure_test.go,102,reviewed-selector,TestSystemStoreWarningUsesLocalSocket,False,"DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
 MAP-e3a6e2c9d7d3,L2,reviewed implementation,internal/dispatch/input_failure_test.go,9,reviewed-selector,TestSPL008SubmissionBoundary,False,SPL-008
 MAP-d66dd1dfe23b,L2,reviewed implementation,internal/dispatch/input_failure_test.go,68,reviewed-selector,TestSPL008VerifiedHoldKeepsItsEvidenceAndSubmitCount,False,SPL-008
 MAP-67f17c50f18e,L2,reviewed implementation,internal/dispatch/input_failure_test.go,89,reviewed-selector,TestSPL008RefusedRetryDoesNotResolveEarlierEnter,False,SPL-008

@@ -1171,6 +1171,9 @@ LEG-331027a8e577,L1,Go core / CLI / server,internal/diag/diag_test.go,307,Test,T
 LEG-7a15b6edd253,L1,Go core / CLI / server,internal/diag/diag_test.go,334,Test,TestParseLevelAndString,False,legacy-not-retrospectively-reviewed
 LEG-0b5ee0b6a36f,G,Go core / CLI / server,internal/diag/diag_test.go,348,Test,TestActiveSegmentIsWhereTheWriterAppends,False,legacy-not-retrospectively-reviewed
 LEG-a0eba6f3f480,L1,Go core / CLI / server,internal/diag/diag_test.go,350,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
+MAP-745f693c3a09,L2,reviewed implementation,internal/diag/failure_test.go,17,reviewed-selector,TestInteractiveStoreFailureLeavesStderrAlone,False,"DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
+MAP-58b2325d5509,L2,reviewed implementation,internal/diag/failure_test.go,70,reviewed-selector,TestInteractiveDiskFullWarningRearmsAfterWrite,False,"DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
+MAP-7cdc6cd87843,L2,reviewed implementation,internal/diag/failure_test.go,102,reviewed-selector,TestSystemStoreWarningUsesLocalSocket,False,"DIAG-TERM-001,DIAG-TERM-002,DIAG-TERM-003"
 LEG-5cad8d388db0,L1,Go core / CLI / server,internal/dispatch/attention_test.go,10,Test,TestDispositionRoundTripAndLegacy,False,legacy-not-retrospectively-reviewed
 LEG-11940cef4f3f,L1,Go core / CLI / server,internal/dispatch/attention_test.go,39,Test,TestSetDispositionRecordsHow,False,legacy-not-retrospectively-reviewed
 LEG-8a5e700e01f4,L1,Go core / CLI / server,internal/dispatch/attention_test.go,60,Test,TestRetiredFieldsStillLoad,False,legacy-not-retrospectively-reviewed
