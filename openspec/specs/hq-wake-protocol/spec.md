@@ -1013,13 +1013,13 @@ query instead of information destroyed at every handoff.
 - **WHEN** HQ has brought its board and knowledge base current and runs `gtmux hq --rotate` during its own active Codex turn
 - **THEN** gtmux queues the reset without typing, and reports pending; after the turn finishes and the input box is safe, the resident process sends the reset once
 - **AND** only a new session ID confirms rotation and restarts the health window
-- **AND** that ID SHALL come from the original pane and generation's current session evidence for the retiring agent's driver. A legacy direct client requires its live driver and an independently verified hook observation for the original generation made after the reset and within the current window. An unbound lifecycle event SHALL NOT establish, extend or confirm the handoff
+- **AND** that ID SHALL come from the original pane and generation's current session evidence for the retiring agent's driver. A legacy direct client requires its live driver and an independently verified hook observation for the original generation made after the recorded completion of the reset keys and within the current window. An unbound lifecycle event SHALL NOT establish, extend or confirm the handoff
 
 #### Scenario: The current agent or session evidence is temporarily unavailable after reset
 
 - **WHEN** the sent reset's original pane and generation still match but current agent or session evidence is missing
 - **THEN** the request SHALL remain pending in the existing 45-second successor window, or in the existing three-minute handoff window after a verified successor is first observed
-- **AND** a deadline tick SHALL consider available current evidence before recording a failure. For Codex, an observed history boundary after the applicable deadline SHALL NOT settle the request. Incomplete evidence SHALL record the phase and available identity reason, with no second reset or new briefing at an expired deadline
+- **AND** a deadline tick SHALL consider available current evidence before recording a failure. For Codex, an observed history boundary after the applicable deadline SHALL NOT settle the request. Incomplete evidence SHALL record the phase and available identity reason, with no second reset or new briefing at an expired deadline. Briefing reservation SHALL recheck the clock after any target or composer probe
 - **AND** a changed pane, generation or observed different agent SHALL fail immediately
 
 #### Scenario: Rotation never submits what the user is typing

@@ -46,6 +46,7 @@ type rotationRequest struct {
 	Input                 string `json:"input"`
 	CreatedAt             int64  `json:"createdAt"`
 	SentAt                int64  `json:"sentAt,omitempty"`
+	SubmittedAtNS         int64  `json:"submittedAtNS,omitempty"`
 	ReserveBrief          bool   `json:"reserveBrief,omitempty"`
 }
 
@@ -222,11 +223,12 @@ func ProcessPendingHQRotation() {
 		failQueuedRotation(r, "HQ session changed before reset was sent", time.Now().Unix())
 		return
 	}
-	advanceHQRotation(r, pane, agent, sid, dispatchbridge.DispatchIO(pane), transcript.CodexLastTurnBoundary, time.Now(), reason)
+	advanceHQRotationWithClock(r, pane, agent, sid, dispatchbridge.DispatchIO(pane), transcript.CodexLastTurnBoundary, time.Now, reason)
 }
 
-func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.IO,
-	boundary func(string) (string, time.Time), now time.Time, identityReason ...string) {
+func advanceHQRotationWithClock(r rotationRequest, pane, agent, sid string, io dispatch.IO,
+	boundary func(string) (string, time.Time), clock func() time.Time, identityReason ...string) {
+	now := clock()
 	release, acquired, err := hqinput.Acquire()
 	if err != nil {
 		diag.ReportStoreFailure("hq-input", err)
@@ -238,7 +240,7 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 	var bootstrap hqinput.RotationBrief
 	defer func() {
 		release()
-		if bootstrap.Request != "" {
+		if bootstrap.Request != "" && clock().Unix() < bootstrap.Deadline {
 			rotationBootstrap(bootstrap)
 		}
 	}()
@@ -279,7 +281,7 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 			if !ready {
 				var at time.Time
 				kind, at = boundary(sid)
-				ready = transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" && !at.Before(time.Unix(r.SentAt, 0)) &&
+				ready = transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" && !at.Before(rotationSendBoundary(r)) &&
 					!at.After(now) && !at.After(time.Unix(deadline, 0))
 			}
 			if ready {
@@ -307,7 +309,12 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 					frontend.Instance == "" || frontend.PID <= 0 {
 					return
 				}
-				r.BootstrapAt = now.Unix()
+				bootstrapAt := clock().Unix()
+				if bootstrapAt >= deadline {
+					failSentRotationTimeout(r, agent, sid, reason, bootstrapAt)
+					return
+				}
+				r.BootstrapAt = bootstrapAt
 				r.BootstrapID, r.BootstrapHome = diag.NewOpID(), frontend.HomeID
 				r.BootstrapInstance, r.BootstrapPID = frontend.Instance, frontend.PID
 				if err := writeRotationFile(r, false); err != nil {
@@ -371,7 +378,7 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 	// persistence would otherwise leave a queued request that could paste a second
 	// reset after Codex discards or submits the first draft. An uncertain attempt
 	// may time out as failed, but it is never retried automatically.
-	r.SentAt = now.Unix()
+	r.SentAt = clock().Unix()
 	r.ReserveBrief = r.Agent == "codex" && hqBriefingEnabled()
 	if err := writeRotationFile(r, false); err != nil {
 		failRotation(r, "could not record reset attempt; no keys were sent", now.Unix())
@@ -383,7 +390,20 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 	}
 	if err := io.Enter(); err != nil {
 		failRotation(r, "could not submit reset command; inspect HQ input box", now.Unix())
+		return
 	}
+	// A completed key call gives legacy witnesses an ordering fence, separate
+	// from the attempt which already prevents retry. A crash here keeps the
+	// attempt recorded and leaves legacy evidence ineligible.
+	r.SubmittedAtNS = clock().UnixNano()
+	diag.ReportStoreFailure("hq-rotation", writeRotationFile(r, false))
+}
+
+func rotationSendBoundary(r rotationRequest) time.Time {
+	if r.SubmittedAtNS != 0 {
+		return time.Unix(0, r.SubmittedAtNS)
+	}
+	return time.Unix(r.SentAt, 0)
 }
 
 func rotationDeadline(r rotationRequest) int64 {
@@ -394,8 +414,8 @@ func rotationDeadline(r rotationRequest) int64 {
 }
 
 func legacyRotationObservation(proof resume.HQObservation, r rotationRequest, now int64) bool {
-	return r.SentAt > 0 && rotationTargetMatches(r.TargetStamp, proof.Generation) &&
-		proof.ObservedAt > r.SentAt && proof.ObservedAt <= now && proof.ObservedAt <= rotationDeadline(r)
+	return r.SentAt > 0 && r.SubmittedAtNS > 0 && rotationTargetMatches(r.TargetStamp, proof.Generation) &&
+		proof.ObservedAt > rotationSendBoundary(r).Unix() && proof.ObservedAt <= now && proof.ObservedAt <= rotationDeadline(r)
 }
 
 func rotationTurnFinished(r rotationRequest, boundary func(string) (string, time.Time), now time.Time) bool {

@@ -1905,22 +1905,24 @@ LEG-8a52a851928f,L1,Go core / CLI / server,internal/hq/revalidate_test.go,198,su
 LEG-8bde7143a266,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,65,Test,TestRotationWillNotTypeOverADraft,False,legacy-not-retrospectively-reviewed
 LEG-1b926805a62a,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,84,Test,TestRotationHoldsWhenTheBoxCannotBeRead,False,legacy-not-retrospectively-reviewed
 LEG-6550dcaabc2a,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,101,Test,TestRotationProceedsOnAnEmptyBox,False,legacy-not-retrospectively-reviewed
-LEG-4c8b7b8e26a6,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,141,Test,TestRotationWaitsForTaskEndAndConfirmsSuccessor,False,legacy-not-retrospectively-reviewed
-LEG-ef340243f845,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,183,Test,TestRotationDuplicateRequestDoesNotDuplicateKeysOrAudit,False,legacy-not-retrospectively-reviewed
-LEG-ac624c92422b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,196,Test,TestRotationFailureReceiptAndNoBlindRetry,False,legacy-not-retrospectively-reviewed
-LEG-9a1bbe42b10b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,211,Test,TestRotationPersistsAttemptBeforeTyping,False,legacy-not-retrospectively-reviewed
-LEG-1d0b91a2341c,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,228,Test,TestRotationRejectedResetTimesOutWithoutSuccess,False,legacy-not-retrospectively-reviewed
-LEG-f20c1831eba3,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,242,Test,TestRotationDraftExpiresWithoutSubmittingOrLosingFailureReceipt,False,legacy-not-retrospectively-reviewed
-LEG-db998607f792,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,262,Test,TestRotationChangedSessionBeforeDeliveryDoesNotResetSuccessor,False,legacy-not-retrospectively-reviewed
-LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,316,Test,TestRotationNotSentIsNotConfirmedByEvents,False,legacy-not-retrospectively-reviewed
-MAP-8b86d8cef4d9,L2,Go core / CLI / server,internal/hq/rotateguard_test.go,277,reviewed-selector,TestSentRotationRequiresCurrentEvidenceInsteadOfJournal,False,HRB-007
+LEG-4c8b7b8e26a6,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,146,Test,TestRotationWaitsForTaskEndAndConfirmsSuccessor,False,legacy-not-retrospectively-reviewed
+LEG-ef340243f845,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,188,Test,TestRotationDuplicateRequestDoesNotDuplicateKeysOrAudit,False,legacy-not-retrospectively-reviewed
+LEG-ac624c92422b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,201,Test,TestRotationFailureReceiptAndNoBlindRetry,False,legacy-not-retrospectively-reviewed
+LEG-9a1bbe42b10b,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,216,Test,TestRotationPersistsAttemptBeforeTyping,False,legacy-not-retrospectively-reviewed
+LEG-1d0b91a2341c,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,233,Test,TestRotationRejectedResetTimesOutWithoutSuccess,False,legacy-not-retrospectively-reviewed
+LEG-f20c1831eba3,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,247,Test,TestRotationDraftExpiresWithoutSubmittingOrLosingFailureReceipt,False,legacy-not-retrospectively-reviewed
+LEG-db998607f792,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,267,Test,TestRotationChangedSessionBeforeDeliveryDoesNotResetSuccessor,False,legacy-not-retrospectively-reviewed
+LEG-d4b834e4cf65,L1,Go core / CLI / server,internal/hq/rotateguard_test.go,321,Test,TestRotationNotSentIsNotConfirmedByEvents,False,legacy-not-retrospectively-reviewed
+MAP-8b86d8cef4d9,L2,Go core / CLI / server,internal/hq/rotateguard_test.go,282,reviewed-selector,TestSentRotationRequiresCurrentEvidenceInsteadOfJournal,False,HRB-007
 MAP-fc5da55172ab,L2,reviewed implementation,internal/hq/rotation_admission_test.go,11,reviewed-selector,TestHRW007RegistrationSharesTheInputClaimLease,False,HRW-007
 MAP-5fb504a908e7,L2,reviewed implementation,internal/hq/rotation_attention_test.go,14,reviewed-selector,TestHRW011RotationFailureUsesNonWaitingAttention,False,HRW-011
+MAP-e2d7319b136b,L2,reviewed implementation,internal/hq/rotation_clock_boundaries_test.go,15,reviewed-selector,TestResetAttemptAndCompletedKeysHaveSeparateClocks,False,HRB-013
+MAP-7f737db488d5,L2,reviewed implementation,internal/hq/rotation_clock_boundaries_test.go,55,reviewed-selector,TestBriefingTargetProbeCannotCrossItsOriginalDeadline,False,HRB-013
 LEG-9d15885fe97d,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,26,Test,TestRotationDoesNotConfirmAnUnsavedNewThread,False,legacy-not-retrospectively-reviewed
 LEG-a65be3d25bf9,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,58,Test,TestRotationQueuesOneGuardedHandoffAfterReleasingInput,False,legacy-not-retrospectively-reviewed
 LEG-974db74f29ef,L1,Go core / CLI / server,internal/hq/rotation_durability_test.go,103,Test,TestRotationDoesNotTrustReissuedPaneNumbers,False,legacy-not-retrospectively-reviewed
 MAP-9192fb7864f6,L2,reviewed implementation,internal/hq/rotation_evidence_window_test.go,11,reviewed-selector,TestLegacyRotationWitnessRequiresMatchingGenerationAndSendOrder,False,HRB-012
-MAP-88042fd021cb,L2,reviewed implementation,internal/hq/rotation_evidence_window_test.go,36,reviewed-selector,TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow,False,HRB-012
+MAP-88042fd021cb,L2,reviewed implementation,internal/hq/rotation_evidence_window_test.go,37,reviewed-selector,TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow,False,HRB-012
 MAP-5ca00611b9a2,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,8,reviewed-selector,TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity,False,HRW-012
 MAP-5c6873f6e524,L2,reviewed implementation,internal/hq/rotation_priority_test.go,13,reviewed-selector,TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert,False,HRW-006
 MAP-66c72832a3b6,L2,reviewed implementation,internal/hq/rotation_transient_identity_test.go,14,reviewed-selector,TestSentRotationWaitsThroughTransientIdentityGaps,False,"HRB-007,HRB-008"

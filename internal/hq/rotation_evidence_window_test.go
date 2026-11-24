@@ -9,7 +9,7 @@ import (
 )
 
 func TestLegacyRotationWitnessRequiresMatchingGenerationAndSendOrder(t *testing.T) {
-	r := rotationRequest{SentAt: 100, TargetStamp: "10:20:30"}
+	r := rotationRequest{SentAt: 100, SubmittedAtNS: time.Unix(102, 100).UnixNano(), TargetStamp: "10:20:30"}
 	for _, tc := range []struct {
 		name, stamp string
 		observed    int64
@@ -18,7 +18,8 @@ func TestLegacyRotationWitnessRequiresMatchingGenerationAndSendOrder(t *testing.
 		{"fresh", r.TargetStamp, 140, true},
 		{"missing-generation", "", 140, false},
 		{"previous-generation", "10:20:29", 140, false},
-		{"same-second", r.TargetStamp, r.SentAt, false},
+		{"same-second", r.TargetStamp, 102, false},
+		{"between-attempt-and-submit", r.TargetStamp, 101, false},
 		{"after-deadline", r.TargetStamp, 146, false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

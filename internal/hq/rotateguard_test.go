@@ -129,6 +129,11 @@ func testBoundary(kind string, at time.Time) func(string) (string, time.Time) {
 	return func(string) (string, time.Time) { return kind, at }
 }
 
+func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.IO,
+	boundary func(string) (string, time.Time), now time.Time, reason ...string) {
+	advanceHQRotationWithClock(r, pane, agent, sid, io, boundary, func() time.Time { return now }, reason...)
+}
+
 func testRotationEvents(t *testing.T) []events.Record {
 	t.Helper()
 	recs, gap := events.ReadSince(0)

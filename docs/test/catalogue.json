@@ -16659,7 +16659,7 @@
       ]
     },
     "internal/hq/rotateguard_test.go": {
-      "sha256": "f4747f6585043cf5b03e9515949eeea05ba2a4831720c8173b06cf3184995719",
+      "sha256": "db816f44ff60a15ec43c539484a47fb92f803317b93ac2b771a6116c997cb9c2",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -16689,7 +16689,7 @@
         },
         {
           "id": "LEG-4c8b7b8e26a6",
-          "line": 141,
+          "line": 146,
           "kind": "Test",
           "name": "TestRotationWaitsForTaskEndAndConfirmsSuccessor",
           "dynamic": false,
@@ -16697,7 +16697,7 @@
         },
         {
           "id": "LEG-ef340243f845",
-          "line": 183,
+          "line": 188,
           "kind": "Test",
           "name": "TestRotationDuplicateRequestDoesNotDuplicateKeysOrAudit",
           "dynamic": false,
@@ -16705,7 +16705,7 @@
         },
         {
           "id": "LEG-ac624c92422b",
-          "line": 196,
+          "line": 201,
           "kind": "Test",
           "name": "TestRotationFailureReceiptAndNoBlindRetry",
           "dynamic": false,
@@ -16713,7 +16713,7 @@
         },
         {
           "id": "LEG-9a1bbe42b10b",
-          "line": 211,
+          "line": 216,
           "kind": "Test",
           "name": "TestRotationPersistsAttemptBeforeTyping",
           "dynamic": false,
@@ -16721,7 +16721,7 @@
         },
         {
           "id": "LEG-1d0b91a2341c",
-          "line": 228,
+          "line": 233,
           "kind": "Test",
           "name": "TestRotationRejectedResetTimesOutWithoutSuccess",
           "dynamic": false,
@@ -16729,7 +16729,7 @@
         },
         {
           "id": "LEG-f20c1831eba3",
-          "line": 242,
+          "line": 247,
           "kind": "Test",
           "name": "TestRotationDraftExpiresWithoutSubmittingOrLosingFailureReceipt",
           "dynamic": false,
@@ -16737,7 +16737,7 @@
         },
         {
           "id": "LEG-db998607f792",
-          "line": 262,
+          "line": 267,
           "kind": "Test",
           "name": "TestRotationChangedSessionBeforeDeliveryDoesNotResetSuccessor",
           "dynamic": false,
@@ -16745,7 +16745,7 @@
         },
         {
           "id": "LEG-d4b834e4cf65",
-          "line": 316,
+          "line": 321,
           "kind": "Test",
           "name": "TestRotationNotSentIsNotConfirmedByEvents",
           "dynamic": false,
@@ -16753,7 +16753,7 @@
         },
         {
           "id": "MAP-8b86d8cef4d9",
-          "line": 277,
+          "line": 282,
           "kind": "reviewed-selector",
           "name": "TestSentRotationRequiresCurrentEvidenceInsteadOfJournal",
           "dynamic": false,
@@ -70172,7 +70172,7 @@
         },
         {
           "id": "MAP-88042fd021cb",
-          "line": 36,
+          "line": 37,
           "kind": "reviewed-selector",
           "name": "TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow",
           "dynamic": false,
@@ -70180,7 +70180,32 @@
           "design": "HRB-012"
         }
       ],
-      "sha256": "59d6e46d875469c022f4444f687231ae5848f67290291e05cc65aa2e9a066633"
+      "sha256": "cb2dd4043032b7cecbba14bdeb762942cedcc5592dd72548755a8b3906ed73bf"
+    },
+    "internal/hq/rotation_clock_boundaries_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e2d7319b136b",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestResetAttemptAndCompletedKeysHaveSeparateClocks",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-013"
+        },
+        {
+          "id": "MAP-7f737db488d5",
+          "line": 55,
+          "kind": "reviewed-selector",
+          "name": "TestBriefingTargetProbeCannotCrossItsOriginalDeadline",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HRB-013"
+        }
+      ],
+      "sha256": "2f61c06e08e6d468962d4da0151451f9234d2c099a95ab08cba82f563677c2de"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",
