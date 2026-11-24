@@ -123,8 +123,13 @@
    `asc-asset-library.rb creative-status --version "$STORE_VERSION"` 排障。
    中英各两行都为 `ok` 才算配好，有 `TODO` 时退出码为 1。
 
-版本一旦送审或上线，API 就不能再往上面加放置。那时只能在网页的 Asset Library 里单独送审素材，
-批准后在产品页「Header and Search Results」里选上。1.0.97 就是这样：素材是版本提交之后才做出来的。
+素材可以独立送审。素材库中的 `APPROVED` 表示图片可用，线上是否展示要查正式产品页的四个位置。
+记录中英文的头图和搜索图各自对应的素材 ID。已经上线的版本，从 App Store Connect 的
+「Header and Search Results → Browse Assets」选已批准的图。发布前看两种语言的 iPhone
+和 iPad 预览，发布后核对四个位置实际关联的 ID。见
+[Apple 的线上素材更新说明](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-your-app-store-assets)。
+按原回执中的 ID 或带内容摘要的名称选择图片，`fastlane/creative/` 可能保存的是上个 App 版本的归档素材。
+单独提交的图片查素材审核，App 二进制版本查版本审核。
 
 ## 3. 构建与上传二进制
 

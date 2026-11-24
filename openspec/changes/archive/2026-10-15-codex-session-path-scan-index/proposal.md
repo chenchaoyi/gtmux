@@ -19,7 +19,7 @@ Internal implementation change to `agent-radar`, Codex transcript lookup, and Co
 binding recovery. No CLI/API schema or user-visible behavior changes. Detailed design,
 compatibility boundaries, and performance evidence follow below. Test cases are in
 [`test-spec.md`](./test-spec.md); measured results are in
-[`docs/test/CODEX-SESSION-PATH-SCAN-2026-10-15.md`](../../../docs/test/CODEX-SESSION-PATH-SCAN-2026-10-15.md).
+[`docs/test/CODEX-SESSION-PATH-SCAN-2026-10-15.md`](../../../../docs/test/CODEX-SESSION-PATH-SCAN-2026-10-15.md).
 
 ## Surfaces
 
