@@ -63,7 +63,18 @@
       "planned_files": [
         "internal/dispatchbridge/rotation_brief_admission_test.go"
       ]
+    },
+    {
+      "id": "HRB-012",
+      "layer": "L2",
+      "description": "Legacy observations and recoverable history must belong to the bounded rotation",
+      "setup": "Compare a generation-bound legacy observation after the reset with a missing, wrong-generation, same-second or future witness. Model recoverable Codex history that becomes available before or after the deadline.",
+      "action": "Validate the observation against the sent request and run the final tick with the synthetic history boundary.",
+      "expected": "Only a live direct driver with a post-reset witness from the original pane generation is eligible to settle. Late observation can settle existing durable evidence that belongs to the window; a history boundary after the deadline fails. No new reset or briefing can be authorized on incomplete evidence.",
+      "planned_files": [
+        "internal/hq/rotation_evidence_window_test.go"
+      ]
     }
   ],
-  "seal": "6c5ab7a5a585eb6a31cae709e4c83754658c2339546fcc3c5b3cf1174579b46f"
+  "seal": "aeb1d1077b38dd84528e14bce068aa0b303c36b89db973e09a68ec6be642a038"
 }
