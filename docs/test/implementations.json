@@ -5677,5 +5677,13 @@
     "selectors": [
       "WLI-009 Late host theme reconciles the"
     ]
+  },
+  "tests/web/live-frozen-palette.test.cjs": {
+    "cases": [
+      "WLI-010"
+    ],
+    "selectors": [
+      "WLI-010 Paused ANSI output keeps its palette after"
+    ]
   }
 }

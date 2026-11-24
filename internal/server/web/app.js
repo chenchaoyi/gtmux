@@ -1154,11 +1154,7 @@
   function applyAppearance() {
     document.documentElement.style.setProperty('--chat-text-size', chatSizePref + 'px');
     var preview = document.querySelector('.terminal-font-preview'); if (preview) { preview.style.fontFamily = resolveFont(); preview.style.fontSize = termSize() + 'px'; }
-    document.documentElement.style.setProperty('--terminal-bg', (theme && theme.background) || GHOSTTY.bg);
-    document.documentElement.style.setProperty('--live-terminal-fg', liveDefaultForeground());
-    LIVE_ANSI_PALETTE.forEach(function (_, i) {
-      document.documentElement.style.setProperty('--terminal-ansi-' + i, liveThemePalette(i));
-    });
+    applyLiveColors(document.documentElement, liveColors);
     if (term) {
       term.options.theme = xtermTheme();
       term.options.fontFamily = resolveFont();
@@ -1193,8 +1189,13 @@
   function fetchTheme() {
     return api('/api/theme').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       if (!j) return;
-      theme = j; applyAppearance(); syncSettings();
-      document.querySelectorAll('.chat-live[open]').forEach(function (panel) {
+      var panels = document.querySelectorAll('.chat-live[open]');
+      panels.forEach(function (panel) {
+        var state = chatLive[panel.dataset.pane];
+        if (state) freezeLiveSelection(panel, state);
+      });
+      theme = j; liveColors = terminalLiveColors(j); applyAppearance(); syncSettings();
+      panels.forEach(function (panel) {
         var state = chatLive[panel.dataset.pane];
         if (state) paintLive(panel, state);
       });
@@ -2736,6 +2737,29 @@
   // xterm's default ANSI entries. Appearance supplies the host palette where present.
   var LIVE_ANSI_PALETTE = ['#2e3436', '#cc0000', '#4e9a06', '#c4a000', '#3465a4', '#75507b', '#06989a', '#d3d7cf',
     '#555753', '#ef2929', '#8ae234', '#fce94f', '#729fcf', '#ad7fa8', '#34e2e2', '#eeeeec'];
+  var liveColors = terminalLiveColors(null);
+  function terminalLiveColors(theme) {
+    var t = theme || {};
+    return {
+      foreground: t.foreground || '#d6d6da',
+      background: t.background || GHOSTTY.bg,
+      palette: LIVE_ANSI_PALETTE.map(function (fallback, index) {
+        var color = t.palette && t.palette[index];
+        return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
+      }),
+    };
+  }
+  function applyLiveColors(node, colors) {
+    function set(name, value) {
+      if (colors) node.style.setProperty(name, value);
+      else node.style.removeProperty(name);
+    }
+    set('--terminal-bg', colors && colors.background);
+    set('--live-terminal-fg', colors && colors.foreground);
+    LIVE_ANSI_PALETTE.forEach(function (_, index) {
+      set('--terminal-ansi-' + index, colors && colors.palette[index]);
+    });
+  }
   // Only SGR carries style. Strip OSC, DCS and other terminal controls without
   // turning terminal bytes into markup, browser links or cursor commands.
   var LIVE_CONTROL = /\x1b\[([0-9;:]*)m|\x1b\[[0-?]*[ -\/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\|$)|\x1b[PX^_][^\x1b]*(?:\x1b\\|$)|\x1b\[[0-?]*[ -\/]*$|\x1b[ -\/]*[@-~]|[\x00-\x08\x0b-\x1f\x7f-\x9f]/g;
@@ -2762,11 +2786,6 @@
       }
     }
     return {text: text, spans: spans, styles: spans.length ? JSON.stringify(spans) : ''};
-  }
-  function liveDefaultForeground() { return (theme && theme.foreground) || '#d6d6da'; }
-  function liveThemePalette(index) {
-    var color = theme && theme.palette && theme.palette[index];
-    return /^#[0-9a-f]{6}$/i.test(color) ? color : LIVE_ANSI_PALETTE[index];
   }
   function livePaletteColor(index) {
     var cube = [0, 95, 135, 175, 215, 255], n = index - 16;
@@ -2857,31 +2876,31 @@
     if (capture.text.length > offset) fragment.append(capture.text.slice(offset));
     output.replaceChildren(fragment);
   }
-  function liveResolvedColor(color, background) {
-    if (typeof color === 'number') color = liveThemePalette(color);
-    if (color === 'var(--terminal-bg)') color = background;
-    if (color === 'var(--live-terminal-fg)') color = liveDefaultForeground();
+  function liveResolvedColor(color, colors) {
+    if (typeof color === 'number') color = colors.palette[color];
+    if (color === 'var(--terminal-bg)') color = colors.background;
+    if (color === 'var(--live-terminal-fg)') color = colors.foreground;
     if (!/^#[0-9a-f]{6}$/i.test(color)) return color;
     return liveRGB([1, 3, 5].map(function (index) { return parseInt(color.slice(index, index + 2), 16); }));
   }
-  function visibleLiveStyles(capture) {
-    var spans = [], background = (theme && theme.background) || GHOSTTY.bg;
-    var defaultFG = liveResolvedColor(liveDefaultForeground(), background);
-    var defaultBG = liveResolvedColor(background, background);
+  function visibleLiveStyles(capture, colors) {
+    var spans = [], offset = 0;
+    var defaults = [liveResolvedColor(colors.foreground, colors), liveResolvedColor(colors.background, colors), false, false, false];
     capture.spans.forEach(function (run) {
       var [fg, bg, bold, dim, underline] = run.appearance;
-      fg = liveResolvedColor(fg, background);
-      bg = liveResolvedColor(bg, background);
-      if (fg === defaultFG) fg = '';
-      if (bg === defaultBG) bg = '';
-      if (fg || bg || bold || dim || underline) addLiveSpan(spans, run.start, run.end, [fg, bg, bold, dim, underline]);
+      if (run.start > offset) addLiveSpan(spans, offset, run.start, defaults);
+      addLiveSpan(spans, run.start, run.end, [liveResolvedColor(fg, colors) || defaults[0], liveResolvedColor(bg, colors) || defaults[1], bold, dim, underline]);
+      offset = run.end;
     });
+    if (capture.text.length > offset) addLiveSpan(spans, offset, capture.text.length, defaults);
     return JSON.stringify(spans);
   }
-  function sameLiveCapture(a, b) {
-    if (a === b) return true;
-    if (!a || !b || a.text !== b.text) return false;
-    return a.styles === b.styles || visibleLiveStyles(a) === visibleLiveStyles(b);
+  function sameLiveCapture(a, b, colorsA, colorsB) {
+    if (!a || !b) return a === b;
+    if (a.text !== b.text) return false;
+    if (colorsA === colorsB && a.styles === b.styles) return true;
+    return liveResolvedColor(colorsA.background, colorsA) === liveResolvedColor(colorsB.background, colorsB) &&
+      visibleLiveStyles(a, colorsA) === visibleLiveStyles(b, colorsB);
   }
   function liveBounds(panel) {
     var host = panel.parentElement, body = host.parentElement, tile = body.closest('.tile');
@@ -2946,11 +2965,20 @@
   function freezeLive(panel, state) {
     // An equal capture can reuse already-painted nodes under the current
     // theme. Freeze the capture those nodes represent, even if a newer one was skipped.
-    if (!state.frozen && panel.displayedCapture) state.frozen = {capture: panel.displayedCapture};
+    if (!state.frozen && panel.displayedCapture) {
+      var capture = panel.displayedCapture;
+      var latest = sameLiveCapture(capture, state.capture, liveColors, liveColors) ? state.capture : capture;
+      state.frozen = {capture: capture, latest: latest, colors: liveColors};
+      applyLiveColors(panel.output, liveColors);
+      panel.frozenColors = liveColors;
+    }
     if (state.frozen) {
       state.frozen.top = panel.output.scrollTop;
       state.frozen.left = panel.output.scrollLeft;
     }
+  }
+  function freezeLiveSelection(panel, state) {
+    if (!state.frozen && panel.captureRevision === state.revision && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
   }
   function syncChatLive(host, agent, valid) {
     var id = agent && agent.pane_id, panel = host.querySelector('.chat-live');
@@ -3035,20 +3063,30 @@
     panel.source.textContent = pendingHistory ? T('Current pane ', '当前 pane ') + state.agent.pane_id + T(' · History association unconfirmed', ' · 历史对话关联待确认') : '';
     panel.source.title = panel.source.textContent;
     panel.resume.hidden = !state.frozen;
-    panel.update.hidden = !state.frozen || !state.capture || sameLiveCapture(state.capture, state.frozen.capture);
+    var frozen = state.frozen;
+    // A theme response changes presentation, not the latest captured output.
+    panel.update.hidden = !frozen || !state.capture ||
+      sameLiveCapture(state.capture, frozen.latest, liveColors, liveColors) ||
+      sameLiveCapture(state.capture, frozen.capture, liveColors, frozen.colors);
     panel.tools.hidden = !pendingHistory && !state.frozen;
   }
   function paintLive(panel, state) {
     panel.clock.textContent = liveDuration(state.agent);
     panel.action.textContent = state.open ? T('Collapse', '收起') : T('Live output', '展开实时输出');
-    if (!state.frozen && state.capture && state.capture.text && panel.captureRevision === state.revision && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
+    freezeLiveSelection(panel, state);
     paintLiveTools(panel, state);
     paintLiveHeight(panel, state);
     if (!panel.open) { panel.wasClosed = true; return; }
+    var frozenColors = state.frozen ? state.frozen.colors : null;
+    if (panel.frozenColors !== frozenColors) {
+      if (frozenColors || panel.frozenColors) applyLiveColors(panel.output, frozenColors);
+      panel.frozenColors = frozenColors;
+    }
+    var colors = frozenColors || liveColors;
     var capture = state.frozen ? state.frozen.capture : state.capture;
     var captured = capture && capture.text ? capture : null;
     var text = captured ? captured.text : (state.error ? T('Live output is unavailable.', '暂时无法读取实时输出。') : state.loading ? T('Loading live output…', '正在加载实时输出…') : T('Waiting for output…', '等待实时输出…'));
-    var changed = panel.displayedText !== text || !sameLiveCapture(panel.displayedCapture, captured);
+    var changed = panel.displayedText !== text || !sameLiveCapture(panel.displayedCapture, captured, colors, colors);
     if (changed) {
       if (captured) renderLiveCapture(panel.output, captured); else panel.output.textContent = text;
       panel.displayedCapture = captured; panel.displayedText = text;
