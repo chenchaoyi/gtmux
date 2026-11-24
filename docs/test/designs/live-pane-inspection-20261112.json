@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner, self-review; not independent approval",
-    "date": "2026-11-12",
+    "date": "2026-11-24",
     "decision": "Separate authorized pane-screen reading from historical conversation input restrictions",
-    "notes": "User reports working Live row cannot expand while association is pending. Exact main9a534a9c ChatView merges readOnlyHistory into readOnly, then hides the Live disclosure; parents already read the separately authorized current pane. Keep conversation sends, uploads, input keys, exact-session binding and explicit desktop/native readOnly fences unchanged. Allow read-only current-pane preview with a visible pane-source/association-pending caption, never claiming the current pane is the saved conversation. Scope parent captures to the exact client object and pane so switching server/token/pane cannot display a previous capture before the new read settles; preserve existing cancellation/late-response guards. Browser already permits this read and receives the same source caption. No new API, polling loop, live session input, restore, deployment, TCC or installation. Existing valid tests stay byte-for-byte unchanged; new files carry only these cases. MainPR1853 CI continues independently, no reuse of its pass as proof of this change."
+    "notes": "User reports working Live row cannot expand while association is pending. Exact main9a534a9c ChatView merges readOnlyHistory into readOnly, then hides the Live disclosure; parents already read the separately authorized current pane. Keep conversation sends, uploads, input keys, exact-session binding and explicit desktop/native readOnly fences unchanged. Allow read-only current-pane preview with a visible pane-source/association-pending caption, never claiming the current pane is the saved conversation. Scope parent captures to the exact client object and pane so switching server/token/pane cannot display a previous capture before the new read settles; preserve existing cancellation/late-response guards. Browser already permits this read and receives the same source caption. No new API, polling loop, live session input, restore, deployment, TCC or installation. Existing valid tests stay byte-for-byte unchanged; new files carry only these cases. MainPR1853 CI continues independently, no reuse of its pass as proof of this change. Browser resize follow-up review after hosted CI surfaced the obsolete 14-row assertion. Both viewport variants compare the full 20-row current-pane capture exactly and retain the caption, input fence, disclosure, and page checks. WLV-002 covers the new 2,000-row bound."
   },
   "cases": [
     {
@@ -35,12 +35,12 @@
       "layer": "L4",
       "description": "Browser current-pane Live preview labels pending history and keeps input fenced",
       "setup": "Existing isolated production browser fixture at390dark and1440light, working pane with observed historical conversation,20 synthetic screen lines and explicit readonly transcript state.",
-      "action": "Open Chat, expand Live, inspect tail/source caption, collapse; verify no send and pending conversation input remains unavailable.",
-      "expected": "Existing disclosure works and displays only the bounded current-pane tail, with explicit pane/association caption. Closing hides output. No send or authority promotion and no page/console errors.",
+      "action": "Open Chat, expand Live, compare the current capture and source caption, then collapse; verify no send and pending conversation input remains unavailable.",
+      "expected": "Live displays exactly the 20 captured rows from the current pane and identifies the pending association. Closing hides output. No send or authority promotion and no page/console errors.",
       "planned_files": [
         "tests/web/live-pending.test.cjs"
       ]
     }
   ],
-  "seal": "933e326bebd27a00c4f9b45dda166dfa941d10af4eefc2253772a3a5b9f4b5c3"
+  "seal": "8681b9a8b54eeed5cfe544463dbebcb35e3cfd766110614c3ea2ef32919f9867"
 }
