@@ -5501,5 +5501,13 @@
     "selectors": [
       "TestGSS003CommandsGateInterruptedLayout"
     ]
+  },
+  "internal/app/doctor_layout_dsh_test.go": {
+    "cases": [
+      "GSS-004"
+    ],
+    "selectors": [
+      "TestGSS004GroupedLayoutPreservesDSHRegistration"
+    ]
   }
 }

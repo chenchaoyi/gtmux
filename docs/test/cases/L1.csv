@@ -185,6 +185,7 @@ LEG-59e77ab9e3c1,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go
 LEG-b2647ff53c45,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,79,Test,TestStorageDoesNotFollowExternalSymlinks,False,legacy-not-retrospectively-reviewed
 LEG-16ee1faeb7f9,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,93,Test,TestStorageMissingStateIsKnownEmpty,False,legacy-not-retrospectively-reviewed
 LEG-a109448efbef,L1,Go core / CLI / server,internal/app/doctor_diskusage_test.go,100,Test,TestStorageCategoriesIncludeBackupAndEvidence,False,legacy-not-retrospectively-reviewed
+MAP-e7f675c91bc6,L1,reviewed implementation,internal/app/doctor_layout_dsh_test.go,17,reviewed-selector,TestGSS004GroupedLayoutPreservesDSHRegistration,False,GSS-004
 MAP-fde505a4f21f,L1,reviewed implementation,internal/app/doctor_layout_test.go,15,reviewed-selector,TestGSS003CommandsGateInterruptedLayout,False,GSS-003
 LEG-11f8f7133cba,L1,Go core / CLI / server,internal/app/doctor_test.go,16,Test,TestRenderSectionsTally,False,legacy-not-retrospectively-reviewed
 LEG-0f94dea29a8c,L1,Go core / CLI / server,internal/app/doctor_test.go,30,Test,TestAdvisoryRemaining,False,legacy-not-retrospectively-reviewed

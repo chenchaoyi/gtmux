@@ -30,7 +30,7 @@ var groupedStores = map[string]string{
 	"terminal-lifecycle": "panes", "turn-id": "panes", "turn-outcome": "panes",
 	"usagewarn": "panes", "usagewarn-gate": "panes", "waiting": "panes", "watched": "panes", "watchdog": "panes",
 
-	"capture-requests": "clients", "native": "clients", "terminal-clients": "clients",
+	"capture-requests": "clients", "native": "clients",
 
 	"dead-pane-sweep-last": "service", "disk-hygiene-last": "service",
 	"resourcewarn-gate": "service", "resourcewarn-held": "service",
@@ -306,7 +306,7 @@ func ChangeStorageLayout(grouped bool, checkWriters func() error) error {
 		return err
 	}
 	if mode == target {
-		return nil
+		return CheckStorageLayout()
 	}
 	if err := checkWriters(); err != nil {
 		return err

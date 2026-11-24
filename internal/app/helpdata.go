@@ -348,7 +348,7 @@ var helpCommands = []command{
 	},
 
 	{
-		Name: "doctor", Args: "[--json | --fix | --bundle | --prune-profile-locks | --storage-layout | --group-storage | --flatten-storage]", Group: "setup", Writes: true,
+		Name: "doctor", Args: "[--json | --fix | --bundle | --storage-layout]", Group: "setup", Writes: true,
 		EN: "check this host, then set up what is missing",
 		ZH: "检查本机环境和功能配置",
 		Flags: []cmdFlag{
