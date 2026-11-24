@@ -74,7 +74,18 @@
       "planned_files": [
         "internal/hq/rotation_evidence_window_test.go"
       ]
+    },
+    {
+      "id": "HRB-013",
+      "layer": "L2",
+      "description": "Key completion and slow briefing preparation use the actual clock",
+      "setup": "Use an isolated request and injected clock with terminal reset IO and strict frontend fixtures. Advance the clock during Enter or during the briefing target check.",
+      "action": "Observe the attempt marker before keys, the evidence fence after Enter returns, and the incomplete handoff whose target check reaches its deadline.",
+      "expected": "An attempted reset stays non-replayable, including without a completed evidence fence. A prior or same-second legacy observation cannot authorize a successor. A slow target check that reaches the original deadline cannot persist or enqueue a new briefing. One phase-specific failure is recorded.",
+      "planned_files": [
+        "internal/hq/rotation_clock_boundaries_test.go"
+      ]
     }
   ],
-  "seal": "aeb1d1077b38dd84528e14bce068aa0b303c36b89db973e09a68ec6be642a038"
+  "seal": "066ec2f2e0e436f1709bc71adf9aba1729edbc2d69f3a13ad3b1912037514e2e"
 }
