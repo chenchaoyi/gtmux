@@ -21,6 +21,7 @@ import (
 const rotationBriefSuffix = ".hqbrief"
 const briefComposerUnavailable = "rotation-brief-composer-unavailable"
 const briefTargetWaiting = "rotation-brief-target-proof-unavailable"
+const briefRouteWaiting = "rotation-brief-native-route-unavailable"
 
 type rotationBriefWake struct {
 	Line string                `json:"line"`
@@ -142,7 +143,7 @@ func drainRotationBrief(x io, pane, name string) {
 		return ""
 	}
 	settleHold := func(reason string) {
-		if reason == briefComposerUnavailable || reason == briefTargetWaiting {
+		if reason == briefComposerUnavailable || reason == briefTargetWaiting || reason == briefRouteWaiting {
 			waitRotationBrief(claim, path, name, reason)
 		} else {
 			refuseRotationBrief(claim, reason)
@@ -165,18 +166,10 @@ func drainRotationBrief(x io, pane, name string) {
 	}
 	submit := prepareNativeWakeFor(pane, opts, nativeHold)
 	if submit == nil {
-		if reason := hold(); reason != "" {
-			settleHold(reason)
-			return
-		}
-		// Routing may have missed the proof between two valid observations.
-		// Preparation cannot send input; re-resolve the same route once.
-		submit = prepareNativeWakeFor(pane, opts, nativeHold)
-	}
-	if submit == nil {
 		reason := hold()
 		if reason == "" {
-			reason = "rotation-brief-native-unavailable"
+			// No native route was prepared, so this attempt cannot have submitted.
+			reason = briefRouteWaiting
 		}
 		settleHold(reason)
 		return

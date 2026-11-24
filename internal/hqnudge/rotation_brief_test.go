@@ -104,6 +104,12 @@ func TestHRB001RotationBriefBindsOriginalRecipient(t *testing.T) {
 			switch name {
 			case "correct":
 				wantCalls, wantInputs, wantRefused = 1, 1, 0
+			case "no native route":
+				if !Pending() {
+					t.Fatal("unavailable routing discarded a provably unsent briefing")
+				}
+				f.nano += int64(3 * time.Second)
+				Drain(bind.Pane)
 			case "late successor change", "deadline during native check":
 				wantCalls = 1
 			case "draft", "copy mode", "unreadable composer":

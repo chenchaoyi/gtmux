@@ -1138,7 +1138,7 @@ Automatic Codex wakes SHALL freshly verify an exact loaded idle thread before at
 - **WHEN** an immediate or periodic drain runs before the existing rotation deadlines
 - **THEN** regular wakes, protected Relay attention, and legacy repair input SHALL remain local while the successor is being resolved or its handoff is pending
 - **AND** the addressed briefing gets the first safe opportunity, its own native batch and the existing original deadline
-- **AND** a temporarily unavailable composer or missing frontend proof SHALL keep the original briefing pending while the original pane generation and durable reservation still match. If the native path ran, only definite non-submission with the eligible hold SHALL return that same briefing to the queue
+- **AND** a temporarily unavailable composer, missing frontend proof, or absent native route before submission SHALL keep the original briefing pending while the original pane generation and durable reservation still match. If the native path ran, only definite non-submission with an eligible hold SHALL return that same briefing to the queue
 - **AND** terminal acceptance or uncertainty SHALL NOT authorize replays, and expiry or completed rotation SHALL release the input reservation without repeating reset
 
 #### Scenario: A queued rotation briefing outlives its recipient

@@ -69904,7 +69904,7 @@
         },
         {
           "id": "MAP-974764f4f5ce",
-          "line": 129,
+          "line": 135,
           "kind": "reviewed-selector",
           "name": "TestHRB002RotationBriefNeverRetriesOrJoinsOrdinaryWake",
           "dynamic": false,
@@ -69913,7 +69913,7 @@
         },
         {
           "id": "MAP-3e2e3fefb84f",
-          "line": 259,
+          "line": 265,
           "kind": "reviewed-selector",
           "name": "TestHRB005ReservedSuccessorPrecedesImmediateAndPeriodicWakes",
           "dynamic": false,
@@ -69922,7 +69922,7 @@
         },
         {
           "id": "MAP-d583da1c618e",
-          "line": 326,
+          "line": 332,
           "kind": "reviewed-selector",
           "name": "TestHRB005SentHandoffHoldsLegacyRepair",
           "dynamic": false,
@@ -69931,7 +69931,7 @@
         },
         {
           "id": "MAP-5b7f8ed801fa",
-          "line": 354,
+          "line": 360,
           "kind": "reviewed-selector",
           "name": "TestHRB006ComposerWaitPreservesBriefing",
           "dynamic": false,
@@ -69939,7 +69939,7 @@
           "design": "HRB-001,HRB-002,HRB-005,HRB-006"
         }
       ],
-      "sha256": "fc5339fb588a44ce777c226be0c5ffcc4e839c9c4db2eb1e4af4850d6825dd10"
+      "sha256": "1a1e98ac5d3868578b511a59be68c6167d27393d5036f4d3b480edb750e82dd0"
     },
     "tests/web/short-tile-header.test.cjs": {
       "layer": "L4",
