@@ -29,7 +29,18 @@
       "planned_files": [
         "internal/state/layout_test.go"
       ]
+    },
+    {
+      "id": "GSS-003",
+      "layer": "L1",
+      "description": "CLI gates partial layout changes and reads events after relocation",
+      "setup": "Disposable HOME with real Go event storage and a simulated writer appearing after preparation.",
+      "action": "Call the production CLI entry for layout inspection, a normal command and the Codex entry. Resume the transition in the fixture and append another ordinary event.",
+      "expected": "Inspection remains available, entry points that can write are gated while pending, and the event journal and sequence advance in the canonical group without creating a flat event log.",
+      "planned_files": [
+        "internal/app/doctor_layout_test.go"
+      ]
     }
   ],
-  "seal": "f7226b7c243782088bb2199bc1aa1b599aff4e4acd0a5b530bf1465de969685b"
+  "seal": "6244d2ccca35ead6d1891814c85c545c7c7e7db3f9df81ad94ca90e3ca9b404a"
 }
