@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, design self-review after independent findings",
     "date": "2026-11-24",
     "decision": "Use current same-generation pane evidence for rotation and preserve only an exactly bound, provably unsent briefing during transient observation loss.",
-    "notes": "Historical lifecycle records contain neither pane generation nor subsecond send ordering. They cannot prove the current rotation recipient. Preserve the direct-client path with current driver and resume evidence. A bound brief uses its exact proof and native target pin instead of the generic automatic wake fingerprint. An empty pane identity sample is unavailability; a nonempty mismatch remains a detectable change. Tests use isolated state, synthetic time and target proofs; they do not exercise a live HQ or establish incident causation."
+    "notes": "Historical lifecycle records contain neither pane generation nor subsecond send ordering. They cannot prove the current rotation recipient. Preserve the direct-client path with current driver and resume evidence. A bound brief uses its exact proof and native target pin instead of the generic automatic wake fingerprint. An empty pane identity sample is unavailability; a nonempty mismatch remains a detectable change. Tests use isolated state, synthetic time and target proofs; they do not exercise a live HQ or establish incident causation. The default Claude launch is a foreground child of the pane shell. The hook and rotation confirmation must verify the same live client through that shell and compare its terminal and pane generation."
   },
   "cases": [
     {
@@ -108,7 +108,18 @@
       "planned_files": [
         "internal/hqinput/rotation_brief_witness_test.go"
       ]
+    },
+    {
+      "id": "HRB-016",
+      "layer": "L2",
+      "description": "A Claude hook from the default shell launch records the live successor and fails closed on loss of terminal ownership",
+      "setup": "Use a private tmux server with its normal interactive shell. Launch a synthetic Claude-named frontend by typing its command into the shell, then run an actual hook from that process.",
+      "action": "Inspect the saved witness and confirm the live client. Change the generation and persisted TTY, stop the foreground job, and launch a replacement client in the same pane.",
+      "expected": "The hook persists the original pane generation, actual child PID and birth, and same pane TTY. The matching live incarnation confirms. Changed generation, changed TTY, lost foreground and the replacement process cannot confirm the previously witnessed session.",
+      "planned_files": [
+        "internal/hook/hq_claude_foreground_test.go"
+      ]
     }
   ],
-  "seal": "5c48f400740f25d9bba8e3924eab30cc1dcad295864b934245db9536ea4a303e"
+  "seal": "07f2327fa12a6f009a538651a6f6c5ecba1899effcc16e4213959e0b066641f3"
 }
