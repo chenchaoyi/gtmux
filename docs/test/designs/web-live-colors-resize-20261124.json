@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner (Codex self-review)",
     "date": "2026-11-24",
     "decision": "Reuse the read-only capture and terminal palette. Extend the existing workbench drag rectangles.",
-    "notes": "Reviewed against 4c99206f. The screenshots are the Chat workbench tile, not the browser-dialog action sheets. Add no requests and no terminal input. Build spans as text DOM. Keep Live freeze, draft, authorization and view retirement. Add handles only to freely positioned tiles. Preserve the SE affordance, snap preference, size floor, saved layout and single-column behavior. Validate with the existing synthetic browser harness and cached Chromium."
+    "notes": "Reviewed against 4c99206f. The screenshots are the Chat workbench tile, not the browser-dialog action sheets. Add no requests and no terminal input. Build spans as text DOM. Keep Live freeze, draft, authorization and view retirement. Add handles only to freely positioned tiles. Preserve the SE affordance, snap preference, size floor, saved layout and single-column behavior. Validate with the existing synthetic browser harness and cached Chromium. Fixed-head review requires a usable starting rectangle after a narrower board clips an older layout and visible-only snapshot comparison. Hosted consistency keeps the existing unthemed Live foreground. Exercise touch resize and use the specified composer disclosure before writing a local draft."
   },
   "cases": [
     {
@@ -62,7 +62,29 @@
       "planned_files": [
         "internal/server/web/app.test.cjs"
       ]
+    },
+    {
+      "id": "WLI-006",
+      "layer": "L3",
+      "description": "Resizing recovers the visible part of a clipped tile",
+      "setup": "An existing saved tile fits a wide workbench and is partly clipped after a narrower and shorter browser resize. Grid snap is enabled.",
+      "action": "Drag a remaining west/north corner into the board, inspect the new geometry, then reload the browser.",
+      "expected": "The tile is fully inside the board when it has room for the minimum, keeps its composer draft, and reloads with the usable geometry.",
+      "planned_files": [
+        "tests/web/workbench-recover-resize.test.cjs"
+      ]
+    },
+    {
+      "id": "WLI-007",
+      "layer": "L3",
+      "description": "Live alerts only for visible capture changes, including a successful blank screen",
+      "setup": "A colored capture with older rows outside the 2,000-row limit, then changes only to ignored OSC or discarded text. A later successful capture is empty.",
+      "action": "Observe unpaused node reuse, freeze the capture, receive ignored-only changes and a successful empty frame, then return to live.",
+      "expected": "Ignored-only changes do not repaint or indicate new output. The blank frame does indicate new output, leaving the frozen view readable until return, then displaying the empty state.",
+      "planned_files": [
+        "tests/web/live-visible-updates.test.cjs"
+      ]
     }
   ],
-  "seal": "f755b0fdde1659f0357457026e53e7eaed866440d5a42969f81aedbe409b8f88"
+  "seal": "e5b7565fc7907f29706af68c877c637257ff3a2dc92eaf5b5a529dd2cefe6f86"
 }
