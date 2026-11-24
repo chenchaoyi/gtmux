@@ -1,0 +1,69 @@
+{
+  "id": "hq-rotation-live-evidence-364772",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review after independent findings",
+    "date": "2026-11-24",
+    "decision": "Use current same-generation pane evidence for rotation and preserve only an exactly bound, provably unsent briefing during transient observation loss.",
+    "notes": "Historical lifecycle records contain neither pane generation nor subsecond send ordering. They cannot prove the current rotation recipient. Preserve the direct-client path with current driver and resume evidence. A bound brief uses its exact proof and native target pin instead of the generic automatic wake fingerprint. An empty pane identity sample is unavailability; a nonempty mismatch remains a detectable change. Tests use isolated state, synthetic time and target proofs; they do not exercise a live HQ or establish incident causation."
+  },
+  "cases": [
+    {
+      "id": "HRB-007",
+      "layer": "L2",
+      "description": "A sent reset survives transient identity loss and is settled by the live same-pane successor",
+      "setup": "Send one reset on a stable pane generation with briefing enabled. Include raw same-pane same-second, later, future and wrong-pane journal records and a Codex agent sample without live session proof. Provide recoverable history and exact live identity later.",
+      "action": "Advance through empty identity samples before and after the live successor is first seen, crossing the settle deadline once the handoff is active. Restore the verified successor, then replay a stale unsent tick.",
+      "expected": "Raw journal events cannot choose a successor, extend the deadline or replace a failed live proof. A verified successor keeps the original handoff window across empty samples. Its durable history and turn boundary can settle once. The existing draft and input reservation guards hold, with no extra reset or briefing.",
+      "planned_files": [
+        "internal/hq/rotateguard_test.go",
+        "internal/hq/rotation_transient_identity_test.go"
+      ]
+    },
+    {
+      "id": "HRB-008",
+      "layer": "L2",
+      "description": "Deadline and target change govern post-reset failure",
+      "setup": "Use a sent request, a missing or known successor, synthetic clock, input spy, and exact or changed tmux generation.",
+      "action": "Run just before and at each expiry, including a deadline tick with valid live evidence. Also change pane, generation or agent before expiry and replay a stale tick.",
+      "expected": "Wait only within the applicable existing phase. The final tick can record success with current evidence and recoverable history. Incomplete evidence fails once, names the phase and available agent or session reason, and cannot start a briefing. Positive target changes fail promptly. No second reset occurs.",
+      "planned_files": [
+        "internal/hq/rotation_transient_identity_test.go"
+      ]
+    },
+    {
+      "id": "HRB-009",
+      "layer": "L2",
+      "description": "A previously bound unsent briefing waits on a transient observation gap only for its original target",
+      "setup": "Use the production drain with a real persisted reservation and original queued envelope in isolated state. Simulate an exact generation with missing frontend proof before and during the final native guard, an unavailable generic fingerprint that does not override exact matching, a different observed recipient, expiry and an uncertain native call.",
+      "action": "Drain repeatedly across missing and recovered proof; inspect native attempts, queue identity, terminal operations and the accepted audit.",
+      "expected": "A same-generation transient gap leaves the original positively unsent briefing queued for the original deadline, including when the final native gate proves non-submission. Changes, expiry and uncertainty do not authorize retries. A recovered exact target can receive one native input without terminal paste or Enter.",
+      "planned_files": [
+        "internal/hqnudge/rotation_brief_identity_gap_test.go"
+      ]
+    },
+    {
+      "id": "HRB-010",
+      "layer": "L2",
+      "description": "Strict frontend readiness distinguishes absence from a known changed target",
+      "setup": "Bind a synthetic live frontend with existing proof utilities. Use stale heartbeat, a missing pane observation or frontend record, a retired record, an explicit pane mismatch, a mismatched index and a positively replaced bridge.",
+      "action": "Read exact pane readiness and compare the existing successful frontend lookup.",
+      "expected": "A present fresh proof has its original authority. Unavailable proof carries a retry diagnostic and observed identifiers where present. A mismatched index or replaced bridge denies retry permission. No missing or mismatched proof grants an attachment.",
+      "planned_files": [
+        "internal/resume/frontend_pane_readiness_test.go"
+      ]
+    },
+    {
+      "id": "HRB-011",
+      "layer": "L2",
+      "description": "Native briefing distinguishes a failed frontend lookup before the final composer guard",
+      "setup": "Use the real Codex native adapter with a staged bound wake and fake kernel observations and RPC input. Simulate a retryable final proof miss, a conflicting target and a new draft observed after successful lookup.",
+      "action": "Run the final native check and inspect the typed refusal, admission and transport attempts.",
+      "expected": "Only same-binding missing proof becomes eligible for the unsent briefing wait. Conflicting proof is a terminal refusal. A successful final target read is followed by the composer guard before admission. All three negative controls prove non-submission.",
+      "planned_files": [
+        "internal/dispatchbridge/rotation_brief_admission_test.go"
+      ]
+    }
+  ],
+  "seal": "6c5ab7a5a585eb6a31cae709e4c83754658c2339546fcc3c5b3cf1174579b46f"
+}
