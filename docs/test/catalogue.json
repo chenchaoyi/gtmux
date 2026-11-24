@@ -70114,7 +70114,7 @@
           "design": "HRB-007,HRB-008"
         }
       ],
-      "sha256": "848e907b6c953ddcf6b63bd4153db15c8cb9851b79f06ba9c166cdfca90996ca"
+      "sha256": "cc7ba050be4ef6196baca18e0ad4e7820f8c287218facce701b12d80fe1a2d1d"
     },
     "internal/hqnudge/rotation_brief_identity_gap_test.go": {
       "layer": "L2",
@@ -70131,7 +70131,7 @@
         },
         {
           "id": "MAP-46012b0cc511",
-          "line": 109,
+          "line": 118,
           "kind": "reviewed-selector",
           "name": "TestBoundRotationBriefUsesExactProofAcrossGenericFingerprintGap",
           "dynamic": false,
@@ -70139,7 +70139,7 @@
           "design": "HRB-009"
         }
       ],
-      "sha256": "7f9fc9682c47ba98235a521ae68554904af422df158d04403ed557781b59bf96"
+      "sha256": "bdfadf474b4a014ed5a8785ba45a1eeabd68b7a2cf6accf08464f6e9b62554ba"
     },
     "internal/resume/frontend_pane_readiness_test.go": {
       "layer": "L2",

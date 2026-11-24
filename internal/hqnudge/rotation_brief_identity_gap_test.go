@@ -10,7 +10,7 @@ import (
 )
 
 func TestBoundRotationBriefWaitsOnlyForMissingOriginalProof(t *testing.T) {
-	for _, mode := range []string{"preflight", "native-routing", "routing-recovered", "native-lookup", "final-guard", "changed", "wrong-stamp", "expired", "uncertain"} {
+	for _, mode := range []string{"preflight", "native-routing", "routing-recovered", "routing-draft", "native-lookup", "final-guard", "changed", "wrong-stamp", "expired", "uncertain"} {
 		t.Run(mode, func(t *testing.T) {
 			bind, _, f, target := rotationBriefFixture(t)
 			original := *target
@@ -22,12 +22,15 @@ func TestBoundRotationBriefWaitsOnlyForMissingOriginalProof(t *testing.T) {
 				return prod.identity(pane)
 			}
 			calls, accepted := 0, 0
-			routingGap := mode == "native-routing" || mode == "routing-recovered"
+			routingGap := mode == "native-routing" || mode == "routing-recovered" || mode == "routing-draft"
 			nativeWakeIO = func(string, ...string) dispatch.IO {
 				if routingGap {
 					routingGap = false
 					if mode == "native-routing" {
 						*target = missing
+					}
+					if mode == "routing-draft" {
+						f.draft = "new user draft"
 					}
 					return dispatch.IO{}
 				}
@@ -82,7 +85,7 @@ func TestBoundRotationBriefWaitsOnlyForMissingOriginalProof(t *testing.T) {
 				f.nano += int64(3 * time.Second)
 			}
 			Drain(bind.Pane)
-			wantRecover := mode == "preflight" || mode == "native-routing" || mode == "native-lookup" || mode == "final-guard"
+			wantRecover := mode == "preflight" || mode == "native-routing" || mode == "routing-draft" || mode == "native-lookup" || mode == "final-guard"
 			after := queuedNames(isRotationBrief)
 			if accepted != 0 || wantRecover && !slices.Equal(before, after) || !wantRecover && len(after) != 0 {
 				t.Fatalf("incorrect pending disposition: %v -> %v, accepted=%d", before, after, accepted)
@@ -96,6 +99,12 @@ func TestBoundRotationBriefWaitsOnlyForMissingOriginalProof(t *testing.T) {
 				wantInputs++
 			}
 			*target = original
+			if mode == "routing-draft" {
+				if f.draft != "new user draft" {
+					t.Fatal("unsent briefing changed the user's draft")
+				}
+				f.draft = ""
+			}
 			Drain(bind.Pane)
 			Drain(bind.Pane)
 			if calls != wantCalls || accepted != wantInputs || f.pastes != 0 || f.enters != 0 ||

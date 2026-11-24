@@ -274,6 +274,22 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 				failRotation(r, "HQ changed again before its successor became recoverable", now.Unix())
 				return
 			}
+			kind := ""
+			ready := r.Agent != "codex"
+			if !ready {
+				var at time.Time
+				kind, at = boundary(sid)
+				ready = transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" && !at.Before(time.Unix(r.SentAt, 0)) && !at.After(now)
+			}
+			if ready {
+				events.AuditRotateConfirmed(r.Agent, r.Retiring, sid, r.Input, now.Unix())
+				_ = os.Remove(rotationPendingPath())
+				return
+			}
+			if now.Unix() >= deadline {
+				failSentRotationTimeout(r, agent, sid, reason, now.Unix())
+				return
+			}
 			if r.Successor == "" {
 				r.Successor, r.SwitchedAt = sid, now.Unix()
 				deadline = r.SwitchedAt + int64(rotationReadyWait/time.Second)
@@ -283,39 +299,26 @@ func advanceHQRotation(r rotationRequest, pane, agent, sid string, io dispatch.I
 				}
 				diag.For("hq").Info("hq.rotation.switched", "HQ successor observed; waiting for durable handoff", "session", sid)
 			}
-			if r.Agent == "codex" {
-				kind, at := boundary(sid)
-				ready := transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" && !at.Before(time.Unix(r.SentAt, 0)) && !at.After(now)
-				if !ready {
-					if now.Unix() >= deadline {
-						failSentRotationTimeout(r, agent, sid, reason, now.Unix())
-						return
-					}
-					if r.BootstrapAt == 0 && kind == "" && hqBriefingEnabled() &&
-						!state.Exists(state.ActivePath(pane)) && !state.Exists(state.WaitingPath(pane)) && dispatch.BoxEmpty(io) {
-						frontend, bound := rotationBriefFrontend(pane)
-						if !bound || frontend.SessionID != sid || frontend.HomeID != transcript.CodexHomeID() ||
-							frontend.Instance == "" || frontend.PID <= 0 {
-							return
-						}
-						r.BootstrapAt = now.Unix()
-						r.BootstrapID, r.BootstrapHome = diag.NewOpID(), frontend.HomeID
-						r.BootstrapInstance, r.BootstrapPID = frontend.Instance, frontend.PID
-						if err := writeRotationFile(r, false); err != nil {
-							diag.ReportStoreFailure("hq-rotation", err)
-							return
-						}
-						bootstrap = hqinput.RotationBrief{
-							Request: r.BootstrapID, Pane: r.Pane, Agent: r.Agent, Home: r.BootstrapHome,
-							Session: r.Successor, Stamp: r.TargetStamp, Instance: r.BootstrapInstance,
-							ClientPID: r.BootstrapPID, Deadline: deadline,
-						}
-					}
+			if r.BootstrapAt == 0 && kind == "" && hqBriefingEnabled() &&
+				!state.Exists(state.ActivePath(pane)) && !state.Exists(state.WaitingPath(pane)) && dispatch.BoxEmpty(io) {
+				frontend, bound := rotationBriefFrontend(pane)
+				if !bound || frontend.SessionID != sid || frontend.HomeID != transcript.CodexHomeID() ||
+					frontend.Instance == "" || frontend.PID <= 0 {
 					return
 				}
+				r.BootstrapAt = now.Unix()
+				r.BootstrapID, r.BootstrapHome = diag.NewOpID(), frontend.HomeID
+				r.BootstrapInstance, r.BootstrapPID = frontend.Instance, frontend.PID
+				if err := writeRotationFile(r, false); err != nil {
+					diag.ReportStoreFailure("hq-rotation", err)
+					return
+				}
+				bootstrap = hqinput.RotationBrief{
+					Request: r.BootstrapID, Pane: r.Pane, Agent: r.Agent, Home: r.BootstrapHome,
+					Session: r.Successor, Stamp: r.TargetStamp, Instance: r.BootstrapInstance,
+					ClientPID: r.BootstrapPID, Deadline: deadline,
+				}
 			}
-			events.AuditRotateConfirmed(r.Agent, r.Retiring, sid, r.Input, now.Unix())
-			_ = os.Remove(rotationPendingPath())
 			return
 		}
 		if now.Unix() >= deadline {
@@ -427,6 +430,8 @@ func failSentRotationTimeout(r rotationRequest, agent, sid, code string, now int
 	reason := "reset was attempted but no new session ID appeared"
 	if r.Successor != "" {
 		reason = "HQ successor was observed but its handoff/history was not confirmed"
+	} else if agent != "" && sid != "" && sid != r.Retiring {
+		reason = "HQ successor was observed without recoverable history at the settle deadline"
 	}
 	switch {
 	case agent == "":

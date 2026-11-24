@@ -12,7 +12,7 @@ import (
 )
 
 func TestSentRotationWaitsThroughTransientIdentityGaps(t *testing.T) {
-	for _, mode := range []string{"recover", "settle-timeout", "session-timeout", "handoff-timeout", "wrong-pane", "reused-pane"} {
+	for _, mode := range []string{"recover", "settle-complete", "settle-incomplete", "settle-timeout", "session-timeout", "handoff-timeout", "wrong-pane", "reused-pane"} {
 		t.Run(mode, func(t *testing.T) {
 			now := time.Now().Truncate(time.Second)
 			r := testRotationRequest(t, now)
@@ -71,6 +71,12 @@ func TestSentRotationWaitsThroughTransientIdentityGaps(t *testing.T) {
 			case "recover":
 				writeRotationHistory(t, successor)
 				agent, sid = r.Agent, successor
+			case "settle-complete":
+				successor = "successor"
+				writeRotationHistory(t, successor)
+				agent, sid = r.Agent, successor
+			case "settle-incomplete":
+				agent, sid, reason = r.Agent, "late-successor", "without recoverable history at the settle deadline"
 			case "session-timeout":
 				agent, reason = r.Agent, "HQ session identity unavailable: proof-expired"
 			case "wrong-pane":
@@ -81,9 +87,14 @@ func TestSentRotationWaitsThroughTransientIdentityGaps(t *testing.T) {
 			if mode != "wrong-pane" && mode != "reused-pane" {
 				before := deadline.Add(-time.Second)
 				advance(r.Pane, agent, "", before, mode == "recover")
-				checkPending(successor, switchedAt, before)
+				if switchedAt == 0 {
+					checkPending("", 0, before)
+				} else {
+					checkPending(successor, switchedAt, before)
+				}
 			}
-			advance(pane, agent, sid, deadline, mode == "recover")
+			confirmed := mode == "recover" || mode == "settle-complete"
+			advance(pane, agent, sid, deadline, confirmed)
 			advance(r.Pane, r.Agent, r.Retiring, deadline.Add(time.Second), false)
 			if _, ok, err := readRotationRequest(); err != nil || ok || !slices.Equal(p.pasted, []string{"/new"}) || p.enters != 1 {
 				t.Fatalf("terminal state or reset count was wrong: %v, %v, %+v", ok, err, p)
@@ -92,7 +103,7 @@ func TestSentRotationWaitsThroughTransientIdentityGaps(t *testing.T) {
 			if len(records) != 2 {
 				t.Fatalf("expected one outcome: %+v", records)
 			}
-			if mode == "recover" {
+			if confirmed {
 				if records[1].Event != events.AuditEventRotate || records[1].AgentSession != successor || len(notices) != 0 {
 					t.Fatalf("exact deadline evidence did not settle: %+v, %+v", records, notices)
 				}

@@ -141,12 +141,15 @@ func drainRotationBrief(x io, pane, name string) {
 		}
 		return ""
 	}
-	if reason := hold(); reason != "" {
+	settleHold := func(reason string) {
 		if reason == briefComposerUnavailable || reason == briefTargetWaiting {
 			waitRotationBrief(claim, path, name, reason)
 		} else {
 			refuseRotationBrief(claim, reason)
 		}
+	}
+	if reason := hold(); reason != "" {
+		settleHold(reason)
 		return
 	}
 	ctx, cancel := context.WithDeadline(context.Background(), time.Unix(w.Bind.Deadline, 0))
@@ -161,17 +164,21 @@ func drainRotationBrief(x io, pane, name string) {
 		return lastHold
 	}
 	submit := prepareNativeWakeFor(pane, opts, nativeHold)
-	if submit == nil && hold() == "" {
+	if submit == nil {
+		if reason := hold(); reason != "" {
+			settleHold(reason)
+			return
+		}
 		// Routing may have missed the proof between two valid observations.
 		// Preparation cannot send input; re-resolve the same route once.
 		submit = prepareNativeWakeFor(pane, opts, nativeHold)
 	}
 	if submit == nil {
-		if hold() == briefTargetWaiting {
-			waitRotationBrief(claim, path, name, briefTargetWaiting)
-			return
+		reason := hold()
+		if reason == "" {
+			reason = "rotation-brief-native-unavailable"
 		}
-		refuseRotationBrief(claim, "rotation-brief-native-unavailable")
+		settleHold(reason)
 		return
 	}
 
