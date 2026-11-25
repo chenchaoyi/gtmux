@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -157,6 +158,11 @@ func checkStorageWriters() error {
 	if err := checkStorageProcesses(nil); err != nil {
 		return err
 	}
+	if runtime.GOOS == "darwin" {
+		if err := checkLegacyMenuBar(userservice.StorageLaunchd{Home: state.Home()}); err != nil {
+			return err
+		}
+	}
 	return userservice.CheckStorageStopped(state.Home(), serveAgentLabel, tunnelAgentLabel, selfTunnelAgentLabel)
 }
 
@@ -176,7 +182,7 @@ func checkStorageProcesses(servicePIDs []int) error {
 		if name == "tmux" || strings.HasPrefix(name, "tmux:") {
 			return fmt.Errorf(i18n.Tr("%s is still running (PID %s)", "%s 仍在运行（PID %s）"), name, fields[1])
 		}
-		if name == "gtmuxbar" || name == "gtmux-bar" {
+		if name == "gtmuxbar" || name == "gtmux-bar" || name == "gtmux-menubar" {
 			return fmt.Errorf(i18n.Tr("quit the gtmux menu bar app (PID %s) and rerun Doctor",
 				"请退出 gtmux 菜单栏 App（PID %s），然后重新运行 gtmux doctor --fix"), fields[1])
 		}

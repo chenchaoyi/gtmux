@@ -1058,9 +1058,11 @@ The optional workflow layout SHALL group HQ delivery, submission recovery, deliv
 
 - **WHEN** the operator approves a workflow layout change in `gtmux doctor --fix` after reboot and before opening tmux
 - **THEN** Doctor records the installed managed service identities and their previous settings before changing launchd
+- **AND** Doctor rechecks the confirmed settings under the remote configuration lock and pauses only jobs whose installed and loaded definitions match
+- **AND** Doctor preserves launchd overrides, including default settings, while verified profiles are held outside the automatic startup path
 - **AND** Doctor verifies that all writers are stopped before moving stores
-- **AND** Doctor restores and checks the original service state after verifying the layout
-- **AND** a restart failure or an incomplete move can be resumed from the same command and its recorded plan
+- **AND** Doctor restores eligible profiles and jobs only after the layout commit is durable
+- **AND** a restart failure, an incomplete move or a cleanup error can be resumed from the same command and its recorded plan
 
 #### Scenario: A tmux or other gtmux writer is still present
 

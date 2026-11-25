@@ -19,13 +19,17 @@ import (
 )
 
 type storageLaunchdFixture struct {
-	t             *testing.T
-	manager       userservice.StorageLaunchd
-	overrides     map[string]bool
-	loaded        bool
-	foreignPath   bool
-	failBootstrap bool
-	mutations     []string
+	t              *testing.T
+	manager        userservice.StorageLaunchd
+	overrides      map[string]bool
+	loaded         bool
+	directLoaded   bool
+	idle           bool
+	foreignPath    bool
+	foreignProgram bool
+	legacyMenu     bool
+	failBootstrap  bool
+	mutations      []string
 }
 
 func newStorageLaunchdFixture(t *testing.T) *storageLaunchdFixture {
@@ -46,12 +50,18 @@ func newStorageLaunchdFixture(t *testing.T) *storageLaunchdFixture {
 	labels := []string{serveAgentLabel, tunnelAgentLabel, selfTunnelAgentLabel}
 	missing := exec.Command("sh", "-c", "exit 113").Run()
 	uid := strconv.Itoa(os.Getuid())
+	program := filepath.Join(home, ".local", "bin", "gtmux")
+	argv := map[string][]string{
+		serveAgentLabel:      {program, "serve", "--bind", "127.0.0.1", "--port", "8765"},
+		selfTunnelAgentLabel: {program, "tunnel-client", "--port", "8765"},
+	}
 	for _, label := range []string{serveAgentLabel, selfTunnelAgentLabel} {
-		if err := os.WriteFile(launchd.Path(label), []byte(label), 0600); err != nil {
+		if err := launchd.Write(launchd.Path(label), label, argv[label], filepath.Join(state.Dir(), label+".log")); err != nil {
 			t.Fatal(err)
 		}
-		for _, domain := range []string{"gui/" + uid, "user/" + uid} {
-			fixture.overrides[domain+"/"+label] = label != serveAgentLabel
+		if label == selfTunnelAgentLabel {
+			fixture.overrides["gui/"+uid+"/"+label] = true
+			fixture.overrides["user/"+uid+"/"+label] = true
 		}
 	}
 	fixture.manager = userservice.StorageLaunchd{
@@ -61,16 +71,29 @@ func newStorageLaunchdFixture(t *testing.T) *storageLaunchdFixture {
 			if name != "launchctl" || len(args) < 2 {
 				t.Fatalf("unexpected process: %s %q", name, args)
 			}
+			label := filepath.Base(args[len(args)-1])
+			label = strings.TrimSuffix(label, ".plist")
 			switch args[0] {
 			case "print":
-				if args[1] == "gui/"+uid+"/"+serveAgentLabel && fixture.loaded {
-					path := launchd.Path(serveAgentLabel)
+				if label == menubarBundleID && fixture.legacyMenu && strings.HasPrefix(args[1], "gui/") {
+					return []byte("loaded legacy fixture"), nil
+				}
+				active := label == serveAgentLabel && fixture.loaded || label == selfTunnelAgentLabel && fixture.directLoaded
+				if strings.HasPrefix(args[1], "gui/") && active {
+					path, exe := launchd.Path(label), program
 					if fixture.foreignPath {
 						path = filepath.Join(home, "another.plist")
 					}
-					return fmt.Appendf(nil, "\tpath = %s\n\tpid = 41\n", path), nil
+					if fixture.foreignProgram {
+						exe = "/usr/bin/true"
+					}
+					body := fmt.Sprintf("\tpath = %s\n\tprogram = %s\n\targuments = {\n\t\t%s\n\t}\n", path, exe, strings.Join(argv[label], "\n\t\t"))
+					if label != serveAgentLabel || !fixture.idle {
+						body += "\tpid = 41\n"
+					}
+					return []byte(body), nil
 				}
-				return fmt.Appendf(nil, "Could not find service %q in domain for uid: %s", filepath.Base(args[1]), uid), missing
+				return fmt.Appendf(nil, "Could not find service %q in domain for uid: %s", label, uid), missing
 			case "print-disabled":
 				var rows strings.Builder
 				rows.WriteString("disabled services = {\n")
@@ -82,26 +105,33 @@ func newStorageLaunchdFixture(t *testing.T) *storageLaunchdFixture {
 				rows.WriteString("}\n")
 				return []byte(rows.String()), nil
 			}
-			if jobs, err := readStorageServicePlan(); err != nil || len(jobs) != 2 || !jobs[0].Loaded || jobs[1].Loaded {
-				t.Fatalf("pre-mutation service plan: %+v, %v", jobs, err)
+			if plan, err := readStorageServicePlan(); err != nil || plan == nil || len(plan.Jobs) != 2 || !plan.Jobs[0].Loaded {
+				t.Fatalf("pre-mutation service plan: %+v, %v", plan, err)
 			}
-			fixture.mutations = append(fixture.mutations, args[0])
+			fixture.mutations = append(fixture.mutations, args[0]+":"+label)
 			switch args[0] {
-			case "disable", "enable":
-				if filepath.Base(args[1]) != serveAgentLabel {
-					t.Fatalf("changed an originally disabled job: %q", args)
-				}
-				fixture.overrides[args[1]] = args[0] == "disable"
 			case "bootout":
-				fixture.loaded = false
+				if _, parked, _, err := state.FindStorageServiceProfile(label); err != nil || !parked {
+					t.Fatalf("job stopped before its profile was parked: %v", err)
+				}
+				if label == serveAgentLabel {
+					fixture.loaded = false
+				} else {
+					fixture.directLoaded = false
+				}
 			case "bootstrap":
-				if fixture.failBootstrap {
+				if fixture.failBootstrap && label == serveAgentLabel {
 					return nil, errors.New("fixture bootstrap failed")
 				}
 				if status, err := state.ReadStorageLayout(); err != nil || !status.WorkflowActive() {
 					t.Fatalf("bootstrap before layout readback: %+v, %v", status, err)
 				}
-				fixture.loaded = true
+				if label == serveAgentLabel {
+					fixture.loaded = true
+				} else {
+					fixture.directLoaded = true
+				}
+			case "kickstart":
 			default:
 				t.Fatalf("unexpected launchctl call: %q", args)
 			}
@@ -113,12 +143,12 @@ func newStorageLaunchdFixture(t *testing.T) *storageLaunchdFixture {
 
 func (f *storageLaunchdFixture) offline() error {
 	f.t.Helper()
-	if f.loaded {
-		f.t.Fatal("layout check ran while the managed job was loaded")
+	if f.loaded || f.directLoaded {
+		f.t.Fatal("layout check ran while a managed job was loaded")
 	}
-	for _, disabled := range f.overrides {
-		if !disabled {
-			f.t.Fatal("layout check ran while a managed job could start")
+	for _, label := range []string{serveAgentLabel, selfTunnelAgentLabel} {
+		if _, parked, _, err := state.FindStorageServiceProfile(label); err != nil || !parked {
+			f.t.Fatalf("layout check ran before %s was durably parked: %v", label, err)
 		}
 	}
 	return nil
@@ -127,8 +157,8 @@ func (f *storageLaunchdFixture) offline() error {
 func (f *storageLaunchdFixture) assertRestored() {
 	f.t.Helper()
 	jobs, err := f.manager.Inspect()
-	if err != nil || len(jobs) != 2 || !jobs[0].Running || jobs[0].Disabled != [2]bool{} ||
-		jobs[1].Loaded || jobs[1].Disabled != [2]bool{true, true} {
+	if err != nil || len(jobs) != 2 || !jobs[0].Running || jobs[0].Override != [2]string{"default", "default"} ||
+		jobs[0].Parked || jobs[1].Parked || jobs[1].Loaded || jobs[1].Override != [2]string{"disabled", "disabled"} {
 		f.t.Fatalf("original jobs not restored: %+v, %v", jobs, err)
 	}
 	if plan, err := readStorageServicePlan(); err != nil || plan != nil {
@@ -155,7 +185,7 @@ func TestDoctorGuidedStorageRestoresManagedServices(t *testing.T) {
 	if code := guidedDoctorStorageChange(fixture.manager, processes, fixture.offline, confirm); code != 0 || confirms != 1 {
 		t.Fatalf("Doctor returned %d with %d confirmations", code, confirms)
 	}
-	want := []string{"disable", "disable", "bootout", "enable", "enable", "bootstrap"}
+	want := []string{"bootout:" + serveAgentLabel, "bootstrap:" + serveAgentLabel}
 	if !slices.Equal(fixture.mutations, want) {
 		t.Fatalf("launchd mutations %v, want %v", fixture.mutations, want)
 	}
@@ -275,12 +305,12 @@ func TestDoctorGuidedStorageContinuesAfterInterruption(t *testing.T) {
 			if code := guidedDoctorStorageChange(fixture.manager, processes, writers, confirm); code != 1 || fixture.loaded {
 				t.Fatalf("failure returned %d, service loaded: %v", code, fixture.loaded)
 			}
-			if jobs, err := readStorageServicePlan(); err != nil || len(jobs) != 2 || !jobs[0].Loaded {
-				t.Fatalf("missing original service plan after failure: %+v, %v", jobs, err)
+			if plan, err := readStorageServicePlan(); err != nil || plan == nil || len(plan.Jobs) != 2 || !plan.Jobs[0].Loaded {
+				t.Fatalf("missing original service plan after failure: %+v, %v", plan, err)
 			}
 			wantConfirms := 1
 			if failure == "late writer" {
-				if err := state.CheckStorageLayout(); err == nil || !slices.Equal(fixture.mutations, []string{"disable", "disable", "bootout"}) {
+				if err := state.CheckStorageLayout(); err == nil || !slices.Equal(fixture.mutations, []string{"bootout:" + serveAgentLabel}) {
 					t.Fatalf("writers resumed before layout recovery: %v, %v", err, fixture.mutations)
 				}
 				wantConfirms = 2

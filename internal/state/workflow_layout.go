@@ -224,6 +224,20 @@ func ChangeWorkflowLayout(grouped bool, checkWriters func() error) error {
 	return moveWorkflowLayout(next, checkWriters)
 }
 
+// SyncVerifiedStorageLayout confirms the currently visible layout and commits
+// its journal directory before paused services are allowed to start.
+func SyncVerifiedStorageLayout() error {
+	lease, err := acquireLayoutLease(unix.LOCK_EX)
+	if err != nil {
+		return err
+	}
+	defer lease.Close()
+	if err := CheckStorageLayout(); err != nil {
+		return err
+	}
+	return SyncPrivateDirectory(Dir())
+}
+
 func finishWorkflowLayout(journal *workflowJournal, checkWriters func() error) error {
 	if err := verifyWorkflowMoves(journal, false); err != nil {
 		return err

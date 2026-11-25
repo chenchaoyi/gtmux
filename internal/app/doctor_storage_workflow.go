@@ -38,22 +38,27 @@ func doctorStorageEntry(command string, args []string) (int, bool) {
 		workflow, grouped, pending := status.PendingChange()
 		if interactiveFix && runtime.GOOS == "darwin" && !tmux.InTmux() {
 			_, planErr := os.Lstat(storageServicePlanPath())
+			if os.IsNotExist(planErr) {
+				if err := syncStorageRecoveryAnchor(); err != nil {
+					return guidedStorageRecoveryFailure(err), true
+				}
+			}
 			recoverServices := status.WorkflowActive() && !os.IsNotExist(planErr)
 			groupWorkflow := pending && workflow && grouped ||
 				fault == nil && !status.WorkflowActive() && status.Mode == "grouped"
 			if recoverServices || groupWorkflow {
 				manager := userservice.StorageLaunchd{
-					Home:   state.Home(),
-					Labels: []string{serveAgentLabel, tunnelAgentLabel, selfTunnelAgentLabel},
+					Home:       state.Home(),
+					Executable: selfPath(),
+					Labels:     []string{serveAgentLabel, tunnelAgentLabel, selfTunnelAgentLabel},
 				}
 				if groupWorkflow && !pending && os.IsNotExist(planErr) {
 					jobs, inspectErr := manager.Inspect()
-					if inspectErr == nil {
-						inspectErr = checkStorageProcesses(userservice.StorageLaunchdPIDs(jobs))
-					}
 					if inspectErr != nil {
-						i18n.Sae("Storage grouping deferred: "+inspectErr.Error(),
-							"暂缓数据目录迁移："+inspectErr.Error())
+						return guidedStorageFailure(inspectErr), true
+					}
+					if err := checkStorageProcesses(userservice.StorageLaunchdPIDs(jobs)); err != nil {
+						i18n.Sae("Storage grouping deferred: "+err.Error(), "暂缓数据目录迁移："+err.Error())
 						return 0, false
 					}
 				}
