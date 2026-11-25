@@ -1862,7 +1862,7 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 	}
 	var bounds []bound
 	verified := 0
-	var unavailable, missing, unverified, stopped []string
+	var unavailable, missing, unverified, stopped, focus []string
 	claimed := map[string]bool{} // every session id some pane already owns
 	currentClients := map[string]bool{}
 	for _, attachment := range agentclient.All() {
@@ -1894,6 +1894,9 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 			_, live, reason := resume.LoadLiveDiagnostic(p.Loc)
 			if !live {
 				unavailable = append(unavailable, p.PaneID+" ("+reason+")")
+				if len(focus) < 8 && strings.HasPrefix(p.PaneID, "%") {
+					focus = append(focus, "gtmux focus "+p.PaneID)
+				}
 				if resume.LoadFrontendRecoveryKind(p.Loc) == resume.FrontendRecoveryStopped {
 					stopped = append(stopped, p.PaneID)
 				}
@@ -1924,11 +1927,16 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 	case len(unavailable) > 0:
 		note := doctorAssociationDetails(unavailable, missing, unverified)
 		if len(stopped) > 0 {
-			note += fmt.Sprintf(i18n.Tr(". Frontend stopped: %s; waiting cannot restore it. Normally resume this conversation in its terminal.", "。前端已退出：%s，等待不会恢复；请在对应终端正常续开这段对话。"), strings.Join(stopped, ", "))
+			note += fmt.Sprintf(i18n.Tr(". Frontend stopped: %s; waiting cannot restore it.", "。前端已退出：%s，等待不会恢复。"), strings.Join(stopped, ", "))
 		}
 		if len(stopped) < len(unavailable) {
-			note += i18n.Tr(" Automatic recovery for the remaining panes cannot be confirmed. Check their terminals and resume normally if they stay unlinked.", " 其余窗格无法确认正在自动恢复；请检查对应终端，持续未关联时正常续开。")
+			note += i18n.Tr(" Automatic recovery for the other panes cannot be confirmed.", " 其余窗格的自动恢复无法确认。")
 		}
+		if len(focus) > 0 {
+			note += i18n.Tr(" Open the affected terminal with ", " 打开对应终端：") + strings.Join(focus, ", ") + "."
+		}
+		note += i18n.Tr(" If the link stays unavailable, save any draft and let the current turn finish. Exit Codex normally, then run `gtmux codex -- resume` in that pane and select the original conversation.",
+			" 若持续未关联，请先保存草稿并等当前回合结束。正常退出 Codex 后，在原窗格运行 `gtmux codex -- resume`，选择原对话。")
 		return dcheck{stMiss, label, fmt.Sprintf(i18n.Tr("%d unavailable", "%d 个未关联"), len(unavailable)),
 			note}
 	case len(missing)+len(unverified) > 0:

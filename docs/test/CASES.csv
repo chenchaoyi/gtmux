@@ -264,6 +264,7 @@ LEG-7c630285eaf3,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.g
 LEG-557a69970f28,G,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,274,Test,TestKiroMigratedArrayForeignProfileSurvivesGlobalInstall,False,legacy-not-retrospectively-reviewed
 MAP-0f1a3a4682ef,L2,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,69,reviewed-selector,TestAppHookFixturesIgnoreInheritedCodexHome,False,"CHI-001,CHI-002"
 MAP-3d8c62b101e2,L2,Go core / CLI / server,internal/app/doctor_agent_hooks_test.go,95,reviewed-selector,TestDoctorRepairsUnusableCodexHookExecutable,False,"CHI-001,CHI-002"
+MAP-2d394ad207f0,L3,reviewed implementation,internal/app/doctor_binding_repair_test.go,14,reviewed-selector,TestDBR002DoctorIdentifiesTheTerminalWithoutTouchingIt,False,DBR-002
 LEG-28bec547a2b0,L1,Go core / CLI / server,internal/app/doctor_claudetui_test.go,12,Test,TestClaudeTUIRow,False,legacy-not-retrospectively-reviewed
 LEG-8f15b04a541d,L1,Go core / CLI / server,internal/app/doctor_claudetui_test.go,36,Test,TestClaudeTUIPinnableOnlyWithEvidenceAndNoExplicitChoice,False,legacy-not-retrospectively-reviewed
 LEG-577ebdc57c6d,L1,Go core / CLI / server,internal/app/doctor_claudetui_test.go,92,Test,TestReadClaudeTUIFactsFromSettingsAndEnv,False,legacy-not-retrospectively-reviewed
@@ -2899,6 +2900,8 @@ MAP-a549d442247a,L2,reviewed implementation,internal/resume/conversation_test.go
 MAP-fa6914665340,L2,reviewed implementation,internal/resume/conversation_test.go,134,reviewed-selector,TestCAS002OwnHeartbeatRepairsLostIndex,False,"CAS-001,CAS-002"
 MAP-67dd266a7a62,L2,reviewed implementation,internal/resume/conversation_test.go,158,reviewed-selector,TestCAS002HeartbeatCannotReclaimReplacementOrUnknownEvidence,False,"CAS-001,CAS-002"
 MAP-d797af1a2534,L2,reviewed implementation,internal/resume/conversation_test.go,214,reviewed-selector,TestCAS001LegacyEmptyAndForeignHome,False,"CAS-001,CAS-002"
+MAP-964df2c97dc3,L3,reviewed implementation,internal/resume/doctor_binding_repair_test.go,68,reviewed-selector,TestDBR001DoctorRepairsOnlyTheVerifiedReference,False,DBR-001
+MAP-6ebff544cb7c,L3,reviewed implementation,internal/resume/doctor_binding_repair_test.go,105,reviewed-selector,TestDBR001DoctorRefusesIncompleteOrChangedEvidence,False,DBR-001
 LEG-3036a69fd5c3,L1,Go core / CLI / server,internal/resume/dsh_test.go,11,Test,TestDSHResumeRequiresVerifiedTerminalHomeAndExistingRoot,False,legacy-not-retrospectively-reviewed
 LEG-6efe6b04d63b,L1,Go core / CLI / server,internal/resume/fromcommand_test.go,5,Test,TestFromCommand,False,legacy-not-retrospectively-reviewed
 LEG-df6a4e30461b,L1,Go core / CLI / server,internal/resume/fromcommand_test.go,38,Test,TestFromCommandRoundTripsCommand,False,legacy-not-retrospectively-reviewed

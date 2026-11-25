@@ -5705,5 +5705,13 @@
   "internal/hq/eventscmd_cursor_test.go": {
     "cases": ["HCR-001"],
     "selectors": ["TestHCR001SkipAheadReadProvidesSavedCursor"]
+  },
+  "internal/resume/doctor_binding_repair_test.go": {
+    "cases": ["DBR-001"],
+    "selectors": ["TestDBR001DoctorRepairsOnlyTheVerifiedReference", "TestDBR001DoctorRefusesIncompleteOrChangedEvidence"]
+  },
+  "internal/app/doctor_binding_repair_test.go": {
+    "cases": ["DBR-002"],
+    "selectors": ["TestDBR002DoctorIdentifiesTheTerminalWithoutTouchingIt"]
   }
 }

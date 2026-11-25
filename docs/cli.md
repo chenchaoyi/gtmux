@@ -2178,6 +2178,12 @@ The terminal report ends with all blocking and recommended findings, blocking
 first, including their group, current value and existing guidance. The fix pass
 uses the same list for remaining findings; a recommendation is not itself a
 failed repair. Some items need a separate action rather than `doctor --fix`.
+
+For a Codex conversation with an expired reference, `doctor --fix` can restore the
+link when a verified live connection and its committed receipt identify the same
+conversation in the same pane. The repair only updates the saved reference. When
+Doctor cannot verify the link, it shows `gtmux focus %N` and the steps to resume the
+original conversation after saving any draft and letting the current turn finish.
 The Mac summary shows complete guidance and specific actions (open HQ or copy the
 error-log command), instead of linking back to the same check. It never runs copied
 commands automatically.
