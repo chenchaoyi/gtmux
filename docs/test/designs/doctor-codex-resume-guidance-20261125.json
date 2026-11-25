@@ -1,0 +1,24 @@
+{
+  "change": "Show the exact terminal and safe resume steps for unavailable Codex conversations",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (Codex self-review after independent rejection of the writer)",
+    "date": "2026-11-25",
+    "decision": "Keep Doctor's association handling read-only and make its findings actionable",
+    "notes": "A recent disk receipt does not prove ownership during a pending root switch. Older writers may also bypass the current lease. Drop index mutation and its tests. Opening or resuming still belongs to the user at the terminal; Doctor displays the exact pane, draft preservation and launch context guidance."
+  },
+  "cases": [
+    {
+      "id": "DBR-003",
+      "layer": "L3",
+      "description": "Doctor gives terminal recovery steps for expired, missing and unverified Codex associations",
+      "setup": "Isolated HOME and tmux observation cover one expired proof, one missing index, one current client that cannot be verified, and an unrelated unbound agent.",
+      "action": "Read the actual association row for each case and for a mixed group.",
+      "expected": "The note carries each applicable Codex pane's focus command, save-draft and managed resume steps, and original launcher or Codex home guidance. Other agents receive no Codex command. Existing severity and evidence files are preserved. No repair action sends input or changes association evidence.",
+      "planned_files": [
+        "internal/app/doctor_codex_guidance_test.go"
+      ]
+    }
+  ],
+  "seal": "862fdea91bb120b6f24fec2f819a5642fd846865a7295f24c60384b120c4ecf5"
+}
