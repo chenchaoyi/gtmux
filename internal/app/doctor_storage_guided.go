@@ -58,13 +58,14 @@ func readStorageServicePlan() (*storageServicePlan, error) {
 		return nil, errors.New("the saved launchd maintenance plan needs review")
 	}
 	switch plan.Phase {
-	case "pause", "restore", "verified":
+	case "pause", "restore", "start", "verified":
 	default:
 		return nil, errors.New("the saved launchd maintenance phase needs review")
 	}
 	seen := make(map[string]bool)
 	for _, job := range plan.Jobs {
 		if job.Identity.Inode == 0 || seen[job.Label] ||
+			plan.Phase == "start" && !profileReturnRecorded(job) ||
 			plan.Phase == "verified" && job.Stage != "" && job.Stage != "done" && job.Stage != "changed" {
 			return nil, errors.New("the saved launchd maintenance jobs need review")
 		}
@@ -142,21 +143,19 @@ func (ops storageServiceIO) finish(manager userservice.StorageLaunchd, plan *sto
 	if plan.Phase == "verified" {
 		return ops.cleanup()
 	}
-	if err := ops.barrier(); err != nil {
+	if plan.Phase != "start" {
+		if err := ops.prepareServiceStart(manager, plan); err != nil {
+			return err
+		}
+	}
+	// A service started by this plan may still hold shared admission when
+	// another job needs a retry. This phase has no layout paths to move.
+	lease, err := state.EnterStorageCommand()
+	if err != nil {
 		return err
 	}
-	plan.Phase = "restore"
-	if err := ops.save(plan); err != nil {
-		return err
-	}
-	save := func() error { return ops.save(plan) }
-	if err := manager.ReturnProfiles(plan.Jobs, save); err != nil {
-		return err
-	}
-	if err := state.ReleaseWorkflowServiceFence(); err != nil {
-		return err
-	}
-	if err := manager.Restore(plan.Jobs, save); err != nil {
+	defer lease.Close()
+	if err := manager.Restore(plan.Jobs, func() error { return ops.save(plan) }); err != nil {
 		return err
 	}
 	for _, job := range plan.Jobs {
@@ -169,6 +168,49 @@ func (ops storageServiceIO) finish(manager userservice.StorageLaunchd, plan *sto
 		return err
 	}
 	return ops.cleanup()
+}
+
+func profileReturnRecorded(job userservice.StorageLaunchdJob) bool {
+	switch job.Stage {
+	case "", "returned", "done", "changed":
+		return true
+	default:
+		return false
+	}
+}
+
+func (ops storageServiceIO) prepareServiceStart(manager userservice.StorageLaunchd, plan *storageServicePlan) error {
+	allReturned := true
+	for _, job := range plan.Jobs {
+		allReturned = allReturned && profileReturnRecorded(job)
+	}
+	if plan.Phase == "restore" && allReturned {
+		// Recover if the fence was durably cleared before recording the
+		// start phase, potentially across a restart of launchd itself.
+		if lease, err := state.EnterStorageCommand(); err == nil {
+			defer lease.Close()
+			if err := ops.sync(state.Dir()); err != nil {
+				return err
+			}
+			plan.Phase = "start"
+			return ops.save(plan)
+		}
+	}
+	if err := ops.barrier(); err != nil {
+		return err
+	}
+	plan.Phase = "restore"
+	if err := ops.save(plan); err != nil {
+		return err
+	}
+	if err := manager.ReturnProfiles(plan.Jobs, func() error { return ops.save(plan) }); err != nil {
+		return err
+	}
+	if err := state.ReleaseWorkflowServiceFence(); err != nil {
+		return err
+	}
+	plan.Phase = "start"
+	return ops.save(plan)
 }
 
 func guidedStorageFailure(err error) int {

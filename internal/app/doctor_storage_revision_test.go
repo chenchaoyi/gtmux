@@ -178,6 +178,27 @@ func TestDoctorStorageDurableBoundaries(t *testing.T) {
 }
 
 func TestDoctorStorageRecoversPartialServicesAndBoundsKickstart(t *testing.T) {
+	t.Run("already running serve keeps its storage lease", func(t *testing.T) {
+		fixture := newStorageLaunchdFixture(t)
+		fixture.directLoaded = true
+		fixture.serveAdmitted = true
+		fixture.failDirect = true
+		uid := strconv.Itoa(os.Getuid())
+		delete(fixture.overrides, "gui/"+uid+"/"+selfTunnelAgentLabel)
+		delete(fixture.overrides, "user/"+uid+"/"+selfTunnelAgentLabel)
+		processes := func([]int) error { return nil }
+		confirm := func(string) bool { return true }
+		if rc := guidedDoctorStorageChange(fixture.manager, processes, fixture.offline, confirm); rc != 1 ||
+			!fixture.loaded || fixture.directLoaded {
+			t.Fatalf("expected serve to be recovered first: rc=%d serve=%v Direct=%v", rc, fixture.loaded, fixture.directLoaded)
+		}
+		fixture.failDirect = false
+		before := len(fixture.mutations)
+		if rc := guidedDoctorStorageChange(fixture.manager, processes, fixture.offline, confirm); rc != 0 ||
+			!fixture.loaded || !fixture.directLoaded || !slices.Equal(fixture.mutations[before:], []string{"bootstrap:" + selfTunnelAgentLabel}) {
+			t.Fatalf("recovery disturbed already running serve: rc=%d actions=%v", rc, fixture.mutations)
+		}
+	})
 	t.Run("dependent tunnel waits but disabled job can be restored", func(t *testing.T) {
 		for _, directOn := range []bool{true, false} {
 			t.Run(strconv.FormatBool(directOn), func(t *testing.T) {

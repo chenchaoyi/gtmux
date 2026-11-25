@@ -29,6 +29,8 @@ type storageLaunchdFixture struct {
 	foreignProgram bool
 	legacyMenu     bool
 	failBootstrap  bool
+	failDirect     bool
+	serveAdmitted  bool
 	mutations      []string
 }
 
@@ -129,11 +131,21 @@ func newStorageLaunchdFixture(t *testing.T) *storageLaunchdFixture {
 				if fixture.failBootstrap && label == serveAgentLabel {
 					return nil, errors.New("fixture bootstrap failed")
 				}
+				if fixture.failDirect && label == selfTunnelAgentLabel {
+					return nil, errors.New("fixture Direct bootstrap failed")
+				}
 				if status, err := state.ReadStorageLayout(); err != nil || !status.WorkflowActive() {
 					t.Fatalf("bootstrap before layout readback: %+v, %v", status, err)
 				}
 				if label == serveAgentLabel {
 					fixture.loaded = true
+					if fixture.serveAdmitted {
+						lease, err := state.EnterStorageCommand()
+						if err != nil {
+							return nil, err
+						}
+						t.Cleanup(func() { _ = lease.Close() })
+					}
 				} else {
 					fixture.directLoaded = true
 				}

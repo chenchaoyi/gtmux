@@ -70949,7 +70949,7 @@
       "cases": [
         {
           "id": "MAP-23cec3f34534",
-          "line": 175,
+          "line": 187,
           "kind": "reviewed-selector",
           "name": "TestDoctorGuidedStorageRestoresManagedServices",
           "dynamic": false,
@@ -70958,7 +70958,7 @@
         },
         {
           "id": "MAP-a93f84fa1c3c",
-          "line": 254,
+          "line": 266,
           "kind": "reviewed-selector",
           "name": "TestDoctorGuidedStorageBlocksWithoutTouchingServices",
           "dynamic": false,
@@ -70967,7 +70967,7 @@
         },
         {
           "id": "MAP-0f15a656ecf9",
-          "line": 295,
+          "line": 307,
           "kind": "reviewed-selector",
           "name": "TestDoctorGuidedStorageContinuesAfterInterruption",
           "dynamic": false,
@@ -70976,7 +70976,7 @@
         },
         {
           "id": "MAP-9915c6cf9785",
-          "line": 204,
+          "line": 216,
           "kind": "reviewed-selector",
           "name": "TestDoctorGuidedStorageFixEntry",
           "dynamic": false,
@@ -70984,7 +70984,7 @@
           "design": "DGS-001,DGS-002,DGS-003"
         }
       ],
-      "sha256": "2dfe235e8b66c9581c6f78019264c0602c69f8f6cec84f4c3a9837659de65281"
+      "sha256": "92e6a8a2db74183bd49a0f0171bdcd2138f938207b0119396418a3d997192c42"
     },
     "internal/app/doctor_storage_revision_test.go": {
       "layer": "L2",
@@ -71036,7 +71036,7 @@
           "design": "DGR-001,DGR-002,DGR-003,DGR-004"
         }
       ],
-      "sha256": "a4e76a81802666c3b591ba6d15842c09444c5280b6b47812ae5bc7c262786996"
+      "sha256": "f95565c2307f7ad18bea57496af62cf5bc06465e96239125797e377178938f00"
     },
     "internal/app/doctor_storage_compat_test.go": {
       "layer": "L2",
