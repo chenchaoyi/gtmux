@@ -1,0 +1,46 @@
+{
+  "id": "closed-session-restore-20261125",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-25",
+    "decision": "Approve before implementation",
+    "notes": "Check the actual session-closed hook in private tmux. Scope evidence to a surviving server and exact archive revision because the close hook does not establish user intent or exit status on its own. Preserve the original bytes and verify the restore consumer, as well as both availability surfaces. Do not modify a live user's tmux configuration during tests."
+  },
+  "cases": [
+    {
+      "id": "CLSR-001",
+      "layer": "L2",
+      "description": "Two observed session closes update pending restore before autosave",
+      "setup": "Run gtmux and tmux on a private socket with an old Resurrect save and a surviving detached anchor.",
+      "action": "Exit two saved shell sessions normally in succession. Read the pending CLI view and remote plan without saving again.",
+      "expected": "The two closures are omitted, the detached anchor and a separately missing saved session remain eligible on their respective surfaces, and the original archive bytes are unchanged.",
+      "planned_files": [
+        "internal/app/restore_closed_test.go"
+      ]
+    },
+    {
+      "id": "CLSR-002",
+      "layer": "L2",
+      "description": "Restore uses the same closure evidence as preview",
+      "setup": "Use the same snapshot and a logged Resurrect consumer.",
+      "action": "Run restoration with an eligible missing session and two closed sessions in the source archive.",
+      "expected": "The consumer receives only eligible rows and cannot recreate the closed sessions. The original archive and configured Resurrect directory are preserved.",
+      "planned_files": [
+        "internal/app/restore_closed_test.go"
+      ]
+    },
+    {
+      "id": "CLSR-003",
+      "layer": "L2",
+      "description": "Closure evidence expires at server and snapshot boundaries",
+      "setup": "Use the same live server and a verified closure record.",
+      "action": "Create a same-named live session, change the snapshot, then stop or replace the tmux server.",
+      "expected": "A live detached session remains eligible. Closure evidence is rejected across a different snapshot or server instance, and failure to query the server does not masquerade as confirmed closure.",
+      "planned_files": [
+        "internal/app/restore_closed_test.go"
+      ]
+    }
+  ],
+  "seal": "8d20f97a3dbd4fb152f01dd71acfba311807262a58ef56bdec3ac07a5fb2de72"
+}
