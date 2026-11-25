@@ -1,4 +1,13 @@
 {
+  "internal/app/doctor_storage_compat_test.go": {
+    "cases": ["DGC-001", "DGC-002", "DGC-003", "DGC-004"],
+    "selectors": [
+      "TestDoctorStorageRebootAfterParkingThroughCLI",
+      "TestDoctorStorageFencesLegacyRemoteOff",
+      "TestDoctorStorageCleanupRetryThroughCLI",
+      "TestDoctorStorageCustomCLIHelpPreservesIdentity"
+    ]
+  },
   "internal/app/doctor_storage_revision_test.go": {
     "cases": ["DGR-001", "DGR-002", "DGR-003", "DGR-004"],
     "selectors": [

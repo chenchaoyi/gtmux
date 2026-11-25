@@ -1,8 +1,11 @@
 package state
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
+
+	"golang.org/x/sys/unix"
 )
 
 type StorageServiceProfileIdentity struct {
@@ -12,6 +15,87 @@ type StorageServiceProfileIdentity struct {
 
 func StorageServiceRecoveryDir() string {
 	return filepath.Join(Dir(), layoutRecovery, "launchd-maintenance")
+}
+
+// PrepareWorkflowServiceFence drains old CLI admission before the first profile
+// can be parked. The existing journal path also fences already installed builds
+// after a process exit or a restart.
+func PrepareWorkflowServiceFence() error {
+	lease, err := acquireLayoutLease(unix.LOCK_EX)
+	if err != nil {
+		return err
+	}
+	defer lease.Close()
+	journal, err := readWorkflowJournal()
+	if err != nil {
+		return err
+	}
+	if journal != nil {
+		switch {
+		case journal.Phase == workflowServicePrep:
+			if err := checkWorkflowServicePreparation(); err != nil {
+				return err
+			}
+		case journal.Phase == workflowServiceMove:
+			if err := verifyWorkflowMoves(journal, false); err != nil {
+				return err
+			}
+		default:
+			return errors.New("another storage change already owns the journal")
+		}
+		return SyncPrivateDirectory(Dir())
+	}
+	if err := CheckStorageLayout(); err != nil {
+		return err
+	}
+	if err := checkWorkflowServicePreparation(); err != nil {
+		return err
+	}
+	return publishWorkflowJournal(&workflowJournal{Version: workflowVersion, Phase: workflowServicePrep}, nil)
+}
+
+// ReleaseWorkflowServiceFence makes the verified layout available to ordinary
+// commands only once no service profile remains held outside LaunchAgents.
+func ReleaseWorkflowServiceFence() error {
+	lease, err := acquireLayoutLease(unix.LOCK_EX)
+	if err != nil {
+		return err
+	}
+	defer lease.Close()
+	journal, err := readWorkflowJournal()
+	if err != nil {
+		return err
+	}
+	if err := verifyStorageBeforeReturningServices(journal); err != nil {
+		return err
+	}
+	for _, label := range []string{"com.gtmux.serve", "com.gtmux.tunnel", "com.gtmux.selftunnel"} {
+		if _, parked, _, err := FindStorageServiceProfile(label); err != nil || parked {
+			return fmt.Errorf("launchd profile %s has not been returned", label)
+		}
+	}
+	if journal == nil || journal.Phase == workflowGrouped {
+		return SyncPrivateDirectory(Dir())
+	}
+	if journal.Phase == workflowServiceReady {
+		active := &workflowJournal{Version: workflowVersion, Phase: workflowGrouped, Marker: journal.Marker}
+		return publishWorkflowJournal(active, journal)
+	}
+	parent, err := privateDirectory(Dir(), false)
+	if err != nil {
+		return err
+	}
+	defer unix.Close(parent)
+	if err := verifyWorkflowJournal(journal); err != nil {
+		return err
+	}
+	if current, err := layoutRegularAt(parent, layoutTransition); err != nil || current != journal.proof.file {
+		return errors.New("prepared service journal changed before retirement")
+	}
+	if err := unix.Unlinkat(parent, layoutTransition, 0); err != nil {
+		return err
+	}
+	return unix.Fsync(parent)
 }
 
 // FindStorageServiceProfile reads the two possible names of a managed profile.

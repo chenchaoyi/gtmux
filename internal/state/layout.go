@@ -106,8 +106,10 @@ func ReadStorageLayout() (StorageLayoutStatus, error) {
 	var transition *layoutTransaction
 	if workflow != nil {
 		status.Workflow = workflow.Phase
-		if workflow.Phase == workflowGrouped {
+		if workflow.Phase == workflowGrouped || workflow.Phase == workflowServiceReady {
 			err = checkWorkflowActive(workflow)
+		} else if workflow.Phase == workflowServicePrep {
+			err = checkWorkflowServicePreparation()
 		} else {
 			err = verifyWorkflowMoves(workflow, false)
 		}
@@ -169,13 +171,17 @@ func ReadStorageLayout() (StorageLayoutStatus, error) {
 	return status, nil
 }
 
-func (s StorageLayoutStatus) WorkflowActive() bool { return s.Workflow == workflowGrouped }
+func (s StorageLayoutStatus) WorkflowActive() bool {
+	return s.Workflow == workflowGrouped || s.Workflow == workflowServiceReady
+}
+
+func (s StorageLayoutStatus) ServicePreparation() bool { return s.Workflow == workflowServicePrep }
 
 // PendingChange reports the direction recorded in a verified journal. A
 // caller must still check the readback error and the offline preconditions.
 func (s StorageLayoutStatus) PendingChange() (workflow, grouped, pending bool) {
 	switch s.Workflow {
-	case workflowGrouping:
+	case workflowGrouping, workflowServiceMove:
 		return true, true, true
 	case workflowRestoring:
 		return true, false, true
@@ -200,6 +206,10 @@ func CheckStorageLayout() error {
 	} else if _, err := os.Lstat(filepath.Join(Dir(), workflowLayoutMarker)); !errors.Is(err, os.ErrNotExist) {
 		return errors.New("workflow layout marker exists without its journal")
 	}
+	return checkBaseStorageLayout()
+}
+
+func checkBaseStorageLayout() error {
 	mode, err := currentLayout()
 	if err != nil {
 		return err

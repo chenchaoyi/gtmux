@@ -38,13 +38,16 @@ func doctorStorageEntry(command string, args []string) (int, bool) {
 		workflow, grouped, pending := status.PendingChange()
 		if interactiveFix && runtime.GOOS == "darwin" && !tmux.InTmux() {
 			_, planErr := os.Lstat(storageServicePlanPath())
-			if os.IsNotExist(planErr) {
-				if err := syncStorageRecoveryAnchor(); err != nil {
+			if _, cleanupErr := os.Lstat(storageServiceCleanupPath()); !os.IsNotExist(cleanupErr) {
+				if err := finishStorageServiceCleanup(systemStorageServiceIO()); err != nil {
 					return guidedStorageRecoveryFailure(err), true
 				}
+				i18n.Say("Storage service recovery cleanup finished.", "存储维护的服务恢复记录已清理。")
+				return 0, true
 			}
-			recoverServices := status.WorkflowActive() && !os.IsNotExist(planErr)
-			groupWorkflow := pending && workflow && grouped ||
+			hasPlan := !os.IsNotExist(planErr)
+			recoverServices := status.WorkflowActive() && hasPlan
+			groupWorkflow := hasPlan && (status.ServicePreparation() || pending && workflow && grouped) ||
 				fault == nil && !status.WorkflowActive() && status.Mode == "grouped"
 			if recoverServices || groupWorkflow {
 				manager := userservice.StorageLaunchd{
@@ -140,6 +143,11 @@ func applyDoctorStorageChange(workflow, grouped bool, writers func() error, conf
 
 func workflowLayoutRow(status state.StorageLayoutStatus, err error) dcheck {
 	label := i18n.Tr("data layout", "数据目录布局")
+	if status.ServicePreparation() {
+		return dcheck{stRec, label, i18n.Tr("service recovery preparing", "后台服务已进入维护"),
+			i18n.Tr("Run gtmux doctor --fix before opening tmux to continue or cancel the prepared move.",
+				"请在打开 tmux 前运行 gtmux doctor --fix，继续或撤回已准备的迁移。")}
+	}
 	if _, grouped, pending := status.PendingChange(); pending {
 		action := i18n.Tr("finish grouping", "继续分组")
 		if !grouped {

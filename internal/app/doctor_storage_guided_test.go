@@ -111,8 +111,14 @@ func newStorageLaunchdFixture(t *testing.T) *storageLaunchdFixture {
 			fixture.mutations = append(fixture.mutations, args[0]+":"+label)
 			switch args[0] {
 			case "bootout":
-				if _, parked, _, err := state.FindStorageServiceProfile(label); err != nil || !parked {
-					t.Fatalf("job stopped before its profile was parked: %v", err)
+				if path, parked, _, err := state.FindStorageServiceProfile(label); err != nil || path == "" || parked {
+					t.Fatalf("job stopped without its live original profile: %v", err)
+				}
+				plan, _ := readStorageServicePlan()
+				for _, job := range plan.Jobs {
+					if job.Label == label && (!job.Reload || job.Stage != "stopping") {
+						t.Fatalf("job stopped before its reload intent was recorded: %+v", job)
+					}
 				}
 				if label == serveAgentLabel {
 					fixture.loaded = false

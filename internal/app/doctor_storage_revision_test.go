@@ -163,8 +163,7 @@ func TestDoctorStorageDurableBoundaries(t *testing.T) {
 				}
 			}
 			if failure == "cleanup sync" {
-				// This is the empty-anchor branch used by a rerun of Doctor.
-				if err := syncStorageRecoveryAnchor(); err != nil {
+				if err := finishStorageServiceCleanup(systemStorageServiceIO()); err != nil {
 					t.Fatal(err)
 				}
 			} else if rc := guidedDoctorStorageChange(fixture.manager, processes, fixture.offline, confirm); rc != 0 {
@@ -196,7 +195,7 @@ func TestDoctorStorageRecoversPartialServicesAndBoundsKickstart(t *testing.T) {
 					t.Fatalf("bootstrap failure returned %d", rc)
 				}
 				_, parked, _, err := state.FindStorageServiceProfile(selfTunnelAgentLabel)
-				if err != nil || parked != directOn || fixture.directLoaded {
+				if err != nil || parked || fixture.directLoaded {
 					t.Fatalf("independent profile handling: parked=%v loaded=%v err=%v", parked, fixture.directLoaded, err)
 				}
 				fixture.failBootstrap = false

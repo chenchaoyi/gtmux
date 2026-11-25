@@ -36,6 +36,12 @@ func storageServicePlanPath() string {
 	return filepath.Join(state.StorageServiceRecoveryDir(), "plan.json")
 }
 
+func storageServiceCleanupPath() string {
+	return filepath.Join(state.StorageServiceRecoveryDir(), "cleanup-pending")
+}
+
+const storageServiceCleanupReceipt = "gtmux launchd recovery verified\n"
+
 func readStorageServicePlan() (*storageServicePlan, error) {
 	f, err := state.OpenPrivateRead(storageServicePlanPath())
 	if errors.Is(err, os.ErrNotExist) {
@@ -84,20 +90,49 @@ func (ops storageServiceIO) save(plan *storageServicePlan) error {
 }
 
 func (ops storageServiceIO) cleanup() error {
+	if err := state.WritePrivateFile(storageServiceCleanupPath(), []byte(storageServiceCleanupReceipt)); err != nil {
+		return err
+	}
 	if err := ops.remove(storageServicePlanPath()); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	// The directory stays as a small retry anchor if removal succeeded but
-	// fsync did not, or if a crash makes the verified receipt reappear.
-	return ops.sync(state.StorageServiceRecoveryDir())
+	if err := ops.sync(state.StorageServiceRecoveryDir()); err != nil {
+		return err
+	}
+	// The significant deletion is already durable. If a crash makes only
+	// this marker reappear, the retry repeats cleanup and no service action.
+	return os.Remove(storageServiceCleanupPath())
 }
 
-func syncStorageRecoveryAnchor() error {
-	dir := state.StorageServiceRecoveryDir()
-	if _, err := os.Lstat(dir); os.IsNotExist(err) {
-		return nil
+func finishStorageServiceCleanup(ops storageServiceIO) error {
+	lease, err := storageMaintenanceLease()
+	if err != nil {
+		return err
 	}
-	return state.SyncPrivateDirectory(dir)
+	defer lease.Close()
+	file, err := state.OpenPrivateRead(storageServiceCleanupPath())
+	if err != nil {
+		return err
+	}
+	data, readErr := io.ReadAll(io.LimitReader(file, int64(len(storageServiceCleanupReceipt)+1)))
+	closeErr := file.Close()
+	if err := errors.Join(readErr, closeErr); err != nil {
+		return err
+	}
+	if string(data) != storageServiceCleanupReceipt {
+		return errors.New("the service cleanup receipt needs review")
+	}
+	plan, err := readStorageServicePlan()
+	if err != nil {
+		return err
+	}
+	if plan != nil && plan.Phase != "verified" {
+		return errors.New("service recovery must finish before removing its plan")
+	}
+	if err := state.CheckStorageLayout(); err != nil {
+		return err
+	}
+	return ops.cleanup()
 }
 
 func (ops storageServiceIO) finish(manager userservice.StorageLaunchd, plan *storageServicePlan) error {
@@ -114,7 +149,14 @@ func (ops storageServiceIO) finish(manager userservice.StorageLaunchd, plan *sto
 	if err := ops.save(plan); err != nil {
 		return err
 	}
-	if err := manager.Restore(plan.Jobs, func() error { return ops.save(plan) }); err != nil {
+	save := func() error { return ops.save(plan) }
+	if err := manager.ReturnProfiles(plan.Jobs, save); err != nil {
+		return err
+	}
+	if err := state.ReleaseWorkflowServiceFence(); err != nil {
+		return err
+	}
+	if err := manager.Restore(plan.Jobs, save); err != nil {
 		return err
 	}
 	for _, job := range plan.Jobs {
@@ -178,6 +220,13 @@ func guidedDoctorStorageChangeWithIO(manager userservice.StorageLaunchd, process
 	if err != nil {
 		return guidedStorageFailure(err)
 	}
+	if !status.ServicePreparation() && !pending {
+		for _, job := range jobs {
+			if job.Parked {
+				return guidedStorageFailure(fmt.Errorf("parked profile %s has no verified storage fence and needs review", job.Label))
+			}
+		}
+	}
 	if err := checkLegacyMenuBar(manager); err != nil {
 		return guidedStorageFailure(err)
 	}
@@ -239,13 +288,17 @@ func guidedDoctorStorageChangeWithIO(manager userservice.StorageLaunchd, process
 			return guidedStorageRecoveryFailure(changeErr)
 		}
 		i18n.Say("Pausing managed gtmux services.", "正在暂停 gtmux 后台服务。")
-		changeErr = manager.Pause(plan.Jobs, func() error { return ops.save(plan) })
+		save := func() error { return ops.save(plan) }
+		changeErr = manager.Stop(plan.Jobs, save)
+		if changeErr == nil {
+			changeErr = state.PrepareWorkflowServiceFence()
+		}
+		if changeErr == nil {
+			changeErr = manager.Park(plan.Jobs, save)
+		}
 	}
 	if changeErr == nil {
 		changeErr = state.ChangeWorkflowLayout(true, writers)
-	}
-	if err := state.CheckStorageLayout(); err != nil {
-		return guidedStorageRecoveryFailure(errors.Join(changeErr, err))
 	}
 	if err := ops.finish(manager, plan); err != nil {
 		return guidedStorageRecoveryFailure(errors.Join(changeErr, err))

@@ -100,7 +100,7 @@ func (m StorageLaunchd) inspect(label string) (StorageLaunchdJob, bool, error) {
 	}
 	const limit = 64 << 10
 	data, err := io.ReadAll(io.LimitReader(f, limit+1))
-	argv := m.profileArguments(label, data)
+	argv := storageProfileArguments(label, data)
 	if err != nil || len(data) > limit || len(argv) == 0 {
 		return job, false, fmt.Errorf("launchd profile %s does not match a supported gtmux installation", label)
 	}
@@ -111,6 +111,9 @@ func (m StorageLaunchd) inspect(label string) (StorageLaunchdJob, bool, error) {
 	loaded, pid, err := m.loaded(domains[0], label, source, argv)
 	if err != nil {
 		return job, false, err
+	}
+	if label != "com.gtmux.tunnel" && !m.isCLI(argv[0]) {
+		return job, false, fmt.Errorf("launchd profile %s uses an unrecognized gtmux path; for a verified custom installation (GTMUX_BIN_DIR), run doctor --fix using the same gtmux executable that registered the service", label)
 	}
 	job.Identity, job.Digest = identity, sha256.Sum256(data)
 	job.Loaded, job.Running, job.PID, job.Parked = loaded, pid > 0, pid, parked
@@ -128,7 +131,7 @@ func (m StorageLaunchd) inspect(label string) (StorageLaunchdJob, bool, error) {
 	return job, true, nil
 }
 
-func (m StorageLaunchd) profileArguments(label string, data []byte) []string {
+func storageProfileArguments(label string, data []byte) []string {
 	var fields map[string]any
 	if _, err := plist.Unmarshal(data, &fields); err != nil || fields["Label"] != label {
 		return nil
@@ -168,14 +171,14 @@ func (m StorageLaunchd) profileArguments(label string, data []byte) []string {
 	}
 	switch label {
 	case "com.gtmux.serve":
-		if m.isCLI(args[0]) && args[1] == "serve" && (len(args) == 2 ||
+		if filepath.Base(args[0]) == "gtmux" && args[1] == "serve" && (len(args) == 2 ||
 			len(args) == 4 && args[2] == "--port" && isPort(args[3]) ||
 			len(args) == 6 && args[2] == "--bind" && (args[3] == "127.0.0.1" || args[3] == "0.0.0.0") &&
 				args[4] == "--port" && isPort(args[5])) {
 			return args
 		}
 	case "com.gtmux.selftunnel":
-		if m.isCLI(args[0]) && len(args) == 4 && args[1] == "tunnel-client" && args[2] == "--port" && isPort(args[3]) {
+		if filepath.Base(args[0]) == "gtmux" && len(args) == 4 && args[1] == "tunnel-client" && args[2] == "--port" && isPort(args[3]) {
 			return args
 		}
 	case "com.gtmux.tunnel":
@@ -299,12 +302,17 @@ func SameStorageLaunchdSnapshot(before, after []StorageLaunchdJob) bool {
 	})
 }
 
+var errStorageServiceRemoved = errors.New("launchd profile was removed")
+
 func (m StorageLaunchd) current(job StorageLaunchdJob) (StorageLaunchdJob, error) {
 	now, found, err := m.inspect(job.Label)
 	if err != nil {
 		return now, err
 	}
-	if !found || now.Identity != job.Identity || now.Digest != job.Digest {
+	if !found {
+		return now, errStorageServiceRemoved
+	}
+	if now.Identity != job.Identity || now.Digest != job.Digest {
 		return now, fmt.Errorf("the launchd profile for %s changed", job.Label)
 	}
 	return now, nil
@@ -322,66 +330,145 @@ func saveStorageJobStage(job *StorageLaunchdJob, stage string, save func() error
 	return save()
 }
 
-func (m StorageLaunchd) Pause(jobs []StorageLaunchdJob, save func() error) error {
-	// Tunnels stop before the service that they connect to.
+// Stop unloads verified jobs while their original profiles are still at their
+// registered paths. The durable reload intent precedes both unload and parking.
+func (m StorageLaunchd) Stop(jobs []StorageLaunchdJob, save func() error) error {
 	for i := len(jobs) - 1; i >= 0; i-- {
-		if err := m.pauseJob(&jobs[i], save); err != nil {
+		job := &jobs[i]
+		if job.Stage == "changed" {
+			continue
+		}
+		now, err := m.current(*job)
+		if errors.Is(err, errStorageServiceRemoved) && (job.Stage == "" || job.Stage == "stopping") {
+			if err := saveStorageJobStage(job, "changed", save); err != nil {
+				return err
+			}
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if now.Override != job.Override || now.Loaded && (!job.Loaded || now.Parked) {
+			return fmt.Errorf("launchd settings changed for %s; verify the latest choice", job.Label)
+		}
+		switch job.Stage {
+		case "":
+			if now.Parked || now.Loaded != job.Loaded || now.Running != job.Running {
+				return fmt.Errorf("launchd state changed for %s; review the migration again", job.Label)
+			}
+			job.Reload = job.Loaded
+			if err := saveStorageJobStage(job, "stopping", save); err != nil {
+				return err
+			}
+		case "stopping", "parking":
+		case "paused":
+			if !now.Parked {
+				return fmt.Errorf("the paused profile %s was moved outside Doctor", job.Label)
+			}
+		default:
+			return fmt.Errorf("launchd profile %s has an invalid pause phase", job.Label)
+		}
+		if now.Loaded {
+			if err := m.mutate("bootout", storageLaunchdDomains()[0]+"/"+job.Label); err != nil {
+				return err
+			}
+			now, err = m.current(*job)
+			if err != nil {
+				return err
+			}
+			if now.Loaded {
+				return fmt.Errorf("launchd job %s is still loaded", job.Label)
+			}
+		}
+	}
+	return nil
+}
+
+// Park follows exclusive publication of the compatibility fence. It never
+// unloads a job or changes its recorded reload intent.
+func (m StorageLaunchd) Park(jobs []StorageLaunchdJob, save func() error) error {
+	for i := len(jobs) - 1; i >= 0; i-- {
+		job := &jobs[i]
+		if job.Stage == "changed" {
+			continue
+		}
+		now, err := m.current(*job)
+		if err != nil {
+			return err
+		}
+		if now.Override != job.Override || now.Loaded {
+			return fmt.Errorf("launchd job %s changed before its profile could be parked", job.Label)
+		}
+		switch job.Stage {
+		case "stopping":
+			if err := saveStorageJobStage(job, "parking", save); err != nil {
+				return err
+			}
+		case "parking", "paused":
+		default:
+			return fmt.Errorf("launchd profile %s has an invalid parking phase", job.Label)
+		}
+		if err := state.MoveStorageServiceProfile(job.Label, job.Identity, true); err != nil {
+			return err
+		}
+		if err := saveStorageJobStage(job, "paused", save); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (m StorageLaunchd) pauseJob(job *StorageLaunchdJob, save func() error) error {
-	now, err := m.current(*job)
-	if err != nil {
-		return err
+// ReturnProfiles completes name recovery before any CLI can be admitted again.
+func (m StorageLaunchd) ReturnProfiles(jobs []StorageLaunchdJob, save func() error) error {
+	var result error
+	for i := range jobs {
+		if err := m.returnProfile(&jobs[i], save); err != nil {
+			result = errors.Join(result, err)
+		}
 	}
-	if now.Override != job.Override || now.Loaded && !job.Loaded {
-		return fmt.Errorf("launchd settings changed for %s; verify the latest choice", job.Label)
-	}
+	return result
+}
+
+func (m StorageLaunchd) returnProfile(job *StorageLaunchdJob, save func() error) error {
 	switch job.Stage {
-	case "":
-		if now.Parked || now.Loaded != job.Loaded || now.Running != job.Running {
-			return fmt.Errorf("launchd state changed for %s; review the migration again", job.Label)
-		}
-		if err := saveStorageJobStage(job, "parking", save); err != nil {
-			return err
-		}
-	case "parking", "stopping", "paused":
+	case "", "done", "changed":
+		return nil
+	case "stopping", "parking", "paused", "returning", "returned":
 	default:
-		return fmt.Errorf("launchd profile %s has an invalid pause phase", job.Label)
+		return fmt.Errorf("launchd profile %s has an invalid return phase", job.Label)
 	}
-	if err := state.MoveStorageServiceProfile(job.Label, job.Identity, true); err != nil {
-		return err
+	now, err := m.current(*job)
+	if errors.Is(err, errStorageServiceRemoved) && (job.Stage == "stopping" || job.Stage == "returned" ||
+		job.Stage == "returning" && state.CheckStorageLayout() == nil) {
+		// An old CLI can legitimately remove a profile before the fence
+		// starts or after it is lifted. Never recreate a removed profile.
+		return saveStorageJobStage(job, "changed", save)
 	}
-	now, err = m.current(*job)
 	if err != nil {
 		return err
 	}
-	if now.Override != job.Override || job.Stage == "paused" && now.Loaded {
-		return fmt.Errorf("launchd settings changed while %s was paused", job.Label)
+	if now.Override != job.Override {
+		job.Reload = false
 	}
-	if now.Loaded {
-		if !job.Loaded {
-			return fmt.Errorf("launchd job %s started during maintenance", job.Label)
-		}
-		if err := saveStorageJobStage(job, "stopping", save); err != nil {
+	if job.Stage != "returned" {
+		if err := saveStorageJobStage(job, "returning", save); err != nil {
 			return err
 		}
-		if err := m.mutate("bootout", storageLaunchdDomains()[0]+"/"+job.Label); err != nil {
+		if now.Parked {
+			if err := state.MoveStorageServiceProfile(job.Label, job.Identity, false); err != nil {
+				return err
+			}
+		} else if err := state.SyncPrivateDirectory(filepath.Dir((Launchd{Home: m.Home}).Path(job.Label))); err != nil {
 			return err
 		}
-		now, err = m.current(*job)
-		if err != nil {
+		if err := state.SyncPrivateDirectory(state.StorageServiceRecoveryDir()); err != nil {
 			return err
 		}
-		if now.Loaded {
-			return fmt.Errorf("launchd job %s is still loaded", job.Label)
+		if err := saveStorageJobStage(job, "returned", save); err != nil {
+			return err
 		}
 	}
-	job.Reload = job.Reload || job.Stage == "stopping"
-	return saveStorageJobStage(job, "paused", save)
+	return nil
 }
 
 func (m StorageLaunchd) Restore(jobs []StorageLaunchdJob, save func() error) error {
@@ -407,26 +494,18 @@ func (m StorageLaunchd) Restore(jobs []StorageLaunchdJob, save func() error) err
 }
 
 func (m StorageLaunchd) restoreJob(job *StorageLaunchdJob, save func() error) error {
+	if job.Stage != "returned" {
+		return fmt.Errorf("launchd profile %s has not been returned", job.Label)
+	}
 	now, err := m.current(*job)
+	if errors.Is(err, errStorageServiceRemoved) {
+		return saveStorageJobStage(job, "changed", save)
+	}
 	if err != nil {
 		return err
 	}
-	switch job.Stage {
-	case "parking", "stopping", "paused":
-		job.Reload = (job.Reload || job.Stage == "stopping") && now.Override == job.Override
-		if err := saveStorageJobStage(job, "returning", save); err != nil {
-			return err
-		}
-	case "returning":
-	default:
-		return fmt.Errorf("launchd profile %s has an invalid recovery phase", job.Label)
-	}
-	if err := state.MoveStorageServiceProfile(job.Label, job.Identity, false); err != nil {
-		return err
-	}
-	now, err = m.current(*job)
-	if err != nil {
-		return err
+	if now.Parked {
+		return fmt.Errorf("launchd profile %s is still parked", job.Label)
 	}
 	if now.Override != job.Override {
 		return saveStorageJobStage(job, "changed", save)

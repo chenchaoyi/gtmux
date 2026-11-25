@@ -112,7 +112,7 @@ func verifyWorkflowMoves(journal *workflowJournal, complete bool) error {
 	if journal.Phase == workflowRestoring && marked && marker != *journal.Marker {
 		return errors.New("workflow layout marker changed during rollback")
 	}
-	allMoved := complete || journal.Phase == workflowGrouping && marked ||
+	allMoved := complete || (journal.Phase == workflowGrouping || journal.Phase == workflowServiceMove) && marked ||
 		journal.Phase == workflowRestoring && !marked
 	planned := make(map[string]layoutEntry, len(journal.Entries))
 	for _, entry := range journal.Entries {
