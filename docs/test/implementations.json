@@ -1,4 +1,13 @@
 {
+  "internal/app/doctor_storage_guided_test.go": {
+    "cases": ["DGS-001", "DGS-002", "DGS-003"],
+    "selectors": [
+      "TestDoctorGuidedStorageRestoresManagedServices",
+      "TestDoctorGuidedStorageFixEntry",
+      "TestDoctorGuidedStorageBlocksWithoutTouchingServices",
+      "TestDoctorGuidedStorageContinuesAfterInterruption"
+    ]
+  },
   "internal/codexterminal/claude_foreground_test.go": {
     "cases": ["HRB-017"],
     "selectors": ["TestClaudeVersionAliasRequiresLinuxForegroundGroupLeader"]

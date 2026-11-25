@@ -83,6 +83,10 @@ MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_
 MAP-f167ee401a33,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,60,reviewed-selector,TestSTOR011DoctorReportsLegacyProfileLocksWithoutChanges,False,"STOR-011,STOR-012"
 MAP-e5e0b1ca236e,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,86,reviewed-selector,TestSTOR012DoctorPrunesOnlyConfirmedIdleLegacyProfileLocks,False,"STOR-011,STOR-012"
 MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
+MAP-23cec3f34534,L2,reviewed implementation,internal/app/doctor_storage_guided_test.go,139,reviewed-selector,TestDoctorGuidedStorageRestoresManagedServices,False,"DGS-001,DGS-002,DGS-003"
+MAP-a93f84fa1c3c,L2,reviewed implementation,internal/app/doctor_storage_guided_test.go,218,reviewed-selector,TestDoctorGuidedStorageBlocksWithoutTouchingServices,False,"DGS-001,DGS-002,DGS-003"
+MAP-0f15a656ecf9,L2,reviewed implementation,internal/app/doctor_storage_guided_test.go,259,reviewed-selector,TestDoctorGuidedStorageContinuesAfterInterruption,False,"DGS-001,DGS-002,DGS-003"
+MAP-9915c6cf9785,L2,reviewed implementation,internal/app/doctor_storage_guided_test.go,168,reviewed-selector,TestDoctorGuidedStorageFixEntry,False,"DGS-001,DGS-002,DGS-003"
 MAP-23b08a3a33d1,L2,reviewed implementation,internal/app/doctor_storage_workflow_test.go,14,reviewed-selector,TestGSW003DoctorStorageMaintenanceWindow,False,"GSW-003,GSW-004"
 MAP-cac9795bd1ab,L2,reviewed implementation,internal/app/doctor_storage_workflow_test.go,61,reviewed-selector,TestGSW004DoctorCacheCleanupProtectsDeliveryState,False,"GSW-003,GSW-004"
 MAP-c7f093bf6da7,L2,reviewed implementation,internal/app/dsh_terminal_spool_test.go,21,reviewed-selector,TestDSHTerminalReceiverSharesSpoolWithGo,False,"SPL-004,SPL-012"

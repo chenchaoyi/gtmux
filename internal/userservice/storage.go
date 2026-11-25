@@ -73,13 +73,18 @@ func stoppedLaunchdStorage(run storageManagerProbe, manager Launchd, uid string,
 }
 
 func persistentlyDisabled(output []byte, label string) bool {
-	var inside, closed, disabled bool
+	disabled, known := launchdDisabledState(output, label)
+	return known && disabled
+}
+
+func launchdDisabledState(output []byte, label string) (disabled, known bool) {
+	var inside, closed bool
 	count := 0
 	for _, line := range strings.Split(string(output), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "disabled services = {" {
 			if inside || closed {
-				return false
+				return false, false
 			}
 			inside = true
 			continue
@@ -95,10 +100,17 @@ func persistentlyDisabled(output []byte, label string) bool {
 		if found && strings.TrimSpace(key) == strconv.Quote(label) {
 			count++
 			value = strings.TrimSpace(value)
-			disabled = value == "disabled" || value == "true"
+			switch value {
+			case "disabled", "true":
+				disabled, known = true, true
+			case "enabled", "false":
+				disabled, known = false, true
+			default:
+				return false, false
+			}
 		}
 	}
-	return closed && count == 1 && disabled
+	return disabled, known && closed && count == 1
 }
 
 func stoppedLaunchdJob(run storageManagerProbe, domain, label string) error {
