@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
 
@@ -32,7 +33,7 @@ func stageClosedRestore(script string, layout savedLayout, closed restoreClosedR
 	if !bytes.Equal(digest[:], layout.Digest) {
 		return "", errors.New("restore archive changed")
 	}
-	dir, err := os.MkdirTemp("", "gtmux-restore-")
+	dir, err := state.MkdirTemp("", "gtmux-restore-")
 	if err != nil {
 		return "", err
 	}
@@ -53,7 +54,7 @@ func stageClosedRestore(script string, layout savedLayout, closed restoreClosedR
 		}
 		filtered.Write(row)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "last"), filtered.Bytes(), 0600); err != nil {
+	if err := state.WriteFile(filepath.Join(dir, "last"), filtered.Bytes(), state.PrivateFile); err != nil {
 		return "", err
 	}
 	// Preserve the user's scrollback setting and reuse the original, read-only
@@ -80,7 +81,7 @@ func stageClosedRestore(script string, layout savedLayout, closed restoreClosedR
 		"    @resurrect-never-overwrite) printf 'on\\n'; exit 0 ;;\n" +
 		"  esac\nfi\n" +
 		"exec " + client + " \"$@\"\n"
-	if err := os.WriteFile(filepath.Join(dir, "tmux"), []byte(wrapper), 0700); err != nil {
+	if err := state.WriteFile(filepath.Join(dir, "tmux"), []byte(wrapper), 0700); err != nil {
 		return "", err
 	}
 	ok = true
