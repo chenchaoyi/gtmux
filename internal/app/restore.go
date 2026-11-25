@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -127,7 +128,7 @@ func ensureServerResult() bool {
 	if script != "" {
 		i18n.Say("Restoring the workspace from your save… (tmux-resurrect)",
 			"正在恢复存档工作区…（tmux-resurrect）")
-		driveResurrectRestore(script) // direct subprocess w/ a sane PATH — NOT run-shell (see func doc)
+		driveResurrectRestore(script, "") // direct subprocess w/ a sane PATH — NOT run-shell (see func doc)
 		restored := waitForRestoredSessions(boot, 120*time.Second)
 		restoreLogf("restore.server", "ensureServer: driven-restore restored=%v liveSessions=%v", restored, sessionNamesList())
 		if restored {
@@ -207,7 +208,7 @@ func resurrectRestoreScript() string {
 // env: $TMUX pointed at this server's socket (so resurrect's tmux_socket() targets
 // the right server), and a PATH that starts with our resolved tmux binary's dir.
 // restore.sh's output goes to the log store (component restore) for diagnosis.
-func driveResurrectRestore(script string) {
+func driveResurrectRestore(script, toolPath string) {
 	socket := tmux.Display("", "#{socket_path}")
 	pid := tmux.Display("", "#{pid}")
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
@@ -217,7 +218,11 @@ func driveResurrectRestore(script string) {
 	if socket != "" {
 		env = append(env, "TMUX="+socket+","+pid+",0")
 	}
-	env = append(env, "PATH="+restorePATH())
+	path := restorePATH()
+	if toolPath != "" {
+		path = toolPath + string(os.PathListSeparator) + path
+	}
+	env = append(env, "PATH="+path)
 	cmd.Env = env
 	out, err := cmd.CombinedOutput()
 	restoreLogf("restore.resurrect", "driveResurrectRestore: script=%s exit=%v socket=%s\n--- restore.sh output ---\n%s--- end ---",
@@ -424,8 +429,7 @@ func shouldRecover(saved []string, live map[string]bool) bool {
 
 // recoverMissingSavedSessions handles the post-reboot trap: a server is already
 // up (so ensureServer's boot+restore is skipped) but the saved layout never came
-// back. If a real saved layout exists with ANY session missing from the running
-// server, drive the tmux-resurrect restore into it to fill the gaps.
+// back. Drive tmux-resurrect when an eligible saved session is missing.
 func recoverMissingSavedSessions() {
 	save := resurrectLastSave()
 	if save == "" || !saveHasLayout(save) {
@@ -433,6 +437,9 @@ func recoverMissingSavedSessions() {
 		return
 	}
 	saved := savedSessionNames(save)
+	layout := loadSavedLayout(save)
+	closed := restoreClosedForLayout(layout, tmux.Run)
+	saved = slices.DeleteFunc(saved, func(name string) bool { return slices.Contains(closed.Names, name) })
 	live := liveSessionNames()
 	if !shouldRecover(saved, live) {
 		restoreLogf("restore.recover", "recover: skip — every saved session is already live (saved=%v live=%v)", saved, sessionNamesList())
@@ -452,10 +459,41 @@ func recoverMissingSavedSessions() {
 		i18n.Say(n, n)
 		restoreLogf("restore.recover", "recover: %s", n)
 	}
-	driveResurrectRestore(script)
-	if waitForSavedSessions(saved, 120*time.Second) {
-		restoreActiveSpots(save) // see restoreactive.go — switch-client is a no-op here too
-		afterRestore(save)
+	restoreSource, toolPath := save, ""
+	restoring := saved
+	if len(closed.Names) != 0 {
+		dir, err := stageClosedRestore(script, layout, closed)
+		if err != nil {
+			restoreLogf("restore.recover", "could not prepare the selected saved sessions: %v", err)
+			i18n.Sae("Could not prepare the selected saved sessions. The archive is unchanged.",
+				"无法准备选定的存档会话，原存档仍保留。")
+			return
+		}
+		defer os.RemoveAll(dir)
+		latest := loadSavedLayout(resurrectLastSave())
+		latestClosed := restoreClosedForLayout(latest, tmux.Run)
+		if latest.SavePath != save || !slices.Equal(layout.Digest, latest.Digest) ||
+			!layout.Ref.Equal(latest.Ref) || latestClosed.Server != closed.Server || !slices.Equal(closed.Names, latestClosed.Names) {
+			i18n.Sae("The saved sessions changed during preparation. Preview restore again.",
+				"准备期间存档会话发生变化，请重新查看恢复预览。")
+			return
+		}
+		restoreSource, toolPath = filepath.Join(dir, "last"), dir
+		// Pre-existing sessions cannot count as evidence that this restore worked.
+		restoring = slices.DeleteFunc(slices.Clone(saved), func(name string) bool { return live[name] })
+	}
+	driveResurrectRestore(script, toolPath)
+	if waitForSavedSessions(restoring, 120*time.Second) {
+		if toolPath != "" {
+			server, err := tmux.Run("display-message", "-p", restoreServerFormat)
+			if err != nil || server != closed.Server {
+				i18n.Sae("The tmux server changed during restore. Preview restore again.",
+					"恢复期间 tmux 服务发生变化，请重新查看恢复预览。")
+				return
+			}
+		}
+		restoreActiveSpots(restoreSource) // switch-client is a no-op without a client
+		afterRestore(restoreSource)
 		i18n.Say("Restored your saved sessions. Bringing your agent conversations back…",
 			"已恢复你的存档 session，正在接回你的 agent 会话…")
 		resumeAgents()
@@ -622,6 +660,10 @@ func restoreSessions(list []string, dryRun bool) int {
 var restoreFromApp bool
 
 func cmdRestore(args []string) int {
+	if len(args) > 0 && args[0] == "--record-closed" {
+		recordClosedRestoreSession(args[1:])
+		return 0
+	}
 	if len(args) == 1 && strings.HasPrefix(args[0], "--run-job=") {
 		return runRemoteRestoreJob(strings.TrimPrefix(args[0], "--run-job="))
 	}
@@ -743,7 +785,7 @@ func cmdRestore(args []string) int {
 	// Preview what's about to come back BEFORE touching tmux (read-only) — the user
 	// sees a compact inventory of the sessions and agents restore can bring back; it
 	// doubles as the review checklist afterward. Skipped when nothing is saved.
-	if plan := buildRestorePlan(); len(plan.Sessions) > 0 {
+	if plan := buildRestorePlanFromLayout(loadResumeLayout(resurrectLastSave())); len(plan.Sessions) > 0 {
 		printRestorePlan(plan, false)
 	}
 

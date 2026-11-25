@@ -668,6 +668,7 @@ LEG-98994f65a25c,G,Go core / CLI / server,internal/app/releaseinstall_test.go,37
 LEG-801ddcb495b4,L1,Go core / CLI / server,internal/app/releaseinstall_test.go,383,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-90d7d25461f8,G,Go core / CLI / server,internal/app/restore_app_env_test.go,11,Test,TestRestoreAppInheritedTmuxDoesNotTriggerNestedTerminalGuard,False,legacy-not-retrospectively-reviewed
 LEG-204978fa2880,L1,Go core / CLI / server,internal/app/restore_checkpoint_test.go,12,Test,TestRestorePlanDoesNotReplaceUnsavedThreadWithLaunchID,False,legacy-not-retrospectively-reviewed
+MAP-b52ebe89d9f0,L2,reviewed implementation,internal/app/restore_closed_test.go,27,reviewed-selector,TestClosedRestoreUsesPrivateTmux,False,"CLSR-001,CLSR-002,CLSR-003"
 MAP-d98076e1e157,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,15,reviewed-selector,TestRSDHistoricalSourceBeforeDispatch,False,"RSD-001,RSD-002,RSD-003"
 MAP-991e0cd98702,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,61,reviewed-selector,TestRSDCompatibilityUncertainEnter,False,"RSD-001,RSD-002,RSD-003"
 MAP-f1a1a1779293,L2,reviewed implementation,internal/app/restore_dispatch_boundary_test.go,118,reviewed-selector,TestRSDLocalArchiveBoundaries,False,"RSD-001,RSD-002,RSD-003"

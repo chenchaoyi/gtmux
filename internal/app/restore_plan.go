@@ -211,6 +211,7 @@ func pendingRestoreLayout(layout savedLayout, query func(...string) (string, err
 		windows[name][fields[1]], panes[name][fields[2]] = true, true
 		plan.Sessions[i].Windows, plan.Sessions[i].Panes = len(windows[name]), len(panes[name])
 	}
+	layout = omitClosedRestorePanes(layout, restoreClosedForLayout(layout, query).Names)
 	// Avoid resolving transcripts at all when every saved session is already live.
 	for _, sp := range layout.Panes {
 		if live[sp.Session] {

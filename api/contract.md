@@ -1701,6 +1701,10 @@ Owner reads of `/api/transcript` may explicitly include `observation=1`. Only af
 
 `GET /api/restore` returns `{plan, job?}`; `GET /api/restore/job?id=...` reads one receipt. Both are read-only with respect to restoring sessions. Guest/share tokens receive403 even with input grants. Unavailable callbacks return501; unknown topology/storage returns503, never an empty-success projection.
 
+A confirmed session closure is excluded from the plan when it matches the live tmux
+server and the saved archive revision. A closed session is not restored as part of
+a different session's accepted plan.
+
 `plan` has `revision` (SHA256), `server_time`/`saved_at` (Unix seconds), `resume_mode` (`auto|type|off`), and `sessions[]` with `name, windows, panes, agents, resumable, state:"missing"`. This is the missing-only projection; live detached sessions are not missing. Paths, saved shell commands, transcript goals and native thread IDs are omitted. The revision covers full private producer inputs, including saved bytes and relevant resume records.
 
 `POST /api/restore` accepts only `{request_id,revision}` in at most1024bytes. The ID is `<server_time>-<16..64 ASCII letters/digits/hyphens>`. A new ID must be within24h of server time (at most60s future skew). Persist before dispatch; repeated identical IDs return the original job, including failed/interrupted jobs, without relaunch. A changed revision on the same ID is409 `request_changed`. A stale preview is409 `plan_changed`; another active job is409 `restore_busy`. Storage/launch failure is not evidence of a successful restoration. No request accepts a command, path, arbitrary session name, home or worker options. HTTP202 means the durable job was reserved/observed, not that sessions started.

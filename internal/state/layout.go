@@ -42,7 +42,8 @@ var groupedStores = map[string]string{
 
 	"conversation-messages": "sessions", "octrans": "sessions", "participant-profiles": "sessions",
 	"restore-attempts": "sessions", "restore-backstop-attempt": "sessions",
-	"restore-jobs.json": "sessions", "resume": "sessions", "session-follow": "sessions",
+	"restore-closed-sessions.json": "sessions",
+	"restore-jobs.json":            "sessions", "resume": "sessions", "session-follow": "sessions",
 
 	"account-usage": "usage", "limits.json": "usage", "limits.lock": "usage",
 	"model-windows.json": "usage", "model-windows.scanned": "usage", "probe": "usage",

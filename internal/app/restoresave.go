@@ -10,6 +10,7 @@ import (
 
 	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/resume"
+	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
@@ -183,13 +184,15 @@ func argv0(cmdline string) string {
 
 func loadResumeLayout(path string) savedLayout {
 	if remoteRestoreSessions == nil {
-		return loadSavedLayout(path)
+		layout := loadSavedLayout(path)
+		return omitClosedRestorePanes(layout, restoreClosedForLayout(layout, tmux.Run).Names)
 	}
 	body, err := readRestoreSave(path)
 	if err != nil {
 		return savedLayout{SavePath: path, ReadError: err}
 	}
-	return remoteSaveLayout(path, body)
+	layout := remoteSaveLayout(path, body)
+	return omitClosedRestorePanes(layout, restoreClosedForLayout(layout, tmux.Run).Names)
 }
 
 // loadSavedLayout hashes the same byte stream that supplies pane evidence. A

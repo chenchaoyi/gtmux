@@ -75,8 +75,8 @@ a robust PATH, waiting for the restore to complete rather than racing a fixed ti
 The system SHALL recover the saved layout even when a tmux server is ALREADY
 running but missing it — the post-reboot trap where a reopened terminal tab (or
 anything) started an empty server before `gtmux restore` ran, which would
-otherwise skip the restore. It SHALL drive the restore when ANY saved session is
-missing; when every saved session is live, it SHALL leave them alone. This is the same
+otherwise skip the restore. It SHALL drive the restore when an eligible saved
+session is missing; when none is missing, it SHALL leave live sessions alone. This is the same
 recovery rule specified below in “A running server missing saved sessions has them
 restored”.
 
@@ -91,6 +91,29 @@ restored”.
 - **WHEN** a server is up that already has all the saved sessions (a normal reattach
   after the terminal quit)
 - **THEN** the system does NOT re-restore, avoiding duplicate sessions
+
+### Requirement: Observed session closures update pending restore
+
+gtmux serve SHALL use the tmux session-closed event to record a saved session
+that has closed while the same tmux server can still prove it is running other
+sessions. The record SHALL apply only to the observed server and archive
+revision. The pending CLI, menu-bar and remote restore views, and actual gtmux
+restoration into that server, SHALL use the same evidence. The original
+Resurrect archive remains available as a recovery point.
+
+#### Scenario: Close two sessions before the next save
+
+- **WHEN** two saved sessions close in a surviving tmux server before autosave
+- **THEN** both are omitted from pending restore, and restoring a different
+  missing session does not recreate them
+
+#### Scenario: Detach, reuse a name, or lose the server
+
+- **WHEN** a session still exists without a terminal client, including a
+  same-named replacement
+- **THEN** it remains available for reattachment
+- **AND** an unrecognized or restarted server, a changed archive revision, or
+  unavailable closure evidence cannot turn a saved session into a confirmed closure
 
 ### Requirement: Never overwrite a good save
 
@@ -426,8 +449,8 @@ machine-verifiable and remains a manual check.
 
 ### Requirement: A running server missing saved sessions has them restored
 
-When a server is already running and ANY saved session is absent from it, the system SHALL
-restore the absent ones. It SHALL NOT require that ALL saved sessions be absent: after a
+When a server is already running and any eligible saved session is absent from it,
+the system SHALL restore the eligible absent sessions. It SHALL NOT require that ALL saved sessions be absent: after a
 restart something routinely starts one session on its own, and requiring all-absent made
 that the condition under which the remaining sessions were never recovered — permanently,
 once the next autosave recorded their absence. Restoring alongside live sessions is safe
@@ -440,7 +463,7 @@ because the save/restore tool creates only what does not already exist.
 
 #### Scenario: Nothing is missing
 
-- **WHEN** every saved session is already live
+- **WHEN** every eligible saved session is already live
 - **THEN** no restore is driven
 
 ### Requirement: Restore returns you to the window and pane you were on

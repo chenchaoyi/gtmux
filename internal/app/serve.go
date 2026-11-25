@@ -363,6 +363,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		// Mac, where a paired browser row had no platform at all.
 		OnSlowTick: func() {
 			hq.SlowTickEval()
+			installRestoreClosedHook(selfPath())
 			maybeBackstopSave()
 			serverModeTick()
 			flushRoster()

@@ -4403,6 +4403,16 @@
       "TestQueuedCompatibilityTarget"
     ]
   },
+  "internal/app/restore_closed_test.go": {
+    "cases": [
+      "CLSR-001",
+      "CLSR-002",
+      "CLSR-003"
+    ],
+    "selectors": [
+      "TestClosedRestoreUsesPrivateTmux"
+    ]
+  },
   "internal/app/restore_wrapper_cancel_test.go": {
     "cases": [
       "RWC-001"
