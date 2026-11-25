@@ -2785,4 +2785,6 @@ collide with its description; narrow terminals use stacked descriptions.
 
 ### Data directory layout
 
-Run `gtmux doctor --storage-layout` to inspect the selected layout and see the known paths before changing them. `gtmux doctor --group-storage` groups supported stores after an offline confirmation. `gtmux doctor --flatten-storage` restores the flat paths before a downgrade. Run the [offline procedure](design/state-storage-lifecycle.md#offline-transition) before either write. If interrupted, inspect the pending direction and repeat the same operation.
+Run `gtmux doctor --storage-layout` to see the current location and grouped target of each known store. Doctor reports HQ wake entries by stage, input archive health and expired cache stages that it can clear.
+
+Schedule layout changes for the first terminal after a reboot, before opening or restoring tmux. With gtmux, hooks and automatic service starts paused, `gtmux doctor --fix` offers the workflow layout from an existing grouped installation and can continue a verified interrupted change. `gtmux doctor --group-storage` also supports the initial flat-to-grouped change. Before a downgrade, use `gtmux doctor --flatten-storage` in the same offline window. See [offline transition](design/state-storage-lifecycle.md#offline-transition).

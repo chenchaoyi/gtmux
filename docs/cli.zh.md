@@ -2348,4 +2348,6 @@ HQ 界面可使用 `gtmux hq workspace list --overview --stored --json` 读取�
 
 ### 数据目录布局
 
-运行 `gtmux doctor --storage-layout` 查看当前布局及可分组路径。`gtmux doctor --group-storage` 在离线确认后分组已知存储。`gtmux doctor --flatten-storage` 在软件回退前恢复平铺路径。写入前按[离线迁移步骤](design/state-storage-lifecycle.zh.md#离线迁移)暂停写入。若中断，先查看待继续的方向，再重复同一操作。
+运行 `gtmux doctor --storage-layout` 查看各类数据的当前位置和分组目标。Doctor 也会按阶段盘点 HQ 唤醒，检查终端发送防重档案，并列出可以清理的过期缓存暂存。
+
+把迁移安排在重启后、打开或恢复 tmux 之前。在独立终端暂停 gtmux、hook 和服务自动启动后，`gtmux doctor --fix` 会为已有分组布局预览新的流程分组，也能按已核的记录继续中断的迁移。首次从平铺转为分组可以用 `gtmux doctor --group-storage`。软件降级前在相同的离线窗口运行 `gtmux doctor --flatten-storage`。见[离线迁移步骤](design/state-storage-lifecycle.zh.md#离线迁移)。

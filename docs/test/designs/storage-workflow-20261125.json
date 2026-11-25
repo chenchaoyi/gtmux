@@ -1,0 +1,58 @@
+{
+  "id": "storage-workflow-20261125",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-25",
+    "decision": "Approve before implementation",
+    "notes": "Exercise the real path resolver and migration journal under an isolated HOME. Use injected boot-window and process evidence for CLI checks. These cases do not claim production migration or a reboot."
+  },
+  "cases": [
+    {
+      "id": "GSW-001",
+      "layer": "L2",
+      "description": "Group wake stores and global leases without changing their objects",
+      "setup": "Create grouped v2 state, a parked queue record, a native claim hard link, a batch receipt, an archive and a global lease in a synthetic HOME.",
+      "action": "Activate workflow storage, read back its paths, then restore the previous layout.",
+      "expected": "Only the declared workflow state moves. Queue and claim still share an inode. Archive and lease identities survive both directions. A legacy startup fence prevents old readers from starting during the new layout. Terminal and bootstrap paths remain usable.",
+      "planned_files": [
+        "internal/state/workflow_layout_test.go"
+      ]
+    },
+    {
+      "id": "GSW-002",
+      "layer": "L2",
+      "description": "Resume an interrupted storage operation without replacing conflicts",
+      "setup": "Use a valid workflow migration journal under a synthetic HOME and an unrelated store.",
+      "action": "Interrupt after a move and retry. In a separate fixture make source and destination disagree, or hold an affected lease.",
+      "expected": "An intact journal resumes by matching identities. The conflict or held lease is reported and files are preserved. The startup fence remains until consistency is verified.",
+      "planned_files": [
+        "internal/state/workflow_layout_test.go"
+      ]
+    },
+    {
+      "id": "GSW-003",
+      "layer": "L2",
+      "description": "Doctor offers workflow layout only in a confirmed maintenance window",
+      "setup": "Use isolated storage with an injected writer check and confirmation.",
+      "action": "Check health and invoke repair with an active writer, an offline maintenance window, and an interrupted migration.",
+      "expected": "The default check is read-only. An active writer blocks migration and is named. A confirmed maintenance window can apply the layout. A valid interrupted journal reopens the storage repair flow even when ordinary commands are fenced.",
+      "planned_files": [
+        "internal/app/doctor_storage_workflow_test.go"
+      ]
+    },
+    {
+      "id": "GSW-004",
+      "layer": "L2",
+      "description": "Doctor distinguishes pending wake work, uncertain outcomes and safe cleanup",
+      "setup": "Create representative queue states, accepted proof and abandoned cache staging under an isolated HOME.",
+      "action": "Read the storage inventory, run the admitted targeted cleanup twice and compare records.",
+      "expected": "A bounded inspection reports each state without reading message bodies. Cleanup acts only on verified disposable objects. Wake payloads, claims, unknown outcomes and receipts remain available and the next check shows the actual result.",
+      "planned_files": [
+        "internal/app/doctor_storage_workflow_test.go",
+        "internal/hqnudge/storage_inspect_test.go"
+      ]
+    }
+  ],
+  "seal": "0a2039d4b8cd1aa595f5286700d89a76805a74832be16c10b47699fadaf1a902"
+}

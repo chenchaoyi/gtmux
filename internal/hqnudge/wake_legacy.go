@@ -30,7 +30,7 @@ type attemptRecord struct {
 	Target  string   `json:"target,omitempty"`
 }
 
-func attemptsDir() string { return filepath.Join(state.Dir(), "hq-nudge-attempts") }
+func attemptsDir() string { return state.WorkflowPath("hq-nudge-attempts") }
 
 func legacyAttempt(claims []string, payload, id string, since int64) attemptRecord {
 	r := attemptRecord{ID: id, Payload: payload, Since: since}

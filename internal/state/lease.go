@@ -17,7 +17,7 @@ var ErrLeaseHeld = errors.New("another process holds the lease")
 type Lease struct{ file *os.File }
 
 func TryLease(name string) (*Lease, error) {
-	return TryLeaseIn(Dir(), name)
+	return TryLeaseIn(filepath.Dir(WorkflowPath("lease-"+name+".lock")), name)
 }
 
 // TryLeaseIn keeps a fixed family of lease anchors with its managed data.

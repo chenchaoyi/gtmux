@@ -333,7 +333,8 @@ func doctorSectionsWithProgress(progress func(string)) []dsection {
 		{i18n.Tr("Menu-bar app", "菜单栏 app"), appChecks},
 		{i18n.Tr("Remote access", "远程访问"), remoteChecks},
 		{i18n.Tr("Storage", "存储"), func() []dcheck {
-			return []dcheck{rowHQMemory(), rowHQProcessMaterials(), rowDiskUsage(), rowUploads(), rowInputSpool(), rowInputArchive(), rowLegacyProfileLocks()}
+			return []dcheck{rowWorkflowStorageLayout(), rowWakeStorage(), rowCacheStaging(), rowDiskUsage(), rowUploads(),
+				rowInputSpool(), rowInputArchive(), rowLegacyProfileLocks(), rowHQMemory(), rowHQProcessMaterials()}
 		}},
 		{i18n.Tr("Logs", "日志"), func() []dcheck { return logsChecks(time.Unix(now, 0)) }},
 	}
@@ -1487,9 +1488,7 @@ func rowTunnel() (dcheck, bool) {
 
 // --- storage: phone uploads ---
 
-// rowUploads surfaces the phone image-upload staging dir (a picture the phone sends into a
-// pane lands here first). It grows silently; this makes it visible + `doctor --fix` clears
-// it. Neutral until it's large enough to bother clearing.
+// rowUploads surfaces attachments kept for use by the receiving agent.
 func rowUploads() dcheck {
 	label := i18n.Tr("phone uploads", "手机上传")
 	n, size := dirCountSize(uploadsDir())
@@ -1497,7 +1496,7 @@ func rowUploads() dcheck {
 		return dcheck{stInfo, label, i18n.Tr("empty", "空"),
 			i18n.Tr("images the phone sends into a pane stage here", "手机发进 pane 的图片暂存在此")}
 	}
-	note := uploadsDir() + i18n.Tr(" (`gtmux doctor --fix` clears it)", "（`gtmux doctor --fix` 可清理）")
+	note := uploadsDir() + i18n.Tr(" · review active attachment references before removing anything", " · 清理前请核对仍在使用的附件引用")
 	val := fmt.Sprintf("%s (%d)", humanBytes(size), n)
 	if size >= 100<<20 { // 100 MB — worth clearing
 		return dcheck{stRec, label, val, note}

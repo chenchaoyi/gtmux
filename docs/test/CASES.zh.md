@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1495 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1498 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2740 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2745 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 170 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -640,6 +640,10 @@
 | SID-007 | One server conversation projection stays one row; association-pending and last-known-history labels are consistent and never described as confirmed external ownership. Unconfirmed history is visibly read-only and cannot dispatch send. Verified recovery removes the restriction; stale responses cannot affect a new target. Normal external and existing owner/guest boundaries stay unchanged. |
 | SID-008 | A missing verified session ID stays missing. Pending relation is labeled as such, distinct from confirmed external placement, and source row keys/targets retain existing meaning. No focus, input, installation or real screenshot is performed. |
 | WHS-008 | Normal height retains the direct controls and hides the compact entry. Visible controls keep their bounds and target sizes. Switching to radar retires the old modal, and no input is sent. |
+| GSW-001 | Only the declared workflow state moves. Queue and claim still share an inode. Archive and lease identities survive both directions. A legacy startup fence prevents old readers from starting during the new layout. Terminal and bootstrap paths remain usable. |
+| GSW-002 | An intact journal resumes by matching identities. The conflict or held lease is reported and files are preserved. The startup fence remains until consistency is verified. |
+| GSW-003 | The default check is read-only. An active writer blocks migration and is named. A confirmed maintenance window can apply the layout. A valid interrupted journal reopens the storage repair flow even when ordinary commands are fenced. |
+| GSW-004 | A bounded inspection reports each state without reading message bodies. Cleanup acts only on verified disposable objects. Wake payloads, claims, unknown outcomes and receipts remain available and the next check shows the actual result. |
 | STOR-008 | Protected files and links stay unchanged; normal archives and logs are written and checkpoints remain readable. A failed archive write leaves its previous bytes. |
 | STOR-009 | An effort at or before the reset is not reused. A genuinely later effort is available for matching model identities, including two model-less records. Options from different models never fill the chosen model. |
 | STOR-006 | Each writer rejects the output before simulator setup, provider reads or destination creation. Existing successful capture/render tests exercise legitimate task-owned output. |

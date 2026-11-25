@@ -98,7 +98,7 @@ const sendingSuffix = ".sending"
 const stuckSuffix = ".stuck"
 
 // queueDir holds one file per pending HQ nudge (`<due>-<pid>.p<prio>.txt`).
-func queueDir() string { return filepath.Join(state.Dir(), "hq-nudges") }
+func queueDir() string { return state.WorkflowPath("hq-nudges") }
 
 // failCountPath holds the consecutive delivery-failure counter (text int).
 func failCountPath() string { return filepath.Join(queueDir(), "fail-count") }
