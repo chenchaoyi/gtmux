@@ -228,6 +228,8 @@
 | DGS-001 | The receipt precedes the first launchd mutation. Only eligible jobs are paused, the original offline gate runs before moving data, and original launchd settings and loaded jobs are restored after verified layout readback. |
 | DGS-002 | A blocker is identified or consent is declined. No launchd mutation or storage move occurs. |
 | DGS-003 | During a pending layout change the original plan is retained and launchd stays paused. After layout recovery or a committed move, Doctor restores exactly the original jobs and does not repeat migrations. |
+| DPF-001 | Doctor returns 1, reports the actual layout mismatch and directs the operator to inspect it. The continue or cancel hint is withheld. The original marker and journal survive and ordinary admission stays closed. |
+| DPF-002 | Doctor reports the normal continue or cancel guidance and returns 1 while the fence remains pending. It reports no conflict and leaves the journal in place. |
 | STOR-011 | The recommendation counts only matching owned empty regular files with one link. The report remains read-only and incompatible modes exit before making any changes. |
 | STOR-012 | Declining changes nothing. Confirming removes eligible idle legacy locks, reports the held lock as remaining and returns a nonzero result for partial cleanup. After release the retry succeeds and a further run is a no-op. Old and current profile data, shard locks and lookalike entries are preserved. |
 | DGC-001 | The original loaded job returns exactly once after the profile, and a cancellation preserves the v2 layout. |
