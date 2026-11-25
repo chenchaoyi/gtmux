@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1501 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1502 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2758 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2759 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 170 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -228,6 +228,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DGS-001 | The receipt precedes the first launchd mutation. Only eligible jobs are paused, the original offline gate runs before moving data, and original launchd settings and loaded jobs are restored after verified layout readback. |
 | DGS-002 | A blocker is identified or consent is declined. No launchd mutation or storage move occurs. |
 | DGS-003 | During a pending layout change the original plan is retained and launchd stays paused. After layout recovery or a committed move, Doctor restores exactly the original jobs and does not repeat migrations. |
+| DPF-001 | Doctor returns 1, reports the actual layout mismatch and directs the operator to inspect it. The continue or cancel hint is withheld. The original marker and journal survive and ordinary admission stays closed. |
+| DPF-002 | Doctor reports the normal continue or cancel guidance and returns 1 while the fence remains pending. It reports no conflict and leaves the journal in place. |
 | STOR-011 | The recommendation counts only matching owned empty regular files with one link. The report remains read-only and incompatible modes exit before making any changes. |
 | STOR-012 | Declining changes nothing. Confirming removes eligible idle legacy locks, reports the held lock as remaining and returns a nonzero result for partial cleanup. After release the retry succeeds and a further run is a no-op. Old and current profile data, shard locks and lookalike entries are preserved. |
 | DGC-001 | The original loaded job returns exactly once after the profile, and a cancellation preserves the v2 layout. |

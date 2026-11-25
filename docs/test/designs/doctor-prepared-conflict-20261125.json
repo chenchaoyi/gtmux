@@ -1,0 +1,35 @@
+{
+  "id": "doctor-prepared-conflict-20261125",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-25",
+    "decision": "Approve before implementation",
+    "notes": "Reuse the independent prepared-fence conflict fixture. Exercise the actual interactive Doctor dispatch under a synthetic HOME and empty executable search path. No live service or migration actions are part of this test."
+  },
+  "cases": [
+    {
+      "id": "DPF-001",
+      "layer": "L2",
+      "description": "Doctor prioritizes the prepared layout validation error",
+      "setup": "Use a grouped synthetic HOME with a prepared service fence and a conflicting workflow marker, as in the independent fixture.",
+      "action": "Run doctor --fix from a PTY and read its output, exit code, marker, journal, and ordinary storage admission.",
+      "expected": "Doctor returns 1, reports the actual layout mismatch and directs the operator to inspect it. The continue or cancel hint is withheld. The original marker and journal survive and ordinary admission stays closed.",
+      "planned_files": [
+        "internal/app/doctor_storage_prepared_test.go"
+      ]
+    },
+    {
+      "id": "DPF-002",
+      "layer": "L2",
+      "description": "Doctor still reports a valid prepared layout",
+      "setup": "Use a grouped synthetic HOME with a valid prepared service fence.",
+      "action": "Run the same interactive Doctor command and check the return code and ordinary admission.",
+      "expected": "Doctor reports the normal continue or cancel guidance and returns 1 while the fence remains pending. It reports no conflict and leaves the journal in place.",
+      "planned_files": [
+        "internal/app/doctor_storage_prepared_test.go"
+      ]
+    }
+  ],
+  "seal": "4c915d82a0dc0613f50b1ccefa0b01dfe718c922949f7d3280939b03545f607b"
+}
