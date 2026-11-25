@@ -230,6 +230,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DGS-003 | During a pending layout change the original plan is retained and launchd stays paused. After layout recovery or a committed move, Doctor restores exactly the original jobs and does not repeat migrations. |
 | STOR-011 | The recommendation counts only matching owned empty regular files with one link. The report remains read-only and incompatible modes exit before making any changes. |
 | STOR-012 | Declining changes nothing. Confirming removes eligible idle legacy locks, reports the held lock as remaining and returns a nonzero result for partial cleanup. After release the retry succeeds and a further run is a no-op. Old and current profile data, shard locks and lookalike entries are preserved. |
+| DGC-001 | The original loaded job returns exactly once after the profile, and a cancellation preserves the v2 layout. |
+| DGC-002 | An admitted old participant can stop actual installed jobs. While profiles are parked, the baseline rejects admission. The next Doctor never recreates a removed profile or reopens newly disabled access. |
+| DGC-003 | The retry verifies and reports cleanup without invoking ordinary repair or replaying services. A later ordinary invocation retains its original behavior. |
+| DGC-004 | The unmatched install is left unchanged with specific guidance. Using the registering installation still requires the loaded identity to agree. |
 | DGR-001 | Only recognized matching jobs are eligible. The same profile object returns, and no launchd override is created or modified. |
 | DGR-002 | The shared remote configuration lock and the second observations preserve the newer setting. The legacy login or process blocks with zero service or layout mutation. |
 | DGR-003 | No service mutation occurs before the receipt is durable; recovery waits for durable layout verification; unlink and parent sync errors retry cleanup without reapplying service actions. |
