@@ -1,4 +1,32 @@
 {
+  "internal/app/doctor_storage_compat_test.go": {
+    "cases": ["DGC-001", "DGC-002", "DGC-003", "DGC-004"],
+    "selectors": [
+      "TestDoctorStorageRebootAfterParkingThroughCLI",
+      "TestDoctorStorageFencesLegacyRemoteOff",
+      "TestDoctorStorageCleanupRetryThroughCLI",
+      "TestDoctorStorageCustomCLIHelpPreservesIdentity"
+    ]
+  },
+  "internal/app/doctor_storage_revision_test.go": {
+    "cases": ["DGR-001", "DGR-002", "DGR-003", "DGR-004"],
+    "selectors": [
+      "TestDoctorStorageRejectsMismatchedLaunchdProgram",
+      "TestDoctorStorageReturnsSameProfileAndDefaults",
+      "TestDoctorStoragePreservesChoiceDuringConfirmation",
+      "TestDoctorStorageDurableBoundaries",
+      "TestDoctorStorageRecoversPartialServicesAndBoundsKickstart"
+    ]
+  },
+  "internal/app/doctor_storage_guided_test.go": {
+    "cases": ["DGS-001", "DGS-002", "DGS-003"],
+    "selectors": [
+      "TestDoctorGuidedStorageRestoresManagedServices",
+      "TestDoctorGuidedStorageFixEntry",
+      "TestDoctorGuidedStorageBlocksWithoutTouchingServices",
+      "TestDoctorGuidedStorageContinuesAfterInterruption"
+    ]
+  },
   "internal/codexterminal/claude_foreground_test.go": {
     "cases": ["HRB-017"],
     "selectors": ["TestClaudeVersionAliasRequiresLinuxForegroundGroupLeader"]

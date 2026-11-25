@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
+	"github.com/chenchaoyi/gtmux/internal/userservice"
 )
 
 // Enter the storage-only repair dialog before acquiring ordinary shared
@@ -34,6 +36,38 @@ func doctorStorageEntry(command string, args []string) (int, bool) {
 	status, err := state.ReadStorageLayout()
 	if err == nil {
 		workflow, grouped, pending := status.PendingChange()
+		if interactiveFix && runtime.GOOS == "darwin" && !tmux.InTmux() {
+			_, planErr := os.Lstat(storageServicePlanPath())
+			if _, cleanupErr := os.Lstat(storageServiceCleanupPath()); !os.IsNotExist(cleanupErr) {
+				if err := finishStorageServiceCleanup(systemStorageServiceIO()); err != nil {
+					return guidedStorageRecoveryFailure(err), true
+				}
+				i18n.Say("Storage service recovery cleanup finished.", "存储维护的服务恢复记录已清理。")
+				return 0, true
+			}
+			hasPlan := !os.IsNotExist(planErr)
+			recoverServices := status.WorkflowActive() && hasPlan
+			groupWorkflow := hasPlan && (status.ServicePreparation() || pending && workflow && grouped) ||
+				fault == nil && !status.WorkflowActive() && status.Mode == "grouped"
+			if recoverServices || groupWorkflow {
+				manager := userservice.StorageLaunchd{
+					Home:       state.Home(),
+					Executable: selfPath(),
+					Labels:     []string{serveAgentLabel, tunnelAgentLabel, selfTunnelAgentLabel},
+				}
+				if groupWorkflow && !pending && os.IsNotExist(planErr) {
+					jobs, inspectErr := manager.Inspect()
+					if inspectErr != nil {
+						return guidedStorageFailure(inspectErr), true
+					}
+					if err := checkStorageProcesses(userservice.StorageLaunchdPIDs(jobs)); err != nil {
+						i18n.Sae("Storage grouping deferred: "+err.Error(), "暂缓数据目录迁移："+err.Error())
+						return 0, false
+					}
+				}
+				return guidedDoctorStorageChange(manager, checkStorageProcesses, checkEarlyStorageWriters, confirmRisky), true
+			}
+		}
 		switch {
 		case pending && interactiveFix:
 			return applyDoctorStorageChange(workflow, grouped, checkEarlyStorageWriters, confirmRisky), true
@@ -67,30 +101,20 @@ func checkEarlyStorageWriters() error {
 }
 
 func applyDoctorStorageChange(workflow, grouped bool, writers func() error, confirmReady func(string) bool) int {
+	lease, err := storageMaintenanceLease()
+	if err != nil {
+		return guidedStorageFailure(err)
+	}
+	defer lease.Close()
 	if err := writers(); err != nil {
 		i18n.Sae("Storage maintenance is blocked: "+err.Error(),
 			"数据目录维护被阻止："+err.Error())
 		return 1
 	}
 	if workflow {
-		stores, err := state.InspectWorkflowPaths()
-		if err != nil {
+		if err := previewDoctorWorkflow(grouped); err != nil {
 			i18n.Sae("Storage preview failed: "+err.Error(), "数据目录预览失败："+err.Error())
 			return 1
-		}
-		if grouped {
-			i18n.Say("Move HQ wake data and global lease files into the workflow layout.",
-				"这次分组会迁移 HQ 唤醒数据和全局锁文件。")
-		} else {
-			i18n.Say("Return HQ wake data and global lease files to their previous paths.",
-				"这次回退会将 HQ 唤醒数据和全局锁文件移回原路径。")
-		}
-		for _, store := range stores {
-			from, to := store.Original, store.Grouped
-			if !grouped {
-				from, to = to, from
-			}
-			fmt.Printf("  %s → %s\n", from, to)
 		}
 	}
 	if !confirmReady(i18n.Tr(
@@ -119,6 +143,11 @@ func applyDoctorStorageChange(workflow, grouped bool, writers func() error, conf
 
 func workflowLayoutRow(status state.StorageLayoutStatus, err error) dcheck {
 	label := i18n.Tr("data layout", "数据目录布局")
+	if status.ServicePreparation() {
+		return dcheck{stRec, label, i18n.Tr("service recovery preparing", "后台服务已进入维护"),
+			i18n.Tr("Run gtmux doctor --fix before opening tmux to continue or cancel the prepared move.",
+				"请在打开 tmux 前运行 gtmux doctor --fix，继续或撤回已准备的迁移。")}
+	}
 	if _, grouped, pending := status.PendingChange(); pending {
 		action := i18n.Tr("finish grouping", "继续分组")
 		if !grouped {
@@ -143,6 +172,14 @@ func workflowLayoutRow(status state.StorageLayoutStatus, err error) dcheck {
 		}
 	}
 	if status.WorkflowActive() {
+		if runtime.GOOS == "darwin" {
+			if _, err := os.Lstat(storageServicePlanPath()); !os.IsNotExist(err) {
+				return dcheck{stRec, label,
+					i18n.Tr("layout-v3 · service recovery pending", "layout-v3 · 后台服务待恢复"),
+					i18n.Tr("Run gtmux doctor --fix in a standalone terminal to restore the saved settings.",
+						"请在独立终端运行 gtmux doctor --fix，恢复已记录的后台服务设置。")}
+			}
+		}
 		return dcheck{stOK, label, "layout-v3",
 			i18n.Tr("HQ wake data and global leases are grouped. Early-boot layout lock, desktop endpoints and input spool use their stable paths.",
 				"HQ 唤醒数据和全局锁已分组。启动布局锁、桌面端点和输入队列使用各自的固定路径。")}

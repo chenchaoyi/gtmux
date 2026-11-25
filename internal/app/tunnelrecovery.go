@@ -22,6 +22,19 @@ import (
 // Mode changes never hold this lock while asking the network or the user. Recovery
 // takes it only to recheck user intent and apply the cloudflared token.
 func lockRemoteServices() (func(), error) {
+	unlock, err := acquireRemoteServicesLock()
+	if err != nil {
+		return nil, err
+	}
+	plan, err := readStorageServicePlan()
+	if err != nil || plan != nil && plan.Phase != "verified" {
+		unlock()
+		return nil, errors.New("finish storage maintenance with gtmux doctor --fix before changing remote services")
+	}
+	return unlock, nil
+}
+
+func acquireRemoteServicesLock() (func(), error) {
 	if err := state.MkdirAll(state.ConfigDir(), 0700); err != nil {
 		return nil, err
 	}

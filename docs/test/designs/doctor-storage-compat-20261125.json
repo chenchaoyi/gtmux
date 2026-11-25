@@ -1,0 +1,57 @@
+{
+  "id": "doctor-storage-compat-20261125",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-25",
+    "decision": "Approve before implementation",
+    "notes": "The prior independent review supplied reproductions. Test synthetic launchd and real Doctor dispatch, and separately check baseline admission in an isolated mixed-version fixture. No physical reboot, login-item or power-off claims."
+  },
+  "cases": [
+    {
+      "id": "DGC-001",
+      "description": "Recover a previously loaded job across the pre-bootout restart boundary",
+      "setup": "Use a synthetic HOME, release-shaped profile, and a distinct process that retains installation and plan state across entries",
+      "action": "Invoke the real macOS Doctor command on both continue and cancel with the profile held and launchd restarted",
+      "expected": "The original loaded job returns exactly once after the profile, and a cancellation preserves the v2 layout.",
+      "layer": "L2",
+      "planned_files": [
+        "internal/app/doctor_storage_compat_test.go"
+      ]
+    },
+    {
+      "id": "DGC-002",
+      "description": "Fence pre-upgrade CLI admission throughout the parked-profile window",
+      "setup": "Use a synthetic grouped home and a participant with baseline storage-command admission and remote-off behavior",
+      "action": "Attempt remote-off before, during, and after the parking fence across application reentry",
+      "expected": "An admitted old participant can stop actual installed jobs. While profiles are parked, the baseline rejects admission. The next Doctor never recreates a removed profile or reopens newly disabled access.",
+      "layer": "L2",
+      "planned_files": [
+        "internal/app/doctor_storage_compat_test.go"
+      ]
+    },
+    {
+      "id": "DGC-003",
+      "description": "End an interactive cleanup retry with the exit code of the cleanup",
+      "setup": "Use a verified plan with a failed directory sync after unlink in a synthetic home",
+      "action": "Rerun the actual Doctor command from a standalone PTY, then check the next dispatch",
+      "expected": "The retry verifies and reports cleanup without invoking ordinary repair or replaying services. A later ordinary invocation retains its original behavior.",
+      "layer": "L2",
+      "planned_files": [
+        "internal/app/doctor_storage_compat_test.go"
+      ]
+    },
+    {
+      "id": "DGC-004",
+      "description": "Guide a verified custom gtmux installation without weakening ownership checks",
+      "setup": "A release-shaped profile points to an executable from a custom install prefix",
+      "action": "Inspect using another binary and then the same custom CLI identity",
+      "expected": "The unmatched install is left unchanged with specific guidance. Using the registering installation still requires the loaded identity to agree.",
+      "layer": "L2",
+      "planned_files": [
+        "internal/app/doctor_storage_compat_test.go"
+      ]
+    }
+  ],
+  "seal": "6094231e7717fe0cdb282a22645d1bc0765c0fdc07869b84d149636da2b52f0e"
+}

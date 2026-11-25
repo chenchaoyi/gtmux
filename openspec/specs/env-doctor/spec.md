@@ -1054,7 +1054,20 @@ Doctor SHALL preview owned stores and their grouped locations without writing st
 
 The optional workflow layout SHALL group HQ delivery, submission recovery, delivery verification and shared coordination under the wake hierarchy. Registered global lease anchors SHALL share a directory outside the layout bootstrap path. A same-device move SHALL retain original queue, journal and claim identities, including hard links. The workflow layout SHALL fence older CLI writers until rollback. Doctor SHALL display known locations and report delivery stages from metadata. Storage diagnostics SHALL remain available while application writes are fenced. Doctor --fix SHALL continue a verified interrupted change only after the same offline confirmation, and SHALL preserve conflicting or unverified records.
 
-#### Scenario: A tmux or gtmux writer is still present
+#### Scenario: Pause and restore known macOS services from Doctor
+
+- **WHEN** the operator approves a workflow layout change in `gtmux doctor --fix` after reboot and before opening tmux
+- **THEN** Doctor records the installed managed service identities and their previous settings before changing launchd
+- **AND** Doctor rechecks the confirmed settings under the remote configuration lock and pauses only jobs whose installed and loaded definitions match
+- **AND** Doctor durably records which jobs to reload before unloading them or parking their profiles
+- **AND** Doctor uses the stable layout journal to reject older writers before parking and until the original profile names are returned
+- **AND** Doctor preserves launchd overrides, including default settings, while verified profiles are held outside the automatic startup path
+- **AND** Doctor verifies that all writers are stopped before moving stores
+- **AND** Doctor restores eligible profiles and jobs only after the layout commit is durable
+- **AND** a restart failure, an incomplete move or a cleanup error can be resumed from the same command and its recorded plan
+- **AND** a cleanup-only retry reports its result without launching ordinary repair
+
+#### Scenario: A tmux or other gtmux writer is still present
 
 - **WHEN** the operator checks or attempts a layout change while a writer is active
 - **THEN** Doctor does not offer an in-place migration and names a detected blocker when the operator requests it

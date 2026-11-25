@@ -21,6 +21,9 @@ const (
 	workflowGrouping     = "group-workflow"
 	workflowGrouped      = "workflow-grouped"
 	workflowRestoring    = "restore-workflow"
+	workflowServicePrep  = "prepare-workflow-services"
+	workflowServiceMove  = "group-workflow-with-services-held"
+	workflowServiceReady = "return-workflow-services"
 	workflowArchive      = "hqwake/accepted-archive.jsonl"
 	workflowJournalLimit = 256 << 10
 	workflowObjectLimit  = 4096
@@ -62,10 +65,7 @@ func readWorkflowJournal() (*workflowJournal, error) {
 	if journal.Version == layoutJournalVersion {
 		return nil, nil
 	}
-	if journal.Version != workflowVersion || len(journal.Entries) > workflowObjectLimit ||
-		(journal.Phase != workflowGrouping && journal.Phase != workflowGrouped && journal.Phase != workflowRestoring) ||
-		(journal.Phase != workflowGrouping) != (journal.Marker != nil) ||
-		journal.Phase == workflowGrouped && len(journal.Entries) != 0 {
+	if journal.Version != workflowVersion || !journal.validShape() {
 		return nil, fmt.Errorf("unknown workflow layout journal: %s", path)
 	}
 	if journal.Marker != nil && (journal.Marker.Inode == 0 || journal.Marker.Mode != uint32(os.ModeDir)) {
@@ -89,6 +89,24 @@ func readWorkflowJournal() (*workflowJournal, error) {
 		hash: sha256.Sum256(data),
 	}
 	return &journal, nil
+}
+
+func (j workflowJournal) validShape() bool {
+	if len(j.Entries) > workflowObjectLimit {
+		return false
+	}
+	switch j.Phase {
+	case workflowGrouping, workflowServiceMove:
+		return j.Marker == nil
+	case workflowRestoring:
+		return j.Marker != nil
+	case workflowGrouped, workflowServiceReady:
+		return j.Marker != nil && len(j.Entries) == 0
+	case workflowServicePrep:
+		return j.Marker == nil && len(j.Entries) == 0
+	default:
+		return false
+	}
 }
 
 func workflowObjectType(store workflowStore) uint32 {
@@ -185,8 +203,9 @@ func ChangeWorkflowLayout(grouped bool, checkWriters func() error) error {
 	if !grouped {
 		phase = workflowRestoring
 	}
-	if journal != nil && journal.Phase != workflowGrouped {
-		if journal.Phase != phase {
+	prepared := grouped && journal != nil && journal.Phase == workflowServicePrep
+	if journal != nil && journal.Phase != workflowGrouped && !prepared {
+		if journal.Phase != phase && !(grouped && journal.Phase == workflowServiceMove) {
 			return errors.New("finish the recorded workflow storage operation first")
 		}
 		return finishWorkflowLayout(journal, checkWriters)
@@ -196,13 +215,16 @@ func ChangeWorkflowLayout(grouped bool, checkWriters func() error) error {
 			return err
 		}
 	}
-	if grouped == (journal != nil) {
+	if !prepared && grouped == (journal != nil) {
 		return CheckStorageLayout()
 	}
-	if journal != nil {
+	if journal != nil && !prepared {
 		if err := checkWorkflowActive(journal); err != nil {
 			return err
 		}
+	}
+	if prepared {
+		phase = workflowServiceMove
 	}
 	next := &workflowJournal{Version: workflowVersion, Phase: phase}
 	if journal != nil {
@@ -222,6 +244,49 @@ func ChangeWorkflowLayout(grouped bool, checkWriters func() error) error {
 		return err
 	}
 	return moveWorkflowLayout(next, checkWriters)
+}
+
+// SyncVerifiedStorageLayout confirms the currently visible layout and commits
+// its journal directory before paused services are allowed to start.
+func SyncVerifiedStorageLayout() error {
+	lease, err := acquireLayoutLease(unix.LOCK_EX)
+	if err != nil {
+		return err
+	}
+	defer lease.Close()
+	journal, err := readWorkflowJournal()
+	if err != nil {
+		return err
+	}
+	if err := verifyStorageBeforeReturningServices(journal); err != nil {
+		return err
+	}
+	return SyncPrivateDirectory(Dir())
+}
+
+func verifyStorageBeforeReturningServices(journal *workflowJournal) error {
+	if journal != nil {
+		switch journal.Phase {
+		case workflowServicePrep:
+			return checkWorkflowServicePreparation()
+		case workflowServiceReady:
+			if err := checkWorkflowActive(journal); err != nil {
+				return err
+			}
+			return checkBaseStorageLayout()
+		}
+	}
+	return CheckStorageLayout()
+}
+
+func checkWorkflowServicePreparation() error {
+	if _, found, err := workflowMarker(); err != nil || found {
+		return errors.New("the prepared service fence does not match the base layout")
+	}
+	if mode, err := currentLayout(); err != nil || mode != layoutGrouped {
+		return errors.New("the prepared service fence needs a grouped base layout")
+	}
+	return checkBaseStorageLayout()
 }
 
 func finishWorkflowLayout(journal *workflowJournal, checkWriters func() error) error {
@@ -293,7 +358,11 @@ func moveWorkflowLayout(journal *workflowJournal, checkWriters func() error) err
 	if err != nil {
 		return err
 	}
-	active := &workflowJournal{Version: workflowVersion, Phase: workflowGrouped, Marker: &marker}
+	phase := workflowGrouped
+	if journal.Phase == workflowServiceMove {
+		phase = workflowServiceReady
+	}
+	active := &workflowJournal{Version: workflowVersion, Phase: phase, Marker: &marker}
 	return publishWorkflowJournal(active, journal)
 }
 

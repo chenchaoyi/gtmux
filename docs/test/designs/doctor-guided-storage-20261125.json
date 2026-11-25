@@ -1,0 +1,46 @@
+{
+  "id": "doctor-guided-storage-20261125",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-25",
+    "decision": "Approve before implementation",
+    "notes": "Drive the Doctor workflow through a synthetic HOME with fake launchd and process observations. The real migration engine supplies layout and journal evidence. Fixture runs cannot attest to macOS login behavior or actual service health."
+  },
+  "cases": [
+    {
+      "id": "DGS-001",
+      "layer": "L2",
+      "description": "Doctor groups storage in a single confirmed flow",
+      "setup": "Use grouped v2 data, an active managed serve job, a disabled Direct job, and no tmux or menu app.",
+      "action": "Approve the Doctor preview, then read back layout and original service state.",
+      "expected": "The receipt precedes the first launchd mutation. Only eligible jobs are paused, the original offline gate runs before moving data, and original launchd settings and loaded jobs are restored after verified layout readback.",
+      "planned_files": [
+        "internal/app/doctor_storage_guided_test.go"
+      ]
+    },
+    {
+      "id": "DGS-002",
+      "layer": "L2",
+      "description": "Doctor defers on active or unidentified work",
+      "setup": "Use an isolated workflow with a live tmux, a menu app, an unrecognized loaded job and a declined confirmation in separate trials.",
+      "action": "Start Doctor from an independent terminal and review the migration decision.",
+      "expected": "A blocker is identified or consent is declined. No launchd mutation or storage move occurs.",
+      "planned_files": [
+        "internal/app/doctor_storage_guided_test.go"
+      ]
+    },
+    {
+      "id": "DGS-003",
+      "layer": "L2",
+      "description": "Doctor recovers the service plan and an interrupted migration",
+      "setup": "Inject a late writer or a launchd restart failure after a verified initial plan under a synthetic HOME.",
+      "action": "Read the durable plan and rerun the same Doctor entry after the blocker is resolved.",
+      "expected": "During a pending layout change the original plan is retained and launchd stays paused. After layout recovery or a committed move, Doctor restores exactly the original jobs and does not repeat migrations.",
+      "planned_files": [
+        "internal/app/doctor_storage_guided_test.go"
+      ]
+    }
+  ],
+  "seal": "12acbec1afd2bfb0a8904a02d48709bb88f7ea686f8b51828f2d79afeae03151"
+}
