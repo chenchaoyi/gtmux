@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1494 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1493 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2739 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
+| L3 · Runtime integration | 169 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 509 | [G.csv](cases/G.csv) |
@@ -213,6 +213,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DTV-003 | Correct worktree/branch/stat totals and directory grouping, no pre-opened code. Explicit expansion reveals original colored diff lines; collapse-all hides contents. Existing smoke assertion opens the file/hunk before checking original code. No unsafe HTML for context/path names. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
 | DTV-004 | JSON-quoted root identifies linked worktree, branch matches that worktree, diff/untracked data stay present. Existing8s deadline,400KiB cap and no-repo/error semantics remain; the extra metadata read uses the same deadline. Server pane authorization and response envelope are unchanged. |
 | DTV-005 | Owner receives original root/branch/patch byte-for-byte. Allowed guest receives branch and original patch without the new absolute root preamble; root-looking code remains. Denied/unauthenticated requests do not call the capture dependency. No audience/credential/permission setting changes. |
+| DBR-003 | The note carries each applicable Codex pane's focus command, save-draft and managed resume steps, and original launcher or Codex home guidance. Other agents receive no Codex command. Existing severity and evidence files are preserved. No repair action sends input or changes association evidence. |
 | DCA-001 | A missing/expired managed proof is not OK/live; reason and exact pane are visible, no state changes or guessed thread |
 | DCA-002 | Supported missing association is visible as recommended/unassociated; unsupported/plain are neutral; strict verified control remains OK; nearby history never authorizes repair |
 | DCA-003 | Explains automatic producer retry and normal per-session continuation when evidence is insufficient; does not claim doctor repaired state, restart clients, clear drafts or offer directory-derived binding |
@@ -222,8 +223,6 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DKC-001 | All-settled retained lines report0; mixed parsed unsettled rows report the exact remaining count, matching official capture semantics. Invalid JSON and blanks are ignored, legacy IDs remain read-time-only, and no source, ledger, receipt, lock or marker is created/modified/deleted. Missing sources are empty; real read failures are visibly unavailable rather than an invented pending count. Both English and Chinese notes remain concise. The old count must fail the genuine settled/mixed assertions; existing capture/sensor and translation/receipt contracts remain unchanged. |
 | STOR-011 | The recommendation counts only matching owned empty regular files with one link. The report remains read-only and incompatible modes exit before making any changes. |
 | STOR-012 | Declining changes nothing. Confirming removes eligible idle legacy locks, reports the held lock as remaining and returns a nonzero result for partial cleanup. After release the retry succeeds and a further run is a no-op. Old and current profile data, shard locks and lookalike entries are preserved. |
-| DBR-001 | The fix only changes the frontend reference for the same home, thread and pane incarnation. The live binding reads back, the receipts and record metadata are preserved, and identity conflicts, lock contention and changed index bytes cause no write. |
-| DBR-002 | The row names the focus command and safe managed resume steps. The fixer does not change the index or proof and does not start a session or write to a pane. |
 | DPC-001 | Only recognized generated observations leave the automatic core scope; included observations and all full-export records remain. Unknown or corrupt notes remain protected and may still cause an honest limit failure. Restore limits stay128MiB/32MiB/10000; no file is moved or deleted. |
 | DPC-002 | Report bounded category counts/bytes and a clear project-archive recommendation.128MiB is described as recovery-package safety, distinct from directory size and configured snapshot budget. Unknown files are not declared disposable. Doctor and doctor fix do not migrate/delete materials or modify backup policy. |
 | DPC-003 | Stopped and unknown producers get accurate normal-resume or verification guidance; stale-live evidence is not presented as proof of an active retry. Healthy exact current ownership remains healthy. No session input, RPC resend, forced binding, history timestamp inference or state write occurs. |

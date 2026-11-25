@@ -1,6 +1,6 @@
 id,layer,stack,file,line,kind,description,dynamic,design
 MAP-12689bc816c9,L3,reviewed implementation,internal/app/diff_context_test.go,12,reviewed-selector,TestDTV004DiffNamesActualLinkedWorktreeFromNestedCwd,False,DTV-004
-MAP-2d394ad207f0,L3,reviewed implementation,internal/app/doctor_binding_repair_test.go,14,reviewed-selector,TestDBR002DoctorIdentifiesTheTerminalWithoutTouchingIt,False,DBR-002
+MAP-161532ea4950,L3,reviewed implementation,internal/app/doctor_codex_guidance_test.go,18,reviewed-selector,TestDBR003DoctorCodexGuidanceCoversUnavailableStates,False,DBR-003
 MAP-6c44c0313e74,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,334,reviewed-selector,TestWorkspaceDraftKeepsBothWakeQueues,False,"HPC-004,HPC-005"
 MAP-69d66d9f9a98,L3,reviewed implementation,internal/app/hqworkspace_continuation_cli_test.go,97,reviewed-selector,TestWorkspaceContinuationCLI,False,"HPC-004,HPC-005"
 MAP-0e82e0de8675,L3,reviewed implementation,internal/app/hqworkspace_continuation_test.go,23,reviewed-selector,TestWorkspaceContinuationIncidentReplay,False,HPC-002
@@ -16,8 +16,6 @@ MAP-f4e5b80196e1,L3,reviewed implementation,internal/codexbridge/trust_interop_t
 MAP-0c5af6c31981,L3,reviewed implementation,internal/hq/eventscmd_cursor_test.go,14,reviewed-selector,TestHCR001SkipAheadReadProvidesSavedCursor,False,HCR-001
 MAP-c49705115ac9,L3,reviewed implementation,internal/radar/codex_completed_marker_test.go,15,reviewed-selector,TestGatherCompletedOwnTurnSurvivesLateActiveMarker,False,"CET-002,CET-003"
 MAP-226227944e48,L3,reviewed implementation,internal/radar/codex_foreign_marker_gather_test.go,14,reviewed-selector,TestGatherDoesNotReviveAnotherSessionsOldMarkerFromWindowActivity,False,CORE-CODEX-FOREIGN-GATHER
-MAP-964df2c97dc3,L3,reviewed implementation,internal/resume/doctor_binding_repair_test.go,68,reviewed-selector,TestDBR001DoctorRepairsOnlyTheVerifiedReference,False,DBR-001
-MAP-6ebff544cb7c,L3,reviewed implementation,internal/resume/doctor_binding_repair_test.go,105,reviewed-selector,TestDBR001DoctorRefusesIncompleteOrChangedEvidence,False,DBR-001
 MAP-6de233bbcc8c,L3,reviewed implementation,internal/server/diff_privacy_test.go,10,reviewed-selector,TestDTV005WorktreePathIsOwnerOnlyAndPaneGateRunsFirst,False,DTV-005
 MAP-b4dde0e66e09,L3,reviewed implementation,internal/server/observed_conversation_test.go,10,reviewed-selector,TestSID005OwnerOptInHistoryAndGuestFence,False,SID-005
 MAP-48bb55755c3f,L3,reviewed implementation,internal/server/observed_conversation_test.go,54,reviewed-selector,TestSID005SharedRosterOmitsHistoricalIdentifiers,False,SID-005

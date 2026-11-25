@@ -95,7 +95,6 @@ func doctorFix(yes bool, progress func(string)) int {
 	applied += s.applied("claude-tui", s.stepClaudeTUI)
 	applied += s.applied("codex-hook", s.stepCodexHook)
 	applied += s.applied("codex-terminal", s.stepCodexTerminal)
-	applied += s.applied("conversation-binding", s.stepConversationBindings)
 	applied += s.applied("kimi-hook", s.stepKimiHook)
 	for _, key := range additionalHookAgents {
 		key := key

@@ -1863,6 +1863,11 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 	var bounds []bound
 	verified := 0
 	var unavailable, missing, unverified, stopped, focus []string
+	addFocus := func(pane string) {
+		if len(focus) < 8 && pane != "" && paneIDRe.FindString(pane) == pane {
+			focus = append(focus, "gtmux focus "+pane)
+		}
+	}
 	claimed := map[string]bool{} // every session id some pane already owns
 	currentClients := map[string]bool{}
 	for _, attachment := range agentclient.All() {
@@ -1880,6 +1885,9 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 		if !ok || rec.SessionID == "" {
 			if doctorExpectsConversation(p.Agent) {
 				missing = append(missing, p.PaneID+" (resume-record-unavailable)")
+				if agents.KeyForLabel(p.Agent) == "codex" {
+					addFocus(p.PaneID)
+				}
 			}
 			continue
 		}
@@ -1891,12 +1899,10 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 			continue
 		}
 		if rec.Agent == "codex" && rec.Frontend != "" {
+			addFocus(p.PaneID)
 			_, live, reason := resume.LoadLiveDiagnostic(p.Loc)
 			if !live {
 				unavailable = append(unavailable, p.PaneID+" ("+reason+")")
-				if len(focus) < 8 && strings.HasPrefix(p.PaneID, "%") {
-					focus = append(focus, "gtmux focus "+p.PaneID)
-				}
 				if resume.LoadFrontendRecoveryKind(p.Loc) == resume.FrontendRecoveryStopped {
 					stopped = append(stopped, p.PaneID)
 				}
@@ -1932,18 +1938,16 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 		if len(stopped) < len(unavailable) {
 			note += i18n.Tr(" Automatic recovery for the other panes cannot be confirmed.", " 其余窗格的自动恢复无法确认。")
 		}
-		if len(focus) > 0 {
-			note += i18n.Tr(" Open the affected terminal with ", " 打开对应终端：") + strings.Join(focus, ", ") + "."
-		}
-		note += i18n.Tr(" If the link stays unavailable, save any draft and let the current turn finish. Exit Codex normally, then run `gtmux codex -- resume` in that pane and select the original conversation.",
-			" 若持续未关联，请先保存草稿并等当前回合结束。正常退出 Codex 后，在原窗格运行 `gtmux codex -- resume`，选择原对话。")
 		return dcheck{stMiss, label, fmt.Sprintf(i18n.Tr("%d unavailable", "%d 个未关联"), len(unavailable)),
-			note}
+			note + doctorCodexResumeGuidance(focus)}
 	case len(missing)+len(unverified) > 0:
+		note := doctorAssociationDetails(missing, unverified)
+		if len(focus) == 0 {
+			note += i18n.Tr(". Select a conversation in this terminal, or resume it normally if it stays unlinked.",
+				"。请在对应终端选定对话；若仍未关联，可正常退出后续开。")
+		}
 		return dcheck{stRec, label, fmt.Sprintf(i18n.Tr("%d need verification", "%d 个待核实"), len(missing)+len(unverified)),
-			doctorAssociationDetails(missing, unverified) + i18n.Tr(
-				". Select a conversation in this terminal, or resume it normally if it stays unlinked.",
-				"。请在对应终端选定对话；若仍未关联，可正常退出后续开。")}
+			note + doctorCodexResumeGuidance(focus)}
 	case len(bounds) == 0 && verified == 0:
 		return dcheck{stInfo, label, i18n.Tr("nothing bound yet", "暂无绑定"), note}
 	case len(bounds) == 0:
@@ -1957,6 +1961,15 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 			i18n.Tr("Current managed frontends verify their own thread automatically. Nearby history alone does not establish a binding fault; no repair is proposed from directory recency.",
 				"受管客户端会自动确认当前线程。同目录下出现较新的历史不足以判定绑定错误，因此不据此要求修复或重新绑定。")}
 	}
+}
+
+func doctorCodexResumeGuidance(focus []string) string {
+	if len(focus) == 0 {
+		return ""
+	}
+	return i18n.Tr(" Open the affected Codex terminal with ", " 打开对应 Codex 窗格：") + strings.Join(focus, ", ") +
+		i18n.Tr(". If the link stays unavailable, save any draft and let the current turn finish. Exit normally, then use the original launcher and `CODEX_HOME` if customized. For a standard launch, run `gtmux codex -- resume` in the same pane and select the original conversation.",
+			"。若持续未关联，请先保存草稿并等当前回合结束，再正常退出。原来使用自定义启动器或 `CODEX_HOME` 时请沿用。标准启动可在原窗格运行 `gtmux codex -- resume`，选择原对话。")
 }
 
 func doctorExpectsConversation(label string) bool {
