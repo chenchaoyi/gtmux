@@ -311,6 +311,7 @@ MAP-23cec3f34534,L2,reviewed implementation,internal/app/doctor_storage_guided_t
 MAP-a93f84fa1c3c,L2,reviewed implementation,internal/app/doctor_storage_guided_test.go,266,reviewed-selector,TestDoctorGuidedStorageBlocksWithoutTouchingServices,False,"DGS-001,DGS-002,DGS-003"
 MAP-0f15a656ecf9,L2,reviewed implementation,internal/app/doctor_storage_guided_test.go,307,reviewed-selector,TestDoctorGuidedStorageContinuesAfterInterruption,False,"DGS-001,DGS-002,DGS-003"
 MAP-9915c6cf9785,L2,reviewed implementation,internal/app/doctor_storage_guided_test.go,216,reviewed-selector,TestDoctorGuidedStorageFixEntry,False,"DGS-001,DGS-002,DGS-003"
+MAP-5b132144f5de,L2,reviewed implementation,internal/app/doctor_storage_prepared_test.go,14,reviewed-selector,TestDoctorPreparedStorageDiagnosticThroughCLI,False,"DPF-001,DPF-002"
 MAP-fdf93d45633d,L2,reviewed implementation,internal/app/doctor_storage_revision_test.go,17,reviewed-selector,TestDoctorStorageRejectsMismatchedLaunchdProgram,False,"DGR-001,DGR-002,DGR-003,DGR-004"
 MAP-b1593e983715,L2,reviewed implementation,internal/app/doctor_storage_revision_test.go,40,reviewed-selector,TestDoctorStorageReturnsSameProfileAndDefaults,False,"DGR-001,DGR-002,DGR-003,DGR-004"
 MAP-4d64fe5bafc4,L2,reviewed implementation,internal/app/doctor_storage_revision_test.go,61,reviewed-selector,TestDoctorStoragePreservesChoiceDuringConfirmation,False,"DGR-001,DGR-002,DGR-003,DGR-004"

@@ -1,4 +1,8 @@
 {
+  "internal/app/doctor_storage_prepared_test.go": {
+    "cases": ["DPF-001", "DPF-002"],
+    "selectors": ["TestDoctorPreparedStorageDiagnosticThroughCLI"]
+  },
   "internal/app/doctor_storage_compat_test.go": {
     "cases": ["DGC-001", "DGC-002", "DGC-003", "DGC-004"],
     "selectors": [

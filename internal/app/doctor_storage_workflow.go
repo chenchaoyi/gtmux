@@ -81,7 +81,8 @@ func doctorStorageEntry(command string, args []string) (int, bool) {
 	if fault == nil {
 		return 0, false
 	}
-	if _, _, pending := status.PendingChange(); err == nil && !pending {
+	// A valid prepared fence blocks ordinary admission without a readback error.
+	if _, _, pending := status.PendingChange(); err == nil && !pending && !status.ServicePreparation() {
 		err = fault
 	}
 	sections := []dsection{{i18n.Tr("Storage", "数据目录"), []dcheck{workflowLayoutRow(status, err)}}}
@@ -143,7 +144,7 @@ func applyDoctorStorageChange(workflow, grouped bool, writers func() error, conf
 
 func workflowLayoutRow(status state.StorageLayoutStatus, err error) dcheck {
 	label := i18n.Tr("data layout", "数据目录布局")
-	if status.ServicePreparation() {
+	if status.ServicePreparation() && err == nil {
 		return dcheck{stRec, label, i18n.Tr("service recovery preparing", "后台服务已进入维护"),
 			i18n.Tr("Run gtmux doctor --fix before opening tmux to continue or cancel the prepared move.",
 				"请在打开 tmux 前运行 gtmux doctor --fix，继续或撤回已准备的迁移。")}
