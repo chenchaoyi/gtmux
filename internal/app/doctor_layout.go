@@ -52,6 +52,9 @@ func cmdDoctorLayout(flag string) int {
 			mode = i18n.Tr("grouped", "分组")
 		}
 		fmt.Println(i18n.Tr("Storage layout", "数据目录布局"), "·", mode)
+		if status.Workflow != "" {
+			renderSections([]dsection{{i18n.Tr("Workflow storage", "流程存储"), []dcheck{workflowLayoutRow(status, nil)}}})
+		}
 		if status.Continuing != "" {
 			next := "--group-storage"
 			if status.Continuing == "flat" {
@@ -82,22 +85,50 @@ func cmdDoctorLayout(flag string) int {
 				}
 			}
 		}
+		if stores, err := state.InspectWorkflowPaths(); err != nil {
+			i18n.Sae(err.Error(), err.Error())
+			return 1
+		} else {
+			for _, store := range stores {
+				place := i18n.Tr("at original path", "位于原路径")
+				if store.AtGroupedPath {
+					place = i18n.Tr("at grouped path", "位于分组路径")
+				}
+				fmt.Printf("  %s → %s · %s\n", store.Original, store.Grouped, place)
+			}
+		}
 		if conflict {
 			return 1
 		}
 		return 0
 	}
 
-	if err := checkStorageWriters(); err != nil {
+	status, err := state.ReadStorageLayout()
+	if err != nil {
+		i18n.Sae(err.Error(), err.Error())
+		return 1
+	}
+	if err := checkEarlyStorageWriters(); err != nil {
 		i18n.Sae(err.Error(), "无法确认写入方已停用："+err.Error())
 		return 1
 	}
 	if !confirmRisky(i18n.Tr(
-		"Have you stopped gtmux, the menu bar, tmux, agent hooks and automatic restarts? Move storage paths [y/N] ",
-		"已退出 gtmux、菜单栏、tmux，并暂停 agent hook 及自动重启吗？确认迁移文件路径 [y/N] ")) {
+		"After reboot and before restoring tmux, have you stopped gtmux, its menu bar, agent hooks and automatic restarts? Move storage paths [y/N] ",
+		"重启后、恢复 tmux 前，是否已停用 gtmux、菜单栏、agent hook 和自动重启？确认迁移文件路径 [y/N] ")) {
 		return 0
 	}
-	if err := state.ChangeStorageLayout(flag == "--group-storage", checkStorageWriters); err != nil {
+	grouped := flag == "--group-storage"
+	if status.Workflow != "" && !grouped {
+		if err := state.ChangeWorkflowLayout(false, checkEarlyStorageWriters); err != nil {
+			i18n.Sae("Storage layout change stopped: "+err.Error(), "数据目录迁移已停住："+err.Error())
+			return 1
+		}
+	}
+	change := state.ChangeStorageLayout
+	if grouped && status.Mode == "grouped" && status.Continuing == "" {
+		change = state.ChangeWorkflowLayout
+	}
+	if err := change(grouped, checkEarlyStorageWriters); err != nil {
 		i18n.Sae("Storage layout change stopped: "+err.Error(), "数据目录迁移已停住："+err.Error())
 		return 1
 	}
@@ -128,7 +159,7 @@ func checkStorageWriters() error {
 		name := strings.ToLower(filepath.Base(strings.Join(fields[2:], " ")))
 		if name == "gtmux" || name == "gtmuxbar" || name == "gtmux-bar" ||
 			name == "tmux" || strings.HasPrefix(name, "tmux:") {
-			return fmt.Errorf("a gtmux or tmux process is still running (PID %s)", fields[1])
+			return fmt.Errorf("%s is still running (PID %s)", name, fields[1])
 		}
 	}
 	return userservice.CheckStorageStopped(state.Home(), serveAgentLabel, tunnelAgentLabel, selfTunnelAgentLabel)

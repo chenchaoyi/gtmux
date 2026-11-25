@@ -103,7 +103,8 @@ func doctorFix(yes bool, progress func(string)) int {
 	applied += s.applied("knowledge-sync", s.stepKnowledgeSync)
 	applied += s.applied("cloudflared", s.stepCloudflared)
 	applied += s.applied("app", s.stepAppInstall)
-	applied += s.applied("uploads", s.stepUploads)
+	applied += s.applied("cache-staging", s.stepCacheStaging)
+	applied += s.applied("legacy-profile-locks", s.stepLegacyProfileLocks)
 	applied += s.applied("housekeeping", s.stepHousekeep)
 	applied += s.applied("credential-backups", s.stepCredentialBackups)
 
@@ -179,28 +180,6 @@ func (s *fixState) ask(title, detail string) bool {
 		return false
 	}
 	return true
-}
-
-// stepUploads offers to clear the phone image-upload staging dir. Safe cleanup: those
-// images were already delivered into their panes; the dir only accumulates.
-func (s *fixState) stepUploads() int {
-	n, size := dirCountSize(uploadsDir())
-	if n == 0 {
-		return 0
-	}
-	if !s.ask(
-		i18n.Tr(fmt.Sprintf("Clear phone uploads (%s · %d files)", humanBytes(size), n),
-			fmt.Sprintf("清理手机上传（%s · %d 个文件）", humanBytes(size), n)),
-		i18n.Tr("Images the phone sent into panes are staged in "+uploadsDir()+". They are already delivered, so clearing is safe.",
-			"手机发进 pane 的图片暂存在 "+uploadsDir()+"，已送达，清理安全。")) {
-		return 0
-	}
-	entries, _ := os.ReadDir(uploadsDir())
-	for _, e := range entries {
-		_ = os.RemoveAll(filepath.Join(uploadsDir(), e.Name()))
-	}
-	i18n.Say(fmt.Sprintf("  cleared %d files.", n), fmt.Sprintf("  已清理 %d 个文件。", n))
-	return 1
 }
 
 // applyConf backs up once, merges `lines` into the managed block, writes it, and

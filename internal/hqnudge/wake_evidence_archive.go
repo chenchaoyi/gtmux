@@ -21,7 +21,7 @@ type acceptedArchiveRecord struct {
 }
 
 func acceptedArchivePath() string {
-	return filepath.Join(state.Dir(), "hqwake", "accepted-archive.jsonl")
+	return state.WorkflowPath("hqwake/accepted-archive.jsonl")
 }
 
 // Only known receiver acknowledgements may leave the active proof window.

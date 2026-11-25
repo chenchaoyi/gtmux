@@ -329,7 +329,7 @@ func acquireMigrationApplyLock() (func(), error) {
 	if err := state.MkdirAll(state.Dir(), 0700); err != nil {
 		return nil, err
 	}
-	f, err := state.OpenPrivateLock(filepath.Join(state.Dir(), ".hq-migration-apply.lock"))
+	f, err := state.OpenPrivateLock(state.WorkflowPath(".hq-migration-apply.lock"))
 	if err != nil {
 		return nil, err
 	}

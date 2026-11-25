@@ -77,6 +77,7 @@ func StorePath(name string, descendants ...string) string {
 type StorageLayoutStatus struct {
 	Mode            string
 	Continuing      string
+	Workflow        string
 	UnmarkedGrouped bool
 	Stores          []StorageLayoutStore
 	StagedFiles     int
@@ -98,9 +99,29 @@ func ReadStorageLayout() (StorageLayoutStatus, error) {
 		return StorageLayoutStatus{}, err
 	}
 	status := StorageLayoutStatus{Mode: mode}
-	transition, err := readLayoutTransaction()
+	workflow, err := readWorkflowJournal()
 	if err != nil {
 		return status, err
+	}
+	var transition *layoutTransaction
+	if workflow != nil {
+		status.Workflow = workflow.Phase
+		if workflow.Phase == workflowGrouped {
+			err = checkWorkflowActive(workflow)
+		} else {
+			err = verifyWorkflowMoves(workflow, false)
+		}
+		if err != nil {
+			return status, err
+		}
+	} else {
+		if _, found, err := workflowMarker(); err != nil || found {
+			return status, errors.New("workflow layout marker exists without a verified journal")
+		}
+		transition, err = readLayoutTransaction()
+		if err != nil {
+			return status, err
+		}
 	}
 	if transition != nil {
 		status.Continuing = transition.Target
@@ -148,11 +169,36 @@ func ReadStorageLayout() (StorageLayoutStatus, error) {
 	return status, nil
 }
 
+func (s StorageLayoutStatus) WorkflowActive() bool { return s.Workflow == workflowGrouped }
+
+// PendingChange reports the direction recorded in a verified journal. A
+// caller must still check the readback error and the offline preconditions.
+func (s StorageLayoutStatus) PendingChange() (workflow, grouped, pending bool) {
+	switch s.Workflow {
+	case workflowGrouping:
+		return true, true, true
+	case workflowRestoring:
+		return true, false, true
+	}
+	return false, s.Continuing == layoutGrouped, s.Continuing != ""
+}
+
 // CheckStorageLayout fences commands during an interrupted move. The app's
 // desktop-facing flat paths do not participate in the transition.
 func CheckStorageLayout() error {
 	if _, err := os.Lstat(filepath.Join(Dir(), layoutTransition)); !errors.Is(err, os.ErrNotExist) {
-		return errors.New("storage layout transition requires attention; run gtmux doctor --storage-layout")
+		journal, err := readWorkflowJournal()
+		if err != nil {
+			return err
+		}
+		if journal == nil || journal.Phase != workflowGrouped {
+			return errors.New("storage layout transition requires attention; run gtmux doctor --storage-layout")
+		}
+		if err := checkWorkflowActive(journal); err != nil {
+			return err
+		}
+	} else if _, err := os.Lstat(filepath.Join(Dir(), workflowLayoutMarker)); !errors.Is(err, os.ErrNotExist) {
+		return errors.New("workflow layout marker exists without its journal")
 	}
 	mode, err := currentLayout()
 	if err != nil {

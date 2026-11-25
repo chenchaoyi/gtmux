@@ -12,7 +12,7 @@ import (
 )
 
 func Acquire() (release func(), acquired bool, err error) {
-	return acquire(filepath.Join(state.Dir(), "hqwake", "input.lock"))
+	return acquire(state.WorkflowPath("hqwake", "input.lock"))
 }
 func acquire(path string) (release func(), acquired bool, err error) {
 	if err := state.MkdirAll(filepath.Dir(path), 0700); err != nil {

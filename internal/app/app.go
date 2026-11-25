@@ -113,6 +113,9 @@ func Run(argv []string) int {
 		args = args[1:]
 	}
 
+	if rc, handled := doctorStorageEntry(sub, args); handled {
+		return rc
+	}
 	lease, ok := enterCommandLayout(sub, args)
 	if !ok {
 		return 1

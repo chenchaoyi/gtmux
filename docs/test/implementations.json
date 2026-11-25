@@ -5723,5 +5723,17 @@
   "internal/app/doctor_codex_guidance_current_agent_test.go": {
     "cases": ["DBR-004"],
     "selectors": ["TestDBR004DoctorDoesNotSuggestCodexForAReusedPane"]
+  },
+  "internal/state/workflow_layout_test.go": {
+    "cases": ["GSW-001", "GSW-002"],
+    "selectors": ["TestGSW001WorkflowStorageRoundTrip", "TestGSW002WorkflowResumeAndConflict"]
+  },
+  "internal/app/doctor_storage_workflow_test.go": {
+    "cases": ["GSW-003", "GSW-004"],
+    "selectors": ["TestGSW003DoctorStorageMaintenanceWindow", "TestGSW004DoctorCacheCleanupProtectsDeliveryState"]
+  },
+  "internal/hqnudge/storage_inspect_test.go": {
+    "cases": ["GSW-004"],
+    "selectors": ["TestGSW004WakeStorageInventory"]
   }
 }

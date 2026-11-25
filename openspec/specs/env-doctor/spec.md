@@ -1034,7 +1034,7 @@ safety limit SHALL NOT be described as a directory quota or snapshot retention b
 
 ### Requirement: Inspect and change the data layout
 
-Doctor SHALL preview owned stores and their grouped locations without writing state. A layout change SHALL require explicit offline confirmation, reserve one transition, preserve object identity, refuse collisions and leave a durable direction for recovery. The running operation SHALL verify the journal identity and contents before moving data and before retirement. Transition metadata SHALL remain until all planned identities and any archive have reached their targets and the layout marker and group paths establish the selected layout. CLI commands that need storage SHALL hold shared admission until exit and refuse access while a transition is unfinished. Migration SHALL hold exclusive admission and reject a running or pending managed service, or a managed service that cannot be checked. An installed managed service SHALL be persistently disabled during the move. Desktop and native path contracts SHALL be preserved where their writers do not take part in the transition. The HQ wake spool, protocol locks, claims and receipts SHALL keep their existing paths.
+Doctor SHALL preview owned stores and their grouped locations without writing state. It SHALL offer a layout change only in a standalone terminal with no observable active tmux or gtmux writer, and SHALL require confirmation that the machine has restarted and no tmux session has been opened or restored. A layout change SHALL reserve one transition, preserve object identity, refuse collisions and leave a durable direction for recovery. The running operation SHALL verify the journal identity and contents before moving data and before retirement. Transition metadata SHALL remain until all planned identities and any archive have reached their targets and the layout marker and group paths establish the selected layout. CLI commands that need storage SHALL hold shared admission until exit and refuse access while a transition is unfinished. Migration SHALL hold exclusive admission and reject a running or pending managed service, or a managed service that cannot be checked. An installed managed service SHALL be persistently disabled during the move. Desktop and native path contracts SHALL be preserved where their writers do not take part in the transition.
 
 #### Scenario: Repair an interrupted storage change
 
@@ -1049,3 +1049,18 @@ Doctor SHALL preview owned stores and their grouped locations without writing st
 - **AND** known owner-private, interrupted staging files are kept in an inactive recovery directory
 - **AND** the removal of the grouped marker is synced before cleaning or archiving the scaffold, including on retry
 - **AND** cleanup can remove only known empty scaffold directories and preserves objects that appear late
+
+### Requirement: Group wake workflow storage and inspect it with Doctor
+
+The optional workflow layout SHALL group HQ delivery, submission recovery, delivery verification and shared coordination under the wake hierarchy. Registered global lease anchors SHALL share a directory outside the layout bootstrap path. A same-device move SHALL retain original queue, journal and claim identities, including hard links. The workflow layout SHALL fence older CLI writers until rollback. Doctor SHALL display known locations and report delivery stages from metadata. Storage diagnostics SHALL remain available while application writes are fenced. Doctor --fix SHALL continue a verified interrupted change only after the same offline confirmation, and SHALL preserve conflicting or unverified records.
+
+#### Scenario: A tmux or gtmux writer is still present
+
+- **WHEN** the operator checks or attempts a layout change while a writer is active
+- **THEN** Doctor does not offer an in-place migration and names a detected blocker when the operator requests it
+
+#### Scenario: Cache staging and wake evidence coexist
+
+- **WHEN** a rebuildable cache contains private abandoned write stages and the wake queue contains held or unconfirmed records
+- **THEN** Doctor can preview and remove eligible cache stages with identity rechecks
+- **AND** the queue, claims, attachments and unverified receipts remain available for their owner workflows

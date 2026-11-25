@@ -7,7 +7,6 @@ import (
 	"io"
 	"maps"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -149,7 +148,7 @@ func publishWakeNotices(scope, title string, alerts map[string]wakeNotice, now i
 			return
 		}
 	}
-	path := filepath.Join(state.Dir(), "hqwake", "notices-"+scope+".json")
+	path := state.WorkflowPath("hqwake", "notices-"+scope+".json")
 	previous, readErr := readWakeNotices(path)
 	workspace := scope == "workspace"
 	if workspace {

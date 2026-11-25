@@ -83,6 +83,8 @@ MAP-dec87488124a,L2,reviewed implementation,internal/app/doctor_knowledge_count_
 MAP-f167ee401a33,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,60,reviewed-selector,TestSTOR011DoctorReportsLegacyProfileLocksWithoutChanges,False,"STOR-011,STOR-012"
 MAP-e5e0b1ca236e,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,86,reviewed-selector,TestSTOR012DoctorPrunesOnlyConfirmedIdleLegacyProfileLocks,False,"STOR-011,STOR-012"
 MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
+MAP-23b08a3a33d1,L2,reviewed implementation,internal/app/doctor_storage_workflow_test.go,14,reviewed-selector,TestGSW003DoctorStorageMaintenanceWindow,False,"GSW-003,GSW-004"
+MAP-cac9795bd1ab,L2,reviewed implementation,internal/app/doctor_storage_workflow_test.go,61,reviewed-selector,TestGSW004DoctorCacheCleanupProtectsDeliveryState,False,"GSW-003,GSW-004"
 MAP-c7f093bf6da7,L2,reviewed implementation,internal/app/dsh_terminal_spool_test.go,21,reviewed-selector,TestDSHTerminalReceiverSharesSpoolWithGo,False,"SPL-004,SPL-012"
 MAP-800c507bcf35,L2,reviewed implementation,internal/app/frontend_location_restore_test.go,13,reviewed-selector,TestCFL001RestoreUsesCurrentSavedLayoutOnceAndKeepsOriginalHistory,False,CFL-001
 MAP-0ac93543b761,L2,reviewed implementation,internal/app/help_readability_test.go,9,reviewed-selector,TestCAS006HelpKeepsLongSyntaxSeparateAndScreenshotsVisible,False,CAS-006
@@ -380,6 +382,7 @@ MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_t
 MAP-62d7c36b98c4,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,121,reviewed-selector,TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity,False,"HRW-004,HRW-005,HRW-008"
 MAP-f6f7a40c985c,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,152,reviewed-selector,TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource,False,"HRW-004,HRW-005,HRW-008"
 MAP-047069ddfab6,L2,reviewed implementation,internal/hqnudge/startup_witness_test.go,17,reviewed-selector,TestHSP003StartupReceiptObservationDoesNotReplayInput,False,HSP-003
+MAP-0f1d97d1a516,L2,reviewed implementation,internal/hqnudge/storage_inspect_test.go,11,reviewed-selector,TestGSW004WakeStorageInventory,False,GSW-004
 MAP-dac5bb4a6387,L2,reviewed implementation,internal/hqnudge/waiting_relay_retry_test.go,14,reviewed-selector,TestHWW004ProtectedRelayUsesFirstWindowWithDueWaitingRetry,False,HWW-004
 MAP-3cdb1de3f223,L2,reviewed implementation,internal/hqnudge/waiting_test.go,91,reviewed-selector,TestHWW001FreshWaitingRevalidationWithProtectedRelay,False,"HWW-001,HWW-002"
 MAP-fd0f7cbc9edc,L2,reviewed implementation,internal/hqnudge/waiting_test.go,172,reviewed-selector,TestHWW002PreviouslyAttemptedWaitingKeepsRecoveryRules,False,"HWW-001,HWW-002"
@@ -974,6 +977,8 @@ MAP-e5d2427c7d6d,L2,reviewed implementation,internal/state/cpu_repeated_poll_tes
 MAP-33d2a35b1094,L2,reviewed implementation,internal/state/cpu_repeated_poll_test.go,30,reviewed-selector,TestCSR005RepeatedPollRequiresValidPriorEvidence,False,CSR-005
 MAP-c2cbd0d02497,L2,reviewed implementation,internal/state/privatewrite_durability_test.go,14,reviewed-selector,TestPrivateWriteRetriesDirectorySyncAfterRename,False,PRIVATEWRITE-DIRECTORY-SYNC
 MAP-495d9fb7b0a9,L2,Go core / CLI / server,internal/state/privatewrite_test.go,201,reviewed-selector,TestPrivateWritePrePublicationFailurePreservesOriginal,False,KBCARRIER-ATOMIC
+MAP-247c4d81b321,L2,reviewed implementation,internal/state/workflow_layout_test.go,11,reviewed-selector,TestGSW001WorkflowStorageRoundTrip,False,"GSW-001,GSW-002"
+MAP-a074d430cfc5,L2,reviewed implementation,internal/state/workflow_layout_test.go,80,reviewed-selector,TestGSW002WorkflowResumeAndConflict,False,"GSW-001,GSW-002"
 MAP-3cff5fa16242,L2,reviewed implementation,internal/transcript/activity_action_test.go,78,reviewed-selector,TestASA001RecordedSkillIdentityAcrossFiveAdapters,False,"ASA-001,ASA-002,ASA-003"
 MAP-005983dcced4,L2,reviewed implementation,internal/transcript/activity_action_test.go,96,reviewed-selector,TestASA001ShellTextAndBareNamesDoNotInventSkillReads,False,"ASA-001,ASA-002,ASA-003"
 MAP-6f4234fa9eea,L2,reviewed implementation,internal/transcript/activity_action_test.go,111,reviewed-selector,TestASA002WebIntentUsesExplicitMethodsOrCompleteActions,False,"ASA-001,ASA-002,ASA-003"

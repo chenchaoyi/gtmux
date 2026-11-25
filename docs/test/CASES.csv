@@ -303,6 +303,8 @@ MAP-fde505a4f21f,L1,reviewed implementation,internal/app/doctor_layout_test.go,1
 MAP-f167ee401a33,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,60,reviewed-selector,TestSTOR011DoctorReportsLegacyProfileLocksWithoutChanges,False,"STOR-011,STOR-012"
 MAP-e5e0b1ca236e,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,86,reviewed-selector,TestSTOR012DoctorPrunesOnlyConfirmedIdleLegacyProfileLocks,False,"STOR-011,STOR-012"
 MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
+MAP-23b08a3a33d1,L2,reviewed implementation,internal/app/doctor_storage_workflow_test.go,14,reviewed-selector,TestGSW003DoctorStorageMaintenanceWindow,False,"GSW-003,GSW-004"
+MAP-cac9795bd1ab,L2,reviewed implementation,internal/app/doctor_storage_workflow_test.go,61,reviewed-selector,TestGSW004DoctorCacheCleanupProtectsDeliveryState,False,"GSW-003,GSW-004"
 LEG-11f8f7133cba,L1,Go core / CLI / server,internal/app/doctor_test.go,16,Test,TestRenderSectionsTally,False,legacy-not-retrospectively-reviewed
 LEG-0f94dea29a8c,L1,Go core / CLI / server,internal/app/doctor_test.go,30,Test,TestAdvisoryRemaining,False,legacy-not-retrospectively-reviewed
 LEG-7a93b0f03c02,L1,Go core / CLI / server,internal/app/doctor_test.go,56,Test,TestIsUTF8Locale,False,legacy-not-retrospectively-reviewed
@@ -2145,6 +2147,7 @@ MAP-ad61e9898864,L2,reviewed implementation,internal/hqnudge/rotation_priority_t
 MAP-62d7c36b98c4,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,121,reviewed-selector,TestHRW005AutomaticProducerSetsPolicyAndKeepsHQIdentity,False,"HRW-004,HRW-005,HRW-008"
 MAP-f6f7a40c985c,L2,reviewed implementation,internal/hqnudge/rotation_priority_test.go,152,reviewed-selector,TestHRW008BusyRetentionAndAcceptedReceiptDoNotConsumeImportantSource,False,"HRW-004,HRW-005,HRW-008"
 MAP-047069ddfab6,L2,reviewed implementation,internal/hqnudge/startup_witness_test.go,17,reviewed-selector,TestHSP003StartupReceiptObservationDoesNotReplayInput,False,HSP-003
+MAP-0f1d97d1a516,L2,reviewed implementation,internal/hqnudge/storage_inspect_test.go,11,reviewed-selector,TestGSW004WakeStorageInventory,False,GSW-004
 MAP-385d256c3e24,L1,reviewed implementation,internal/hqnudge/storage_layout_test.go,12,reviewed-selector,TestGSS012StorageLayoutKeepsNativeWakeEvidence,False,GSS-012
 MAP-dac5bb4a6387,L2,reviewed implementation,internal/hqnudge/waiting_relay_retry_test.go,14,reviewed-selector,TestHWW004ProtectedRelayUsesFirstWindowWithDueWaitingRetry,False,HWW-004
 MAP-3cdb1de3f223,L2,reviewed implementation,internal/hqnudge/waiting_test.go,91,reviewed-selector,TestHWW001FreshWaitingRevalidationWithProtectedRelay,False,"HWW-001,HWW-002"
@@ -3535,6 +3538,8 @@ LEG-b285e117d09b,G,Go core / CLI / server,internal/state/state_test.go,152,Test,
 LEG-53126243c539,L1,Go core / CLI / server,internal/state/state_test.go,187,Test,TestLoadTabOrderDropsBlanks,False,legacy-not-retrospectively-reviewed
 LEG-cb1b580aa52b,L1,Go core / CLI / server,internal/state/state_test.go,206,Test,TestReapOrphanTurnMarkers,False,legacy-not-retrospectively-reviewed
 LEG-5711fae0e79f,G,Go core / CLI / server,internal/state/taborder_atomic_test.go,9,Test,TestSaveTabOrderPublishesReplacement,False,legacy-not-retrospectively-reviewed
+MAP-247c4d81b321,L2,reviewed implementation,internal/state/workflow_layout_test.go,11,reviewed-selector,TestGSW001WorkflowStorageRoundTrip,False,"GSW-001,GSW-002"
+MAP-a074d430cfc5,L2,reviewed implementation,internal/state/workflow_layout_test.go,80,reviewed-selector,TestGSW002WorkflowResumeAndConflict,False,"GSW-001,GSW-002"
 LEG-7da56919233c,G,Go core / CLI / server,internal/tabalert/tabalert_test.go,15,Test,TestEnablePrependsAndDisableRestores,False,legacy-not-retrospectively-reviewed
 LEG-51b85fdfc61e,L1,Go core / CLI / server,internal/tabalert/tabalert_test.go,40,Test,TestOwnershipIsReadFromTheFormat,False,legacy-not-retrospectively-reviewed
 LEG-0008907dc02c,L1,Go core / CLI / server,internal/tabalert/tabalert_test.go,56,Test,TestWaitingSessionsIgnoresNonPaneEntries,False,legacy-not-retrospectively-reviewed
