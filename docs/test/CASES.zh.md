@@ -2,13 +2,13 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1493 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1494 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2739 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 169 | [L3.csv](cases/L3.csv) |
+| L3 · 运行时集成 | 170 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
@@ -213,6 +213,7 @@
 | DTV-003 | Correct worktree/branch/stat totals and directory grouping, no pre-opened code. Explicit expansion reveals original colored diff lines; collapse-all hides contents. Existing smoke assertion opens the file/hunk before checking original code. No unsafe HTML for context/path names. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
 | DTV-004 | JSON-quoted root identifies linked worktree, branch matches that worktree, diff/untracked data stay present. Existing8s deadline,400KiB cap and no-repo/error semantics remain; the extra metadata read uses the same deadline. Server pane authorization and response envelope are unchanged. |
 | DTV-005 | Owner receives original root/branch/patch byte-for-byte. Allowed guest receives branch and original patch without the new absolute root preamble; root-looking code remains. Denied/unauthenticated requests do not call the capture dependency. No audience/credential/permission setting changes. |
+| DBR-004 | The historical failure remains readable. Focus and managed resume guidance never applies to the active Claude terminal. A current Codex pane in a mixed report gets only its own focus command along with draft and launch-context guidance. |
 | DBR-003 | The note carries each applicable Codex pane's focus command, save-draft and managed resume steps, and original launcher or Codex home guidance. Other agents receive no Codex command. Existing severity and evidence files are preserved. No repair action sends input or changes association evidence. |
 | DCA-001 | A missing/expired managed proof is not OK/live; reason and exact pane are visible, no state changes or guessed thread |
 | DCA-002 | Supported missing association is visible as recommended/unassociated; unsupported/plain are neutral; strict verified control remains OK; nearby history never authorizes repair |

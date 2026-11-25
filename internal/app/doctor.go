@@ -1881,11 +1881,12 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 			verified++ // same exact current-client override as the transcript API
 			continue
 		}
+		currentCodex := agents.KeyForLabel(p.Agent) == "codex"
 		rec, ok := resume.Load(p.Loc)
 		if !ok || rec.SessionID == "" {
 			if doctorExpectsConversation(p.Agent) {
 				missing = append(missing, p.PaneID+" (resume-record-unavailable)")
-				if agents.KeyForLabel(p.Agent) == "codex" {
+				if currentCodex {
 					addFocus(p.PaneID)
 				}
 			}
@@ -1899,7 +1900,10 @@ func staleBindingsFor(panes []radar.PaneRow, now int64, verify func(string, resu
 			continue
 		}
 		if rec.Agent == "codex" && rec.Frontend != "" {
-			addFocus(p.PaneID)
+			// A retained index can outlive the agent currently in this pane.
+			if currentCodex {
+				addFocus(p.PaneID)
+			}
 			_, live, reason := resume.LoadLiveDiagnostic(p.Loc)
 			if !live {
 				unavailable = append(unavailable, p.PaneID+" ("+reason+")")
