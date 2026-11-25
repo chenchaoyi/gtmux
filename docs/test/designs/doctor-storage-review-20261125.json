@@ -1,0 +1,57 @@
+{
+  "id": "doctor-storage-review-20261125",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-25",
+    "decision": "Approve before implementation",
+    "notes": "Independent review of the previous head supplied the failure cases. Faults use temporary directories, fake launchd observations and injected sync boundaries; the design cannot prove a physical power loss or live macOS eligibility."
+  },
+  "cases": [
+    {
+      "id": "DGR-001",
+      "layer": "L2",
+      "description": "Match installed and loaded LaunchAgent definitions, preserve absence of overrides",
+      "setup": "Synthetic release plist, distinct loaded arguments, wrong executable, default override and both valid override values",
+      "action": "Inspect and then park and recover an accepted job",
+      "expected": "Only recognized matching jobs are eligible. The same profile object returns, and no launchd override is created or modified.",
+      "planned_files": [
+        "internal/app/doctor_storage_revision_test.go"
+      ]
+    },
+    {
+      "id": "DGR-002",
+      "layer": "L2",
+      "description": "Recheck service and menu bar state after confirmation",
+      "setup": "Synthetic grouped storage, valid remote jobs, changed preferences during confirmation and either release login or old menu process",
+      "action": "Approve the preview, then change the fixture before pausing",
+      "expected": "The shared remote configuration lock and the second observations preserve the newer setting. The legacy login or process blocks with zero service or layout mutation.",
+      "planned_files": [
+        "internal/app/doctor_storage_revision_test.go"
+      ]
+    },
+    {
+      "id": "DGR-003",
+      "layer": "L2",
+      "description": "Publish durable storage and service receipts before recovery",
+      "setup": "Synthetic moves and injected failures in the receipt ancestor sync, layout durability barrier and receipt cleanup",
+      "action": "Interrupt and rerun Doctor at each failure boundary",
+      "expected": "No service mutation occurs before the receipt is durable; recovery waits for durable layout verification; unlink and parent sync errors retry cleanup without reapplying service actions.",
+      "planned_files": [
+        "internal/app/doctor_storage_revision_test.go"
+      ]
+    },
+    {
+      "id": "DGR-004",
+      "layer": "L2",
+      "description": "Recover services independently and bound retries of an idle job",
+      "setup": "Several verified jobs and an originally running service without a PID after bootstrap",
+      "action": "Pause, restore and rerun after a failure or idle result",
+      "expected": "An independent failure does not suppress separate progress, dependent jobs report their blocker, and at most one verified kickstart is attempted for a given original job.",
+      "planned_files": [
+        "internal/app/doctor_storage_revision_test.go"
+      ]
+    }
+  ],
+  "seal": "b35b10bc058226eeb92ca987c7355cbdd72e3ddcf1fb996d45d4ce8d23eb0a96"
+}
