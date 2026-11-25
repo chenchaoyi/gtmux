@@ -5705,5 +5705,13 @@
   "internal/hq/eventscmd_cursor_test.go": {
     "cases": ["HCR-001"],
     "selectors": ["TestHCR001SkipAheadReadProvidesSavedCursor"]
+  },
+  "internal/app/doctor_codex_guidance_test.go": {
+    "cases": ["DBR-003"],
+    "selectors": ["TestDBR003DoctorCodexGuidanceCoversUnavailableStates"]
+  },
+  "internal/app/doctor_codex_guidance_current_agent_test.go": {
+    "cases": ["DBR-004"],
+    "selectors": ["TestDBR004DoctorDoesNotSuggestCodexForAReusedPane"]
   }
 }

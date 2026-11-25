@@ -2,13 +2,13 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1492 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1494 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2739 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 168 | [L3.csv](cases/L3.csv) |
+| L3 · Runtime integration | 170 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 509 | [G.csv](cases/G.csv) |
@@ -213,6 +213,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DTV-003 | Correct worktree/branch/stat totals and directory grouping, no pre-opened code. Explicit expansion reveals original colored diff lines; collapse-all hides contents. Existing smoke assertion opens the file/hunk before checking original code. No unsafe HTML for context/path names. Metadata-only clean worktrees retain context and explicitly show no changes, with no metadata rendered as code. |
 | DTV-004 | JSON-quoted root identifies linked worktree, branch matches that worktree, diff/untracked data stay present. Existing8s deadline,400KiB cap and no-repo/error semantics remain; the extra metadata read uses the same deadline. Server pane authorization and response envelope are unchanged. |
 | DTV-005 | Owner receives original root/branch/patch byte-for-byte. Allowed guest receives branch and original patch without the new absolute root preamble; root-looking code remains. Denied/unauthenticated requests do not call the capture dependency. No audience/credential/permission setting changes. |
+| DBR-004 | The historical failure remains readable. Focus and managed resume guidance never applies to the active Claude terminal. A current Codex pane in a mixed report gets only its own focus command along with draft and launch-context guidance. |
+| DBR-003 | The note carries each applicable Codex pane's focus command, save-draft and managed resume steps, and original launcher or Codex home guidance. Other agents receive no Codex command. Existing severity and evidence files are preserved. No repair action sends input or changes association evidence. |
 | DCA-001 | A missing/expired managed proof is not OK/live; reason and exact pane are visible, no state changes or guessed thread |
 | DCA-002 | Supported missing association is visible as recommended/unassociated; unsupported/plain are neutral; strict verified control remains OK; nearby history never authorizes repair |
 | DCA-003 | Explains automatic producer retry and normal per-session continuation when evidence is insufficient; does not claim doctor repaired state, restart clients, clear drafts or offer directory-derived binding |

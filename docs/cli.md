@@ -2178,6 +2178,12 @@ The terminal report ends with all blocking and recommended findings, blocking
 first, including their group, current value and existing guidance. The fix pass
 uses the same list for remaining findings; a recommendation is not itself a
 failed repair. Some items need a separate action rather than `doctor --fix`.
+
+When Doctor cannot verify a Codex conversation link, it shows `gtmux focus %N` to
+find the affected terminal. Save any draft and wait for the current turn to finish
+before exiting the client. Resume the original conversation with its original
+launcher and Codex home. For a standard launch, use `gtmux codex -- resume` in the
+same pane. Doctor leaves the conversation and its saved references intact.
 The Mac summary shows complete guidance and specific actions (open HQ or copy the
 error-log command), instead of linking back to the same check. It never runs copied
 commands automatically.

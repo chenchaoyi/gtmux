@@ -1,0 +1,24 @@
+{
+  "change": "Scope Doctor's Codex recovery instructions to the current agent",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (Codex self-review after independent finding)",
+    "date": "2026-11-25",
+    "decision": "Use the current pane's Codex identity for terminal recovery instructions",
+    "notes": "A historical index can survive a different agent starting in the same pane. Preserve the diagnostic result and avoid Codex focus or resume instructions for that pane. A genuinely current Codex with a separate missing record can still get its own guidance."
+  },
+  "cases": [
+    {
+      "id": "DBR-004",
+      "layer": "L3",
+      "description": "Doctor withholds Codex actions when a different current agent occupies a previously bound location",
+      "setup": "Synthetic prior Codex proof at a location whose current agent is Claude Code. A separate variant adds a current Codex pane with no record.",
+      "action": "Inspect Doctor's binding row in both cases.",
+      "expected": "The historical failure remains readable. Focus and managed resume guidance never applies to the active Claude terminal. A current Codex pane in a mixed report gets only its own focus command along with draft and launch-context guidance.",
+      "planned_files": [
+        "internal/app/doctor_codex_guidance_current_agent_test.go"
+      ]
+    }
+  ],
+  "seal": "dde2decc3aa7b56b9cfdf6288302f1143531d32316fe8529c0243b3f89682aa5"
+}
