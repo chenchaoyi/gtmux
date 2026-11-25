@@ -1,0 +1,35 @@
+{
+  "change": "Repair a proven Codex conversation reference and guide an unverified pane back to its terminal",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (Codex self-review)",
+    "date": "2026-11-25",
+    "decision": "Apply only an exact same-thread reference repair and retain actionable terminal guidance for missing proof",
+    "notes": "An expired receipt can follow a failed bridge reconnection while the Codex terminal is still alive. The fixer uses only an independently verified fresh same-thread frontend plus its committed native binding. It preserves the index fields, rechecks under the producer lease, and never starts an agent, sends input, or renews proof. Missing and ambiguous evidence remain unresolved."
+  },
+  "cases": [
+    {
+      "id": "DBR-001",
+      "layer": "L3",
+      "description": "Repair an expired Codex resume reference only from a unique committed frontend for the same thread",
+      "setup": "Isolated state with a stale reference, a verified successor in the same terminal, its independent binding receipt, and other index metadata.",
+      "action": "Plan and apply a repair, including a concurrent update and controls with missing, changed or conflicting evidence.",
+      "expected": "The fix only changes the frontend reference for the same home, thread and pane incarnation. The live binding reads back, the receipts and record metadata are preserved, and identity conflicts, lock contention and changed index bytes cause no write.",
+      "planned_files": [
+        "internal/resume/doctor_binding_repair_test.go"
+      ]
+    },
+    {
+      "id": "DBR-002",
+      "layer": "L3",
+      "description": "Doctor identifies the exact terminal and explains how to resume when it cannot prove a repair",
+      "setup": "The Doctor fixture holds an expired Codex proof, with no independent fresh receipt.",
+      "action": "Read the Doctor row and run its unattended conversation repair step.",
+      "expected": "The row names the focus command and safe managed resume steps. The fixer does not change the index or proof and does not start a session or write to a pane.",
+      "planned_files": [
+        "internal/app/doctor_binding_repair_test.go"
+      ]
+    }
+  ],
+  "seal": "9a9a2455e221a910c1bc02d68942d0dcdb3da139bbbb34616a33c83ee997b1be"
+}
