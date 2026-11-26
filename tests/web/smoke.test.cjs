@@ -564,7 +564,7 @@ scenario('Workspace controls support keyboard access and truthful copy feedback'
   assert.equal(await copy.getAttribute('title'), 'Copy failed');
 });
 
-scenario('Live chat shows current work, retains disclosure state and clears after completion or revocation', {viewport: {width: 1440, height: 1000}, locale: 'zh-CN'}, async (page, fixture) => {
+scenario('Live chat shows current work, retains disclosure state and stays open after completion and clears on revocation', {viewport: {width: 1440, height: 1000}, locale: 'zh-CN'}, async (page, fixture) => {
   let captures = 0;
   page.on('request', request => {if (new URL(request.url()).pathname.endsWith('/api/pane')) captures++;});
   fixture.state.screens['%901'] = '\u001b[32mRunning current checks\u001b[0m\nInspecting cancellation\n\n';
@@ -630,7 +630,8 @@ scenario('Live chat shows current work, retains disclosure state and clears afte
   assert.equal(await page.locator('#chat-input .cx-input').inputValue(), 'Keep this live draft');
   const agent = fixture.state.agents.find(a => a.pane_id === '%901');
   agent.status = 'idle'; agent.since++;
-  await live.waitFor({state: 'detached'});
+  await live.locator('summary strong').filter({hasText: '空闲'}).waitFor();
+  assert.equal(await live.evaluate(e => e.open), true);
   assert.equal(await page.locator('#chat-input .cx-input').inputValue(), 'Keep this live draft');
   agent.status = 'working'; agent.since++;
   await live.waitFor();

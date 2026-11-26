@@ -550,6 +550,11 @@ export class ApiError extends Error {
   }
 }
 
+/** A pane read explicitly lost authority or its resource disappeared. */
+export function paneReadUnavailable(error: unknown): boolean {
+  return error instanceof ApiError && (error.isAuth || error.status === 404);
+}
+
 export class UsageNetworkError extends Error {
   constructor() {
     super('usage request could not reach the server');
@@ -791,7 +796,7 @@ export class GtmuxClient {
       `${this.base}/api/pane?id=${encodeURIComponent(id)}`,
       {headers: this.h(), ...(signal ? {signal} : {})},
     );
-    if (!r.ok) throw new Error(`pane: HTTP ${r.status}`);
+    if (!r.ok) throw new ApiError(r.status, 'pane');
     return r.json();
   }
 

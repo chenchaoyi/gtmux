@@ -19,7 +19,7 @@ const HEADER_HEIGHT = 44;
 const PANEL_PADDING = 6;
 
 /** The conversation owns disclosure state; this row can disappear between observations. */
-export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, open, onToggle, inspectAvailable = true, sourceLabel, heightLimit, savedHeight, onResize}: {
+export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, open, onToggle, working, inspectAvailable = true, sourceLabel, heightLimit, savedHeight, onResize}: {
   avatar: React.ReactNode;
   label: string;
   lines: AnsiLine[];
@@ -27,6 +27,7 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
   fontFamily: string | undefined;
   lang: Lang;
   open: boolean;
+  working: boolean;
   onToggle: () => void;
   inspectAvailable?: boolean;
   sourceLabel?: string;
@@ -75,7 +76,7 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
   React.useEffect(() => finish, [finish]);
   const action = lang === 'zh' ? (open ? '收起实时画面' : '展开实时画面') : (open ? 'Hide live view' : 'Show live view');
   const marker = <>
-    <BrandLoader size={14} neutral={pal.fg3} />
+    {working && <BrandLoader size={14} neutral={pal.fg3} />}
     <ChromeText style={styles.label} numberOfLines={1}>{label}</ChromeText>
   </>;
   const actionContent = (title: string) => <View style={[styles.action, !open && styles.disclosureAction]}>

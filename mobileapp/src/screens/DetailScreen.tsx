@@ -1,4 +1,4 @@
-import {ConversationReadError} from '../api/client';
+import {ConversationReadError, paneReadUnavailable} from '../api/client';
 import {newSendId} from '../api/sendId';
 import type {SendDelivery} from '../ui/sendReceipt';
 // DetailScreen — a read-only view of one pane's current screen (MOBILE §4), in
@@ -244,7 +244,9 @@ function PaneDetailView({
       : (lang === 'zh' ? `${where}重连中 · ` : `${where}reconnecting · `);
   })();
   const [text, setText] = useState('');
-  const paneReadIdentity = useMemo(() => ({client, pane: agent.pane_id}), [client, agent.pane_id]);
+  const paneSession = live.observed_conversation?.session_id ?? live.session_id;
+  const paneHome = live.observed_conversation?.home_id ?? live.home_id;
+  const paneReadIdentity = useMemo(() => ({client, pane: agent.pane_id, paneSession, paneHome}), [client, agent.pane_id, paneSession, paneHome]);
   const [captureIdentity, setCaptureIdentity] = useState<typeof paneReadIdentity>();
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   // The tmux pane's width, which tells Codex's cut prompt row from a row that merely ends in
@@ -480,6 +482,7 @@ function PaneDetailView({
   const smaller = () => setFontSize(n => adjustSessionFont(n, -1));
   const bigger = () => setFontSize(n => adjustSessionFont(n, 1));
 
+  const captureGeneration = useRef(0);
   const paneRead = useRef<ReturnType<typeof createReadTask> | null>(null);
   const loadPane = useCallback(() => paneRead.current?.run(), []);
 
@@ -518,6 +521,7 @@ function PaneDetailView({
       // sendResult keeps the server's own refusal, which is what lets the bar say
       // WHICH refusal it was. The old `send` returned null for all of them.
       const lane = paneRead.current;
+      const generation = captureGeneration.current;
       client
         .sendResult(agent.pane_id, p)
         .then(r => {
@@ -541,7 +545,7 @@ function PaneDetailView({
           }
           // A late receipt can settle its message after a newer control key, but
           // its older capture must not invalidate or replace the current screen.
-          if (attempt !== sendAttempt.current) return;
+          if (attempt !== sendAttempt.current || generation !== captureGeneration.current) return;
           // Retire a capture started before this accepted send.
           lane.invalidate();
           const snap = r.pane;
@@ -578,7 +582,15 @@ function PaneDetailView({
         return c;
       });
       setCaptureIdentity(paneReadIdentity);
-    }, {onSettled: () => setLoading(false)});
+    }, {onError: error => {
+      if (paneReadUnavailable(error)) {
+        captureGeneration.current++;
+        setCaptureIdentity(undefined);
+        setText('');
+        setCursor(undefined);
+        setPaneCols(undefined);
+      }
+    }, onSettled: () => setLoading(false)});
     paneRead.current = task;
     const stop = startReadPolling(task, 1500);
     return () => {stop(); if (paneRead.current === task) paneRead.current = null;};
@@ -595,9 +607,10 @@ function PaneDetailView({
   const onLoadKeys = useCallback((version?: number, boot?: string) => client.inputCapabilities(agent.pane_id, version, boot), [client, agent.pane_id]);
   const onSendKey = useCallback(async (p: SendPayload) => {
     const lane = paneRead.current;
+    const generation = captureGeneration.current;
     const attempt = ++sendAttempt.current;
     const r = await client.sendResult(agent.pane_id, p);
-    if (attempt === sendAttempt.current && r.ok && r.pane && lane?.isActive() && paneRead.current === lane) {
+    if (generation === captureGeneration.current && attempt === sendAttempt.current && r.ok && r.pane && lane?.isActive() && paneRead.current === lane) {
       lane.invalidate();
       if (typeof r.pane.text === 'string') setText(r.pane.text);
       if (r.pane.cols) setPaneCols(r.pane.cols);

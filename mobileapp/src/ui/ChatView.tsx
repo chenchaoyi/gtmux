@@ -441,17 +441,17 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   }, [lines]);
 
   const inspectAvailable = !readOnly && !!agent.pane_id && agent.source !== 'native';
-  const liveOverlay = status === 'working' && inspectAvailable && liveOpen;
+  const liveOverlay = inspectAvailable && liveOpen;
   const foldInset = controlsTop !== undefined && turns.length > 0 ? 44 : 0;
   const liveHeightLimit = viewportHeight === undefined ? undefined
     : Math.max(0, viewportHeight - Math.max(topPad, controlsTop ?? 0) - foldInset - LIVE_PANEL_INSET);
-  const liveProgress = status === 'working' && <LiveProgress key={liveScope}
+  const liveProgress = (status === 'working' || liveOverlay) && <LiveProgress key={liveScope}
     open={liveOverlay} onToggle={() => setLiveDisclosure({scope: liveScope, open: !liveOpen})}
     heightLimit={liveHeightLimit} savedHeight={liveSize.current.height}
     onResize={height => {if (liveSize.current.scope === liveScope) liveSize.current.height = height;}}
     avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent})}
-    label={liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
-    inspectAvailable={inspectAvailable}
+    label={status !== 'working' ? statusLabel(status, lang) : liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
+    inspectAvailable={inspectAvailable} working={status === 'working'}
     sourceLabel={readOnlyHistory ? (lang === 'zh' ? `当前 pane ${agent.pane_id} · 历史对话关联待确认` : `Current pane ${agent.pane_id} · History association unconfirmed`) : undefined}
     lines={liveShown} fontSize={fontSize} fontFamily={fontFamily} lang={lang} />;
 

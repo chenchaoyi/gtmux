@@ -2943,6 +2943,11 @@ An expanded Live terminal with captured output SHALL expose an adjustable grip i
 - **WHEN** the reader can inspect the pane and Live is collapsed
 - **THEN** a single outlined disclosure highlights the Live action beside the existing working label in either appearance and offers at least a 48-point touch target
 
+#### Scenario: Transcript and status refresh while Live is open
+- **WHEN** the same readable pane receives new conversation text or moves to waiting or idle
+- **THEN** the expanded Live panel stays mounted at its selected height and displays the current status. HQ and Detail retain authorized rows during transient read failures. A pane access rejection or missing pane clears the captured rows and their scroll view.
+- **AND** closing it while idle leaves it closed when work resumes
+
 #### Scenario: Resize the working preview
 - **WHEN** a reader drags the grip upward or activates its increase action
 - **THEN** the preview shows more of the existing terminal output while keeping the latest line visible

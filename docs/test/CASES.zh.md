@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1505 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1508 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2763 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2766 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 170 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 149 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
 
@@ -518,6 +518,11 @@
 | LPV-001 | Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and uses a 220-point default viewport with up to 1,000 accessible rows; clearing the current pane capture discards the held history. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain. |
 | LPV-002 | Old capture is absent immediately in the new Live scope; late A cannot replace B. Current B capture appears only after its read settles. Historical Chat send/keys/uploads remain disabled and no send is made. No additional poller is introduced. |
 | LPV-003 | Live displays exactly the 20 captured rows from the current pane and identifies the pending association. Closing hides output. No send or authority promotion and no page/console errors. |
+| LRB-001 | The same panel, height and scroll position survive confirmation. A different session cannot inherit the capture. |
+| LRB-002 | The same scroll view retains the rows and height until manually closed. |
+| LRB-003 | Transient failure keeps the authorized rows. Rejection clears them and their scroll view. A later authorized read shows fresh rows. |
+| LRP-001 | The open panel and frozen position survive same-session refreshes. Closing is sticky. A new identity starts fresh. The label reflects the current status. |
+| LRP-002 | An open overlay remains visible at the chosen height and reports the current status. Closing during idle hides the strip, and returning to work respects that choice. |
 | LAP-007 | Only a verified local service yields an HTTP address. The published App reference survives unavailable service and the CLI reports how to retry. An explicit port cannot send a credential or select a foreign host. |
 | LAP-001 | Exact registered metadata and original scope are returned after byte/hash checks; source changes do not replace the snapshot. Missing/revoked/corrupt fail without source fallback or scanning. |
 | LAP-002 | Both App reference and local HTTP link name the registered bytes. The link contains only the original document/session/home and the browser must pair independently. |

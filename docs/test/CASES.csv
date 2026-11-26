@@ -5476,6 +5476,8 @@ LEG-e7c4a17d81df,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.tes
 LEG-01caacff2459,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,379,test,"an in-flight write cannot be submitted twice, and completion keeps the entry open",False,legacy-not-retrospectively-reviewed
 MAP-c2bb7e3c4204,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,120,reviewed-selector,landing preserves the viewed revision even when the entry changes during confirmation,False,KBCARRIER-REVISION
 MAP-cde3a006fd7b,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,142,reviewed-selector,a refusal shows the server,False,"KBCARRIER-REVISION,KRD-003,KRD-004"
+MAP-f0aa4fc784df,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAccess.test.tsx,61,reviewed-selector,LRB-002 %s keeps the captured rows and viewport through waiting and idle,False,"LRB-002,LRB-003"
+MAP-8dee995655ee,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAccess.test.tsx,85,reviewed-selector,LRB-003 HTTP %i clears the retained screen until a fresh capture,False,"LRB-002,LRB-003"
 MAP-21ca1ef67e70,L3,reviewed implementation,mobileapp/src/screens/LivePreviewScope.test.tsx,19,reviewed-selector,LPV002,False,LPV-002
 LEG-95a2e8c8c96b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,62,test,"nothing answered: said, the switch stays where the server has it, and Retry runs the same change",False,legacy-not-retrospectively-reviewed
 LEG-2888efda7a0b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,88,test,"server mode that cannot be read is said, not hidden",False,legacy-not-retrospectively-reviewed
@@ -6159,13 +6161,14 @@ LEG-4e0e1fa7d050,L2,RN / mobile harness,mobileapp/src/ui/ChatView.history.test.t
 LEG-ffb2d70c65c5,L2,RN / mobile harness,mobileapp/src/ui/ChatView.hqPrompt.test.tsx,35,test,"a long prompt from HQ is shown whole, with no Show all toggle",False,legacy-not-retrospectively-reviewed
 LEG-0b9c6865de2e,L2,RN / mobile harness,mobileapp/src/ui/ChatView.hqPrompt.test.tsx,41,test,the same prompt typed by the reader is still collapsed,False,legacy-not-retrospectively-reviewed
 LEG-1f7724e1e819,L2,RN / mobile harness,mobileapp/src/ui/ChatView.hqPrompt.test.tsx,47,test,the same prompt dispatched by another session is still collapsed,False,legacy-not-retrospectively-reviewed
-LEG-56b976fa48e0,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,52,test.each(),%s: the default is a status row; the same disclosure opens and closes the bounded screen,True,legacy-not-retrospectively-reviewed
-LEG-37958d9f666f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,70,test,"capture and transcript refresh retain expansion, including first output and temporary empty captures",False,legacy-not-retrospectively-reviewed
-LEG-086c5c5a6b44,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,89,test.each(),a new working scope starts folded: %j,True,legacy-not-retrospectively-reviewed
+LEG-56b976fa48e0,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,53,test.each(),%s: the default is a status row; the same disclosure opens and closes the bounded screen,True,legacy-not-retrospectively-reviewed
+LEG-37958d9f666f,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,71,test,"capture and transcript refresh retain expansion, including first output and temporary empty captures",False,legacy-not-retrospectively-reviewed
+LEG-086c5c5a6b44,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,90,test.each(),a new working scope starts folded: %j,True,legacy-not-retrospectively-reviewed
 LEG-a5dc77223605,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,96,test.each(),%s hides the working preview without losing the reader preference,True,legacy-not-retrospectively-reviewed
-LEG-31d065a33508,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,107,test,a native conversation without terminal access keeps the status without an empty disclosure,False,legacy-not-retrospectively-reviewed
-LEG-40b967b90c1c,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,115,test,"radar timestamp corrections do not collapse the live view, and explicit folding survives updates",False,legacy-not-retrospectively-reviewed
-MAP-e5027560aedb,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,34,reviewed-selector,MCE-002 %s Live has one outlined disclosure and an emphasized action,False,MCE-002
+LEG-31d065a33508,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,112,test,a native conversation without terminal access keeps the status without an empty disclosure,False,legacy-not-retrospectively-reviewed
+LEG-40b967b90c1c,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,120,test,"radar timestamp corrections do not collapse the live view, and explicit folding survives updates",False,legacy-not-retrospectively-reviewed
+MAP-e5027560aedb,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,35,reviewed-selector,MCE-002 %s Live has one outlined disclosure and an emphasized action,False,MCE-002
+MAP-7214e4ff3d37,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure.test.tsx,97,reviewed-selector,%s keeps an open Live preview through a transcript redraw,False,"MCE-002,LRP-002"
 LEG-2e1f3eeb5351,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveElapsed.test.tsx,32,test.each(),%s: the elapsed time is there with and without output,True,legacy-not-retrospectively-reviewed
 LEG-63a0f74f75c3,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveElapsed.test.tsx,43,test,an unknown start shows no duration on the Live card,False,legacy-not-retrospectively-reviewed
 LEG-717b753fc16c,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveElapsed.test.tsx,49,test,the duration on the Live card moves with the clock,False,legacy-not-retrospectively-reviewed
@@ -7263,7 +7266,9 @@ MAP-7fb866f795f7,L3,reviewed implementation,tests/web/harness-isolation.test.cjs
 MAP-eda764da861f,G,reviewed implementation,tests/web/harness.cjs,13,reviewed-selector,function scenario,False,"CT-TIMING,CT-BROWSER"
 MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
 MAP-e2db0c25a320,L3,reviewed implementation,tests/web/live-access-loss.test.cjs,5,reviewed-selector,WLI-011 Access loss clears old Live content after,False,WLI-011
+MAP-2ee5999d4b9d,L4,reviewed implementation,tests/web/live-binding.test.cjs,5,reviewed-selector,LRB-001 Binding preserves the same Live reader at ,False,LRB-001
 MAP-67525aee818e,L3,reviewed implementation,tests/web/live-capture-badge.test.cjs,4,reviewed-selector,WLI-012 Theme publication does not reclassify an equivalent paused capture,False,WLI-012
+MAP-370c98c5b53c,L4,reviewed implementation,tests/web/live-disclosure-refresh.test.cjs,5,reviewed-selector,LRP-001 Live survives conversation and status redraws at ,False,LRP-001
 MAP-0ad7a9de59d7,L3,reviewed implementation,tests/web/live-equivalent-colors.test.cjs,4,reviewed-selector,WLI-008 Equivalent ANSI and RGB styles do not report new output,False,WLI-008
 MAP-21bb64aa8761,L3,reviewed implementation,tests/web/live-frozen-palette.test.cjs,5,reviewed-selector,WLI-010 Paused ANSI output keeps its palette after,False,WLI-010
 MAP-058769c23d4a,L3,reviewed implementation,tests/web/live-late-theme.test.cjs,5,reviewed-selector,WLI-009 Late host theme reconciles the,False,WLI-009
@@ -7329,16 +7334,17 @@ LEG-e526198ccd27,L3,Browser,tests/web/smoke.test.cjs,393,scenario,"Workspace con
 LEG-a88f9e388b83,L3,Browser,tests/web/smoke.test.cjs,478,scenario,Narrow chat supports input and touch copy while trace remains within viewport,False,legacy-not-retrospectively-reviewed
 LEG-eb05aa918933,L3,Browser,tests/web/smoke.test.cjs,512,scenario,Workspace controls support keyboard access and truthful copy feedback,False,legacy-not-retrospectively-reviewed
 LEG-b946e51a9044,L3,Browser,tests/web/smoke.test.cjs,567,scenario,"Live chat shows current work, retains disclosure state and clears after completion or revocation",False,legacy-not-retrospectively-reviewed
-LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,644,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
-LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,688,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
-LEG-00a1f7cbea36,G,Browser,tests/web/smoke.test.cjs,711,scenario,"Composer stages files, annotates images, recalls input and matches app send controls",False,legacy-not-retrospectively-reviewed
-LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,830,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
-LEG-f81adc301549,G,Browser,tests/web/smoke.test.cjs,886,scenario,Clipboard images and dropped files stay staged until an explicit send,False,legacy-not-retrospectively-reviewed
-LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,915,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
+LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,645,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
+LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,689,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
+LEG-00a1f7cbea36,G,Browser,tests/web/smoke.test.cjs,712,scenario,"Composer stages files, annotates images, recalls input and matches app send controls",False,legacy-not-retrospectively-reviewed
+LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,831,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
+LEG-f81adc301549,G,Browser,tests/web/smoke.test.cjs,887,scenario,Clipboard images and dropped files stay staged until an explicit send,False,legacy-not-retrospectively-reviewed
+LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,916,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
 MAP-be17f88f3a1c,L4,Browser,tests/web/smoke.test.cjs,190,reviewed-selector,Structured activity at ${width}px,False,AOP-005
 MAP-57dbbd511453,L4,Browser,tests/web/smoke.test.cjs,48,reviewed-selector,DTV003 Diff tree and worktree context at ${width}px,False,"AOP-005,DTV-003"
 MAP-47f4ffb1700f,L4,Browser,tests/web/smoke.test.cjs,310,reviewed-selector,Compact tile controls stay readable in ${locale},False,"AOP-005,DTV-003,WHS-008"
-MAP-756a48ad34a9,L4,Browser,tests/web/smoke.test.cjs,940,reviewed-selector,WHS-008 compact tile actions retire on layout switch,False,"AOP-005,DTV-003,WHS-008"
+MAP-756a48ad34a9,L4,Browser,tests/web/smoke.test.cjs,941,reviewed-selector,WHS-008 compact tile actions retire on layout switch,False,"AOP-005,DTV-003,WHS-008"
+MAP-54f1c843f8d1,L4,Browser,tests/web/smoke.test.cjs,567,reviewed-selector,"Live chat shows current work, retains disclosure state and stays open after completion and clears on revocation",False,"AOP-005,DTV-003,WHS-008,LRP-001"
 LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Terminal grid fits desktop tile and focus at DPR ${deviceScaleFactor}`,True,legacy-not-retrospectively-reviewed
 LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
 MAP-8fceb6b39ede,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005
