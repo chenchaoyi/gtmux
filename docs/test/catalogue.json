@@ -69252,7 +69252,7 @@
       "cases": [
         {
           "id": "MAP-439b23120796",
-          "line": 39,
+          "line": 44,
           "kind": "reviewed-selector",
           "name": "dragging the live grip reveals more terminal lines and respects the available height",
           "dynamic": false,
@@ -69261,7 +69261,7 @@
         },
         {
           "id": "MAP-e9dd481a4da5",
-          "line": 78,
+          "line": 87,
           "kind": "reviewed-selector",
           "name": "preview sizing survives updates, folding and idle but starts fresh on another pane",
           "dynamic": false,
@@ -69269,23 +69269,23 @@
           "design": "LVR-001,LVR-002"
         }
       ],
-      "sha256": "f29141292115bdfcbf6dac31def8a6a5e0104206eda321a6b994aad63051a509"
+      "sha256": "b590ff6204bff43864c69008a6943130c099410e2ecb1a293936940cc9a9326a"
     },
     "mobileapp/src/ui/ChatView.liveResizeFold.test.tsx": {
       "layer": "L2",
       "stack": "reviewed implementation",
       "cases": [
         {
-          "id": "MAP-cdace81e520c",
+          "id": "MAP-c60cae643ed6",
           "line": 10,
           "kind": "reviewed-selector",
-          "name": "the fixed fold label has a conversation background while the live preview is open",
+          "name": "Live covers the transcript without changing its layout or following the tail",
           "dynamic": false,
           "layer": "L2",
           "design": "LVR-003"
         }
       ],
-      "sha256": "c9209b367f272376929121780285fe72db76873b0f9077424f540f45e8fb0efc"
+      "sha256": "fae70eaf218c1792c85ebfe2a9ef33719b263b0ea801d40c57295a063cdea731"
     },
     "internal/hqnudge/startup_witness_test.go": {
       "layer": "L2",

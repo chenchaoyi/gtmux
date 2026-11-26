@@ -37,7 +37,7 @@ import {separatorLabels} from './time';
 import {nativeFontFamily} from './term';
 import {BrandLoader} from './BrandLoader';
 import {ChromeText} from './ChromeText';
-import {DEFAULT_LIVE_PREVIEW_HEIGHT, LiveProgress} from './LiveProgress';
+import {COLLAPSED_LIVE_ROW_HEIGHT, LiveProgress} from './LiveProgress';
 import {segmentKey, stepsOpen} from './chatSteps';
 import {ToolSteps} from './ToolSteps';
 import {Agent, StatusName} from '../api/types';
@@ -188,12 +188,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   React.useEffect(() => {setLiveDisclosure(prev => prev.scope === liveScope ? prev : {scope: liveScope, open: false});}, [liveScope]);
   const liveSize = React.useRef<{scope: string; height?: number}>({scope: liveScope});
   if (liveSize.current.scope !== liveScope) liveSize.current = {scope: liveScope};
-  const [viewportHeight, setViewportHeight] = useState(0);
-  const [resizingLive, setResizingLive] = useState(false);
-  // Reserve the working row, grip and margins above the terminal body.
-  const liveHeightLimit = viewportHeight > 0
-    ? Math.max(1, Math.floor(viewportHeight - Math.max(topPad, controlsTop ?? 0) - 122))
-    : DEFAULT_LIVE_PREVIEW_HEIGHT;
+  const [viewportHeight, setViewportHeight] = useState<number>();
+  const [liveRowHeight, setLiveRowHeight] = useState(COLLAPSED_LIVE_ROW_HEIGHT);
   const [profileTarget, setProfileTarget] = useState<ProfileTarget | null>(null);
   const avatar = (content: React.ReactNode, target: ProfileTarget, placement?: 'incoming' | 'outgoing') => <TouchableOpacity testID="participant-avatar" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '查看参与者资料' : 'View participant profile'} style={[styles.avatarButton, placement === 'outgoing' && styles.messageAvatar, placement === 'incoming' && styles.incomingAvatar]} onPress={() => setProfileTarget(target)}>{content}</TouchableOpacity>;
   const fontFamily = nativeFontFamily(fontPref, Platform.OS); // match the terminal font (shared resolver)
@@ -444,6 +440,21 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     return end === lines.length ? lines : lines.slice(0, end);
   }, [lines]);
 
+  const inspectAvailable = !readOnly && !!agent.pane_id && agent.source !== 'native';
+  const liveOverlay = status === 'working' && inspectAvailable && liveOpen;
+  const foldInset = controlsTop !== undefined && turns.length > 0 ? 44 : 0;
+  const liveHeightLimit = viewportHeight === undefined ? undefined
+    : Math.max(0, viewportHeight - Math.max(topPad, controlsTop ?? 0) - foldInset - LIVE_PANEL_INSET);
+  const liveProgress = status === 'working' && <LiveProgress key={liveScope}
+    open={liveOverlay} onToggle={() => setLiveDisclosure({scope: liveScope, open: !liveOpen})}
+    heightLimit={liveHeightLimit} savedHeight={liveSize.current.height}
+    onResize={height => {if (liveSize.current.scope === liveScope) liveSize.current.height = height;}}
+    avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent})}
+    label={liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
+    inspectAvailable={inspectAvailable}
+    sourceLabel={readOnlyHistory ? (lang === 'zh' ? `当前 pane ${agent.pane_id} · 历史对话关联待确认` : `Current pane ${agent.pane_id} · History association unconfirmed`) : undefined}
+    lines={liveShown} fontSize={fontSize} fontFamily={fontFamily} lang={lang} />;
+
   return (
     <ReadingPaletteContext.Provider value={pal}>
     <CopyFeedbackContext.Provider value>
@@ -458,8 +469,6 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
           style={[
             styles.collapseBar,
             controlsTop !== undefined && [styles.collapseBarFloating, {top: controlsTop}],
-            controlsTop !== undefined && status === 'working' && liveOpen &&
-              [styles.collapseBarOverLive, {backgroundColor: pal.bg}],
             // Under the chrome (not in full screen) it rides the chrome's slide. It used to
             // stay in the flow at the top of the chat, under the chrome (%6, 2026-10-06).
             // Keep an identity transform when leaving the native animation. Fabric
@@ -475,8 +484,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       ref={scrollRef}
       testID={TestIds.detail.chat}
       style={styles.body}
-      scrollEnabled={!resizingLive}
-      contentContainerStyle={[styles.content, (topPad > 0 || controlsTop !== undefined) && {paddingTop: Math.max(topPad, controlsTop ?? 0) + (controlsTop !== undefined && turns.length > 0 ? 44 : 0)}, maxWidth ? {maxWidth, width: '100%', alignSelf: 'center'} : null]}
+      contentContainerStyle={[styles.content, (topPad > 0 || controlsTop !== undefined) && {paddingTop: Math.max(topPad, controlsTop ?? 0) + foldInset}, maxWidth ? {maxWidth, width: '100%', alignSelf: 'center'} : null]}
       onScroll={onScroll}
       onScrollBeginDrag={() => {
         dragging.current = true;
@@ -735,23 +743,11 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
       })}
       {actRows(placed.after)}
 
-      {/* The conversation owns this preference even while the working row is absent. */}
-      {status === 'working' && <LiveProgress key={liveScope}
-        open={liveOpen} onToggle={() => setLiveDisclosure({scope: liveScope, open: !liveOpen})}
-        heightLimit={liveHeightLimit} savedHeight={liveSize.current.height}
-        onResize={height => {if (liveSize.current.scope === liveScope) liveSize.current.height = height;}}
-        onResizeActive={active => {
-          if (active) {
-            stick.current = true;
-            setAtBottom(true);
-          }
-          setResizingLive(active);
-        }}
-        avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent})}
-        label={liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
-        inspectAvailable={!readOnly && !!agent.pane_id && agent.source !== 'native'}
-        sourceLabel={readOnlyHistory ? (lang === 'zh' ? `当前 pane ${agent.pane_id} · 历史对话关联待确认` : `Current pane ${agent.pane_id} · History association unconfirmed`) : undefined}
-        lines={liveShown} fontSize={fontSize} fontFamily={fontFamily} lang={lang} />}
+      {/* Keep the compact row's measured space while Live covers the conversation. */}
+      {liveProgress && <View testID="chat-live-anchor" style={[styles.liveRow, liveOverlay && {height: liveRowHeight}]}
+        onLayout={liveOverlay ? undefined : event => setLiveRowHeight(event.nativeEvent.layout.height)}>
+        {!liveOverlay && liveProgress}
+      </View>}
     </ScrollView>
       {/* branded loader over the list while collapse/expand-all re-renders. */}
       {busy && (
@@ -759,8 +755,13 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
           <BrandLoader size={40} neutral={pal.fg3} />
         </View>
       )}
+      <JumpToBottom visible={!liveOverlay && (!atBottom || hiddenAfter > 0 || history.disconnected) && turns.length > 0} onPress={jumpToBottom} lang={lang} />
+      {liveOverlay && <View testID="chat-live-overlay" pointerEvents="box-none" style={styles.liveOverlay}>
+        <View style={maxWidth ? {width: '100%', maxWidth: maxWidth - 2 * LIVE_PANEL_INSET, alignSelf: 'center'} : undefined}>
+          {liveProgress}
+        </View>
+      </View>}
       {profileTarget && <ParticipantProfileModal key={`${profileTarget.kind}:${profileTarget.turn?.session_id ?? ''}:${profileTarget.turn?.time ?? ''}`} target={profileTarget} client={client} lang={lang} onClose={() => setProfileTarget(null)} />}
-      <JumpToBottom visible={(!atBottom || hiddenAfter > 0 || history.disconnected) && turns.length > 0} onPress={jumpToBottom} lang={lang} />
     </View>
     </TextSelectionContext.Provider>
     </CopyFeedbackContext.Provider>
@@ -768,12 +769,16 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   );
 }
 
+const LIVE_PANEL_INSET = 10;
+
 const makeStyles = (pal: Palette) => StyleSheet.create({
   root: {flex: 1, backgroundColor: pal.bg},
   avatarButton: {width: 44, height: 44, alignItems: 'center', justifyContent: 'center'},
   globalFold: {minWidth: 44, minHeight: 44, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center'},
   body: {flex: 1, backgroundColor: pal.bg},
   content: {padding: 10, gap: 8},
+  liveRow: {marginTop: 6},
+  liveOverlay: {position: 'absolute', left: LIVE_PANEL_INSET, right: LIVE_PANEL_INSET, bottom: LIVE_PANEL_INSET, zIndex: 1},
   terminalLink: {alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, justifyContent: 'center'},
   terminalLinkText: {color: readingColors(pal).link, fontSize: 14, fontWeight: '500'},
   center: {paddingVertical: 24, alignItems: 'center'},
@@ -793,8 +798,6 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   earlierText: {fontSize: 12, color: pal.fg2, textAlign: 'center'},
   collapseBar: {flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4},
   collapseBarFloating: {position: 'absolute', right: 14, height: 44, zIndex: 2, backgroundColor: 'transparent', paddingHorizontal: 0, paddingVertical: 0},
-  // An enlarged preview pulls replies under the fixed action.
-  collapseBarOverLive: {left: 0, right: 0, paddingHorizontal: 14},
   collapseBarText: {fontSize: 12.5, color: readingColors(pal).link, fontWeight: '600'},
   // per-turn reply toggle shown while collapsed (chevron + preview).
   replyToggle: {alignSelf: 'flex-start', marginLeft: 35, paddingVertical: 3, maxWidth: '88%'},

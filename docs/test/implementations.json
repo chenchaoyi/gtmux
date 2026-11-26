@@ -5391,7 +5391,7 @@
       "LVR-003"
     ],
     "selectors": [
-      "the fixed fold label has a conversation background while the live preview is open"
+      "Live covers the transcript without changing its layout or following the tail"
     ]
   },
   "mobileapp/src/ui/ChatView.liveDisclosure.test.tsx": {
