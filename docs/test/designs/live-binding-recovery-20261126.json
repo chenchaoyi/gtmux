@@ -1,0 +1,24 @@
+{
+  "id": "live-binding-recovery-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review",
+    "date": "2026-11-26",
+    "decision": "Preserve the mounted reader while the same pane first acquires or reconfirms its session identity.",
+    "notes": "Use synthetic pane and transcript reads and mounted RN views; no physical gesture claims."
+  },
+  "cases": [
+    {
+      "id": "LBR-001",
+      "layer": "L2",
+      "description": "Keep a mounted pane reader on first identity and binding recovery",
+      "setup": "Expand and freeze HQ or Detail with an ordinary empty history or an observation.",
+      "action": "Read the first confirmed turn, or drop the observation, fail one scoped history read with 503, then confirm the same SID.",
+      "expected": "Both surfaces keep the original viewport, frozen rows and 276-point height. A transient unconfirmed reader remains hidden until proof.",
+      "planned_files": [
+        "mobileapp/src/screens/LiveBindingRecovery.test.tsx"
+      ]
+    }
+  ],
+  "seal": "87d0ead3c23b923fca54057ad519426b5a276e201f99afb59ddd00ebca584094"
+}
