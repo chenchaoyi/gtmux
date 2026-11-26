@@ -1,3 +1,4 @@
+import type {PaneReadProblem} from '../api/client';
 import {useReadingPalette, readingColors} from './ReadingPalette';
 import type {Palette} from './theme';
 import React from 'react';
@@ -19,14 +20,16 @@ const HEADER_HEIGHT = 44;
 const PANEL_PADDING = 6;
 
 /** The conversation owns disclosure state; this row can disappear between observations. */
-export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, open, onToggle, inspectAvailable = true, sourceLabel, heightLimit, savedHeight, onResize}: {
+export function LiveProgress({avatar, label, lines, problem, fontSize, fontFamily, lang, open, onToggle, working = true, inspectAvailable = true, sourceLabel, heightLimit, savedHeight, onResize}: {
   avatar: React.ReactNode;
   label: string;
   lines: AnsiLine[];
+  problem?: PaneReadProblem;
   fontSize: number;
   fontFamily: string | undefined;
   lang: Lang;
   open: boolean;
+  working?: boolean;
   onToggle: () => void;
   inspectAvailable?: boolean;
   sourceLabel?: string;
@@ -75,7 +78,7 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
   React.useEffect(() => finish, [finish]);
   const action = lang === 'zh' ? (open ? '收起实时画面' : '展开实时画面') : (open ? 'Hide live view' : 'Show live view');
   const marker = <>
-    <BrandLoader size={14} neutral={pal.fg3} />
+    {working && <BrandLoader size={14} neutral={pal.fg3} />}
     <ChromeText style={styles.label} numberOfLines={1}>{label}</ChromeText>
   </>;
   const actionContent = (title: string) => <View style={[styles.action, !open && styles.disclosureAction]}>
@@ -128,7 +131,9 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
     </View>
     {height > 0 && <View testID={TestIds.detail.chatLivePreview} style={styles.preview}>
       {lines.length ? <LiveScrollback lines={lines} height={height} fontSize={fontSize} lineHeight={lineHeight}
-        fontFamily={fontFamily} /> : <Text style={historyStyles.empty}>{lang === 'zh' ? '尚无实时输出' : 'No terminal output yet'}</Text>}
+        fontFamily={fontFamily} /> : <Text style={historyStyles.empty}>{problem === 'denied' ? (lang === 'zh' ? '无权查看此窗格' : 'Access to this pane was denied')
+          : problem === 'missing' ? (lang === 'zh' ? '此窗格已不存在' : 'This pane no longer exists')
+          : (lang === 'zh' ? '尚无实时输出' : 'No terminal output yet')}</Text>}
     </View>}
   </View>;
 }

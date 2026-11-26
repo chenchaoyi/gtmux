@@ -564,11 +564,21 @@ Browser routes and overlays SHALL use concise localized action labels, factual e
 - **THEN** the menu states that no saved layouts exist and offers a clearly named Save current layout action
 
 ### Requirement: Collapsible working conversation preview
-Chat SHALL show a collapsed-by-default Live strip while the current agent is working, shared by focused conversations and workspace panels. Expanding SHALL show up to 2,000 rows from the authorized pane capture, including available terminal scrollback. Live SHALL render supported ANSI colors and emphasis with the terminal palette while ordinary selection remains plain text. Pausing SHALL retain the painted frame and its effective palette. Changed captured text or styles indicate new output, including a successful empty capture. A theme response alone SHALL NOT indicate new output. Terminal escape sequences SHALL NOT create HTML, change web navigation or send input. The open panel SHALL cover the chat from the composer edge and stay bounded to that conversation. In a short workspace tile it SHALL make room for readable terminal text inside the tile, while preserving its composer and transcript geometry. Its top handle SHALL resize by pointer, touch and keyboard. The panel SHALL retain its height and disclosure per pane across polling and mode switches, preserve the transcript viewport and drafts, and disappear when work stops. Runtime SHALL use the recorded current-state start and server clock when available, and be omitted when unknown. Capture errors SHALL identify unavailable or stale output and retry. Late responses SHALL not appear in a different pane, mode, turn or credential scope, and revoked access SHALL clear cached Live content.
+Chat SHALL show a collapsed-by-default Live strip while the current agent is working, shared by focused conversations and workspace panels. Expanding SHALL show up to 2,000 rows from the authorized pane capture, including available terminal scrollback. Live SHALL render supported ANSI colors and emphasis with the terminal palette while ordinary selection remains plain text. Pausing SHALL retain the painted frame and its effective palette. Changed captured text or styles indicate new output, including a successful empty capture. A theme response alone SHALL NOT indicate new output. Terminal escape sequences SHALL NOT create HTML, change web navigation or send input. The open panel SHALL cover the chat from the composer edge and stay bounded to that conversation. In a short workspace tile it SHALL make room for readable terminal text inside the tile, while preserving its composer and transcript geometry. Its top handle SHALL resize by pointer, touch and keyboard. The panel SHALL retain its height and disclosure per pane across polling and mode switches, preserve the transcript viewport and drafts, and remain visible at the selected height when the same pane becomes idle or waits for input. Runtime SHALL use the recorded current-state start and server clock when available, and be omitted when unknown. Capture errors SHALL identify unavailable or stale output and retry. Late responses SHALL not appear in a different pane, mode, turn or credential scope, and revoked access SHALL clear cached Live content.
+
+#### Scenario: An observed conversation becomes bound
+- **WHEN** the latest turn from a fresh bound transcript identifies the same observed session
+- **THEN** the open panel, its height and its frozen reading position survive; a different session starts with a fresh panel
+
+#### Scenario: Clear and missing transcript association
+- **WHEN** the server reports a new clear or new-session marker before the first new turn
+- **THEN** the old capture and frozen reading position retire. Successive resets retire the reader even when the log lacks timestamps. Repeating the same reset generation preserves the fresh reader. An ordinary empty transcript alone preserves an established reader.
+- **WHEN** a formerly observed history can no longer be associated and the working pane is readable
+- **THEN** a fresh Live control can read that pane while the conversation reports its association failure.
 
 #### Scenario: Watch an active turn
 - **WHEN** the reader expands Live during a working conversation
-- **THEN** current output updates without replacing transcript history or changing the draft, and the strip closes only when the reader chooses or work stops
+- **THEN** current output updates without replacing transcript history or changing the draft, and a status refresh retains the open panel until the reader closes it or its source becomes unavailable
 
 #### Scenario: Read earlier terminal output
 

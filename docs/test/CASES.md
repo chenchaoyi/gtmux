@@ -2,14 +2,14 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1505 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1516 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2764 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 170 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
+| L2 · Component / contract | 2774 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
+| L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 509 | [G.csv](cases/G.csv) |
 
@@ -306,6 +306,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQIL-001 | Short entry retains local precedence, includes only the existing LOCAL import, publishes files under the matching version and language, and leaves prior files, tasks and sessions alone. |
 | HQIL-002 | Recreate only missing managed files, keep active personal files and old backups intact, refuse a conflicting runbook, and retain the previous entry on failed publication. |
 | HQIL-003 | Use matching board sections, register without replay, respect known versus unknown usage, resolve approved review and capture from sourced leads. |
+| HLS-001 | A remains readable as history. Its frozen viewport retires. Reopening B survives subsequent B polls and the first B turn. |
 | HRW-014 | Generation/ctime mismatch never deletes or reauthorizes the claim, despite identical inode/body/mtime. Normal unchanged accepted cleanup passes. Exact owned uncertain publication completes one link retirement and retains original batch uncertainty; changed payload or foreign link holds without deletion. Known-refused shared queue ownership still preserves newest B. Original T tests/expectations remain unchanged; old-source target red is a real assertion, not compile/setup/allocator failure. |
 | HRW-015 | Only a verified same-inode anchor can support native cleanup; original inode remains alive across process loss and cannot naturally be reused. Missing/foreign/unknown pin holds without deletion or native call. Accepted/refused closes only own references, uncertain preserves exact original input and pin; valid conflicting batches cannot overwrite protected claims or block independent fresh events. Pin count is bounded before mutation; errors never fall back or replay. No sleep, allocator-luck or relaxed cloud assertion. |
 | HRW-009 | A is never submitted under a new batch identity; original exact payload, ID and uncertainty remain inspectable. Accepted/uncertain spool state is not downgraded to unsent. B and legitimate fresh duplicate text can progress once. Journal precedes possible mutation; failure holds without mutation. Recovery never removes a foreign replacement; malformed evidence holds conservatively. Ordinary non-native transport retains its existing contract. |
@@ -517,9 +518,22 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | KBSYNC-SERIALIZATION | Old implementation fails held-lock and final R1-content assertions. New sync holds the same ledger lock across read/publication; independent review/carry cannot interleave and final R1 remains landed with its full carrier. Errors/refusals release the lock. Carry uses an internal already-locked implementation; no recursive deadlock. |
 | KBLOCAL-DURABILITY-RETRY | Both failures leave ledger unchanged, same revision pending and carrier complete/private; every retry invokes the durable writer even with identical content. Only successful writer completion allows exactly one land append. Existing readonly/link/edited-target protections and original revision token contract remain. Old equal-content early return fails actual ledger/callback assertions. |
 | PRIVATEWRITE-DIRECTORY-SYNC | EIO is returned after complete visible replacement, repeated same-byte writes reach directory synchronization again, successful directory fsync returns nil. No truncated inode, exposed permissions or leaked staging file. No hardware durability claim. |
+| LBR-001 | Both surfaces keep the original viewport, frozen rows and 276-point height. A transient unconfirmed reader remains hidden until proof. |
 | LPV-001 | Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and uses a 220-point default viewport with up to 1,000 accessible rows; clearing the current pane capture discards the held history. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain. |
 | LPV-002 | Old capture is absent immediately in the new Live scope; late A cannot replace B. Current B capture appears only after its read settles. Historical Chat send/keys/uploads remain disabled and no send is made. No additional poller is introduced. |
 | LPV-003 | Live displays exactly the 20 captured rows from the current pane and identifies the pending association. Closing hides output. No send or authority promotion and no page/console errors. |
+| LRB-001 | The same panel, height and scroll position survive confirmation. A different session cannot inherit the capture. |
+| LRB-002 | The same scroll view retains the rows and height until manually closed. |
+| LRB-003 | Transient failure keeps the authorized rows. Rejection clears them and their scroll view. A later authorized read shows fresh rows. |
+| LRG-001 | Pending content is concealed. Matching proof keeps the original scroll view, frozen rows and height. A replacement starts folded. |
+| LRG-002 | A new reset generation retires the old reader. Repetition preserves a reopened reader. Older responses with a populated-to-empty clockless reset also retire once. |
+| LRG-003 | The header carries a distinct stable reset identity only alongside a reset. |
+| LRP-001 | The open panel and frozen position survive same-session refreshes. Closing is sticky. A new identity starts fresh. The label reflects the current status. |
+| LRP-002 | An open overlay remains visible at the chosen height and reports the current status. Closing during idle hides the strip, and returning to work respects that choice. |
+| LRE-001 | Plain empty history preserves the reader. A new reset drops old output and sizes; repeated metadata preserves the reopened reader. |
+| LRE-002 | A fresh folded control exposes only the current pane and remains open on subsequent association failures. |
+| LRE-003 | Confidence updates retain the reader; a new session starts closed and reopens at the default height. |
+| LRE-004 | Old rows disappear. The message distinguishes denied access, a missing pane and a successful empty read. |
 | LAP-007 | Only a verified local service yields an HTTP address. The published App reference survives unavailable service and the CLI reports how to retry. An explicit port cannot send a credential or select a foreign host. |
 | LAP-001 | Exact registered metadata and original scope are returned after byte/hash checks; source changes do not replace the snapshot. Missing/revoked/corrupt fail without source fallback or scanning. |
 | LAP-002 | Both App reference and local HTTP link name the registered bytes. The link contains only the original document/session/home and the browser must pair independently. |
@@ -586,6 +600,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | RDR-002 | Only one HTTP read is active per scope; at most one trailing refresh is kept per in-flight burst, rather than losing the event. Refreshing stays true until the owned lane really settles; full response deadline15s retires late results, releases lane and allows explicit retry. No new timerpoll. Existing two401/403, share and activity behavior stays. |
 | RDR-003 | Initial loading has BrandLoader/copy and no zero summary/tutorial/quote. Failure/access remains actionable without a playful quote; cached rows remain. Only successful unfiltered worker-empty shows stable existing browser short Dune excerpt/attribution, with existing gated New session for owner; guests never gain creation. Expired share messaging remains both banner and state. Pull refresh uses actual provider settlement, no decorative600ms timer. |
 | RDR-004 | [] remains successful empty; non-array2xx throws instead of becoming an empty fleet. Valid mapping, credentials, non-ok/auth failures and original usage-read contract assertions remain unchanged. |
+| MRG-001 | A different ID retires the old view and its frozen rows. Repeated ID and ordinary empty history preserve the reopened reader. |
 | SFR-001 | Only explicit native question yields question code. Generic waiting and unknown native evidence remain neutral. Existing association text, draft refusal and unconfirmed no-replay advice stay; no dispatch mutation. |
 | SFR-002 | 400/error wrapper stays compatible; valid code survives errors.As, absent/unknown code omitted. 401/403 and callback count unchanged; no receipt is invented. Old server must fail the code assertion semantically, not due to compilation. |
 | SFR-003 | Only known codes survive, legacy send shape unchanged, auth classification always takes precedence; no background retries. |

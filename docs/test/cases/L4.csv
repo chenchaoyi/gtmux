@@ -119,6 +119,11 @@ MAP-143d521b0ce1,L4,reviewed implementation,tests/web/artifact-storage-clear.tes
 MAP-f57d9dffcb66,L4,reviewed implementation,tests/web/artifact-storage-clear.test.cjs,30,reviewed-selector,LAP-011 server revocation wins before the other tab retires,False,LAP-011
 MAP-44f608a7c4fa,L4,reviewed implementation,tests/web/design-recovery.test.cjs,7,reviewed-selector,DFR-003,False,DFR-003
 MAP-60e68185ef5d,L4,Browser,tests/web/full-input.test.cjs,35,reviewed-selector,Diff file cards and independent hunks at ,False,DTV-003
+MAP-2ee5999d4b9d,L4,reviewed implementation,tests/web/live-binding.test.cjs,5,reviewed-selector,LRB-001 Binding preserves the same Live reader at ,False,LRB-001
+MAP-43789bdd2f6f,L4,reviewed implementation,tests/web/live-clockless-reset.test.cjs,5,reviewed-selector,LRG-002 clockless reset at ,False,LRG-002
+MAP-370c98c5b53c,L4,reviewed implementation,tests/web/live-disclosure-refresh.test.cjs,5,reviewed-selector,LRP-001 Live survives conversation and status redraws at ,False,LRP-001
+MAP-bebe2df3aaf1,L4,reviewed implementation,tests/web/live-history-boundaries.test.cjs,5,reviewed-selector,verified empty replacement,False,"LRE-001,LRE-002"
+MAP-95c6bb806702,L4,reviewed implementation,tests/web/live-history-boundaries.test.cjs,5,reviewed-selector,unassociated but pane readable,False,"LRE-001,LRE-002"
 MAP-e9c53ab15ef5,L4,reviewed implementation,tests/web/live-pending.test.cjs,4,reviewed-selector,LPV003,False,LPV-003
 MAP-0e14f41b41ee,L4,reviewed implementation,tests/web/live-short-tiles.test.cjs,42,reviewed-selector,WLC-001 Live is readable and draggable on ordinary short workbench cards,False,"WLC-001,WLC-002"
 MAP-043f15e52152,L4,reviewed implementation,tests/web/live-short-tiles.test.cjs,99,reviewed-selector,WLC-002 Short workbench Live identifies its current pane and preserves read-only history,False,"WLC-001,WLC-002"
@@ -144,4 +149,5 @@ MAP-1e4014a69252,L4,reviewed implementation,tests/web/short-tile-header.test.cjs
 MAP-be17f88f3a1c,L4,Browser,tests/web/smoke.test.cjs,190,reviewed-selector,Structured activity at ${width}px,False,AOP-005
 MAP-57dbbd511453,L4,Browser,tests/web/smoke.test.cjs,48,reviewed-selector,DTV003 Diff tree and worktree context at ${width}px,False,"AOP-005,DTV-003"
 MAP-47f4ffb1700f,L4,Browser,tests/web/smoke.test.cjs,310,reviewed-selector,Compact tile controls stay readable in ${locale},False,"AOP-005,DTV-003,WHS-008"
-MAP-756a48ad34a9,L4,Browser,tests/web/smoke.test.cjs,940,reviewed-selector,WHS-008 compact tile actions retire on layout switch,False,"AOP-005,DTV-003,WHS-008"
+MAP-756a48ad34a9,L4,Browser,tests/web/smoke.test.cjs,941,reviewed-selector,WHS-008 compact tile actions retire on layout switch,False,"AOP-005,DTV-003,WHS-008"
+MAP-54f1c843f8d1,L4,Browser,tests/web/smoke.test.cjs,567,reviewed-selector,"Live chat shows current work, retains disclosure state and stays open after completion and clears on revocation",False,"AOP-005,DTV-003,WHS-008,LRP-001"

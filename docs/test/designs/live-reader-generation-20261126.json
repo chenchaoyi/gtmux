@@ -1,0 +1,46 @@
+{
+  "id": "live-reader-generation-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review",
+    "date": "2026-11-26",
+    "decision": "Scope Live to confirmed source and session reset generation",
+    "notes": "Use synthetic pane and transcript reads and mounted RN views; no physical gesture claims."
+  },
+  "cases": [
+    {
+      "id": "LRG-001",
+      "layer": "L2",
+      "description": "Confirm a mobile reader without losing its native viewport",
+      "setup": "Freeze and resize the HQ and Detail readers on an observed session.",
+      "action": "Remove the observation, delay the bound transcript, then confirm either the same or a different SID.",
+      "expected": "Pending content is concealed. Matching proof keeps the original scroll view, frozen rows and height. A replacement starts folded.",
+      "planned_files": [
+        "mobileapp/src/screens/LiveBindingProof.test.tsx"
+      ]
+    },
+    {
+      "id": "LRG-002",
+      "layer": "L4",
+      "description": "Clockless resets retire the prior capture",
+      "setup": "Freeze a working session with a clear marker in focused and tiled layouts.",
+      "action": "Read another clear without a timestamp, including an empty transcript. Repeat the new marker and test an ordinary empty read.",
+      "expected": "A new reset generation retires the old reader. Repetition preserves a reopened reader. Older responses with a populated-to-empty clockless reset also retire once.",
+      "planned_files": [
+        "tests/web/live-clockless-reset.test.cjs"
+      ]
+    },
+    {
+      "id": "LRG-003",
+      "layer": "L3",
+      "description": "Expose the reset generation even before the first turn",
+      "setup": "Serve authorized empty transcript responses with a session reset.",
+      "action": "Read two different generations with no timestamp and read a normal response.",
+      "expected": "The header carries a distinct stable reset identity only alongside a reset.",
+      "planned_files": [
+        "internal/server/transcript_reset_id_test.go"
+      ]
+    }
+  ],
+  "seal": "2e9e5a2523e81b5d63b5cb06b0fd4e8db569d8fe325b24b746e0fc4465a5b62c"
+}

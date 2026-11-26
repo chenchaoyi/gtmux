@@ -20,7 +20,7 @@ import {AgentAvatar} from './AgentAvatar';
 import {ReplyActions} from './ReplyActions';
 import {ParticipantProfileModal} from './ParticipantProfileModal';
 import {ProfileTarget, turnIdentity} from './participantProfile';
-import type {GtmuxClient} from '../api/client';
+import type {GtmuxClient, PaneReadProblem} from '../api/client';
 import {CopyableText, CopyFeedbackContext} from './CopyableText';
 import {TextSelectionContext} from './RangeText';
 import Clipboard from '@react-native-clipboard/clipboard';
@@ -86,6 +86,9 @@ interface Props {
   failed?: boolean;
   associationFailed?: boolean;
   readOnlyHistory?: boolean;
+  liveProblem?: PaneReadProblem;
+  liveSource?: {generation: number};
+  liveBindingPending?: boolean;
   onRetry?: () => void;
   onOpenTerminal?: () => void;
   retrying?: boolean;
@@ -176,13 +179,16 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, onRetry, onOpenTerminal, retrying = false, retryFailed = false, pendingEcho, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, liveProblem, liveSource, liveBindingPending = false, onRetry, onOpenTerminal, retrying = false, retryFailed = false, pendingEcho, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   const styles = useMemo(() => makeStyles(pal), [pal]);
   const {markdown: MD_COLORS, userMarkdown: USER_MD_COLORS} = readingColors(pal);
   const CHAT_FG = pal.fg, CHAT_FG_DIM = pal.fg2;
   // Radar timestamps and temporary status changes are observations, not a new reader.
   const conversationReadOnly = readOnly || readOnlyHistory;
-  const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
+  const chatScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
+  const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.agent,
+    liveSource ? liveSource.generation : [agent.observed_conversation?.home_id ?? agent.home_id,
+      agent.observed_conversation?.session_id ?? agent.session_id]]);
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
   const liveOpen = liveDisclosure.scope === liveScope && liveDisclosure.open;
   React.useEffect(() => {setLiveDisclosure(prev => prev.scope === liveScope ? prev : {scope: liveScope, open: false});}, [liveScope]);
@@ -203,8 +209,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const turns = history.turns;
   // Keep the optimistic turn's React key when its source record first arrives.
   // This is a bounded presentation alias, never send/association authority.
-  const echoRows = React.useRef<{scope: string; pending?: PendingChatEcho; aliases: Map<string, {key: string; prompt: string}>}>({scope: liveScope, aliases: new Map()});
-  if (echoRows.current.scope !== liveScope) echoRows.current = {scope: liveScope, aliases: new Map()};
+  const echoRows = React.useRef<{scope: string; pending?: PendingChatEcho; aliases: Map<string, {key: string; prompt: string}>}>({scope: chatScope, aliases: new Map()});
+  if (echoRows.current.scope !== chatScope) echoRows.current = {scope: chatScope, aliases: new Map()};
   const echoState = echoRows.current;
   if (pendingPrompt && (!echoState.pending || echoState.pending.text !== pendingPrompt || pendingEcho && echoState.pending.id !== pendingEcho.id)) {
     echoState.pending = pendingEcho ?? beginChatEcho(`local:${Date.now()}`, pendingPrompt, recentTurns);
@@ -319,7 +325,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   // app on switching to Chat — see chatWindow.ts for the measurements.
   const [windowSize, setWindowSize] = React.useState(CHAT_WINDOW);
   const [historyEnd, setHistoryEnd] = React.useState<{scope: string; id: string} | undefined>();
-  React.useEffect(() => {historyOperation.current++; prependAnchor.current = undefined; setHistoryEnd(undefined); setWindowSize(CHAT_WINDOW);}, [client, liveScope, agent.agent]);
+  React.useEffect(() => {historyOperation.current++; prependAnchor.current = undefined; setHistoryEnd(undefined); setWindowSize(CHAT_WINDOW);}, [client, chatScope, agent.agent]);
   // A 1s heartbeat WHILE WORKING only, so the "thinking" elapsed label moves. Idle
   // costs nothing: the interval isn't created unless a turn is actually running.
   // The SERVER's clock, not the phone's: `workingSince` is a timestamp the Mac produced,
@@ -392,7 +398,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
 
   // The MOUNTED slice. `offset` maps a windowed index back to its real turn index, so
   // the per-turn state maps (turnOpen / promptOpen / timeLabels) stay correct.
-  const savedEnd = historyEnd?.scope === liveScope ? turns.findIndex(t => t.record_id === historyEnd.id) : -1;
+  const savedEnd = historyEnd?.scope === chatScope ? turns.findIndex(t => t.record_id === historyEnd.id) : -1;
   // Reading a full older window freezes its live edge rather than unmounting the
   // oldest visible record whenever new turns arrive. Jump to bottom resumes live.
   const visibleTurns = savedEnd >= 0 && turns.length > windowSize && !stick.current ? turns.slice(0, savedEnd + 1) : turns;
@@ -441,19 +447,19 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   }, [lines]);
 
   const inspectAvailable = !readOnly && !!agent.pane_id && agent.source !== 'native';
-  const liveOverlay = status === 'working' && inspectAvailable && liveOpen;
+  const liveOverlay = inspectAvailable && liveOpen;
   const foldInset = controlsTop !== undefined && turns.length > 0 ? 44 : 0;
   const liveHeightLimit = viewportHeight === undefined ? undefined
     : Math.max(0, viewportHeight - Math.max(topPad, controlsTop ?? 0) - foldInset - LIVE_PANEL_INSET);
-  const liveProgress = status === 'working' && <LiveProgress key={liveScope}
+  const liveProgress = (status === 'working' || liveOverlay) && <LiveProgress key={liveScope}
     open={liveOverlay} onToggle={() => setLiveDisclosure({scope: liveScope, open: !liveOpen})}
     heightLimit={liveHeightLimit} savedHeight={liveSize.current.height}
     onResize={height => {if (liveSize.current.scope === liveScope) liveSize.current.height = height;}}
     avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent})}
-    label={liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
-    inspectAvailable={inspectAvailable}
+    label={status !== 'working' ? statusLabel(status, lang) : liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
+    inspectAvailable={inspectAvailable} working={status === 'working'}
     sourceLabel={readOnlyHistory ? (lang === 'zh' ? `当前 pane ${agent.pane_id} · 历史对话关联待确认` : `Current pane ${agent.pane_id} · History association unconfirmed`) : undefined}
-    lines={liveShown} fontSize={fontSize} fontFamily={fontFamily} lang={lang} />;
+    problem={liveProblem} lines={liveShown} fontSize={fontSize} fontFamily={fontFamily} lang={lang} />;
 
   return (
     <ReadingPaletteContext.Provider value={pal}>
@@ -590,7 +596,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
             stick.current = false;
             setAtBottom(false);
             const last = visibleTurns[visibleTurns.length - 1]?.record_id;
-            if (last) setHistoryEnd({scope: liveScope, id: last});
+            if (last) setHistoryEnd({scope: chatScope, id: last});
             if (hiddenHere) {prependAnchor.current = {height: contentHeight.current, y: offRef.current}; setWindowSize(n => nextWindow(n, turns.length));}
             else {const operation = historyOperation.current; history.load().then(count => {if (count && operation === historyOperation.current) setWindowSize(n => Math.max(n, Math.min(n, visibleTurns.length) + Math.min(count, CHAT_WINDOW)));});}
           }}
@@ -756,7 +762,10 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
       <JumpToBottom visible={!liveOverlay && (!atBottom || hiddenAfter > 0 || history.disconnected) && turns.length > 0} onPress={jumpToBottom} lang={lang} />
-      {liveOverlay && <View testID="chat-live-overlay" pointerEvents="box-none" style={styles.liveOverlay}>
+      {liveOverlay && <View testID="chat-live-overlay" pointerEvents={liveBindingPending ? 'none' : 'box-none'}
+        accessibilityElementsHidden={liveBindingPending}
+        importantForAccessibility={liveBindingPending ? 'no-hide-descendants' : 'auto'}
+        style={[styles.liveOverlay, liveBindingPending && styles.pendingBinding]}>
         <View style={maxWidth ? {width: '100%', maxWidth: maxWidth - 2 * LIVE_PANEL_INSET, alignSelf: 'center'} : undefined}>
           {liveProgress}
         </View>
@@ -778,6 +787,7 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   body: {flex: 1, backgroundColor: pal.bg},
   content: {padding: 10, gap: 8},
   liveRow: {marginTop: 6},
+  pendingBinding: {opacity: 0},
   liveOverlay: {position: 'absolute', left: LIVE_PANEL_INSET, right: LIVE_PANEL_INSET, bottom: LIVE_PANEL_INSET, zIndex: 1},
   terminalLink: {alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, justifyContent: 'center'},
   terminalLinkText: {color: readingColors(pal).link, fontSize: 14, fontWeight: '500'},

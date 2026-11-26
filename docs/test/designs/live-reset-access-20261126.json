@@ -1,0 +1,57 @@
+{
+  "id": "live-reset-access-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review",
+    "date": "2026-11-26",
+    "decision": "Verify clear, association and pane read boundaries in each reader",
+    "notes": "Exercise fresh synthetic HTTP in Chromium and mounted mobile screen entry points. Keep bound-session, held-frame and access recovery controls. No native device claim."
+  },
+  "cases": [
+    {
+      "id": "LRE-001",
+      "layer": "L4",
+      "description": "Clear retires a frozen Live frame before the first new turn",
+      "setup": "Freeze and resize a working pane on a narrow page or desktop tile.",
+      "action": "Read an empty transcript, then an explicit reset; reopen and poll the same reset again.",
+      "expected": "Plain empty history preserves the reader. A new reset drops old output and sizes; repeated metadata preserves the reopened reader.",
+      "planned_files": [
+        "tests/web/live-history-boundaries.test.cjs"
+      ]
+    },
+    {
+      "id": "LRE-002",
+      "layer": "L4",
+      "description": "Live remains usable when history association is unavailable",
+      "setup": "Freeze observed Live in each web layout.",
+      "action": "Withdraw the observation and serve repeated unassociated transcript responses while pane reads succeed.",
+      "expected": "A fresh folded control exposes only the current pane and remains open on subsequent association failures.",
+      "planned_files": [
+        "tests/web/live-history-boundaries.test.cjs"
+      ]
+    },
+    {
+      "id": "LRE-003",
+      "layer": "L2",
+      "description": "An observed session owns its mobile Live height and disclosure",
+      "setup": "Open and resize captured output in HQ and Detail.",
+      "action": "Update observation confidence, then switch the observed session in the same pane.",
+      "expected": "Confidence updates retain the reader; a new session starts closed and reopens at the default height.",
+      "planned_files": [
+        "mobileapp/src/screens/LiveReaderBoundaries.test.tsx"
+      ]
+    },
+    {
+      "id": "LRE-004",
+      "layer": "L2",
+      "description": "Pane access and absence have distinct mobile messages",
+      "setup": "Open the Live pane in HQ and Detail with authorized content.",
+      "action": "Return 401, 403 or 404, then a successful empty capture.",
+      "expected": "Old rows disappear. The message distinguishes denied access, a missing pane and a successful empty read.",
+      "planned_files": [
+        "mobileapp/src/screens/LiveReaderBoundaries.test.tsx"
+      ]
+    }
+  ],
+  "seal": "542cdc813ce1ed55c422d14e26603df1c6ec89812b8447732927c9c2d7d742d8"
+}

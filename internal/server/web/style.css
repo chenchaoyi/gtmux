@@ -1155,6 +1155,7 @@ button.appr-opt { width: 100%; background: transparent; color: inherit; text-ali
 .live-compact .live-note { padding: 0 10px 2px; }
 .chat-live:not([open]) > :not(summary) { display: none; }
 @keyframes live-pulse { 50% { opacity: .45; } }
+.chat-live:not([data-status='working']) .live-dot { animation: none; background: currentColor; }
 @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
 @media (pointer: coarse) {
   .chat-live { --live-grip-height: 44px; }

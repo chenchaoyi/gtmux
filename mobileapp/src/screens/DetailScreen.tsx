@@ -1,4 +1,5 @@
-import {ConversationReadError} from '../api/client';
+import {useLivePaneSource} from './useLivePaneSource';
+import {ConversationReadError, paneReadProblem, type PaneReadProblem} from '../api/client';
 import {newSendId} from '../api/sendId';
 import type {SendDelivery} from '../ui/sendReceipt';
 // DetailScreen — a read-only view of one pane's current screen (MOBILE §4), in
@@ -244,8 +245,6 @@ function PaneDetailView({
       : (lang === 'zh' ? `${where}重连中 · ` : `${where}reconnecting · `);
   })();
   const [text, setText] = useState('');
-  const paneReadIdentity = useMemo(() => ({client, pane: agent.pane_id}), [client, agent.pane_id]);
-  const [captureIdentity, setCaptureIdentity] = useState<typeof paneReadIdentity>();
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   // The tmux pane's width, which tells Codex's cut prompt row from a row that merely ends in
   // "…" (ui/codexPinned). Absent on a Mac server older than v1.0.53.
@@ -339,8 +338,13 @@ function PaneDetailView({
   // flipping 终端→对话 shows the cached history instantly instead of re-fetching +
   // spinning every time. Polled on status/prompt change; turns are never cleared.
   const chatIdentity = useMemo(() => ({client, pane: agent.pane_id, session: live.session_id, home: live.home_id, agent: live.agent, observation: JSON.stringify([live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state])}), [client, agent.pane_id, live.session_id, live.home_id, live.agent, live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state]);
-  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean}>({identity: chatIdentity, turns: [], dropped: 0, loaded: false});
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; loaded: boolean; failed?: boolean; retryBinding?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean}>({identity: chatIdentity, turns: [], dropped: 0, loaded: false});
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
+  const {source: paneReadIdentity, pending: liveBindingPending} = useLivePaneSource(
+    client, live, chatRecord.identity === chatIdentity ? chatRecord : undefined);
+  const [captureIdentity, setCaptureIdentity] = useState<typeof paneReadIdentity>();
+  const [paneFailure, setPaneFailure] = useState<{scope: typeof paneReadIdentity; reason: PaneReadProblem}>();
+  const liveProblem = paneFailure?.scope === paneReadIdentity ? paneFailure.reason : undefined;
   const latestTurns = useRef(turns); latestTurns.current = turns;
   // Retire the optimistic row in this commit, before passive effect cleanup.
   const visiblePendingPrompt = pendingEcho.current && !chatEchoRecorded(pendingEcho.current, turns) ? pendingPrompt : '';
@@ -480,6 +484,7 @@ function PaneDetailView({
   const smaller = () => setFontSize(n => adjustSessionFont(n, -1));
   const bigger = () => setFontSize(n => adjustSessionFont(n, 1));
 
+  const captureGeneration = useRef(0);
   const paneRead = useRef<ReturnType<typeof createReadTask> | null>(null);
   const loadPane = useCallback(() => paneRead.current?.run(), []);
 
@@ -518,6 +523,7 @@ function PaneDetailView({
       // sendResult keeps the server's own refusal, which is what lets the bar say
       // WHICH refusal it was. The old `send` returned null for all of them.
       const lane = paneRead.current;
+      const generation = captureGeneration.current;
       client
         .sendResult(agent.pane_id, p)
         .then(r => {
@@ -541,7 +547,7 @@ function PaneDetailView({
           }
           // A late receipt can settle its message after a newer control key, but
           // its older capture must not invalidate or replace the current screen.
-          if (attempt !== sendAttempt.current) return;
+          if (attempt !== sendAttempt.current || generation !== captureGeneration.current) return;
           // Retire a capture started before this accepted send.
           lane.invalidate();
           const snap = r.pane;
@@ -577,8 +583,18 @@ function PaneDetailView({
         if (prev && c && prev.x === c.x && prev.up === c.up && prev.visible === c.visible) return prev;
         return c;
       });
-      setCaptureIdentity(paneReadIdentity);
-    }, {onSettled: () => setLoading(false)});
+      setCaptureIdentity(paneReadIdentity); setPaneFailure(undefined);
+    }, {onError: error => {
+      const reason = paneReadProblem(error);
+      if (reason) {
+        setPaneFailure({scope: paneReadIdentity, reason});
+        captureGeneration.current++;
+        setCaptureIdentity(undefined);
+        setText('');
+        setCursor(undefined);
+        setPaneCols(undefined);
+      }
+    }, onSettled: () => setLoading(false)});
     paneRead.current = task;
     const stop = startReadPolling(task, 1500);
     return () => {stop(); if (paneRead.current === task) paneRead.current = null;};
@@ -595,9 +611,10 @@ function PaneDetailView({
   const onLoadKeys = useCallback((version?: number, boot?: string) => client.inputCapabilities(agent.pane_id, version, boot), [client, agent.pane_id]);
   const onSendKey = useCallback(async (p: SendPayload) => {
     const lane = paneRead.current;
+    const generation = captureGeneration.current;
     const attempt = ++sendAttempt.current;
     const r = await client.sendResult(agent.pane_id, p);
-    if (attempt === sendAttempt.current && r.ok && r.pane && lane?.isActive() && paneRead.current === lane) {
+    if (generation === captureGeneration.current && attempt === sendAttempt.current && r.ok && r.pane && lane?.isActive() && paneRead.current === lane) {
       lane.invalidate();
       if (typeof r.pane.text === 'string') setText(r.pane.text);
       if (r.pane.cols) setPaneCols(r.pane.cols);
@@ -657,11 +674,12 @@ function PaneDetailView({
         setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, readOnlyHistory} : {identity: chatIdentity, turns: ts, dropped, reset, loaded: true, readOnlyHistory});
       }, {onError: error => {
         if (etagIdentity.current !== chatIdentity) return;
+        const retryBinding = error instanceof ConversationReadError && error.status === 503;
         if (isAuthError(error)) {
           etagRef.current = undefined;
           setTraceOpen(false); setDiffOpen(false);
           setChatRecord({identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association});
-        } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association});
+        } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, retryBinding, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, retryBinding, associationFailed: error instanceof ConversationReadError && error.association});
       }, onSettled: () => setReload(prev => prev.identity === chatIdentity ? {...prev, busy: false} : prev)},
     );
     // A page refusal may have retired the hook's snapshot while this parent
@@ -687,9 +705,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onOpenTerminal={isNative ? undefined : () => pickModeRef.current('terminal')} onRetry={() => retryTurnsRef.current()} pendingPrompt={visiblePendingPrompt} pendingEcho={pendingEcho.current ?? undefined} retrying={retrying} retryFailed={retryFailed} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView liveSource={paneReadIdentity} liveBindingPending={liveBindingPending} liveProblem={liveProblem} readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onOpenTerminal={isNative ? undefined : () => pickModeRef.current('terminal')} onRetry={() => retryTurnsRef.current()} pendingPrompt={visiblePendingPrompt} pendingEcho={pendingEcho.current ?? undefined} retrying={retrying} retryFailed={retryFailed} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [client, isGuest, isNative, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, visiblePendingPrompt, retrying, retryFailed, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
+    [client, isGuest, isNative, live, liveProblem, liveBindingPending, paneReadIdentity, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, visiblePendingPrompt, retrying, retryFailed, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation

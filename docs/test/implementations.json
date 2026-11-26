@@ -1,4 +1,44 @@
 {
+  "mobileapp/src/screens/HQLiveEarlierReset.test.tsx": {
+    "cases": ["HLS-001"],
+    "selectors": ["HQ retires the frozen live viewport on a new empty reset while reading an earlier session"]
+  },
+  "mobileapp/src/screens/LiveResetGeneration.test.tsx": {
+    "cases": ["MRG-001"],
+    "selectors": ["%s retires a frozen reader when two verified resets both have empty histories"]
+  },
+  "mobileapp/src/screens/LiveBindingRecovery.test.tsx": {
+    "cases": ["LBR-001"],
+    "selectors": ["%s keeps the reader when an ordinary empty transcript gets its first turn", "%s recovers the same bound reader after a transient transcript error"]
+  },
+  "mobileapp/src/screens/LiveBindingProof.test.tsx": {
+    "cases": ["LRG-001"],
+    "selectors": ["LRG-001 only matching proof resumes the frozen reader (%s)"]
+  },
+  "tests/web/live-clockless-reset.test.cjs": {
+    "cases": ["LRG-002"],
+    "selectors": ["LRG-002 clockless reset at "]
+  },
+  "internal/server/transcript_reset_id_test.go": {
+    "cases": ["LRG-003"],
+    "selectors": ["TestTranscriptResetGenerationOnEmptyBody"]
+  },
+  "tests/web/live-history-boundaries.test.cjs": {
+    "cases": ["LRE-001", "LRE-002"],
+    "selectors": ["verified empty replacement", "unassociated but pane readable"]
+  },
+  "mobileapp/src/screens/LiveReaderBoundaries.test.tsx": {
+    "cases": ["LRE-003", "LRE-004"],
+    "selectors": ["LRE-003 only a change of observed identity starts a fresh reader", "LRE-004 access denial, missing pane and empty capture have distinct messages"]
+  },
+  "tests/web/live-binding.test.cjs": {
+    "cases": ["LRB-001"],
+    "selectors": ["LRB-001 Binding preserves the same Live reader at "]
+  },
+  "mobileapp/src/screens/LiveCaptureAccess.test.tsx": {
+    "cases": ["LRB-002", "LRB-003"],
+    "selectors": ["LRB-002 %s keeps the captured rows and viewport through waiting and idle", "LRB-003 HTTP %i clears the retained screen until a fresh capture"]
+  },
   "internal/app/doctor_storage_eligibility_test.go": {
     "cases": ["DMD-004", "DMD-005"],
     "selectors": ["TestDoctorStorageMigrationEligibility"]
@@ -3532,17 +3572,23 @@
       "Diff preserves recorded layout, syntax and original copy at ${width}"
     ]
   },
+  "tests/web/live-disclosure-refresh.test.cjs": {
+    "cases": ["LRP-001"],
+    "selectors": ["LRP-001 Live survives conversation and status redraws at "]
+  },
   "tests/web/smoke.test.cjs": {
     "cases": [
       "AOP-005",
       "DTV-003",
-      "WHS-008"
+      "WHS-008",
+      "LRP-001"
     ],
     "selectors": [
       "Structured activity at ${width}px",
       "DTV003 Diff tree and worktree context at ${width}px",
       "Compact tile controls stay readable in ${locale}",
-      "WHS-008 compact tile actions retire on layout switch"
+      "WHS-008 compact tile actions retire on layout switch",
+      "Live chat shows current work, retains disclosure state and stays open after completion and clears on revocation"
     ]
   },
   "tests/web/tool-call-detail.test.cjs": {
@@ -5392,7 +5438,8 @@
     "cases": [
       "LVR-001",
       "LVR-002",
-      "LVR-004"
+      "LVR-004",
+      "LRP-002"
     ],
     "selectors": [
       "dragging the live grip reveals more terminal lines and respects the available height",
@@ -5410,10 +5457,12 @@
   },
   "mobileapp/src/ui/ChatView.liveDisclosure.test.tsx": {
     "cases": [
-      "MCE-002"
+      "MCE-002",
+      "LRP-002"
     ],
     "selectors": [
-      "MCE-002 %s Live has one outlined disclosure and an emphasized action"
+      "MCE-002 %s Live has one outlined disclosure and an emphasized action",
+      "%s keeps an open Live preview through a transcript redraw"
     ]
   },
   "mobileapp/src/ui/MarkdownView.test.tsx": {

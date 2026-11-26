@@ -53831,13 +53831,13 @@
       ]
     },
     "mobileapp/src/ui/ChatView.liveDisclosure.test.tsx": {
-      "sha256": "63e06f439a71a416c6a48a6894af03773bdab17a999b431e0ff007f2907253aa",
+      "sha256": "76e89308aa2f238f59cb6c6340ab0e56942dfeb3d92c15868ab6c6a4a1c1969d",
       "layer": "L2",
       "stack": "RN / mobile harness",
       "cases": [
         {
           "id": "LEG-56b976fa48e0",
-          "line": 52,
+          "line": 53,
           "kind": "test.each()",
           "name": "%s: the default is a status row; the same disclosure opens and closes the bounded screen",
           "dynamic": true,
@@ -53845,7 +53845,7 @@
         },
         {
           "id": "LEG-37958d9f666f",
-          "line": 70,
+          "line": 71,
           "kind": "test",
           "name": "capture and transcript refresh retain expansion, including first output and temporary empty captures",
           "dynamic": false,
@@ -53853,7 +53853,7 @@
         },
         {
           "id": "LEG-086c5c5a6b44",
-          "line": 89,
+          "line": 90,
           "kind": "test.each()",
           "name": "a new working scope starts folded: %j",
           "dynamic": true,
@@ -53869,7 +53869,7 @@
         },
         {
           "id": "LEG-31d065a33508",
-          "line": 107,
+          "line": 112,
           "kind": "test",
           "name": "a native conversation without terminal access keeps the status without an empty disclosure",
           "dynamic": false,
@@ -53877,7 +53877,7 @@
         },
         {
           "id": "LEG-40b967b90c1c",
-          "line": 115,
+          "line": 120,
           "kind": "test",
           "name": "radar timestamp corrections do not collapse the live view, and explicit folding survives updates",
           "dynamic": false,
@@ -53885,12 +53885,21 @@
         },
         {
           "id": "MAP-e5027560aedb",
-          "line": 34,
+          "line": 35,
           "kind": "reviewed-selector",
           "name": "MCE-002 %s Live has one outlined disclosure and an emphasized action",
           "dynamic": false,
           "layer": "L2",
           "design": "MCE-002"
+        },
+        {
+          "id": "MAP-7214e4ff3d37",
+          "line": 97,
+          "kind": "reviewed-selector",
+          "name": "%s keeps an open Live preview through a transcript redraw",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MCE-002,LRP-002"
         }
       ]
     },
@@ -63479,7 +63488,7 @@
       ]
     },
     "tests/web/smoke.test.cjs": {
-      "sha256": "4aa23185eee1bed608519309d6b48460414b2198037c3acf84ec3adf38af8807",
+      "sha256": "aa0bb6e5b115eed7a58f65f8a5b5c2f0fb2d8d47f262ed55b6b068671dbd9681",
       "layer": "L3",
       "stack": "Browser",
       "cases": [
@@ -63613,7 +63622,7 @@
         },
         {
           "id": "LEG-fb1c9cc17ccb",
-          "line": 644,
+          "line": 645,
           "kind": "scenario",
           "name": "Appearance follows the system and persists an explicit choice without recoloring terminals",
           "dynamic": false,
@@ -63621,7 +63630,7 @@
         },
         {
           "id": "LEG-b055e62dee7c",
-          "line": 688,
+          "line": 689,
           "kind": "scenario",
           "name": "Trace tool closes details and returns to the original panel draft",
           "dynamic": false,
@@ -63629,7 +63638,7 @@
         },
         {
           "id": "LEG-00a1f7cbea36",
-          "line": 711,
+          "line": 712,
           "kind": "scenario",
           "name": "Composer stages files, annotates images, recalls input and matches app send controls",
           "dynamic": false,
@@ -63637,7 +63646,7 @@
         },
         {
           "id": "LEG-f0e15e31d7c2",
-          "line": 830,
+          "line": 831,
           "kind": "scenario",
           "name": "Mobile composer and speaker profiles expose identity without redundant writable badges",
           "dynamic": false,
@@ -63645,7 +63654,7 @@
         },
         {
           "id": "LEG-f81adc301549",
-          "line": 886,
+          "line": 887,
           "kind": "scenario",
           "name": "Clipboard images and dropped files stay staged until an explicit send",
           "dynamic": false,
@@ -63653,7 +63662,7 @@
         },
         {
           "id": "LEG-05c9e13ce4c2",
-          "line": 915,
+          "line": 916,
           "kind": "scenario",
           "name": "'Native file actions keep readable labels and recorded changes at ' + width",
           "dynamic": true,
@@ -63688,12 +63697,21 @@
         },
         {
           "id": "MAP-756a48ad34a9",
-          "line": 940,
+          "line": 941,
           "kind": "reviewed-selector",
           "name": "WHS-008 compact tile actions retire on layout switch",
           "dynamic": false,
           "layer": "L4",
           "design": "AOP-005,DTV-003,WHS-008"
+        },
+        {
+          "id": "MAP-54f1c843f8d1",
+          "line": 567,
+          "kind": "reviewed-selector",
+          "name": "Live chat shows current work, retains disclosure state and stays open after completion and clears on revocation",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "AOP-005,DTV-003,WHS-008,LRP-001"
         }
       ]
     },
@@ -69278,7 +69296,7 @@
           "design": "LVR-001,LVR-002,LVR-004"
         }
       ],
-      "sha256": "ae56b1b0a60ed0566212962183c66f17a3860b700d14054c648c770461f60ef9"
+      "sha256": "327019237a84745f27e9d5aa9151a832b7acae0b976f98a5f119b751787ac8e1"
     },
     "mobileapp/src/ui/ChatView.liveResizeFold.test.tsx": {
       "layer": "L2",
@@ -71162,6 +71180,218 @@
         }
       ],
       "sha256": "72187bd3994c503157fec020cc02428d3432bc10bbd254cdda57805cdecac28c"
+    },
+    "mobileapp/src/screens/LiveCaptureAccess.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f0aa4fc784df",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "LRB-002 %s keeps the captured rows and viewport through waiting and idle",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LRB-002,LRB-003"
+        },
+        {
+          "id": "MAP-8dee995655ee",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "LRB-003 HTTP %i clears the retained screen until a fresh capture",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LRB-002,LRB-003"
+        }
+      ],
+      "sha256": "0313c0a345a6bd88cd229bce4f680478b09c730328c68888457d7a51759294bf"
+    },
+    "tests/web/live-binding.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-2ee5999d4b9d",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "LRB-001 Binding preserves the same Live reader at ",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LRB-001"
+        }
+      ],
+      "sha256": "93bafc56d71b76a777a4491e44bdbc79106f7d7be2956ff5ca6213481896cc22"
+    },
+    "tests/web/live-disclosure-refresh.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-370c98c5b53c",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "LRP-001 Live survives conversation and status redraws at ",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LRP-001"
+        }
+      ],
+      "sha256": "3cccee922f672b79aec0ed69248154531c96a2b496c13d7c72a02af0b1f6b06d"
+    },
+    "mobileapp/src/screens/LiveReaderBoundaries.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b332e29d412f",
+          "line": 7,
+          "kind": "reviewed-selector",
+          "name": "LRE-003 only a change of observed identity starts a fresh reader",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LRE-003,LRE-004"
+        },
+        {
+          "id": "MAP-c1c246a2d7e5",
+          "line": 33,
+          "kind": "reviewed-selector",
+          "name": "LRE-004 access denial, missing pane and empty capture have distinct messages",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LRE-003,LRE-004"
+        }
+      ],
+      "sha256": "62c72402a12f24274d6eed34e00b42875440a911b79c583a95307781919e71d8"
+    },
+    "tests/web/live-history-boundaries.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-bebe2df3aaf1",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "verified empty replacement",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LRE-001,LRE-002"
+        },
+        {
+          "id": "MAP-95c6bb806702",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "unassociated but pane readable",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LRE-001,LRE-002"
+        }
+      ],
+      "sha256": "81ea6bd00c76bf36d383388631b0b96a40820094c3c28569d605ea13568b0eab"
+    },
+    "internal/server/transcript_reset_id_test.go": {
+      "layer": "L3",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-a154f826fe9b",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestTranscriptResetGenerationOnEmptyBody",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "LRG-003"
+        }
+      ],
+      "sha256": "7bc63b8a2ad67e6f43854ec972057c643050dc5de16f2c4bea60c036448a3cae"
+    },
+    "mobileapp/src/screens/LiveBindingProof.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-481aba785a6c",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "LRG-001 only matching proof resumes the frozen reader (%s)",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LRG-001"
+        }
+      ],
+      "sha256": "8f2b1f3b89df30361798a9fc1faed81070cd3986132074a991d0b62b5412ff9c"
+    },
+    "tests/web/live-clockless-reset.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-43789bdd2f6f",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "LRG-002 clockless reset at ",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LRG-002"
+        }
+      ],
+      "sha256": "dadfd0bf007d5c51ea26e487dbe6209bf2ed94d1a559f64bc8e68e735b028f9d"
+    },
+    "mobileapp/src/screens/LiveBindingRecovery.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-fbe570e34aef",
+          "line": 6,
+          "kind": "reviewed-selector",
+          "name": "%s keeps the reader when an ordinary empty transcript gets its first turn",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LBR-001"
+        },
+        {
+          "id": "MAP-cb08df3232cf",
+          "line": 36,
+          "kind": "reviewed-selector",
+          "name": "%s recovers the same bound reader after a transient transcript error",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LBR-001"
+        }
+      ],
+      "sha256": "a9f31799516e02ae037c7968c56d44a42366fcd599064f781c31a0ab452503c7"
+    },
+    "mobileapp/src/screens/LiveResetGeneration.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-444f265aa079",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "%s retires a frozen reader when two verified resets both have empty histories",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "MRG-001"
+        }
+      ],
+      "sha256": "0a4a961e4a16a39b2508169bc15faab21d2ef422a23b5c69d23ce1013f333fb2"
+    },
+    "mobileapp/src/screens/HQLiveEarlierReset.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-69af732bc29f",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "HQ retires the frozen live viewport on a new empty reset while reading an earlier session",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "HLS-001"
+        }
+      ],
+      "sha256": "b90ef180907f30205c1871624dc195c5f080071e5c956ddc4f9d58c0b5bf71e6"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

@@ -1,5 +1,6 @@
+import {useLivePaneSource} from './useLivePaneSource';
 import {NavigationContext} from '@react-navigation/native';
-import {ConversationReadError} from '../api/client';
+import {ConversationReadError, paneReadProblem, type PaneReadProblem} from '../api/client';
 import {newSendId} from '../api/sendId';
 import {noteChatEchoReceipt, beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
 import type {SendDelivery} from '../ui/sendReceipt';
@@ -116,7 +117,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const [actFeed, setActFeed] = useState<HQEvent[]>([]);
   const [traceOpen, setTraceOpen] = useState(false), [diffOpen, setDiffOpen] = useState(false);
   const chatIdentity = useMemo(() => ({client, pane: hq.pane_id, session: live.session_id, home: live.home_id, agent: live.agent, observation: JSON.stringify([live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state])}), [client, hq.pane_id, live.session_id, live.home_id, live.agent, live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state]);
-  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; includesEarlier?: boolean; loaded: boolean; failed?: boolean; retryBinding?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
   const historyReadOnly = (chatRecord.identity === chatIdentity && !!chatRecord.readOnlyHistory) || !!live.observed_conversation;
   const historyReadOnlyRef = useRef(false); historyReadOnlyRef.current = historyReadOnly;
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
@@ -132,7 +133,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // `gtmux hq --rotate` HQ performs on itself. The console then shows this shift whole
   // and the shift before it not at all, which without a word reads as a broken app: on
   // 2026-08-09 a cleared 400-turn shift showed three bubbles and cost a diagnosis.
-  const sessionReset = chatRecord.identity === chatIdentity ? chatRecord.reset : undefined;
+  const sessionReset = chatRecord.identity === chatIdentity && !chatRecord.includesEarlier ? chatRecord.reset : undefined;
   const loaded = chatRecord.identity === chatIdentity && chatRecord.loaded;
   const [pending, setPending] = useState<string | undefined>();
   const [pendingDelivered, setPendingDelivered] = useState(false);
@@ -249,9 +250,13 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // prompt echoed, then nothing until the reply landed, so a long turn was
   // indistinguishable from a dead app. ChatView renders it as the same "live" card the
   // worker Detail has —HQ was the only place passing an empty screen.
+  const captureGeneration = useRef(0);
   const [paneText, setPaneText] = useState('');
-  const paneReadIdentity = useMemo(() => ({client, pane: hq.pane_id}), [client, hq.pane_id]);
+  const {source: paneReadIdentity, pending: liveBindingPending} = useLivePaneSource(
+    client, live, chatRecord.identity === chatIdentity ? chatRecord : undefined);
   const [captureIdentity, setCaptureIdentity] = useState<typeof paneReadIdentity>();
+  const [paneFailure, setPaneFailure] = useState<{scope: typeof paneReadIdentity; reason: PaneReadProblem}>();
+  const liveProblem = paneFailure?.scope === paneReadIdentity ? paneFailure.reason : undefined;
   const navigation = React.useContext(NavigationContext) as {navigate: (route: string) => void} | undefined;
   const recovery = useSendRecovery(chatIdentity);
   const failure = recovery.failure;
@@ -306,11 +311,19 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   }, [client, zh]);
 
   useEffect(() => {
-    setCaptureIdentity(undefined);
-    if (live.status !== 'working') {setPaneText(''); return;}
+    if (!hq.pane_id) return;
     return startReadPolling(createReadTask(
-      signal => client.pane(hq.pane_id, signal), p => {setPaneText(p.text ?? ''); setCaptureIdentity(paneReadIdentity);},
-    ), 1500);
+      signal => client.pane(hq.pane_id, signal), p => {setPaneText(p.text ?? ''); setCaptureIdentity(paneReadIdentity); setPaneFailure(undefined);},
+      {onError: error => {
+        const reason = paneReadProblem(error);
+        if (reason) {
+          setPaneFailure({scope: paneReadIdentity, reason});
+          captureGeneration.current++;
+          setCaptureIdentity(undefined);
+          setPaneText('');
+        }
+      }},
+    ), live.status === 'working' ? 1500 : 8000);
   }, [client, hq.pane_id, live.status, paneReadIdentity]);
 
   const hqPaneLines: AnsiLine[] = useMemo(() => captureIdentity === paneReadIdentity ? paneLines(paneText) : [], [paneText, captureIdentity, paneReadIdentity]);
@@ -343,14 +356,15 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
     ({turns: ts, reset, etag, unchanged, earlierAvailable: more, readOnlyHistory}) => {
       if (etagIdentity.current !== chatIdentity) return;
       etagRef.current = etag;
-      setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, earlierAvailable: !!more, readOnlyHistory} : {identity: chatIdentity, turns: ts, reset: earlier > 0 ? undefined : reset, loaded: true, earlierAvailable: !!more, readOnlyHistory});
+      setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, earlierAvailable: !!more, readOnlyHistory} : {identity: chatIdentity, turns: ts, reset, includesEarlier: earlier > 0, loaded: true, earlierAvailable: !!more, readOnlyHistory});
     }, {onError: error => {
       if (etagIdentity.current !== chatIdentity) return;
+      const retryBinding = error instanceof ConversationReadError && error.status === 503;
       if (isAuthError(error)) {
         etagRef.current = undefined;
         setTraceOpen(false); setDiffOpen(false);
         setChatRecord({identity: chatIdentity, turns: [], loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
-      } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
+      } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, retryBinding, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], loaded: true, failed: true, retryBinding, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
     }, onSettled: () => {setEarlierLoading(false); setReload(prev => prev.identity === chatIdentity ? {...prev, busy: false} : prev);}},
   );
     receiptRefresh.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};
@@ -403,6 +417,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
       const payload: SendPayload = input.key ? {key: input.key, send_id: input.send_id ?? newSendId()} : {text: body, enter: input.enter ?? true, send_id: input.send_id ?? newSendId()};
       if (!recovery.begin(payload)) return;
       const attempt = ++sendAttempt.current;
+      const generation = captureGeneration.current;
       if (body) {
         const echo = echoAttempts.current.get(payload.send_id!) ?? beginChatEcho(payload.send_id!, body, latestTurns.current);
         echoAttempts.current.set(echo.id, echo);
@@ -426,7 +441,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
         recovery.accept(payload);
         if (currentEcho()) {noteChatEchoReceipt(pendingEcho.current!, result.delivery); setPendingDelivered(true); setPendingDelivery(result.delivery); receiptRefresh.current();}
         // Receipt settlement and the terminal capture are separate generations.
-        if (attempt === sendAttempt.current && result.pane) setPaneText(result.pane.text ?? '');
+        if (generation === captureGeneration.current && attempt === sendAttempt.current && result.pane) setPaneText(result.pane.text ?? '');
       }).catch(() => fail(zh
         ? '发送结果未确认，请先查看对话。'
         : 'Send status unknown. Check the conversation before retrying.', undefined, 'outcome-unconfirmed'));
@@ -441,8 +456,9 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const onSendKey = useCallback(async (payload: SendPayload) => {
     if (!sendMounted.current || sendIdentity.current !== chatIdentity) return {ok: false as const, reason: 'Input target changed'};
     const attempt = ++sendAttempt.current;
+    const generation = captureGeneration.current;
     const result = await client.sendResult(hq.pane_id, payload);
-    if (sendMounted.current && sendIdentity.current === chatIdentity && attempt === sendAttempt.current && result.ok && result.pane) setPaneText(result.pane.text ?? '');
+    if (sendMounted.current && sendIdentity.current === chatIdentity && generation === captureGeneration.current && attempt === sendAttempt.current && result.ok && result.pane) setPaneText(result.pane.text ?? '');
     return result;
   }, [client, hq.pane_id, chatIdentity]);
   const command = useCallback((text: string) => sendHQ({text, enter: true}), [sendHQ]);
@@ -628,7 +644,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
     }
   };
   const consoleEl = (topPad: number, onEdge?: (gap: number) => void) => (
-    <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client}
+    <ChatView liveSource={paneReadIdentity} liveBindingPending={liveBindingPending} liveProblem={liveProblem} readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client}
               agent={live}
               lines={hqPaneLines}
               status={live.status}

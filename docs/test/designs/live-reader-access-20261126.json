@@ -1,0 +1,46 @@
+{
+  "id": "live-reader-access-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review",
+    "date": "2026-11-26",
+    "decision": "Verify Live capture ownership across binding, status and access changes",
+    "notes": "Use mounted screen entry points, synthetic pane HTTP and both real Chromium layouts. No physical device evidence."
+  },
+  "cases": [
+    {
+      "id": "LRB-001",
+      "layer": "L4",
+      "description": "Bound transcript validates an observed Live reader",
+      "setup": "Open, resize and freeze observed Live in a narrow page and a workspace tile.",
+      "action": "Remove the observation, read a bound transcript for the same session, then change sessions.",
+      "expected": "The same panel, height and scroll position survive confirmation. A different session cannot inherit the capture.",
+      "planned_files": [
+        "tests/web/live-binding.test.cjs"
+      ]
+    },
+    {
+      "id": "LRB-002",
+      "layer": "L2",
+      "description": "HQ retains the current capture while waiting or idle",
+      "setup": "Mount the HQ console, load captured terminal rows and expand and resize Live.",
+      "action": "Enter waiting and idle, then close the reader.",
+      "expected": "The same scroll view retains the rows and height until manually closed.",
+      "planned_files": [
+        "mobileapp/src/screens/LiveCaptureAccess.test.tsx"
+      ]
+    },
+    {
+      "id": "LRB-003",
+      "layer": "L2",
+      "description": "Pane read authority controls retained captures",
+      "setup": "Open a populated Live reader using the detail or HQ screen and enter waiting.",
+      "action": "Return a transient failure, then HTTP 403 or 404 and a later successful pane read.",
+      "expected": "Transient failure keeps the authorized rows. Rejection clears them and their scroll view. A later authorized read shows fresh rows.",
+      "planned_files": [
+        "mobileapp/src/screens/LiveCaptureAccess.test.tsx"
+      ]
+    }
+  ],
+  "seal": "06524deb18e834c305689871fe6fa52273011d6aa65852220617789644c004df"
+}

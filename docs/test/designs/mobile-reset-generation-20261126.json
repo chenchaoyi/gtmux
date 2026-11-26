@@ -1,0 +1,24 @@
+{
+  "id": "mobile-reset-generation-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review",
+    "date": "2026-11-26",
+    "decision": "Use the optional reset generation as source identity in both mobile readers.",
+    "notes": "Use synthetic pane and transcript reads and mounted RN views; no physical gesture claims."
+  },
+  "cases": [
+    {
+      "id": "MRG-001",
+      "layer": "L2",
+      "description": "Retire an empty reset session on an explicit new generation",
+      "setup": "Mount HQ and Detail using the production GtmuxClient and synthetic verified HTTP.",
+      "action": "Freeze Live on empty reset A. Read empty reset B without timestamps. Reopen and read B again, then an ordinary empty history.",
+      "expected": "A different ID retires the old view and its frozen rows. Repeated ID and ordinary empty history preserve the reopened reader.",
+      "planned_files": [
+        "mobileapp/src/screens/LiveResetGeneration.test.tsx"
+      ]
+    }
+  ],
+  "seal": "98e87412f6e0b175e6f6dcff6aae051424aa09e2208e2c5147c15a12690e7fdc"
+}

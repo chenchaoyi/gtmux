@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, regression design self-review",
     "date": "2026-11-22",
     "decision": "Use the existing preview resolver, highlight the Live action, and describe the actual default session name.",
-    "notes": "The supplied iPhone screenshots identify the native Markdown renderer, the working Live strip and the New session sheet. Synthetic tests cover behavior and presentation invariants. Native visual acceptance is separate."
+    "notes": "The supplied iPhone screenshots identify the native Markdown renderer, the working Live strip and the New session sheet. Synthetic tests cover behavior and presentation invariants. Native visual acceptance is separate. Reviewed the existing assertions in their shared test file for the open Live refresh change. LRP-001 and LRP-002 cover the new behavior."
   },
   "cases": [
     {
@@ -42,5 +42,5 @@
       ]
     }
   ],
-  "seal": "5df58ecec0475d97bfccc9400c22676d7282e25eca244e0143afee6163616204"
+  "seal": "846693174027a93bdc248e2a47cc6bd0d1c6f95c1e179b1634a06008b20d4298"
 }

@@ -7,6 +7,7 @@ import {Agent, StatusName} from '../api/types';
 import {GtmuxClient, TranscriptTurn} from '../api/client';
 import {TestIds} from '../constants/testIds';
 import {AnsiLine} from './ansi';
+import {statusLabel} from '../i18n';
 
 jest.mock('../api/clock', () => ({serverNowSec: () => 2000}));
 const agent = {pane_id: '%1', session_id: 'session-one', agent: 'Codex', status: 'working'} as Agent;
@@ -93,14 +94,18 @@ test.each([
   expect(toggle(tree).props.accessibilityState.expanded).toBe(false);
 });
 
-test.each(['idle', 'waiting'] as const)('%s hides the working preview without losing the reader preference', status => {
+test.each(['idle', 'waiting'] as const)('%s keeps an open Live preview through a transcript redraw', status => {
   const tree = mount();
   act(() => toggle(tree).props.onPress());
-  act(() => {tree.update(view({status}));});
-  expect(tree.root.findAll(n => n.props.testID === TestIds.detail.chatLiveToggle)).toHaveLength(0);
-  expect(preview(tree)).toHaveLength(0);
-  act(() => {tree.update(view());});
+  const contents = preview(tree)[0];
+  act(() => {tree.update(view({status, turns: [{prompt: 'New turn', response: 'Recorded reply'}]}));});
+  expect(preview(tree)[0]).toBe(contents);
   expect(toggle(tree).props.accessibilityState.expanded).toBe(true);
+  expect(toggle(tree).props.accessibilityLabel).toContain(statusLabel(status, 'en'));
+  act(() => toggle(tree).props.onPress());
+  expect(toggle(tree)).toBeUndefined();
+  act(() => {tree.update(view());});
+  expect(toggle(tree).props.accessibilityState.expanded).toBe(false);
 });
 
 

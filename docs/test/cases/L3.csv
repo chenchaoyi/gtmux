@@ -22,6 +22,7 @@ MAP-b4dde0e66e09,L3,reviewed implementation,internal/server/observed_conversatio
 MAP-48bb55755c3f,L3,reviewed implementation,internal/server/observed_conversation_test.go,54,reviewed-selector,TestSID005SharedRosterOmitsHistoricalIdentifiers,False,SID-005
 MAP-5c6d75362085,L3,reviewed implementation,internal/server/send_receipt_test.go,9,reviewed-selector,TestMSD003HTTPPreservesActualReceiptAndLegacySend,False,MSD-003
 MAP-7d2c5e5ac242,L3,reviewed implementation,internal/server/send_receipt_test.go,48,reviewed-selector,TestMSD003PreferredReceiptCannotBypassGuestScope,False,MSD-003
+MAP-a154f826fe9b,L3,reviewed implementation,internal/server/transcript_reset_id_test.go,8,reviewed-selector,TestTranscriptResetGenerationOnEmptyBody,False,LRG-003
 MAP-9904691c1fa9,L3,reviewed implementation,internal/server/web/activity-action-facts.test.cjs,6,reviewed-selector,ASA004 browser Chat and Trace preserve factual action labels and one call per record,False,"ASA-004,ASA-005"
 MAP-861b36c25077,L3,reviewed implementation,internal/server/web/activity-action-facts.test.cjs,25,reviewed-selector,ASA005 browser fallback ignores contradictory facts without guessing scripts or changing raw input,False,"ASA-004,ASA-005"
 MAP-6acf30600cc5,L3,reviewed implementation,internal/server/web/activity-semantics.test.cjs,8,reviewed-selector,AOP001 generated browser presenter shows read/search while retaining actual calls,False,"AOP-001,AOP-002,AOP-003"
@@ -139,10 +140,10 @@ LEG-e526198ccd27,L3,Browser,tests/web/smoke.test.cjs,393,scenario,"Workspace con
 LEG-a88f9e388b83,L3,Browser,tests/web/smoke.test.cjs,478,scenario,Narrow chat supports input and touch copy while trace remains within viewport,False,legacy-not-retrospectively-reviewed
 LEG-eb05aa918933,L3,Browser,tests/web/smoke.test.cjs,512,scenario,Workspace controls support keyboard access and truthful copy feedback,False,legacy-not-retrospectively-reviewed
 LEG-b946e51a9044,L3,Browser,tests/web/smoke.test.cjs,567,scenario,"Live chat shows current work, retains disclosure state and clears after completion or revocation",False,legacy-not-retrospectively-reviewed
-LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,644,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
-LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,688,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
-LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,830,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
-LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,915,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
+LEG-fb1c9cc17ccb,L3,Browser,tests/web/smoke.test.cjs,645,scenario,Appearance follows the system and persists an explicit choice without recoloring terminals,False,legacy-not-retrospectively-reviewed
+LEG-b055e62dee7c,L3,Browser,tests/web/smoke.test.cjs,689,scenario,Trace tool closes details and returns to the original panel draft,False,legacy-not-retrospectively-reviewed
+LEG-f0e15e31d7c2,L3,Browser,tests/web/smoke.test.cjs,831,scenario,Mobile composer and speaker profiles expose identity without redundant writable badges,False,legacy-not-retrospectively-reviewed
+LEG-05c9e13ce4c2,L3,Browser,tests/web/smoke.test.cjs,916,scenario,'Native file actions keep readable labels and recorded changes at ' + width,True,legacy-not-retrospectively-reviewed
 LEG-245fb0545893,L3,Browser,tests/web/terminal-fit.test.cjs,23,scenario,`Terminal grid fits desktop tile and focus at DPR ${deviceScaleFactor}`,True,legacy-not-retrospectively-reviewed
 LEG-5fc1eee042c5,L3,Browser,tests/web/terminal-fit.test.cjs,41,scenario,Terminal grid fits narrow browser after rotation,False,legacy-not-retrospectively-reviewed
 MAP-8fceb6b39ede,L3,reviewed implementation,tests/web/tool-call-detail.test.cjs,6,reviewed-selector,Typed query details in Chat and Trace ,False,TCV-005

@@ -96,7 +96,7 @@ test('preview sizing survives updates, folding and idle but starts fresh on anot
   press();
   expect(height()).toBe(276);
   act(() => tree.update(view(agent, 'idle')));
-  expect(grip()).toBeUndefined();
+  expect(height()).toBe(276);
   act(() => tree.update(view()));
   expect(height()).toBe(276);
   act(() => tree.update(view({...agent, pane_id: '%2'})));

@@ -550,6 +550,15 @@ export class ApiError extends Error {
   }
 }
 
+/** A pane read explicitly lost authority or its resource disappeared. */
+export type PaneReadProblem = 'denied' | 'missing';
+export function paneReadProblem(error: unknown): PaneReadProblem | undefined {
+  if (!(error instanceof ApiError)) return undefined;
+  if (error.isAuth) return 'denied';
+  if (error.status === 404) return 'missing';
+  return undefined;
+}
+
 export class UsageNetworkError extends Error {
   constructor() {
     super('usage request could not reach the server');
@@ -791,7 +800,7 @@ export class GtmuxClient {
       `${this.base}/api/pane?id=${encodeURIComponent(id)}`,
       {headers: this.h(), ...(signal ? {signal} : {})},
     );
-    if (!r.ok) throw new Error(`pane: HTTP ${r.status}`);
+    if (!r.ok) throw new ApiError(r.status, 'pane');
     return r.json();
   }
 
@@ -954,6 +963,7 @@ export class GtmuxClient {
     if (!Array.isArray(j)) return {turns: [], dropped: 0};
     const dropped = parseInt(r.headers?.get?.('X-Gtmux-Turns-Dropped') ?? '', 10);
     const kind = r.headers?.get?.('X-Gtmux-Session-Reset') ?? '';
+    const resetID = r.headers?.get?.('X-Gtmux-Session-Reset-ID');
     // The clock is optional: a kind with no usable timestamp is still worth saying, so
     // `at` falls back to 0 and the view drops the time from the phrase rather than the
     // phrase itself.
@@ -962,7 +972,7 @@ export class GtmuxClient {
       turns: Array.isArray(j) ? j : [],
       readOnlyHistory,
       dropped: Number.isFinite(dropped) && dropped > 0 ? dropped : 0,
-      reset: kind === 'clear' || kind === 'new' ? {kind, at: Number.isFinite(at) && at > 0 ? at : 0} : undefined,
+      reset: kind === 'clear' || kind === 'new' ? {kind, at: Number.isFinite(at) && at > 0 ? at : 0, ...(resetID ? {id: resetID} : {})} : undefined,
       etag: r.headers?.get?.('ETag') ?? undefined,
       ...(earlierAvailable ? {earlierAvailable} : {}),
     };

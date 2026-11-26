@@ -1,0 +1,37 @@
+{
+  "id": "live-reader-redraw-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review",
+    "date": "2026-11-26",
+    "decision": "Retain an explicitly opened Live viewer across same-session redraws",
+    "notes": "Use a synthetic browser fixture and mounted mobile components. Check rendered controls, content and reader choices. No user session or device input."
+  },
+  "cases": [
+    {
+      "id": "LRP-001",
+      "layer": "L4",
+      "description": "Focused and tiled Live stay open through transcript and status refreshes",
+      "setup": "Open and resize Live on a working pane, then scroll away from the tail.",
+      "action": "Append a turn, refresh observation metadata, change status, close while idle, resume work and switch session.",
+      "expected": "The open panel and frozen position survive same-session refreshes. Closing is sticky. A new identity starts fresh. The label reflects the current status.",
+      "planned_files": [
+        "tests/web/live-disclosure-refresh.test.cjs",
+        "tests/web/smoke.test.cjs"
+      ]
+    },
+    {
+      "id": "LRP-002",
+      "layer": "L2",
+      "description": "Mobile Chat retains an open Live overlay while the current pane waits or becomes idle",
+      "setup": "Mount a working conversation and open the overlay.",
+      "action": "Update transcript and status; resize, close, resume work and switch panes.",
+      "expected": "An open overlay remains visible at the chosen height and reports the current status. Closing during idle hides the strip, and returning to work respects that choice.",
+      "planned_files": [
+        "mobileapp/src/ui/ChatView.liveDisclosure.test.tsx",
+        "mobileapp/src/ui/ChatView.liveResize.test.tsx"
+      ]
+    }
+  ],
+  "seal": "89d01f97427ced7ec9896022c3ca43f0a083703df276f9af38a750163e45a9d4"
+}
