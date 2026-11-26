@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.202',
+    en: [
+      '- Drag Live View up over the conversation to see more terminal output. Collapse it to return to the same place in the chat.',
+      '- The drag handle now shares a row with the status and collapse button, leaving more room for terminal output.',
+    ],
+    zh: [
+      '- 向上拖动 Live View，可覆盖对话查看更多终端输出。收起后回到原来的阅读位置。',
+      '- 拖柄与运行状态、收起按钮共用一行，给终端输出留出更多空间。',
+    ],
+  },
+  {
     version: '1.0.194',
     en: [
       '- Open conversation file previews when names contain spaces, Chinese characters, or parentheses.',

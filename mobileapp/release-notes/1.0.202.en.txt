@@ -1,0 +1,2 @@
+- Drag Live View up over the conversation to see more terminal output. Collapse it to return to the same place in the chat.
+- The drag handle now shares a row with the status and collapse button, leaving more room for terminal output.
