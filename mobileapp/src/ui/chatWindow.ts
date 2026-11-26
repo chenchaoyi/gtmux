@@ -25,7 +25,7 @@ export function windowedTurns<T>(turns: T[], size: number): {shown: T[]; hiddenH
 // SessionReset — the conversation was started over (`/clear`, `/new`, or `gtmux hq
 // --rotate`, which types one of them), reported by the server on GET /api/transcript.
 // `at` is unix seconds; 0 when the log carried no usable clock.
-export type SessionReset = {kind: 'clear' | 'new'; at: number};
+export type SessionReset = {kind: 'clear' | 'new'; at: number; id?: string};
 
 // hhmm renders a reset's clock in the reader's own timezone. "" when there is none, so
 // the label degrades to the kind alone rather than printing a fake time.

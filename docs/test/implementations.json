@@ -1,4 +1,8 @@
 {
+  "mobileapp/src/screens/LiveResetGeneration.test.tsx": {
+    "cases": ["MRG-001"],
+    "selectors": ["%s retires a frozen reader when two verified resets both have empty histories"]
+  },
   "mobileapp/src/screens/LiveBindingRecovery.test.tsx": {
     "cases": ["LBR-001"],
     "selectors": ["%s keeps the reader when an ordinary empty transcript gets its first turn", "%s recovers the same bound reader after a transient transcript error"]

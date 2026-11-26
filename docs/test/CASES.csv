@@ -5486,6 +5486,7 @@ MAP-8dee995655ee,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAcc
 MAP-21ca1ef67e70,L3,reviewed implementation,mobileapp/src/screens/LivePreviewScope.test.tsx,19,reviewed-selector,LPV002,False,LPV-002
 MAP-b332e29d412f,L2,reviewed implementation,mobileapp/src/screens/LiveReaderBoundaries.test.tsx,7,reviewed-selector,LRE-003 only a change of observed identity starts a fresh reader,False,"LRE-003,LRE-004"
 MAP-c1c246a2d7e5,L2,reviewed implementation,mobileapp/src/screens/LiveReaderBoundaries.test.tsx,33,reviewed-selector,"LRE-004 access denial, missing pane and empty capture have distinct messages",False,"LRE-003,LRE-004"
+MAP-444f265aa079,L2,reviewed implementation,mobileapp/src/screens/LiveResetGeneration.test.tsx,9,reviewed-selector,%s retires a frozen reader when two verified resets both have empty histories,False,MRG-001
 LEG-95a2e8c8c96b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,62,test,"nothing answered: said, the switch stays where the server has it, and Retry runs the same change",False,legacy-not-retrospectively-reviewed
 LEG-2888efda7a0b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,88,test,"server mode that cannot be read is said, not hidden",False,legacy-not-retrospectively-reviewed
 LEG-de5871aa3c13,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,105,test,"refused (401/403): pair again, and no Retry that could never work",False,legacy-not-retrospectively-reviewed

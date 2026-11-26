@@ -19,13 +19,14 @@ export function useLivePaneSource(client: GtmuxClient, row: Agent, transcript?: 
     old.source.agent === row.agent && !(home && old.home && home !== old.home) ? old : null;
   const verified = transcript?.loaded && !transcript.failed && !transcript.readOnlyHistory;
   const latest = verified ? transcript.turns[transcript.turns.length - 1]?.session_id : undefined;
-  const reset = verified && transcript.reset ? JSON.stringify(transcript.reset) : undefined;
+  const marker = verified ? transcript.reset : undefined;
+  const reset = marker ? JSON.stringify([marker.kind, marker.id ?? marker.at]) : undefined;
   let session = observation?.session_id ?? row.session_id ?? latest;
   // The ordinary roster can omit a binding's SID. Keep the observed reader
   // concealed across a temporary outage until that binding can be checked.
   const pending = !session && !!prior?.observed &&
     (!transcript?.loaded || (transcript.failed && !!transcript.retryBinding));
-  if (!session && (pending || (!prior?.observed && !reset))) session = prior?.session;
+  if (!session && (pending || (!prior?.observed && (!reset || reset === prior?.reset)))) session = prior?.session;
 
   // The first verified turn names an existing pane reader. Only a replacement
   // needs a new native scroll view and a fresh pane capture.

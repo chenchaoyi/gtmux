@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1514 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1515 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2772 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2773 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 171 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -599,6 +599,7 @@
 | RDR-002 | Only one HTTP read is active per scope; at most one trailing refresh is kept per in-flight burst, rather than losing the event. Refreshing stays true until the owned lane really settles; full response deadline15s retires late results, releases lane and allows explicit retry. No new timerpoll. Existing two401/403, share and activity behavior stays. |
 | RDR-003 | Initial loading has BrandLoader/copy and no zero summary/tutorial/quote. Failure/access remains actionable without a playful quote; cached rows remain. Only successful unfiltered worker-empty shows stable existing browser short Dune excerpt/attribution, with existing gated New session for owner; guests never gain creation. Expired share messaging remains both banner and state. Pull refresh uses actual provider settlement, no decorative600ms timer. |
 | RDR-004 | [] remains successful empty; non-array2xx throws instead of becoming an empty fleet. Valid mapping, credentials, non-ok/auth failures and original usage-read contract assertions remain unchanged. |
+| MRG-001 | A different ID retires the old view and its frozen rows. Repeated ID and ordinary empty history preserve the reopened reader. |
 | SFR-001 | Only explicit native question yields question code. Generic waiting and unknown native evidence remain neutral. Existing association text, draft refusal and unconfirmed no-replay advice stay; no dispatch mutation. |
 | SFR-002 | 400/error wrapper stays compatible; valid code survives errors.As, absent/unknown code omitted. 401/403 and callback count unchanged; no receipt is invented. Old server must fail the code assertion semantically, not due to compilation. |
 | SFR-003 | Only known codes survive, legacy send shape unchanged, auth classification always takes precedence; no background retries. |
