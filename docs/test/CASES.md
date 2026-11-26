@@ -7,7 +7,7 @@ The catalogue covers 1505 test/harness source files. Each CSV row lists stable I
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2763 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2764 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 170 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -255,6 +255,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DPC-004 | Neither language promises a running automatic retry. Confirmed exit explains waiting cannot restore; missing proof explains recovery is unconfirmed. Source evidence is unchanged and the original DCA tests remain byte-identical to base. |
 | DPC-005 | Valid pane/thread observations match. Missing pane and missing/overlong Codex thread source, absent mandatory serialized keys (including false/empty-valued fields), unknown extensions, duplicate keys, nulls and partial nested structures do not match and remain in core. Explicit includes/full preserve valid observations. No new limits, deletion, state write or binding authority is granted by recognition. |
 | DPC-006 | Both source failures are observed; messages accurately mention size-or-file-count safety limits (128MiB/10000 files), rather than asserting a size-only cause. Snapshot64MiB retention budget and directory size are not substituted. Existing destination and source files remain unchanged; no production export/import occurs. |
+| DWI-001 | Count each entry in its stage, including known refusals and legacy unconfirmed attempts. Count the occupied slot with distinct files once, leaving the hard-link pair out of the conflict count. Unrecognized or nonregular entries remain protected. Neither body contents nor changes to files are needed for inspection. |
+| DWI-002 | The row reports separate stage counts and simultaneously advises preserved unknown outcomes, same-slot records and actual unrecognized entries. Refusals alone have informational status and no unclassified warning. |
 | FOCUS-001 | Literal and decorated versions of the complete session match; differently quoted, truncated, unrelated, wrong-separator and empty identities do not. Existing ordinary/decorated titles and bare trailing-whitespace tolerance remain supported. |
 | FOCUS-002 | A literal match wins across all tabs before tolerant decoration fallback. With only a decorated match it is selected. The chosen record, indices and trailing title bytes remain unchanged; no match and empty session return false. Multiple literal tabs retain first-match order. |
 | GSS-001 | Each owned source moves by inode to its declared group and back. No duplicate or regenerated receipt. Preview and legacy path lookup are side effect free. Stable and unknown entries are untouched. |
@@ -663,7 +665,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | GSW-001 | Only the declared workflow state moves. Queue and claim still share an inode. Archive and lease identities survive both directions. A legacy startup fence prevents old readers from starting during the new layout. Terminal and bootstrap paths remain usable. |
 | GSW-002 | An intact journal resumes by matching identities. The conflict or held lease is reported and files are preserved. The startup fence remains until consistency is verified. |
 | GSW-003 | The default check is read-only. An active writer blocks migration and is named. A confirmed maintenance window can apply the layout. A valid interrupted journal reopens the storage repair flow even when ordinary commands are fenced. |
-| GSW-004 | A bounded inspection reports each state without reading message bodies. Cleanup acts only on verified disposable objects. Wake payloads, claims, unknown outcomes and receipts remain available and the next check shows the actual result. |
+| GSW-004 | A bounded inspection reports each state without reading message bodies. Refused records are counted, and distinct claim and retained files in one slot get a separate diagnostic. Cleanup acts only on verified disposable objects. Wake payloads, claims, unknown outcomes and receipts remain available and the next check shows the actual result. |
 | STOR-008 | Protected files and links stay unchanged; normal archives and logs are written and checkpoints remain readable. A failed archive write leaves its previous bytes. |
 | STOR-009 | An effort at or before the reset is not reused. A genuinely later effort is available for matching model identities, including two model-less records. Options from different models never fill the chosen model. |
 | STOR-006 | Each writer rejects the output before simulator setup, provider reads or destination creation. Existing successful capture/render tests exercise legitimate task-owned output. |
