@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, design self-review following independent reproduction",
     "date": "2026-11-23",
     "decision": "Check only rendered controls and retire the compact action sheet with its workbench.",
-    "notes": "The false CI failures measured a display-none button at normal height. Independent Chromium QA also confirmed the compact modal can remain above the radar after a viewport transition. Preserve real flows and use an isolated synthetic server."
+    "notes": "The false CI failures measured a display-none button at normal height. Independent Chromium QA also confirmed the compact modal can remain above the radar after a viewport transition. Preserve real flows and use an isolated synthetic server. Reviewed the existing assertions in their shared test file for the open Live refresh change. LRP-001 and LRP-002 cover the new behavior."
   },
   "cases": [
     {
@@ -20,5 +20,5 @@
       ]
     }
   ],
-  "seal": "20ce4448eec224319292a6d020fce9e53b2a5e334c99fe0bc339d61d925b1238"
+  "seal": "dc89aa845ad401ef399bb2125162d0fa01bec90e60fbfdec1125e848f7bfd073"
 }

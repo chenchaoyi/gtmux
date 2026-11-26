@@ -5,7 +5,7 @@
     "reviewer": "Codex implementation owner, regression design self-review",
     "date": "2026-11-26",
     "decision": "Keep scrollback independent of the height of the mobile Live overlay",
-    "notes": "Implementation owner reviewed the released viewport-only slice. Exercise the rendered scroll content, capture turnover and scope reset. Gesture physics and device frame time require native acceptance."
+    "notes": "Implementation owner reviewed the released viewport-only slice. Exercise the rendered scroll content, capture turnover and scope reset. Gesture physics and device frame time require native acceptance. Reviewed the combined overlay on the merged scrollback baseline. Its held frame must survive status redraws and clear after pane access loss; the idle resize assertion now checks the selected height."
   },
   "cases": [
     {
@@ -53,5 +53,5 @@
       ]
     }
   ],
-  "seal": "efa1a2c512c72eb6941126e0c4dc533d531072fc81cd72f4999d03dc4a527bc8"
+  "seal": "8fb214f277efc63b97a98a1ad31ee9c9d396f3dfb8dd913da8ae800cd87d5756"
 }
