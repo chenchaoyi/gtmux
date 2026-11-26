@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Codex implementation owner, self-review; not independent approval",
-    "date": "2026-11-24",
+    "date": "2026-11-26",
     "decision": "Separate authorized pane-screen reading from historical conversation input restrictions",
-    "notes": "User reports working Live row cannot expand while association is pending. Exact main9a534a9c ChatView merges readOnlyHistory into readOnly, then hides the Live disclosure; parents already read the separately authorized current pane. Keep conversation sends, uploads, input keys, exact-session binding and explicit desktop/native readOnly fences unchanged. Allow read-only current-pane preview with a visible pane-source/association-pending caption, never claiming the current pane is the saved conversation. Scope parent captures to the exact client object and pane so switching server/token/pane cannot display a previous capture before the new read settles; preserve existing cancellation/late-response guards. Browser already permits this read and receives the same source caption. No new API, polling loop, live session input, restore, deployment, TCC or installation. Existing valid tests stay byte-for-byte unchanged; new files carry only these cases. MainPR1853 CI continues independently, no reuse of its pass as proof of this change. Browser resize follow-up review after hosted CI surfaced the obsolete 14-row assertion. Both viewport variants compare the full 20-row current-pane capture exactly and retain the caption, input fence, disclosure, and page checks. WLV-002 covers the new 2,000-row bound."
+    "notes": "User reports working Live row cannot expand while association is pending. Exact main9a534a9c ChatView merges readOnlyHistory into readOnly, then hides the Live disclosure; parents already read the separately authorized current pane. Keep conversation sends, uploads, input keys, exact-session binding and explicit desktop/native readOnly fences unchanged. Allow read-only current-pane preview with a visible pane-source/association-pending caption, never claiming the current pane is the saved conversation. Scope parent captures to the exact client object and pane so switching server/token/pane cannot display a previous capture before the new read settles; preserve existing cancellation/late-response guards. Browser already permits this read and receives the same source caption. No new API, polling loop, live session input, restore, deployment, TCC or installation. Existing valid tests stay byte-for-byte unchanged; new files carry only these cases. MainPR1853 CI continues independently, no reuse of its pass as proof of this change. Browser resize follow-up review after hosted CI surfaced the obsolete 14-row assertion. Both viewport variants compare the full 20-row current-pane capture exactly and retain the caption, input fence, disclosure, and page checks. WLV-002 covers the new 2,000-row bound. Mobile scrollback follow-up: allow earlier rows from the authorized capture even at the default height. Clearing that capture must immediately retire any held frame."
   },
   "cases": [
     {
@@ -14,7 +14,7 @@
       "description": "Historical Chat can disclose its authorized current pane without gaining input authority",
       "setup": "Mounted actual ChatView/LiveProgress with readOnlyHistory, a real synthetic pane ID and bounded synthetic ANSI output; English/Chinese, explicit readOnly, native and no-pane variants.",
       "action": "Open, inspect source caption and bounded output, close; refresh and switch conversation scope; inject output into terminal-unavailable variants.",
-      "expected": "Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and remains bounded14lines/220pt. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain.",
+      "expected": "Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and uses a 220-point default viewport with up to 1,000 accessible rows; clearing the current pane capture discards the held history. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain.",
       "planned_files": [
         "mobileapp/src/ui/ChatView.pendingLive.test.tsx"
       ]
@@ -42,5 +42,5 @@
       ]
     }
   ],
-  "seal": "8681b9a8b54eeed5cfe544463dbebcb35e3cfd766110614c3ea2ef32919f9867"
+  "seal": "6b4981dd8ab32c99c84f2efced885d13c66deba8ba963243c956ba47456acbe0"
 }
