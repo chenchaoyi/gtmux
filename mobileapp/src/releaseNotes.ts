@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.203',
+    en: [
+      '- Scroll through earlier terminal output in Live View. When the expanded panel fits all the output you were reading, it resumes following new lines.',
+      '- Live View keeps its height and reading position when the same conversation refreshes or finishes connecting.',
+    ],
+    zh: [
+      '- 在 Live View 中可向上翻看更早的终端输出。拉高面板后，如果正在回看的内容已能全部显示，就会自动跟随新输出。',
+      '- 同一对话刷新或完成连接时，Live View 会保留展开高度和阅读位置。',
+    ],
+  },
+  {
     version: '1.0.202',
     en: [
       '- Drag Live View up over the conversation to see more terminal output. Collapse it to return to the same place in the chat.',

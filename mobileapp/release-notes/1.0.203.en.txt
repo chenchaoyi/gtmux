@@ -1,0 +1,2 @@
+- Scroll through earlier terminal output in Live View. When the expanded panel fits all the output you were reading, it resumes following new lines.
+- Live View keeps its height and reading position when the same conversation refreshes or finishes connecting.
