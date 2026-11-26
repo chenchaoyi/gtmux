@@ -87,7 +87,7 @@ interface Props {
   associationFailed?: boolean;
   readOnlyHistory?: boolean;
   liveProblem?: PaneReadProblem;
-  liveSource?: {home?: string; session?: string};
+  liveSource?: {generation: number};
   liveBindingPending?: boolean;
   onRetry?: () => void;
   onOpenTerminal?: () => void;
@@ -187,8 +187,8 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const conversationReadOnly = readOnly || readOnlyHistory;
   const chatScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
   const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.agent,
-    liveSource ? liveSource.home : agent.observed_conversation?.home_id ?? agent.home_id,
-    liveSource ? liveSource.session : agent.observed_conversation?.session_id ?? agent.session_id]);
+    liveSource ? liveSource.generation : [agent.observed_conversation?.home_id ?? agent.home_id,
+      agent.observed_conversation?.session_id ?? agent.session_id]]);
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
   const liveOpen = liveDisclosure.scope === liveScope && liveDisclosure.open;
   React.useEffect(() => {setLiveDisclosure(prev => prev.scope === liveScope ? prev : {scope: liveScope, open: false});}, [liveScope]);

@@ -5479,6 +5479,8 @@ LEG-01caacff2459,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.tes
 MAP-c2bb7e3c4204,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,120,reviewed-selector,landing preserves the viewed revision even when the entry changes during confirmation,False,KBCARRIER-REVISION
 MAP-cde3a006fd7b,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,142,reviewed-selector,a refusal shows the server,False,"KBCARRIER-REVISION,KRD-003,KRD-004"
 MAP-481aba785a6c,L2,reviewed implementation,mobileapp/src/screens/LiveBindingProof.test.tsx,6,reviewed-selector,LRG-001 only matching proof resumes the frozen reader (%s),False,LRG-001
+MAP-fbe570e34aef,L2,reviewed implementation,mobileapp/src/screens/LiveBindingRecovery.test.tsx,6,reviewed-selector,%s keeps the reader when an ordinary empty transcript gets its first turn,False,LBR-001
+MAP-cb08df3232cf,L2,reviewed implementation,mobileapp/src/screens/LiveBindingRecovery.test.tsx,36,reviewed-selector,%s recovers the same bound reader after a transient transcript error,False,LBR-001
 MAP-f0aa4fc784df,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAccess.test.tsx,6,reviewed-selector,LRB-002 %s keeps the captured rows and viewport through waiting and idle,False,"LRB-002,LRB-003"
 MAP-8dee995655ee,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAccess.test.tsx,30,reviewed-selector,LRB-003 HTTP %i clears the retained screen until a fresh capture,False,"LRB-002,LRB-003"
 MAP-21ca1ef67e70,L3,reviewed implementation,mobileapp/src/screens/LivePreviewScope.test.tsx,19,reviewed-selector,LPV002,False,LPV-002

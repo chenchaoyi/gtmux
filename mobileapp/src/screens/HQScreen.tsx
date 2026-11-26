@@ -117,7 +117,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const [actFeed, setActFeed] = useState<HQEvent[]>([]);
   const [traceOpen, setTraceOpen] = useState(false), [diffOpen, setDiffOpen] = useState(false);
   const chatIdentity = useMemo(() => ({client, pane: hq.pane_id, session: live.session_id, home: live.home_id, agent: live.agent, observation: JSON.stringify([live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state])}), [client, hq.pane_id, live.session_id, live.home_id, live.agent, live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state]);
-  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; loaded: boolean; failed?: boolean; retryBinding?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
   const historyReadOnly = (chatRecord.identity === chatIdentity && !!chatRecord.readOnlyHistory) || !!live.observed_conversation;
   const historyReadOnlyRef = useRef(false); historyReadOnlyRef.current = historyReadOnly;
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
@@ -359,11 +359,12 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
       setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, earlierAvailable: !!more, readOnlyHistory} : {identity: chatIdentity, turns: ts, reset: earlier > 0 ? undefined : reset, loaded: true, earlierAvailable: !!more, readOnlyHistory});
     }, {onError: error => {
       if (etagIdentity.current !== chatIdentity) return;
+      const retryBinding = error instanceof ConversationReadError && error.status === 503;
       if (isAuthError(error)) {
         etagRef.current = undefined;
         setTraceOpen(false); setDiffOpen(false);
         setChatRecord({identity: chatIdentity, turns: [], loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
-      } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
+      } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, retryBinding, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], loaded: true, failed: true, retryBinding, associationFailed: error instanceof ConversationReadError && error.association, earlierAvailable: false});
     }, onSettled: () => {setEarlierLoading(false); setReload(prev => prev.identity === chatIdentity ? {...prev, busy: false} : prev);}},
   );
     receiptRefresh.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};

@@ -1,4 +1,8 @@
 {
+  "mobileapp/src/screens/LiveBindingRecovery.test.tsx": {
+    "cases": ["LBR-001"],
+    "selectors": ["%s keeps the reader when an ordinary empty transcript gets its first turn", "%s recovers the same bound reader after a transient transcript error"]
+  },
   "mobileapp/src/screens/LiveBindingProof.test.tsx": {
     "cases": ["LRG-001"],
     "selectors": ["LRG-001 only matching proof resumes the frozen reader (%s)"]

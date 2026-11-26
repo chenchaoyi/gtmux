@@ -338,7 +338,7 @@ function PaneDetailView({
   // flipping 终端→对话 shows the cached history instantly instead of re-fetching +
   // spinning every time. Polled on status/prompt change; turns are never cleared.
   const chatIdentity = useMemo(() => ({client, pane: agent.pane_id, session: live.session_id, home: live.home_id, agent: live.agent, observation: JSON.stringify([live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state])}), [client, agent.pane_id, live.session_id, live.home_id, live.agent, live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state]);
-  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; loaded: boolean; failed?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean}>({identity: chatIdentity, turns: [], dropped: 0, loaded: false});
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; dropped: number; reset?: SessionReset; loaded: boolean; failed?: boolean; retryBinding?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean}>({identity: chatIdentity, turns: [], dropped: 0, loaded: false});
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
   const {source: paneReadIdentity, pending: liveBindingPending} = useLivePaneSource(
     client, live, chatRecord.identity === chatIdentity ? chatRecord : undefined);
@@ -674,11 +674,12 @@ function PaneDetailView({
         setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, readOnlyHistory} : {identity: chatIdentity, turns: ts, dropped, reset, loaded: true, readOnlyHistory});
       }, {onError: error => {
         if (etagIdentity.current !== chatIdentity) return;
+        const retryBinding = error instanceof ConversationReadError && error.status === 503;
         if (isAuthError(error)) {
           etagRef.current = undefined;
           setTraceOpen(false); setDiffOpen(false);
           setChatRecord({identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association});
-        } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, associationFailed: error instanceof ConversationReadError && error.association});
+        } else setChatRecord(previous => previous.identity === chatIdentity ? {...previous, loaded: true, failed: true, retryBinding, associationFailed: error instanceof ConversationReadError && error.association} : {identity: chatIdentity, turns: [], dropped: 0, loaded: true, failed: true, retryBinding, associationFailed: error instanceof ConversationReadError && error.association});
       }, onSettled: () => setReload(prev => prev.identity === chatIdentity ? {...prev, busy: false} : prev)},
     );
     // A page refusal may have retired the hook's snapshot while this parent
