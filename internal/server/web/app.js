@@ -2994,7 +2994,8 @@
   function liveResetMarker(response) {
     var kind = response.headers.get('X-Gtmux-Session-Reset');
     if (!response.ok || (kind !== 'clear' && kind !== 'new')) return '';
-    return kind + ':' + (response.headers.get('X-Gtmux-Session-Reset-At') || '');
+    var generation = response.headers.get('X-Gtmux-Session-Reset-ID');
+    return kind + ':' + (generation ? 'id:' + generation : response.headers.get('X-Gtmux-Session-Reset-At') || '');
   }
   function livePaneScope(agent) {
     return JSON.stringify([agent.pane_id, agent.agent, agent.home_id, agent.session_id]);
@@ -3018,10 +3019,15 @@
     var scope = livePaneScope(agent);
     if (!state || state.scope !== scope) state = freshLiveReader(id, scope);
     var latest = turns && turns[turns.length - 1], sid = latest && latest.session_id;
-    var changed = (reset && reset !== state.reset) ||
+    // Older servers may send just the kind. A populated reset session that
+    // becomes empty under that marker must release its old frame once.
+    var clocklessClear = (reset === 'clear:' || reset === 'new:') &&
+      state.reset === reset && state.hadTurns && turns && turns.length === 0;
+    var changed = clocklessClear || (reset && reset !== state.reset) ||
       ((sid || state.awaitingBinding) && state.session && state.session !== sid);
     var redraw = changed || state.awaitingBinding;
     if (changed) state = freshLiveReader(id, state.scope, state.observed);
+    if (turns && turns.length) state.hadTurns = true;
     if (reset) state.reset = reset;
     state.unassociated = false;
     state.awaitingBinding = false;

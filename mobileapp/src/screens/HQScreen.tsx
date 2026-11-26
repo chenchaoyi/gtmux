@@ -1,3 +1,4 @@
+import {useLivePaneSource} from './useLivePaneSource';
 import {NavigationContext} from '@react-navigation/native';
 import {ConversationReadError, paneReadProblem, type PaneReadProblem} from '../api/client';
 import {newSendId} from '../api/sendId';
@@ -251,9 +252,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // worker Detail has —HQ was the only place passing an empty screen.
   const captureGeneration = useRef(0);
   const [paneText, setPaneText] = useState('');
-  const paneSession = live.observed_conversation?.session_id ?? live.session_id;
-  const paneHome = live.observed_conversation?.home_id ?? live.home_id;
-  const paneReadIdentity = useMemo(() => ({client, pane: hq.pane_id, paneSession, paneHome}), [client, hq.pane_id, paneSession, paneHome]);
+  const {source: paneReadIdentity, pending: liveBindingPending} = useLivePaneSource(
+    client, live, chatRecord.identity === chatIdentity ? chatRecord : undefined);
   const [captureIdentity, setCaptureIdentity] = useState<typeof paneReadIdentity>();
   const [paneFailure, setPaneFailure] = useState<{scope: typeof paneReadIdentity; reason: PaneReadProblem}>();
   const liveProblem = paneFailure?.scope === paneReadIdentity ? paneFailure.reason : undefined;
@@ -643,7 +643,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
     }
   };
   const consoleEl = (topPad: number, onEdge?: (gap: number) => void) => (
-    <ChatView liveProblem={liveProblem} readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client}
+    <ChatView liveSource={paneReadIdentity} liveBindingPending={liveBindingPending} liveProblem={liveProblem} readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client}
               agent={live}
               lines={hqPaneLines}
               status={live.status}

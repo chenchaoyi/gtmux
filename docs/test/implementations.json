@@ -1,4 +1,16 @@
 {
+  "mobileapp/src/screens/LiveBindingProof.test.tsx": {
+    "cases": ["LRG-001"],
+    "selectors": ["LRG-001 only matching proof resumes the frozen reader (%s)"]
+  },
+  "tests/web/live-clockless-reset.test.cjs": {
+    "cases": ["LRG-002"],
+    "selectors": ["LRG-002 clockless reset at "]
+  },
+  "internal/server/transcript_reset_id_test.go": {
+    "cases": ["LRG-003"],
+    "selectors": ["TestTranscriptResetGenerationOnEmptyBody"]
+  },
   "tests/web/live-history-boundaries.test.cjs": {
     "cases": ["LRE-001", "LRE-002"],
     "selectors": ["verified empty replacement", "unassociated but pane readable"]

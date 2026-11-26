@@ -601,8 +601,10 @@ performs on itself starts a new conversation; an HQ caller can request its prede
 with `earlier=N` (below). A reset does not itself count as dropped turns. The size budget
 still applies, so reset and truncation headers can appear together. `X-Gtmux-Session-Reset`
 carries the kind (`clear`/`new`) and `X-Gtmux-Session-Reset-At` the unix second it
-happened (omitted when the log carried no usable clock; the kind is still sent). Both are
-absent for an ordinary session. Claude Code only — its log is the one that records the
+happened (omitted when the log carried no usable clock; the kind is still sent). When the reset source is known,
+`X-Gtmux-Session-Reset-ID` identifies it across polls, including before its first turn.
+Readers can distinguish successive resets even when both lack timestamps. All three
+headers are absent for an ordinary session. Claude Code only — its log is the one that records the
 invocation; for other agents no claim is made rather than a wrong one.
 
 ```

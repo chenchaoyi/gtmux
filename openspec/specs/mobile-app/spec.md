@@ -2945,7 +2945,7 @@ An expanded Live terminal with captured output SHALL expose an adjustable grip i
 
 #### Scenario: Transcript and status refresh while Live is open
 - **WHEN** the same readable pane receives new conversation text or moves to waiting or idle
-- **THEN** the expanded Live panel stays mounted at its selected height and displays the current status. HQ and Detail retain authorized rows during transient read failures. A pane access rejection or missing pane clears the captured rows and their scroll view. The empty view distinguishes denied access, a missing pane and a successful read with no output. A new observed session or home on the same pane starts folded at its default height. Observation confidence updates preserve the current reader.
+- **THEN** the expanded Live panel stays mounted at its selected height and displays the current status. HQ and Detail retain authorized rows during transient read failures. A pane access rejection or missing pane clears the captured rows and their scroll view. The empty view distinguishes denied access, a missing pane and a successful read with no output. A new observed session or home on the same pane starts folded at its default height. Observation confidence updates preserve the current reader. If the observation disappears before the binding is confirmed, HQ and Detail conceal the expanded reader until the new source is known. Confirmation of the same session restores the same viewport, selected height and reading position.
 - **AND** closing it while idle leaves it closed when work resumes
 
 #### Scenario: Resize the working preview

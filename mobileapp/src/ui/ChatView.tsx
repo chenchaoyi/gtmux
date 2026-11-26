@@ -87,6 +87,8 @@ interface Props {
   associationFailed?: boolean;
   readOnlyHistory?: boolean;
   liveProblem?: PaneReadProblem;
+  liveSource?: {home?: string; session?: string};
+  liveBindingPending?: boolean;
   onRetry?: () => void;
   onOpenTerminal?: () => void;
   retrying?: boolean;
@@ -177,16 +179,16 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, liveProblem, onRetry, onOpenTerminal, retrying = false, retryFailed = false, pendingEcho, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, liveProblem, liveSource, liveBindingPending = false, onRetry, onOpenTerminal, retrying = false, retryFailed = false, pendingEcho, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   const styles = useMemo(() => makeStyles(pal), [pal]);
   const {markdown: MD_COLORS, userMarkdown: USER_MD_COLORS} = readingColors(pal);
   const CHAT_FG = pal.fg, CHAT_FG_DIM = pal.fg2;
   // Radar timestamps and temporary status changes are observations, not a new reader.
   const conversationReadOnly = readOnly || readOnlyHistory;
   const chatScope = JSON.stringify([client?.base, agent.pane_id, agent.home_id, agent.session_id]);
-  const liveScope = JSON.stringify([client?.base, agent.pane_id,
-    agent.observed_conversation?.home_id ?? agent.home_id,
-    agent.observed_conversation?.session_id ?? agent.session_id]);
+  const liveScope = JSON.stringify([client?.base, agent.pane_id, agent.agent,
+    liveSource ? liveSource.home : agent.observed_conversation?.home_id ?? agent.home_id,
+    liveSource ? liveSource.session : agent.observed_conversation?.session_id ?? agent.session_id]);
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
   const liveOpen = liveDisclosure.scope === liveScope && liveDisclosure.open;
   React.useEffect(() => {setLiveDisclosure(prev => prev.scope === liveScope ? prev : {scope: liveScope, open: false});}, [liveScope]);
@@ -760,7 +762,10 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
         </View>
       )}
       <JumpToBottom visible={!liveOverlay && (!atBottom || hiddenAfter > 0 || history.disconnected) && turns.length > 0} onPress={jumpToBottom} lang={lang} />
-      {liveOverlay && <View testID="chat-live-overlay" pointerEvents="box-none" style={styles.liveOverlay}>
+      {liveOverlay && <View testID="chat-live-overlay" pointerEvents={liveBindingPending ? 'none' : 'box-none'}
+        accessibilityElementsHidden={liveBindingPending}
+        importantForAccessibility={liveBindingPending ? 'no-hide-descendants' : 'auto'}
+        style={[styles.liveOverlay, liveBindingPending && styles.pendingBinding]}>
         <View style={maxWidth ? {width: '100%', maxWidth: maxWidth - 2 * LIVE_PANEL_INSET, alignSelf: 'center'} : undefined}>
           {liveProgress}
         </View>
@@ -782,6 +787,7 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   body: {flex: 1, backgroundColor: pal.bg},
   content: {padding: 10, gap: 8},
   liveRow: {marginTop: 6},
+  pendingBinding: {opacity: 0},
   liveOverlay: {position: 'absolute', left: LIVE_PANEL_INSET, right: LIVE_PANEL_INSET, bottom: LIVE_PANEL_INSET, zIndex: 1},
   terminalLink: {alignSelf: 'center', minHeight: 44, paddingHorizontal: 16, justifyContent: 'center'},
   terminalLinkText: {color: readingColors(pal).link, fontSize: 14, fontWeight: '500'},

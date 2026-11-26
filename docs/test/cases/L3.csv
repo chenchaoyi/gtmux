@@ -22,6 +22,7 @@ MAP-b4dde0e66e09,L3,reviewed implementation,internal/server/observed_conversatio
 MAP-48bb55755c3f,L3,reviewed implementation,internal/server/observed_conversation_test.go,54,reviewed-selector,TestSID005SharedRosterOmitsHistoricalIdentifiers,False,SID-005
 MAP-5c6d75362085,L3,reviewed implementation,internal/server/send_receipt_test.go,9,reviewed-selector,TestMSD003HTTPPreservesActualReceiptAndLegacySend,False,MSD-003
 MAP-7d2c5e5ac242,L3,reviewed implementation,internal/server/send_receipt_test.go,48,reviewed-selector,TestMSD003PreferredReceiptCannotBypassGuestScope,False,MSD-003
+MAP-a154f826fe9b,L3,reviewed implementation,internal/server/transcript_reset_id_test.go,8,reviewed-selector,TestTranscriptResetGenerationOnEmptyBody,False,LRG-003
 MAP-9904691c1fa9,L3,reviewed implementation,internal/server/web/activity-action-facts.test.cjs,6,reviewed-selector,ASA004 browser Chat and Trace preserve factual action labels and one call per record,False,"ASA-004,ASA-005"
 MAP-861b36c25077,L3,reviewed implementation,internal/server/web/activity-action-facts.test.cjs,25,reviewed-selector,ASA005 browser fallback ignores contradictory facts without guessing scripts or changing raw input,False,"ASA-004,ASA-005"
 MAP-6acf30600cc5,L3,reviewed implementation,internal/server/web/activity-semantics.test.cjs,8,reviewed-selector,AOP001 generated browser presenter shows read/search while retaining actual calls,False,"AOP-001,AOP-002,AOP-003"

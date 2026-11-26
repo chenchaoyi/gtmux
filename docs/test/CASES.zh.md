@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1510 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1513 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2768 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 170 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 151 | [L4.csv](cases/L4.csv) |
+| L2 · 组件/契约 | 2769 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 171 | [L3.csv](cases/L3.csv) |
+| L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
 
@@ -521,6 +521,9 @@
 | LRB-001 | The same panel, height and scroll position survive confirmation. A different session cannot inherit the capture. |
 | LRB-002 | The same scroll view retains the rows and height until manually closed. |
 | LRB-003 | Transient failure keeps the authorized rows. Rejection clears them and their scroll view. A later authorized read shows fresh rows. |
+| LRG-001 | Pending content is concealed. Matching proof keeps the original scroll view, frozen rows and height. A replacement starts folded. |
+| LRG-002 | A new reset generation retires the old reader. Repetition preserves a reopened reader. Older responses with a populated-to-empty clockless reset also retire once. |
+| LRG-003 | The header carries a distinct stable reset identity only alongside a reset. |
 | LRP-001 | The open panel and frozen position survive same-session refreshes. Closing is sticky. A new identity starts fresh. The label reflects the current status. |
 | LRP-002 | An open overlay remains visible at the chosen height and reports the current status. Closing during idle hides the strip, and returning to work respects that choice. |
 | LRE-001 | Plain empty history preserves the reader. A new reset drops old output and sizes; repeated metadata preserves the reopened reader. |

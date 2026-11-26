@@ -955,6 +955,11 @@ func transcriptRecordRead(id string, rec resume.Record, recovered bool, earlier,
 	// moment ago has an empty transcript, and that is exactly when the reader most needs
 	// to be told why rather than shown a blank screen.
 	meta.Reset, meta.ResetAt = transcript.SessionOrigin(rec.Agent, rec.SessionID)
+	if meta.Reset != "" && rec.SessionID != "" {
+		// A reset belongs to the new source even before it has any turns.
+		sum := sha256.Sum256([]byte(rec.Agent + "\x00" + rec.HomeID + "\x00" + rec.SessionID))
+		meta.ResetID = hex.EncodeToString(sum[:])
+	}
 	turns, err := transcript.Load(rec.Agent, rec.SessionID, limit)
 	turns = append([]transcript.Turn(nil), turns...)
 	if err != nil {

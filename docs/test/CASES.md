@@ -2,14 +2,14 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1510 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1513 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2768 | [L2.csv](cases/L2.csv) |
-| L3 · Runtime integration | 170 | [L3.csv](cases/L3.csv) |
-| L4 · Application journeys | 151 | [L4.csv](cases/L4.csv) |
+| L2 · Component / contract | 2769 | [L2.csv](cases/L2.csv) |
+| L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
+| L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
 | G · Qualification guards | 509 | [G.csv](cases/G.csv) |
 
@@ -521,6 +521,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | LRB-001 | The same panel, height and scroll position survive confirmation. A different session cannot inherit the capture. |
 | LRB-002 | The same scroll view retains the rows and height until manually closed. |
 | LRB-003 | Transient failure keeps the authorized rows. Rejection clears them and their scroll view. A later authorized read shows fresh rows. |
+| LRG-001 | Pending content is concealed. Matching proof keeps the original scroll view, frozen rows and height. A replacement starts folded. |
+| LRG-002 | A new reset generation retires the old reader. Repetition preserves a reopened reader. Older responses with a populated-to-empty clockless reset also retire once. |
+| LRG-003 | The header carries a distinct stable reset identity only alongside a reset. |
 | LRP-001 | The open panel and frozen position survive same-session refreshes. Closing is sticky. A new identity starts fresh. The label reflects the current status. |
 | LRP-002 | An open overlay remains visible at the chosen height and reports the current status. Closing during idle hides the strip, and returning to work respects that choice. |
 | LRE-001 | Plain empty history preserves the reader. A new reset drops old output and sizes; repeated metadata preserves the reopened reader. |

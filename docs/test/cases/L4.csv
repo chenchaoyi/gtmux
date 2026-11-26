@@ -120,6 +120,7 @@ MAP-f57d9dffcb66,L4,reviewed implementation,tests/web/artifact-storage-clear.tes
 MAP-44f608a7c4fa,L4,reviewed implementation,tests/web/design-recovery.test.cjs,7,reviewed-selector,DFR-003,False,DFR-003
 MAP-60e68185ef5d,L4,Browser,tests/web/full-input.test.cjs,35,reviewed-selector,Diff file cards and independent hunks at ,False,DTV-003
 MAP-2ee5999d4b9d,L4,reviewed implementation,tests/web/live-binding.test.cjs,5,reviewed-selector,LRB-001 Binding preserves the same Live reader at ,False,LRB-001
+MAP-43789bdd2f6f,L4,reviewed implementation,tests/web/live-clockless-reset.test.cjs,5,reviewed-selector,LRG-002 clockless reset at ,False,LRG-002
 MAP-370c98c5b53c,L4,reviewed implementation,tests/web/live-disclosure-refresh.test.cjs,5,reviewed-selector,LRP-001 Live survives conversation and status redraws at ,False,LRP-001
 MAP-bebe2df3aaf1,L4,reviewed implementation,tests/web/live-history-boundaries.test.cjs,5,reviewed-selector,verified empty replacement,False,"LRE-001,LRE-002"
 MAP-95c6bb806702,L4,reviewed implementation,tests/web/live-history-boundaries.test.cjs,5,reviewed-selector,unassociated but pane readable,False,"LRE-001,LRE-002"

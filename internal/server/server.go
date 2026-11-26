@@ -1186,6 +1186,7 @@ type TranscriptMeta struct {
 	// from reading as a broken one.
 	Reset   string
 	ResetAt int64
+	ResetID string // opaque source generation, independent of the optional clock
 
 	// Etag identifies the LOG this body was built from — its identity plus how far it
 	// had grown. The chat view polls while it is open (a pane whose status is stuck can
@@ -1297,6 +1298,9 @@ func writeTranscript(w http.ResponseWriter, r *http.Request, b []byte, meta Tran
 	}
 	if meta.Reset != "" {
 		w.Header().Set("X-Gtmux-Session-Reset", meta.Reset)
+		if meta.ResetID != "" {
+			w.Header().Set("X-Gtmux-Session-Reset-ID", meta.ResetID)
+		}
 		// The clock is sent only WITH the kind: a bare timestamp says nothing a client
 		// could phrase, and a kind with an unknown clock is still worth saying.
 		if meta.ResetAt > 0 {

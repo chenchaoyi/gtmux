@@ -1319,6 +1319,7 @@ LEG-e7c4a17d81df,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.tes
 LEG-01caacff2459,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,379,test,"an in-flight write cannot be submitted twice, and completion keeps the entry open",False,legacy-not-retrospectively-reviewed
 MAP-c2bb7e3c4204,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,120,reviewed-selector,landing preserves the viewed revision even when the entry changes during confirmation,False,KBCARRIER-REVISION
 MAP-cde3a006fd7b,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,142,reviewed-selector,a refusal shows the server,False,"KBCARRIER-REVISION,KRD-003,KRD-004"
+MAP-481aba785a6c,L2,reviewed implementation,mobileapp/src/screens/LiveBindingProof.test.tsx,6,reviewed-selector,LRG-001 only matching proof resumes the frozen reader (%s),False,LRG-001
 MAP-f0aa4fc784df,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAccess.test.tsx,6,reviewed-selector,LRB-002 %s keeps the captured rows and viewport through waiting and idle,False,"LRB-002,LRB-003"
 MAP-8dee995655ee,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAccess.test.tsx,30,reviewed-selector,LRB-003 HTTP %i clears the retained screen until a fresh capture,False,"LRB-002,LRB-003"
 MAP-b332e29d412f,L2,reviewed implementation,mobileapp/src/screens/LiveReaderBoundaries.test.tsx,7,reviewed-selector,LRE-003 only a change of observed identity starts a fresh reader,False,"LRE-003,LRE-004"
