@@ -1,0 +1,35 @@
+{
+  "id": "doctor-wake-storage-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-26",
+    "decision": "Approve before implementation",
+    "notes": "Use temporary HOME directories and synthetic, opaque fixture bodies. Cover distinct files and hard links in the same slot. Check the shared Doctor row used by terminal and JSON output. These fixtures do not establish a delivery outcome or exercise live recovery."
+  },
+  "cases": [
+    {
+      "id": "DWI-001",
+      "layer": "L2",
+      "description": "Identify retained refusals and overlapping wake generations from metadata",
+      "setup": "Use grouped workflow storage in a temporary HOME with plain and retry queue entries, claims, ordinary and relay refusals, native and legacy unknown outcomes, an accepted receipt and unrecognized entries. Include a claim and parked file sharing a name stem but holding distinct identities, plus a second pair sharing an inode.",
+      "action": "Read the inventory and compare all fixture paths, identities and bytes before and after.",
+      "expected": "Count each entry in its stage, including known refusals and legacy unconfirmed attempts. Count the occupied slot with distinct files once, leaving the hard-link pair out of the conflict count. Unrecognized or nonregular entries remain protected. Neither body contents nor changes to files are needed for inspection.",
+      "planned_files": [
+        "internal/hqnudge/storage_inspect_test.go"
+      ]
+    },
+    {
+      "id": "DWI-002",
+      "layer": "L2",
+      "description": "Show independent wake diagnostics in Doctor in English and Chinese",
+      "setup": "Use a temporary HOME containing known refusals, an unknown outcome overlapping a distinct claimed file, and an unrecognized entry. Also sample the same row with known refusals alone.",
+      "action": "Read the Doctor storage row in both languages.",
+      "expected": "The row reports separate stage counts and simultaneously advises preserved unknown outcomes, same-slot records and actual unrecognized entries. Refusals alone have informational status and no unclassified warning.",
+      "planned_files": [
+        "internal/app/doctor_storage_workflow_test.go"
+      ]
+    }
+  ],
+  "seal": "9aaae34d4c764675d49e40e997945577bad2325b469becec903d1ce6b7fbd294"
+}

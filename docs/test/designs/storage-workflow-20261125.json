@@ -3,9 +3,9 @@
   "status": "reviewed",
   "review": {
     "reviewer": "Implementation owner, author self-review",
-    "date": "2026-11-25",
+    "date": "2026-11-26",
     "decision": "Approve before implementation",
-    "notes": "Exercise the real path resolver and migration journal under an isolated HOME. Use injected boot-window and process evidence for CLI checks. These cases do not claim production migration or a reboot."
+    "notes": "Exercise the real path resolver and migration journal under an isolated HOME. Use injected boot-window and process evidence for CLI checks. Re-reviewed the storage test files for the wake inventory fix. The maintenance window and cleanup expectations still apply, and the wake inventory case now checks refusal and overlap evidence. These cases do not claim production migration or a reboot."
   },
   "cases": [
     {
@@ -47,12 +47,12 @@
       "description": "Doctor distinguishes pending wake work, uncertain outcomes and safe cleanup",
       "setup": "Create representative queue states, accepted proof and abandoned cache staging under an isolated HOME.",
       "action": "Read the storage inventory, run the admitted targeted cleanup twice and compare records.",
-      "expected": "A bounded inspection reports each state without reading message bodies. Cleanup acts only on verified disposable objects. Wake payloads, claims, unknown outcomes and receipts remain available and the next check shows the actual result.",
+      "expected": "A bounded inspection reports each state without reading message bodies. Refused records are counted, and distinct claim and retained files in one slot get a separate diagnostic. Cleanup acts only on verified disposable objects. Wake payloads, claims, unknown outcomes and receipts remain available and the next check shows the actual result.",
       "planned_files": [
         "internal/app/doctor_storage_workflow_test.go",
         "internal/hqnudge/storage_inspect_test.go"
       ]
     }
   ],
-  "seal": "0a2039d4b8cd1aa595f5286700d89a76805a74832be16c10b47699fadaf1a902"
+  "seal": "f328db5dfd5c62d4160fb629b61f985eaf53940bc0ca3c4ef9c019870bae1c2d"
 }
