@@ -1,0 +1,24 @@
+{
+  "id": "hq-live-stitched-history-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review",
+    "date": "2026-11-26",
+    "decision": "Separate current Live reset metadata from presentation of earlier HQ turns.",
+    "notes": "Use synthetic pane and transcript reads and mounted RN views; no physical gesture claims."
+  },
+  "cases": [
+    {
+      "id": "HLS-001",
+      "layer": "L2",
+      "description": "Changing the current HQ session retires the reader even when only earlier turns remain",
+      "setup": "Mount HQ with the production HTTP client, request the previous session and freeze Live at 276 points.",
+      "action": "Change reset generation on the same pane while the joined response contains only predecessor A; then read B again and return its first turn.",
+      "expected": "A remains readable as history. Its frozen viewport retires. Reopening B survives subsequent B polls and the first B turn.",
+      "planned_files": [
+        "mobileapp/src/screens/HQLiveEarlierReset.test.tsx"
+      ]
+    }
+  ],
+  "seal": "4a327465d12d2d093e3d1b7fd5f56a9a453100c8ed7da8fe60f560f8f6ebea54"
+}
