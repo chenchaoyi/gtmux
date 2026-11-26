@@ -7,7 +7,7 @@ type Source = {client: GtmuxClient; pane: string; agent: string; generation: num
 type Reader = {source: Source; observed: boolean; session?: string; home?: string; reset?: string};
 type Transcript = {
   loaded: boolean; failed?: boolean; retryBinding?: boolean; readOnlyHistory?: boolean;
-  turns: TranscriptTurn[]; reset?: SessionReset;
+  turns: TranscriptTurn[]; reset?: SessionReset; includesEarlier?: boolean;
 };
 
 export function useLivePaneSource(client: GtmuxClient, row: Agent, transcript?: Transcript) {
@@ -18,9 +18,12 @@ export function useLivePaneSource(client: GtmuxClient, row: Agent, transcript?: 
   const prior = old?.source.client === client && old.source.pane === row.pane_id &&
     old.source.agent === row.agent && !(home && old.home && home !== old.home) ? old : null;
   const verified = transcript?.loaded && !transcript.failed && !transcript.readOnlyHistory;
-  const latest = verified ? transcript.turns[transcript.turns.length - 1]?.session_id : undefined;
   const marker = verified ? transcript.reset : undefined;
   const reset = marker ? JSON.stringify([marker.kind, marker.id ?? marker.at]) : undefined;
+  // With earlier turns loaded, the last row may still belong to the predecessor
+  // of a just-cleared session. The reset header describes the current pane.
+  const latest = verified && !(transcript.includesEarlier && marker)
+    ? transcript.turns[transcript.turns.length - 1]?.session_id : undefined;
   let session = observation?.session_id ?? row.session_id ?? latest;
   // The ordinary roster can omit a binding's SID. Keep the observed reader
   // concealed across a temporary outage until that binding can be checked.

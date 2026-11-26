@@ -1,4 +1,8 @@
 {
+  "mobileapp/src/screens/HQLiveEarlierReset.test.tsx": {
+    "cases": ["HLS-001"],
+    "selectors": ["HQ retires the frozen live viewport on a new empty reset while reading an earlier session"]
+  },
   "mobileapp/src/screens/LiveResetGeneration.test.tsx": {
     "cases": ["MRG-001"],
     "selectors": ["%s retires a frozen reader when two verified resets both have empty histories"]

@@ -117,7 +117,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const [actFeed, setActFeed] = useState<HQEvent[]>([]);
   const [traceOpen, setTraceOpen] = useState(false), [diffOpen, setDiffOpen] = useState(false);
   const chatIdentity = useMemo(() => ({client, pane: hq.pane_id, session: live.session_id, home: live.home_id, agent: live.agent, observation: JSON.stringify([live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state])}), [client, hq.pane_id, live.session_id, live.home_id, live.agent, live.observed_conversation?.session_id, live.observed_conversation?.home_id, live.observed_conversation?.state]);
-  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; loaded: boolean; failed?: boolean; retryBinding?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
+  const [chatRecord, setChatRecord] = useState<{identity: typeof chatIdentity; turns: TranscriptTurn[]; reset?: SessionReset; includesEarlier?: boolean; loaded: boolean; failed?: boolean; retryBinding?: boolean; associationFailed?: boolean; readOnlyHistory?: boolean; earlierAvailable: boolean}>({identity: chatIdentity, turns: [], loaded: false, earlierAvailable: false});
   const historyReadOnly = (chatRecord.identity === chatIdentity && !!chatRecord.readOnlyHistory) || !!live.observed_conversation;
   const historyReadOnlyRef = useRef(false); historyReadOnlyRef.current = historyReadOnly;
   const turns = chatRecord.identity === chatIdentity ? chatRecord.turns : EMPTY_TURNS;
@@ -133,7 +133,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   // `gtmux hq --rotate` HQ performs on itself. The console then shows this shift whole
   // and the shift before it not at all, which without a word reads as a broken app: on
   // 2026-08-09 a cleared 400-turn shift showed three bubbles and cost a diagnosis.
-  const sessionReset = chatRecord.identity === chatIdentity ? chatRecord.reset : undefined;
+  const sessionReset = chatRecord.identity === chatIdentity && !chatRecord.includesEarlier ? chatRecord.reset : undefined;
   const loaded = chatRecord.identity === chatIdentity && chatRecord.loaded;
   const [pending, setPending] = useState<string | undefined>();
   const [pendingDelivered, setPendingDelivered] = useState(false);
@@ -356,7 +356,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
     ({turns: ts, reset, etag, unchanged, earlierAvailable: more, readOnlyHistory}) => {
       if (etagIdentity.current !== chatIdentity) return;
       etagRef.current = etag;
-      setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, earlierAvailable: !!more, readOnlyHistory} : {identity: chatIdentity, turns: ts, reset: earlier > 0 ? undefined : reset, loaded: true, earlierAvailable: !!more, readOnlyHistory});
+      setChatRecord(previous => unchanged && previous.identity === chatIdentity ? {...previous, loaded: true, failed: false, associationFailed: false, earlierAvailable: !!more, readOnlyHistory} : {identity: chatIdentity, turns: ts, reset, includesEarlier: earlier > 0, loaded: true, earlierAvailable: !!more, readOnlyHistory});
     }, {onError: error => {
       if (etagIdentity.current !== chatIdentity) return;
       const retryBinding = error instanceof ConversationReadError && error.status === 503;

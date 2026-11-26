@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1515 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1516 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2773 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2774 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -306,6 +306,7 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HQIL-001 | Short entry retains local precedence, includes only the existing LOCAL import, publishes files under the matching version and language, and leaves prior files, tasks and sessions alone. |
 | HQIL-002 | Recreate only missing managed files, keep active personal files and old backups intact, refuse a conflicting runbook, and retain the previous entry on failed publication. |
 | HQIL-003 | Use matching board sections, register without replay, respect known versus unknown usage, resolve approved review and capture from sourced leads. |
+| HLS-001 | A remains readable as history. Its frozen viewport retires. Reopening B survives subsequent B polls and the first B turn. |
 | HRW-014 | Generation/ctime mismatch never deletes or reauthorizes the claim, despite identical inode/body/mtime. Normal unchanged accepted cleanup passes. Exact owned uncertain publication completes one link retirement and retains original batch uncertainty; changed payload or foreign link holds without deletion. Known-refused shared queue ownership still preserves newest B. Original T tests/expectations remain unchanged; old-source target red is a real assertion, not compile/setup/allocator failure. |
 | HRW-015 | Only a verified same-inode anchor can support native cleanup; original inode remains alive across process loss and cannot naturally be reused. Missing/foreign/unknown pin holds without deletion or native call. Accepted/refused closes only own references, uncertain preserves exact original input and pin; valid conflicting batches cannot overwrite protected claims or block independent fresh events. Pin count is bounded before mutation; errors never fall back or replay. No sleep, allocator-luck or relaxed cloud assertion. |
 | HRW-009 | A is never submitted under a new batch identity; original exact payload, ID and uncertainty remain inspectable. Accepted/uncertain spool state is not downgraded to unsent. B and legitimate fresh duplicate text can progress once. Journal precedes possible mutation; failure holds without mutation. Recovery never removes a foreign replacement; malformed evidence holds conservatively. Ordinary non-native transport retains its existing contract. |
