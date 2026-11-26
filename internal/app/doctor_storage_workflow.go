@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -50,11 +51,7 @@ func doctorStorageEntry(command string, args []string) (int, bool) {
 			groupWorkflow := hasPlan && (status.ServicePreparation() || pending && workflow && grouped) ||
 				fault == nil && !status.WorkflowActive() && status.Mode == "grouped"
 			if recoverServices || groupWorkflow {
-				manager := userservice.StorageLaunchd{
-					Home:       state.Home(),
-					Executable: selfPath(),
-					Labels:     []string{serveAgentLabel, tunnelAgentLabel, selfTunnelAgentLabel},
-				}
+				manager := doctorStorageLaunchd()
 				if groupWorkflow && !pending && os.IsNotExist(planErr) {
 					jobs, inspectErr := manager.Inspect()
 					if inspectErr != nil {
@@ -99,6 +96,65 @@ func checkEarlyStorageWriters() error {
 		return fmt.Errorf("this terminal is inside tmux")
 	}
 	return checkStorageWriters()
+}
+
+func doctorStorageLaunchd() userservice.StorageLaunchd {
+	return userservice.StorageLaunchd{
+		Home:       state.Home(),
+		Executable: selfPath(),
+		Labels:     []string{serveAgentLabel, tunnelAgentLabel, selfTunnelAgentLabel},
+	}
+}
+
+func checkStorageMigrationWindow() error {
+	if tmux.InTmux() {
+		return errors.New(i18n.Tr("the current terminal is inside tmux", "当前终端在 tmux 内"))
+	}
+	if runtime.GOOS != "darwin" {
+		return checkStorageWriters()
+	}
+	manager := doctorStorageLaunchd()
+	jobs, err := manager.Inspect()
+	if err != nil {
+		return err
+	}
+	if err := checkStorageProcesses(userservice.StorageLaunchdPIDs(jobs)); err != nil {
+		return err
+	}
+	if err := checkLegacyMenuBar(manager); err != nil {
+		return err
+	}
+	for _, job := range jobs {
+		if job.Parked || job.Loaded && job.Override[0] == "disabled" {
+			return fmt.Errorf(i18n.Tr("review the settings for %s before migration", "迁移前需核对 %s 的设置"), job.Label)
+		}
+	}
+	return nil
+}
+
+func storageMigrationAdvice() string {
+	intro := i18n.Tr("You can move HQ wake data and global locks to layout-v3. ",
+		"可将 HQ 唤醒数据和全局锁迁移到 layout-v3。")
+	if err := checkStorageMigrationWindow(); err != nil {
+		return intro + i18n.Tr("Migration deferred: ", "迁移暂缓：") + err.Error() +
+			i18n.Tr(". After resolving this, run gtmux doctor --fix from a standalone terminal after reboot and before restoring tmux.",
+				"。处理后，在重启且尚未恢复 tmux 时，从独立终端运行 gtmux doctor --fix。")
+	}
+	paths, err := state.InspectWorkflowPaths()
+	if err == nil {
+		for _, path := range paths {
+			if path.AtGroupedPath {
+				err = fmt.Errorf(i18n.Tr("destination already exists: %s", "目标路径已有数据：%s"), path.Grouped)
+				break
+			}
+		}
+	}
+	if err != nil {
+		return intro + i18n.Tr("Migration deferred: ", "迁移暂缓：") + err.Error() +
+			i18n.Tr(". Inspect the paths with gtmux doctor --storage-layout.", "。请运行 gtmux doctor --storage-layout 核对路径。")
+	}
+	return intro + i18n.Tr("No blocker found in this check. If you have rebooted and not restored tmux yet, run gtmux doctor --fix from a standalone terminal to review and confirm the move.",
+		"本次检查未发现阻碍。若已重启且尚未恢复 tmux，从独立终端运行 gtmux doctor --fix 查看并确认迁移。")
 }
 
 func applyDoctorStorageChange(workflow, grouped bool, writers func() error, confirmReady func(string) bool) int {
@@ -194,7 +250,11 @@ func workflowLayoutRow(status state.StorageLayoutStatus, err error) dcheck {
 
 func rowWorkflowStorageLayout() dcheck {
 	status, err := state.ReadStorageLayout()
-	return workflowLayoutRow(status, err)
+	row := workflowLayoutRow(status, err)
+	if row.status == stInfo && row.value == "layout-v2" {
+		row.note = storageMigrationAdvice()
+	}
+	return row
 }
 
 func rowWakeStorage() dcheck {

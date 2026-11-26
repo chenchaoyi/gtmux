@@ -1,4 +1,8 @@
 {
+  "internal/app/doctor_storage_discovery_test.go": {
+    "cases": ["DMD-001", "DMD-002", "DMD-003"],
+    "selectors": ["TestDoctorStorageMigrationDiscovery"]
+  },
   "internal/app/doctor_storage_prepared_test.go": {
     "cases": ["DPF-001", "DPF-002"],
     "selectors": ["TestDoctorPreparedStorageDiagnosticThroughCLI"]

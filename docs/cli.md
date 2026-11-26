@@ -2787,4 +2787,6 @@ collide with its description; narrow terminals use stacked descriptions.
 
 Run `gtmux doctor --storage-layout` to see the current location and grouped target of each known store. Doctor reports HQ wake entries by stage, input archive health and expired cache stages that it can clear.
 
+On an eligible `layout-v2` installation, plain `gtmux doctor` lists the optional `layout-v3` migration in its summary. It reports detected blockers and tells you how to open the migration wizard. The check keeps the current layout in place.
+
 After a reboot, run `gtmux doctor --fix` from a standalone terminal before opening or restoring tmux. On macOS, quit the gtmux menu bar app and turn off its login item in System Settings if enabled. Doctor previews the workflow move for an existing grouped installation, asks once, then pauses recognized gtmux services and resumes them after checking the layout. Run the same command if a move or service recovery is pending. You can restore the menu bar login setting after recovery. `gtmux doctor --group-storage` supports the initial flat-to-grouped change. Before a downgrade, use `gtmux doctor --flatten-storage` in the same offline window. See [offline transition](design/state-storage-lifecycle.md#offline-transition).

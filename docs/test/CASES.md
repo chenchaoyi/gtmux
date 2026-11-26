@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1502 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1503 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2759 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2760 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 170 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 146 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -236,6 +236,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | DGC-002 | An admitted old participant can stop actual installed jobs. While profiles are parked, the baseline rejects admission. The next Doctor never recreates a removed profile or reopens newly disabled access. |
 | DGC-003 | The retry verifies and reports cleanup without invoking ordinary repair or replaying services. A later ordinary invocation retains its original behavior. |
 | DGC-004 | The unmatched install is left unchanged with specific guidance. Using the registering installation still requires the loaded identity to agree. |
+| DMD-001 | The summary names the optional v3 migration and gtmux doctor --fix. It offers no migration confirmation and leaves the original path, layout marker and service state intact. |
+| DMD-002 | The note is visible at the end, distinguishes deferral from readiness and advises running the migration wizard only in the right window. No migration or service change is attempted. |
+| DMD-003 | Flat and verified v3 states have no optional v2 migration notice. Existing interrupted and conflicting layouts retain their original guidance instead of a fresh-migration offer. |
 | DGR-001 | Only recognized matching jobs are eligible. The same profile object returns, and no launchd override is created or modified. |
 | DGR-002 | The shared remote configuration lock and the second observations preserve the newer setting. The legacy login or process blocks with zero service or layout mutation. |
 | DGR-003 | No service mutation occurs before the receipt is durable; recovery waits for durable layout verification; unlink and parent sync errors retry cleanup without reapplying service actions. |

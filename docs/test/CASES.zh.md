@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1502 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1503 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2759 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2760 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 170 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -236,6 +236,9 @@
 | DGC-002 | An admitted old participant can stop actual installed jobs. While profiles are parked, the baseline rejects admission. The next Doctor never recreates a removed profile or reopens newly disabled access. |
 | DGC-003 | The retry verifies and reports cleanup without invoking ordinary repair or replaying services. A later ordinary invocation retains its original behavior. |
 | DGC-004 | The unmatched install is left unchanged with specific guidance. Using the registering installation still requires the loaded identity to agree. |
+| DMD-001 | The summary names the optional v3 migration and gtmux doctor --fix. It offers no migration confirmation and leaves the original path, layout marker and service state intact. |
+| DMD-002 | The note is visible at the end, distinguishes deferral from readiness and advises running the migration wizard only in the right window. No migration or service change is attempted. |
+| DMD-003 | Flat and verified v3 states have no optional v2 migration notice. Existing interrupted and conflicting layouts retain their original guidance instead of a fresh-migration offer. |
 | DGR-001 | Only recognized matching jobs are eligible. The same profile object returns, and no launchd override is created or modified. |
 | DGR-002 | The shared remote configuration lock and the second observations preserve the newer setting. The legacy login or process blocks with zero service or layout mutation. |
 | DGR-003 | No service mutation occurs before the receipt is durable; recovery waits for durable layout verification; unlink and parent sync errors retry cleanup without reapplying service actions. |
