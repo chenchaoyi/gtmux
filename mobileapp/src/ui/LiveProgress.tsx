@@ -19,7 +19,7 @@ const HEADER_HEIGHT = 44;
 const PANEL_PADDING = 6;
 
 /** The conversation owns disclosure state; this row can disappear between observations. */
-export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, open, onToggle, working, inspectAvailable = true, sourceLabel, heightLimit, savedHeight, onResize}: {
+export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, open, onToggle, working = true, inspectAvailable = true, sourceLabel, heightLimit, savedHeight, onResize}: {
   avatar: React.ReactNode;
   label: string;
   lines: AnsiLine[];
@@ -27,7 +27,7 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
   fontFamily: string | undefined;
   lang: Lang;
   open: boolean;
-  working: boolean;
+  working?: boolean;
   onToggle: () => void;
   inspectAvailable?: boolean;
   sourceLabel?: string;
