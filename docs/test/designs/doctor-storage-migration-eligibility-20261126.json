@@ -1,0 +1,35 @@
+{
+  "id": "doctor-storage-migration-eligibility-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-26",
+    "decision": "Require current data that can benefit from the optional move",
+    "notes": "The current installer leaves a fresh root in the default flat mode. A v2 marker, startup leases, or empty scaffolding are also insufficient evidence of useful work. A verified v3 journal and matching marker establish completion. A marker or directory alone cannot establish completion or invite a fresh move."
+  },
+  "cases": [
+    {
+      "id": "DMD-004",
+      "layer": "L2",
+      "description": "Fresh installation and empty v2 scaffolds have no migration notice",
+      "setup": "Use temporary homes with a fresh root, an empty opted-in v2 root, and v2 with only nested empty directories and empty registered locks.",
+      "action": "Run ordinary Doctor and inspect its report and the original layout.",
+      "expected": "Doctor does not advertise a workflow migration and does not create a new workflow marker. Existing populated v2 coverage still offers the optional move.",
+      "planned_files": [
+        "internal/app/doctor_storage_eligibility_test.go"
+      ]
+    },
+    {
+      "id": "DMD-005",
+      "layer": "L2",
+      "description": "Doctor distinguishes verified completion from stray or inconsistent layout evidence",
+      "setup": "Use a completed v3 layout, a standalone marker, and a verified v3 layout with a re-created original path.",
+      "action": "Run ordinary Doctor and inspect the results.",
+      "expected": "A verified complete layout displays v3 without a migration offer. A stray marker or unexpected inactive store reports its validation error without a new migration offer.",
+      "planned_files": [
+        "internal/app/doctor_storage_eligibility_test.go"
+      ]
+    }
+  ],
+  "seal": "8ac54011dd20cb1fb26c921d47982930cd77fd7dd0ebd23ca161853d258e7ba1"
+}
