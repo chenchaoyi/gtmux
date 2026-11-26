@@ -5775,11 +5775,11 @@
     "selectors": ["TestGSW001WorkflowStorageRoundTrip", "TestGSW002WorkflowResumeAndConflict"]
   },
   "internal/app/doctor_storage_workflow_test.go": {
-    "cases": ["GSW-003", "GSW-004"],
-    "selectors": ["TestGSW003DoctorStorageMaintenanceWindow", "TestGSW004DoctorCacheCleanupProtectsDeliveryState"]
+    "cases": ["GSW-003", "GSW-004", "DWI-002"],
+    "selectors": ["TestGSW003DoctorStorageMaintenanceWindow", "TestGSW004DoctorCacheCleanupProtectsDeliveryState", "TestDWI002DoctorWakeStorageShowsIndependentDiagnostics"]
   },
   "internal/hqnudge/storage_inspect_test.go": {
-    "cases": ["GSW-004"],
+    "cases": ["GSW-004", "DWI-001"],
     "selectors": ["TestGSW004WakeStorageInventory"]
   }
 }

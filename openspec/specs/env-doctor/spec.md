@@ -1054,6 +1054,15 @@ Doctor SHALL preview owned stores and their grouped locations without writing st
 
 The optional workflow layout SHALL group HQ delivery, submission recovery, delivery verification and shared coordination under the wake hierarchy. Registered global lease anchors SHALL share a directory outside the layout bootstrap path. A same-device move SHALL retain original queue, journal and claim identities, including hard links. The workflow layout SHALL fence older CLI writers until rollback. Doctor SHALL display known locations and report delivery stages from metadata. Storage diagnostics SHALL remain available while application writes are fenced. Doctor --fix SHALL continue a verified interrupted change only after the same offline confirmation, and SHALL preserve conflicting or unverified records.
 
+#### Scenario: Refused, uncertain, and unrecognized wake records coexist
+
+- **WHEN** Doctor inspects wake delivery storage containing pending entries, claims, retained refusals, unknown outcomes, acceptance records awaiting proof, or unrecognized entries
+- **THEN** it SHALL report separate counts from directory and file identity metadata, without reading delivery bodies or changing the records
+- **AND** a retained refusal alone SHALL be informational, including ordinary and relay wake refusals
+- **AND** it SHALL advise checking delivery evidence for each batch with an unknown outcome and checking ownership for unrecognized entries, showing both messages when both conditions exist
+- **AND** it SHALL separately report when distinct claimed and retained files occupy the same wake slot and advise keeping both files
+- **AND** two names for the same inode SHALL NOT count as a slot conflict
+
 #### Scenario: Pause and restore known macOS services from Doctor
 
 - **WHEN** the operator approves a workflow layout change in `gtmux doctor --fix` after reboot and before opening tmux
