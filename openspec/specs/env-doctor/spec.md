@@ -1059,6 +1059,7 @@ The optional workflow layout SHALL group HQ delivery, submission recovery, deliv
 - **WHEN** Doctor inspects wake delivery storage containing pending entries, claims, retained refusals, unknown outcomes, acceptance records awaiting proof, or unrecognized entries
 - **THEN** it SHALL report separate counts from directory and file identity metadata, without reading delivery bodies or changing the records
 - **AND** a retained refusal alone SHALL be informational, including ordinary and relay wake refusals
+- **AND** a retained refusal with malformed retry fields SHALL be counted as unrecognized
 - **AND** it SHALL advise checking delivery evidence for each batch with an unknown outcome and checking ownership for unrecognized entries, showing both messages when both conditions exist
 - **AND** it SHALL separately report when distinct claimed and retained files occupy the same wake slot and advise keeping both files
 - **AND** two names for the same inode SHALL NOT count as a slot conflict

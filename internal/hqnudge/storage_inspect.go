@@ -38,7 +38,12 @@ func InspectStorage() (StorageUsage, error) {
 		case strings.HasSuffix(name, nativeUncertainSuffix), strings.HasSuffix(name, legacyUncertainSuffix):
 			usage.Uncertain++
 			parked[name] = entry
-		case strings.HasSuffix(name, wakeRefusedSuffix) && isPendingWake(strings.TrimSuffix(name, wakeRefusedSuffix)):
+		case strings.HasSuffix(name, wakeRefusedSuffix):
+			base := strings.TrimSuffix(name, wakeRefusedSuffix)
+			if _, valid := parseRetry(base); !isPendingWake(base) || !valid {
+				usage.Unclassified++
+				continue
+			}
 			usage.Refused++
 			parked[name] = entry
 		case strings.HasSuffix(name, sendingSuffix), strings.HasSuffix(name, stuckSuffix):

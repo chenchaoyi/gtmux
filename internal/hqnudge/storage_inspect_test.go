@@ -11,21 +11,25 @@ import (
 
 func TestGSW004WakeStorageInventory(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
+	retryTarget := strings.Repeat("a", 32)
 	fixtures := map[string]string{
-		"hq-nudges/10.p1.txt":                                        "not parsed",
-		"hq-nudges/20.p1.txt.refused":                                "retained refusal",
-		"hq-nudges/21.p1.hqrelay.refused":                            "retained relay refusal",
-		"hq-nudges/30.p1.txt.sending":                                "claimed",
-		"hq-nudges/30.p1.txt.stuck":                                  "another claim in the same slot",
-		"hq-nudges/30.p1.txt.native-uncertain":                       "unknown",
-		"hq-nudges/40.p1.txt.legacy-uncertain":                       "unknown",
-		"hq-nudges/41.p1.a1.txt":                                     "unconfirmed legacy attempt",
-		"hq-nudges/50.p1.txt.sending":                                "hard-link publication in progress",
-		"hq-nudges/60.p1.r1-123-" + strings.Repeat("a", 32) + ".txt": "scheduled retry",
-		"hq-nudges/61.p1.r1-invalid.txt":                             "unrecognized retry",
-		"hq-nudges/not-a-wake.refused":                               "unrecognized suffix lookalike",
-		"hq-nudges/foreign-file":                                     "unclassified",
-		"hq-wake-accepted/receipt.json":                              "not parsed",
+		"hq-nudges/10.p1.txt":                                    "not parsed",
+		"hq-nudges/20.p1.txt.refused":                            "retained refusal",
+		"hq-nudges/21.p1.hqrelay.refused":                        "retained relay refusal",
+		"hq-nudges/30.p1.txt.sending":                            "claimed",
+		"hq-nudges/30.p1.txt.stuck":                              "another claim in the same slot",
+		"hq-nudges/30.p1.txt.native-uncertain":                   "unknown",
+		"hq-nudges/40.p1.txt.legacy-uncertain":                   "unknown",
+		"hq-nudges/41.p1.a1.txt":                                 "unconfirmed legacy attempt",
+		"hq-nudges/50.p1.txt.sending":                            "hard-link publication in progress",
+		"hq-nudges/60.p1.r1-123-" + retryTarget + ".txt":         "scheduled retry",
+		"hq-nudges/61.p1.r1-invalid.txt":                         "unrecognized retry",
+		"hq-nudges/61.p1.r1-invalid.txt.refused":                 "unrecognized retained retry",
+		"hq-nudges/61.p1.r1-invalid.txt.sending":                 "claim beside an unrecognized entry",
+		"hq-nudges/62.p1.r1-123-" + retryTarget + ".txt.refused": "known retained retry",
+		"hq-nudges/not-a-wake.refused":                           "unrecognized suffix lookalike",
+		"hq-nudges/foreign-file":                                 "unclassified",
+		"hq-wake-accepted/receipt.json":                          "not parsed",
 	}
 	for relative, body := range fixtures {
 		if err := state.WritePrivateFile(filepath.Join(state.Dir(), relative), []byte(body)); err != nil {
@@ -56,7 +60,7 @@ func TestGSW004WakeStorageInventory(t *testing.T) {
 		before[relative] = info
 	}
 	usage, err := InspectStorage()
-	if want := (StorageUsage{Queued: 2, Claimed: 3, Refused: 2, Uncertain: 4, AwaitingProof: 1, Unclassified: 4, ConflictingSlots: 1}); err != nil || usage != want {
+	if want := (StorageUsage{Queued: 2, Claimed: 4, Refused: 3, Uncertain: 4, AwaitingProof: 1, Unclassified: 5, ConflictingSlots: 1}); err != nil || usage != want {
 		t.Fatalf("usage %+v, want %+v (%v)", usage, want, err)
 	}
 	for relative, body := range fixtures {

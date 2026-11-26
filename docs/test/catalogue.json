@@ -70918,7 +70918,7 @@
           "design": "GSW-003,GSW-004,DWI-002"
         }
       ],
-      "sha256": "18fa9a40ce23e14b6dd01a92b897a508cd46bccea73326b1a46f9c139c5734f2"
+      "sha256": "1bff9723a4d3f75f62efe422e94698f1776c7cf268402c702d51d51956f8a794"
     },
     "internal/hqnudge/storage_inspect_test.go": {
       "layer": "L2",
@@ -70934,7 +70934,7 @@
           "design": "GSW-004"
         }
       ],
-      "sha256": "b3502499f76fca5a47023b8b02c90e51cb0bbf5353b8726883352efde438de18"
+      "sha256": "ab810e14bdc72f01bc32e08396a34749a6ca1f108d9ac39acf3858d3b195f9f9"
     },
     "internal/state/workflow_layout_test.go": {
       "layer": "L2",

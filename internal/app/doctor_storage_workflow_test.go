@@ -125,9 +125,9 @@ func TestDWI002DoctorWakeStorageShowsIndependentDiagnostics(t *testing.T) {
 		notes       []string
 	}{
 		{"en", "1 queued · 1 claimed · 2 refused and retained · 1 unknown · 0 awaiting proof · 1 unrecognized",
-			[]string{"Check delivery evidence for each batch", "Distinct claimed and retained files share 1 wake slot", "Verify ownership and delivery evidence for unrecognized entries"}},
+			[]string{"Check delivery evidence for each batch", "Distinct claimed and retained files share 1 wake slot", "Keep both files.", "Verify ownership and delivery evidence for unrecognized entries"}},
 		{"zh", "1 待投递 · 1 已领取 · 2 已拒绝留存 · 1 结果未知 · 0 待送达核实 · 1 未识别",
-			[]string{"按批次核对送达证据", "1 个投递槽位同时存在不同的领取文件和留存文件", "请核对未识别条目的归属和投递证据"}},
+			[]string{"按批次核对送达证据", "1 个投递槽位同时存在不同的领取文件和留存文件", "请保留两份原件。", "请核对未识别条目的归属和投递证据"}},
 	} {
 		t.Run(tc.lang, func(t *testing.T) {
 			i18n.SetLang(tc.lang)
