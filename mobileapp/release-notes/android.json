@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.0.202",
+    "en": [
+      "Drag Live View over the conversation to see more terminal output. The chat keeps its scroll position.",
+      "The drag handle and controls fit on one row, leaving more room for output on small screens."
+    ],
+    "zh": [
+      "向上拖动 Live View，可覆盖对话查看更多终端输出。聊天保留原来的滚动位置。",
+      "拖柄和操作按钮放在同一行，小屏幕也能多显示几行终端输出。"
+    ]
+  },
+  {
     "version": "1.0.194",
     "en": [
       "Open conversation file previews for names with spaces, Chinese characters, and parentheses.",

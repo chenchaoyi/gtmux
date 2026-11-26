@@ -1,3 +1,2 @@
-- Open conversation file previews when names contain spaces, Chinese characters, or parentheses.
-- Find Live terminal output more easily. Tap anywhere on the Live row to open it.
-- See the default number and the final spelling before creating a named session.
+- Drag Live View up over the conversation to see more terminal output. Collapse it to return to the same place in the chat.
+- The drag handle now shares a row with the status and collapse button, leaving more room for terminal output.
