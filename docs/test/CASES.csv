@@ -6167,9 +6167,9 @@ MAP-e5027560aedb,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveDisclosure
 LEG-2e1f3eeb5351,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveElapsed.test.tsx,32,test.each(),%s: the elapsed time is there with and without output,True,legacy-not-retrospectively-reviewed
 LEG-63a0f74f75c3,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveElapsed.test.tsx,43,test,an unknown start shows no duration on the Live card,False,legacy-not-retrospectively-reviewed
 LEG-717b753fc16c,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveElapsed.test.tsx,49,test,the duration on the Live card moves with the clock,False,legacy-not-retrospectively-reviewed
-MAP-439b23120796,L2,reviewed implementation,mobileapp/src/ui/ChatView.liveResize.test.tsx,39,reviewed-selector,dragging the live grip reveals more terminal lines and respects the available height,False,"LVR-001,LVR-002"
-MAP-e9dd481a4da5,L2,reviewed implementation,mobileapp/src/ui/ChatView.liveResize.test.tsx,78,reviewed-selector,"preview sizing survives updates, folding and idle but starts fresh on another pane",False,"LVR-001,LVR-002"
-MAP-cdace81e520c,L2,reviewed implementation,mobileapp/src/ui/ChatView.liveResizeFold.test.tsx,10,reviewed-selector,the fixed fold label has a conversation background while the live preview is open,False,LVR-003
+MAP-439b23120796,L2,reviewed implementation,mobileapp/src/ui/ChatView.liveResize.test.tsx,44,reviewed-selector,dragging the live grip reveals more terminal lines and respects the available height,False,"LVR-001,LVR-002"
+MAP-e9dd481a4da5,L2,reviewed implementation,mobileapp/src/ui/ChatView.liveResize.test.tsx,87,reviewed-selector,"preview sizing survives updates, folding and idle but starts fresh on another pane",False,"LVR-001,LVR-002"
+MAP-c60cae643ed6,L2,reviewed implementation,mobileapp/src/ui/ChatView.liveResizeFold.test.tsx,10,reviewed-selector,Live covers the transcript without changing its layout or following the tail,False,LVR-003
 LEG-74ffbe338023,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,20,test,user prompts render markdown with selectable text and the chosen font size,False,legacy-not-retrospectively-reviewed
 LEG-17bcf63fd7e8,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,28,test,long prompt switches from bounded preview to complete markdown,False,legacy-not-retrospectively-reviewed
 LEG-62da14bfdb16,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,36,test,copy from a collapsed reply includes all segments without prompt or tools,False,legacy-not-retrospectively-reviewed

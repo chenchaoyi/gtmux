@@ -1,5 +1,5 @@
 import React from 'react';
-import {PanResponder, ScrollView, Text, TouchableOpacity, View} from 'react-native';
+import {PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import renderer, {act} from 'react-test-renderer';
 import type {Agent, StatusName} from '../api/types';
 import {TestIds} from '../constants/testIds';
@@ -25,6 +25,11 @@ const shown = () => tree.root.findAllByType(Text).map(n => n.props.children).fla
 const height = () => tree.root.findAllByType(ScrollView).find(n => n.props.nestedScrollEnabled && !n.props.horizontal)!.props.style.maxHeight;
 const layout = (size: number) => act(() => chat().props.onLayout({nativeEvent: {layout: {height: size}}}));
 const press = () => act(() => toggle().props.onPress());
+const liveView = (id: string) => tree.root.findAllByType(View).find(n => n.props.testID === id)!;
+const expectedLimit = (chatHeight: number) => {
+  const panel = StyleSheet.flatten(liveView(TestIds.detail.chatThinking).props.style);
+  return Math.floor(chatHeight - 80 - 10 - 44 - 2 * (panel.padding + panel.borderWidth));
+};
 
 beforeEach(() => {
   responder = jest.spyOn(PanResponder, 'create');
@@ -42,18 +47,22 @@ test('dragging the live grip reveals more terminal lines and respects the availa
   expect(shown()).not.toContain('Line 31');
   expect(shown()).toContain('Line 50');
   expect(grip().props.accessibilityRole).toBe('adjustable');
+  const header = liveView('chat-live-header');
+  expect(header.findAllByType(View)).toContain(grip());
+  expect(header.findAllByType(TouchableOpacity)).toContain(toggle());
+  expect(StyleSheet.flatten(grip().props.style)).toMatchObject({width: 44, minHeight: 44});
   const gesture = responder.mock.calls.at(-1)![0];
   expect(chat().props.onResponderGrant).toBeUndefined();
   act(() => gesture.onPanResponderGrant());
-  expect(chat().props.scrollEnabled).toBe(false);
+  expect(chat().props.scrollEnabled).not.toBe(false);
   act(() => gesture.onPanResponderMove(null, {dy: -190}));
   expect(height()).toBe(410);
   expect(shown()).toContain('Line 31');
   expect(shown()).toContain('Line 50');
   act(() => gesture.onPanResponderRelease());
-  expect(chat().props.scrollEnabled).toBe(true);
+  expect(chat().props.scrollEnabled).not.toBe(false);
   layout(380);
-  expect(height()).toBe(178);
+  expect(height()).toBe(expectedLimit(380));
   layout(720);
   expect(height()).toBe(410);
   act(() => {
@@ -61,7 +70,7 @@ test('dragging the live grip reveals more terminal lines and respects the availa
     gesture.onPanResponderMove(null, {dy: 300});
     gesture.onPanResponderTerminate();
   });
-  expect(chat().props.scrollEnabled).toBe(true);
+  expect(chat().props.scrollEnabled).not.toBe(false);
   expect(height()).toBe(132);
   act(() => grip().props.onAccessibilityAction({nativeEvent: {actionName: 'increment'}}));
   expect(height()).toBe(188);
@@ -72,7 +81,7 @@ test('dragging the live grip reveals more terminal lines and respects the availa
     gesture.onPanResponderMove(null, {dy: -2000});
     gesture.onPanResponderRelease();
   });
-  expect(height()).toBe(518);
+  expect(height()).toBe(expectedLimit(720));
 });
 
 test('preview sizing survives updates, folding and idle but starts fresh on another pane', () => {
