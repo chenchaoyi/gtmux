@@ -1,4 +1,12 @@
 {
+  "tests/web/live-history-boundaries.test.cjs": {
+    "cases": ["LRE-001", "LRE-002"],
+    "selectors": ["verified empty replacement", "unassociated but pane readable"]
+  },
+  "mobileapp/src/screens/LiveReaderBoundaries.test.tsx": {
+    "cases": ["LRE-003", "LRE-004"],
+    "selectors": ["LRE-003 only a change of observed identity starts a fresh reader", "LRE-004 access denial, missing pane and empty capture have distinct messages"]
+  },
   "tests/web/live-binding.test.cjs": {
     "cases": ["LRB-001"],
     "selectors": ["LRB-001 Binding preserves the same Live reader at "]

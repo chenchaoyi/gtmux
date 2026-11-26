@@ -2392,11 +2392,11 @@
     }
   }
   function pollChat() {
-    var reload = chatReload;
+    var reload = chatReload, requestedScope = chatScope(curAgent);
     pollConversationStatus();
     runRead('chat', function (signal) {
       if (!curPane) return;
-      var scope = chatScope(curAgent), read = currentRead('chat', signal);
+      var scope = chatScope(curAgent), read = currentRead('chat', signal), reset;
       var current = function (visible) { return read(visible) && scope === chatScope(curAgent); };
       return api(transcriptPath(curAgent), {signal: signal}).then(function (r) {
         if (!current()) return null;
@@ -2404,10 +2404,20 @@
         if (r.status === 403) { chatHistory = null; lastTurns = []; throw new Error('forbidden'); }
         if (r.status === 404) { setConn(true); return []; } // no resume record / not available
         curAgent.history_read_only = r.headers.get('X-Gtmux-Conversation-State') === 'last-known'; updateInputBar();
+        reset = liveResetMarker(r);
         return chatReadResponse(r);
-      }).then(function (turns) { if (turns === null || !current(true)) return; setConn(true); hideChatLoader(); chatReadFailure = ''; if (confirmLiveTranscript(curAgent, turns)) chatSig = ''; renderChat(turns || []); })
-        .catch(function (error) { if (current()) { hideChatLoader(); chatReadFailure = error.association ? 'association' : 'failed'; renderChat(lastTurns); } });
-    }, 15000, function () { setConn(false); hideChatLoader(); chatReadFailure = 'failed'; chatSig = ''; renderChat(lastTurns); }, function () {settleConversationReload(reload);});
+      }).then(function (turns) {
+        if (turns === null || !current(true)) return;
+        setConn(true); hideChatLoader(); chatReadFailure = '';
+        if (confirmLiveTranscript(curAgent, turns, reset)) chatSig = '';
+        renderChat(turns || []);
+      }).catch(function (error) {
+        if (!current()) return;
+        hideChatLoader(); chatReadFailure = error.association ? 'association' : 'failed';
+        if (releaseUnconfirmedLive(curAgent, error.association)) chatSig = '';
+        renderChat(lastTurns);
+      });
+    }, 15000, function () { if (requestedScope !== chatScope(curAgent)) return; setConn(false); hideChatLoader(); releaseUnconfirmedLive(curAgent, false); chatReadFailure = 'failed'; chatSig = ''; renderChat(lastTurns); }, function () {settleConversationReload(reload);});
   }
 
   // The same bounded history contract and stable merge as App/Trace. Each reader
@@ -2981,21 +2991,42 @@
   function freezeLiveSelection(panel, state) {
     if (!state.frozen && liveSelection(panel, window.getSelection())) freezeLive(panel, state);
   }
-  // The tmux roster omits the observation once a binding is established. Only
-  // the latest turn from a fresh, scope-checked transcript can confirm its SID.
-  function confirmLiveTranscript(agent, turns) {
+  function liveResetMarker(response) {
+    var kind = response.headers.get('X-Gtmux-Session-Reset');
+    if (!response.ok || (kind !== 'clear' && kind !== 'new')) return '';
+    return kind + ':' + (response.headers.get('X-Gtmux-Session-Reset-At') || '');
+  }
+  function livePaneScope(agent) {
+    return JSON.stringify([agent.pane_id, agent.agent, agent.home_id, agent.session_id]);
+  }
+  function freshLiveReader(id, scope, observed) {
+    cancelRead('live:' + id);
+    return chatLive[id] = {open: false, revision: 0, scope: scope, observed: observed};
+  }
+  // A failed history association cannot confirm the previous frame. Keep a
+  // separate, fresh reader available for the pane's own authorized capture.
+  function releaseUnconfirmedLive(agent, unassociated) {
+    var id = agent && agent.pane_id, state = chatLive[id];
+    if (!state || (!state.awaitingBinding && (!unassociated || state.unassociated))) return false;
+    var fresh = freshLiveReader(id, state.scope, state.observed);
+    fresh.unassociated = true;
+    return true;
+  }
+  function confirmLiveTranscript(agent, turns, reset) {
     var id = agent.pane_id, state = chatLive[id];
-    if (!state || agent.observed_conversation || agent.history_read_only) return false;
+    if (!id || agent.observed_conversation || agent.history_read_only) return false;
+    var scope = livePaneScope(agent);
+    if (!state || state.scope !== scope) state = freshLiveReader(id, scope);
     var latest = turns && turns[turns.length - 1], sid = latest && latest.session_id;
-    if ((sid || state.awaitingBinding) && state.session && state.session !== sid) {
-      cancelRead('live:' + id);
-      delete chatLive[id];
-      return true;
-    }
-    if (sid) state.session = sid;
-    var pending = state.awaitingBinding;
+    var changed = (reset && reset !== state.reset) ||
+      ((sid || state.awaitingBinding) && state.session && state.session !== sid);
+    var redraw = changed || state.awaitingBinding;
+    if (changed) state = freshLiveReader(id, state.scope, state.observed);
+    if (reset) state.reset = reset;
+    state.unassociated = false;
     state.awaitingBinding = false;
-    return pending;
+    if (sid) state.session = sid;
+    return redraw;
   }
   function syncChatLive(host, agent, valid) {
     var id = agent && agent.pane_id, panel = host.querySelector('.chat-live');
@@ -3004,15 +3035,14 @@
     // Observation confidence and status can change on each roster read.
     // Only a change of pane/conversation identity retires the reader's choice.
     var observation = agent.observed_conversation;
-    var scope = JSON.stringify([id, agent.agent, agent.home_id, agent.session_id]);
+    var scope = livePaneScope(agent);
     var observed = observation && JSON.stringify([observation.home_id, observation.session_id]);
     var state = chatLive[id], working = agent.status === 'working';
     if (!state || state.scope !== scope || (observed && observed !== state.observed)) {
-      cancelRead('live:' + id);
-      state = chatLive[id] = {open: false, revision: 0, scope: scope};
+      state = freshLiveReader(id, scope, observed);
     }
     if (observed) state.session = observation.session_id;
-    if (state.observed && !observed) {
+    if (state.observed && !observed && !state.unassociated) {
       state.awaitingBinding = true;
       state.revision++;
       state.loading = false;
@@ -4434,26 +4464,28 @@
     if (t.mode === 'chat') { var host = t.body.querySelector('.conversation-main'); if (host) syncChatLive(host, t.agent, function () { return WB.on && !t.removed && t.mode === 'chat' && !!t.agent.status; }); }
     var reload = t.chatReload, readEpoch = t.readEpoch, readScope = chatScope(t.agent);
     runRead('tile:' + t.id, function (signal) {
-      var epoch = t.readEpoch, scope = chatScope(t.agent);
+      var epoch = t.readEpoch, scope = chatScope(t.agent), reset;
       return api(transcriptPath(t.agent), {signal: signal}).then(function (r) {
         if(signal.aborted || t.removed || epoch !== t.readEpoch || scope !== chatScope(t.agent)) return null;
         if(r.status === 401) {token=null;localStorage.removeItem(TOKEN_KEY);gate('expired');return null;}
         if(r.status === 403 || readableConversation(t.agent) && (r.status === 404 || r.status === 422)) {removeTile(t);return null;}
         t.agent.history_read_only = r.headers.get('X-Gtmux-Conversation-State') === 'last-known'; tileInputSync(t);
         t.dropped = Number(r.headers.get('X-Gtmux-Turns-Dropped') || 0) || 0;
+        reset = liveResetMarker(r);
         return r.status === 404 ? [] : chatReadResponse(r);
       }).then(function (turns) {
         if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || scope !== chatScope(t.agent) || t.mode !== 'chat') return;
-        if (confirmLiveTranscript(t.agent, turns)) t.chatSig = '';
+        if (confirmLiveTranscript(t.agent, turns, reset)) t.chatSig = '';
         t.chatReadFailure = ''; t.history = historyState(t.history, t.agent); turns = chatTail(t.history, turns || []);
         var sig = JSON.stringify([turns, t.dropped || 0, t.chatReadFailure, observedReadOnly(t.agent)]); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns);
       }).catch(function (error) {
         if (!signal.aborted && !t.removed && epoch === t.readEpoch && scope === chatScope(t.agent) && t.mode === 'chat') {
+          releaseUnconfirmedLive(t.agent, error.association);
           t.chatReadFailure = error.association ? 'association' : 'failed'; t.chatSig = ''; renderTileChat(t, t.lastTurns || []);
         }
       });
     }, 15000, function () {
-      if (!t.removed && readEpoch === t.readEpoch && readScope === chatScope(t.agent) && t.mode === 'chat') {t.chatReadFailure = 'failed'; t.chatSig = ''; renderTileChat(t, t.lastTurns || []);}
+      if (!t.removed && readEpoch === t.readEpoch && readScope === chatScope(t.agent) && t.mode === 'chat') {releaseUnconfirmedLive(t.agent, false); t.chatReadFailure = 'failed'; t.chatSig = ''; renderTileChat(t, t.lastTurns || []);}
     }, function () {
       if (!t.removed && reload && reload === t.chatReload && readEpoch === t.readEpoch && readScope === chatScope(t.agent) && t.mode === 'chat') {
         reload.busy = false; if (t.chatReadFailure) {t.chatSig = ''; renderTileChat(t, t.lastTurns || []);}

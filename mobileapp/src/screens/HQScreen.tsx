@@ -1,5 +1,5 @@
 import {NavigationContext} from '@react-navigation/native';
-import {ConversationReadError, paneReadUnavailable} from '../api/client';
+import {ConversationReadError, paneReadProblem, type PaneReadProblem} from '../api/client';
 import {newSendId} from '../api/sendId';
 import {noteChatEchoReceipt, beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
 import type {SendDelivery} from '../ui/sendReceipt';
@@ -255,6 +255,8 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   const paneHome = live.observed_conversation?.home_id ?? live.home_id;
   const paneReadIdentity = useMemo(() => ({client, pane: hq.pane_id, paneSession, paneHome}), [client, hq.pane_id, paneSession, paneHome]);
   const [captureIdentity, setCaptureIdentity] = useState<typeof paneReadIdentity>();
+  const [paneFailure, setPaneFailure] = useState<{scope: typeof paneReadIdentity; reason: PaneReadProblem}>();
+  const liveProblem = paneFailure?.scope === paneReadIdentity ? paneFailure.reason : undefined;
   const navigation = React.useContext(NavigationContext) as {navigate: (route: string) => void} | undefined;
   const recovery = useSendRecovery(chatIdentity);
   const failure = recovery.failure;
@@ -311,9 +313,11 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
   useEffect(() => {
     if (!hq.pane_id) return;
     return startReadPolling(createReadTask(
-      signal => client.pane(hq.pane_id, signal), p => {setPaneText(p.text ?? ''); setCaptureIdentity(paneReadIdentity);},
+      signal => client.pane(hq.pane_id, signal), p => {setPaneText(p.text ?? ''); setCaptureIdentity(paneReadIdentity); setPaneFailure(undefined);},
       {onError: error => {
-        if (paneReadUnavailable(error)) {
+        const reason = paneReadProblem(error);
+        if (reason) {
+          setPaneFailure({scope: paneReadIdentity, reason});
           captureGeneration.current++;
           setCaptureIdentity(undefined);
           setPaneText('');
@@ -639,7 +643,7 @@ export function HQConsoleView({agent: hq, prefill: prefillText, onBack, layout =
     }
   };
   const consoleEl = (topPad: number, onEdge?: (gap: number) => void) => (
-    <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client}
+    <ChatView liveProblem={liveProblem} readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client}
               agent={live}
               lines={hqPaneLines}
               status={live.status}

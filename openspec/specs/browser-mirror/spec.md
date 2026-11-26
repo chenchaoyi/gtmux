@@ -570,6 +570,12 @@ Chat SHALL show a collapsed-by-default Live strip while the current agent is wor
 - **WHEN** the latest turn from a fresh bound transcript identifies the same observed session
 - **THEN** the open panel, its height and its frozen reading position survive; a different session starts with a fresh panel
 
+#### Scenario: Clear and missing transcript association
+- **WHEN** the server reports a new clear or new-session marker before the first new turn
+- **THEN** the old capture and frozen reading position retire. Repeating that marker preserves the fresh reader. An ordinary empty transcript alone preserves an established reader.
+- **WHEN** a formerly observed history can no longer be associated and the working pane is readable
+- **THEN** a fresh Live control can read that pane while the conversation reports its association failure.
+
 #### Scenario: Watch an active turn
 - **WHEN** the reader expands Live during a working conversation
 - **THEN** current output updates without replacing transcript history or changing the draft, and a status refresh retains the open panel until the reader closes it or its source becomes unavailable

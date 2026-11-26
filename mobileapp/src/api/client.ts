@@ -551,8 +551,12 @@ export class ApiError extends Error {
 }
 
 /** A pane read explicitly lost authority or its resource disappeared. */
-export function paneReadUnavailable(error: unknown): boolean {
-  return error instanceof ApiError && (error.isAuth || error.status === 404);
+export type PaneReadProblem = 'denied' | 'missing';
+export function paneReadProblem(error: unknown): PaneReadProblem | undefined {
+  if (!(error instanceof ApiError)) return undefined;
+  if (error.isAuth) return 'denied';
+  if (error.status === 404) return 'missing';
+  return undefined;
 }
 
 export class UsageNetworkError extends Error {

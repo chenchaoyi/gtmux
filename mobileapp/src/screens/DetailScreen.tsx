@@ -1,4 +1,4 @@
-import {ConversationReadError, paneReadUnavailable} from '../api/client';
+import {ConversationReadError, paneReadProblem, type PaneReadProblem} from '../api/client';
 import {newSendId} from '../api/sendId';
 import type {SendDelivery} from '../ui/sendReceipt';
 // DetailScreen — a read-only view of one pane's current screen (MOBILE §4), in
@@ -248,6 +248,8 @@ function PaneDetailView({
   const paneHome = live.observed_conversation?.home_id ?? live.home_id;
   const paneReadIdentity = useMemo(() => ({client, pane: agent.pane_id, paneSession, paneHome}), [client, agent.pane_id, paneSession, paneHome]);
   const [captureIdentity, setCaptureIdentity] = useState<typeof paneReadIdentity>();
+  const [paneFailure, setPaneFailure] = useState<{scope: typeof paneReadIdentity; reason: PaneReadProblem}>();
+  const liveProblem = paneFailure?.scope === paneReadIdentity ? paneFailure.reason : undefined;
   const [cursor, setCursor] = useState<{x: number; up: number; visible: boolean} | undefined>();
   // The tmux pane's width, which tells Codex's cut prompt row from a row that merely ends in
   // "…" (ui/codexPinned). Absent on a Mac server older than v1.0.53.
@@ -581,9 +583,11 @@ function PaneDetailView({
         if (prev && c && prev.x === c.x && prev.up === c.up && prev.visible === c.visible) return prev;
         return c;
       });
-      setCaptureIdentity(paneReadIdentity);
+      setCaptureIdentity(paneReadIdentity); setPaneFailure(undefined);
     }, {onError: error => {
-      if (paneReadUnavailable(error)) {
+      const reason = paneReadProblem(error);
+      if (reason) {
+        setPaneFailure({scope: paneReadIdentity, reason});
         captureGeneration.current++;
         setCaptureIdentity(undefined);
         setText('');
@@ -700,9 +704,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onOpenTerminal={isNative ? undefined : () => pickModeRef.current('terminal')} onRetry={() => retryTurnsRef.current()} pendingPrompt={visiblePendingPrompt} pendingEcho={pendingEcho.current ?? undefined} retrying={retrying} retryFailed={retryFailed} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView liveProblem={liveProblem} readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onOpenTerminal={isNative ? undefined : () => pickModeRef.current('terminal')} onRetry={() => retryTurnsRef.current()} pendingPrompt={visiblePendingPrompt} pendingEcho={pendingEcho.current ?? undefined} retrying={retrying} retryFailed={retryFailed} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [client, isGuest, isNative, live, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, visiblePendingPrompt, retrying, retryFailed, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
+    [client, isGuest, isNative, live, liveProblem, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, visiblePendingPrompt, retrying, retryFailed, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation

@@ -5476,9 +5476,11 @@ LEG-e7c4a17d81df,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.tes
 LEG-01caacff2459,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,379,test,"an in-flight write cannot be submitted twice, and completion keeps the entry open",False,legacy-not-retrospectively-reviewed
 MAP-c2bb7e3c4204,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,120,reviewed-selector,landing preserves the viewed revision even when the entry changes during confirmation,False,KBCARRIER-REVISION
 MAP-cde3a006fd7b,L2,RN / mobile harness,mobileapp/src/screens/KnowledgeSheet.test.tsx,142,reviewed-selector,a refusal shows the server,False,"KBCARRIER-REVISION,KRD-003,KRD-004"
-MAP-f0aa4fc784df,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAccess.test.tsx,61,reviewed-selector,LRB-002 %s keeps the captured rows and viewport through waiting and idle,False,"LRB-002,LRB-003"
-MAP-8dee995655ee,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAccess.test.tsx,85,reviewed-selector,LRB-003 HTTP %i clears the retained screen until a fresh capture,False,"LRB-002,LRB-003"
+MAP-f0aa4fc784df,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAccess.test.tsx,6,reviewed-selector,LRB-002 %s keeps the captured rows and viewport through waiting and idle,False,"LRB-002,LRB-003"
+MAP-8dee995655ee,L2,reviewed implementation,mobileapp/src/screens/LiveCaptureAccess.test.tsx,30,reviewed-selector,LRB-003 HTTP %i clears the retained screen until a fresh capture,False,"LRB-002,LRB-003"
 MAP-21ca1ef67e70,L3,reviewed implementation,mobileapp/src/screens/LivePreviewScope.test.tsx,19,reviewed-selector,LPV002,False,LPV-002
+MAP-b332e29d412f,L2,reviewed implementation,mobileapp/src/screens/LiveReaderBoundaries.test.tsx,7,reviewed-selector,LRE-003 only a change of observed identity starts a fresh reader,False,"LRE-003,LRE-004"
+MAP-c1c246a2d7e5,L2,reviewed implementation,mobileapp/src/screens/LiveReaderBoundaries.test.tsx,33,reviewed-selector,"LRE-004 access denial, missing pane and empty capture have distinct messages",False,"LRE-003,LRE-004"
 LEG-95a2e8c8c96b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,62,test,"nothing answered: said, the switch stays where the server has it, and Retry runs the same change",False,legacy-not-retrospectively-reviewed
 LEG-2888efda7a0b,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,88,test,"server mode that cannot be read is said, not hidden",False,legacy-not-retrospectively-reviewed
 LEG-de5871aa3c13,L2,RN / mobile harness,mobileapp/src/screens/ManageMacScreen.test.tsx,105,test,"refused (401/403): pair again, and no Retry that could never work",False,legacy-not-retrospectively-reviewed
@@ -7271,6 +7273,8 @@ MAP-67525aee818e,L3,reviewed implementation,tests/web/live-capture-badge.test.cj
 MAP-370c98c5b53c,L4,reviewed implementation,tests/web/live-disclosure-refresh.test.cjs,5,reviewed-selector,LRP-001 Live survives conversation and status redraws at ,False,LRP-001
 MAP-0ad7a9de59d7,L3,reviewed implementation,tests/web/live-equivalent-colors.test.cjs,4,reviewed-selector,WLI-008 Equivalent ANSI and RGB styles do not report new output,False,WLI-008
 MAP-21bb64aa8761,L3,reviewed implementation,tests/web/live-frozen-palette.test.cjs,5,reviewed-selector,WLI-010 Paused ANSI output keeps its palette after,False,WLI-010
+MAP-bebe2df3aaf1,L4,reviewed implementation,tests/web/live-history-boundaries.test.cjs,5,reviewed-selector,verified empty replacement,False,"LRE-001,LRE-002"
+MAP-95c6bb806702,L4,reviewed implementation,tests/web/live-history-boundaries.test.cjs,5,reviewed-selector,unassociated but pane readable,False,"LRE-001,LRE-002"
 MAP-058769c23d4a,L3,reviewed implementation,tests/web/live-late-theme.test.cjs,5,reviewed-selector,WLI-009 Late host theme reconciles the,False,WLI-009
 MAP-e9c53ab15ef5,L4,reviewed implementation,tests/web/live-pending.test.cjs,4,reviewed-selector,LPV003,False,LPV-003
 MAP-0e14f41b41ee,L4,reviewed implementation,tests/web/live-short-tiles.test.cjs,42,reviewed-selector,WLC-001 Live is readable and draggable on ordinary short workbench cards,False,"WLC-001,WLC-002"

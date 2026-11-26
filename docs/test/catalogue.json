@@ -71178,7 +71178,7 @@
       "cases": [
         {
           "id": "MAP-f0aa4fc784df",
-          "line": 61,
+          "line": 6,
           "kind": "reviewed-selector",
           "name": "LRB-002 %s keeps the captured rows and viewport through waiting and idle",
           "dynamic": false,
@@ -71187,7 +71187,7 @@
         },
         {
           "id": "MAP-8dee995655ee",
-          "line": 85,
+          "line": 30,
           "kind": "reviewed-selector",
           "name": "LRB-003 HTTP %i clears the retained screen until a fresh capture",
           "dynamic": false,
@@ -71195,7 +71195,7 @@
           "design": "LRB-002,LRB-003"
         }
       ],
-      "sha256": "02a72a3ab2432c532f6eaf7848dcd183cd353dfdf306cf703bd3e8c4083cb84b"
+      "sha256": "0313c0a345a6bd88cd229bce4f680478b09c730328c68888457d7a51759294bf"
     },
     "tests/web/live-binding.test.cjs": {
       "layer": "L4",
@@ -71228,6 +71228,56 @@
         }
       ],
       "sha256": "3cccee922f672b79aec0ed69248154531c96a2b496c13d7c72a02af0b1f6b06d"
+    },
+    "mobileapp/src/screens/LiveReaderBoundaries.test.tsx": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b332e29d412f",
+          "line": 7,
+          "kind": "reviewed-selector",
+          "name": "LRE-003 only a change of observed identity starts a fresh reader",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LRE-003,LRE-004"
+        },
+        {
+          "id": "MAP-c1c246a2d7e5",
+          "line": 33,
+          "kind": "reviewed-selector",
+          "name": "LRE-004 access denial, missing pane and empty capture have distinct messages",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LRE-003,LRE-004"
+        }
+      ],
+      "sha256": "62c72402a12f24274d6eed34e00b42875440a911b79c583a95307781919e71d8"
+    },
+    "tests/web/live-history-boundaries.test.cjs": {
+      "layer": "L4",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-bebe2df3aaf1",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "verified empty replacement",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LRE-001,LRE-002"
+        },
+        {
+          "id": "MAP-95c6bb806702",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "unassociated but pane readable",
+          "dynamic": false,
+          "layer": "L4",
+          "design": "LRE-001,LRE-002"
+        }
+      ],
+      "sha256": "81ea6bd00c76bf36d383388631b0b96a40820094c3c28569d605ea13568b0eab"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

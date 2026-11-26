@@ -2,14 +2,14 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1508 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1510 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2766 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2768 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 170 | [L3.csv](cases/L3.csv) |
-| L4 · 应用操作流程 | 149 | [L4.csv](cases/L4.csv) |
+| L4 · 应用操作流程 | 151 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 509 | [G.csv](cases/G.csv) |
 
@@ -523,6 +523,10 @@
 | LRB-003 | Transient failure keeps the authorized rows. Rejection clears them and their scroll view. A later authorized read shows fresh rows. |
 | LRP-001 | The open panel and frozen position survive same-session refreshes. Closing is sticky. A new identity starts fresh. The label reflects the current status. |
 | LRP-002 | An open overlay remains visible at the chosen height and reports the current status. Closing during idle hides the strip, and returning to work respects that choice. |
+| LRE-001 | Plain empty history preserves the reader. A new reset drops old output and sizes; repeated metadata preserves the reopened reader. |
+| LRE-002 | A fresh folded control exposes only the current pane and remains open on subsequent association failures. |
+| LRE-003 | Confidence updates retain the reader; a new session starts closed and reopens at the default height. |
+| LRE-004 | Old rows disappear. The message distinguishes denied access, a missing pane and a successful empty read. |
 | LAP-007 | Only a verified local service yields an HTTP address. The published App reference survives unavailable service and the CLI reports how to retry. An explicit port cannot send a credential or select a foreign host. |
 | LAP-001 | Exact registered metadata and original scope are returned after byte/hash checks; source changes do not replace the snapshot. Missing/revoked/corrupt fail without source fallback or scanning. |
 | LAP-002 | Both App reference and local HTTP link name the registered bytes. The link contains only the original document/session/home and the browser must pair independently. |
