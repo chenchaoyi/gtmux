@@ -2350,6 +2350,6 @@ HQ 界面可使用 `gtmux hq workspace list --overview --stored --json` 读取�
 
 运行 `gtmux doctor --storage-layout` 查看各类数据的当前位置和分组目标。Doctor 也会按阶段盘点 HQ 唤醒，检查终端发送防重档案，并列出可以清理的过期缓存暂存。
 
-适用的 `layout-v2` 安装运行普通 `gtmux doctor` 时，报告末尾的「可选维护」会说明可以迁移到 `layout-v3`，列出查到的阻碍，并指引你打开迁移向导。这次检查会保留当前布局。
+已核验的 `layout-v2` 如果还在旧路径存有流程数据，普通 `gtmux doctor` 会在报告末尾提示可以迁移到 `layout-v3`，说明暂缓原因和下一步。全新安装、只有空目录或启动锁的安装，以及已核验完成迁移的安装都无需提醒。布局记录有冲突时，会直接说明问题。这次检查会保留当前布局。
 
 重启后，在打开或恢复 tmux 前，从独立终端运行 `gtmux doctor --fix`。在 macOS 上，先退出 gtmux 菜单栏 App；如果开启了登录启动，在系统设置里暂时关闭。升级已有分组布局时，Doctor 会预览并请你确认一次，接着暂停售管 gtmux 后台服务，核对新布局后恢复服务。如果提示迁移或服务恢复待继续，在同一离线窗口重跑原命令。完成后可以恢复菜单栏的登录设置。首次从平铺转为分组可以用 `gtmux doctor --group-storage`。软件降级前在相同的离线窗口运行 `gtmux doctor --flatten-storage`。见[离线迁移步骤](design/state-storage-lifecycle.zh.md#离线迁移)。

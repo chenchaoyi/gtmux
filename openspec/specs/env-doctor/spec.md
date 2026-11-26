@@ -1069,11 +1069,12 @@ The optional workflow layout SHALL group HQ delivery, submission recovery, deliv
 
 #### Scenario: Discover an optional layout migration during a normal check
 
-- **WHEN** plain `gtmux doctor` checks an eligible `layout-v2` installation
+- **WHEN** plain `gtmux doctor` checks a verified `layout-v2` installation with workflow data still at the original paths
 - **THEN** the results summary identifies the optional `layout-v3` migration and gives the next command
 - **AND** it names any detected reason to defer the move
 - **AND** the notice is informational and does not start the migration wizard or change storage or service state
-- **AND** a completed or interrupted migration retains its own diagnostic
+- **AND** a fresh installation or empty scaffolding without workflow data does not receive the offer
+- **AND** completed, interrupted and inconsistent layouts retain their own diagnostic
 
 #### Scenario: A tmux or other gtmux writer is still present
 

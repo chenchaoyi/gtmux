@@ -1,4 +1,8 @@
 {
+  "internal/app/doctor_storage_eligibility_test.go": {
+    "cases": ["DMD-004", "DMD-005"],
+    "selectors": ["TestDoctorStorageMigrationEligibility"]
+  },
   "internal/app/doctor_storage_discovery_test.go": {
     "cases": ["DMD-001", "DMD-002", "DMD-003"],
     "selectors": ["TestDoctorStorageMigrationDiscovery"]

@@ -133,25 +133,20 @@ func checkStorageMigrationWindow() error {
 }
 
 func storageMigrationAdvice() string {
+	hasData, err := state.WorkflowMigrationHasData()
+	if err != nil {
+		return i18n.Tr("Migration to layout-v3 requires review. Migration deferred: ", "迁移到 layout-v3 前需要核对。迁移暂缓：") + err.Error() +
+			i18n.Tr(". Inspect the paths with gtmux doctor --storage-layout.", "。请运行 gtmux doctor --storage-layout 核对路径。")
+	}
+	if !hasData {
+		return ""
+	}
 	intro := i18n.Tr("You can move HQ wake data and global locks to layout-v3. ",
 		"可将 HQ 唤醒数据和全局锁迁移到 layout-v3。")
 	if err := checkStorageMigrationWindow(); err != nil {
 		return intro + i18n.Tr("Migration deferred: ", "迁移暂缓：") + err.Error() +
 			i18n.Tr(". After resolving this, run gtmux doctor --fix from a standalone terminal after reboot and before restoring tmux.",
 				"。处理后，在重启且尚未恢复 tmux 时，从独立终端运行 gtmux doctor --fix。")
-	}
-	paths, err := state.InspectWorkflowPaths()
-	if err == nil {
-		for _, path := range paths {
-			if path.AtGroupedPath {
-				err = fmt.Errorf(i18n.Tr("destination already exists: %s", "目标路径已有数据：%s"), path.Grouped)
-				break
-			}
-		}
-	}
-	if err != nil {
-		return intro + i18n.Tr("Migration deferred: ", "迁移暂缓：") + err.Error() +
-			i18n.Tr(". Inspect the paths with gtmux doctor --storage-layout.", "。请运行 gtmux doctor --storage-layout 核对路径。")
 	}
 	return intro + i18n.Tr("No blocker found in this check. If you have rebooted and not restored tmux yet, run gtmux doctor --fix from a standalone terminal to review and confirm the move.",
 		"本次检查未发现阻碍。若已重启且尚未恢复 tmux，从独立终端运行 gtmux doctor --fix 查看并确认迁移。")
