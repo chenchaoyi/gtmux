@@ -54,6 +54,12 @@ func renderDoctorResults(w io.Writer, sections []dsection) {
 	}
 	fmt.Fprintln(w)
 	renderDoctorFindings(w, sections)
+	for _, finding := range doctorFindings(sections, stInfo) {
+		row := finding.row
+		if row.label == i18n.Tr("data layout", "数据目录布局") && row.value == "layout-v2" && row.note != "" {
+			fmt.Fprintf(w, "\n  %s%s%s\n    %s\n", i18n.Bold, i18n.Tr("Optional maintenance", "可选维护"), i18n.Reset, row.note)
+		}
+	}
 }
 
 // Completion is a probe lifecycle state. Recommendations and blocking findings

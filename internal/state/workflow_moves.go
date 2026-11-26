@@ -13,6 +13,47 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// WorkflowMigrationHasData distinguishes old workflow records from scaffolding
+// created by a new installation. Layout validity is checked by the caller.
+func WorkflowMigrationHasData() (bool, error) {
+	paths, err := InspectWorkflowPaths()
+	if err != nil {
+		return false, err
+	}
+	for _, path := range paths {
+		if path.AtGroupedPath {
+			return false, fmt.Errorf("destination already exists: %s", path.Grouped)
+		}
+	}
+	for _, path := range paths {
+		store, _ := workflowStoreFor(path.Original)
+		// A standalone lease is runtime scaffolding, not a workflow record.
+		if !store.directory && path.Original != workflowArchive {
+			continue
+		}
+		old := filepath.Join(Dir(), path.Original)
+		entry, present, err := workflowPathObject(old)
+		if err != nil {
+			return false, err
+		}
+		if !present || entry.Mode != workflowObjectType(store) {
+			return false, fmt.Errorf("workflow store changed during inspection: %s", old)
+		}
+		hasData := false
+		err = scanWorkflowTree(old, entry.Dev, func(info fs.FileInfo) error {
+			if info.Size() > 0 {
+				hasData = true
+				return fs.SkipAll
+			}
+			return nil
+		})
+		if err != nil || hasData {
+			return hasData, err
+		}
+	}
+	return false, nil
+}
+
 func planWorkflowMoves(grouped bool) ([]layoutEntry, error) {
 	phase := workflowGrouping
 	if !grouped {
@@ -58,6 +99,10 @@ func planWorkflowMoves(grouped bool) ([]layoutEntry, error) {
 // Wake payloads and their claim pins can legitimately link to one inode.
 // Whole-directory renames preserve both names without rewriting the files.
 func checkWorkflowTree(root string, device uint64) error {
+	return scanWorkflowTree(root, device, nil)
+}
+
+func scanWorkflowTree(root string, device uint64, visitFile func(fs.FileInfo) error) error {
 	const entryLimit = 64 * 1024
 	count := 0
 	return filepath.WalkDir(root, func(path string, object fs.DirEntry, err error) error {
@@ -81,6 +126,9 @@ func checkWorkflowTree(root string, device uint64) error {
 		}
 		if err := checkOwnedRegular(info); err != nil || info.Mode().Perm()&0077 != 0 {
 			return fmt.Errorf("workflow file requires review: %s", path)
+		}
+		if visitFile != nil {
+			return visitFile(info)
 		}
 		return nil
 	})

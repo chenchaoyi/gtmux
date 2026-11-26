@@ -1067,6 +1067,15 @@ The optional workflow layout SHALL group HQ delivery, submission recovery, deliv
 - **AND** a restart failure, an incomplete move or a cleanup error can be resumed from the same command and its recorded plan
 - **AND** a cleanup-only retry reports its result without launching ordinary repair
 
+#### Scenario: Discover an optional layout migration during a normal check
+
+- **WHEN** plain `gtmux doctor` checks a verified `layout-v2` installation with workflow data still at the original paths
+- **THEN** the results summary identifies the optional `layout-v3` migration and gives the next command
+- **AND** it names any detected reason to defer the move
+- **AND** the notice is informational and does not start the migration wizard or change storage or service state
+- **AND** a fresh installation or empty scaffolding without workflow data does not receive the offer
+- **AND** completed, interrupted and inconsistent layouts retain their own diagnostic
+
 #### Scenario: A tmux or other gtmux writer is still present
 
 - **WHEN** the operator checks or attempts a layout change while a writer is active

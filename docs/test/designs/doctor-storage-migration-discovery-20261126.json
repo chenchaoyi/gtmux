@@ -1,0 +1,46 @@
+{
+  "id": "doctor-storage-migration-discovery-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-26",
+    "decision": "Show applicable maintenance in the initial Doctor summary and keep it read-only",
+    "notes": "Exercise the ordinary interactive Doctor dispatch with a temporary HOME and known process/service observations. Check informational readiness independently of unrelated repairs. The fixture does not verify an actual Mac reboot or migration."
+  },
+  "cases": [
+    {
+      "id": "DMD-001",
+      "layer": "L2",
+      "description": "Ordinary Doctor shows the applicable v2 migration and its next command",
+      "setup": "Use private grouped v2 storage and an isolated terminal with read-only launchd fixtures.",
+      "action": "Run bare doctor from a PTY and inspect the result summary.",
+      "expected": "The summary names the optional v3 migration and gtmux doctor --fix. It offers no migration confirmation and leaves the original path, layout marker and service state intact.",
+      "planned_files": [
+        "internal/app/doctor_storage_discovery_test.go"
+      ]
+    },
+    {
+      "id": "DMD-002",
+      "layer": "L2",
+      "description": "Ordinary Doctor tells a reader why to defer an applicable migration",
+      "setup": "Use grouped v2 storage and observe a tmux terminal, a live tmux process, a menu-bar process or an occupied workflow destination.",
+      "action": "Run bare doctor and inspect the summary for the concrete reason and the pre-restore next step.",
+      "expected": "The note is visible at the end, distinguishes deferral from readiness and advises running the migration wizard only in the right window. No migration or service change is attempted.",
+      "planned_files": [
+        "internal/app/doctor_storage_discovery_test.go"
+      ]
+    },
+    {
+      "id": "DMD-003",
+      "layer": "L2",
+      "description": "Completed, inconsistent or inapplicable layouts never show fresh v2 migration advice",
+      "setup": "Use isolated flat, already migrated and interrupted or conflicting fixtures.",
+      "action": "Run ordinary Doctor and read the diagnostic.",
+      "expected": "Flat and verified v3 states have no optional v2 migration notice. Existing interrupted and conflicting layouts retain their original guidance instead of a fresh-migration offer.",
+      "planned_files": [
+        "internal/app/doctor_storage_discovery_test.go"
+      ]
+    }
+  ],
+  "seal": "23f5de212c8e20423e4cfdf329fc4e6698f4a4f0d6a6638c09e89010621f2d35"
+}
