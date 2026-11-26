@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner, author self-review",
     "date": "2026-11-26",
     "decision": "Approve before implementation",
-    "notes": "Exercise the real path resolver and migration journal under an isolated HOME. Use injected boot-window and process evidence for CLI checks. Re-reviewed the storage test files for the wake inventory fix. The maintenance window and cleanup expectations still apply, and the wake inventory case now checks refusal and overlap evidence. These cases do not claim production migration or a reboot."
+    "notes": "Exercise the real path resolver and migration journal under an isolated HOME. Use injected boot-window and process evidence for CLI checks. Re-reviewed the storage test files for the wake inventory fix. The maintenance window and cleanup expectations still apply. The wake inventory case checks refusal and overlap evidence, including the independent PR review boundary for valid and malformed retained retries. These cases do not claim production migration or a reboot."
   },
   "cases": [
     {
@@ -54,5 +54,5 @@
       ]
     }
   ],
-  "seal": "f328db5dfd5c62d4160fb629b61f985eaf53940bc0ca3c4ef9c019870bae1c2d"
+  "seal": "d375a24fbcfdbd2fd63e13fc5d5ab40d488c7ff4764969ab724eba971fb6dda9"
 }

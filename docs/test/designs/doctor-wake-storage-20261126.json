@@ -5,7 +5,7 @@
     "reviewer": "Implementation owner, author self-review",
     "date": "2026-11-26",
     "decision": "Approve before implementation",
-    "notes": "Use temporary HOME directories and synthetic, opaque fixture bodies. Cover distinct files and hard links in the same slot. Check the shared Doctor row used by terminal and JSON output. These fixtures do not establish a delivery outcome or exercise live recovery."
+    "notes": "Use temporary HOME directories and synthetic, opaque fixture bodies. Cover distinct files and hard links in the same slot. Check the shared Doctor row used by terminal and JSON output. The independent PR review identified the malformed retry boundary. Under DWI-001, use a malformed retained retry paired with a claim and a valid retained retry as a positive control. Under DWI-002, assert the keep-both guidance in each language. These fixtures do not establish a delivery outcome or exercise live recovery."
   },
   "cases": [
     {
@@ -31,5 +31,5 @@
       ]
     }
   ],
-  "seal": "9aaae34d4c764675d49e40e997945577bad2325b469becec903d1ce6b7fbd294"
+  "seal": "1e05c625ec7a7f3f215aac45a3e043b9194d56f30cdfab781c9880cbbf16c83c"
 }
