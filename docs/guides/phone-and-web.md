@@ -32,7 +32,7 @@ To add another device or browser, run `gtmux pair` on the host for a fresh code.
 On **iPhone**, tap an agent to read its conversation or terminal. When it needs a reply,
 choose an offered answer or type your own. You can also send control keys or a screenshot.
 
-While an agent is working, tap **Show live view** in Chat. Drag the handle in the header up to see more terminal output or down to make room for the conversation. The panel covers the conversation from above the message field and keeps your reading position.
+While an agent is working, tap **Show live view** in Chat. Drag the handle in the header up to see more terminal output or down to make room for the conversation. The panel covers the conversation from above the message field and keeps your reading position. Scroll inside the panel to read up to 1,000 retained terminal lines at any height. Fresh output waits while you browse. Scroll back to the bottom to resume following.
 
 Explicit phone messages to a verified Codex session use the current eligible turn, or
 start a turn when that session is already loaded and idle. They do not resume a closed

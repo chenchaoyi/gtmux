@@ -2936,7 +2936,7 @@ Last-known history SHALL retain the authorized current-pane Live disclosure whil
 
 ### Requirement: Chat Live terminal height can be adjusted
 
-An expanded Live terminal with captured output SHALL expose an adjustable grip in the same compact header as its status and close action. Upward and downward drags SHALL change the height of a bottom-anchored layer within the available Chat viewport. The grip SHALL also support accessible increase and decrease actions. The preview SHALL preserve the newest captured line and show more captured lines as height increases. The selected height SHALL follow the same conversation scope as the disclosure.
+An expanded Live terminal with captured output SHALL expose an adjustable grip in the same compact header as its status and close action. Upward and downward drags SHALL change the height of a bottom-anchored layer within the available Chat viewport. The grip SHALL also support accessible increase and decrease actions. The preview SHALL preserve the newest captured line and show more captured lines as height increases. The selected height SHALL follow the same conversation scope as the disclosure. At any height, the reader SHALL be able to scroll through the latest 1,000 available capture lines. Browsing earlier output SHALL hold that capture until the reader returns to the tail or reopens Live.
 
 #### Scenario: Find Live in a working conversation
 

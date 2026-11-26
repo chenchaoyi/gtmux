@@ -40,7 +40,7 @@ import {useTermReflow, TermReflowViewport} from './useTermReflow';
 import {JumpToBottom} from './JumpToBottom';
 import {Debug} from '../debug';
 import {AnsiLine} from './ansi';
-import {PAD, cellWidthFor, colsFor, cursorSpans, flattenGrid, linkify, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
+import {MOBILE_SCROLLBACK_LINES, PAD, cellWidthFor, colsFor, cursorSpans, flattenGrid, linkify, nativeFontFamily, normalizeGlyphs, renderView, rowHeightFor, tapTarget} from './term';
 import {makeLineCache, parseLinesCached, wrapLinesCached} from './termLineCache';
 import {TermTheme} from '../api/types';
 import {edgeDistance} from './liveEdge';
@@ -125,15 +125,6 @@ const DEF_FG = '#d4d2cc';
 // bundled woff2 picker fonts are webview-only; native would need them linked as
 // .ttf — a later follow-up, not needed for the read-only viewer.
 const MONO = nativeFontFamily(undefined, Platform.OS);
-// cap how many trailing capture lines we render as one selectable <Text> — enough
-// scrollback for a phone glance, light enough not to hitch/crash. Deeper history
-// lives in Chat mode (the conversation, itself bounded by the server and the view).
-const MAX_LINES = 1000; // dual-layer (color + selectable overlay) makes each line
-// cost twice; 1000 gives a deep phone scrollback (the server capture sends 2000, so
-// this stays half the buffer) while holding under the flat-ScrollView mount hitch —
-// dial down if a fast-updating pane janks on older hardware. The bottom is preserved
-// so the bottom-anchored cursor still maps; older output is reached through Chat mode.
-
 // Selection tint. iOS: the native selection overlay's tintColor — the system paints
 // the range band (at its own ~20% alpha) and the drag handles from it, so pass it
 // OPAQUE. Android: its transparent <Text selectable> overlay draws the band verbatim
@@ -356,7 +347,7 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
   const wrapCols = Platform.OS === 'ios' ? viewportCols : 0;
   const rowH = rowHeightFor(fs);
 
-  // Render only the last MAX_LINES of the capture (capture-pane returns up to ~2000
+  // Render only the last MOBILE_SCROLLBACK_LINES of the capture (capture-pane returns up to ~2000
   // lines of scrollback; one big selectable <Text> of that many nested spans is
   // heavy enough to hitch a working pane's re-render and, at the extreme, crash the
   // app). The bottom is preserved, so the cursor's bottom-relative `up` still maps.
@@ -370,7 +361,7 @@ export function NativeTerm({text, fontSize = 12, cursor, paneCols, theme, lang =
   const wrapCache = useRef(makeLineCache());
   const raws = useMemo(() => {
     const nl = normalizeGlyphs(shown).split('\n');
-    return nl.length > MAX_LINES ? nl.slice(nl.length - MAX_LINES) : nl;
+    return nl.length > MOBILE_SCROLLBACK_LINES ? nl.slice(nl.length - MOBILE_SCROLLBACK_LINES) : nl;
   }, [shown]);
   const opts = useMemo(() => ({palette: theme?.palette, base: fg, bg: true}), [theme?.palette, fg]);
   const sourceLines = useMemo(() => parseLinesCached(raws, opts, parseCache.current), [raws, opts]);

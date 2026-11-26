@@ -5387,11 +5387,13 @@
   "mobileapp/src/ui/ChatView.liveResize.test.tsx": {
     "cases": [
       "LVR-001",
-      "LVR-002"
+      "LVR-002",
+      "LVR-004"
     ],
     "selectors": [
       "dragging the live grip reveals more terminal lines and respects the available height",
-      "preview sizing survives updates, folding and idle but starts fresh on another pane"
+      "preview sizing survives updates, folding and idle but starts fresh on another pane",
+      "browsing an older Live capture survives polling and resizing until the reader returns to the tail"
     ]
   },
   "mobileapp/src/ui/ChatView.liveResizeFold.test.tsx": {

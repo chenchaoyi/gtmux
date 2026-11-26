@@ -19,12 +19,16 @@ test.each(['en','zh'] as const)('LPV001 %s pending history still opens the indep
   expect(text(tree)).not.toContain('pane-line-19');
   act(()=>toggle().props.onPress());
   expect(toggle().props.accessibilityState.expanded).toBe(true);
-  expect(text(tree)).toContain('pane-line-19');expect(text(tree)).not.toContain('pane-line-5');
+  expect(text(tree)).toContain('pane-line-19');expect(text(tree)).toContain('pane-line-0');
   const source=tree.root.findByProps({testID:'live-pane-source'});
   expect(String(source.props.children)).toContain('%fixture');
   expect(String(source.props.children)).toContain(lang==='zh'?'关联待确认':'association unconfirmed');
   expect(tree.root.findAllByType(ScrollView).some(n=>n.props.nestedScrollEnabled&&n.props.style?.maxHeight===220)).toBe(true);
   expect(tree.root.findAllByProps({testID:'history-read-only'})).not.toHaveLength(0);
+  const scroll=tree.root.findAllByType(ScrollView).find(n=>n.props.nestedScrollEnabled&&!n.props.horizontal)!;
+  act(()=>scroll.props.onScrollBeginDrag());
+  act(()=>tree.update(<ChatView agent={agent} lines={[]} status="working" fontSize={13} pal={paletteFor('dark')} lang={lang} turns={[]} loading={false} readOnlyHistory/>));
+  expect(text(tree)).not.toContain('pane-line-0');
   act(()=>toggle().props.onPress());expect(text(tree)).not.toContain('pane-line-19');
  }finally{act(()=>tree.unmount());}
 });

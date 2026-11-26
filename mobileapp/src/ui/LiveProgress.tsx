@@ -2,7 +2,9 @@ import {useReadingPalette, readingColors} from './ReadingPalette';
 import type {Palette} from './theme';
 import React from 'react';
 import {PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
-import {AnsiLine} from './ansi';
+import type {AnsiLine, Span} from './ansi';
+import {MOBILE_SCROLLBACK_LINES} from './term';
+import type {NativeScrollEvent, NativeSyntheticEvent} from 'react-native';
 import {BrandLoader} from './BrandLoader';
 import {Chevron} from './Icons';
 import {TestIds} from '../constants/testIds';
@@ -42,7 +44,6 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
   const height = Math.max(minHeight, Math.min(desiredHeight, previewLimit));
   const lineHeight = Math.round(fontSize * 1.4);
   const rowLimit = Math.max(1, Math.floor((height - 8) / lineHeight));
-  const visibleLines = open ? lines.slice(-rowLimit) : [];
   const canResize = lines.length > 0 && previewLimit > minHeight;
   const current = React.useRef({height, minHeight, previewLimit, onResize});
   current.current = {height, minHeight, previewLimit, onResize};
@@ -126,19 +127,55 @@ export function LiveProgress({avatar, label, lines, fontSize, fontFamily, lang, 
       {sourceLabel && <ChromeText testID="live-pane-source" style={styles.source}>{sourceLabel}</ChromeText>}
     </View>
     {height > 0 && <View testID={TestIds.detail.chatLivePreview} style={styles.preview}>
-      {visibleLines.length ? <ScrollView style={{...styles.viewport, height, maxHeight: height}} nestedScrollEnabled>
-        <ScrollView horizontal nestedScrollEnabled contentContainerStyle={styles.screen}>
-          <Text selectable style={[styles.mono, {fontFamily, fontSize, lineHeight}]}>
-            {visibleLines.map((spans, i) => <Text key={i}>
-              {i > 0 ? '\n' : ''}
-              {spans.length === 0 ? ' ' : spans.map((span, j) =>
-                <Text key={j} style={{color: span.color, fontWeight: span.bold ? '700' : '400'}}>{span.text}</Text>)}
-            </Text>)}
-          </Text>
-        </ScrollView>
-      </ScrollView> : <Text style={styles.empty}>{lang === 'zh' ? '尚无实时输出' : 'No terminal output yet'}</Text>}
+      {lines.length ? <LiveScrollback lines={lines} height={height} fontSize={fontSize} lineHeight={lineHeight}
+        fontFamily={fontFamily} /> : <Text style={historyStyles.empty}>{lang === 'zh' ? '尚无实时输出' : 'No terminal output yet'}</Text>}
     </View>}
   </View>;
+}
+
+// The viewport can resize independently of the bounded capture. Keep the displayed
+// frame while browsing: a rotating buffer can otherwise replace the row under a finger.
+function LiveScrollback({lines, height, fontSize, lineHeight, fontFamily}: {
+  lines: AnsiLine[]; height: number; fontSize: number; lineHeight: number; fontFamily?: string;
+}) {
+  const live = React.useMemo(() => lines.length > MOBILE_SCROLLBACK_LINES ? lines.slice(-MOBILE_SCROLLBACK_LINES) : lines, [lines]);
+  const [held, setHeld] = React.useState<AnsiLine[] | null>(null);
+  const viewport = React.useRef<ScrollView>(null);
+  const following = React.useRef(true);
+  const displayed = held ?? live;
+  const text = React.useMemo(() => {
+    // Plain terminal output often has hundreds of identically styled lines.
+    // Keep selection continuous without building a native Text node per line.
+    const runs: Span[] = [];
+    function append(value: string, color: string, bold?: boolean) {
+      const last = runs[runs.length - 1];
+      if (last && last.color === color && last.bold === bold) last.text += value;
+      else runs.push({text: value, color, bold});
+    }
+    displayed.forEach((row, i) => {
+      if (i > 0) runs[runs.length - 1].text += '\n';
+      if (!row.length) append(' ', '#D6D6DA');
+      for (const span of row) append(span.text, span.color, span.bold);
+    });
+    return runs.map((run, i) => <Text key={i} style={{color: run.color, fontWeight: run.bold ? '700' : '400'}}>{run.text}</Text>);
+  }, [displayed]);
+  const snapToTail = () => {
+    if (following.current) viewport.current?.scrollToEnd({animated: false});
+  };
+  const settle = ({nativeEvent: {contentSize, layoutMeasurement, contentOffset}}: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (contentSize.height - layoutMeasurement.height - contentOffset.y <= 1) {
+      following.current = true;
+      setHeld(null);
+    }
+  };
+  return <ScrollView ref={viewport} style={{...historyStyles.viewport, height, maxHeight: height}} nestedScrollEnabled
+    onContentSizeChange={snapToTail} onLayout={snapToTail}
+    onScrollBeginDrag={() => {following.current = false; setHeld(displayed);}}
+    onScrollEndDrag={settle} onMomentumScrollEnd={settle}>
+    <ScrollView horizontal nestedScrollEnabled contentContainerStyle={historyStyles.screen}>
+      <Text selectable style={[historyStyles.mono, {fontFamily, fontSize, lineHeight}]}>{text}</Text>
+    </ScrollView>
+  </ScrollView>;
 }
 
 const makeStyles = (pal: Palette) => StyleSheet.create({
@@ -157,6 +194,9 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
   actionText: {fontSize: 13, fontWeight: '600', color: readingColors(pal).link, flexShrink: 1},
   preview: {flexShrink: 1, overflow: 'hidden', borderRadius: 6},
   source: {color: pal.fg2, fontSize: 12, lineHeight: 18, marginBottom: 4, paddingHorizontal: 6},
+});
+
+const historyStyles = StyleSheet.create({
   viewport: {backgroundColor: '#17171A'},
   screen: {paddingVertical: 4},
   mono: {color: '#D6D6DA'},

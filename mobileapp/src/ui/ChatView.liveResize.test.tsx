@@ -44,7 +44,7 @@ afterEach(() => {
 test('dragging the live grip reveals more terminal lines and respects the available height', () => {
   press();
   expect(height()).toBe(220);
-  expect(shown()).not.toContain('Line 31');
+  expect(shown()).toContain('Line 31');
   expect(shown()).toContain('Line 50');
   expect(grip().props.accessibilityRole).toBe('adjustable');
   const header = liveView('chat-live-header');
@@ -104,4 +104,30 @@ test('preview sizing survives updates, folding and idle but starts fresh on anot
   expect(grip()).toBeUndefined();
   press();
   expect(height()).toBe(220);
+});
+
+test('browsing an older Live capture survives polling and resizing until the reader returns to the tail', () => {
+  const history = Array.from({length: 1050}, (_, i) => [{text: `row[${i}]`, color: '#fff'}]);
+  const next = [[{text: 'new frame', color: '#fff'}]];
+  act(() => tree.update(view(agent, 'working', history)));
+  press();
+  expect(shown()).toContain('row[50]');
+  expect(shown()).not.toContain('row[49]');
+  expect(shown()).toContain('row[1049]');
+  const scroll = () => tree.root.findAllByType(ScrollView).find(n => n.props.nestedScrollEnabled && !n.props.horizontal)!;
+  const position = (y: number) => ({nativeEvent: {contentOffset: {y}, layoutMeasurement: {height: 220}, contentSize: {height: 18000}}});
+  act(() => scroll().props.onScrollBeginDrag());
+  act(() => scroll().props.onScrollEndDrag(position(120)));
+  act(() => tree.update(view(agent, 'working', next)));
+  act(() => grip().props.onAccessibilityAction({nativeEvent: {actionName: 'increment'}}));
+  expect(shown()).toContain('row[50]');
+  expect(shown()).not.toContain('new frame');
+  act(() => scroll().props.onMomentumScrollEnd(position(17780)));
+  expect(shown()).toContain('new frame');
+  expect(shown()).not.toContain('row[50]');
+  act(() => scroll().props.onScrollBeginDrag());
+  act(() => tree.update(view(agent, 'working', history)));
+  press();
+  press();
+  expect(shown()).toContain('row[1049]');
 });

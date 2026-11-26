@@ -6171,6 +6171,7 @@ LEG-63a0f74f75c3,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveElapsed.te
 LEG-717b753fc16c,L2,RN / mobile harness,mobileapp/src/ui/ChatView.liveElapsed.test.tsx,49,test,the duration on the Live card moves with the clock,False,legacy-not-retrospectively-reviewed
 MAP-439b23120796,L2,reviewed implementation,mobileapp/src/ui/ChatView.liveResize.test.tsx,44,reviewed-selector,dragging the live grip reveals more terminal lines and respects the available height,False,"LVR-001,LVR-002"
 MAP-e9dd481a4da5,L2,reviewed implementation,mobileapp/src/ui/ChatView.liveResize.test.tsx,87,reviewed-selector,"preview sizing survives updates, folding and idle but starts fresh on another pane",False,"LVR-001,LVR-002"
+MAP-8589824d0d41,L2,reviewed implementation,mobileapp/src/ui/ChatView.liveResize.test.tsx,109,reviewed-selector,browsing an older Live capture survives polling and resizing until the reader returns to the tail,False,"LVR-001,LVR-002,LVR-004"
 MAP-c60cae643ed6,L2,reviewed implementation,mobileapp/src/ui/ChatView.liveResizeFold.test.tsx,10,reviewed-selector,Live covers the transcript without changing its layout or following the tail,False,LVR-003
 LEG-74ffbe338023,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,20,test,user prompts render markdown with selectable text and the chosen font size,False,legacy-not-retrospectively-reviewed
 LEG-17bcf63fd7e8,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,28,test,long prompt switches from bounded preview to complete markdown,False,legacy-not-retrospectively-reviewed

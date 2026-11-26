@@ -54002,7 +54002,7 @@
           "design": "LPV-001"
         }
       ],
-      "sha256": "9fc77862ad13e4c5f25223dc3b15d364e8fde86f3420cad0fd0c6201f721b2d8"
+      "sha256": "43cfda6901f44539ee41671ee7b042962f5885cf5b6a395d5908451583895e23"
     },
     "mobileapp/src/ui/ChatView.seam.test.tsx": {
       "sha256": "2f4589238c0b7d618993b32534cbad1953a297eefa834de1db72fc0606e58619",
@@ -69267,9 +69267,18 @@
           "dynamic": false,
           "layer": "L2",
           "design": "LVR-001,LVR-002"
+        },
+        {
+          "id": "MAP-8589824d0d41",
+          "line": 109,
+          "kind": "reviewed-selector",
+          "name": "browsing an older Live capture survives polling and resizing until the reader returns to the tail",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "LVR-001,LVR-002,LVR-004"
         }
       ],
-      "sha256": "b590ff6204bff43864c69008a6943130c099410e2ecb1a293936940cc9a9326a"
+      "sha256": "b1e7cc9fea31f095734c992e2a613425f43db5edf6a9d5d7dbf02b52408dbd0a"
     },
     "mobileapp/src/ui/ChatView.liveResizeFold.test.tsx": {
       "layer": "L2",
