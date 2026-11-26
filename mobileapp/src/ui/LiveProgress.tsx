@@ -142,6 +142,7 @@ function LiveScrollback({lines, height, fontSize, lineHeight, fontFamily}: {
   const [held, setHeld] = React.useState<AnsiLine[] | null>(null);
   const viewport = React.useRef<ScrollView>(null);
   const following = React.useRef(true);
+  const measured = React.useRef({viewport: 0, content: 0});
   const displayed = held ?? live;
   const text = React.useMemo(() => {
     // Plain terminal output often has hundreds of identically styled lines.
@@ -159,17 +160,27 @@ function LiveScrollback({lines, height, fontSize, lineHeight, fontFamily}: {
     });
     return runs.map((run, i) => <Text key={i} style={{color: run.color, fontWeight: run.bold ? '700' : '400'}}>{run.text}</Text>);
   }, [displayed]);
-  const snapToTail = () => {
-    if (following.current) viewport.current?.scrollToEnd({animated: false});
+  const resume = () => {
+    following.current = true;
+    setHeld(null);
+  };
+  const reconcileSize = () => {
+    if (!following.current) {
+      // A resize can remove the last scrollable row without a scroll-end event.
+      const {viewport: visible, content} = measured.current;
+      if (!(visible > 0 && content > 0 && content <= visible)) return;
+      resume();
+    }
+    viewport.current?.scrollToEnd({animated: false});
   };
   const settle = ({nativeEvent: {contentSize, layoutMeasurement, contentOffset}}: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (contentSize.height - layoutMeasurement.height - contentOffset.y <= 1) {
-      following.current = true;
-      setHeld(null);
-    }
+    const content = contentSize.height, visible = layoutMeasurement.height;
+    measured.current = {content, viewport: visible};
+    if (content > 0 && visible > 0 && content - visible - contentOffset.y <= 1) resume();
   };
   return <ScrollView ref={viewport} style={{...historyStyles.viewport, height, maxHeight: height}} nestedScrollEnabled
-    onContentSizeChange={snapToTail} onLayout={snapToTail}
+    onContentSizeChange={(_width, content) => {measured.current.content = content; reconcileSize();}}
+    onLayout={({nativeEvent: {layout}}) => {measured.current.viewport = layout.height; reconcileSize();}}
     onScrollBeginDrag={() => {following.current = false; setHeld(displayed);}}
     onScrollEndDrag={settle} onMomentumScrollEnd={settle}>
     <ScrollView horizontal nestedScrollEnabled contentContainerStyle={historyStyles.screen}>

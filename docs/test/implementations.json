@@ -5384,6 +5384,10 @@
       "keeps full labelled request details and a failed outcome with HTTP 200"
     ]
   },
+  "mobileapp/src/ui/LiveProgress.resizeFollow.test.tsx": {
+    "cases": ["LVR-005"],
+    "selectors": ["a measured %s change resumes Live when the held frame fits"]
+  },
   "mobileapp/src/ui/ChatView.liveResize.test.tsx": {
     "cases": [
       "LVR-001",
