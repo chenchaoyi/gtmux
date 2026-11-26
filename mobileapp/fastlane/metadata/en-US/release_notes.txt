@@ -1,2 +1,2 @@
-- Drag Live View up over the conversation to see more terminal output. Collapse it to return to the same place in the chat.
-- The drag handle now shares a row with the status and collapse button, leaving more room for terminal output.
+- Scroll through earlier terminal output in Live View. When the expanded panel fits all the output you were reading, it resumes following new lines.
+- Live View keeps its height and reading position when the same conversation refreshes or finishes connecting.
