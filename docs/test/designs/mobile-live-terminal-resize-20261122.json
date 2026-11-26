@@ -4,8 +4,8 @@
   "review": {
     "reviewer": "Codex implementation owner, regression design self-review",
     "date": "2026-11-26",
-    "decision": "Cover the conversation with the expanded Live panel and integrate the grip into its header",
-    "notes": "The reported iPhone build adds both the grip row and the terminal height to the transcript. Exercise the shared React Native tree, resize responder, viewport changes and reading anchor. Native rendering, touch and VoiceOver on devices require separate acceptance."
+    "decision": "Keep scrollback independent of the height of the mobile Live overlay",
+    "notes": "Implementation owner reviewed the released viewport-only slice. Exercise the rendered scroll content, capture turnover and scope reset. Gesture physics and device frame time require native acceptance."
   },
   "cases": [
     {
@@ -40,7 +40,18 @@
       "planned_files": [
         "mobileapp/src/ui/ChatView.liveResizeFold.test.tsx"
       ]
+    },
+    {
+      "id": "LVR-004",
+      "layer": "L2",
+      "description": "Mobile Live retains a bounded scrollable capture while the reader browses earlier output",
+      "setup": "Open the working Chat overlay with more than 1,000 numbered capture lines.",
+      "action": "Browse away from the tail, replace the capture, resize the panel and return to the tail. Close and reopen.",
+      "expected": "Up to the latest 1,000 captured lines are available at any panel height. Older rows remain readable during polling, returning to the tail shows the current capture, and reopening starts live.",
+      "planned_files": [
+        "mobileapp/src/ui/ChatView.liveResize.test.tsx"
+      ]
     }
   ],
-  "seal": "f4123acb1465757953f7a2fbac2c22a1e162799369cc6c97fe49ed4fca14520b"
+  "seal": "efa1a2c512c72eb6941126e0c4dc533d531072fc81cd72f4999d03dc4a527bc8"
 }

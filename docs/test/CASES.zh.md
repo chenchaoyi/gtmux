@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1504 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1505 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2761 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2763 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 170 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 146 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -515,7 +515,7 @@
 | KBSYNC-SERIALIZATION | Old implementation fails held-lock and final R1-content assertions. New sync holds the same ledger lock across read/publication; independent review/carry cannot interleave and final R1 remains landed with its full carrier. Errors/refusals release the lock. Carry uses an internal already-locked implementation; no recursive deadlock. |
 | KBLOCAL-DURABILITY-RETRY | Both failures leave ledger unchanged, same revision pending and carrier complete/private; every retry invokes the durable writer even with identical content. Only successful writer completion allows exactly one land append. Existing readonly/link/edited-target protections and original revision token contract remain. Old equal-content early return fails actual ledger/callback assertions. |
 | PRIVATEWRITE-DIRECTORY-SYNC | EIO is returned after complete visible replacement, repeated same-byte writes reach directory synchronization again, successful directory fsync returns nil. No truncated inode, exposed permissions or leaked staging file. No hardware durability claim. |
-| LPV-001 | Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and remains bounded14lines/220pt. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain. |
+| LPV-001 | Pending historical Chat shows a real disclosure and its current-pane caption; raw output mounts only after expansion and uses a 220-point default viewport with up to 1,000 accessible rows; clearing the current pane capture discards the held history. No terminal output/disclosure for explicit desktop readOnly, native or missing pane. Existing input/read-only guidance and scope reset/retention semantics remain. |
 | LPV-002 | Old capture is absent immediately in the new Live scope; late A cannot replace B. Current B capture appears only after its read settles. Historical Chat send/keys/uploads remain disabled and no send is made. No additional poller is introduced. |
 | LPV-003 | Live displays exactly the 20 captured rows from the current pane and identifies the pending association. Closing hides output. No send or authority promotion and no page/console errors. |
 | LAP-007 | Only a verified local service yields an HTTP address. The published App reference survives unavailable service and the CLI reports how to retry. An explicit port cannot send a credential or select a foreign host. |
@@ -564,9 +564,11 @@
 | KRDS-001 | History API and extra ordinary title words remain current; exact supported titles with clear descriptors can fold, headings inside fences/quotes remain current; ordered source bytes remain identical |
 | KRDS-002 | Historical subheadings can stay in history; same/higher following headings cause conservative whole-body current fallback, retaining original order and all text. Non-heading code/quote lookalikes do not end history |
 | KRDS-003 | Hidden comment markers/content never become visible. Conservative whole-body fallback retains the exact source. Ordinary supported split still retains guidance and history; existing reference-definition fallback stays unchanged |
+| LVR-005 | The latest capture and both later frames display without another scroll. If old content still overflows, browsing stays held until the reader reaches the bottom at the new viewport height. Unknown or zero dimensions cannot establish a fit. |
 | LVR-001 | The grip shares the header row with the status and close control, with a 44-point touch target. Upward drag expands the panel and shows earlier captured output while retaining the latest row. Downward drag shrinks it. Viewport changes clamp the effective height and restoring space restores the selected size. Accessible actions use the same bounds. |
 | LVR-002 | The selection survives redraw, folding and temporary idle within the same scope. A new scope starts folded at its default size. Resizing does not create an input action or change pane identity. |
 | LVR-003 | Only the collapsed row occupies layout space in the transcript. The expanded card sits above the composer and below the top controls as a sibling layer with an opaque surface. Its resize leaves the scroll subtree, footer space and reading state stable. The fixed fold action keeps its normal touch target and the closed Live disclosure returns. |
+| LVR-004 | Up to the latest 1,000 captured lines are available at any panel height. Older rows remain readable during polling, returning to the tail shows the current capture, and reopening starts live. |
 | MCE-007 | Only well-formed external links reach the native opener. Permissive-only protocol matches do not become local previews or external links. Explicit entity references preserve query separators and local evidence still uses the paired resolver interpretation. |
 | PPR-001 | No upload/send/history or clearing while read is pending; visible disabled Send and concise reading feedback. Only one picker request; all four photos remain ordered and a later explicit Send uploads each exactly once before the original caption/paths are submitted. No automatic resend. |
 | PPR-002 | Full lifecycle finally releases ref/state, pending selection blocks send and reentry; after settlement a new selection/send is possible. Caption and existing images remain; no automatic upload/send, no spurious photo editor. Existing unmount late-result guard remains. |

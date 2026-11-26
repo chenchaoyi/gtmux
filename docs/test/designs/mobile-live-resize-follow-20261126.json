@@ -1,0 +1,24 @@
+{
+  "id": "mobile-live-resize-follow-20261126",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review",
+    "date": "2026-11-26",
+    "decision": "Reconcile a held frame with native content and viewport measurements",
+    "notes": "The independent review reproduced a frozen 13-row frame after resize. Exercise layout and content-size callbacks without synthesizing a return-to-tail gesture. Native gesture timing remains device QA."
+  },
+  "cases": [
+    {
+      "id": "LVR-005",
+      "layer": "L2",
+      "description": "Live resumes following once the entire held frame fits the measured viewport",
+      "setup": "At 13-point font, browse 13 captured lines in a 220-point preview. The native scroll measurement reports a 242-point content height.",
+      "action": "Queue a new capture, grow to 444 points and feed the measured layout. Independently exercise content-size remeasurement. Then send two further frames.",
+      "expected": "The latest capture and both later frames display without another scroll. If old content still overflows, browsing stays held until the reader reaches the bottom at the new viewport height. Unknown or zero dimensions cannot establish a fit.",
+      "planned_files": [
+        "mobileapp/src/ui/LiveProgress.resizeFollow.test.tsx"
+      ]
+    }
+  ],
+  "seal": "5447cce9c773de16f6ced66900ab350b6089dabc484880accbc8f0e9a8bf9668"
+}

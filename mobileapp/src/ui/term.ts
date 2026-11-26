@@ -125,6 +125,9 @@ export function paneLines(text: string, opts?: AnsiOpts): AnsiLine[] {
   return parseAnsi(normalizeGlyphs(text), opts);
 }
 
+// Both mobile terminal surfaces retain the same bounded history.
+export const MOBILE_SCROLLBACK_LINES = 1000;
+
 // ————— Uniform grid (mobile-native-term-selection Stage 1, iOS) —————
 //
 // The iOS terminal renders a TRUE uniform grid: every visual row has the same
