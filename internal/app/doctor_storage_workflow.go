@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
@@ -258,18 +259,25 @@ func rowWakeStorage() dcheck {
 	if err != nil {
 		return dcheck{stMiss, label, i18n.Tr("inspection incomplete", "盘点未完成"), err.Error()}
 	}
-	value := fmt.Sprintf(i18n.Tr("%d queued · %d claimed · %d unknown · %d awaiting proof",
-		"%d 待投递 · %d 已领取 · %d 结果未知 · %d 待送达核实"),
-		usage.Queued, usage.Claimed, usage.Uncertain, usage.AwaitingProof)
-	if usage.Unclassified > 0 {
-		return dcheck{stRec, label, value,
-			fmt.Sprintf(i18n.Tr("%d unclassified entries kept in %s. Verify their owner and delivery evidence.",
-				"%d 个未分类条目保留在 %s。请核对归属和投递证据。"), usage.Unclassified, state.WorkflowPath("hq-nudges"))}
-	}
+	value := fmt.Sprintf(i18n.Tr("%d queued · %d claimed · %d refused and retained · %d unknown · %d awaiting proof · %d unrecognized",
+		"%d 待投递 · %d 已领取 · %d 已拒绝留存 · %d 结果未知 · %d 待送达核实 · %d 未识别"),
+		usage.Queued, usage.Claimed, usage.Refused, usage.Uncertain, usage.AwaitingProof, usage.Unclassified)
+	var notes []string
 	if usage.Uncertain > 0 {
-		return dcheck{stRec, label, value,
-			i18n.Tr("Unknown outcomes remain on hold. Check delivery evidence by batch before retrying.",
-				"结果未知的原件继续保留。重试前先按批次核对送达证据。")}
+		notes = append(notes, i18n.Tr("Unknown outcomes remain on hold. Check delivery evidence for each batch.",
+			"结果未知的原件继续保留。请按批次核对送达证据。"))
+	}
+	if usage.ConflictingSlots > 0 {
+		slots := i18n.Pl(usage.ConflictingSlots, i18n.Tr("wake slot", "个投递槽位"))
+		notes = append(notes, fmt.Sprintf(i18n.Tr("Distinct claimed and retained files share %s. Keep both files.",
+			"%s同时存在不同的领取文件和留存文件。请保留两份原件。"), slots))
+	}
+	if usage.Unclassified > 0 {
+		notes = append(notes, i18n.Tr("Verify ownership and delivery evidence for unrecognized entries.",
+			"请核对未识别条目的归属和投递证据。"))
+	}
+	if len(notes) > 0 {
+		return dcheck{stRec, label, value, strings.Join(notes, " ")}
 	}
 	return dcheck{stInfo, label, value, filepath.Dir(state.WorkflowPath("hq-nudges"))}
 }

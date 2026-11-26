@@ -70910,7 +70910,7 @@
       "cases": [
         {
           "id": "MAP-23b08a3a33d1",
-          "line": 14,
+          "line": 15,
           "kind": "reviewed-selector",
           "name": "TestGSW003DoctorStorageMaintenanceWindow",
           "dynamic": false,
@@ -70919,15 +70919,24 @@
         },
         {
           "id": "MAP-cac9795bd1ab",
-          "line": 61,
+          "line": 62,
           "kind": "reviewed-selector",
           "name": "TestGSW004DoctorCacheCleanupProtectsDeliveryState",
           "dynamic": false,
           "layer": "L2",
           "design": "GSW-003,GSW-004"
+        },
+        {
+          "id": "MAP-b4cd96101fe3",
+          "line": 100,
+          "kind": "reviewed-selector",
+          "name": "TestDWI002DoctorWakeStorageShowsIndependentDiagnostics",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "GSW-003,GSW-004,DWI-002"
         }
       ],
-      "sha256": "2a49cd7ab1152bed137d8702ca7f846689600f7a449bbd27ff397d9a040904d0"
+      "sha256": "1bff9723a4d3f75f62efe422e94698f1776c7cf268402c702d51d51956f8a794"
     },
     "internal/hqnudge/storage_inspect_test.go": {
       "layer": "L2",
@@ -70935,7 +70944,7 @@
       "cases": [
         {
           "id": "MAP-0f1d97d1a516",
-          "line": 11,
+          "line": 12,
           "kind": "reviewed-selector",
           "name": "TestGSW004WakeStorageInventory",
           "dynamic": false,
@@ -70943,7 +70952,7 @@
           "design": "GSW-004"
         }
       ],
-      "sha256": "a5ecdd236b8c2f2d80b21b0aeb3408911ae8b010a00e0e16b516cb8e0d19a54d"
+      "sha256": "ab810e14bdc72f01bc32e08396a34749a6ca1f108d9ac39acf3858d3b195f9f9"
     },
     "internal/state/workflow_layout_test.go": {
       "layer": "L2",
