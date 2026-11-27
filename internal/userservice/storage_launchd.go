@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/i18n"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"howett.net/plist"
 )
@@ -37,8 +38,9 @@ type StorageLaunchdJob struct {
 	Stage    string
 	Reload   bool
 	Kicked   bool
-	Parked   bool `json:"-"`
-	PID      int  `json:"-"`
+	Parked   bool   `json:"-"`
+	PID      int    `json:"-"`
+	Program  string `json:"-"`
 }
 
 func (m StorageLaunchd) probe(name string, args ...string) ([]byte, error) {
@@ -115,6 +117,7 @@ func (m StorageLaunchd) inspect(label string) (StorageLaunchdJob, bool, error) {
 	if label != "com.gtmux.tunnel" && !m.isCLI(argv[0]) {
 		return job, false, fmt.Errorf("launchd profile %s uses an unrecognized gtmux path; for a verified custom installation (GTMUX_BIN_DIR), run doctor --fix using the same gtmux executable that registered the service", label)
 	}
+	job.Program = argv[0]
 	job.Identity, job.Digest = identity, sha256.Sum256(data)
 	job.Loaded, job.Running, job.PID, job.Parked = loaded, pid > 0, pid, parked
 	for i, domain := range domains {
@@ -129,6 +132,28 @@ func (m StorageLaunchd) inspect(label string) (StorageLaunchdJob, bool, error) {
 		job.Override[i] = value
 	}
 	return job, true, nil
+}
+
+// A registered path can point at an older CLI even if Doctor itself is current.
+// The version command needs neither a writable layout nor a running service.
+func (m StorageLaunchd) CheckPurposeExecutables(jobs []StorageLaunchdJob) error {
+	for _, job := range jobs {
+		if job.Label == "com.gtmux.tunnel" {
+			continue
+		}
+		path := job.Program
+		before, err := os.Stat(path)
+		if err == nil && before.Mode().IsRegular() && before.Mode().Perm()&0111 != 0 && m.isCLI(path) {
+			out, err := m.probe(path, "version", "--storage-format")
+			after, statErr := os.Stat(path)
+			if err == nil && statErr == nil && os.SameFile(before, after) && before.Size() == after.Size() &&
+				before.ModTime().Equal(after.ModTime()) && string(out) == state.PurposeFormatCapability+"\n" {
+				continue
+			}
+		}
+		return fmt.Errorf(i18n.Tr("update the CLI registered for %s (%s) before storage migration", "请先更新 %s 已登记的 CLI（%s），再整理数据目录"), job.Label, path)
+	}
+	return nil
 }
 
 func storageProfileArguments(label string, data []byte) []string {

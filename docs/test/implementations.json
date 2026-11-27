@@ -1,4 +1,24 @@
 {
+  "internal/app/doctor_purpose_dsh_test.go": {
+    "cases": ["PBS-006"],
+    "selectors": ["TestFreshDoctorDSHRepair", "TestFreshDoctorForeignDSH"]
+  },
+  "internal/app/doctor_purpose_revision_test.go": {
+    "cases": ["PBS-004", "PBS-005"],
+    "selectors": ["TestPurposeDoctorRegisteredCLI", "TestPurposeDoctorResumesPublishedGroup", "TestPurposeDoctorOpenHandle", "TestPurposeDoctorFirstRead"]
+  },
+  "internal/state/purpose_layout_test.go": {
+    "cases": ["PBS-003"],
+    "selectors": ["TestPurposePreviewPreservesSources"]
+  },
+  "internal/hook/notifyicon_test.go": {
+    "cases": ["PBS-001"],
+    "selectors": ["TestNotifyAgentIcon"]
+  },
+  "internal/state/workflow_residue_test.go": {
+    "cases": ["PBS-002"],
+    "selectors": ["TestPurposeCleanVerifiedScaffold"]
+  },
   "mobileapp/src/screens/HQLiveEarlierReset.test.tsx": {
     "cases": ["HLS-001"],
     "selectors": ["HQ retires the frozen live viewport on a new empty reset while reading an earlier session"]

@@ -104,6 +104,8 @@ func doctorFix(yes bool, progress func(string)) int {
 	applied += s.applied("cloudflared", s.stepCloudflared)
 	applied += s.applied("app", s.stepAppInstall)
 	applied += s.applied("cache-staging", s.stepCacheStaging)
+	applied += s.applied("recovery-scaffold", s.stepRecoveryScaffold)
+	applied += s.applied("retired-icons", s.stepRetiredIcons)
 	applied += s.applied("legacy-profile-locks", s.stepLegacyProfileLocks)
 	applied += s.applied("housekeeping", s.stepHousekeep)
 	applied += s.applied("credential-backups", s.stepCredentialBackups)
@@ -661,7 +663,6 @@ func (s *fixState) stepClaudeHook() int {
 	if !s.ask(i18n.Tr("Claude Code hook", "Claude Code hook"), detail) {
 		return 0
 	}
-	cacheClaudeIcon()
 	if err := updateSettings(claudeSettingsPath(), s.hookBin(), true); err != nil {
 		i18n.Sae("  ✗ failed: "+err.Error(), "  ✗ 失败："+err.Error())
 		s.rc = 1

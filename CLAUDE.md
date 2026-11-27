@@ -461,9 +461,10 @@ checklist** (a reviewer confirms them before squash-merge — they can't be full
 - **Contracts (don't break):** the `gtmux agents --json` schema (incl. the
   additive optional `role` field) + the `gtmux digest --json`/`GET /api/digest`
   shape (incl. the additive `sense: driver|partial|screen` perception tier,
-  agent-drivers) + `gtmux usage --json`/`GET /api/usage` (usage-watch); state paths
-  `~/.local/share/gtmux/{active/<pane>, waiting/<pane>, last-finished,
-  notify-icon.png, notify/<id>.json}`; hook events
+  agent-drivers) + `gtmux usage --json`/`GET /api/usage` (usage-watch); resolve
+  `active`, `waiting`, `last-finished` and `notify` against the active storage layout
+  (see `docs/design/state-storage-lifecycle.md`). Notifications use the shared
+  agent icon cache. Preserve legacy artwork still referenced by queued notifications. Hook events
   `Stop`/`Notification`/`UserPromptSubmit`; bundle id `com.gtmux.menubar`. The
   hook→app **notify queue** (`internal/notify` writes JSON; macapp
   `NotificationManager` drains & posts) is the notification channel — there is no

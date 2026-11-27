@@ -1,0 +1,24 @@
+{
+  "id": "purpose-fresh-owned-bridge",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner after independent review of 4cd9af2c",
+    "date": "2026-11-27",
+    "decision": "Verify the advertised recovery command before allowing either first writer.",
+    "notes": "An exact shipped terminal-only component can be refreshed without installing any other DSH component."
+  },
+  "cases": [
+    {
+      "id": "PBS-006",
+      "layer": "G",
+      "description": "Fresh data with a retained DSH installation",
+      "setup": "Start without a data root, with a previous owned DSH installation or an unrecognized terminal-only component.",
+      "action": "Try CLI and menu admission, refresh the owned installation, then retry both first writer paths.",
+      "expected": "Both initializers apply the same compatibility rules. The scoped configuration repair runs without creating flat state or enabling new components. Unowned or changed bytes and old input receipts remain protected.",
+      "planned_files": [
+        "internal/app/doctor_purpose_dsh_test.go"
+      ]
+    }
+  ],
+  "seal": "7179a8e56795cc2e14bf216c7cd3bf925df6c00c3006a7d0f0f07fef07a9359e"
+}

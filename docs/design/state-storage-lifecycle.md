@@ -108,3 +108,27 @@ The migration takes exclusive admission on the fixed layout lock, records the mo
 An interruption keeps normal commands gated. Inspect `--storage-layout` for moved and pending stores, then use `gtmux doctor --fix` to continue the recorded direction in the pre-restore window. Each entry must still match its recorded identity at exactly one location. An occupied destination, incomplete evidence, symlink or foreign-owned object stops the operation and preserves the conflicting paths.
 
 Before a binary downgrade, use the same maintenance procedure and `gtmux doctor --flatten-storage`. This returns all current grouped records to their flat paths, including records written since grouping. It rejects conflicting copies. If an interrupted atomic write left private staging files at the group level, rollback saves their original bytes in `layout-recovery/<id>/`. Those files never become live state. Unrecognized entries still require review. No state migration runs automatically after installation.
+
+### Storage by purpose
+
+The updated menu bar and installer initialize a new data root directly. Category directories grow as needed.
+
+| Directory | Contents |
+| --- | --- |
+| `sessions/` | Conversations, panes, clients, terminal input and usage |
+| `hq/` | HQ activity, inboxes and wake delivery evidence |
+| `attachments/` | Uploads and registered previews |
+| `services/` | Remote access, notifications, screen capture, health and maintenance |
+| `diagnostics/` | Events and runtime logs |
+| `backups/` | HQ recovery points |
+| `cache/` | Rebuildable data, including the shared radar and notification artwork |
+
+Run `gtmux doctor` to check an existing installation. After reboot, before restoring tmux, use `gtmux doctor --fix` in a standalone terminal to review an eligible move from the workflow layout. Doctor records the managed services it pauses and restores. It verifies both paths before continuing an interrupted move. Rollback inventories the active stores again so it includes data created since the upgrade.
+
+On a new installation, ordinary Doctor inspection leaves the data root absent. The first CLI writer or menu bar launch initializes the categories. On macOS, migration checks the actual CLI registered for each managed gtmux service before stopping jobs. Close any terminal-input or capture client keeping the old store open.
+
+If a previous DSH installation remains, both the CLI and menu bar check its compatibility before initializing storage. Run the displayed `gtmux install refresh-owned --agent dsh` command to update the recognized bridge. A terminal-only v1.0.203 file is updated on its own. Other standalone files require verification of their source.
+
+Historical upload references and installed log paths keep their original spelling through verified relative directory links. Existing upload retention still applies (7 days or the 200 MiB budget). Producers use the physical directories. The bootstrap locks retain their stable inodes and paths. Cleanup preserves unknown files, delivery outcomes and outstanding service recovery records.
+
+For an intentional downgrade, review `gtmux doctor --flatten-storage` with the current CLI before opening tmux. Reopen the older version after verification. An existing independent input-store cutover requires review and keeps its original receipt and queue.

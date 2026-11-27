@@ -246,7 +246,7 @@ func instanceID() (string, error) {
 // An explicit non-default Unix endpoint is still Remote in Codex; worktree
 // trust compatibility is handled separately after verified same-home initialize.
 func frontendListener() (string, net.Listener, func(), error) {
-	root := filepath.Join(state.Dir(), "codex-frontends")
+	root := state.RootStorePath("codex-frontends")
 	if err := state.MkdirAll(root, 0700); err != nil {
 		return "", nil, nil, err
 	}

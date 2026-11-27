@@ -274,11 +274,12 @@ func codexInputs(text string) []codexrpc.Input {
 		if err != nil || !filepath.IsAbs(path) || rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || seen[path] || len(inputs) >= 17 {
 			continue
 		}
-		info, err := os.Lstat(path)
+		physical := filepath.Join(state.RootStorePath("uploads"), rel)
+		info, err := os.Lstat(physical)
 		if err != nil || !info.Mode().IsRegular() {
 			continue
 		}
-		file, err := os.Open(path)
+		file, err := state.OpenPrivateRead(physical)
 		if err != nil {
 			continue
 		}

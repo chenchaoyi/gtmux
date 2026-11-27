@@ -51,7 +51,7 @@ type Attachment struct {
 }
 
 // Dir is shared with the installed DSH plugin, including on grouped homes.
-func Dir() string { return filepath.Join(state.Dir(), "terminal-clients") }
+func Dir() string { return state.RootStorePath("terminal-clients") }
 
 // Inspector supplies fresh process and tmux facts. Tests exercise the same
 // ownership rules with synthetic processes, without inspecting a real session.

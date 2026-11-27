@@ -2,7 +2,7 @@
 // The native command receives the exact agent selected by the TUI channel.
 import {constants, openSync, opendirSync, readSync, writeFileSync, closeSync, fsyncSync, linkSync, fstatSync, lstatSync, mkdirSync, renameSync, unlinkSync, realpathSync} from 'node:fs';
 import {homedir} from 'node:os';
-import {dirname, join, resolve} from 'node:path';
+import {basename, dirname, join, resolve} from 'node:path';
 import {randomBytes, createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 import {observe, hookSink} from '../gtmux.mjs';
@@ -160,7 +160,7 @@ function withInputQueue(requestDir, expectedDirectory, ops, work) {
         // The managed queue is HOME/.local/share/gtmux/<queue>. Direct
         // fixture callers have an explicitly isolated immediate parent.
         let path = requestDir;
-        const depth = expectedDirectory ? 4 : 1;
+        const depth = expectedDirectory ? (basename(dirname(requestDir)) === 'sessions' ? 5 : 4) : 1;
         for (let i=0; i<depth; i++) {
           check();
           path = dirname(path);
@@ -377,23 +377,45 @@ function readLayoutDocument(path, fields) {
 
 function inputStore(stateRoot) {
   const legacy = join(stateRoot, 'terminal-input');
-  const active = join(stateRoot, 'terminal-input-v2');
+  let active = join(stateRoot, 'terminal-input-v2');
+  const grouped = join(stateRoot, 'sessions', 'terminal-input');
   const journal = join(stateRoot, 'terminal-input-cutover.json');
   try {
     const root = optionalStat(stateRoot);
     if (root && (!privateLayoutEntry(root) || !root.isDirectory())) return;
     if (!optionalStat(journal)) {
-      if (optionalStat(active)) return;
+      if (optionalStat(active) || optionalStat(grouped) || optionalStat(join(stateRoot, '.storage-purpose'))) return;
       const info = optionalStat(legacy);
       if (info && (!privateLayoutEntry(info) || !info.isDirectory())) return;
       return {path:legacy, generation:'', directory:info ? layoutIdentity(info) : '', marker:''};
     }
     const {value: record} = readLayoutDocument(journal, ['version', 'phase', 'token', 'directory', 'marker']);
-    if (record.version !== 1 || record.phase !== 'active' || typeof record.token !== 'string' || !HEX.test(record.token)) return;
+    if (![1, 2].includes(record.version) || record.phase !== 'active' || typeof record.token !== 'string' || !HEX.test(record.token)) return;
+    if (optionalStat(record.version === 2 ? active : grouped)) return;
+    if (record.version === 2) {
+      const {value:layout} = readLayoutDocument(join(stateRoot, '.storage-layout-transition.json'), ['Version','Phase','PurposeToken','Marker','BaseMarker']);
+      const mark = optionalStat(join(stateRoot, '.storage-purpose'));
+      if (layout.Version !== 4 || layout.Phase !== 'categories-active' || layout.PurposeToken !== record.token ||
+          !privateLayoutEntry(mark) || !mark.isDirectory() ||
+          !Number.isSafeInteger(layout.Marker?.Inode) || !Number.isSafeInteger(layout.Marker?.Dev) ||
+          mark.ino !== BigInt(layout.Marker.Inode) || mark.dev !== BigInt(layout.Marker.Dev)) return;
+      const sessions = join(stateRoot, 'sessions');
+      const parent = optionalStat(sessions);
+      if (!privateLayoutEntry(parent) || !parent.isDirectory()) return;
+      active = grouped;
+    }
     const target = optionalStat(active);
     if (!privateLayoutEntry(target) || !target.isDirectory() || !identityMatches(target, record.directory)) return;
-    const {info, value:marker} = readLayoutDocument(legacy, ['version', 'token']);
-    if (info.dev !== target.dev || !identityMatches(info, record.marker) || marker.version !== 1 || marker.token !== record.token) return;
+    let markerPath = legacy;
+    if (record.version === 2) {
+      for (const p of [join(stateRoot,'services'), join(stateRoot,'services','maintenance')]) {
+        const parent = optionalStat(p);
+        if (!privateLayoutEntry(parent) || !parent.isDirectory()) return;
+      }
+      markerPath = join(stateRoot,'services','maintenance','terminal-input-generation.json');
+    }
+    const {info, value:marker} = readLayoutDocument(markerPath, ['version', 'token']);
+    if (info.dev !== target.dev || !identityMatches(info, record.marker) || marker.version !== record.version || marker.token !== record.token) return;
     return {path:active, generation:record.token, directory:layoutIdentity(target), marker:layoutIdentity(info)};
   } catch {}
 }
@@ -414,11 +436,13 @@ export function apply(ctx) {
   try { home = realpathSync(home); } catch { return; }
   const homeID = createHash('sha256').update(`dsh\0${home}`).digest('hex').slice(0, 32);
   const stateRoot = join(homedir(), '.local', 'share', 'gtmux');
-  const bridgeDir = join(stateRoot, 'terminal-clients');
   const before = inputStore(stateRoot);
   if (!before) return;
+  const grouped = before.path === join(stateRoot, 'sessions', 'terminal-input');
+  const bridgeDir = grouped ? join(stateRoot, 'sessions', 'clients', 'terminal-clients') : join(stateRoot, 'terminal-clients');
   try {
     directory(stateRoot);
+    if (grouped) directory(join(stateRoot, 'sessions', 'clients'));
     directory(bridgeDir);
     if (!before.directory) directory(before.path);
   } catch { return; }

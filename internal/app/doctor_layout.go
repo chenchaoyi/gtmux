@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -29,6 +30,36 @@ func permitsLayoutTransition(command string, args []string) bool {
 		(command == "doctor" || command == "dr") && len(args) == 1 && (layoutDoctorFlag(args[0]) || args[0] == "--help" || args[0] == "-h")
 }
 
+func readOnlyDoctor(command string, args []string) bool {
+	if command != "doctor" && command != "dr" {
+		return false
+	}
+	for _, arg := range args {
+		switch arg {
+		case "--json", "--no-prompt", "--progress":
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func enterRuntimeLayout(command string, args []string) (*state.Lease, bool) {
+	if permitsLayoutTransition(command, args) {
+		return nil, true
+	}
+	if _, err := os.Lstat(state.Dir()); os.IsNotExist(err) {
+		if readOnlyDoctor(command, args) {
+			return nil, true
+		}
+		if err := initializeNewPurposeStorage(); err != nil {
+			guidedStorageFailure(err)
+			return nil, false
+		}
+	}
+	return enterCommandLayout(command, args)
+}
+
 func enterCommandLayout(command string, args []string) (*state.Lease, bool) {
 	if permitsLayoutTransition(command, args) {
 		return nil, true
@@ -48,6 +79,19 @@ func cmdDoctorLayout(flag string) int {
 		if err != nil {
 			i18n.Sae("Storage layout: "+err.Error(), "数据目录布局："+err.Error())
 			return 1
+		}
+		if status.Mode == "purpose" {
+			renderSections([]dsection{{i18n.Tr("Storage", "数据目录"), []dcheck{workflowLayoutRow(status, nil)}}})
+			if status.Workflow == "categories-active" {
+				rows, e := state.InspectPurposePlacement(status)
+				if e != nil {
+					return guidedStorageFailure(e)
+				}
+				for _, row := range rows {
+					fmt.Println("  " + row.Current)
+				}
+			}
+			return 0
 		}
 		mode := i18n.Tr("flat", "平铺")
 		if status.Mode == "grouped" {
@@ -102,6 +146,27 @@ func cmdDoctorLayout(flag string) int {
 		if conflict {
 			return 1
 		}
+		if _, _, pending := status.PendingChange(); !pending && !status.ServicePreparation() && status.Continuing == "" {
+			rows, err := state.InspectPurposePlacement(status)
+			if err != nil {
+				i18n.Sae(err.Error(), err.Error())
+				return 1
+			}
+			if len(rows) > 0 {
+				fmt.Println(i18n.Tr("Storage categories (preview)", "按用途查看目录（预览）"))
+			}
+			for _, row := range rows {
+				note := ""
+				if row.Conflict {
+					note = i18n.Tr(" · destination already exists; preserve both paths", " · 目标位置已存在，请保留原件")
+					conflict = true
+				}
+				fmt.Printf("  %s → %s%s\n", row.Current, row.Destination, note)
+			}
+			if conflict {
+				return 1
+			}
+		}
 		return 0
 	}
 
@@ -128,6 +193,18 @@ func cmdDoctorLayout(flag string) int {
 		return 0
 	}
 	grouped := flag == "--group-storage"
+	if status.Mode == "purpose" {
+		if grouped {
+			return guidedStorageFailure(errors.New("storage already uses categories; run gtmux doctor --fix for any recorded repair"))
+		}
+		if err := state.ChangePurposeLayout(false, checkEarlyPurposeWriters); err != nil {
+			return guidedStorageFailure(err)
+		}
+		status, err = state.ReadStorageLayout()
+		if err != nil {
+			return guidedStorageFailure(err)
+		}
+	}
 	if status.Workflow != "" && !grouped {
 		if err := state.ChangeWorkflowLayout(false, checkEarlyStorageWriters); err != nil {
 			i18n.Sae("Storage layout change stopped: "+err.Error(), "数据目录迁移已停住："+err.Error())

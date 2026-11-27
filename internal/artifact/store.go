@@ -45,7 +45,7 @@ type File struct {
 }
 
 func (f File) Reference() string { return "gtmux-file:" + f.ID }
-func directory() string          { return filepath.Join(state.Dir(), "artifacts") }
+func directory() string          { return state.RootStorePath("artifacts") }
 
 func kind(name string) (string, string) {
 	switch strings.ToLower(filepath.Ext(name)) {

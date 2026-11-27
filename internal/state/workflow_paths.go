@@ -64,7 +64,9 @@ func workflowStoreFor(name string) (workflowStore, bool) {
 // commands hold the fixed storage lease and validate the layout before use.
 func WorkflowPath(name string, descendants ...string) string {
 	if store, ok := workflowStoreFor(name); ok {
-		if _, err := os.Lstat(filepath.Join(Dir(), workflowLayoutMarker)); !os.IsNotExist(err) {
+		if purposeMarked(Dir()) {
+			name = strings.TrimPrefix(store.destination, workflowLayoutDir+"/")
+		} else if _, err := os.Lstat(filepath.Join(Dir(), workflowLayoutMarker)); !os.IsNotExist(err) {
 			name = store.destination
 		}
 	}

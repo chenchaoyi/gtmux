@@ -11,7 +11,7 @@
 //	                  the row "background running" — a modifier on idle, never a status
 //	native/<session>  record: an agent session sensed OUTSIDE tmux (internal/native)
 //	last-finished     the pane id of the most-recently-finished agent turn
-//	notify-icon.png   cached agent icon, used as the notification's thumbnail
+//	cache/agent-icons  shared built-in notification and radar artwork
 //	notify/<id>.json  queued desktop-notification requests; the menu-bar app
 //	                  drains this dir and posts native banners, then deletes them
 package state
@@ -404,7 +404,7 @@ func UsageWarnDir() string { return StorePath("usagewarn") }
 // UsageWarnPath is a pane's usage-warning marker.
 func UsageWarnPath(pane string) string { return filepath.Join(UsageWarnDir(), pane) }
 
-// IconPath is the cached agent icon used as the notification's thumbnail.
+// IconPath names the retired root thumbnail inspected by Doctor.
 func IconPath() string { return filepath.Join(Dir(), "notify-icon.png") }
 
 // RemoteClientsPath holds the live remote-viewer roster
@@ -412,11 +412,11 @@ func IconPath() string { return filepath.Join(Dir(), "notify-icon.png") }
 // by `gtmux serve` on every SSE connect/disconnect + a heartbeat while clients are
 // connected; the menu-bar app reads it to show WHO is connected (and treats a stale
 // `at` as disconnected). `count` is retained for older readers.
-func RemoteClientsPath() string { return filepath.Join(Dir(), "remote-clients.json") }
+func RemoteClientsPath() string { return RootStorePath("remote-clients.json") }
 
 // NotifyDir is the queue the hook writes notification requests into and the
 // menu-bar app drains. It's the delivery channel that replaced terminal-notifier.
-func NotifyDir() string { return filepath.Join(Dir(), "notify") }
+func NotifyDir() string { return RootStorePath("notify") }
 
 // Exists reports whether path exists.
 func Exists(path string) bool { _, err := os.Stat(path); return err == nil }

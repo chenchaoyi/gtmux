@@ -6,6 +6,7 @@ package app
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
@@ -84,7 +86,7 @@ func Run(argv []string) int {
 			}
 			i18n.SetLang(lang)
 		}
-		lease, ok := enterCommandLayout("codex", nil)
+		lease, ok := enterRuntimeLayout("codex", nil)
 		if !ok {
 			return 1
 		}
@@ -113,10 +115,26 @@ func Run(argv []string) int {
 		args = args[1:]
 	}
 
+	if sub == "_storage-init" {
+		if len(args) != 0 {
+			return 2
+		}
+		if err := initializeNewPurposeStorage(); err != nil {
+			return guidedStorageFailure(err)
+		}
+		return 0
+	}
+	// A configuration-only repair must remain reachable before a data root
+	// exists. Its structured stdout receipt does not require a disk journal.
+	if sub == "install" && slices.Equal(args, []string{"refresh-owned", "--agent", "dsh"}) {
+		if _, err := os.Lstat(state.Dir()); os.IsNotExist(err) {
+			return reportOwnedDSHRefresh(false)
+		}
+	}
 	if rc, handled := doctorStorageEntry(sub, args); handled {
 		return rc
 	}
-	lease, ok := enterCommandLayout(sub, args)
+	lease, ok := enterRuntimeLayout(sub, args)
 	if !ok {
 		return 1
 	}
@@ -146,6 +164,10 @@ func Run(argv []string) int {
 		usage()
 		return 0
 	case "-v", "--version", "version":
+		if len(args) == 1 && args[0] == "--storage-format" {
+			fmt.Println(state.PurposeFormatCapability)
+			return 0
+		}
 		fmt.Println("gtmux " + Version)
 		return 0
 	case "overview", "ov":
@@ -232,7 +254,7 @@ func Run(argv []string) int {
 	case "hook":
 		return hook.Run(os.Stdin, args)
 	case "doctor", "dr":
-		return cmdDoctor(args)
+		return cmdDoctorWithAdmission(args, lease == nil && readOnlyDoctor(sub, args))
 	case "update", "upgrade":
 		return cmdUpdate(args)
 	case "whatsnew":

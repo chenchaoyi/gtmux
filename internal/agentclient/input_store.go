@@ -86,6 +86,7 @@ func (r Request) CheckInputStore() error {
 func resolveInputStore(root string) (inputStore, error) {
 	legacy := inputStore{path: filepath.Join(root, legacyInputDir)}
 	active := filepath.Join(root, activeInputDir)
+	grouped := filepath.Join(root, "sessions", legacyInputDir)
 	if _, err := inputDirectoryIdentity(root); errors.Is(err, os.ErrNotExist) {
 		return legacy, nil
 	} else if err != nil {
@@ -95,7 +96,7 @@ func resolveInputStore(root string) (inputStore, error) {
 	var record inputCutover
 	_, err := readInputStoreDocument(filepath.Join(root, inputStoreJournal), &record, "version", "phase", "token", "directory", "marker")
 	if errors.Is(err, os.ErrNotExist) {
-		if _, err := os.Lstat(active); !errors.Is(err, os.ErrNotExist) {
+		if !missingInputPath(active) || !missingInputPath(grouped) || !missingInputPath(filepath.Join(root, ".storage-purpose")) {
 			return inputStore{}, fmt.Errorf("%w: cutover record is missing", ErrInputStoreUnavailable)
 		}
 		legacy.directory, err = inputDirectoryIdentity(legacy.path)
@@ -104,20 +105,49 @@ func resolveInputStore(root string) (inputStore, error) {
 		}
 		return legacy, nil
 	}
-	if err != nil || record.Version != 1 || record.Phase != "active" || !instancePattern.MatchString(record.Token) {
+	if err != nil || (record.Version != 1 && record.Version != 2) || record.Phase != "active" || !instancePattern.MatchString(record.Token) {
 		return inputStore{}, fmt.Errorf("%w: cutover is not active", ErrInputStoreUnavailable)
 	}
 
+	inactive := grouped
+	if record.Version == 2 {
+		if !state.PurposeInputAdmitted(root, record.Token) {
+			return inputStore{}, fmt.Errorf("%w: storage migration is incomplete", ErrInputStoreUnavailable)
+		}
+		inactive = active
+		parent := filepath.Join(root, "sessions")
+		if _, err := inputDirectoryIdentity(parent); err != nil {
+			return inputStore{}, fmt.Errorf("%w: invalid sessions directory", ErrInputStoreUnavailable)
+		}
+		active = grouped
+	}
+	if !missingInputPath(inactive) {
+		return inputStore{}, fmt.Errorf("%w: inactive input path needs review", ErrInputStoreUnavailable)
+	}
 	directory, err := inputDirectoryIdentity(active)
 	if err != nil || !directory.matches(record.Directory) {
 		return inputStore{}, fmt.Errorf("%w: active directory identity changed", ErrInputStoreUnavailable)
 	}
+	markerPath := legacy.path
+	if record.Version == 2 {
+		for _, dir := range []string{filepath.Join(root, "services"), filepath.Join(root, "services", "maintenance")} {
+			if _, err := inputDirectoryIdentity(dir); err != nil {
+				return inputStore{}, fmt.Errorf("%w: invalid generation directory", ErrInputStoreUnavailable)
+			}
+		}
+		markerPath = filepath.Join(root, "services", "maintenance", "terminal-input-generation.json")
+	}
 	var marker inputMarker
-	id, err := readInputStoreDocument(legacy.path, &marker, "version", "token")
-	if err != nil || id.dev != directory.dev || !id.matches(record.Marker) || marker.Version != 1 || marker.Token != record.Token {
+	id, err := readInputStoreDocument(markerPath, &marker, "version", "token")
+	if err != nil || id.dev != directory.dev || !id.matches(record.Marker) || marker.Version != record.Version || marker.Token != record.Token {
 		return inputStore{}, fmt.Errorf("%w: cutover marker does not match", ErrInputStoreUnavailable)
 	}
 	return inputStore{path: active, directory: directory, marker: id, token: record.Token}, nil
+}
+
+func missingInputPath(path string) bool {
+	_, err := os.Lstat(path)
+	return errors.Is(err, os.ErrNotExist)
 }
 
 func inputDirectoryIdentity(path string) (inputIdentity, error) {

@@ -302,6 +302,12 @@ MAP-2bcc26841705,L1,reviewed implementation,internal/app/doctor_layout_safety_te
 MAP-fde505a4f21f,L1,reviewed implementation,internal/app/doctor_layout_test.go,15,reviewed-selector,TestGSS003CommandsGateInterruptedLayout,False,GSS-003
 MAP-f167ee401a33,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,60,reviewed-selector,TestSTOR011DoctorReportsLegacyProfileLocksWithoutChanges,False,"STOR-011,STOR-012"
 MAP-e5e0b1ca236e,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,86,reviewed-selector,TestSTOR012DoctorPrunesOnlyConfirmedIdleLegacyProfileLocks,False,"STOR-011,STOR-012"
+MAP-f196eacf58d7,G,reviewed implementation,internal/app/doctor_purpose_dsh_test.go,11,reviewed-selector,TestFreshDoctorDSHRepair,False,PBS-006
+MAP-d121b5c97e97,G,reviewed implementation,internal/app/doctor_purpose_dsh_test.go,57,reviewed-selector,TestFreshDoctorForeignDSH,False,PBS-006
+MAP-1ecd8e274933,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,48,reviewed-selector,TestPurposeDoctorRegisteredCLI,False,"PBS-004,PBS-005"
+MAP-8538b9be04f0,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,81,reviewed-selector,TestPurposeDoctorResumesPublishedGroup,False,"PBS-004,PBS-005"
+MAP-58736df6454b,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,121,reviewed-selector,TestPurposeDoctorOpenHandle,False,"PBS-004,PBS-005"
+MAP-06b8e463f198,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,16,reviewed-selector,TestPurposeDoctorFirstRead,False,"PBS-004,PBS-005"
 MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
 MAP-f7cc1df8d882,L2,reviewed implementation,internal/app/doctor_storage_compat_test.go,72,reviewed-selector,TestDoctorStorageRebootAfterParkingThroughCLI,False,"DGC-001,DGC-002,DGC-003,DGC-004"
 MAP-dc5d1df43af9,L2,reviewed implementation,internal/app/doctor_storage_compat_test.go,132,reviewed-selector,TestDoctorStorageFencesLegacyRemoteOff,False,"DGC-001,DGC-002,DGC-003,DGC-004"
@@ -1641,7 +1647,7 @@ LEG-357918bea90c,L1,Go core / CLI / server,internal/hook/lifecycle_test.go,92,Te
 LEG-4740a625e759,L1,Go core / CLI / server,internal/hook/lifecycle_test.go,110,Test,TestSessionResetClearsOldTurnIdentityButCompactionPreservesIt,False,legacy-not-retrospectively-reviewed
 LEG-13a71540f658,L1,Go core / CLI / server,internal/hook/nativeprocess_test.go,14,Test,TestAgentProcessCapturedBeforeDetachAndNeverGuessedByWorker,False,legacy-not-retrospectively-reviewed
 LEG-e5dab57e1c21,L1,Go core / CLI / server,internal/hook/nativeprocess_test.go,42,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
-LEG-0a20f15d64cc,G,Go core / CLI / server,internal/hook/notifyicon_test.go,13,Test,TestNotifyAgentIcon,False,legacy-not-retrospectively-reviewed
+LEG-0a20f15d64cc,G,Go core / CLI / server,internal/hook/notifyicon_test.go,16,Test,TestNotifyAgentIcon,False,legacy-not-retrospectively-reviewed
 LEG-2512799d5b01,L1,Go core / CLI / server,internal/hook/notifyicon_test.go,17,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-2962f2699b3f,L1,Go core / CLI / server,internal/hook/nudge_test.go,21,Test,TestHQNudgeEnabled,False,legacy-not-retrospectively-reviewed
 LEG-beac955032ca,L1,Go core / CLI / server,internal/hook/nudge_test.go,55,Test,TestNudgeSupervisorNoop,False,legacy-not-retrospectively-reviewed
@@ -3543,6 +3549,7 @@ LEG-cae3dab26188,G,Go core / CLI / server,internal/state/privatewrite_test.go,76
 LEG-37fad2143d15,G,Go core / CLI / server,internal/state/privatewrite_test.go,135,Test,TestPrivateWritePublishesCompletePrivateBytes,False,legacy-not-retrospectively-reviewed
 MAP-495d9fb7b0a9,L2,Go core / CLI / server,internal/state/privatewrite_test.go,201,reviewed-selector,TestPrivateWritePrePublicationFailurePreservesOriginal,False,KBCARRIER-ATOMIC
 LEG-83346481ddd8,L1,Go core / CLI / server,internal/state/privatewriters_test.go,17,Test,TestRawWritersHaveAnExplicitBoundary,False,legacy-not-retrospectively-reviewed
+MAP-8c91fe1ec918,G,reviewed implementation,internal/state/purpose_layout_test.go,9,reviewed-selector,TestPurposePreviewPreservesSources,False,PBS-003
 LEG-0dd1f2e228c6,L1,Go core / CLI / server,internal/state/runlock_test.go,12,Test,TestRunLockRefusesASecondRun,False,legacy-not-retrospectively-reviewed
 LEG-1a07211e56f5,L1,Go core / CLI / server,internal/state/runlock_test.go,36,Test,TestRunLockTakesOverAStaleLock,False,legacy-not-retrospectively-reviewed
 LEG-b5d0d2da3ff4,L1,Go core / CLI / server,internal/state/runlock_test.go,63,Test,TestRunLockIgnoresAGarbageFile,False,legacy-not-retrospectively-reviewed
@@ -3558,6 +3565,7 @@ LEG-cb1b580aa52b,L1,Go core / CLI / server,internal/state/state_test.go,206,Test
 LEG-5711fae0e79f,G,Go core / CLI / server,internal/state/taborder_atomic_test.go,9,Test,TestSaveTabOrderPublishesReplacement,False,legacy-not-retrospectively-reviewed
 MAP-247c4d81b321,L2,reviewed implementation,internal/state/workflow_layout_test.go,11,reviewed-selector,TestGSW001WorkflowStorageRoundTrip,False,"GSW-001,GSW-002"
 MAP-a074d430cfc5,L2,reviewed implementation,internal/state/workflow_layout_test.go,80,reviewed-selector,TestGSW002WorkflowResumeAndConflict,False,"GSW-001,GSW-002"
+MAP-616c6061f405,G,reviewed implementation,internal/state/workflow_residue_test.go,10,reviewed-selector,TestPurposeCleanVerifiedScaffold,False,PBS-002
 LEG-7da56919233c,G,Go core / CLI / server,internal/tabalert/tabalert_test.go,15,Test,TestEnablePrependsAndDisableRestores,False,legacy-not-retrospectively-reviewed
 LEG-51b85fdfc61e,L1,Go core / CLI / server,internal/tabalert/tabalert_test.go,40,Test,TestOwnershipIsReadFromTheFormat,False,legacy-not-retrospectively-reviewed
 LEG-0008907dc02c,L1,Go core / CLI / server,internal/tabalert/tabalert_test.go,56,Test,TestWaitingSessionsIgnoresNonPaneEntries,False,legacy-not-retrospectively-reviewed

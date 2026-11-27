@@ -78,14 +78,13 @@ func diskHygieneSweep(now int64) {
 	}
 	_ = state.WriteInt64Marker(hygieneLastPath(), now)
 
-	base := state.Dir()
 	nowT := time.Unix(now, 0)
 	// 1) launchd daemon logs — unrotated StandardOut/ErrPath redirects. Cap to the tail.
 	for _, p := range LaunchdCaptures() {
 		_ = trimFileTail(p, logMaxBytes, logKeepBytes)
 	}
 	// 2) phone uploads — never pruned. Age out old files, then LRU-trim to a size budget.
-	_ = pruneDir(filepath.Join(base, "uploads"), uploadsMaxAge, uploadsMaxTotal, nowT, nil)
+	_ = pruneDir(state.RootStorePath("uploads"), uploadsMaxAge, uploadsMaxTotal, nowT, nil)
 	// 3) per-pane ephemeral churn markers of DEAD panes — age them out (size uncapped).
 	// Only when tmux answered (its panes, or that no server is running): a failed query
 	// shows nothing about which panes are gone, and is not read as "all of them" (HQ's
