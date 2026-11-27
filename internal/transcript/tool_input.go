@@ -183,13 +183,13 @@ func toolOperation(name string) string {
 		return "command"
 	case "edit", "write", "apply_patch", "patch", "write_file", "edit_file":
 		return "edit"
-	case "web_search", "websearch", "webfetch", "web_fetch", "browse", "open_url", "fetch", "fetchurl":
+	case "web_search", "websearch", "search_web", "webfetch", "web_fetch", "browse", "open_url", "fetch", "fetchurl":
 		return "web"
 	case "js", "python":
 		return "code"
 	case "wait", "wait_for", "waitfor", "sleep", "wait_agent", "taskoutput":
 		return "wait"
-	case "agent", "agentswarm", "subagent", "task", "spawn_agent", "delegate", "followup_task", "resume_agent":
+	case "agent", "agentswarm", "subagent", "task", "spawn_agent", "invoke_subagent", "delegate", "followup_task", "resume_agent":
 		return "agent"
 	default:
 		return "tool"

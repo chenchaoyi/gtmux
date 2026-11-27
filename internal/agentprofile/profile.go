@@ -36,7 +36,7 @@ type Profile struct {
 }
 
 // Only domain readers live here; identity and display names come from the registry.
-var readers = map[string]bool{"claude": true, "codex": true, "dsh": true, "kimi": true, "opencode": true, "cursor": true, "gemini": true}
+var readers = map[string]bool{"claude": true, "codex": true, "dsh": true, "kimi": true, "opencode": true, "cursor": true, "gemini": true, "agy": true}
 
 func New(agent, session string, historical bool) Profile {
 	p := Profile{Agent: agent, Name: agent, SessionID: session, Historical: historical, Facts: []Fact{}, Partial: !readers[agent]}

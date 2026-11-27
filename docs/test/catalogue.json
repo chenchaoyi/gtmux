@@ -826,7 +826,7 @@
       ]
     },
     "internal/agents/registry_test.go": {
-      "sha256": "3f52fd8c12e55797a0a9d5b5d3ea4fc8b08c4b5b14ead984d4a30336036c28f2",
+      "sha256": "7db03311ad52561eb4c7549be2fb71250b800538b9e04b4e84afe927a2ffd303",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -848,7 +848,7 @@
         },
         {
           "id": "LEG-580f633e713f",
-          "line": 47,
+          "line": 48,
           "kind": "Test",
           "name": "TestDisplayNames_matchesLegacy",
           "dynamic": false,
@@ -856,7 +856,7 @@
         },
         {
           "id": "LEG-733eba2ccba3",
-          "line": 58,
+          "line": 59,
           "kind": "Test",
           "name": "TestResumeArgv_matchesLegacy",
           "dynamic": false,
@@ -864,7 +864,7 @@
         },
         {
           "id": "LEG-640eb2ac3f5a",
-          "line": 77,
+          "line": 79,
           "kind": "Test",
           "name": "TestResourceNames_matchesLegacy",
           "dynamic": false,
@@ -872,7 +872,7 @@
         },
         {
           "id": "LEG-98a515b098aa",
-          "line": 85,
+          "line": 87,
           "kind": "Test",
           "name": "TestContentAndHeadlessKeys_matchesLegacy",
           "dynamic": false,
@@ -880,7 +880,7 @@
         },
         {
           "id": "LEG-a5c83a2df08b",
-          "line": 97,
+          "line": 99,
           "kind": "Test",
           "name": "TestDedicatedSemanticsKeys_matchesLegacy",
           "dynamic": false,
@@ -888,7 +888,7 @@
         },
         {
           "id": "LEG-071c72214861",
-          "line": 105,
+          "line": 107,
           "kind": "Test",
           "name": "TestForResolvesAliases",
           "dynamic": false,
@@ -896,7 +896,7 @@
         },
         {
           "id": "LEG-d94e6299a13c",
-          "line": 114,
+          "line": 121,
           "kind": "Test",
           "name": "TestKeyForLabel",
           "dynamic": false,
@@ -904,7 +904,7 @@
         },
         {
           "id": "LEG-0f2bcce4049e",
-          "line": 127,
+          "line": 134,
           "kind": "Test",
           "name": "TestCommandKeys",
           "dynamic": false,
@@ -12079,13 +12079,13 @@
       ]
     },
     "internal/driver/driver_test.go": {
-      "sha256": "fc2353d68c6e870572a9b901f68b1d769648637aa4bf889429dcc291f595b654",
+      "sha256": "5c5b7be0523163559214c9bfb13930f206262c40b36040053c821079eb6b972a",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-5b6587a973df",
-          "line": 14,
+          "line": 10,
           "kind": "Test",
           "name": "TestRegistryMatchesFormerHookAgents",
           "dynamic": false,
@@ -12101,7 +12101,7 @@
         },
         {
           "id": "LEG-075ed01c63fc",
-          "line": 49,
+          "line": 46,
           "kind": "Test",
           "name": "TestSwitchForcesLayerOne",
           "dynamic": false,
@@ -19619,7 +19619,7 @@
       "sha256": "a38de9e5fc89811b37abcd7dec1cee44d77488cb727a1bc8b37227c0dc17c787"
     },
     "internal/knowledge/distribute_test.go": {
-      "sha256": "7c5c2fb33bf0eea6b3365d87cfe329edd4db2d45eb4de20c62b68a6b2d5c1af7",
+      "sha256": "af4b61d830134a510315e39aeb462af3ad1800a4c781349f554b68664769925d",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -19633,7 +19633,7 @@
         },
         {
           "id": "LEG-6fa8f54f1668",
-          "line": 51,
+          "line": 53,
           "kind": "Test",
           "name": "TestBlockInstallRefreshAndRefusal",
           "dynamic": false,
@@ -19641,7 +19641,7 @@
         },
         {
           "id": "LEG-e683294c2736",
-          "line": 109,
+          "line": 111,
           "kind": "Test",
           "name": "TestMachineSyncWritesIndexNotText",
           "dynamic": false,
@@ -19649,7 +19649,7 @@
         },
         {
           "id": "LEG-b2439d5b16b0",
-          "line": 198,
+          "line": 202,
           "kind": "Test",
           "name": "TestRepoCarrierPrefersWhatExists",
           "dynamic": false,
@@ -19657,7 +19657,7 @@
         },
         {
           "id": "LEG-c8340ac94855",
-          "line": 213,
+          "line": 217,
           "kind": "Test",
           "name": "TestLandCarriesByAudience",
           "dynamic": false,
@@ -19665,7 +19665,7 @@
         },
         {
           "id": "LEG-133a79e07b8d",
-          "line": 287,
+          "line": 292,
           "kind": "Test",
           "name": "TestWithdrawAndTheEveryoneExemption",
           "dynamic": false,
@@ -19673,7 +19673,7 @@
         },
         {
           "id": "LEG-130c95843839",
-          "line": 317,
+          "line": 322,
           "kind": "Test",
           "name": "TestMachineIndexKeepsTheTitleOnItsOwnLine",
           "dynamic": false,
@@ -19681,7 +19681,7 @@
         },
         {
           "id": "MAP-259bfbcda714",
-          "line": 161,
+          "line": 165,
           "kind": "reviewed-selector",
           "name": "TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions",
           "dynamic": false,
@@ -20994,7 +20994,7 @@
           "design": "KBSYNC-SERIALIZATION"
         }
       ],
-      "sha256": "a1c9254f2d2716f02de72ccc69c535d08722957ecba9e6a1e3f6c85f401e7608"
+      "sha256": "0a63d6058c802bb13d6f60a8116d536e9c25fb6d04d70eb3160c6ffcfa579000"
     },
     "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
       "layer": "L2",
@@ -71492,6 +71492,177 @@
         }
       ],
       "sha256": "52950e3981ddd5a1a68af3c4b1c28c89f65ba359938a517e1f3f8ccd53c6a779"
+    },
+    "internal/agentprofile/agy_profile_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d3825db0a2cf",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestAgyProfileHookAndTranscript",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-006"
+        }
+      ],
+      "sha256": "8e23206c49f0d796807489ddd4039c4d505865c5ee6d691d574ef38f5df13e81"
+    },
+    "internal/app/agy_hooks_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3be9acf7e014",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestInstallAgyHooksAndForeignPreservation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-002"
+        },
+        {
+          "id": "MAP-1e1b8d4359e5",
+          "line": 98,
+          "kind": "reviewed-selector",
+          "name": "TestDoctorAgyHookDetectionRepairAndPolicy",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-002"
+        }
+      ],
+      "sha256": "88bcf13af876e2096bddb790d82c6f9b1c292dc3d066ba4f01fae14de16869df"
+    },
+    "internal/hook/agy_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-040f67f36421",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestAgyClassifyPayload",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-003"
+        },
+        {
+          "id": "MAP-ba3519dd7ee0",
+          "line": 42,
+          "kind": "reviewed-selector",
+          "name": "TestAgyHookRunEmitsContractJSONAndRecordsState",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-003"
+        }
+      ],
+      "sha256": "4f72f39abdd0afcbbfab11eca142c5a000dd887bdf0911b367a672cffac2a27e"
+    },
+    "internal/mine/agy_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-b98ffe489123",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestAgyReader",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-008"
+        }
+      ],
+      "sha256": "c1839e0c7aca86b6c86e555b83e6c20a6e4fc95631989b94f84c8993b408a3b2"
+    },
+    "internal/transcript/agy_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7a9d698b805e",
+          "line": 27,
+          "kind": "reviewed-selector",
+          "name": "TestAgyTranscriptLoadAndMetadata",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-004"
+        },
+        {
+          "id": "MAP-9ded5f3706ea",
+          "line": 91,
+          "kind": "reviewed-selector",
+          "name": "TestAgyTranscriptErrorAndPathTraversalGuard",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-004"
+        }
+      ],
+      "sha256": "cf6cf4c8e4e0829a8124e0f5d40c9860bba83450edb2c3817e4278d3a9747e0e"
+    },
+    "internal/usage/agy_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-57bfd3633894",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestUsageAgySession",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-005"
+        }
+      ],
+      "sha256": "cf0ccff25c5675552459355e94b067c43203b1d2d21cd86c29f68706afe07e72"
+    },
+    "internal/app/agy_doctor_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f26cb3ba1591",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "TestDoctorOffersAgyHookOnlyWhenDiscoverable",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-011"
+        }
+      ],
+      "sha256": "662912523b49c88f21aa5eb4e4be3ad3eee5f2331cd6f467dd7ec7ab730c317d"
+    },
+    "internal/radar/usagesources_agy_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1769717e4d0b",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestUsageSourcesDeclareAgyTokenCoverage",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "AGY-009"
+        }
+      ],
+      "sha256": "fceeaf2e5425f9fe8645970114f2083c153c075e770ed4b1828f05a72d3bedec"
+    },
+    "internal/usage/agy_backfill_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e48aed268d2d",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "TestBackfillLearnsAgyWindowsOnce",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-010"
+        }
+      ],
+      "sha256": "c6a4836b12094f3d1c9b7c3ac2ad202791448f89f1cb1feb558c60ca24e3c15c"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

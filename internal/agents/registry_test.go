@@ -20,7 +20,7 @@ func sortedSet(s []string) []string {
 
 func TestHookEquippedKeys_matchesLegacy(t *testing.T) {
 	// internal/driver/driver.go hookEquippedAgents
-	want := []string{"claude", "codex", "gemini", "cursor", "cursor-agent", "opencode", "kimi", "copilot", "kiro", "dsh", "deepseek-harness"}
+	want := []string{"claude", "codex", "gemini", "cursor", "cursor-agent", "opencode", "kimi", "copilot", "kiro", "dsh", "deepseek-harness", "agy", "antigravity", "antigravity-cli"}
 	if got := HookEquippedKeys(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("HookEquippedKeys()=%v, want %v", got, want)
 	}
@@ -38,6 +38,7 @@ func TestProfiles_matchesLegacy(t *testing.T) {
 		{Label: "Cursor", Commands: []string{"cursor-agent", "cursor"}, Icon: "/Applications/Cursor.app"},
 		{Label: "Amp", Commands: []string{"amp"}},
 		{Label: "Kimi Code", Commands: []string{"kimi", "kimi-code"}},
+		{Label: "Antigravity", Commands: []string{"agy"}},
 	}
 	if got := Profiles(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("Profiles()=%#v\nwant %#v", got, want)
@@ -48,7 +49,7 @@ func TestDisplayNames_matchesLegacy(t *testing.T) {
 	// internal/hook/hook.go agentDisplay
 	want := map[string]string{
 		"claude": "Claude Code", "codex": "Codex", "gemini": "Gemini", "cursor": "Cursor",
-		"opencode": "opencode", "kimi": "Kimi Code", "copilot": "Copilot", "hermes-agent": "Hermes", "kiro": "Kiro", "dsh": "DeepSeek Harness",
+		"opencode": "opencode", "kimi": "Kimi Code", "copilot": "Copilot", "hermes-agent": "Hermes", "kiro": "Kiro", "dsh": "DeepSeek Harness", "agy": "Antigravity",
 	}
 	if got := DisplayNames(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("DisplayNames()=%v, want %v", got, want)
@@ -68,6 +69,7 @@ func TestResumeArgv_matchesLegacy(t *testing.T) {
 		"kimi":         {"kimi", "--session"},
 		"hermes-agent": {"hermes", "--resume"},
 		"grok":         {"grok", "-r"},
+		"agy":          {"agy", "--resume"},
 	}
 	if got := ResumeArgv(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("ResumeArgv()=%v, want %v", got, want)
@@ -76,17 +78,17 @@ func TestResumeArgv_matchesLegacy(t *testing.T) {
 
 func TestResourceNames_matchesLegacy(t *testing.T) {
 	// internal/resource/attribute.go agent list
-	want := []string{"claude", "codex", "cursor", "gemini", "aider", "opencode", "crush", "amp", "kimi"}
+	want := []string{"claude", "codex", "cursor", "gemini", "aider", "opencode", "crush", "amp", "kimi", "agy"}
 	if got := ResourceNames(); !reflect.DeepEqual(got, want) {
 		t.Fatalf("ResourceNames()=%v, want %v", got, want)
 	}
 }
 
 func TestContentAndHeadlessKeys_matchesLegacy(t *testing.T) {
-	// Content parsers: claude + codex + kimi read the agent's own on-disk log; opencode
+	// Content parsers: claude + codex + kimi + agy read the agent's own on-disk log; opencode
 	// has no readable log, so gtmux keeps its OWN transcript (internal/transcript/opencode.go,
 	// fed by the plugin via `gtmux hook`). Headless one-shot stays claude+codex only.
-	if got, want := sortedSet(ContentKeys()), []string{"claude", "codex", "dsh", "kimi", "opencode"}; !reflect.DeepEqual(got, want) {
+	if got, want := sortedSet(ContentKeys()), []string{"agy", "claude", "codex", "dsh", "kimi", "opencode"}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("ContentKeys()=%v, want %v", got, want)
 	}
 	if got, want := sortedSet(HeadlessKeys()), []string{"claude", "codex"}; !reflect.DeepEqual(got, want) {
@@ -96,7 +98,7 @@ func TestContentAndHeadlessKeys_matchesLegacy(t *testing.T) {
 
 func TestDedicatedSemanticsKeys_matchesLegacy(t *testing.T) {
 	// internal/hook/classify.go agentEventSemantics
-	want := []string{"claude", "codex", "copilot", "cursor", "dsh", "gemini", "hermes-agent", "kimi", "kiro", "opencode"}
+	want := []string{"agy", "claude", "codex", "copilot", "cursor", "dsh", "gemini", "hermes-agent", "kimi", "kiro", "opencode"}
 	if got := sortedSet(DedicatedSemanticsKeys()); !reflect.DeepEqual(got, want) {
 		t.Fatalf("DedicatedSemanticsKeys()=%v, want %v", got, want)
 	}
@@ -106,13 +108,18 @@ func TestForResolvesAliases(t *testing.T) {
 	if a, ok := For("cursor-agent"); !ok || a.Key != "cursor" {
 		t.Fatalf("For(cursor-agent)=%+v ok=%v, want cursor", a, ok)
 	}
+	for _, alias := range []string{"antigravity", "antigravity-cli"} {
+		if a, ok := For(alias); !ok || a.Key != "agy" {
+			t.Fatalf("For(%q)=%+v ok=%v, want agy", alias, a, ok)
+		}
+	}
 	if _, ok := For("nope"); ok {
 		t.Fatalf("For(nope) should be not-found")
 	}
 }
 
 func TestKeyForLabel(t *testing.T) {
-	cases := map[string]string{"opencode": "opencode", "Claude Code": "claude", "Gemini": "gemini", "Grok": "grok", "nope": ""}
+	cases := map[string]string{"opencode": "opencode", "Claude Code": "claude", "Gemini": "gemini", "Antigravity": "agy", "Grok": "grok", "nope": ""}
 	for label, want := range cases {
 		if got := KeyForLabel(label); got != want {
 			t.Errorf("KeyForLabel(%q)=%q, want %q", label, got, want)
@@ -133,6 +140,7 @@ func TestCommandKeys(t *testing.T) {
 		{"cursor", "cursor"},
 		{"opencode", "opencode"},
 		{"kiro-cli", "kiro"},
+		{"agy", "agy"},
 		{"aider", "aider"}, // detect-only agents are identifiable too
 	} {
 		if got[c.cmd] != c.key {

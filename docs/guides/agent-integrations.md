@@ -31,7 +31,7 @@ There are three paths into the same Go core:
    feeds status, notifications and HQ. A tool starting is not automatically a human
    approval request; an interrupted turn is not a successful completion.
 3. **Saved conversations:** a reader maps a verified session to its local artifacts.
-   Claude, Codex, OpenCode, Kimi and DSH have content readers. Codex and DSH also have
+   Claude, Codex, OpenCode, Kimi, DSH and Antigravity (`agy`) have content readers. Codex and DSH also have
    dedicated external-conversation providers, which discover histories without a
    tmux pane or a loaded hook. Other outside-tmux observations depend on hook traffic.
 
@@ -179,6 +179,7 @@ availability checks. It is not permission to take over an external client.
 | `copilot` | None | Command hooks | None | Resume recipe; no one-shot |
 | `kiro` | None | V3 global hooks / legacy agent profile | None | Resume recipe; no one-shot |
 | `dsh` | Verified terminal-client attachment; installer probes `dsh`/`dst` | Native DSH components | v4 artifacts; shared pane/external reader | dst native input/resume; Web read-only; no one-shot |
+| `agy` | `agy` | Command hooks (`hooks.json`) | `transcript.jsonl` + usage deltas | Resume; no one-shot |
 | `hermes-agent` | None | Classifier only; no installer | None | Resume recipe only |
 | `grok` | None | None | None | Resume recipe only |
 | `aider` | `aider` | None | None | Neither |
@@ -407,6 +408,45 @@ Doctor distinguishes installed configuration from a fresh loaded attachment and 
 Sources: [setup, upstream contracts and official logo](deepseek-harness.md),
 [plugin source](../../internal/app/dsh_plugin.mjs), [artifact reader](../../internal/dsh/log.go).
 
+## Antigravity CLI — `agy`
+
+Radar recognises the `agy` process (aliases `antigravity`, `antigravity-cli`) and attributes
+process resources. The installer owns the top-level `"gtmux"` object in
+`$AGY_CONFIG_DIR/hooks.json` (default `~/.gemini/config/hooks.json`), preserving all other
+named hooks and respecting `"enabled": false` as a user policy choice.
+
+`SessionStart`, `PreInvocation` and `Stop` use flat command-hook arrays (10-second timeout),
+and `PostToolUse` uses a grouped matcher array (`"matcher": "*"`). `PreToolUse` is
+deliberately omitted because `agy` requires `PreToolUse` hooks to emit a permission verdict
+(`allow`/`deny`/`ask`/`force_ask`), which an observational bridge must not decide. Because
+`agy` runs hooks synchronously and expects JSON on stdout, `gtmux hook --agent agy` emits
+`{}` (or `{"decision":"stop"}` on `Stop`) immediately and detaches heavy state/notification
+work. Only `PreInvocation` with `invocationNum <= 1` opens a new user prompt turn; subsequent
+model calls within the same turn classify as `Resumed`. `Stop` maps `terminationReason`
+`USER_CANCELED` to interruption and error/budget termination reasons to `StopFailure`.
+
+The Tier 2 transcript reader reads
+`$AGY_HOME/brain/<conversation-id>/.system_generated/logs/transcript.jsonl` (default
+`~/.gemini/antigravity-cli`), unwrapping `<USER_REQUEST>` blocks, skipping harness metadata,
+compaction summaries and errored `PLANNER_RESPONSE` drafts, and normalizing tool arguments
+for Chat, Trace and HQ transcript mining. Token usage (`input_tokens`, `cache_read_tokens`,
+`output_tokens`) and observed model profile facts come directly from `PLANNER_RESPONSE`
+records (Tier 2+). Interactive input uses tmux; the resume recipe is `agy --resume ID`.
+One-shot headless mode is not wired. Knowledge uses `$AGY_CONFIG_DIR/GEMINI.md` (default
+`~/.gemini/config/GEMINI.md`).
+
+When the `agy` CLI is discoverable, `gtmux doctor` shows an **Antigravity hook** row
+(configured, events needing repair, or disabled by the `"enabled": false` policy) and
+`gtmux doctor --fix` / `install hooks --agent auto` write the same owned entry. The usage
+source list reports Antigravity token coverage without an account quota: no local plan or
+balance record exists, and the model window is learned from observed contexts, including
+a one-time backfill of existing transcripts.
+
+Sources: [hook installer](../../internal/app/agy_hooks.go),
+[hook runtime](../../internal/hook/agy.go),
+[transcript reader](../../internal/transcript/agy.go),
+[usage parser](../../internal/usage/parse.go).
+
 ## Hermes — `hermes-agent`
 
 This is **partial groundwork**, not a turnkey integration. The registry contains
@@ -448,7 +488,7 @@ Source: [manifest](../../internal/agents/registry.go).
 
 ## Installation, diagnosis and implementation ownership
 
-For the nine integrations with an installer, select the exact key above:
+For the ten integrations with an installer, select the exact key above:
 
 ```sh
 gtmux install hooks --agent codex
@@ -478,7 +518,7 @@ phone notifications need pairing, push registration and the relevant consent. Th
 | Source | Owns |
 | --- | --- |
 | [Agent manifests](../../internal/agents/registry.go) | Keys, aliases, process/install detection, resume recipes and declared capabilities |
-| [Hook installers](../../internal/app/agent_hooks.go), [Claude](../../internal/app/hooks.go), [Kimi](../../internal/app/kimi_hooks.go), [DSH](../../internal/app/dsh_hooks.go) | Files written, configuration format and owned migrations |
+| [Hook installers](../../internal/app/agent_hooks.go), [Claude](../../internal/app/hooks.go), [Kimi](../../internal/app/kimi_hooks.go), [DSH](../../internal/app/dsh_hooks.go), [Antigravity](../../internal/app/agy_hooks.go) | Files written, configuration format and owned migrations |
 | [Hook classifier](../../internal/hook/classify.go) | Native event meaning, including limits of waiting/cancellation evidence |
 | [Radar](../../internal/radar/agents.go), [drivers](../../internal/driver/driver.go) | Process/state sensing, receipt/readiness, content and one-shot wiring |
 | [Transcript readers](../../internal/transcript/transcript.go), [external providers](../../internal/conversation/provider.go) | Content parsing and home/session verification |

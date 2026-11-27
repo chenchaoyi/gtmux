@@ -17,7 +17,7 @@
   var LABEL; // the section and status words, in the reader's language: set beside T below
   // terminal defaults taken from the user's Ghostty config (Hack 15, #17171a/#d4d2cc).
   var GHOSTTY = {bg: '#17171a', fg: '#d4d2cc', cursor: '#bbc1ff', sel: '#2a2a33', font: 'Hack, Menlo, Monaco, "Courier New", monospace', size: 15};
-  var MARKS = {'deepseek harness':'DS', dsh:'DS', 'claude code': 'CC', claude: 'CC', codex: 'Cx', gemini: 'G', aider: 'Ai', opencode: 'oc', cursor: 'Cu', crush: 'Cr', amp: 'Am', cline: 'Cl'};
+  var MARKS = {'deepseek harness':'DS', dsh:'DS', 'claude code': 'CC', claude: 'CC', codex: 'Cx', gemini: 'G', antigravity: 'Ag', agy: 'Ag', aider: 'Ai', opencode: 'oc', cursor: 'Cu', crush: 'Cr', amp: 'Am', cline: 'Cl'};
 
   var $ = function (id) { return document.getElementById(id); };
   var token = null, radarTimer = null, paneTimer = null, selIdx = -1;

@@ -86,14 +86,16 @@ type codexLine struct {
 // parseLine extracts a usage observation from one raw log line, ok=false when
 // the line carries none.
 func parseLine(line []byte) (msg, bool) {
-	// Cheap pre-filter: the vast majority of lines carry no usage at all. Both
-	// markers are needed — Codex's block is `"total_token_usage"`, which does
-	// NOT contain the substring `"usage"` (the quote sits before `total`).
+	// Cheap pre-filter: the vast majority of lines carry no usage at all. All three
+	// markers are needed — Codex uses "token_count", agy uses "PLANNER_RESPONSE".
 	s := string(line)
-	if !strings.Contains(s, `"usage"`) && !strings.Contains(s, `"token_count"`) {
+	if !strings.Contains(s, `"usage"`) && !strings.Contains(s, `"token_count"`) && !strings.Contains(s, `"PLANNER_RESPONSE"`) {
 		return msg{}, false
 	}
 	if m, ok := parseCodexLine(line); ok {
+		return m, true
+	}
+	if m, ok := parseAgyLine(line); ok {
 		return m, true
 	}
 	var l logLine
@@ -106,6 +108,34 @@ func parseLine(line []byte) (msg, bool) {
 	}
 	return msg{at: parseAt(l.Timestamp), model: l.Message.Model, in: u.In, out: u.Out,
 		cacheRead: u.CacheRead, cacheCreate: u.CacheCreate}, true
+}
+
+// agyLine is the minimal decode of an Antigravity CLI PLANNER_RESPONSE transcript line,
+// which logs per-invocation non-cached input, cache-read, and output token deltas.
+type agyLine struct {
+	Type            string `json:"type"`
+	CreatedAt       string `json:"created_at"`
+	Model           string `json:"model"`
+	InputTokens     int64  `json:"input_tokens"`
+	CacheReadTokens int64  `json:"cache_read_tokens"`
+	OutputTokens    int64  `json:"output_tokens"`
+}
+
+func parseAgyLine(line []byte) (msg, bool) {
+	var a agyLine
+	if json.Unmarshal(line, &a) != nil || a.Type != "PLANNER_RESPONSE" {
+		return msg{}, false
+	}
+	if a.InputTokens == 0 && a.CacheReadTokens == 0 && a.OutputTokens == 0 {
+		return msg{}, false
+	}
+	return msg{
+		at:        parseAt(a.CreatedAt),
+		model:     a.Model,
+		in:        nonNegative(a.InputTokens),
+		out:       nonNegative(a.OutputTokens),
+		cacheRead: nonNegative(a.CacheReadTokens),
+	}, true
 }
 
 // parseCodexLine decodes a Codex `token_count` event.

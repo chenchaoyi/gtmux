@@ -137,6 +137,16 @@ var manifests = []Manifest{
 		TerminalClients: []string{"dst"},
 		Instructions:    "~/.dsh/AGENTS.md", InstructionsEnv: "DSH_HOME",
 	},
+	{
+		// Antigravity CLI (`agy`). Global hooks live under a named "gtmux" entry in
+		// ~/.gemini/config/hooks.json (camelCase payloads, JSON stdout required).
+		// Transcripts live at ~/.gemini/antigravity-cli/brain/<conversation-id>/.system_generated/logs/transcript.jsonl.
+		Key: "agy", Aliases: []string{"antigravity", "antigravity-cli"}, Label: "Antigravity",
+		Detect: []string{"agy"},
+		Resume: []string{"agy", "--resume"}, Resource: "agy",
+		HookDisplay: true, Hooked: true, Content: "agy", Semantics: true,
+		Instructions: "~/.gemini/config/GEMINI.md", InstructionsEnv: "AGY_CONFIG_DIR",
+	},
 	// Radar-detected but not (yet) hook-equipped.
 	{Key: "aider", Label: "Aider", Detect: []string{"aider"}, Resource: "aider"},
 	{Key: "crush", Label: "Crush", Detect: []string{"crush"}, Resource: "crush"},
@@ -146,8 +156,8 @@ var manifests = []Manifest{
 // resourceOrder / profileOrder pin the emission order the legacy slices used, so a
 // derived list is byte-identical to what it replaces (order is not behaviorally
 // significant — commands are unique across profiles — but keeping it avoids noise).
-var profileOrder = []string{"claude", "codex", "gemini", "aider", "opencode", "crush", "cursor", "amp", "kimi"}
-var resourceOrder = []string{"claude", "codex", "cursor", "gemini", "aider", "opencode", "crush", "amp", "kimi"}
+var profileOrder = []string{"claude", "codex", "gemini", "aider", "opencode", "crush", "cursor", "amp", "kimi", "agy"}
+var resourceOrder = []string{"claude", "codex", "cursor", "gemini", "aider", "opencode", "crush", "amp", "kimi", "agy"}
 
 // byKey indexes the manifests for O(1) lookup.
 var byKey = func() map[string]Manifest {

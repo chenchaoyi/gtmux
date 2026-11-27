@@ -16,7 +16,7 @@ import (
 func syncFixture(t *testing.T, audience string) (knowledgeOp, string, string) {
 	t.Helper()
 	asHQ(t)
-	for _, key := range []string{"CODEX_HOME", "KIMI_CODE_HOME", "DSH_HOME", "OPENCODE_CONFIG_DIR"} {
+	for _, key := range []string{"CODEX_HOME", "KIMI_CODE_HOME", "DSH_HOME", "OPENCODE_CONFIG_DIR", "AGY_CONFIG_DIR"} {
 		t.Setenv(key, "")
 	}
 	repo := t.TempDir()

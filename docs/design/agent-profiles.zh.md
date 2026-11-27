@@ -85,7 +85,7 @@ DSH Web/dst 共用的原生桥接直接启动 hook 子进程，不带已脱离�
 `octrans` 仍只保存文本，不能还原从未留存的历史资料。下表包含已交付来源及后续候选，
 具体采集范围以上文为准。
 
-## 14 个 Agent 的字段设计
+## 15 个 Agent 的字段设计
 
 | Agent | 模型与供应商的可接来源 | 推理与模式的可接来源 | 套餐边界 | 资料窗的差异 |
 | --- | --- | --- | --- | --- |
@@ -93,6 +93,7 @@ DSH Web/dst 共用的原生桥接直接启动 hook 子进程，不带已脱离�
 | `codex` | 对应 rollout 的 `session_meta.model_provider`、`turn_context.model` | `turn_context.effort`、`collaboration_mode`；审批与沙箱单列 | 本会话/账户有对应 `rate_limits.plan_type` 才显示；不能从全局额度借值 | 模型、推理强度、协作模式、权限；CLI、桌面与包装器保留同一 Codex 身份 |
 | `dsh` | v4 `request/header` 的 `data.header.config.provider/model` | 同一 config 的 `reasoningEffort`；`plan/mode` 的 `active`，以及已确认的原生 plan 投影 | 不假设有“DeepSeek Pro”；供应商或登录方式不证明套餐 | DeepSeek Harness 为标题，dst/Web 是使用方式；harness 与客户端版本分开 |
 | `opencode` | 原生插件 `chat.message` 的 `model.providerID/modelID`；`chat.params` 的模型、供应商 | `agent` 是角色，`variant` 是模型变体；仅明确的供应商 reasoning 选项可列推理强度 | OpenCode 可以连接不同供应商，品牌、OAuth 或模型名不证明账户套餐 | 角色（Build/Plan/自定义）、供应商、模型、模型变体；不把所有变体叫 high/low |
+| `agy` | `transcript.jsonl` 中 `PLANNER_RESPONSE.model`；hook 的 `modelName` | 记录中没有推理强度或计划模式字段，不从模型名推断 | Google 账户、登录方式或模型名不证明套餐 | 仅显示模型，标题为 Antigravity；已在 `internal/agentprofile` 实现 |
 | `kimi` | 主 Agent 的 wire `llm.request.provider/model/modelAlias` | `thinkingEffort`；`plan_mode.enter/exit/cancel`；权限另取 `permission.set_mode` | wire 请求不提供套餐。官方账户查询属于另一路径，未接入时不显示猜测值 | 模型及别名、推理选项、计划模式、权限；过滤主 Agent 之外的记录 |
 | `gemini` | 版本门禁下的原生 `BeforeModel/AfterModel.llm_request.model` 观察 | `llm_request.config` 中经版本核验的 thinking 选项；现有通用 hook 没有计划模式字段 | 登录方式、Gemini 模型或 Google 账户都不证明订阅层级 | 模型、思考等级或预算按原语义展示；计划模式缺证时不按默认配置补猜 |
 | `cursor` | 原生 hook 的 `model_id`，旧版可退到 `model` | 可选 `model_params` 的 effort/thinking/context，各按参数类型展示；计划模式需独立证据 | `user_email` 不是套餐，也不进入资料 DTO | 显示“Cursor 版本”（`cursor_version` 的原义），不能冒充独立 CLI/harness 版本 |

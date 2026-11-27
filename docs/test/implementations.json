@@ -1,78 +1,292 @@
 {
+  "internal/radar/usagesources_agy_test.go": {
+    "cases": [
+      "AGY-009"
+    ],
+    "selectors": [
+      "TestUsageSourcesDeclareAgyTokenCoverage"
+    ]
+  },
+  "internal/usage/agy_backfill_test.go": {
+    "cases": [
+      "AGY-010"
+    ],
+    "selectors": [
+      "TestBackfillLearnsAgyWindowsOnce"
+    ]
+  },
+  "internal/app/agy_doctor_test.go": {
+    "cases": [
+      "AGY-011"
+    ],
+    "selectors": [
+      "TestDoctorOffersAgyHookOnlyWhenDiscoverable"
+    ]
+  },
+  "internal/agents/registry_test.go": {
+    "cases": [
+      "AGY-001"
+    ],
+    "selectors": [
+      "TestHookEquippedKeys_matchesLegacy",
+      "TestProfiles_matchesLegacy",
+      "TestDisplayNames_matchesLegacy",
+      "TestResumeArgv_matchesLegacy",
+      "TestResourceNames_matchesLegacy",
+      "TestContentAndHeadlessKeys_matchesLegacy",
+      "TestDedicatedSemanticsKeys_matchesLegacy",
+      "TestForResolvesAliases",
+      "TestKeyForLabel",
+      "TestCommandKeys"
+    ]
+  },
+  "internal/driver/driver_test.go": {
+    "cases": [
+      "AGY-001"
+    ],
+    "selectors": [
+      "TestRegistryMatchesFormerHookAgents",
+      "TestContentRegistration"
+    ]
+  },
+  "internal/app/agy_hooks_test.go": {
+    "cases": [
+      "AGY-002"
+    ],
+    "selectors": [
+      "TestInstallAgyHooksAndForeignPreservation",
+      "TestDoctorAgyHookDetectionRepairAndPolicy"
+    ]
+  },
+  "internal/hook/agy_test.go": {
+    "cases": [
+      "AGY-003"
+    ],
+    "selectors": [
+      "TestAgyClassifyPayload",
+      "TestAgyHookRunEmitsContractJSONAndRecordsState"
+    ]
+  },
+  "internal/transcript/agy_test.go": {
+    "cases": [
+      "AGY-004"
+    ],
+    "selectors": [
+      "TestAgyTranscriptLoadAndMetadata",
+      "TestAgyTranscriptErrorAndPathTraversalGuard"
+    ]
+  },
+  "internal/usage/agy_test.go": {
+    "cases": [
+      "AGY-005"
+    ],
+    "selectors": [
+      "TestUsageAgySession"
+    ]
+  },
+  "internal/agentprofile/agy_profile_test.go": {
+    "cases": [
+      "AGY-006"
+    ],
+    "selectors": [
+      "TestAgyProfileHookAndTranscript"
+    ]
+  },
+  "internal/mine/agy_test.go": {
+    "cases": [
+      "AGY-008"
+    ],
+    "selectors": [
+      "TestAgyReader"
+    ]
+  },
+  "internal/knowledge/distribute_test.go": {
+    "cases": [
+      "AGY-007"
+    ],
+    "selectors": [
+      "TestCarriersResolveHomeAndEnv",
+      "TestMachineSyncWritesIndexNotText",
+      "TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions",
+      "TestLandCarriesByAudience"
+    ]
+  },
+  "internal/knowledge/sync_serialization_test.go": {
+    "cases": [
+      "AGY-007"
+    ],
+    "selectors": [
+      "TestPublicSyncSerializesSnapshotAndPublication",
+      "TestPublicSyncReleasesLockOnErrorAndRefusal"
+    ]
+  },
   "internal/app/doctor_purpose_dsh_test.go": {
-    "cases": ["PBS-006"],
-    "selectors": ["TestFreshDoctorDSHRepair", "TestFreshDoctorForeignDSH"]
+    "cases": [
+      "PBS-006"
+    ],
+    "selectors": [
+      "TestFreshDoctorDSHRepair",
+      "TestFreshDoctorForeignDSH"
+    ]
   },
   "internal/app/doctor_purpose_revision_test.go": {
-    "cases": ["PBS-004", "PBS-005"],
-    "selectors": ["TestPurposeDoctorRegisteredCLI", "TestPurposeDoctorResumesPublishedGroup", "TestPurposeDoctorOpenHandle", "TestPurposeDoctorFirstRead"]
+    "cases": [
+      "PBS-004",
+      "PBS-005"
+    ],
+    "selectors": [
+      "TestPurposeDoctorRegisteredCLI",
+      "TestPurposeDoctorResumesPublishedGroup",
+      "TestPurposeDoctorOpenHandle",
+      "TestPurposeDoctorFirstRead"
+    ]
   },
   "internal/state/purpose_layout_test.go": {
-    "cases": ["PBS-003"],
-    "selectors": ["TestPurposePreviewPreservesSources"]
+    "cases": [
+      "PBS-003"
+    ],
+    "selectors": [
+      "TestPurposePreviewPreservesSources"
+    ]
   },
   "internal/hook/notifyicon_test.go": {
-    "cases": ["PBS-001"],
-    "selectors": ["TestNotifyAgentIcon"]
+    "cases": [
+      "PBS-001"
+    ],
+    "selectors": [
+      "TestNotifyAgentIcon"
+    ]
   },
   "internal/state/workflow_residue_test.go": {
-    "cases": ["PBS-002"],
-    "selectors": ["TestPurposeCleanVerifiedScaffold"]
+    "cases": [
+      "PBS-002"
+    ],
+    "selectors": [
+      "TestPurposeCleanVerifiedScaffold"
+    ]
   },
   "mobileapp/src/screens/HQLiveEarlierReset.test.tsx": {
-    "cases": ["HLS-001"],
-    "selectors": ["HQ retires the frozen live viewport on a new empty reset while reading an earlier session"]
+    "cases": [
+      "HLS-001"
+    ],
+    "selectors": [
+      "HQ retires the frozen live viewport on a new empty reset while reading an earlier session"
+    ]
   },
   "mobileapp/src/screens/LiveResetGeneration.test.tsx": {
-    "cases": ["MRG-001"],
-    "selectors": ["%s retires a frozen reader when two verified resets both have empty histories"]
+    "cases": [
+      "MRG-001"
+    ],
+    "selectors": [
+      "%s retires a frozen reader when two verified resets both have empty histories"
+    ]
   },
   "mobileapp/src/screens/LiveBindingRecovery.test.tsx": {
-    "cases": ["LBR-001"],
-    "selectors": ["%s keeps the reader when an ordinary empty transcript gets its first turn", "%s recovers the same bound reader after a transient transcript error"]
+    "cases": [
+      "LBR-001"
+    ],
+    "selectors": [
+      "%s keeps the reader when an ordinary empty transcript gets its first turn",
+      "%s recovers the same bound reader after a transient transcript error"
+    ]
   },
   "mobileapp/src/screens/LiveBindingProof.test.tsx": {
-    "cases": ["LRG-001"],
-    "selectors": ["LRG-001 only matching proof resumes the frozen reader (%s)"]
+    "cases": [
+      "LRG-001"
+    ],
+    "selectors": [
+      "LRG-001 only matching proof resumes the frozen reader (%s)"
+    ]
   },
   "tests/web/live-clockless-reset.test.cjs": {
-    "cases": ["LRG-002"],
-    "selectors": ["LRG-002 clockless reset at "]
+    "cases": [
+      "LRG-002"
+    ],
+    "selectors": [
+      "LRG-002 clockless reset at "
+    ]
   },
   "internal/server/transcript_reset_id_test.go": {
-    "cases": ["LRG-003"],
-    "selectors": ["TestTranscriptResetGenerationOnEmptyBody"]
+    "cases": [
+      "LRG-003"
+    ],
+    "selectors": [
+      "TestTranscriptResetGenerationOnEmptyBody"
+    ]
   },
   "tests/web/live-history-boundaries.test.cjs": {
-    "cases": ["LRE-001", "LRE-002"],
-    "selectors": ["verified empty replacement", "unassociated but pane readable"]
+    "cases": [
+      "LRE-001",
+      "LRE-002"
+    ],
+    "selectors": [
+      "verified empty replacement",
+      "unassociated but pane readable"
+    ]
   },
   "mobileapp/src/screens/LiveReaderBoundaries.test.tsx": {
-    "cases": ["LRE-003", "LRE-004"],
-    "selectors": ["LRE-003 only a change of observed identity starts a fresh reader", "LRE-004 access denial, missing pane and empty capture have distinct messages"]
+    "cases": [
+      "LRE-003",
+      "LRE-004"
+    ],
+    "selectors": [
+      "LRE-003 only a change of observed identity starts a fresh reader",
+      "LRE-004 access denial, missing pane and empty capture have distinct messages"
+    ]
   },
   "tests/web/live-binding.test.cjs": {
-    "cases": ["LRB-001"],
-    "selectors": ["LRB-001 Binding preserves the same Live reader at "]
+    "cases": [
+      "LRB-001"
+    ],
+    "selectors": [
+      "LRB-001 Binding preserves the same Live reader at "
+    ]
   },
   "mobileapp/src/screens/LiveCaptureAccess.test.tsx": {
-    "cases": ["LRB-002", "LRB-003"],
-    "selectors": ["LRB-002 %s keeps the captured rows and viewport through waiting and idle", "LRB-003 HTTP %i clears the retained screen until a fresh capture"]
+    "cases": [
+      "LRB-002",
+      "LRB-003"
+    ],
+    "selectors": [
+      "LRB-002 %s keeps the captured rows and viewport through waiting and idle",
+      "LRB-003 HTTP %i clears the retained screen until a fresh capture"
+    ]
   },
   "internal/app/doctor_storage_eligibility_test.go": {
-    "cases": ["DMD-004", "DMD-005"],
-    "selectors": ["TestDoctorStorageMigrationEligibility"]
+    "cases": [
+      "DMD-004",
+      "DMD-005"
+    ],
+    "selectors": [
+      "TestDoctorStorageMigrationEligibility"
+    ]
   },
   "internal/app/doctor_storage_discovery_test.go": {
-    "cases": ["DMD-001", "DMD-002", "DMD-003"],
-    "selectors": ["TestDoctorStorageMigrationDiscovery"]
+    "cases": [
+      "DMD-001",
+      "DMD-002",
+      "DMD-003"
+    ],
+    "selectors": [
+      "TestDoctorStorageMigrationDiscovery"
+    ]
   },
   "internal/app/doctor_storage_prepared_test.go": {
-    "cases": ["DPF-001", "DPF-002"],
-    "selectors": ["TestDoctorPreparedStorageDiagnosticThroughCLI"]
+    "cases": [
+      "DPF-001",
+      "DPF-002"
+    ],
+    "selectors": [
+      "TestDoctorPreparedStorageDiagnosticThroughCLI"
+    ]
   },
   "internal/app/doctor_storage_compat_test.go": {
-    "cases": ["DGC-001", "DGC-002", "DGC-003", "DGC-004"],
+    "cases": [
+      "DGC-001",
+      "DGC-002",
+      "DGC-003",
+      "DGC-004"
+    ],
     "selectors": [
       "TestDoctorStorageRebootAfterParkingThroughCLI",
       "TestDoctorStorageFencesLegacyRemoteOff",
@@ -81,7 +295,12 @@
     ]
   },
   "internal/app/doctor_storage_revision_test.go": {
-    "cases": ["DGR-001", "DGR-002", "DGR-003", "DGR-004"],
+    "cases": [
+      "DGR-001",
+      "DGR-002",
+      "DGR-003",
+      "DGR-004"
+    ],
     "selectors": [
       "TestDoctorStorageRejectsMismatchedLaunchdProgram",
       "TestDoctorStorageReturnsSameProfileAndDefaults",
@@ -91,7 +310,11 @@
     ]
   },
   "internal/app/doctor_storage_guided_test.go": {
-    "cases": ["DGS-001", "DGS-002", "DGS-003"],
+    "cases": [
+      "DGS-001",
+      "DGS-002",
+      "DGS-003"
+    ],
     "selectors": [
       "TestDoctorGuidedStorageRestoresManagedServices",
       "TestDoctorGuidedStorageFixEntry",
@@ -100,32 +323,64 @@
     ]
   },
   "internal/codexterminal/claude_foreground_test.go": {
-    "cases": ["HRB-017"],
-    "selectors": ["TestClaudeVersionAliasRequiresLinuxForegroundGroupLeader"]
+    "cases": [
+      "HRB-017"
+    ],
+    "selectors": [
+      "TestClaudeVersionAliasRequiresLinuxForegroundGroupLeader"
+    ]
   },
   "internal/hook/hq_claude_foreground_test.go": {
-    "cases": ["HRB-016"],
-    "selectors": ["TestHQClaudeHookFollowsForegroundShellChild"]
+    "cases": [
+      "HRB-016"
+    ],
+    "selectors": [
+      "TestHQClaudeHookFollowsForegroundShellChild"
+    ]
   },
   "internal/hqinput/rotation_brief_witness_test.go": {
-    "cases": ["HRB-015"],
-    "selectors": ["TestBoundBriefRequiresDurableResetCompletion"]
+    "cases": [
+      "HRB-015"
+    ],
+    "selectors": [
+      "TestBoundBriefRequiresDurableResetCompletion"
+    ]
   },
   "internal/launchhost/agent_test.go": {
-    "cases": ["HRB-014"],
-    "selectors": ["TestAgentHandoffPreservesPreciseObservationTime"]
+    "cases": [
+      "HRB-014"
+    ],
+    "selectors": [
+      "TestAgentHandoffPreservesPreciseObservationTime"
+    ]
   },
   "internal/hq/rotation_submit_witness_test.go": {
-    "cases": ["HRB-014"],
-    "selectors": ["TestLegacyRotationWitnessOrdersSameSecondPrecisely", "TestSentRotationWithNoCompletedKeyFenceFailsWithoutInput"]
+    "cases": [
+      "HRB-014"
+    ],
+    "selectors": [
+      "TestLegacyRotationWitnessOrdersSameSecondPrecisely",
+      "TestSentRotationWithNoCompletedKeyFenceFailsWithoutInput"
+    ]
   },
   "internal/hq/rotation_clock_boundaries_test.go": {
-    "cases": ["HRB-013"],
-    "selectors": ["TestResetAttemptAndCompletedKeysHaveSeparateClocks", "TestBriefingTargetProbeCannotCrossItsOriginalDeadline", "TestIncompleteHistoryProbeCannotOpenAHandoffAfterSettleDeadline"]
+    "cases": [
+      "HRB-013"
+    ],
+    "selectors": [
+      "TestResetAttemptAndCompletedKeysHaveSeparateClocks",
+      "TestBriefingTargetProbeCannotCrossItsOriginalDeadline",
+      "TestIncompleteHistoryProbeCannotOpenAHandoffAfterSettleDeadline"
+    ]
   },
   "internal/hq/rotation_evidence_window_test.go": {
-    "cases": ["HRB-012"],
-    "selectors": ["TestLegacyRotationWitnessRequiresMatchingGenerationAndSendOrder", "TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow"]
+    "cases": [
+      "HRB-012"
+    ],
+    "selectors": [
+      "TestLegacyRotationWitnessRequiresMatchingGenerationAndSendOrder",
+      "TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow"
+    ]
   },
   "internal/dispatchbridge/rotation_brief_admission_test.go": {
     "cases": [
@@ -1449,15 +1704,6 @@
       "TestConsultWholeCardsProtectedOverflowAndNegativeQuery"
     ]
   },
-  "internal/knowledge/distribute_test.go": {
-    "cases": [
-      "KBCARRIER-COMPAT"
-    ],
-    "selectors": [
-      "TestLandCarriesByAudience"
-    ],
-    "reason": "This revision changes the manual land caller only; unchanged storage-boundary assertions retain their existing historical design record in Git."
-  },
   "internal/knowledge/dream_test.go": {
     "cases": [
       "KBMEM-DREAM"
@@ -1604,15 +1850,6 @@
       "TestSourceLineageReviewApply",
       "TestSourceLineageReplay",
       "TestSourceLineageNewCapture"
-    ]
-  },
-  "internal/knowledge/sync_serialization_test.go": {
-    "cases": [
-      "KBSYNC-SERIALIZATION"
-    ],
-    "selectors": [
-      "TestPublicSyncSerializesSnapshotAndPublication",
-      "TestPublicSyncReleasesLockOnErrorAndRefusal"
     ]
   },
   "internal/knowledge/testdata/golden/api/entry-workflows__release-flow-v2.json.golden": {
@@ -3593,8 +3830,12 @@
     ]
   },
   "tests/web/live-disclosure-refresh.test.cjs": {
-    "cases": ["LRP-001"],
-    "selectors": ["LRP-001 Live survives conversation and status redraws at "]
+    "cases": [
+      "LRP-001"
+    ],
+    "selectors": [
+      "LRP-001 Live survives conversation and status redraws at "
+    ]
   },
   "tests/web/smoke.test.cjs": {
     "cases": [
@@ -5451,8 +5692,12 @@
     ]
   },
   "mobileapp/src/ui/LiveProgress.resizeFollow.test.tsx": {
-    "cases": ["LVR-005"],
-    "selectors": ["a measured %s change resumes Live when the held frame fits"]
+    "cases": [
+      "LVR-005"
+    ],
+    "selectors": [
+      "a measured %s change resumes Live when the held frame fits"
+    ]
   },
   "mobileapp/src/ui/ChatView.liveResize.test.tsx": {
     "cases": [
@@ -5828,27 +6073,58 @@
     ]
   },
   "internal/hq/eventscmd_cursor_test.go": {
-    "cases": ["HCR-001"],
-    "selectors": ["TestHCR001SkipAheadReadProvidesSavedCursor"]
+    "cases": [
+      "HCR-001"
+    ],
+    "selectors": [
+      "TestHCR001SkipAheadReadProvidesSavedCursor"
+    ]
   },
   "internal/app/doctor_codex_guidance_test.go": {
-    "cases": ["DBR-003"],
-    "selectors": ["TestDBR003DoctorCodexGuidanceCoversUnavailableStates"]
+    "cases": [
+      "DBR-003"
+    ],
+    "selectors": [
+      "TestDBR003DoctorCodexGuidanceCoversUnavailableStates"
+    ]
   },
   "internal/app/doctor_codex_guidance_current_agent_test.go": {
-    "cases": ["DBR-004"],
-    "selectors": ["TestDBR004DoctorDoesNotSuggestCodexForAReusedPane"]
+    "cases": [
+      "DBR-004"
+    ],
+    "selectors": [
+      "TestDBR004DoctorDoesNotSuggestCodexForAReusedPane"
+    ]
   },
   "internal/state/workflow_layout_test.go": {
-    "cases": ["GSW-001", "GSW-002"],
-    "selectors": ["TestGSW001WorkflowStorageRoundTrip", "TestGSW002WorkflowResumeAndConflict"]
+    "cases": [
+      "GSW-001",
+      "GSW-002"
+    ],
+    "selectors": [
+      "TestGSW001WorkflowStorageRoundTrip",
+      "TestGSW002WorkflowResumeAndConflict"
+    ]
   },
   "internal/app/doctor_storage_workflow_test.go": {
-    "cases": ["GSW-003", "GSW-004", "DWI-002"],
-    "selectors": ["TestGSW003DoctorStorageMaintenanceWindow", "TestGSW004DoctorCacheCleanupProtectsDeliveryState", "TestDWI002DoctorWakeStorageShowsIndependentDiagnostics"]
+    "cases": [
+      "GSW-003",
+      "GSW-004",
+      "DWI-002"
+    ],
+    "selectors": [
+      "TestGSW003DoctorStorageMaintenanceWindow",
+      "TestGSW004DoctorCacheCleanupProtectsDeliveryState",
+      "TestDWI002DoctorWakeStorageShowsIndependentDiagnostics"
+    ]
   },
   "internal/hqnudge/storage_inspect_test.go": {
-    "cases": ["GSW-004", "DWI-001"],
-    "selectors": ["TestGSW004WakeStorageInventory"]
+    "cases": [
+      "GSW-004",
+      "DWI-001"
+    ],
+    "selectors": [
+      "TestGSW004WakeStorageInventory"
+    ]
   }
 }

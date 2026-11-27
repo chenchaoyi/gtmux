@@ -224,6 +224,11 @@ same JSON shape as `--json` and requires owner access.
 Claude records what each message cost, so its totals are a running sum. Codex records
 the session's running totals after every turn, so its totals are the last reading, and
 it states `model_context_window` outright (unless a configured override takes precedence).
+Antigravity (`agy`) records per-call `input_tokens`, `cache_read_tokens` and `output_tokens`
+on each `PLANNER_RESPONSE`, so its totals are a running sum like Claude's and its context is
+the last call's input plus cache read; errored drafts are not counted twice. The one-time
+window backfill reads both Claude and Antigravity history, and `sources` lists Antigravity
+with token coverage but no account quota, because it exposes no local plan record.
 The current agent report skips conversations whose session ID or log cannot be found.
 An existing log without parsed usage yields a row with zero numeric usage fields.
 
@@ -1392,9 +1397,9 @@ pass drains the leads with `knowledge add --capture` / `dismiss --capture`.
 The ledger under `~/.local/share/gtmux/mine/` keeps every offset and every emitted id,
 so a pass never reads or queues anything twice, and a known error keeps counting after
 its lesson was filed; `--status` shows that tally. Sources: Claude Code, Codex, Kimi
-Code, and the transcript gtmux writes for opencode. Claude Code's log carries tool
-output, and of the other three only Codex's does, so recurring-error leads come from
-Claude Code and Codex; correction leads come from all four.
+Code, Antigravity (`agy`), and the transcript gtmux writes for opencode. Claude Code's log
+carries tool output, and of the others only Codex's does, so recurring-error leads come from
+Claude Code and Codex; correction leads come from all five.
 
 ## `gtmux quiet`: how much HQ is allowed to say
 
@@ -1614,8 +1619,8 @@ means only the hint was accepted; `fetched_at` means the source command fetched 
 data, not that a model read or acted on it. Existing queued/accepted legacy records are
 not drained, deleted or re-sent. Other agent drivers retain their verified pane delivery.
 User-directed items must be answered by the user in that pane; HQ cannot approve them. `gtmux relay --help` lists the verbs.
-`gtmux knowledge sync` puts a short relay note in Claude, Codex, opencode, and Kimi's
-global instruction blocks; newly started sessions load it. Other agent types receive
+`gtmux knowledge sync` puts a short relay note in Claude, Codex, opencode, Kimi, DSH and
+Antigravity's global instruction blocks; newly started sessions load it. Other agent types receive
 the note when dispatched by `gtmux spawn`.
 
 ## `gtmux spawn` / `gtmux send` / `gtmux tasks` / `gtmux reap`: verified dispatch
@@ -2537,7 +2542,7 @@ files under `~/.local/share/gtmux/`. gtmux ships that hook built in:
 ```sh
 gtmux install                       # asks: hooks | app | all
 gtmux install hooks                 # Claude, one-time setup (macOS)
-gtmux install hooks --agent codex    # or cursor|gemini|copilot|kiro|opencode|kimi|dsh
+gtmux install hooks --agent codex    # or cursor|gemini|copilot|kiro|opencode|kimi|agy|dsh
 gtmux install hooks --agent auto     # detect installed supported agent CLIs
 gtmux install refresh-owned --agent dsh  # refresh an existing owned bridge only (JSON receipt)
 gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
@@ -2553,7 +2558,7 @@ Notification payloads distinguish permission requests from idle prompts; a missi
 notification type uses the legacy path. The hook also reads prompt/reply content for
 the event journal and supported conversation state.
 
-Other agents: `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` wires that
+Other agents: `--agent codex|cursor|gemini|copilot|kiro|opencode|kimi|agy` wires that
 agent's own hooks file instead. Codex uses its additive hooks system (`~/.codex/hooks.json`
 + `features.hooks`), so it coexists with any existing `notify` (e.g. computer-use)
 instead of replacing it. opencode has no command-hook file, so gtmux installs a small JS
@@ -2561,7 +2566,10 @@ plugin (`~/.config/opencode/plugins/gtmux.js`) that forwards its events. Kimi Co
 its hooks as `[[hooks]]` entries inside your own `~/.kimi-code/config.toml`, so gtmux
 appends one marked block at the end of that file and leaves everything else byte for
 byte; uninstall removes exactly that block. If the block's markers don't pair up (say one
-was deleted by hand), gtmux changes nothing and names the line to fix. `gtmux doctor` checks hook configuration for the eight agents it finds; `--fix` repairs missing/invalid bindings and outdated bridge plugins, backing up files and preserving other hooks. Codex and Kimi interruption ends working without a completion notification. Kiro supports CLI 2.x profiles and V3 global hooks. Restart affected agents after upgrading; review/trust Codex changes in `/hooks`. See [hook contracts and limits](design/agent-hooks.md).
+was deleted by hand), gtmux changes nothing and names the line to fix. Antigravity CLI (`agy`)
+reads named hooks from `~/.gemini/config/hooks.json` (`$AGY_CONFIG_DIR`); gtmux owns only the
+top-level `"gtmux"` entry, never registers `PreToolUse` (that event must return a permission
+verdict) and answers each synchronous hook with the JSON `agy` expects. `gtmux doctor` checks hook configuration for the nine agents it finds; `--fix` repairs missing/invalid bindings and outdated bridge plugins, backing up files and preserving other hooks. Codex and Kimi interruption ends working without a completion notification. Kiro supports CLI 2.x profiles and V3 global hooks. Restart affected agents after upgrading; review/trust Codex changes in `/hooks`. See [hook contracts and limits](design/agent-hooks.md).
 
 For the menu-bar app, `gtmux doctor` and `doctor --fix` both recognize installs
 in `~/Applications` and `/Applications`; an existing system-level app is not

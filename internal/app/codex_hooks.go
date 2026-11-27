@@ -383,7 +383,11 @@ func missingAgentHookEvents(key string) []string {
 		missing = append(missing, b.key)
 	}
 	for _, key := range inst.retired {
-		if gtmuxHookEventsIn(inst.configPath())[key] {
+		events := gtmuxHookEventsIn(inst.configPath())
+		if inst.format == formatAgy {
+			events = agyHookEventsIn(inst.configPath())
+		}
+		if events[key] {
 			missing = append(missing, key+" (retired)")
 		}
 	}

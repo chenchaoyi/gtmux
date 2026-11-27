@@ -141,7 +141,7 @@ LEG-306bc45cf75a,G,Go core / CLI / server,internal/knowledge/axes_test.go,45,Tes
 LEG-088af8b27197,G,Go core / CLI / server,internal/knowledge/axes_test.go,116,Test,TestHypothesisIsShelvedNotDistributed,False,legacy-not-retrospectively-reviewed
 LEG-3c53d4af8a67,G,Go core / CLI / server,internal/knowledge/axes_test.go,148,Test,TestHitsAccumulateAndSurviveSupersede,False,legacy-not-retrospectively-reviewed
 LEG-a14d376fc38b,G,Go core / CLI / server,internal/knowledge/axes_test.go,179,Test,TestFirstV2WriteBacksUpTheV1Ledger,False,legacy-not-retrospectively-reviewed
-LEG-6fa8f54f1668,G,Go core / CLI / server,internal/knowledge/distribute_test.go,51,Test,TestBlockInstallRefreshAndRefusal,False,legacy-not-retrospectively-reviewed
+LEG-6fa8f54f1668,G,Go core / CLI / server,internal/knowledge/distribute_test.go,53,Test,TestBlockInstallRefreshAndRefusal,False,legacy-not-retrospectively-reviewed
 LEG-9bbf8a519df6,G,Go core / CLI / server,internal/knowledge/golden_test.go,105,Test,TestKnowledgeGolden,False,legacy-not-retrospectively-reviewed
 LEG-7ce264f75bde,G,Go core / CLI / server,internal/knowledge/knowledge_test.go,15,Test,TestKnowledgeMutationJoinsAllThreeStores,False,legacy-not-retrospectively-reviewed
 LEG-9d9dc23e2f04,G,Go core / CLI / server,internal/knowledge/knowledgecmd_test.go,43,Test,TestKnowledgeVerbChain,False,legacy-not-retrospectively-reviewed

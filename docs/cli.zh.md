@@ -204,7 +204,11 @@ JSON 结构，需要 owner 权限。
 
 Claude 记的是每条消息花了多少，所以总量是累加出来的。Codex 每个回合记一次会话的运行
 总量，所以总量就是最后那次读数；它还直接写出 `model_context_window`（配置覆盖值仍然
-优先）。当前的整队报告会跳过找不到会话 ID 或日志的对话；日志存在但没有解析出用量时，
+优先）。Antigravity（`agy`）在每条 `PLANNER_RESPONSE` 记录本次调用的 `input_tokens`、
+`cache_read_tokens`、`output_tokens`，所以和 Claude 一样累加，上下文取最后一次调用的输入加
+缓存读取，出错的草稿不会重复计入。一次性的窗口回填同时读取 Claude 和 Antigravity 的历史；
+`sources` 把 Antigravity 列为有 token 统计、没有账户额度，因为它没有可读的本地套餐记录。
+当前的整队报告会跳过找不到会话 ID 或日志的对话；日志存在但没有解析出用量时，
 会保留这一行，用量数值为零。
 
 > agent 启动代理：`GTMUX_AGENT_PROXY` 优先于 `~/.config/gtmux/config.json` 中的
@@ -1180,8 +1184,8 @@ read 14 file(s), 3.2 MB, 61 human line(s) → 3 candidate(s) queued, 0 already e
 
 `~/.local/share/gtmux/mine/` 下的台账记着每个偏移和每条发过的 id，所以不会重复读、
 重复投；已经写进知识库的坑再被踩到时计数照样涨，`--status` 看的就是这个。来源：
-Claude Code、Codex、Kimi Code，以及 gtmux 替 opencode 写的记录。只有 Claude Code 和
-Codex 记了工具输出，所以报错线索来自这两种，纠正线索四种都有。
+Claude Code、Codex、Kimi Code、Antigravity（`agy`），以及 gtmux 替 opencode 写的记录。
+只有 Claude Code 和 Codex 记了工具输出，所以报错线索来自这两种，纠正线索五种都有。
 
 ## `gtmux quiet`：HQ 可以说多少
 
@@ -1363,8 +1367,8 @@ Codex 的同一个准确运行轮次最多收到一次简短收件箱提醒，�
 `fetched_at` 只代表源会话的命令读取了保存数据，不证明模型已阅读或执行。
 已有旧队列和已接受回执不清除、不重放；其他 agent 继续使用核验后的 pane 投递。
 待用户决策的请求必须由用户在源 pane 回答，HQ 不能代为批准。全部用法见 `gtmux relay --help`。
-`gtmux knowledge sync` 会把简短入口写进 Claude、Codex、opencode、Kimi 的全局
-指令块，新会话启动时加载。其他类型的 agent 通过 `gtmux spawn` 派发内容得到说明。
+`gtmux knowledge sync` 会把简短入口写进 Claude、Codex、opencode、Kimi、DSH、Antigravity
+的全局指令块，新会话启动时加载。其他类型的 agent 通过 `gtmux spawn` 派发内容得到说明。
 
 ## `gtmux spawn` / `gtmux send` / `gtmux tasks` / `gtmux reap`：带核验的派活
 
@@ -2148,7 +2152,7 @@ fi
 ```sh
 gtmux install                       # asks: hooks | app | all
 gtmux install hooks                 # Claude, one-time setup (macOS)
-gtmux install hooks --agent codex    # or cursor|gemini|copilot|kiro|opencode|kimi|dsh
+gtmux install hooks --agent codex    # or cursor|gemini|copilot|kiro|opencode|kimi|agy|dsh
 gtmux install hooks --agent auto     # 识别已安装的 agent CLI
 gtmux install refresh-owned --agent dsh  # refresh an existing owned bridge only (JSON receipt)
 gtmux uninstall [hooks|app|all]     # reverse it (asks when no target)
@@ -2163,14 +2167,17 @@ DSH 插件随 gtmux 内置，无需另装 npm 包；`doctor --fix` 可安装或�
 `gtmux hook` 是产出方（由 Claude Code 来跑，你不用跑）。通知载荷区分授权请求和空闲提醒；
 没有通知类型时走旧版路径。hook 也会读取提示或回复内容，写入事件日志和支持的对话状态。
 
-其它 agent：`--agent codex|cursor|gemini|copilot|kiro|opencode|kimi` 改成接那个 agent
+其它 agent：`--agent codex|cursor|gemini|copilot|kiro|opencode|kimi|agy` 改成接那个 agent
 自己的 hook 文件。Codex 用的是可叠加的 hooks 系统（`~/.codex/hooks.json` +
 `features.hooks`），所以和你已有的 `notify`（比如 computer-use）共存。opencode 没有
 命令 hook 文件，gtmux 装一个转发它事件的小 JS 插件（`~/.config/opencode/plugins/gtmux.js`）。
 Kimi Code 的 hook 是你自己 `~/.kimi-code/config.toml` 里的 `[[hooks]]` 条目，gtmux 只在
 文件末尾追加一整块带标记的内容，其余一个字节不动；卸载也只删这一块。块的首尾标记对不上时（比如
 手动删掉了一个），gtmux 什么都不改，只告诉你要修哪一行。
-`gtmux doctor` 检查已存在的八款 agent 的 hook 配置，`--fix` 可补齐事件、修复绑定和更新桥接插件；先备份，保留其它 hook。Codex 和 Kimi 的用户中断会结束工作状态，不发送完成通知。Kiro 兼容 CLI 2.x profile 和 V3 全局 hook。配置升级后重启相应 agent；Codex 在 `/hooks` 中检查并信任变更。详见 [hook 契约与边界](design/agent-hooks.zh.md)。
+Antigravity CLI（`agy`）从 `~/.gemini/config/hooks.json`（`$AGY_CONFIG_DIR`）读取命名 hook，
+gtmux 只维护顶层 `"gtmux"` 一项，不注册必须返回权限裁决的 `PreToolUse`，并按 `agy` 的要求
+为每个同步 hook 输出 JSON。
+`gtmux doctor` 检查已存在的九款 agent 的 hook 配置，`--fix` 可补齐事件、修复绑定和更新桥接插件；先备份，保留其它 hook。Codex 和 Kimi 的用户中断会结束工作状态，不发送完成通知。Kiro 兼容 CLI 2.x profile 和 V3 全局 hook。配置升级后重启相应 agent；Codex 在 `/hooks` 中检查并信任变更。详见 [hook 契约与边界](design/agent-hooks.zh.md)。
 
 菜单栏 app 装在 `~/Applications` 或 `/Applications` 都能识别；已经装好的系统级 app
 不会再被 `doctor --fix` 提示重装。

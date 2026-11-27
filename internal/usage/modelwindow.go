@@ -37,6 +37,7 @@ import (
 	"sync"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // windowSeenPath holds the per-model high-water marks.
@@ -129,6 +130,8 @@ func BackfillWindows() {
 	}
 	for agent, glob := range map[string]string{
 		"claude": filepath.Join(state.Home(), ".claude", "projects", "*", "*.jsonl"),
+		// Antigravity logs per-call context deltas without a stated window either.
+		"agy": filepath.Join(transcript.AgyHome(), "brain", "*", ".system_generated", "logs", "transcript.jsonl"),
 	} {
 		paths, _ := filepath.Glob(glob)
 		for _, p := range paths {

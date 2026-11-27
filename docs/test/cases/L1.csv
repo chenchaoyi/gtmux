@@ -66,14 +66,14 @@ LEG-f7b1efd8cea3,L1,Go core / CLI / server,internal/agents/interactive_test.go,5
 LEG-a14053e02a2d,L1,Go core / CLI / server,internal/agents/opencode_test.go,5,Test,TestOpenCodeInteractiveRecipes,False,legacy-not-retrospectively-reviewed
 LEG-bf8b8b3b0ad7,L1,Go core / CLI / server,internal/agents/registry_test.go,21,Test,TestHookEquippedKeys_matchesLegacy,False,legacy-not-retrospectively-reviewed
 LEG-6e76e42a75c0,L1,Go core / CLI / server,internal/agents/registry_test.go,29,Test,TestProfiles_matchesLegacy,False,legacy-not-retrospectively-reviewed
-LEG-580f633e713f,L1,Go core / CLI / server,internal/agents/registry_test.go,47,Test,TestDisplayNames_matchesLegacy,False,legacy-not-retrospectively-reviewed
-LEG-733eba2ccba3,L1,Go core / CLI / server,internal/agents/registry_test.go,58,Test,TestResumeArgv_matchesLegacy,False,legacy-not-retrospectively-reviewed
-LEG-640eb2ac3f5a,L1,Go core / CLI / server,internal/agents/registry_test.go,77,Test,TestResourceNames_matchesLegacy,False,legacy-not-retrospectively-reviewed
-LEG-98a515b098aa,L1,Go core / CLI / server,internal/agents/registry_test.go,85,Test,TestContentAndHeadlessKeys_matchesLegacy,False,legacy-not-retrospectively-reviewed
-LEG-a5c83a2df08b,L1,Go core / CLI / server,internal/agents/registry_test.go,97,Test,TestDedicatedSemanticsKeys_matchesLegacy,False,legacy-not-retrospectively-reviewed
-LEG-071c72214861,L1,Go core / CLI / server,internal/agents/registry_test.go,105,Test,TestForResolvesAliases,False,legacy-not-retrospectively-reviewed
-LEG-d94e6299a13c,L1,Go core / CLI / server,internal/agents/registry_test.go,114,Test,TestKeyForLabel,False,legacy-not-retrospectively-reviewed
-LEG-0f2bcce4049e,L1,Go core / CLI / server,internal/agents/registry_test.go,127,Test,TestCommandKeys,False,legacy-not-retrospectively-reviewed
+LEG-580f633e713f,L1,Go core / CLI / server,internal/agents/registry_test.go,48,Test,TestDisplayNames_matchesLegacy,False,legacy-not-retrospectively-reviewed
+LEG-733eba2ccba3,L1,Go core / CLI / server,internal/agents/registry_test.go,59,Test,TestResumeArgv_matchesLegacy,False,legacy-not-retrospectively-reviewed
+LEG-640eb2ac3f5a,L1,Go core / CLI / server,internal/agents/registry_test.go,79,Test,TestResourceNames_matchesLegacy,False,legacy-not-retrospectively-reviewed
+LEG-98a515b098aa,L1,Go core / CLI / server,internal/agents/registry_test.go,87,Test,TestContentAndHeadlessKeys_matchesLegacy,False,legacy-not-retrospectively-reviewed
+LEG-a5c83a2df08b,L1,Go core / CLI / server,internal/agents/registry_test.go,99,Test,TestDedicatedSemanticsKeys_matchesLegacy,False,legacy-not-retrospectively-reviewed
+LEG-071c72214861,L1,Go core / CLI / server,internal/agents/registry_test.go,107,Test,TestForResolvesAliases,False,legacy-not-retrospectively-reviewed
+LEG-d94e6299a13c,L1,Go core / CLI / server,internal/agents/registry_test.go,121,Test,TestKeyForLabel,False,legacy-not-retrospectively-reviewed
+LEG-0f2bcce4049e,L1,Go core / CLI / server,internal/agents/registry_test.go,134,Test,TestCommandKeys,False,legacy-not-retrospectively-reviewed
 LEG-101bd93f4f0d,L1,Go core / CLI / server,internal/ansi/ansi_test.go,7,Test,TestStripDroppingFaint,False,legacy-not-retrospectively-reviewed
 LEG-4251fc9163b0,L1,Go core / CLI / server,internal/ansi/ansi_test.go,23,Test,TestStrip_KeepsTextRemovesEscapes,False,legacy-not-retrospectively-reviewed
 LEG-2c6db095519a,L1,Go core / CLI / server,internal/app/accesshistory_test.go,13,Test,TestAccessHistoryCLIUsesSharedPageAndRefusesAmbiguousFlags,False,legacy-not-retrospectively-reviewed
@@ -1038,9 +1038,9 @@ LEG-a63f8391b68b,L1,Go core / CLI / server,internal/docs/docs_test.go,241,Test,T
 LEG-f0f8c1f026a7,L1,Go core / CLI / server,internal/docs/docs_test.go,266,Test,TestCheck_CatchesADeadRegistryEntry,False,legacy-not-retrospectively-reviewed
 LEG-1441912e1b0b,L1,Go core / CLI / server,internal/docs/docs_test.go,280,Test,TestCheck_CatchesAnUnregisteredRegion,False,legacy-not-retrospectively-reviewed
 LEG-8ae8d5bfa51c,L1,Go core / CLI / server,internal/docs/docs_test.go,298,Test,TestRewrite_OnlyTheRegion,False,legacy-not-retrospectively-reviewed
-LEG-5b6587a973df,L1,Go core / CLI / server,internal/driver/driver_test.go,14,Test,TestRegistryMatchesFormerHookAgents,False,legacy-not-retrospectively-reviewed
+LEG-5b6587a973df,L1,Go core / CLI / server,internal/driver/driver_test.go,10,Test,TestRegistryMatchesFormerHookAgents,False,legacy-not-retrospectively-reviewed
 LEG-6f2e76a8c6dd,L1,Go core / CLI / server,internal/driver/driver_test.go,35,Test,TestUnknownAgentIsLayerOne,False,legacy-not-retrospectively-reviewed
-LEG-075ed01c63fc,L1,Go core / CLI / server,internal/driver/driver_test.go,49,Test,TestSwitchForcesLayerOne,False,legacy-not-retrospectively-reviewed
+LEG-075ed01c63fc,L1,Go core / CLI / server,internal/driver/driver_test.go,46,Test,TestSwitchForcesLayerOne,False,legacy-not-retrospectively-reviewed
 LEG-660a75789461,L1,Go core / CLI / server,internal/driver/driver_test.go,76,Test,TestSwitchParsing,False,legacy-not-retrospectively-reviewed
 LEG-923f4e5dc99f,L1,Go core / CLI / server,internal/driver/driver_test.go,91,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-cbb1ef3d5f05,L1,Go core / CLI / server,internal/driver/driver_test.go,124,Test,TestContentRegistration,False,legacy-not-retrospectively-reviewed
@@ -1725,11 +1725,11 @@ LEG-5385ad1bcb3d,L1,Go core / CLI / server,internal/knowledge/capturecmd_test.go
 MAP-1022c99343fa,L1,reviewed implementation,internal/knowledge/consult_test.go,14,reviewed-selector,TestConsultScopeVersionAndEvidenceBoundaries,False,KBMEM-CONSULT
 MAP-a90ab6e921bd,L1,reviewed implementation,internal/knowledge/consult_test.go,59,reviewed-selector,TestConsultWholeCardsProtectedOverflowAndNegativeQuery,False,KBMEM-CONSULT
 LEG-2596ee310590,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,23,Test,TestCarriersResolveHomeAndEnv,False,legacy-not-retrospectively-reviewed
-LEG-e683294c2736,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,109,Test,TestMachineSyncWritesIndexNotText,False,legacy-not-retrospectively-reviewed
-LEG-b2439d5b16b0,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,198,Test,TestRepoCarrierPrefersWhatExists,False,legacy-not-retrospectively-reviewed
-LEG-c8340ac94855,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,213,Test,TestLandCarriesByAudience,False,legacy-not-retrospectively-reviewed
-LEG-133a79e07b8d,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,287,Test,TestWithdrawAndTheEveryoneExemption,False,legacy-not-retrospectively-reviewed
-LEG-130c95843839,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,317,Test,TestMachineIndexKeepsTheTitleOnItsOwnLine,False,legacy-not-retrospectively-reviewed
+LEG-e683294c2736,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,111,Test,TestMachineSyncWritesIndexNotText,False,legacy-not-retrospectively-reviewed
+LEG-b2439d5b16b0,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,202,Test,TestRepoCarrierPrefersWhatExists,False,legacy-not-retrospectively-reviewed
+LEG-c8340ac94855,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,217,Test,TestLandCarriesByAudience,False,legacy-not-retrospectively-reviewed
+LEG-133a79e07b8d,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,292,Test,TestWithdrawAndTheEveryoneExemption,False,legacy-not-retrospectively-reviewed
+LEG-130c95843839,L1,Go core / CLI / server,internal/knowledge/distribute_test.go,322,Test,TestMachineIndexKeepsTheTitleOnItsOwnLine,False,legacy-not-retrospectively-reviewed
 MAP-fbbfed83e95b,L1,reviewed implementation,internal/knowledge/dream_test.go,9,reviewed-selector,TestDreamBudgetUnknownExhaustedAndFingerprint,False,KBMEM-DREAM
 MAP-ce9b5fe45f2e,L1,reviewed implementation,internal/knowledge/dream_test.go,39,reviewed-selector,TestDreamPacketExcludesPrivateAndRejectsMissingIDs,False,KBMEM-DREAM
 LEG-7cf3c18c3e40,L1,Go core / CLI / server,internal/knowledge/knowledge_test.go,42,Test,TestKnowledgeMutationAuditedWhenRenderFails,False,legacy-not-retrospectively-reviewed
@@ -2126,6 +2126,7 @@ LEG-998a95a13df6,L1,Go core / CLI / server,internal/radar/turninprogress_test.go
 LEG-e9af77b1611a,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,71,Test,TestGatherAgentsReportsWorkingFromTheTurnMarker,False,legacy-not-retrospectively-reviewed
 LEG-29923298a331,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,117,Test,TestErroredTranscriptEndsTheTurn,False,legacy-not-retrospectively-reviewed
 LEG-a0bf615b6e23,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,148,Test,TestRecoveredTranscriptKeepsWorking,False,legacy-not-retrospectively-reviewed
+MAP-1769717e4d0b,L1,reviewed implementation,internal/radar/usagesources_agy_test.go,5,reviewed-selector,TestUsageSourcesDeclareAgyTokenCoverage,False,AGY-009
 LEG-0916ceda3959,L1,Go core / CLI / server,internal/radar/usagesources_test.go,9,Test,TestUsageSourcesFollowInstallationAndEvidenceWithoutInventingPlans,False,legacy-not-retrospectively-reviewed
 LEG-60f4094c7da5,L1,Go core / CLI / server,internal/relay/relay_test.go,10,Test,TestOfflineRequestSurvivesAndRetryDoesNotDuplicate,False,legacy-not-retrospectively-reviewed
 LEG-3b7ec691b3e1,L1,Go core / CLI / server,internal/relay/relay_test.go,30,Test,TestClaimRotationAndReplyReceipt,False,legacy-not-retrospectively-reviewed

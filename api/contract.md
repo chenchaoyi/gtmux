@@ -635,7 +635,7 @@ invocation; for other agents no claim is made rather than a wrong one.
 `detail` remains a plain-text summary. For Codex, string `title` then `description`
 takes precedence over command/path fallbacks, with collapsed whitespace and at most
 80 Unicode code points plus an ellipsis. Optional richer fields are supplied by the
-Claude, Codex, Kimi and DSH parsers only when recorded. `operation` describes the
+Claude, Codex, Kimi, DSH and Antigravity parsers only when recorded. `operation` describes the
 exact known tool name or Codex recorded command classification, with unknown or mixed
 commands retaining their generic category. Known typed Codex `item_completed` actions
 add file reads, directory listings/searches, file changes and MCP calls alongside the

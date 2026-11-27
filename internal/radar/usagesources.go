@@ -55,6 +55,10 @@ func usageSources(rep UsageReport, panes []Pane, look func(string) string) []Usa
 			v.Tokens = true
 			v.Account = "balance"
 			v.Status = rep.Limits.DSHAccountStatus
+		case "agy":
+			// Per-call token deltas are read from transcript.jsonl; Antigravity exposes
+			// no local quota or balance record, so the account stays unsupported.
+			v.Tokens = true
 		}
 		out = append(out, v)
 	}

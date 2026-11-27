@@ -1,0 +1,172 @@
+{
+  "id": "agy-cli-agent-20261127",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Antigravity implementation owner (self-review against live agy CLI bytes and hooks.md contract)",
+    "date": "2026-11-27",
+    "decision": "Proceed with Tier 2+ Antigravity CLI (agy) integration across registry, hooks, transcript, usage, profile, doctor, UI fallbacks, and docs",
+    "notes": "Verified live agy binary, hooks.json schema (~/.gemini/config/hooks.json named hook object, flat vs grouped PostToolUse, required JSON stdout, synchronous hook detach), and real transcript.jsonl bytes (USER_EXPLICIT/USER_INPUT with <USER_REQUEST>, MODEL/PLANNER_RESPONSE with model/input_tokens/cache_read_tokens/output_tokens/tool_calls/content, SYSTEM/ERROR_MESSAGE). Deliberately excludes PreToolUse because agy requires an allow/deny/ask permission verdict."
+  },
+  "evidence_limits": [
+    "Contract and fixture tests verify observed live transcript.jsonl bytes, hook payloads, JSON stdout, installer/doctor round-trips, and usage accounting without launching a live paid model turn."
+  ],
+  "cases": [
+    {
+      "id": "AGY-001",
+      "layer": "L1",
+      "description": "Registry declares agy manifest with aliases, radar detection, resume argv, resource attribution, hook display, content parser, and dedicated semantics",
+      "setup": "Canonical internal/agents registry and golden accessor tests.",
+      "action": "Inspect HookEquippedKeys, Profiles, DisplayNames, ResumeArgv, ResourceNames, ContentKeys, DedicatedSemanticsKeys, CommandKeys, and For aliases.",
+      "expected": "agy appears in all Tier 2 projections, resolves antigravity and antigravity-cli aliases, and maps agy binary to canonical key agy.",
+      "planned_files": [
+        "internal/agents/registry_test.go",
+        "internal/driver/driver_test.go"
+      ],
+      "surfaces": [
+        "Registry / Radar / Resume / Driver derivation"
+      ]
+    },
+    {
+      "id": "AGY-002",
+      "layer": "L2",
+      "description": "agy hooks installer writes, verifies, repairs, preserves foreign hooks and disabled policy, and cleanly uninstalls named gtmux entry in ~/.gemini/config/hooks.json",
+      "setup": "Isolated HOME with foreign named hooks, disabled gtmux hook policy, corrupted/incomplete bindings, and executable hook fixture.",
+      "action": "Run updateAgentSettings install/reinstall/uninstall, missingAgentHookEvents, hookPolicyDisabled, and doctor rowAgentHook for agy.",
+      "expected": "Named gtmux hook writes flat SessionStart/PreInvocation/Stop and grouped PostToolUse with matcher *, omits PreToolUse, preserves foreign hooks, respects enabled:false, detects missing/wrong bindings, and cleanly removes only gtmux on uninstall.",
+      "planned_files": [
+        "internal/app/agy_hooks_test.go"
+      ],
+      "surfaces": [
+        "CLI install-hooks / uninstall-hooks / doctor"
+      ]
+    },
+    {
+      "id": "AGY-003",
+      "layer": "L2",
+      "description": "agy hook runtime classifies lifecycle events, distinguishes PreInvocation turn start vs continuation, maps Stop terminationReason, extracts camelCase fields, detaches sync work, and emits contract JSON stdout",
+      "setup": "Isolated HOME/state dir with synthetic camelCase agy hook payloads piped to hook.Run.",
+      "action": "Classify and run SessionStart, PreInvocation (invocationNum 1 and 3), PostToolUse, and Stop (NO_TOOL_CALL, USER_CANCELED, ERROR, MAX_INVOCATIONS).",
+      "expected": "PreInvocation 1 opens turn with cleaned lastUserInput; PreInvocation >1 resolves as Resumed; Stop maps USER_CANCELED to Interrupt and ERROR/MAX_INVOCATIONS to StopFailure; non-detached invocations emit valid JSON stdout ({} or {\"decision\":\"stop\"}).",
+      "planned_files": [
+        "internal/hook/agy_test.go"
+      ],
+      "surfaces": [
+        "Hook runtime / Radar state / Event journal"
+      ]
+    },
+    {
+      "id": "AGY-004",
+      "layer": "L2",
+      "description": "agy transcript parser reads real-shape transcript.jsonl turns, tool calls, timestamps, error status, and rejects path traversal",
+      "setup": "Isolated AGY_HOME with sanitized real-shape fixture testdata/agy-current.jsonl plus error-ending and invalid-id fixtures.",
+      "action": "Call Load, FirstMessageTime, LastMessageTime, LastMessageError, AgentForSession, and LogPath for agy.",
+      "expected": "Extracts clean user request text without metadata tags, ignores SYSTEM_MESSAGE and errored PLANNER_RESPONSE partial text, parses tool_calls into inspectable steps, reads RFC3339 created_at timestamps, reports terminal ERROR_MESSAGE, and rejects unsafe session IDs.",
+      "planned_files": [
+        "internal/transcript/agy_test.go"
+      ],
+      "surfaces": [
+        "Chat / Trace / Digest / HQ session age"
+      ]
+    },
+    {
+      "id": "AGY-005",
+      "layer": "L2",
+      "description": "Usage accounting parses agy PLANNER_RESPONSE delta token records and computes live context footprint and cumulative burn",
+      "setup": "Isolated AGY_HOME with multi-turn agy transcript.jsonl carrying input_tokens, cache_read_tokens, output_tokens, model, and created_at.",
+      "action": "Run parseLine and ForSession for agy.",
+      "expected": "Accumulates non-cached input and output deltas across turns and reports last turn input_tokens + cache_read_tokens as CtxTok.",
+      "planned_files": [
+        "internal/usage/agy_test.go"
+      ],
+      "surfaces": [
+        "Usage CLI / API / HQ self-rotate ctx"
+      ]
+    },
+    {
+      "id": "AGY-006",
+      "layer": "L2",
+      "description": "Agent profile observer extracts agy model facts from hook modelName and transcript PLANNER_RESPONSE model records",
+      "setup": "Synthetic agy hook payload with modelName and transcript line with model.",
+      "action": "Invoke HookFacts and log decode for agy.",
+      "expected": "Records model fact from both native hook and session log without retaining prompts or unrelated fields.",
+      "planned_files": [
+        "internal/agentprofile/agy_profile_test.go"
+      ],
+      "surfaces": [
+        "Agent profile / Avatar dialog"
+      ]
+    },
+    {
+      "id": "AGY-007",
+      "layer": "L1",
+      "description": "Knowledge distribution includes agy global instruction carrier (~/.gemini/config/GEMINI.md / $AGY_CONFIG_DIR) across carrier resolution and serialized sync",
+      "setup": "Isolated HQ home with AGY_CONFIG_DIR cleared alongside other carrier env overrides.",
+      "action": "Run Carriers, SyncMachine, storage-boundary sync, and serialized sync tests.",
+      "expected": "agy carrier resolves to $HOME/.gemini/config/GEMINI.md, receives the managed machine knowledge block, stays idempotent on resync, and participates in serialized sync without lock leaks.",
+      "planned_files": [
+        "internal/knowledge/distribute_test.go",
+        "internal/knowledge/sync_serialization_test.go"
+      ],
+      "surfaces": [
+        "Knowledge distribution / HQ sync"
+      ]
+    },
+    {
+      "id": "AGY-008",
+      "layer": "L2",
+      "description": "HQ transcript miner extracts human correction leads from agy transcript.jsonl while ignoring compaction summaries, system reminders, and errored planner drafts",
+      "setup": "Isolated agy brain directory with synthetic transcript.jsonl containing CONTEXT_SUMMARY, USER_REQUEST, SYSTEM_MESSAGE, errored PLANNER_RESPONSE, completed reply, and follow-up correction.",
+      "action": "Run mine.Run against the agy root.",
+      "expected": "Emits one correction candidate attributed to agent agy and conversation ID with context from the completed reply, excluding compaction summaries, system messages, and errored drafts.",
+      "planned_files": [
+        "internal/mine/agy_test.go"
+      ],
+      "surfaces": [
+        "HQ knowledge mining"
+      ]
+    },
+    {
+      "id": "AGY-009",
+      "layer": "L1",
+      "description": "Usage source coverage declares agy token accounting without inventing an account quota",
+      "setup": "Synthetic executable lookup reporting the agy CLI as installed and an empty usage report.",
+      "action": "Compute usageSources for the registry.",
+      "expected": "The Antigravity source is listed as installed with tokens=true and account=unsupported; an uninstalled, unobserved agy is omitted.",
+      "planned_files": [
+        "internal/radar/usagesources_agy_test.go"
+      ],
+      "surfaces": [
+        "Usage CLI / API / Mac and phone usage sheets"
+      ]
+    },
+    {
+      "id": "AGY-010",
+      "layer": "L2",
+      "description": "One-time context-window backfill learns agy model windows from existing transcript tails",
+      "setup": "Isolated HOME and AGY_HOME with a historical agy transcript.jsonl whose PLANNER_RESPONSE held about 900k context tokens.",
+      "action": "Run BackfillWindows, then resolve windowFor for a smaller agy context of the same model.",
+      "expected": "The agy model window resolves to the 1M tier instead of the 200k guess, and the backfill does not rescan logs written afterwards.",
+      "planned_files": [
+        "internal/usage/agy_backfill_test.go"
+      ],
+      "surfaces": [
+        "Usage ctx figure / HQ self-rotate ctx"
+      ]
+    },
+    {
+      "id": "AGY-011",
+      "layer": "L2",
+      "description": "Doctor and automatic install selection offer the Antigravity hook only when the agy CLI is discoverable, and doctor --fix installs it",
+      "setup": "Isolated HOME with synthetic executable lookup toggling the agy CLI and an executable hook binary fixture.",
+      "action": "Inspect installable/detected hook agents and doctor agent hook checks, then run the doctor fix step for agy.",
+      "expected": "agy is installable; it is detected and gets an Antigravity hook doctor row only when discoverable; the fix step writes a healthy gtmux entry in hooks.json.",
+      "planned_files": [
+        "internal/app/agy_doctor_test.go"
+      ],
+      "surfaces": [
+        "CLI doctor / doctor --fix / install hooks --agent auto"
+      ]
+    }
+  ],
+  "seal": "e117b7c9c8851e0a5b813589145a16115d2bd122e8e1a641cb80c360da212ada"
+}

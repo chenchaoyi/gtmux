@@ -22,7 +22,7 @@ receipt, readiness, content, headless execution, and usage have separate sources
 | 0 · Sensed | A tmux radar row, focus and input; resume when a resume command is declared. | A manifest with detection commands (+ optionally an idle glyph, icon, resume argv). |
 | 1 · Event parity | Hook-fed `waiting`/`done`, receipt-backed send verification, notifications, HQ wakes. | An installer that feeds lifecycle events into gtmux's event stream; the agent must actually run the hooks. |
 | 2 · Digest parity | Transcript-derived `goal`/`last` in the digest, and the transcript's first-message time for HQ session age. | A session mapping and a transcript parser. `ask` is read separately from a waiting pane's numbered options. |
-| 2+ · Usage parity | Context/burn figures (`gtmux usage`) and the `ctx` criterion of HQ self-rotation. | A resolvable session log with usage records the parser supports: Claude per-message usage or Codex cumulative `token_count` records. Usage does not depend on the driver's `content` switch. |
+| 2+ · Usage parity | Context/burn figures (`gtmux usage`) and the `ctx` criterion of HQ self-rotation. | A resolvable session log with usage records the parser supports: Claude per-message usage, Codex cumulative `token_count` records, or Antigravity (`agy`) `PLANNER_RESPONSE` token delta records. Usage does not depend on the driver's `content` switch. |
 
 For HQ, the sensor first needs a resolvable session ID. Its three criteria then have
 different evidence sources:
@@ -30,8 +30,8 @@ different evidence sources:
 | Criterion | Source | Current coverage |
 |---|---|---|
 | `turns` | The HQ pane's `UserPromptSubmit` events since the sensor opened this session's window. | Hook-equipped agents whose hooks emit those events. This is not a count recovered from the full transcript. |
-| `age` | When opening the window: first transcript message if available, otherwise the time the sensor first observed this session. | Transcript readers for Claude, Codex, opencode and Kimi; the fallback works for other mapped sessions too, but understates an older session's age. |
-| `ctx` | Usage parser (`internal/usage/parse.go`). | Claude and Codex logs with usable token records; missing records supply no context figure. |
+| `age` | When opening the window: first transcript message if available, otherwise the time the sensor first observed this session. | Transcript readers for Claude, Codex, opencode, Kimi and Antigravity (`agy`); the fallback works for other mapped sessions too, but understates an older session's age. |
+| `ctx` | Usage parser (`internal/usage/parse.go`). | Claude, Codex and Antigravity (`agy`) logs with usable token records; missing records supply no context figure. |
 
 The wake line omits a non-positive context fraction or age and an unknown (negative)
 turn count. It can print `0 turns` once counting has begun. Missing usage must not be

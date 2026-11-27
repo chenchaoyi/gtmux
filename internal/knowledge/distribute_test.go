@@ -25,6 +25,7 @@ func TestCarriersResolveHomeAndEnv(t *testing.T) {
 	t.Setenv("CODEX_HOME", "")
 	t.Setenv("KIMI_CODE_HOME", "")
 	t.Setenv("DSH_HOME", "")
+	t.Setenv("AGY_CONFIG_DIR", "")
 	byAgent := map[string]string{}
 	for _, c := range Carriers() {
 		byAgent[c.Agent] = c.Path
@@ -35,6 +36,7 @@ func TestCarriersResolveHomeAndEnv(t *testing.T) {
 		"codex":    filepath.Join(home, ".codex", "AGENTS.md"),
 		"opencode": filepath.Join(home, ".config", "opencode", "AGENTS.md"),
 		"kimi":     filepath.Join(home, ".kimi-code", "AGENTS.md"),
+		"agy":      filepath.Join(home, ".gemini", "config", "GEMINI.md"),
 	} {
 		if byAgent[agent] != want {
 			t.Errorf("%s: %s, want %s", agent, byAgent[agent], want)
@@ -111,14 +113,16 @@ func TestMachineSyncWritesIndexNotText(t *testing.T) {
 	t.Setenv("CODEX_HOME", "")
 	t.Setenv("KIMI_CODE_HOME", "")
 	t.Setenv("DSH_HOME", "")
+	t.Setenv("AGY_CONFIG_DIR", "")
 	writeOps(t, promoted("pitfalls/p", "never run cp in a script", AudienceMachine, ""))
 	writeOps(t, withPromotion("pitfalls/p", AudienceMachine, "")...)
 	rep, err := SyncMachine(false)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(rep.Written) != 5 || len(rep.Refused) != 0 {
-		t.Fatalf("all five carriers created: %+v", rep)
+	wantCarriers := len(Carriers())
+	if len(rep.Written) != wantCarriers || len(rep.Refused) != 0 {
+		t.Fatalf("all %d carriers created: %+v", wantCarriers, rep)
 	}
 	for _, c := range Carriers() {
 		b := mustReadFile(t, c.Path)
@@ -141,7 +145,7 @@ func TestMachineSyncWritesIndexNotText(t *testing.T) {
 	}
 	// Second sync: everything kept.
 	rep, _ = SyncMachine(false)
-	if len(rep.Kept) != 5 || len(rep.Written) != 0 {
+	if len(rep.Kept) != wantCarriers || len(rep.Written) != 0 {
 		t.Fatalf("idempotent: %+v", rep)
 	}
 	sts, _ := CarrierStatuses()
@@ -160,7 +164,7 @@ func TestMachineSyncWritesIndexNotText(t *testing.T) {
 
 func TestBuiltinStorageBoundariesReachEveryCarrierWithoutPromotions(t *testing.T) {
 	asHQ(t)
-	for _, key := range []string{"CODEX_HOME", "KIMI_CODE_HOME", "DSH_HOME"} {
+	for _, key := range []string{"CODEX_HOME", "KIMI_CODE_HOME", "DSH_HOME", "AGY_CONFIG_DIR"} {
 		t.Setenv(key, "")
 	}
 	for _, carrier := range Carriers() {
@@ -215,6 +219,7 @@ func TestLandCarriesByAudience(t *testing.T) {
 	t.Setenv("CODEX_HOME", "")
 	t.Setenv("KIMI_CODE_HOME", "")
 	t.Setenv("DSH_HOME", "")
+	t.Setenv("AGY_CONFIG_DIR", "")
 	repo := t.TempDir()
 	os.WriteFile(filepath.Join(repo, "CLAUDE.md"), []byte("# repo rules\n"), 0o644)
 

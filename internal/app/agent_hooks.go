@@ -52,6 +52,10 @@ const (
 	// Enabled by `features.hooks = true` in ~/.codex/config.toml.
 	formatCodex
 	formatKiroV3
+	// formatAgy: Antigravity CLI (~/.gemini/config/hooks.json) — top-level map of
+	// named hook entries (we own "gtmux"), with flat lifecycle arrays and grouped
+	// matcher arrays for tool events (timeout in seconds).
+	formatAgy
 )
 
 // feedTimeoutMs is the long timeout for tool feed events (they can block on you).
@@ -199,6 +203,16 @@ var agentInstallers = map[string]agentInstaller{
 	// opencode's only extension point is a JS plugin — not a command-hook config —
 	// so this installs a plugin (dedicated file) instead of merging JSON. The
 	// plugin subscribes to opencode's events and shells out to `gtmux hook`.
+	"agy": {
+		key: "agy", display: "Antigravity", relDir: ".gemini/config", file: "hooks.json",
+		envDir: "AGY_CONFIG_DIR", format: formatAgy, timeoutMs: 10000,
+		bindings: []agentHookBinding{
+			{key: "SessionStart", event: "SessionStart"},
+			{key: "PreInvocation", event: "PreInvocation"},
+			{key: "PostToolUse", event: "PostToolUse", feed: true},
+			{key: "Stop", event: "Stop"},
+		},
+	},
 	"opencode": {
 		key: "opencode", display: "opencode",
 		relDir: ".config/opencode/plugins", file: "gtmux.js",
@@ -492,6 +506,9 @@ func writeAgentPlugin(path, contents string) error {
 func updateAgentSettings(inst agentInstaller, path, bin string, install bool) error {
 	if inst.format == formatKiroV3 {
 		return updateKiroHooks(inst, path, bin, install)
+	}
+	if inst.format == formatAgy {
+		return updateAgyHooks(inst, path, bin, install)
 	}
 	m, err := loadJSONObject(path)
 	if err != nil {

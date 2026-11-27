@@ -58,6 +58,9 @@ func agentHooksInstalled(inst agentInstaller) bool {
 	if err != nil {
 		return false
 	}
+	if inst.format == formatAgy {
+		return agyHooksInstalled(inst.configPath())
+	}
 	if inst.format == formatKiroV3 {
 		for _, raw := range asArray(m["hooks"]) {
 			h := asObject(raw)
@@ -102,6 +105,9 @@ func installedAgentBindings(inst agentInstaller) map[string]bool {
 	}
 	if hookPolicyDisabled(inst.key, inst.configPath()) {
 		return have
+	}
+	if inst.format == formatAgy {
+		return agyInstalledBindings(inst)
 	}
 	if inst.format == formatKiroV3 {
 		for _, raw := range asArray(m["hooks"]) {
@@ -176,6 +182,9 @@ func hookPolicyDisabled(key, path string) bool {
 		return false
 	}
 	if m["disableAllHooks"] == true {
+		return true
+	}
+	if key == "agy" && agyHookPolicyDisabled(path) {
 		return true
 	}
 	if key == "gemini" {

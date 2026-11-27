@@ -44,7 +44,7 @@ gtmux install hooks --agent codex
 ```
 
 Without `--agent` it sets up Claude Code only. Repeat for the agents you use: `gemini`,
-`cursor`, `opencode`, `kimi`, `copilot` or `kiro`. An agent that was already running picks
+`cursor`, `opencode`, `kimi`, `agy`, `copilot` or `kiro`. An agent that was already running picks
 the hook up after a restart. `gtmux doctor --fix` offers hooks for supported installed agents. You can also use `gtmux install hooks --agent auto`; see [agent setup](agent-integrations.md) for each integration’s loading requirements.
 
 For agents with process detection, gtmux can read fallback state without a hook from
