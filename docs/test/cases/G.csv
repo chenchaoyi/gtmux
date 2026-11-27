@@ -25,6 +25,10 @@ LEG-f0e447d6d59b,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,
 LEG-719a9427867d,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,334,Test,TestHookAndRendererStepsKeepTheOriginalBackup,False,legacy-not-retrospectively-reviewed
 LEG-660aed6940d9,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,356,Test,TestPinKeepsBigNumbersAndLiteralCharacters,False,legacy-not-retrospectively-reviewed
 LEG-57fb770dae38,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,388,Test,TestNullSettingsAreUnreadableNotACrash,False,legacy-not-retrospectively-reviewed
+MAP-1ecd8e274933,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,48,reviewed-selector,TestPurposeDoctorRegisteredCLI,False,"PBS-004,PBS-005"
+MAP-8538b9be04f0,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,81,reviewed-selector,TestPurposeDoctorResumesPublishedGroup,False,"PBS-004,PBS-005"
+MAP-58736df6454b,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,121,reviewed-selector,TestPurposeDoctorOpenHandle,False,"PBS-004,PBS-005"
+MAP-06b8e463f198,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,16,reviewed-selector,TestPurposeDoctorFirstRead,False,"PBS-004,PBS-005"
 LEG-2f59a298ff54,G,Go core / CLI / server,internal/app/doctor_test.go,395,Test,TestStoreWriteProbeChangesNothing,False,legacy-not-retrospectively-reviewed
 LEG-deda8e9d57bb,G,Go core / CLI / server,internal/app/doctorfix_hookgap_test.go,94,Test,TestFixLeavesACompleteClaudeHookAlone,False,legacy-not-retrospectively-reviewed
 LEG-dc309747ca0a,G,Go core / CLI / server,internal/app/doctorfix_test.go,26,Test,TestStepLocaleAppliesPlatformUTF8ToConfigAndServer,False,legacy-not-retrospectively-reviewed

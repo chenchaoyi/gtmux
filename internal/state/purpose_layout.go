@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 
+const PurposeFormatCapability = "gtmux storage-format 4"
+
 // A category describes user-visible ownership. It does not select a writer:
 // the committed layout journal remains the authority for active data.
 var purposeGroups = map[string]string{

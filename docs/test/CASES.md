@@ -2,7 +2,7 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1518 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1519 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ The catalogue covers 1518 test/harness source files. Each CSV row lists stable I
 | L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
-| G · Qualification guards | 511 | [G.csv](cases/G.csv) |
+| G · Qualification guards | 515 | [G.csv](cases/G.csv) |
 
 Numbers are not passes. The legacy 6,223 positions came from the 4fad6119 inventory (declarations, subtests, dynamic templates); explicit new cases, native oracles and reviewed selectors are indexed separately. Dynamic instances are not expanded. Harnesses without named cases retain their hashes. Legacy layers are structural triage; mixed boundaries need semantic review when touched, not fictional historical review/results. A reviewed-selector is not a framework-discovered declaration. Gates catch source/index/mapping drift; names cannot prove assertion quality.
 
@@ -630,6 +630,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | PBS-001 | Use the canonical private cache path, preserve inode on cache hit and return no thumbnail for an unknown agent. |
 | PBS-002 | Only the verified empty scaffold is removed, cleanup is repeatable and replaced or populated directories survive. |
 | PBS-003 | Verify placement, identities, old references, refusal on conflict and idempotence; ordinary inspection must not write. |
+| PBS-004 | Refuse the old binary or an open writer before mutation. Finish the recorded group before the next layout and preserve data identity. |
+| PBS-005 | The inspection leaves the root absent. Both first writers observe the verified purpose layout. |
 | PWR-001 | One production collection per producer tick, no extra REST collections within freshness; explicit next producer bypasses TTL; clone ownership preserved; failure/oversize never turns stale bytes into success; scopes never cross |
 | PWR-002 | Frame probes within one pass share exact text; each pane is captured at most once, no frame survives into next gather; new approval becomes waiting without invented done; unrelated non-Codex states retained |
 | PWR-003 | SSE uses fresh producer, REST reads its cache rather than second gather; role/completion/follow/native identity unchanged; no real services/power settings touched |

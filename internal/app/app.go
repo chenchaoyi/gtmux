@@ -85,7 +85,7 @@ func Run(argv []string) int {
 			}
 			i18n.SetLang(lang)
 		}
-		lease, ok := enterCommandLayout("codex", nil)
+		lease, ok := enterRuntimeLayout("codex", nil)
 		if !ok {
 			return 1
 		}
@@ -123,17 +123,10 @@ func Run(argv []string) int {
 		}
 		return 0
 	}
-	if sub != "doctor" && sub != "dr" && !permitsLayoutTransition(sub, args) {
-		if _, err := os.Lstat(state.Dir()); os.IsNotExist(err) && purposeDesktopCompatibility() == nil {
-			if err := state.InitializePurposeStorage(); err != nil {
-				return guidedStorageFailure(err)
-			}
-		}
-	}
 	if rc, handled := doctorStorageEntry(sub, args); handled {
 		return rc
 	}
-	lease, ok := enterCommandLayout(sub, args)
+	lease, ok := enterRuntimeLayout(sub, args)
 	if !ok {
 		return 1
 	}
@@ -163,6 +156,10 @@ func Run(argv []string) int {
 		usage()
 		return 0
 	case "-v", "--version", "version":
+		if len(args) == 1 && args[0] == "--storage-format" {
+			fmt.Println(state.PurposeFormatCapability)
+			return 0
+		}
 		fmt.Println("gtmux " + Version)
 		return 0
 	case "overview", "ov":
@@ -249,7 +246,7 @@ func Run(argv []string) int {
 	case "hook":
 		return hook.Run(os.Stdin, args)
 	case "doctor", "dr":
-		return cmdDoctor(args)
+		return cmdDoctorWithAdmission(args, lease == nil && readOnlyDoctor(sub, args))
 	case "update", "upgrade":
 		return cmdUpdate(args)
 	case "whatsnew":

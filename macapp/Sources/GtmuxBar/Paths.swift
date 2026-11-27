@@ -14,20 +14,24 @@ enum Paths {
 
     // Migration requires the menu bar to be closed. Freeze the verified route
     // for the lifetime of this process, including notification queue watchers.
-    static let layout: Layout = {
+    static let layout = initialStorageLayout(at: dataDir, bundledCLI: Bundle.main.executableURL?
+        .deletingLastPathComponent().appendingPathComponent("gtmux"))
+
+    static func initialStorageLayout(at root: String, bundledCLI: URL?) -> Layout {
         var info = stat()
-        if lstat(dataDir, &info) != 0 && errno == ENOENT,
-           let bundled = Bundle.main.executableURL?.deletingLastPathComponent().appendingPathComponent("gtmux"),
-           FileManager.default.isExecutableFile(atPath: bundled.path) {
+        if lstat(root, &info) != 0 {
+            guard errno == ENOENT, let bundledCLI,
+                  FileManager.default.isExecutableFile(atPath: bundledCLI.path) else { return .unavailable }
             let initStore = Process()
-            initStore.executableURL = bundled
+            initStore.executableURL = bundledCLI
             initStore.arguments = ["_storage-init"]
             do { try initStore.run(); initStore.waitUntilExit() }
             catch { return .unavailable }
-            guard initStore.terminationStatus == 0 else { return .unavailable }
+            guard initStore.terminationStatus == 0, storageLayout(at: root) == .categories else { return .unavailable }
+            return .categories
         }
-        return storageLayout(at: dataDir)
-    }()
+        return storageLayout(at: root)
+    }
 
     static func storageLayout(at root: String) -> Layout {
         var mark = stat()

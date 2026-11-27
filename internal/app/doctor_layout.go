@@ -30,6 +30,40 @@ func permitsLayoutTransition(command string, args []string) bool {
 		(command == "doctor" || command == "dr") && len(args) == 1 && (layoutDoctorFlag(args[0]) || args[0] == "--help" || args[0] == "-h")
 }
 
+func readOnlyDoctor(command string, args []string) bool {
+	if command != "doctor" && command != "dr" {
+		return false
+	}
+	for _, arg := range args {
+		switch arg {
+		case "--json", "--no-prompt", "--progress":
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func enterRuntimeLayout(command string, args []string) (*state.Lease, bool) {
+	if permitsLayoutTransition(command, args) {
+		return nil, true
+	}
+	if _, err := os.Lstat(state.Dir()); os.IsNotExist(err) {
+		if readOnlyDoctor(command, args) {
+			return nil, true
+		}
+		if err := purposeDesktopCompatibility(); err != nil {
+			guidedStorageFailure(err)
+			return nil, false
+		}
+		if err := state.InitializePurposeStorage(); err != nil {
+			guidedStorageFailure(err)
+			return nil, false
+		}
+	}
+	return enterCommandLayout(command, args)
+}
+
 func enterCommandLayout(command string, args []string) (*state.Lease, bool) {
 	if permitsLayoutTransition(command, args) {
 		return nil, true
@@ -167,7 +201,7 @@ func cmdDoctorLayout(flag string) int {
 		if grouped {
 			return guidedStorageFailure(errors.New("storage already uses categories; run gtmux doctor --fix for any recorded repair"))
 		}
-		if err := state.ChangePurposeLayout(false, checkEarlyStorageWriters); err != nil {
+		if err := state.ChangePurposeLayout(false, checkEarlyPurposeWriters); err != nil {
 			return guidedStorageFailure(err)
 		}
 		status, err = state.ReadStorageLayout()

@@ -153,6 +153,21 @@ func (ops storageServiceIO) finish(manager userservice.StorageLaunchd, plan *sto
 	if plan.Phase == "verified" {
 		return ops.cleanup()
 	}
+	if plan.Purpose {
+		status, err := state.ReadStorageLayout()
+		if err != nil {
+			return err
+		}
+		if status.Mode == "purpose" {
+			jobs, err := manager.Inspect()
+			if err != nil {
+				return err
+			}
+			if err := manager.CheckPurposeExecutables(jobs); err != nil {
+				return err
+			}
+		}
+	}
 	if plan.Phase != "start" {
 		if err := ops.prepareServiceStart(manager, plan); err != nil {
 			return err

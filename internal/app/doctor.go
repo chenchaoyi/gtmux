@@ -77,7 +77,9 @@ func statusGlyph(status int) (glyph, color string) {
 // mapping each gtmux feature to the tmux / terminal / hook prerequisite it needs.
 // With `--fix` it then walks the recommended fixes, explaining and confirming each
 // one (Layer 2, see doctorFix); `--yes` applies them all without prompting.
-func cmdDoctor(args []string) int {
+func cmdDoctor(args []string) int { return cmdDoctorWithAdmission(args, false) }
+
+func cmdDoctorWithAdmission(args []string, needsAdmissionForFix bool) int {
 	for _, flag := range args {
 		if layoutDoctorFlag(flag) {
 			if len(args) != 1 {
@@ -179,6 +181,9 @@ func cmdDoctor(args []string) int {
 			fmt.Println()
 			if confirm(i18n.Tr("  Review available repairs now? [Y/n] ", "  现在查看可修复项？[Y/n] ")) {
 				fmt.Println()
+				if needsAdmissionForFix {
+					return Run([]string{"--lang=" + i18n.Lang(), "doctor", "--fix"})
+				}
 				return doctorFix(false, progress)
 			}
 			i18n.Say("  → run `gtmux doctor --fix` to review available repairs; follow the guidance above for separate actions",

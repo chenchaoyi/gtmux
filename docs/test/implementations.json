@@ -1,4 +1,8 @@
 {
+  "internal/app/doctor_purpose_revision_test.go": {
+    "cases": ["PBS-004", "PBS-005"],
+    "selectors": ["TestPurposeDoctorRegisteredCLI", "TestPurposeDoctorResumesPublishedGroup", "TestPurposeDoctorOpenHandle", "TestPurposeDoctorFirstRead"]
+  },
   "internal/state/purpose_layout_test.go": {
     "cases": ["PBS-003"],
     "selectors": ["TestPurposePreviewPreservesSources"]

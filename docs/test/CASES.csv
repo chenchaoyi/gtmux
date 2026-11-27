@@ -302,6 +302,10 @@ MAP-2bcc26841705,L1,reviewed implementation,internal/app/doctor_layout_safety_te
 MAP-fde505a4f21f,L1,reviewed implementation,internal/app/doctor_layout_test.go,15,reviewed-selector,TestGSS003CommandsGateInterruptedLayout,False,GSS-003
 MAP-f167ee401a33,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,60,reviewed-selector,TestSTOR011DoctorReportsLegacyProfileLocksWithoutChanges,False,"STOR-011,STOR-012"
 MAP-e5e0b1ca236e,L2,reviewed implementation,internal/app/doctor_profile_locks_test.go,86,reviewed-selector,TestSTOR012DoctorPrunesOnlyConfirmedIdleLegacyProfileLocks,False,"STOR-011,STOR-012"
+MAP-1ecd8e274933,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,48,reviewed-selector,TestPurposeDoctorRegisteredCLI,False,"PBS-004,PBS-005"
+MAP-8538b9be04f0,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,81,reviewed-selector,TestPurposeDoctorResumesPublishedGroup,False,"PBS-004,PBS-005"
+MAP-58736df6454b,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,121,reviewed-selector,TestPurposeDoctorOpenHandle,False,"PBS-004,PBS-005"
+MAP-06b8e463f198,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,16,reviewed-selector,TestPurposeDoctorFirstRead,False,"PBS-004,PBS-005"
 MAP-d4dcb1b8d77e,L2,reviewed implementation,internal/app/doctor_recovery_limits_test.go,14,reviewed-selector,TestDPC006DoctorExplainsActualCountAndByteFailures,False,DPC-006
 MAP-f7cc1df8d882,L2,reviewed implementation,internal/app/doctor_storage_compat_test.go,72,reviewed-selector,TestDoctorStorageRebootAfterParkingThroughCLI,False,"DGC-001,DGC-002,DGC-003,DGC-004"
 MAP-dc5d1df43af9,L2,reviewed implementation,internal/app/doctor_storage_compat_test.go,132,reviewed-selector,TestDoctorStorageFencesLegacyRemoteOff,False,"DGC-001,DGC-002,DGC-003,DGC-004"
