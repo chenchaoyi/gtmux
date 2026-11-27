@@ -29,6 +29,7 @@ export const AGENT_KEYS: Readonly<Record<string, string>> = {
   Cursor: 'cursor',
   opencode: 'opencode',
   'Kimi Code': 'kimi',
+  Antigravity: 'agy',
   Copilot: 'copilot',
   Kiro: 'kiro',
   Hermes: 'hermes-agent',
