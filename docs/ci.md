@@ -9,15 +9,19 @@ GitHub account; ordinary PR tests do not use the protected delivery environment.
 
 | Change | Checks |
 | --- | --- |
-| Recognized docs, translations, spec Markdown and release-note text only | Policy/docs gate |
+| Recognized docs, translations, spec Markdown, `.openspec.yaml` metadata, OpenSpec skills, and policy-only guard scripts | Policy/docs gate |
 | Menu-bar Swift source/tests | Policy/docs + Swift build/tests |
 | Embedded Web assets or browser tests | Policy/docs + complete Go + Web logic/browser |
 | Proven Jest-only `mobileapp/src/**/*.test.ts(x)` excluded by the pinned Metro resolver | Policy/docs + complete RN + Web; unavailable proof retains native checks |
 | Other phone/iPad JS/TS source/tests | Policy/docs + RN typecheck/lint/Jest + Web + unsigned iOS build + Android QA/native + phone/tablet emulator |
 | iOS Swift/Objective-C source | Policy/docs + RN + unsigned iOS build |
 | Push relay TS source/tests | Policy/docs + relay + complete Go + RN + Android QA/native + phone/tablet emulator |
-| Go test files only | Policy/docs + complete Go |
-| Core/API, dependencies, build configuration, CI/scripts, tunnel Worker, unknown paths | All checks |
+| Go test files or Go-coupled design/security gate scripts | Policy/docs + complete Go |
+| Non-HTTP Go CLI/core packages, HQ playbooks, and package `testdata/` | Policy/docs + complete Go + `CGO_ENABLED=0` cross-build |
+| Go push-relay reference (`relay/`, `internal/relay/`) | Policy/docs + complete Go + cross-build + push relay Worker |
+| Go conversation-document store (`internal/artifact/`) | Policy/docs + complete Go + cross-build + Swift menu-bar + Web |
+| Go HTTP/SSE server (`internal/server/*.go`) | Policy/docs + complete Go + cross-build + Web + RN + Swift menu-bar |
+| Shared HTTP contracts (`api/contract.md`, `tests/contracts/`), shared assets, dependencies, build/workflow config, `scripts/ci.py`, tunnel Worker, unknown paths | All checks |
 
 The allowlist lives in `scripts/ci.py`. Mixed changes take the union; an unknown path
 makes the whole run full. Renames include both names; deletions retain their old scope.

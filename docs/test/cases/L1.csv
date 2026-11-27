@@ -3800,7 +3800,7 @@ LEG-de09a2af7303,L1,Go core / CLI / server,relay/fcm_test.go,36,subtest,[dynamic
 LEG-9437d12d0839,L1,Go core / CLI / server,relay/fcm_test.go,128,Test,TestFCMRejectsUnsupportedOrOverlongIntents,False,legacy-not-retrospectively-reviewed
 LEG-05e2857a501c,L1,Go core / CLI / server,relay/relay_test.go,81,Test,TestRelayPushGatewayError,False,legacy-not-retrospectively-reviewed
 LEG-444702381167,L1,Go core / CLI / server,relay/relay_test.go,92,Test,TestSignProviderJWT,False,legacy-not-retrospectively-reviewed
-MAP-a4f326b77fc6,L1,reviewed implementation,scripts/ci.py,25,reviewed-selector,document,False,WFG-004
+MAP-a4f326b77fc6,L1,reviewed implementation,scripts/ci.py,38,reviewed-selector,document,False,WFG-004
 MAP-43e91d565746,L1,reviewed implementation,scripts/ci.py,19,reviewed-selector,DOC_FILES,False,WFG-004
 MAP-1897df85f0b4,L1,CI / tooling,scripts/ci_test.py,51,reviewed-selector,test_harness_instructions_and_openspec_skills_are_policy_only,False,WFG-004
 MAP-05e06432b6d4,L1,reviewed implementation,scripts/workflow_guard_test.py,27,reviewed-selector,test_real_repo_passes_workflow_guard,False,"WFG-001,WFG-002,WFG-003"

@@ -19,17 +19,31 @@ JOBS = {
 DOC_FILES = {"README.md", "README.zh.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE",
              "AGENTS.md", "CLAUDE.md", "GEMINI.md", "openspec/config.yaml",
              ".github/pull_request_template.md"}
+QUALITY_ONLY_SCRIPTS = {
+    "scripts/openspec_check.py", "scripts/openspec_check_test.py",
+    "scripts/workflow_guard.py", "scripts/workflow_guard_test.py",
+    "scripts/check-comment-language.py", "scripts/check_comment_language_test.py",
+    "scripts/test_design.py", "scripts/test_design_test.py",
+    "scripts/check_private_source.py", "scripts/check_private_source_test.py",
+    "scripts/check_delivery_retention.py", "scripts/check_delivery_retention_test.py",
+}
+GO_GATE_SCRIPTS = {
+    "scripts/check-design.sh", "scripts/import-boundaries.sh",
+    "scripts/vulncheck.sh", "scripts/vulncheck_test.py",
+    "scripts/check_go_security.py", "scripts/check_go_security_test.py",
+}
 DOC_IMAGES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
 def document(path):
     p = PurePosixPath(path)
     test_record = bool(re.fullmatch(r'docs/test/(?:catalogue\.json|implementations\.json|CASES\.csv|cases/(?:L[1-4]|G|M)\.csv|designs/[a-z0-9][a-z0-9-]*\.json)', path))
+    openspec_meta = bool(re.fullmatch(r'openspec/(?:changes/(?:archive/)?[a-z0-9][a-z0-9-]*/)?\.openspec\.yaml', path))
     openspec_skill = bool(
         re.fullmatch(r'(?:\.agents|\.claude)/skills/openspec(?:-[a-z0-9-]+)?/(?:SKILL\.md|references/[a-z0-9-]+\.md)', path) or
         path == '.agents/skills/.openspec-target'
     )
-    return (test_record or openspec_skill or path in DOC_FILES or
+    return (test_record or openspec_meta or openspec_skill or path in DOC_FILES or path in QUALITY_ONLY_SCRIPTS or
             (path.startswith(("docs/", "openspec/")) and
              (p.suffix == ".md" or (path.startswith("docs/") and p.suffix in DOC_IMAGES))) or
             (path.startswith(("mobileapp/", "macapp/", "relay-worker/", "tunnel-worker/")) and p.suffix == ".md") or
@@ -65,12 +79,29 @@ def classify(paths, force_reason=None, unit_test_isolation=False):
             reasons.append("Unrecognized path; run everything.")
         elif document(path):
             reasons.append("Documentation: " + json.dumps(path))
+        elif path in GO_GATE_SCRIPTS:
+            selected.add("test")
+            reasons.append("Go and architecture gate script: " + json.dumps(path))
         elif path.startswith(("internal/server/web/", "tests/web/")):
             selected.update(("test", "web"))
             reasons.append("Web assets/tests and embedded-server regression tests: " + json.dumps(path))
         elif path.startswith(("cmd/", "internal/", "relay/")) and path.endswith("_test.go"):
             selected.add("test")
             reasons.append("Go tests only: " + json.dumps(path))
+        elif path.startswith(("relay/", "internal/relay/")) and PurePosixPath(path).suffix == ".go":
+            selected.update(("test", "cross-build", "relay-worker"))
+            reasons.append("Go push-relay reference and Cloudflare relay payload guard: " + json.dumps(path))
+        elif path.startswith("internal/server/") and PurePosixPath(path).suffix == ".go":
+            selected.update(("test", "cross-build", "web", "mobile", "menubar"))
+            reasons.append("HTTP/SSE server and its Web/RN/menu-bar consumers: " + json.dumps(path))
+        elif path.startswith("internal/artifact/") and PurePosixPath(path).suffix == ".go":
+            selected.update(("test", "cross-build", "menubar", "web"))
+            reasons.append("Conversation document store and desktop/Web preview consumers: " + json.dumps(path))
+        elif ((path.startswith(("cmd/", "internal/")) and PurePosixPath(path).suffix == ".go") or
+              (path.startswith("internal/hq/playbook/") and PurePosixPath(path).suffix == ".md") or
+              (path.startswith("internal/") and not path.startswith("internal/server/") and "/testdata/" in path)):
+            selected.update(("test", "cross-build"))
+            reasons.append("Go CLI/core package (HTTP wire contract pinned in Go tests): " + json.dumps(path))
         elif (unit_test_isolation and
               re.fullmatch(r"mobileapp/src/(?:[\w-]+/)*[\w.-]+\.test\.tsx?", path)):
             selected.update(("mobile", "web"))

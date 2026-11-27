@@ -61712,7 +61712,7 @@
       "cases": [
         {
           "id": "MAP-41a5bc78e4e8",
-          "line": 39,
+          "line": 53,
           "kind": "reviewed-selector",
           "name": "confirmed_unit_test_isolation",
           "dynamic": false,
@@ -61730,7 +61730,7 @@
         },
         {
           "id": "MAP-a4f326b77fc6",
-          "line": 25,
+          "line": 38,
           "kind": "reviewed-selector",
           "name": "document",
           "dynamic": false,
@@ -61745,12 +61745,39 @@
           "dynamic": false,
           "layer": "L1",
           "design": "WFG-004"
+        },
+        {
+          "id": "MAP-95b2d459c856",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "QUALITY_ONLY_SCRIPTS",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CIS-001,CIS-002,CIS-003,CIS-004"
+        },
+        {
+          "id": "MAP-38dd12ab9f25",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "GO_GATE_SCRIPTS",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CIS-001,CIS-002,CIS-003,CIS-004"
+        },
+        {
+          "id": "MAP-515053c33d08",
+          "line": 70,
+          "kind": "reviewed-selector",
+          "name": "classify",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CIS-001,CIS-002,CIS-003,CIS-004"
         }
       ],
-      "sha256": "7e74cb02554c6f8006469b99caa2daaa878a11276232bbbb1490c11c9bb9dae5"
+      "sha256": "fe68bc5118b511c6ce2eec2f10192a756222822aadb41e9140f33691e6bfc8bc"
     },
     "scripts/ci_test.py": {
-      "sha256": "47459ef66f1d18b53850c50a9b80d8f9281d5ef467903af2b610fe484b50c6ea",
+      "sha256": "61634b69b219a719df0656dcd8c8a04641bc9dd37c53ea58e5878a5d37d400a9",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -61764,7 +61791,7 @@
         },
         {
           "id": "LEG-5e8793132c96",
-          "line": 68,
+          "line": 78,
           "kind": "unittest",
           "name": "test_shared_or_unknown_impact_is_full",
           "dynamic": true,
@@ -61772,7 +61799,7 @@
         },
         {
           "id": "LEG-7bbcfe8992be",
-          "line": 79,
+          "line": 89,
           "kind": "unittest",
           "name": "test_recognized_modules_include_consumers",
           "dynamic": false,
@@ -61780,7 +61807,7 @@
         },
         {
           "id": "LEG-bbdfd85a9000",
-          "line": 88,
+          "line": 108,
           "kind": "unittest",
           "name": "test_nul_parser_preserves_names_and_old_rename_path",
           "dynamic": true,
@@ -61788,7 +61815,7 @@
         },
         {
           "id": "LEG-30f2f4661935",
-          "line": 96,
+          "line": 117,
           "kind": "unittest",
           "name": "test_actual_git_rename_deletion_and_symlink",
           "dynamic": false,
@@ -61796,7 +61823,7 @@
         },
         {
           "id": "LEG-a0a184955335",
-          "line": 122,
+          "line": 143,
           "kind": "unittest",
           "name": "test_missing_refs_force_full_cli_outputs",
           "dynamic": false,
@@ -61804,7 +61831,7 @@
         },
         {
           "id": "LEG-513d57a7489a",
-          "line": 133,
+          "line": 154,
           "kind": "unittest",
           "name": "test_workflow_jobs_cannot_grow_outside_aggregation",
           "dynamic": false,
@@ -61812,7 +61839,7 @@
         },
         {
           "id": "LEG-1f71c99fb4dc",
-          "line": 145,
+          "line": 166,
           "kind": "unittest",
           "name": "test_unsigned_ios_preserves_arm64_target_and_verifies_products",
           "dynamic": false,
@@ -61820,7 +61847,7 @@
         },
         {
           "id": "LEG-2514a184abce",
-          "line": 157,
+          "line": 178,
           "kind": "unittest",
           "name": "test_android_package_is_built_once_and_both_devices_use_its_output",
           "dynamic": false,
@@ -61828,7 +61855,7 @@
         },
         {
           "id": "LEG-76200ceafcf2",
-          "line": 210,
+          "line": 231,
           "kind": "unittest",
           "name": "test_docs_can_skip_heavy_jobs_but_require_quality",
           "dynamic": false,
@@ -61836,7 +61863,7 @@
         },
         {
           "id": "LEG-ecfb4bf818ba",
-          "line": 216,
+          "line": 237,
           "kind": "unittest",
           "name": "test_missing_skipped_failed_cancelled_required_job_never_green",
           "dynamic": true,
@@ -61844,7 +61871,7 @@
         },
         {
           "id": "LEG-252965413bf3",
-          "line": 232,
+          "line": 253,
           "kind": "unittest",
           "name": "test_bad_plans_or_unselected_failure_are_rejected",
           "dynamic": false,
@@ -61852,7 +61879,7 @@
         },
         {
           "id": "LEG-8a6a845c7484",
-          "line": 244,
+          "line": 265,
           "kind": "unittest",
           "name": "test_mac_host_keeps_both_architectures_and_native_checks",
           "dynamic": false,
@@ -61860,7 +61887,7 @@
         },
         {
           "id": "LEG-28f4d1551b14",
-          "line": 261,
+          "line": 282,
           "kind": "unittest",
           "name": "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection",
           "dynamic": false,
@@ -61886,7 +61913,7 @@
         },
         {
           "id": "MAP-1d7d386ae4bf",
-          "line": 225,
+          "line": 246,
           "kind": "reviewed-selector",
           "name": "test_android_aggregation_requires_the_entire_job_family",
           "dynamic": false,

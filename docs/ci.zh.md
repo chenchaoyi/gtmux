@@ -8,15 +8,19 @@
 
 | 改动 | 检查 |
 | --- | --- |
-| 仅已识别的文档、翻译、规格 Markdown 或更新说明文本 | 规范与文档检查 |
+| 仅已识别的文档、翻译、规格 Markdown、`.openspec.yaml` 元数据、OpenSpec 技能或纯规范门禁脚本 | 规范与文档检查 |
 | 菜单栏 Swift 源码或测试 | 规范与文档 + Swift 构建与测试 |
 | 内嵌 Web 资源或浏览器测试 | 规范与文档 + 完整 Go + Web 逻辑与浏览器测试 |
 | 已由完整 Metro 配置摘要证明不进入产品包的 `mobileapp/src/**/*.test.ts(x)` | 规范与文档 + 完整 RN + Web；证明缺失则保留原生检查 |
 | 其他手机/iPad JS/TS 源码或测试 | 规范与文档 + RN 类型、lint、Jest + Web + iOS 无签名构建 + Android QA/原生 + 手机/平板模拟器 |
 | iOS Swift/Objective-C 源码 | 规范与文档 + RN + iOS 无签名构建 |
 | 推送中继 TS 源码或测试 | 规范与文档 + 中继 + 完整 Go + RN + Android QA/原生 + 手机/平板模拟器 |
-| 仅 Go 测试文件 | 规范与文档 + 完整 Go |
-| 核心/API、依赖、构建配置、CI/脚本、隧道 Worker、未知路径 | 全部检查 |
+| 仅 Go 测试文件或与 Go 耦合的设计/安全检查脚本 | 规范与文档 + 完整 Go |
+| 非 HTTP 层的 Go CLI/核心包、HQ playbook 与 `testdata/` | 规范与文档 + 完整 Go + `CGO_ENABLED=0` 跨平台构建 |
+| Go 推送中继参考实现（`relay/`、`internal/relay/`） | 规范与文档 + 完整 Go + 跨平台构建 + 推送中继 Worker |
+| Go 会话文档存储（`internal/artifact/`） | 规范与文档 + 完整 Go + 跨平台构建 + Swift 菜单栏 + Web |
+| Go HTTP/SSE 服务端（`internal/server/*.go`） | 规范与文档 + 完整 Go + 跨平台构建 + Web + RN + Swift 菜单栏 |
+| 共享 HTTP 契约（`api/contract.md`、`tests/contracts/`）、共享资源、依赖、构建/工作流配置、`scripts/ci.py`、隧道 Worker、未知路径 | 全部检查 |
 
 明确的路径规则位于 `scripts/ci.py`。混合改动取并集；出现未知路径则全部检查。
 重命名同时检查新旧路径，删除仍按原路径判断。版本信息缺失、差异读取失败或过大、

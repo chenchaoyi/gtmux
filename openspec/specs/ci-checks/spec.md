@@ -8,23 +8,21 @@ validation without involving release credentials or deployment approval.
 
 ### Requirement: Conservative check selection
 
-PR and main-push CI SHALL always run source conformance, strict specs, bilingual
-pairing, generated documentation examples, workflow validation and CI guard tests.
-Only recognized documentation-only paths MAY omit platform suites. Known module
-changes SHALL run complete corresponding suites and explicit downstream consumers;
-mixed changes SHALL use the union. Shared core/API, dependencies, build/CI changes,
-unknown impact, changed symlinks or unavailable diff information SHALL run all suites.
-Rename classification SHALL include the old and new paths; deleted paths SHALL be
-classified too. Manual CI SHALL run all suites. CI SHALL explain its selection.
+PR and main-push CI SHALL always run policy/docs, strict specs, bilingual pairing, workflow validation and CI guard tests. Only recognized docs, `.openspec.yaml` metadata and policy-only guard scripts MAY omit platform suites. Known module and scoped Go package changes SHALL run complete corresponding suites and explicit downstream consumers; mixed changes SHALL use the union. Shared contracts/assets, dependencies, CI selector changes, symlinks or unknown/unreadable diffs SHALL run all suites and explain the selection.
 
 #### Scenario: Prose changes
 
-- **WHEN** a PR changes only recognized Markdown documents
+- **WHEN** a PR changes only recognized Markdown documents, archived/active `.openspec.yaml` metadata, or policy-only guard scripts
 - **THEN** policy and documentation gates run while native/platform suites can skip
+
+#### Scenario: Pure Go CLI or supervisor package changes
+
+- **WHEN** a PR changes non-HTTP Go packages (such as `cmd/gtmux` or `internal/hq`) without touching shared contract, server, artifact, relay, or dependency files
+- **THEN** policy/docs, complete Go (`test`), and `cross-build` suites run while unrelated iOS, Android, menu-bar, Web, and Worker suites can skip (whereas `internal/server`, `internal/artifact`, and `relay` include their Web, RN, menu-bar, or relay consumers)
 
 #### Scenario: Uncertain or mixed impact
 
-- **WHEN** diff resolution fails, a new unknown component is added, or a core file is renamed into docs
+- **WHEN** diff resolution fails, a new unknown component is added, `scripts/ci.py` or `api/contract.md` changes, or a shared contract file is renamed into docs (both rename paths and deletions are classified, and manual CI runs all suites)
 - **THEN** all platform suites are selected
 
 #### Scenario: Module changes
@@ -115,7 +113,6 @@ historical-commit coverage.
 - **WHEN** a repository-owned policy job has no usable private policy
 - **THEN** it fails instead of claiming privacy coverage
 - **AND** a fork job without that policy explicitly reports its coverage gap
-
 
 ### Requirement: Parallel Android checks preserve one build identity
 
@@ -250,7 +247,6 @@ be reported as rendered parity or native device acceptance.
 
 - **WHEN** one renderer changes loaded-window counts, call labels or sender identity
 - **THEN** its component/browser test fails against the shared expectation fixture
-
 
 ### Requirement: Hermetic real-handler contracts
 Synthetic Go HTTP handler outputs SHALL be compared with independent RN and Web fake responses in ordinary CI, including types, empty values, pagination and permission errors. Fakes SHALL NOT replay expected responses to manufacture agreement.
