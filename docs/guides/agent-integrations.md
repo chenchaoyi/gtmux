@@ -435,6 +435,13 @@ records (Tier 2+). Interactive input uses tmux; the resume recipe is `agy --resu
 One-shot headless mode is not wired. Knowledge uses `$AGY_CONFIG_DIR/GEMINI.md` (default
 `~/.gemini/config/GEMINI.md`).
 
+When the `agy` CLI is discoverable, `gtmux doctor` shows an **Antigravity hook** row
+(configured, events needing repair, or disabled by the `"enabled": false` policy) and
+`gtmux doctor --fix` / `install hooks --agent auto` write the same owned entry. The usage
+source list reports Antigravity token coverage without an account quota: no local plan or
+balance record exists, and the model window is learned from observed contexts, including
+a one-time backfill of existing transcripts.
+
 Sources: [hook installer](../../internal/app/agy_hooks.go),
 [hook runtime](../../internal/hook/agy.go),
 [transcript reader](../../internal/transcript/agy.go),

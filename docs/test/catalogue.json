@@ -71615,6 +71615,54 @@
         }
       ],
       "sha256": "cf0ccff25c5675552459355e94b067c43203b1d2d21cd86c29f68706afe07e72"
+    },
+    "internal/app/agy_doctor_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-f26cb3ba1591",
+          "line": 16,
+          "kind": "reviewed-selector",
+          "name": "TestDoctorOffersAgyHookOnlyWhenDiscoverable",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-011"
+        }
+      ],
+      "sha256": "662912523b49c88f21aa5eb4e4be3ad3eee5f2331cd6f467dd7ec7ab730c317d"
+    },
+    "internal/radar/usagesources_agy_test.go": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-1769717e4d0b",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestUsageSourcesDeclareAgyTokenCoverage",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "AGY-009"
+        }
+      ],
+      "sha256": "fceeaf2e5425f9fe8645970114f2083c153c075e770ed4b1828f05a72d3bedec"
+    },
+    "internal/usage/agy_backfill_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e48aed268d2d",
+          "line": 22,
+          "kind": "reviewed-selector",
+          "name": "TestBackfillLearnsAgyWindowsOnce",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-010"
+        }
+      ],
+      "sha256": "c6a4836b12094f3d1c9b7c3ac2ad202791448f89f1cb1feb558c60ca24e3c15c"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

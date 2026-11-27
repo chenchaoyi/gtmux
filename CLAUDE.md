@@ -151,7 +151,7 @@ over one Go core (gtmux-core is the single data source):
   unresolvable HQ seen within 2h HOLDS the wake instead of dropping it.
   **The distill spool has a second feeder** (change `hq-transcript-mining`, `internal/mine`):
   once a day the serve slow tick reads the agents' session logs (Claude Code, Codex, Kimi Code,
-  gtmux's own opencode transcript) LLM-free from a byte watermark, subtracts what the machine wrote (tool output, harness blocks, wake lines,
+  Antigravity `agy`, gtmux's own opencode transcript) LLM-free from a byte watermark, subtracts what the machine wrote (tool output, harness blocks, wake lines,
   `gtmux send` payloads matched against the audit journal), and queues correction-shaped
   exchanges + recurring tool errors as `source:"transcript"` LEADS — `gtmux knowledge mine`
   runs it by hand, `--status` shows the ledger (`~/.local/share/gtmux/mine/`). Playbook v37

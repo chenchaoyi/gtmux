@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1526 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1529 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2783 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3825 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2785 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 171 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -56,6 +56,9 @@
 | AGY-006 | Records model fact from both native hook and session log without retaining prompts or unrelated fields. |
 | AGY-007 | agy carrier resolves to $HOME/.gemini/config/GEMINI.md, receives the managed machine knowledge block, stays idempotent on resync, and participates in serialized sync without lock leaks. |
 | AGY-008 | Emits one correction candidate attributed to agent agy and conversation ID with context from the completed reply, excluding compaction summaries, system messages, and errored drafts. |
+| AGY-009 | The Antigravity source is listed as installed with tokens=true and account=unsupported; an uninstalled, unobserved agy is omitted. |
+| AGY-010 | The agy model window resolves to the 1M tier instead of the 200k guess, and the backfill does not rescan logs written afterwards. |
+| AGY-011 | agy is installable; it is detected and gets an Antigravity hook doctor row only when discoverable; the fix step writes a healthy gtmux entry in hooks.json. |
 | ACP-001 | Fresh enabled Deny elements only; ignored first click can use one further explicit click in the same camera dialog, maximum two; no click starts after 10s; no unrelated permission acted upon; original command error preserved; no permission grant or settings mutation. |
 | ACP-002 | New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged. |
 | ACP-003 | Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions. |

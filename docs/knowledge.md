@@ -101,7 +101,8 @@ itself, and HQ promotes it, saying who must know:
 
 Promotion writes a brief. `land` without `--ref` carries it to the selected local
 audience; `land --ref` records where you have already carried it. The common case is
-"this machine": your Claude Code, Codex, OpenCode and Kimi Code each get a block naming
+"this machine": your Claude Code, Codex, OpenCode, Kimi Code, DeepSeek Harness and
+Antigravity CLI each get a block naming
 the lessons and pointing at the full text, so a fresh session knows them without anyone
 pasting anything. `gtmux knowledge carriers` shows each agent's file
 and whether it is current; `gtmux doctor --fix` repairs a stale one.
@@ -112,7 +113,7 @@ When an entry no longer applies, use `retire` with a reason. The ledger keeps th
 
 Landing an entry for "this machine" generates `~/.config/gtmux/knowledge/machine.md`
 and refreshes the short index block in the global instruction files for Claude Code,
-Codex, opencode, and Kimi Code. Ordinary entries stay in HQ's knowledge base; they do
+Codex, opencode, Kimi Code, DeepSeek Harness and Antigravity CLI (`~/.gemini/config/GEMINI.md`). Ordinary entries stay in HQ's knowledge base; they do
 not automatically enter every agent's instructions. Installing gtmux or running
 `gtmux update` does not perform this sync. After an upgrade, run
 `gtmux knowledge sync` if the blocks are stale, or use `gtmux doctor --fix` to check

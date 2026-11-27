@@ -49,6 +49,7 @@ MAP-f477967708d8,L2,reviewed implementation,internal/agentprofile/observation_st
 MAP-fab36ee0bfb3,L2,reviewed implementation,internal/agentprofile/observation_storage_test.go,40,reviewed-selector,TestProfileObservationIsolatesMixedWriters,False,STOR-004
 MAP-f6200d4fe8c9,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,9,reviewed-selector,TestSID001PresentationConfigKeepsManagedIdentity,False,SID-001
 MAP-410b581f2c06,L2,reviewed implementation,internal/agents/codex_presentation_config_test.go,35,reviewed-selector,TestSID001HelpStillRecognizesCommandsAfterDisplayConfig,False,SID-001
+MAP-f26cb3ba1591,L2,reviewed implementation,internal/app/agy_doctor_test.go,16,reviewed-selector,TestDoctorOffersAgyHookOnlyWhenDiscoverable,False,AGY-011
 MAP-3be9acf7e014,L2,reviewed implementation,internal/app/agy_hooks_test.go,10,reviewed-selector,TestInstallAgyHooksAndForeignPreservation,False,AGY-002
 MAP-1e1b8d4359e5,L2,reviewed implementation,internal/app/agy_hooks_test.go,98,reviewed-selector,TestDoctorAgyHookDetectionRepairAndPolicy,False,AGY-002
 MAP-9d9c69aa8fd5,L2,reviewed implementation,internal/app/artifact_endpoint_test.go,43,reviewed-selector,TestLAP007OnlyCurrentWorkspaceOffersALocalPreview,False,LAP-007
@@ -1019,6 +1020,7 @@ MAP-b642bcb9f926,L2,reviewed implementation,internal/transcript/startup_context_
 MAP-8bab4244dbb9,L2,reviewed implementation,internal/transcript/startup_directory_witness_test.go,5,reviewed-selector,TestHSP005DirectoryQualifiedContextRequiresVerifiedMetadata,False,HSP-005
 MAP-76e251a582e3,L2,reviewed implementation,internal/transcript/startup_witness_test.go,12,reviewed-selector,TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix,False,"HSP-001,HSP-002"
 MAP-bb3df0aabb7c,L2,reviewed implementation,internal/transcript/wake_evidence_test.go,11,reviewed-selector,TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt,False,HWA-013
+MAP-e48aed268d2d,L2,reviewed implementation,internal/usage/agy_backfill_test.go,22,reviewed-selector,TestBackfillLearnsAgyWindowsOnce,False,AGY-010
 MAP-57bfd3633894,L2,reviewed implementation,internal/usage/agy_test.go,10,reviewed-selector,TestUsageAgySession,False,AGY-005
 MAP-ddc82854da4a,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift,9,reviewed-selector,testUnknownLateSuccessRetriesCleanupAfterSameSnapshotRecovers,False,"HND-008,HND-009"
 MAP-53ff7f04ac68,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/HQAttentionLateDeliveryTests.swift,45,reviewed-selector,testBoundedSweepRemovesLateDeliveryWithoutOldProcessCallback,False,"HND-008,HND-009"

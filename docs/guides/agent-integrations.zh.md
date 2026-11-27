@@ -340,6 +340,11 @@ Tier 2 对话读取器解析 `$AGY_HOME/brain/<conversation-id>/.system_generate
 `PLANNER_RESPONSE`（Tier 2+）。交互输入走 tmux，恢复命令为 `agy --resume ID`，未接入无头一次性执行。
 知识载体写入 `$AGY_CONFIG_DIR/GEMINI.md`（默认 `~/.gemini/config/GEMINI.md`）。
 
+能找到 `agy` CLI 时，`gtmux doctor` 会显示 **Antigravity hook** 一行（已配置、需修复的事件，
+或 `"enabled": false` 禁用策略），`gtmux doctor --fix` 与 `install hooks --agent auto` 写入同一份
+自有配置。用量来源列表显示 Antigravity 有 token 统计、没有账户额度：本地没有套餐或余额记录；
+模型窗口按观察到的上下文推断，并会一次性回填已有对话记录。
+
 实现：[hook 安装器](../../internal/app/agy_hooks.go)、[hook 运行时](../../internal/hook/agy.go)、
 [对话读取器](../../internal/transcript/agy.go)、[用量解析](../../internal/usage/parse.go)。
 

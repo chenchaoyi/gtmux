@@ -41,7 +41,7 @@ gtmux install hooks --agent claude
 gtmux install hooks --agent codex
 ```
 
-不加 `--agent` 只配 Claude Code。你用哪些就接着配哪些：`gemini`、`cursor`、`opencode`、`kimi`、`copilot` 或 `kiro`。已经在跑的 agent 重启后才会用上 hook。`gtmux doctor --fix` 会为本机已安装且受支持的 agent 提出 hook 配置，也可用 `gtmux install hooks --agent auto`。各自的加载要求见 [Agent 接入](agent-integrations.zh.md)。
+不加 `--agent` 只配 Claude Code。你用哪些就接着配哪些：`gemini`、`cursor`、`opencode`、`kimi`、`agy`、`copilot` 或 `kiro`。已经在跑的 agent 重启后才会用上 hook。`gtmux doctor --fix` 会为本机已安装且受支持的 agent 提出 hook 配置，也可用 `gtmux install hooks --agent auto`。各自的加载要求见 [Agent 接入](agent-integrations.zh.md)。
 
 支持进程识别的 agent 不装 hook 时，gtmux 从 pane 标题、屏幕和 CPU 采样读取回退状态，细节少一些（Codex 正在弹的审批菜单仍会显示为等待）。tmux 外的可见范围取决于各 agent 的 hook 和历史读取支持。
 

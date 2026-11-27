@@ -1,4 +1,28 @@
 {
+  "internal/radar/usagesources_agy_test.go": {
+    "cases": [
+      "AGY-009"
+    ],
+    "selectors": [
+      "TestUsageSourcesDeclareAgyTokenCoverage"
+    ]
+  },
+  "internal/usage/agy_backfill_test.go": {
+    "cases": [
+      "AGY-010"
+    ],
+    "selectors": [
+      "TestBackfillLearnsAgyWindowsOnce"
+    ]
+  },
+  "internal/app/agy_doctor_test.go": {
+    "cases": [
+      "AGY-011"
+    ],
+    "selectors": [
+      "TestDoctorOffersAgyHookOnlyWhenDiscoverable"
+    ]
+  },
   "internal/agents/registry_test.go": {
     "cases": [
       "AGY-001"

@@ -696,8 +696,8 @@ func Run(stdin io.Reader, args []string) int {
 		ToolCall           *struct {
 			Name string `json:"name"`
 		} `json:"toolCall"`
-		Cwd              string          `json:"cwd"`               // the agent's working dir (Claude)
-		NotificationType string          `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
+		Cwd              string `json:"cwd"`               // the agent's working dir (Claude)
+		NotificationType string `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
 		// Why a compaction ran (Claude's PreCompact/PostCompact): "auto" when the context
 		// filled mid-turn, "manual" when someone typed `/compact` at the prompt. Absent on
 		// agents that do not say → "" (read as the mid-turn case, the one the re-arm was

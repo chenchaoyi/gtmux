@@ -2126,6 +2126,7 @@ LEG-998a95a13df6,L1,Go core / CLI / server,internal/radar/turninprogress_test.go
 LEG-e9af77b1611a,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,71,Test,TestGatherAgentsReportsWorkingFromTheTurnMarker,False,legacy-not-retrospectively-reviewed
 LEG-29923298a331,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,117,Test,TestErroredTranscriptEndsTheTurn,False,legacy-not-retrospectively-reviewed
 LEG-a0bf615b6e23,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,148,Test,TestRecoveredTranscriptKeepsWorking,False,legacy-not-retrospectively-reviewed
+MAP-1769717e4d0b,L1,reviewed implementation,internal/radar/usagesources_agy_test.go,5,reviewed-selector,TestUsageSourcesDeclareAgyTokenCoverage,False,AGY-009
 LEG-0916ceda3959,L1,Go core / CLI / server,internal/radar/usagesources_test.go,9,Test,TestUsageSourcesFollowInstallationAndEvidenceWithoutInventingPlans,False,legacy-not-retrospectively-reviewed
 LEG-60f4094c7da5,L1,Go core / CLI / server,internal/relay/relay_test.go,10,Test,TestOfflineRequestSurvivesAndRetryDoesNotDuplicate,False,legacy-not-retrospectively-reviewed
 LEG-3b7ec691b3e1,L1,Go core / CLI / server,internal/relay/relay_test.go,30,Test,TestClaimRotationAndReplyReceipt,False,legacy-not-retrospectively-reviewed

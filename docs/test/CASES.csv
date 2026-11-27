@@ -172,6 +172,7 @@ LEG-20305837d3db,L1,Go core / CLI / server,internal/app/agents_notmux_test.go,17
 LEG-773456cf9f65,L1,Go core / CLI / server,internal/app/agents_scope_test.go,5,Test,TestAgentsPaneFilterRejectsInvalidOrNonJSONRequests,False,legacy-not-retrospectively-reviewed
 LEG-b6d125f9ee95,L1,Go core / CLI / server,internal/app/agents_test.go,14,Test,TestAgentsSummary,False,legacy-not-retrospectively-reviewed
 LEG-a1963f676696,G,Go core / CLI / server,internal/app/agents_test.go,56,Test,TestREADMEAgentsSampleIsReal,False,legacy-not-retrospectively-reviewed
+MAP-f26cb3ba1591,L2,reviewed implementation,internal/app/agy_doctor_test.go,16,reviewed-selector,TestDoctorOffersAgyHookOnlyWhenDiscoverable,False,AGY-011
 MAP-3be9acf7e014,L2,reviewed implementation,internal/app/agy_hooks_test.go,10,reviewed-selector,TestInstallAgyHooksAndForeignPreservation,False,AGY-002
 MAP-1e1b8d4359e5,L2,reviewed implementation,internal/app/agy_hooks_test.go,98,reviewed-selector,TestDoctorAgyHookDetectionRepairAndPolicy,False,AGY-002
 MAP-9d9c69aa8fd5,L2,reviewed implementation,internal/app/artifact_endpoint_test.go,43,reviewed-selector,TestLAP007OnlyCurrentWorkspaceOffersALocalPreview,False,LAP-007
@@ -2837,6 +2838,7 @@ LEG-998a95a13df6,L1,Go core / CLI / server,internal/radar/turninprogress_test.go
 LEG-e9af77b1611a,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,71,Test,TestGatherAgentsReportsWorkingFromTheTurnMarker,False,legacy-not-retrospectively-reviewed
 LEG-29923298a331,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,117,Test,TestErroredTranscriptEndsTheTurn,False,legacy-not-retrospectively-reviewed
 LEG-a0bf615b6e23,L1,Go core / CLI / server,internal/radar/turninprogress_test.go,148,Test,TestRecoveredTranscriptKeepsWorking,False,legacy-not-retrospectively-reviewed
+MAP-1769717e4d0b,L1,reviewed implementation,internal/radar/usagesources_agy_test.go,5,reviewed-selector,TestUsageSourcesDeclareAgyTokenCoverage,False,AGY-009
 LEG-0916ceda3959,L1,Go core / CLI / server,internal/radar/usagesources_test.go,9,Test,TestUsageSourcesFollowInstallationAndEvidenceWithoutInventingPlans,False,legacy-not-retrospectively-reviewed
 MAP-081f78baa59f,L2,reviewed implementation,internal/relay/inbox_test.go,30,reviewed-selector,TestRBL002InboxCoalescesConcurrentNoticesAndPreservesReceipts,False,RBL-002
 MAP-6010cd28478a,L2,reviewed implementation,internal/relay/inbox_test.go,95,reviewed-selector,TestRBL002FreshnessLegacyAndBoundedSourceWait,False,RBL-002
@@ -3810,6 +3812,7 @@ LEG-547d809fb2ad,L1,Go core / CLI / server,internal/transcript/transcript_test.g
 LEG-547a3ed583fc,L1,Go core / CLI / server,internal/transcript/transcript_test.go,1078,Test,TestSessionOriginMakesNoClaimForOtherAgents,False,legacy-not-retrospectively-reviewed
 LEG-06d56e453427,L1,Go core / CLI / server,internal/transcript/transcript_test.go,1102,Test,TestLoadClaudeSkipsTheCompactionSummary,False,legacy-not-retrospectively-reviewed
 MAP-bb3df0aabb7c,L2,reviewed implementation,internal/transcript/wake_evidence_test.go,11,reviewed-selector,TestHWA013WakeWitnessRequiresExpectedNewTurnAndExactFirstPrompt,False,HWA-013
+MAP-e48aed268d2d,L2,reviewed implementation,internal/usage/agy_backfill_test.go,22,reviewed-selector,TestBackfillLearnsAgyWindowsOnce,False,AGY-010
 MAP-57bfd3633894,L2,reviewed implementation,internal/usage/agy_test.go,10,reviewed-selector,TestUsageAgySession,False,AGY-005
 LEG-b07dbc7e1482,L1,Go core / CLI / server,internal/usage/daily_test.go,17,Test,TestDailyLedgerAttributesByMessageDay,False,legacy-not-retrospectively-reviewed
 LEG-08a274b89036,L1,Go core / CLI / server,internal/usage/daily_test.go,97,Test,TestDailyLedgerWindowAndPrune,False,legacy-not-retrospectively-reviewed

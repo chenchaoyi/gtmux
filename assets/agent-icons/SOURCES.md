@@ -25,6 +25,8 @@ Notes:
 - `grok` and `glm` need registry entries (detection commands) before their panes are
   recognized as agents and the icon is shown; `opencode`, `gemini` and `kimi` are
   already detected.
+- Antigravity CLI (`agy`) has no committed icon; its panes use the neutral `Ag`
+  monogram until an official mark is provided.
 - `gemini.png` is a wide wordmark (2:1) rather than a square glyph — replace with a
   square icon when available for a cleaner avatar.
 
