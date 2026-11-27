@@ -97,7 +97,7 @@ cmds=$(grep -oE 'case "[a-z][a-z0-9-]*"' "$APP" | sed 's/case "//;s/"$//' | sort
 # The command list is "Commands: `a`, `b`, … `uninstall-app`." — grab exactly that,
 # truncating the prose that follows `uninstall-app` on the same line (else a command
 # named in the description would falsely count as "listed").
-listblock=$(awk '/Commands:/{f=1} f{print} /uninstall-app`\./{exit}' CLAUDE.md | sed -E 's/`uninstall-app`\..*/`uninstall-app`./')
+listblock=$(awk '/Commands:/{f=1} f{print} /uninstall-app`\./{exit}' AGENTS.md | sed -E 's/`uninstall-app`\..*/`uninstall-app`./')
 for cmd in $cmds; do
   case "$HIDDEN" in *" $cmd "*) continue ;; esac
   needle=$(printf '`%s`' "$cmd")
@@ -105,7 +105,7 @@ for cmd in $cmds; do
   # SIGPIPE-ing printf ("write error: Broken pipe") — a timing-dependent flake that
   # failed CI at random. `<<<` feeds grep without a pipe, so there is nothing to break.
   grep -qF "$needle" <<<"$listblock" || {
-    note "CLI command '$cmd' (dispatched in $APP) is NOT in the CLAUDE.md command list — add it there (and weigh 'gtmux --help' usage + a docs/cli.md section)"; fail=1
+    note "CLI command '$cmd' (dispatched in $APP) is NOT in the AGENTS.md command list — add it there (and weigh 'gtmux --help' usage + a docs/cli.md section)"; fail=1
   }
 done
 for cmd in $(grep -oE '^## `gtmux [a-z][a-z0-9-]*`' docs/cli.md | sed -E 's/^## `gtmux ([a-z0-9-]+)`/\1/'); do
@@ -145,7 +145,7 @@ done
 #    Searched: the docs that describe CURRENT behavior. openspec/changes/** is excluded on
 #    purpose — a proposal must be able to QUOTE the thing it is retiring (this very change
 #    does), and the same goes for the archive's audit trail.
-DOC_TREE="docs CLAUDE.md README.md README.zh.md api openspec/specs"
+DOC_TREE="docs AGENTS.md CLAUDE.md GEMINI.md README.md README.zh.md api openspec/specs"
 retired_check() {  # $1=token  $2=retired-by  $3=exempt files
   for f in $(grep -rlF "$1" --include=*.md $DOC_TREE 2>/dev/null | sed 's|^\./||'); do
     case " $3 " in *" $f "*) continue ;; esac
@@ -155,7 +155,7 @@ retired_check() {  # $1=token  $2=retired-by  $3=exempt files
 retired_check '[gtmux] '        'hq-perception-v2 (the wake format is now `» gtmux·<class>`)' \
   'openspec/specs/chat-transcript/spec.md docs/design/DESIGN.md docs/design/DESIGN.zh.md docs/design/HANDOFF.md docs/design/HANDOFF.zh.md'
 retired_check 'internal/menubar/' 'the Swift migration v0.0.11 (the package is gone)' \
-  'CLAUDE.md docs/design/DESIGN.md docs/design/DESIGN.zh.md docs/design/HANDOFF.md docs/design/HANDOFF.zh.md'
+  'AGENTS.md CLAUDE.md docs/design/DESIGN.md docs/design/DESIGN.zh.md docs/design/HANDOFF.md docs/design/HANDOFF.zh.md'
 retired_check 'hq-feed' 'retire-perception-spool (the spool daemon and its command are gone)' ''
 retired_check 'feed-degraded' 'retire-perception-spool (the wake class retired with its raiser)' ''
 retired_check 'gtmux share code' 'share-link-is-the-code (a link carries its own code; `share link` prints both forms)' ''
@@ -471,7 +471,11 @@ for tasks in openspec/changes/*/tasks.md; do
   fi
 done
 
-# Code comments are English (CLAUDE.md "CODE IS ENGLISH"): a quoted Chinese report may stay,
+# Harness-agnostic repo instructions (AGENTS.md + thin CLAUDE.md/GEMINI.md pointers)
+# and cross-harness OpenSpec skills (.agents/skills + .claude/skills).
+python3 scripts/workflow_guard.py || fail=1
+
+# Code comments are English (AGENTS.md "CODE IS ENGLISH"): a quoted Chinese report may stay,
 # Chinese prose may not. The rule and its one heuristic live in the script.
 python3 scripts/check-comment-language.py || fail=1
 

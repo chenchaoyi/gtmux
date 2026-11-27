@@ -48,6 +48,21 @@ class ScopeTests(unittest.TestCase):
         for path in ["docs/test/designs/script.py", "docs/test/catalogue.js", "docs/test/cases/unknown.csv"]:
             self.assertTrue(ci.classify([path])["full"])
 
+    def test_harness_instructions_and_openspec_skills_are_policy_only(self):
+        docs = [
+            "AGENTS.md",
+            "CLAUDE.md",
+            "GEMINI.md",
+            "openspec/config.yaml",
+            ".agents/skills/.openspec-target",
+            ".agents/skills/openspec-propose/SKILL.md",
+            ".claude/skills/openspec-propose/SKILL.md",
+            ".claude/commands/opsx/propose.md",
+        ]
+        self.assertEqual(ci.classify(docs)["selected"], [])
+        for path in [".agents/skills/openspec-propose/run.sh", ".agents/hooks.json", ".claude/settings.json"]:
+            self.assertTrue(ci.classify([path])["full"])
+
     def test_shared_or_unknown_impact_is_full(self):
         for path in ["internal/radar/agents.go", "api/contract.md", "go.mod", "go.sum",
                      ".github/workflows/ci.yml", "scripts/ci.py", "new-component/code.ts",

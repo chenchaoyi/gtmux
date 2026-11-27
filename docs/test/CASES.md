@@ -2,11 +2,11 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1529 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1530 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3825 | [L1.csv](cases/L1.csv) |
+| L1 · Unit / pure logic | 3831 | [L1.csv](cases/L1.csv) |
 | L2 · Component / contract | 2785 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
@@ -289,6 +289,10 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | GSS-017 | The new group inode and original group are retained, and the rollback stops before moving live stores or retiring the journal. |
 | GSS-018 | A genuine full disabled-services block establishes evidence, while truncated or ambiguous replies are refused. |
 | GSS-019 | Both failed attempts leave each original group and the journal available. The retry sync is required even when the marker is absent. The ordinary retry finishes with intact store identity and any staging retained. |
+| WFG-001 | Returns zero errors. |
+| WFG-002 | Each malformed fixture returns a non-empty error list naming the offending file and invariant. |
+| WFG-003 | Returns errors naming both missing/empty skill paths. |
+| WFG-004 | Recognized instruction/skill/config docs select no heavy platform jobs (quality only); an unrecognized executable/script under .agents/ broadens to full CI. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |
 | HQBC-001 | Exact language-specific titles are lifted. The original number, short first-line quote and group are retained. An explicit recommendation is recognized. Removal leaves the other item and its number intact. An empty decision section produces no actionable item. |
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |

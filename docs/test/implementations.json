@@ -1,4 +1,33 @@
 {
+  "scripts/workflow_guard_test.py": {
+    "cases": [
+      "WFG-001",
+      "WFG-002",
+      "WFG-003"
+    ],
+    "selectors": [
+      "test_real_repo_passes_workflow_guard",
+      "test_rejects_missing_symlinked_or_bloated_instructions",
+      "test_rejects_missing_or_empty_cross_harness_openspec_skills"
+    ]
+  },
+  "scripts/ci_test.py": {
+    "cases": [
+      "WFG-004"
+    ],
+    "selectors": [
+      "test_harness_instructions_and_openspec_skills_are_policy_only"
+    ]
+  },
+  "scripts/ci.py": {
+    "cases": [
+      "WFG-004"
+    ],
+    "selectors": [
+      "document",
+      "DOC_FILES"
+    ]
+  },
   "internal/radar/usagesources_agy_test.go": {
     "cases": [
       "AGY-009"
@@ -3608,29 +3637,6 @@
       "test_missing_or_invalid_case_and_lane_receipts_fail",
       "test_full_phone_rejects_any_selection_or_missing_scenario",
       "test_partition_rejects_crossing_setup_groups_or_prerequisites"
-    ]
-  },
-  "scripts/ci.py": {
-    "cases": [
-      "CT-SCOPE",
-      "ACS-001"
-    ],
-    "selectors": [
-      "confirmed_unit_test_isolation",
-      "ANDROID_JOBS"
-    ]
-  },
-  "scripts/ci_test.py": {
-    "cases": [
-      "CT-SCOPE",
-      "ACS-001",
-      "ACS-004"
-    ],
-    "selectors": [
-      "test_unit_test_scope_requires_immutable_product_exclusion",
-      "test_android_package_is_built_once_and_both_devices_use_its_output",
-      "test_android_aggregation_requires_the_entire_job_family",
-      "test_android_receipt_retention_spans_reruns_and_names_the_producer"
     ]
   },
   "scripts/test_design.py": {

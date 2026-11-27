@@ -1,0 +1,73 @@
+{
+  "id": "harness-agnostic-workflow-20261127",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (self-review against repository OpenSpec, CI, and cross-harness skill discovery contracts)",
+    "date": "2026-11-27",
+    "decision": "Proceed with consolidating repository workflow into AGENTS.md, thin CLAUDE.md/GEMINI.md pointers, cross-harness .agents/skills/ OpenSpec skills, and automated workflow guards",
+    "notes": "Verified pinned @fission-ai/openspec@1.10.0 tool layouts (--tools agents and --tools claude), Antigravity .agents/skills/ discovery, Claude/Gemini @AGENTS.md import pointers, and scripts/ci.py symlink prohibition."
+  },
+  "evidence_limits": [
+    "Automated Python unit tests verify workflow_guard.py negative/positive fixtures and ci.py path classification; real multi-harness IDE/CLI auto-loading is validated against each harness's documented discovery contract."
+  ],
+  "cases": [
+    {
+      "id": "WFG-001",
+      "layer": "L1",
+      "description": "Workflow guard accepts valid AGENTS.md, thin regular-file CLAUDE.md and GEMINI.md @AGENTS.md pointers, and complete cross-harness OpenSpec skills in the repository",
+      "setup": "Real repository root containing AGENTS.md, thin regular-file CLAUDE.md/GEMINI.md pointers, and five OpenSpec skills under both .agents/skills/ and .claude/skills/.",
+      "action": "Run workflow_guard.check_repo(ROOT).",
+      "expected": "Returns zero errors.",
+      "planned_files": [
+        "scripts/workflow_guard_test.py"
+      ],
+      "surfaces": [
+        "CI policy / contributor workflow"
+      ]
+    },
+    {
+      "id": "WFG-002",
+      "layer": "L1",
+      "description": "Workflow guard rejects missing AGENTS.md, symlinked pointers, missing @AGENTS.md import, and bloated/duplicated pointer files",
+      "setup": "Synthetic temporary repositories with (a) missing AGENTS.md, (b) symlinked CLAUDE.md, (c) CLAUDE.md missing @AGENTS.md, and (d) GEMINI.md duplicating ## headings.",
+      "action": "Run workflow_guard.check_repo(temp_root) on each malformed layout.",
+      "expected": "Each malformed fixture returns a non-empty error list naming the offending file and invariant.",
+      "planned_files": [
+        "scripts/workflow_guard_test.py"
+      ],
+      "surfaces": [
+        "CI policy / contributor workflow"
+      ]
+    },
+    {
+      "id": "WFG-003",
+      "layer": "L1",
+      "description": "Workflow guard rejects missing or empty OpenSpec skills in either .agents/skills/ or .claude/skills/",
+      "setup": "Synthetic temporary repository missing openspec-propose in .agents/skills/ and with an empty openspec-archive-change SKILL.md in .claude/skills/.",
+      "action": "Run workflow_guard.check_repo(temp_root).",
+      "expected": "Returns errors naming both missing/empty skill paths.",
+      "planned_files": [
+        "scripts/workflow_guard_test.py"
+      ],
+      "surfaces": [
+        "CI policy / contributor workflow"
+      ]
+    },
+    {
+      "id": "WFG-004",
+      "layer": "L1",
+      "description": "CI path classifier treats AGENTS.md, GEMINI.md, openspec/config.yaml, and OpenSpec skill/command markdown files as policy-only documents while keeping unknown files fail-closed",
+      "setup": "Path lists passed to scripts/ci.classify.",
+      "action": "Classify AGENTS.md, GEMINI.md, openspec/config.yaml, .agents/skills/openspec-propose/SKILL.md, .claude/commands/opsx/propose.md, and an unrecognized script under .agents/.",
+      "expected": "Recognized instruction/skill/config docs select no heavy platform jobs (quality only); an unrecognized executable/script under .agents/ broadens to full CI.",
+      "planned_files": [
+        "scripts/ci.py",
+        "scripts/ci_test.py"
+      ],
+      "surfaces": [
+        "CI scope selection"
+      ]
+    }
+  ],
+  "seal": "42b8aceb4608347e39bef6fa23c49887064396c41a8a55b228f7c3bb823b97e4"
+}
