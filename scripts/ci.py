@@ -26,9 +26,8 @@ def document(path):
     p = PurePosixPath(path)
     test_record = bool(re.fullmatch(r'docs/test/(?:catalogue\.json|implementations\.json|CASES\.csv|cases/(?:L[1-4]|G|M)\.csv|designs/[a-z0-9][a-z0-9-]*\.json)', path))
     openspec_skill = bool(
-        re.fullmatch(r'(?:\.agents|\.claude)/skills/openspec-[a-z0-9-]+/SKILL\.md', path) or
-        path == '.agents/skills/.openspec-target' or
-        re.fullmatch(r'\.claude/commands/opsx/[a-z0-9-]+\.md', path)
+        re.fullmatch(r'(?:\.agents|\.claude)/skills/openspec(?:-[a-z0-9-]+)?/(?:SKILL\.md|references/[a-z0-9-]+\.md)', path) or
+        path == '.agents/skills/.openspec-target'
     )
     return (test_record or openspec_skill or path in DOC_FILES or
             (path.startswith(("docs/", "openspec/")) and

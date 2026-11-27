@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
-"""Enforce harness-agnostic repo instructions (AGENTS.md) and cross-harness OpenSpec skills."""
+"""Enforce harness-agnostic repo instructions (AGENTS.md) and cross-harness OpenSpec 2.x skills."""
 from pathlib import Path
 import sys
 
 REQUIRED_POINTERS = ("CLAUDE.md", "GEMINI.md")
 MAX_POINTER_LINES = 10
 REQUIRED_OPENSPEC_SKILLS = (
+    "openspec",
     "openspec-propose",
     "openspec-apply-change",
     "openspec-archive-change",
     "openspec-explore",
     "openspec-sync-specs",
+)
+REQUIRED_OPENSPEC_REFERENCES = (
+    "answers.md",
+    "where-things-stand.md",
+    "without-skills.md",
 )
 SKILL_ROOTS = (".agents/skills", ".claude/skills")
 
@@ -45,13 +51,20 @@ def check_repo(root: Path) -> list[str]:
 
     for skill_root in SKILL_ROOTS:
         for skill in REQUIRED_OPENSPEC_SKILLS:
-            skill_file = root / skill_root / skill / "SKILL.md"
-            if skill_file.is_symlink():
+            skill_dir = root / skill_root / skill
+            skill_file = skill_dir / "SKILL.md"
+            if skill_dir.is_symlink() or skill_file.is_symlink():
                 errors.append(f"{skill_root}/{skill}/SKILL.md must be a regular file, not a symbolic link")
             elif not skill_file.is_file():
                 errors.append(f"missing OpenSpec skill: {skill_root}/{skill}/SKILL.md")
             elif not skill_file.read_text(encoding="utf-8", errors="replace").strip():
                 errors.append(f"empty OpenSpec skill: {skill_root}/{skill}/SKILL.md")
+        for ref in REQUIRED_OPENSPEC_REFERENCES:
+            ref_file = root / skill_root / "openspec" / "references" / ref
+            if ref_file.is_symlink():
+                errors.append(f"{skill_root}/openspec/references/{ref} must be a regular file, not a symbolic link")
+            elif not ref_file.is_file() or not ref_file.read_text(encoding="utf-8", errors="replace").strip():
+                errors.append(f"missing or empty OpenSpec reference: {skill_root}/openspec/references/{ref}")
 
     return errors
 
@@ -63,7 +76,7 @@ def main() -> int:
         for err in errors:
             print(f"workflow-guard: {err}", file=sys.stderr)
         return 1
-    print("workflow-guard: OK — AGENTS.md canonical, CLAUDE.md/GEMINI.md thin pointers, cross-harness OpenSpec skills present")
+    print("workflow-guard: OK — AGENTS.md canonical, CLAUDE.md/GEMINI.md thin pointers, cross-harness OpenSpec 2.x skills present")
     return 0
 
 

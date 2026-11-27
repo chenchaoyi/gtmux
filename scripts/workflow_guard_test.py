@@ -17,6 +17,10 @@ def seed_valid_repo(root: Path) -> None:
             skill_file = root / skill_root / skill / "SKILL.md"
             skill_file.parent.mkdir(parents=True, exist_ok=True)
             skill_file.write_text(f"---\nname: {skill}\n---\n", encoding="utf-8")
+        for ref in workflow_guard.REQUIRED_OPENSPEC_REFERENCES:
+            ref_file = root / skill_root / "openspec" / "references" / ref
+            ref_file.parent.mkdir(parents=True, exist_ok=True)
+            ref_file.write_text(f"# {ref}\n", encoding="utf-8")
 
 
 class WorkflowGuardTests(unittest.TestCase):

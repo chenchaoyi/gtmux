@@ -461,7 +461,7 @@ for tasks in openspec/changes/*/tasks.md; do
   open="$(grep -cE '^[[:space:]]*- \[ \]' "$tasks" || true)"
   checked="$(grep -cE '^[[:space:]]*- \[[xX]\]' "$tasks" || true)"
   if [ "$open" = 0 ] && [ "$checked" -gt 0 ]; then
-    note "openspec/changes/$id: every task is checked — archive it in this PR: npx @fission-ai/openspec@1.10.0 archive $id --yes"
+    note "openspec/changes/$id: every task is checked — archive it in this PR: npx @fission-ai/openspec@2.2.0 archive $id --yes"
     fail=1
   fi
   proc="$(grep -nE '^[[:space:]]*- \[ \].*([Oo]pen (a )?PR|[Ww]ait for (green )?CI|after CI pass|[Mm]erge after)' "$tasks" || true)"

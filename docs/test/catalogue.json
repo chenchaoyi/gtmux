@@ -61712,7 +61712,7 @@
       "cases": [
         {
           "id": "MAP-41a5bc78e4e8",
-          "line": 40,
+          "line": 39,
           "kind": "reviewed-selector",
           "name": "confirmed_unit_test_isolation",
           "dynamic": false,
@@ -61747,10 +61747,10 @@
           "design": "WFG-004"
         }
       ],
-      "sha256": "65dd357b347635d54f1edb354896d9b3900c6b8d651c5d1281a20666f4c2b0cc"
+      "sha256": "7e74cb02554c6f8006469b99caa2daaa878a11276232bbbb1490c11c9bb9dae5"
     },
     "scripts/ci_test.py": {
-      "sha256": "bca6aa5821d90af18bc1cafe5504d5ba4e51319af0afee3a2eb2810f5470d772",
+      "sha256": "47459ef66f1d18b53850c50a9b80d8f9281d5ef467903af2b610fe484b50c6ea",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -61764,7 +61764,7 @@
         },
         {
           "id": "LEG-5e8793132c96",
-          "line": 66,
+          "line": 68,
           "kind": "unittest",
           "name": "test_shared_or_unknown_impact_is_full",
           "dynamic": true,
@@ -61772,7 +61772,7 @@
         },
         {
           "id": "LEG-7bbcfe8992be",
-          "line": 77,
+          "line": 79,
           "kind": "unittest",
           "name": "test_recognized_modules_include_consumers",
           "dynamic": false,
@@ -61780,7 +61780,7 @@
         },
         {
           "id": "LEG-bbdfd85a9000",
-          "line": 86,
+          "line": 88,
           "kind": "unittest",
           "name": "test_nul_parser_preserves_names_and_old_rename_path",
           "dynamic": true,
@@ -61788,7 +61788,7 @@
         },
         {
           "id": "LEG-30f2f4661935",
-          "line": 94,
+          "line": 96,
           "kind": "unittest",
           "name": "test_actual_git_rename_deletion_and_symlink",
           "dynamic": false,
@@ -61796,7 +61796,7 @@
         },
         {
           "id": "LEG-a0a184955335",
-          "line": 120,
+          "line": 122,
           "kind": "unittest",
           "name": "test_missing_refs_force_full_cli_outputs",
           "dynamic": false,
@@ -61804,7 +61804,7 @@
         },
         {
           "id": "LEG-513d57a7489a",
-          "line": 131,
+          "line": 133,
           "kind": "unittest",
           "name": "test_workflow_jobs_cannot_grow_outside_aggregation",
           "dynamic": false,
@@ -61812,7 +61812,7 @@
         },
         {
           "id": "LEG-1f71c99fb4dc",
-          "line": 143,
+          "line": 145,
           "kind": "unittest",
           "name": "test_unsigned_ios_preserves_arm64_target_and_verifies_products",
           "dynamic": false,
@@ -61820,7 +61820,7 @@
         },
         {
           "id": "LEG-2514a184abce",
-          "line": 155,
+          "line": 157,
           "kind": "unittest",
           "name": "test_android_package_is_built_once_and_both_devices_use_its_output",
           "dynamic": false,
@@ -61828,7 +61828,7 @@
         },
         {
           "id": "LEG-76200ceafcf2",
-          "line": 208,
+          "line": 210,
           "kind": "unittest",
           "name": "test_docs_can_skip_heavy_jobs_but_require_quality",
           "dynamic": false,
@@ -61836,7 +61836,7 @@
         },
         {
           "id": "LEG-ecfb4bf818ba",
-          "line": 214,
+          "line": 216,
           "kind": "unittest",
           "name": "test_missing_skipped_failed_cancelled_required_job_never_green",
           "dynamic": true,
@@ -61844,7 +61844,7 @@
         },
         {
           "id": "LEG-252965413bf3",
-          "line": 230,
+          "line": 232,
           "kind": "unittest",
           "name": "test_bad_plans_or_unselected_failure_are_rejected",
           "dynamic": false,
@@ -61852,7 +61852,7 @@
         },
         {
           "id": "LEG-8a6a845c7484",
-          "line": 242,
+          "line": 244,
           "kind": "unittest",
           "name": "test_mac_host_keeps_both_architectures_and_native_checks",
           "dynamic": false,
@@ -61860,7 +61860,7 @@
         },
         {
           "id": "LEG-28f4d1551b14",
-          "line": 259,
+          "line": 261,
           "kind": "unittest",
           "name": "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection",
           "dynamic": false,
@@ -61886,7 +61886,7 @@
         },
         {
           "id": "MAP-1d7d386ae4bf",
-          "line": 223,
+          "line": 225,
           "kind": "reviewed-selector",
           "name": "test_android_aggregation_requires_the_entire_job_family",
           "dynamic": false,
@@ -62284,7 +62284,7 @@
       ]
     },
     "scripts/openspec_check_test.py": {
-      "sha256": "b8ba56d4368623516aaf3a97c5b2612bd1bde4e09136ad7970d1353de244ac19",
+      "sha256": "4306ec9643c73b62001614259a2f1f7ec1b1f62f969a3e3d585aa8c7c24214d7",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -62327,6 +62327,15 @@
           "name": "test_success_requires_complete_machine_output",
           "dynamic": false,
           "layer": "G"
+        },
+        {
+          "id": "MAP-6f348db72565",
+          "line": 44,
+          "kind": "reviewed-selector",
+          "name": "test_v2_legacy_length_advisories_pass_while_other_warnings_fail",
+          "dynamic": false,
+          "layer": "G",
+          "design": "OSV-001,OSV-002,OSV-003,OSV-004,OSV-005,OSV-006"
         }
       ]
     },
@@ -71697,7 +71706,7 @@
       "cases": [
         {
           "id": "MAP-05e06432b6d4",
-          "line": 23,
+          "line": 27,
           "kind": "reviewed-selector",
           "name": "test_real_repo_passes_workflow_guard",
           "dynamic": false,
@@ -71706,7 +71715,7 @@
         },
         {
           "id": "MAP-767be48b9bde",
-          "line": 26,
+          "line": 30,
           "kind": "reviewed-selector",
           "name": "test_rejects_missing_symlinked_or_bloated_instructions",
           "dynamic": false,
@@ -71715,7 +71724,7 @@
         },
         {
           "id": "MAP-dacff1eecb4d",
-          "line": 52,
+          "line": 56,
           "kind": "reviewed-selector",
           "name": "test_rejects_missing_or_empty_cross_harness_openspec_skills",
           "dynamic": false,
@@ -71723,7 +71732,59 @@
           "design": "WFG-001,WFG-002,WFG-003"
         }
       ],
-      "sha256": "3720ff5b14a38c8e8e2db2a9a9823adeac90f3c5318d521c21fa8816c5b2e37f"
+      "sha256": "e6fd0fb77d7b734726d06a8f29b9bda545c3666172bf85ad7a496df3fe538ff5"
+    },
+    "scripts/openspec_check.py": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-176254a5b730",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "COMMAND",
+          "dynamic": false,
+          "layer": "G",
+          "design": "OSV-001,OSV-002,OSV-003,OSV-004,OSV-005,OSV-006"
+        },
+        {
+          "id": "MAP-878d29975287",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "LEGACY_PROSE_LEN_WARNING",
+          "dynamic": false,
+          "layer": "G",
+          "design": "OSV-001,OSV-002,OSV-003,OSV-004,OSV-005,OSV-006"
+        },
+        {
+          "id": "MAP-ab19978fc91f",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "blocking_issues",
+          "dynamic": false,
+          "layer": "G",
+          "design": "OSV-001,OSV-002,OSV-003,OSV-004,OSV-005,OSV-006"
+        },
+        {
+          "id": "MAP-c776e43e2879",
+          "line": 30,
+          "kind": "reviewed-selector",
+          "name": "verdict",
+          "dynamic": false,
+          "layer": "G",
+          "design": "OSV-001,OSV-002,OSV-003,OSV-004,OSV-005,OSV-006"
+        },
+        {
+          "id": "MAP-7c86821e8772",
+          "line": 52,
+          "kind": "reviewed-selector",
+          "name": "main",
+          "dynamic": false,
+          "layer": "G",
+          "design": "OSV-001,OSV-002,OSV-003,OSV-004,OSV-005,OSV-006"
+        }
+      ],
+      "sha256": "e2a3fd079a9c88426805d73f4a6953ec6ed77bd52e2a61cb8a1409b7e5d2f711"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

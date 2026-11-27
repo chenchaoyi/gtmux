@@ -2,7 +2,7 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1530 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1531 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
@@ -11,7 +11,7 @@
 | L3 · 运行时集成 | 171 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
-| G · 质量门禁 | 517 | [G.csv](cases/G.csv) |
+| G · 质量门禁 | 523 | [G.csv](cases/G.csv) |
 
 数字不是通过数。存量 6,223 个位置来自 4fad6119 盘点（声明、子测试、动态模板），另加明确的新用例、原生过程入口和评审映射入口；动态实例不展开。没有具名用例的辅助文件仍保留摘要。存量层次是结构分类，混合边界在触及时需语义复核，不补造历史评审/运行结果。`reviewed-selector` 也不冒充框架发现的声明。源码/目录/映射漂移由门禁拦截，但测试名不能自动证明断言质量。
 
@@ -637,6 +637,12 @@
 | RFD-001 | Missing operation may use existing conservative activityOperation fallback: one direct command, no single-command outline/tab clutter, cleaned terminal presentation. Explicit operation wins, original copy/raw and opaque numeric text remain exact; unknown tool data is not inferred as shell. |
 | RFD-002 | One concise explanation, one clear44pt retry, optional secondary action of lower prominence. Retry is busy/disabled while the parent owns request, original callbacks remain scope-owned and no automatic write/association occurs. Shared loader is decorative inside the labeled action; copy avoids internal association/session-log language. |
 | SID-009 | Default URLs and malformed empty result remain exactly compatible. Detail/HQ transcript call sites explicitly opt in; pane Trace opts in only when the supplied agent contains observed_conversation metadata. Preserve recent/context/cursor/conditional headers and the existing TraceReader three-argument call contract. Last-known state survives 304; verified removes restriction. External session routes retain exact identity and never receive observation fallback. Input paths unchanged; no network/session/device operations. |
+| OSV-001 | Returns status 'invalid'. |
+| OSV-002 | Each returns status 'tool' rather than 'ok' or 'invalid'. |
+| OSV-003 | Blocking invalid spec returns 'invalid'; mismatched summary and foreign root return 'tool'. |
+| OSV-004 | Returns exit code 2 and prints tool/setup failure message without claiming drifted specs. |
+| OSV-005 | Valid JSON returns 'ok'; plain text returns 'tool'. |
+| OSV-006 | Case (a) returns 'ok', case (b) returns 'tool', and case (c) returns 'invalid' preserving only blocking issues for error reporting. |
 | PCP-001 | No historical fact request without a message timestamp and no false assertion that metadata was read and empty. Current process read is on demand and must match exact source SID and explicit source agent (historical profile agent when actually available, otherwise recorded turn.agent); unknown source identity cannot borrow radar agent or cause futile retry. Current model/tier never fills message facts. Correct same-source chain displays/copies; wrong or rotated source cannot display/copy and has actionable explanation. Retry visibly enters loading, requests once, times out in 15s including uncooperative body/transport, ignores late answers and can recover. UI uses a44pt accessible retry with visible busy status and the shared three-pane loading mark; reduced motion is static; no service, binding, auth or send writes. |
 | STOR-007 | Legacy facts remain readable before the new observer runs. Clearing persists even when it leaves no facts. Old files and lock namespaces remain independent. The later model-only write may advance model time while its carried-forward effort stays hidden. A genuinely later option observation is accepted. |
 | STOR-010 | Both model changes leave effort empty even when the current generation still records the old A effort. The later effort is accepted under the latest A selection. |

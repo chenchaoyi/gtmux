@@ -3242,7 +3242,7 @@
       "replaces the index with results, rather than showing both",
       "says so when nothing matches, naming what was typed",
       "gives the index back when the query is cleared",
-      "is closed by default — it is read once, then it is just height",
+      "is closed by default \u2014 it is read once, then it is just height",
       "opens on tap",
       "describes the result instead of the ledger verb",
       "write-it-in sends carry with no text, after one confirmation",
@@ -3498,7 +3498,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane’s different current runtime",
+      "a stitched older session never requests the pane\u2019s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -5379,7 +5379,7 @@
       "DFR-002"
     ],
     "selectors": [
-      "Dark and 中文 apply at once and survive a relaunch"
+      "Dark and \u4e2d\u6587 apply at once and survive a relaunch"
     ]
   },
   "mobileapp/e2e/setup/global-setup-target.test.ts": {
@@ -6131,6 +6131,41 @@
     ],
     "selectors": [
       "TestGSW004WakeStorageInventory"
+    ]
+  },
+  "scripts/openspec_check.py": {
+    "cases": [
+      "OSV-001",
+      "OSV-002",
+      "OSV-003",
+      "OSV-004",
+      "OSV-005",
+      "OSV-006"
+    ],
+    "selectors": [
+      "COMMAND",
+      "LEGACY_PROSE_LEN_WARNING",
+      "blocking_issues",
+      "verdict",
+      "main"
+    ]
+  },
+  "scripts/openspec_check_test.py": {
+    "cases": [
+      "OSV-001",
+      "OSV-002",
+      "OSV-003",
+      "OSV-004",
+      "OSV-005",
+      "OSV-006"
+    ],
+    "selectors": [
+      "test_invalid_spec_is_not_a_launcher_failure",
+      "test_cache_and_startup_errors_have_no_spec_verdict",
+      "test_false_green_mismatched_summary_and_other_checkout_fail_closed",
+      "test_missing_or_timed_out_launcher_reports_tool_failure",
+      "test_success_requires_complete_machine_output",
+      "test_v2_legacy_length_advisories_pass_while_other_warnings_fail"
     ]
   }
 }
