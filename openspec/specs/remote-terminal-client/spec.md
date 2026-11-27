@@ -1,7 +1,7 @@
 # remote-terminal-client Specification
 
 ## Purpose
-TBD - created by archiving change remote-terminal-client. Update Purpose after archive.
+Defines the `gtmux attach` interactive remote terminal client, including owner-only bearer verification, pane selection in TTY and non-TTY contexts, raw WebSocket passthrough, resize propagation, and clean terminal restoration.
 ## Requirements
 ### Requirement: Attach to a remote pane by target, resolving scope
 

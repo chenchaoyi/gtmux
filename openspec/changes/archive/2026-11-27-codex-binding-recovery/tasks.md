@@ -5,4 +5,4 @@
 - [x] Run affected race, full core, source and exact-history gates
 
 ## Acceptance
-- [ ] Verify normal reconnect with the installed candidate on the intended session without replaying user input
+Post-install manual acceptance (not a merge blocker): verify normal reconnect with the installed candidate on the intended session without replaying user input.

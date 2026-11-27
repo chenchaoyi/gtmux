@@ -1,7 +1,7 @@
 # supervisor-agent Specification
 
 ## Purpose
-TBD - created by archiving change supervisor-mvp. Update Purpose after archive.
+Specifies the HQ supervisor agent (`gtmux hq`), covering managed workspace initialization, charter and runbook distribution, worker enrollment and dispatch, wake handling, attention routing, and safe lifecycle transitions.
 
 ## Requirements
 

@@ -1,7 +1,7 @@
 # agent-driver Specification
 
 ## Purpose
-TBD - created by archiving change agent-drivers. Update Purpose after archive.
+Defines the two-layer agent perception and drive architecture: a permanent tmux screen-and-keystroke base for any terminal agent, paired with optional per-agent drivers for delivery receipts, readiness gates, transcript content, and opt-in headless execution.
 ## Requirements
 ### Requirement: Two-layer perception/drive model with tmux as the permanent base
 

@@ -6,4 +6,4 @@
 - [x] Align contract, bilingual docs and test catalogue
 
 ## Acceptance
-- [ ] After installation, user-authorized remote restore and menu visibility acceptance on a disposable saved workspace (not the protected old sessions)
+Post-install manual acceptance (not a merge blocker): user-authorized remote restore and menu visibility acceptance on a disposable saved workspace (not the protected old sessions).
