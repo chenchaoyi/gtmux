@@ -20,13 +20,12 @@ delete `<key>.png`; a missing icon simply falls back to the neutral monogram.
 | `glm.png` | GLM | Zhipu AI |
 | `kimi.png` | Kimi | Moonshot AI |
 | `dsh.png` | DeepSeek Harness | DeepSeek |
+| `agy.png` | Antigravity | Google |
 
 Notes:
 - `grok` and `glm` need registry entries (detection commands) before their panes are
-  recognized as agents and the icon is shown; `opencode`, `gemini` and `kimi` are
-  already detected.
-- Antigravity CLI (`agy`) has no committed icon; its panes use the neutral `Ag`
-  monogram until an official mark is provided.
+  recognized as agents and the icon is shown; `opencode`, `gemini`, `kimi`, `dsh`, and
+  `agy` are already detected.
 - `gemini.png` is a wide wordmark (2:1) rather than a square glyph — replace with a
   square icon when available for a cleaner avatar.
 
@@ -42,3 +41,9 @@ installed `com.anthropic.claudefordesktop` 2.9939.4 application icon (`electron.
 It identifies Claude across gtmux, including usage widgets. The icon paths and colors
 are unchanged. PNG SHA-256: `8d8d51ac7dff1060c5f787d5aab984950650ba4f29d73a24d5de642778345a35`.
 Widget `UsageAgent-*` copies preserve the canonical PNG bytes in this directory.
+
+`agy.png` is the official Google Antigravity desktop icon (`512×512`), extracted
+unchanged from the installed `com.google.antigravity` 2.35.2 application icon
+(`icon.icns` / `icon_256x256@2x.png`). It identifies Antigravity (`agy`) across gtmux,
+including usage widgets. The icon paths and colors are unchanged.
+PNG SHA-256: `594726627f619305fbfd3ed5a4c0c25501daa6b37ce0ab2af5df79e6898be7ea`.

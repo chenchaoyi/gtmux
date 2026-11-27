@@ -419,7 +419,8 @@ full-input retrieval across Chat and Trace. Results and reasoning remain exclude
 ### Requirement: Antigravity CLI (`agy`) integration follows its named-hook and transcript contracts
 
 Antigravity CLI (`agy`, aliases `antigravity` and `antigravity-cli`) SHALL be registered as a
-Tier 2+ agent with process detection, resume recipe (`agy --resume ID`), resource attribution,
+Tier 2+ agent with process detection, committed official icon (`assets/agent-icons/agy.png`),
+resume recipe (`agy --resume ID`), resource attribution,
 global knowledge carrier (`$AGY_CONFIG_DIR/GEMINI.md`, default `~/.gemini/config/GEMINI.md`),
 dedicated hook installer, lifecycle classifier, transcript reader, usage parser, profile reader
 and transcript miner. The hook installer SHALL own only the top-level `"gtmux"` object in

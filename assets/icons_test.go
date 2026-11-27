@@ -6,7 +6,7 @@ import "testing"
 // would ship an empty icon silently). opencode + codex + gemini are detected agents
 // that have a committed icon today (codex uses its own mark, NOT the ChatGPT logo).
 func TestAgentIconEmbedded(t *testing.T) {
-	for _, k := range []string{"opencode", "codex", "gemini"} {
+	for _, k := range []string{"opencode", "codex", "gemini", "agy"} {
 		if b := AgentIcon(k); len(b) == 0 {
 			t.Errorf("committed icon for %q is missing or empty (check assets/agent-icons/%s.png + the //go:embed)", k, k)
 		}
