@@ -33,7 +33,7 @@ func Native(ctx context.Context, request Request, files []*os.File) (Reply, erro
 	if runtime.GOOS != "darwin" {
 		return Reply{}, Fail("platform-unsupported", "Native screenshots require the macOS App")
 	}
-	dir := filepath.Join(state.Dir(), "capture-bridge")
+	dir := state.RootStorePath("capture-bridge")
 	var host Host
 	if err := ownedJSON(filepath.Join(dir, "host.json"), &host); err != nil {
 		return Reply{}, Fail("app-unavailable", "Open a compatible Gtmux App to use native screenshot operations")

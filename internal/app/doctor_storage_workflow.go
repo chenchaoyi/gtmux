@@ -48,9 +48,24 @@ func doctorStorageEntry(command string, args []string) (int, bool) {
 				return 0, true
 			}
 			hasPlan := !os.IsNotExist(planErr)
+			if hasPlan {
+				plan, e := readStorageServicePlan()
+				if e != nil {
+					return guidedStorageRecoveryFailure(e), true
+				}
+				if plan != nil && plan.Purpose {
+					return doctorPurposeFix(status, doctorStorageLaunchd()), true
+				}
+			}
 			recoverServices := status.WorkflowActive() && hasPlan
 			groupWorkflow := hasPlan && (status.ServicePreparation() || pending && workflow && grouped) ||
 				fault == nil && !status.WorkflowActive() && status.Mode == "grouped"
+			if groupWorkflow && !hasPlan && !pending && status.Workflow == "" && purposeDesktopCompatibility() == nil && checkStorageMigrationWindow() == nil {
+				has, e := state.HasLegacyPurposeData(status)
+				if e == nil && has {
+					return doctorPurposeFix(status, doctorStorageLaunchd()), true
+				}
+			}
 			if recoverServices || groupWorkflow {
 				manager := doctorStorageLaunchd()
 				if groupWorkflow && !pending && os.IsNotExist(planErr) {
@@ -64,6 +79,17 @@ func doctorStorageEntry(command string, args []string) (int, bool) {
 					}
 				}
 				return guidedDoctorStorageChange(manager, checkStorageProcesses, checkEarlyStorageWriters, confirmRisky), true
+			}
+		}
+		if interactiveFix && status.Mode == "flat" && status.Continuing == "" && !status.UnmarkedGrouped {
+			has, e := state.HasLegacyPurposeData(status)
+			if e == nil && has && checkStorageMigrationWindow() == nil && purposeDesktopCompatibility() == nil {
+				return doctorPurposeFix(status, doctorStorageLaunchd()), true
+			}
+		}
+		if interactiveFix && (status.Mode == "purpose" && status.Workflow != "categories-active" || status.Workflow == "workflow-grouped") {
+			if status.Mode == "purpose" || checkStorageMigrationWindow() == nil && purposeDesktopCompatibility() == nil {
+				return doctorPurposeFix(status, doctorStorageLaunchd()), true
 			}
 		}
 		switch {
@@ -196,6 +222,20 @@ func applyDoctorStorageChange(workflow, grouped bool, writers func() error, conf
 
 func workflowLayoutRow(status state.StorageLayoutStatus, err error) dcheck {
 	label := i18n.Tr("data layout", "数据目录布局")
+	if status.Mode == "purpose" && err == nil {
+		if status.Workflow != "categories-active" {
+			return dcheck{stMiss, label, i18n.Tr("migration in progress", "迁移尚未完成"), i18n.Tr("Keep tmux closed and run gtmux doctor --fix from a standalone terminal.", "请保持 tmux 关闭，在独立终端运行 gtmux doctor --fix 继续。")}
+		}
+		if plan, e := state.InspectRecoveryScaffold(); e != nil {
+			return dcheck{stRec, label, i18n.Tr("review recovery directory", "请核对恢复目录"), e.Error()}
+		} else if plan != nil {
+			return dcheck{stRec, label, i18n.Tr("migration complete", "迁移已完成"), i18n.Tr("Run gtmux doctor --fix to remove the empty recovery directories.", "可运行 gtmux doctor --fix 清理空的恢复目录。")}
+		}
+		if e := purposeDesktopCompatibility(); e != nil {
+			return dcheck{stRec, label, i18n.Tr("organized by purpose", "已按用途整理"), e.Error()}
+		}
+		return dcheck{stOK, label, i18n.Tr("organized by purpose", "已按用途整理"), ""}
+	}
 	if status.ServicePreparation() && err == nil {
 		return dcheck{stRec, label, i18n.Tr("service recovery preparing", "后台服务已进入维护"),
 			i18n.Tr("Run gtmux doctor --fix before opening tmux to continue or cancel the prepared move.",
@@ -233,6 +273,11 @@ func workflowLayoutRow(status state.StorageLayoutStatus, err error) dcheck {
 						"请在独立终端运行 gtmux doctor --fix，恢复已记录的后台服务设置。")}
 			}
 		}
+		if plan, err := state.InspectRecoveryScaffold(); err != nil {
+			return dcheck{stRec, label, i18n.Tr("review recovery directory", "请核对迁移恢复目录"), err.Error()}
+		} else if plan != nil {
+			return dcheck{stRec, label, "layout-v3", i18n.Tr("Migration finished. Run gtmux doctor --fix to remove the empty recovery directories.", "迁移已完成。可运行 gtmux doctor --fix 清理留下的空恢复目录。")}
+		}
 		return dcheck{stOK, label, "layout-v3",
 			i18n.Tr("HQ wake data and global leases are grouped. Early-boot layout lock, desktop endpoints and input spool use their stable paths.",
 				"HQ 唤醒数据和全局锁已分组。启动布局锁、桌面端点和输入队列使用各自的固定路径。")}
@@ -247,6 +292,31 @@ func workflowLayoutRow(status state.StorageLayoutStatus, err error) dcheck {
 func rowWorkflowStorageLayout() dcheck {
 	status, err := state.ReadStorageLayout()
 	row := workflowLayoutRow(status, err)
+	if err == nil && status.Workflow == "workflow-grouped" && (row.status == stOK || row.status == stRec && row.value == "layout-v3") {
+		if note, e := purposeAdvice(status); e != nil {
+			row.status = stMiss
+			row.note = e.Error()
+		} else if note != "" {
+			if row.status == stRec {
+				note = row.note + " " + note
+			}
+			row.status = stRec
+			row.note = note
+		}
+	}
+	if err == nil && status.Mode == "flat" && status.Continuing == "" && !status.UnmarkedGrouped && row.status == stInfo {
+		has, e := state.HasLegacyPurposeData(status)
+		if e != nil {
+			row.status = stMiss
+			row.note = e.Error()
+		} else if has {
+			row.note, e = purposeAdvice(status)
+			if e != nil {
+				row.note = e.Error()
+			}
+			row.status = stRec
+		}
+	}
 	if row.status == stInfo && row.value == "layout-v2" {
 		row.note = storageMigrationAdvice()
 	}
@@ -311,4 +381,46 @@ func (s *fixState) stepCacheStaging() int {
 	}
 	i18n.Say(fmt.Sprintf("Removed %d cache staging files.", removed), fmt.Sprintf("已清理 %d 个缓存暂存文件。", removed))
 	return removed
+}
+
+func (s *fixState) stepRecoveryScaffold() int {
+	plan, err := state.InspectRecoveryScaffold()
+	if err != nil || plan == nil {
+		return 0
+	}
+	if !s.ask(i18n.Tr("Remove empty migration directories", "清理迁移留下的空目录"),
+		i18n.Tr("Storage is ready and no service files remain in the recovery directories.", "迁移已完成，服务恢复目录中没有待归还的文件。")) {
+		return 0
+	}
+	lease, err := storageMaintenanceLease()
+	if err == nil {
+		defer lease.Close()
+		err = plan.Prune()
+	}
+	if err != nil {
+		s.rc = 1
+		i18n.Sae("Storage cleanup stopped: "+err.Error(), "存储清理已停止："+err.Error())
+		return 0
+	}
+	i18n.Say("Removed the empty migration directories.", "已移除迁移留下的空目录。")
+	return 1
+}
+
+func (s *fixState) stepRetiredIcons() int {
+	plan, err := state.InspectRetiredIcons()
+	if err != nil || plan.Count() == 0 {
+		return 0
+	}
+	if err := checkEarlyStorageWriters(); err != nil {
+		return 0
+	}
+	if !s.ask(i18n.Tr("Remove duplicate notification icons", "清理重复的通知图标"), fmt.Sprintf(i18n.Tr("%d private files match the built-in artwork and the old notification queue is empty.", "%d 个旧文件与内置图标逐字节相同，通知队列已清空。"), plan.Count())) {
+		return 0
+	}
+	n, err := plan.Prune(checkEarlyStorageWriters)
+	if err != nil {
+		s.rc = 1
+		i18n.Sae(err.Error(), err.Error())
+	}
+	return n
 }

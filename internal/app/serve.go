@@ -1288,7 +1288,7 @@ func saveUpload(name string, data []byte) (string, error) {
 	if err := state.WritePrivateFile(path, data); err != nil {
 		return "", err
 	}
-	return path, nil
+	return state.UploadReference(path), nil
 }
 
 // sanitizeFilename keeps just the base name with a conservative charset, so an

@@ -15,6 +15,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/hq"
 	"github.com/chenchaoyi/gtmux/internal/hqnudge"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/usercfg"
 )
 
@@ -113,6 +114,22 @@ func Run(argv []string) int {
 		args = args[1:]
 	}
 
+	if sub == "_storage-init" {
+		if len(args) != 0 {
+			return 2
+		}
+		if err := state.InitializePurposeStorage(); err != nil {
+			return guidedStorageFailure(err)
+		}
+		return 0
+	}
+	if sub != "doctor" && sub != "dr" && !permitsLayoutTransition(sub, args) {
+		if _, err := os.Lstat(state.Dir()); os.IsNotExist(err) && purposeDesktopCompatibility() == nil {
+			if err := state.InitializePurposeStorage(); err != nil {
+				return guidedStorageFailure(err)
+			}
+		}
+	}
 	if rc, handled := doctorStorageEntry(sub, args); handled {
 		return rc
 	}

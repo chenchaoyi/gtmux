@@ -8,8 +8,8 @@ Use stable categories for sessions, HQ, attachments, services, diagnostics, back
 
 ## Surfaces
 
-- Terminal: Doctor owns inspection, consent, interruption recovery and verification.
-- Menu bar: consume the same icon files and notification queue as the CLI.
-- Phone: existing attachment links and input acknowledgments remain valid.
+- In the terminal, Doctor owns inspection, consent, interruption recovery and verification.
+- The menubar uses the same icon files and notification queue as the CLI.
+- On a phone, existing attachment links and input acknowledgments remain valid.
 - iPad: the same host protocol and access checks apply.
 - Web: use embedded icon bytes and preserve registered preview identities.

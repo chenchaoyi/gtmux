@@ -65,11 +65,17 @@ var groupedStores = map[string]string{
 func StorePath(name string, descendants ...string) string {
 	root := Dir()
 	if group, ok := groupedStores[name]; ok {
+		if purposeMarked(root) {
+			return filepath.Join(append([]string{root, purposeGroups[group], name}, descendants...)...)
+		}
 		// A malformed marker is caught by CheckStorageLayout at the CLI entry.
 		// Never use absence of an individual grouped store to fall back to flat.
 		if _, err := os.Lstat(filepath.Join(root, layoutMarker)); !errors.Is(err, os.ErrNotExist) {
 			root = filepath.Join(root, layoutDir, group)
 		}
+	}
+	if _, ok := purposeRootStores[name]; ok {
+		return RootStorePath(name, descendants...)
 	}
 	return filepath.Join(append([]string{root, name}, descendants...)...)
 }
@@ -94,15 +100,41 @@ type StorageLayoutStore struct {
 
 // ReadStorageLayout inventories known stores without creating any paths.
 func ReadStorageLayout() (StorageLayoutStatus, error) {
-	mode, err := currentLayout()
-	if err != nil {
-		return StorageLayoutStatus{}, err
-	}
-	status := StorageLayoutStatus{Mode: mode}
+	var status StorageLayoutStatus
 	workflow, err := readWorkflowJournal()
 	if err != nil {
 		return status, err
 	}
+	if workflow != nil && workflow.Version == purposeVersion {
+		status.Mode = "purpose"
+		status.Workflow = workflow.Phase
+		if err := verifyPurposeMarker(workflow); err != nil {
+			return status, err
+		}
+		switch workflow.Phase {
+		case purposeActive, purposeServicesHeld:
+			err = checkActivePurposeRoutes(workflow.PurposeToken)
+		case purposeFinishing:
+			err = verifyPurposeMoves(workflow.Entries, true, true)
+		case purposeMoving:
+			err = verifyPurposeMoves(workflow.Entries, true, false)
+		case purposeReturning:
+			err = verifyPurposeMoves(workflow.Entries, false, false)
+		case purposeRestored:
+			err = verifyPurposeMoves(workflow.Entries, false, true)
+		case purposeReleasing: // Exact aliases may already have been retired.
+			err = verifyPurposeMoves(workflow.Entries, true, true)
+		}
+		return status, err
+	}
+	if err := requireNoPurposeMarker(); err != nil {
+		return status, err
+	}
+	mode, err := currentLayout()
+	if err != nil {
+		return status, err
+	}
+	status.Mode = mode
 	var transition *layoutTransaction
 	if workflow != nil {
 		status.Workflow = workflow.Phase
@@ -197,6 +229,15 @@ func CheckStorageLayout() error {
 		if err != nil {
 			return err
 		}
+		if journal != nil && journal.Version == purposeVersion {
+			if err := verifyPurposeMarker(journal); err != nil {
+				return err
+			}
+			if journal.Phase != purposeActive {
+				return errors.New("category migration is incomplete; run gtmux doctor --fix")
+			}
+			return checkActivePurposeRoutes(journal.PurposeToken)
+		}
 		if journal == nil || journal.Phase != workflowGrouped {
 			return errors.New("storage layout transition requires attention; run gtmux doctor --storage-layout")
 		}
@@ -205,6 +246,9 @@ func CheckStorageLayout() error {
 		}
 	} else if _, err := os.Lstat(filepath.Join(Dir(), workflowLayoutMarker)); !errors.Is(err, os.ErrNotExist) {
 		return errors.New("workflow layout marker exists without its journal")
+	}
+	if err := requireNoPurposeMarker(); err != nil {
+		return err
 	}
 	return checkBaseStorageLayout()
 }
@@ -901,6 +945,14 @@ func StorageStoreName(rel string) string {
 	parts := strings.Split(filepath.ToSlash(rel), "/")
 	if len(parts) >= 3 && parts[0] == layoutDir && groupedStores[parts[2]] == parts[1] {
 		return parts[2]
+	}
+	if len(parts) >= 3 && groupedStores[parts[2]] != "" && purposeGroups[groupedStores[parts[2]]] == strings.Join(parts[:2], "/") {
+		return parts[2]
+	}
+	for n := len(parts); n > 0; n-- {
+		if key, ok := purposeStoreNames[strings.Join(parts[:n], "/")]; ok {
+			return key
+		}
 	}
 	return parts[0]
 }

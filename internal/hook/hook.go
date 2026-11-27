@@ -17,7 +17,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/assets"
 	"github.com/chenchaoyi/gtmux/internal/agentclient"
 	"github.com/chenchaoyi/gtmux/internal/agentprofile"
 	"github.com/chenchaoyi/gtmux/internal/agents"
@@ -34,6 +33,7 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/native"
 	"github.com/chenchaoyi/gtmux/internal/notify"
 	"github.com/chenchaoyi/gtmux/internal/prompt"
+	"github.com/chenchaoyi/gtmux/internal/radar"
 	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -589,26 +589,6 @@ func payloadFile(payload []byte) (*os.File, error) {
 		return nil, err
 	}
 	return f, nil
-}
-
-// notifyAgentIcon returns a PNG path for agentKey's committed built-in icon (embedded
-// assets/agent-icons/<key>.png), cached under the state dir, or "" when the agent has no
-// built-in icon (the installed-app fallback is cached separately as state.IconPath).
-// Written fresh each call so a gtmux update's new icon takes effect.
-func notifyAgentIcon(agentKey string) string {
-	b := assets.AgentIcon(agentKey)
-	if len(b) == 0 {
-		return ""
-	}
-	dir := filepath.Join(state.CacheDir(), "notify-icons")
-	if state.MkdirAll(dir, 0o755) != nil {
-		return ""
-	}
-	p := filepath.Join(dir, agentKey+".png")
-	if state.WriteFile(p, b, 0o644) != nil {
-		return ""
-	}
-	return p
 }
 
 func Run(stdin io.Reader, args []string) int {
@@ -1318,16 +1298,7 @@ func Run(stdin io.Reader, args []string) int {
 		return 0
 	}
 
-	icon := ""
-	if state.Exists(state.IconPath()) {
-		icon = state.IconPath()
-	}
-	// Per-agent thumbnail: an agent with a committed built-in icon (Codex, Gemini, …) gets
-	// ITS icon, not the single cached Claude icon (state.IconPath) — else EVERY non-Claude
-	// notification showed the Claude logo (a Codex session's banner used CC's mark).
-	if p := notifyAgentIcon(agentKey); p != "" {
-		icon = p
-	}
+	icon := radar.BuiltinIconPath(agentKey)
 	// Differentiate copy/sound: "finished" (calm) vs "needs your input" (urgent).
 	// The session name is the bold title; the agent name is the subtitle.
 	kind := "done"

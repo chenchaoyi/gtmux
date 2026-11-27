@@ -1506,7 +1506,7 @@ func rowUploads() dcheck {
 
 // uploadsDir is where a file handed to an agent by path lives: the phone's uploads
 // (saveUpload) and `gtmux send --attach` alike, pruned by age and size (diskhygiene).
-func uploadsDir() string { return filepath.Join(state.Dir(), "uploads") }
+func uploadsDir() string { return state.RootStorePath("uploads") }
 
 // dirCountSize returns the file count + total bytes of a directory tree (0,0 if absent).
 func dirCountSize(dir string) (int, int64) {

@@ -1,0 +1,4 @@
+- [x] Share built-in notification artwork and retire the legacy writer.
+- [x] Recognize and clean verified empty recovery scaffolding in Doctor.
+- [x] Implement versioned, recoverable path selection for stable categories and verify legacy clients and stored attachment references.
+- [x] Exercise fresh, old, interrupted, conflicting and completed layouts in isolated homes.

@@ -32,11 +32,14 @@ const (
 // Use the legacy journal pathname as a compatibility fence. Version 2 commands
 // refuse admission while it exists and cannot interpret a version 3 plan.
 type workflowJournal struct {
-	Version int
-	Phase   string
-	Entries []layoutEntry `json:",omitempty"`
-	Marker  *layoutEntry  `json:",omitempty"`
-	proof   layoutJournalProof
+	BaseMarker   *layoutEntry `json:",omitempty"`
+	HoldServices bool         `json:",omitempty"`
+	PurposeToken string       `json:",omitempty"`
+	Version      int
+	Phase        string
+	Entries      []layoutEntry `json:",omitempty"`
+	Marker       *layoutEntry  `json:",omitempty"`
+	proof        layoutJournalProof
 }
 
 func readWorkflowJournal() (*workflowJournal, error) {
@@ -65,24 +68,31 @@ func readWorkflowJournal() (*workflowJournal, error) {
 	if journal.Version == layoutJournalVersion {
 		return nil, nil
 	}
-	if journal.Version != workflowVersion || !journal.validShape() {
+	purpose := journal.Version == purposeVersion
+	if purpose {
+		if err := validatePurposeJournal(&journal); err != nil {
+			return nil, err
+		}
+	} else if journal.Version != workflowVersion || !journal.validShape() {
 		return nil, fmt.Errorf("unknown workflow layout journal: %s", path)
 	}
 	if journal.Marker != nil && (journal.Marker.Inode == 0 || journal.Marker.Mode != uint32(os.ModeDir)) {
 		return nil, fmt.Errorf("invalid workflow layout marker identity: %s", path)
 	}
-	seen := make(map[string]bool, len(journal.Entries))
-	for _, entry := range journal.Entries {
-		store, ok := workflowStoreFor(entry.Name)
-		if !ok || seen[entry.Name] || entry.Inode == 0 || entry.Mode != workflowObjectType(store) {
-			return nil, fmt.Errorf("unknown or duplicate workflow store: %s", entry.Name)
+	if !purpose {
+		seen := make(map[string]bool, len(journal.Entries))
+		for _, entry := range journal.Entries {
+			store, ok := workflowStoreFor(entry.Name)
+			if !ok || seen[entry.Name] || entry.Inode == 0 || entry.Mode != workflowObjectType(store) {
+				return nil, fmt.Errorf("unknown or duplicate workflow store: %s", entry.Name)
+			}
+			seen[entry.Name] = true
 		}
-		seen[entry.Name] = true
-	}
-	if !sort.SliceIsSorted(journal.Entries, func(i, j int) bool {
-		return workflowNameBefore(journal.Entries[i].Name, journal.Entries[j].Name)
-	}) {
-		return nil, errors.New("workflow journal has an invalid move order")
+		if !sort.SliceIsSorted(journal.Entries, func(i, j int) bool {
+			return workflowNameBefore(journal.Entries[i].Name, journal.Entries[j].Name)
+		}) {
+			return nil, errors.New("workflow journal has an invalid move order")
+		}
 	}
 	journal.proof = layoutJournalProof{
 		file: layoutEntry{Dev: uint64(stat.Dev), Inode: uint64(stat.Ino)},
@@ -199,6 +209,9 @@ func ChangeWorkflowLayout(grouped bool, checkWriters func() error) error {
 	if err != nil {
 		return err
 	}
+	if journal != nil && journal.Version == purposeVersion {
+		return errors.New("finish the recorded purpose layout operation with gtmux doctor --fix")
+	}
 	phase := workflowGrouping
 	if !grouped {
 		phase = workflowRestoring
@@ -267,6 +280,11 @@ func SyncVerifiedStorageLayout() error {
 func verifyStorageBeforeReturningServices(journal *workflowJournal) error {
 	if journal != nil {
 		switch journal.Phase {
+		case purposeServicesHeld:
+			if err := verifyPurposeMarker(journal); err != nil {
+				return err
+			}
+			return checkActivePurposeRoutes(journal.PurposeToken)
 		case workflowServicePrep:
 			return checkWorkflowServicePreparation()
 		case workflowServiceReady:

@@ -74,12 +74,19 @@ func ReleaseWorkflowServiceFence() error {
 			return fmt.Errorf("launchd profile %s has not been returned", label)
 		}
 	}
-	if journal == nil || journal.Phase == workflowGrouped {
+	if journal == nil || journal.Phase == workflowGrouped || journal.Phase == purposeActive {
 		return SyncPrivateDirectory(Dir())
+	}
+	if journal.Phase == purposeServicesHeld {
+		_, err := purposePhase(journal, purposeActive)
+		return err
 	}
 	if journal.Phase == workflowServiceReady {
 		active := &workflowJournal{Version: workflowVersion, Phase: workflowGrouped, Marker: journal.Marker}
 		return publishWorkflowJournal(active, journal)
+	}
+	if journal.Phase != workflowServicePrep {
+		return errors.New("unrecognized service recovery phase")
 	}
 	parent, err := privateDirectory(Dir(), false)
 	if err != nil {

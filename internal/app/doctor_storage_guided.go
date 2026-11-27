@@ -14,8 +14,9 @@ import (
 )
 
 type storageServicePlan struct {
-	Phase string
-	Jobs  []userservice.StorageLaunchdJob
+	Purpose bool `json:",omitempty"`
+	Phase   string
+	Jobs    []userservice.StorageLaunchdJob
 }
 
 type storageServiceIO struct {
@@ -102,7 +103,16 @@ func (ops storageServiceIO) cleanup() error {
 	}
 	// The significant deletion is already durable. If a crash makes only
 	// this marker reappear, the retry repeats cleanup and no service action.
-	return os.Remove(storageServiceCleanupPath())
+	if err := os.Remove(storageServiceCleanupPath()); err != nil {
+		return err
+	}
+	// All callers own the maintenance lease. A retained backup or parked
+	// profile makes the scaffold ineligible even after this plan finished.
+	plan, err := state.InspectRecoveryScaffold()
+	if err != nil || plan == nil {
+		return err
+	}
+	return plan.Prune()
 }
 
 func finishStorageServiceCleanup(ops storageServiceIO) error {

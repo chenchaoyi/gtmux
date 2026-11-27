@@ -64,7 +64,7 @@ func saveAttachment(name string, data []byte) (string, error) {
 	if err := state.WritePrivateFile(path, data); err != nil {
 		return "", err
 	}
-	return path, nil
+	return state.UploadReference(path), nil
 }
 
 // withAttachments appends one path per line after the message, as the phone's composer

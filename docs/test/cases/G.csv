@@ -96,7 +96,7 @@ LEG-6797b781996e,G,Go core / CLI / server,internal/events/auditlog_test.go,17,Te
 LEG-f77d69f19ac2,G,Go core / CLI / server,internal/events/messagesenders_test.go,73,Test,TestMessageSendersFollowRotationRewriteAndMissingJournal,False,legacy-not-retrospectively-reviewed
 LEG-99659c74b7cc,G,Go core / CLI / server,internal/hook/detach_test.go,39,Test,TestDetachedWorkerGetsThePayloadAfterTheHookExits,False,legacy-not-retrospectively-reviewed
 LEG-4a64def14abd,G,Go core / CLI / server,internal/hook/launchhost_test.go,86,Test,TestDetachedWorkerReceivesFreshHostEnvironment,False,legacy-not-retrospectively-reviewed
-LEG-0a20f15d64cc,G,Go core / CLI / server,internal/hook/notifyicon_test.go,13,Test,TestNotifyAgentIcon,False,legacy-not-retrospectively-reviewed
+LEG-0a20f15d64cc,G,Go core / CLI / server,internal/hook/notifyicon_test.go,16,Test,TestNotifyAgentIcon,False,legacy-not-retrospectively-reviewed
 LEG-26f0c8142123,G,Go core / CLI / server,internal/hook/prompt_shape_test.go,44,Test,TestKimiPromptReachesTheGoalMarker,False,legacy-not-retrospectively-reviewed
 LEG-107086809561,G,Go core / CLI / server,internal/hook/run_test.go,255,Test,TestRunDebugLog,False,legacy-not-retrospectively-reviewed
 LEG-9e6368290a09,G,Go core / CLI / server,internal/hq/archive_small_records_test.go,45,Test,TestAutomaticManySmallNotesRoundTrip,False,legacy-not-retrospectively-reviewed
@@ -207,9 +207,11 @@ LEG-067c12754ea2,G,Go core / CLI / server,internal/state/privateio_test.go,48,Te
 LEG-cd86dfe66edf,G,Go core / CLI / server,internal/state/privatewrite_test.go,14,Test,TestPrivateWriteRefusesLinksAndSpecialTargets,False,legacy-not-retrospectively-reviewed
 LEG-cae3dab26188,G,Go core / CLI / server,internal/state/privatewrite_test.go,76,Test,TestPrivateWriteReplacesOnlyOwnedDestination,False,legacy-not-retrospectively-reviewed
 LEG-37fad2143d15,G,Go core / CLI / server,internal/state/privatewrite_test.go,135,Test,TestPrivateWritePublishesCompletePrivateBytes,False,legacy-not-retrospectively-reviewed
+MAP-8c91fe1ec918,G,reviewed implementation,internal/state/purpose_layout_test.go,9,reviewed-selector,TestPurposePreviewPreservesSources,False,PBS-003
 LEG-71dff215cc33,G,Go core / CLI / server,internal/state/state_test.go,74,Test,TestLastFinishedRoundTrip,False,legacy-not-retrospectively-reviewed
 LEG-b285e117d09b,G,Go core / CLI / server,internal/state/state_test.go,152,Test,TestTabOrderRoundTrip,False,legacy-not-retrospectively-reviewed
 LEG-5711fae0e79f,G,Go core / CLI / server,internal/state/taborder_atomic_test.go,9,Test,TestSaveTabOrderPublishesReplacement,False,legacy-not-retrospectively-reviewed
+MAP-616c6061f405,G,reviewed implementation,internal/state/workflow_residue_test.go,10,reviewed-selector,TestPurposeCleanVerifiedScaffold,False,PBS-002
 LEG-7da56919233c,G,Go core / CLI / server,internal/tabalert/tabalert_test.go,15,Test,TestEnablePrependsAndDisableRestores,False,legacy-not-retrospectively-reviewed
 LEG-adaf991c144d,G,Go core / CLI / server,internal/terminal/warp_test.go,99,Test,TestWarpSpawnTabs,False,legacy-not-retrospectively-reviewed
 LEG-90260c4d8bcf,G,Go core / CLI / server,internal/terminal/warp_test.go,143,Test,TestWarpOpenWindow,False,legacy-not-retrospectively-reviewed

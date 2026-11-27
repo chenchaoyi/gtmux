@@ -248,19 +248,6 @@ func uninstallHooks(args []string) int {
 	return 0
 }
 
-// cacheClaudeIcon writes a 256px PNG of the Claude app icon to the state dir.
-// Best-effort: returns false (silently) if Claude or sips isn't available.
-func cacheClaudeIcon() bool {
-	icns := "/Applications/Claude.app/Contents/Resources/electron.icns"
-	if _, err := os.Stat(icns); err != nil {
-		return false
-	}
-	if err := state.MkdirAll(state.Dir(), 0o755); err != nil {
-		return false
-	}
-	return runQuiet("sips", "-s", "format", "png", "-Z", "256", icns, "--out", state.IconPath()) == nil
-}
-
 // handlePeonPing offers to disable peon-ping's desktop notifications and tab-title
 // management so gtmux owns both. terminal_tab_title=false is critical: focus
 // relies on tmux set-titles owning the tab title.

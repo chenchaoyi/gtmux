@@ -469,7 +469,7 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     /// corner (kind-specific, matching the popover rows) so a needs-you banner reads
     /// differently at a glance from a finished one — waiting = red "stop" square with
     /// two bars, done = green ✓ disc. Rendered to a fresh temp PNG (the attachment
-    /// moves the file, so we never consume the shared notify-icon.png).
+    /// moves the file, so the shared agent icon must stay at its original path).
     private func attachment(_ iconPath: String, kind: String) -> UNNotificationAttachment? {
         guard !iconPath.isEmpty, let base = NSImage(contentsOfFile: iconPath) else { return nil }
         let s: CGFloat = 96

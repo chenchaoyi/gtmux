@@ -41,7 +41,7 @@ func PrivateUmask() int { return syscall.Umask(0o077) }
 func ConfigDir() string { return configDir(home()) }
 
 // LogsDir holds the local log store: one JSON Lines file per local day.
-func LogsDir() string { return filepath.Join(Dir(), "logs") }
+func LogsDir() string { return RootStorePath("logs") }
 
 // CapturePath is where launchd writes a gtmux daemon's stdout and stderr: what a crash or
 // a panic prints before the process can log it. It sits beside the store, named for the
@@ -54,7 +54,7 @@ func CapturePath(component string) string { return filepath.Join(LogsDir(), comp
 var LegacyCaptures = []string{"serve.log", "tunnel.log", "selftunnel.log"}
 
 // StatusDir holds one small JSON file per component: what is true right now.
-func StatusDir() string { return filepath.Join(Dir(), "status") }
+func StatusDir() string { return RootStorePath("status") }
 
 // CacheDir holds what can be deleted at any time and regrows: rendered icons.
 func CacheDir() string { return filepath.Join(Dir(), "cache") }
@@ -62,7 +62,7 @@ func CacheDir() string { return filepath.Join(Dir(), "cache") }
 // TunnelURLPath is where the running tunnel records its public address. It is runtime
 // state, so it lives in the data root; LegacyTunnelURLPath is where it used to be, and
 // readers fall back to it for one release.
-func TunnelURLPath() string       { return filepath.Join(Dir(), "tunnel-url") }
+func TunnelURLPath() string       { return RootStorePath("tunnel-url") }
 func LegacyTunnelURLPath() string { return filepath.Join(ConfigDir(), "tunnel-url") }
 
 // TunnelAddressesPath is every address this Mac could answer at: its port on each Direct

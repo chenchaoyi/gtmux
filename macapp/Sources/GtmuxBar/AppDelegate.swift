@@ -44,6 +44,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var displayMode: DisplayMode { settings.displayMode }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        guard Paths.layout != .unavailable else {
+            let alert = NSAlert()
+            alert.messageText = l10n.tr("Storage is not ready", "数据目录尚未就绪")
+            alert.informativeText = l10n.tr("Run gtmux doctor in a standalone terminal to check the migration before reopening the menu bar.", "请在独立终端运行 gtmux doctor，核对迁移状态后再打开菜单栏。")
+            alert.runModal()
+            NSApp.terminate(nil)
+            return
+        }
         dbg("launched")
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
         DiagLog.info("menubar.start", "the menu bar app started", ["version": version, "cli": GtmuxCLI.path])

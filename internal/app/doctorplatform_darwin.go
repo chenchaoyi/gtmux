@@ -1,11 +1,10 @@
 package app
 
 import (
-	"github.com/chenchaoyi/gtmux/internal/servermode"
 	"os"
 	"time"
 
-	"github.com/chenchaoyi/gtmux/internal/i18n"
+	"github.com/chenchaoyi/gtmux/internal/servermode"
 )
 
 func platformTerminalChecks() []dcheck { return []dcheck{rowTerminal(), rowOtherTerminals()} }
@@ -20,11 +19,6 @@ func prepareHookDesktop() {
 	if _, err := os.Stat(legacyFocusAppPath()); err == nil {
 		runQuiet(lsregister, "-u", legacyFocusAppPath())
 		_ = os.RemoveAll(legacyFocusAppPath())
-	}
-
-	// 1. Cache the Claude icon (best-effort).
-	if cacheClaudeIcon() {
-		i18n.Say("✓ cached Claude icon for notifications", "✓ 已缓存 Claude 通知图标")
 	}
 
 }

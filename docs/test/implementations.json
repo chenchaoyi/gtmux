@@ -1,4 +1,16 @@
 {
+  "internal/state/purpose_layout_test.go": {
+    "cases": ["PBS-003"],
+    "selectors": ["TestPurposePreviewPreservesSources"]
+  },
+  "internal/hook/notifyicon_test.go": {
+    "cases": ["PBS-001"],
+    "selectors": ["TestNotifyAgentIcon"]
+  },
+  "internal/state/workflow_residue_test.go": {
+    "cases": ["PBS-002"],
+    "selectors": ["TestPurposeCleanVerifiedScaffold"]
+  },
   "mobileapp/src/screens/HQLiveEarlierReset.test.tsx": {
     "cases": ["HLS-001"],
     "selectors": ["HQ retires the frozen live viewport on a new empty reset while reading an earlier session"]
