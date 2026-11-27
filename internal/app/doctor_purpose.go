@@ -61,11 +61,24 @@ func checkPurposeOpenHandles() error {
 	return errors.New(i18n.Tr("could not verify open terminal input and capture handles with lsof; check lsof and rerun Doctor", "lsof 未能核实终端输入和截屏目录是否仍在使用。请确认 lsof 可用，再运行 Doctor。"))
 }
 
+func initializeNewPurposeStorage() error {
+	if _, err := os.Lstat(state.Dir()); !os.IsNotExist(err) {
+		return err
+	}
+	if err := purposeDesktopCompatibility(); err != nil {
+		return err
+	}
+	return state.InitializePurposeStorage()
+}
+
 func purposeDesktopCompatibility() error {
 	inst := agentInstallers["dsh"]
 	bridge := filepath.Join(filepath.Dir(inst.configPath()), "terminal-dst", "bridge.mjs")
 	if data, err := readDSHArtifact(bridge); err == nil {
-		if string(data) != dshTerminalArtifacts(inst)[bridge] {
+		if string(data) != dshTerminalPluginTemplate {
+			if _, err := os.Lstat(inst.configPath()); os.IsNotExist(err) && !retainedV203Bridge(data) {
+				return fmt.Errorf(i18n.Tr("unknown terminal-only DSH bridge at %s; verify its source and update it through its original installer", "单独保留的 DSH 桥接文件来源未能确认（%s）。请核对来源，通过原安装方式更新。"), bridge)
+			}
 			return errors.New(i18n.Tr("update the installed DSH bridge with gtmux install refresh-owned --agent dsh", "请先运行 gtmux install refresh-owned --agent dsh 更新已安装的 DSH 桥接插件"))
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {

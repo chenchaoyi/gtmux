@@ -2,11 +2,14 @@ package app
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -20,12 +23,16 @@ type bridgeRefreshReceipt struct {
 
 // Maintenance is limited to an already installed, recognized gtmux bridge.
 // It never enables a new profile, downloads a client, or restarts an agent.
-func refreshOwnedDSHBridge() int {
+func refreshOwnedDSHBridge() int { return reportOwnedDSHRefresh(true) }
+
+func reportOwnedDSHRefresh(audit bool) int {
 	status, err := refreshDSHBridge(agentInstallers["dsh"])
 	if err != nil {
 		status = "failed"
 	}
-	diag.Did("act.maintenance.dsh-bridge", "dsh", diag.Outcome(err), "checked an existing DeepSeek state bridge for maintenance", "status", status)
+	if audit {
+		diag.Did("act.maintenance.dsh-bridge", "dsh", diag.Outcome(err), "checked an existing DeepSeek state bridge for maintenance", "status", status)
+	}
 	_ = json.NewEncoder(os.Stdout).Encode(bridgeRefreshReceipt{1, "dsh", status})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "DSH bridge maintenance: "+err.Error())
@@ -34,10 +41,65 @@ func refreshOwnedDSHBridge() int {
 	return 0
 }
 
+func retainedV203Bridge(data []byte) bool {
+	const digest = "16b5af05683fbc66c618f58fb301f2e6f18bc4ba914823d5dad922ea17a7d1b8"
+	return fmt.Sprintf("%x", sha256.Sum256(data)) == digest
+}
+
+// Some installations retain only the terminal bridge. An exact shipped
+// v1.0.203 component can be updated in place without installing a profile.
+func refreshTerminalOnlyDSH(inst agentInstaller) (string, error) {
+	base := filepath.Dir(inst.configPath())
+	dir := filepath.Join(base, "terminal-dst")
+	path := filepath.Join(dir, "bridge.mjs")
+	for _, parent := range []string{filepath.Dir(base), base, dir} {
+		info, err := os.Lstat(parent)
+		if os.IsNotExist(err) {
+			return "not-installed", nil
+		}
+		if err != nil {
+			return "failed", err
+		}
+		if !info.IsDir() {
+			return "failed", errors.New("DSH bridge directory is redirected")
+		}
+	}
+	have, err := readDSHArtifact(path)
+	if os.IsNotExist(err) {
+		return "not-installed", nil
+	}
+	if err != nil {
+		return "failed", err
+	}
+	if string(have) == dshTerminalPluginTemplate {
+		return "current", nil
+	}
+	if !retainedV203Bridge(have) {
+		return "failed", fmt.Errorf("unrecognized standalone DSH terminal bridge at %s; verify its installation before updating", path)
+	}
+	for _, parent := range []string{base, dir} {
+		if err := state.CheckPrivateDirectory(parent); err != nil {
+			return "failed", err
+		}
+	}
+	info, err := os.Lstat(path)
+	if err != nil {
+		return "failed", err
+	}
+	st, ok := info.Sys().(*syscall.Stat_t)
+	if !ok || st.Nlink != 1 {
+		return "failed", errors.New("linked DSH bridge requires review")
+	}
+	if err := refreshDSHArtifact(path, have, []byte(dshTerminalPluginTemplate)); err != nil {
+		return "failed", err
+	}
+	return "updated", nil
+}
+
 func refreshDSHBridge(inst agentInstaller) (string, error) {
 	module, err := readDSHArtifact(inst.configPath())
 	if os.IsNotExist(err) {
-		return "not-installed", nil
+		return refreshTerminalOnlyDSH(inst)
 	}
 	if err != nil {
 		return "failed", err

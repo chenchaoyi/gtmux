@@ -52,11 +52,7 @@ func enterRuntimeLayout(command string, args []string) (*state.Lease, bool) {
 		if readOnlyDoctor(command, args) {
 			return nil, true
 		}
-		if err := purposeDesktopCompatibility(); err != nil {
-			guidedStorageFailure(err)
-			return nil, false
-		}
-		if err := state.InitializePurposeStorage(); err != nil {
+		if err := initializeNewPurposeStorage(); err != nil {
 			guidedStorageFailure(err)
 			return nil, false
 		}

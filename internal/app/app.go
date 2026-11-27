@@ -6,6 +6,7 @@ package app
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 
@@ -118,10 +119,17 @@ func Run(argv []string) int {
 		if len(args) != 0 {
 			return 2
 		}
-		if err := state.InitializePurposeStorage(); err != nil {
+		if err := initializeNewPurposeStorage(); err != nil {
 			return guidedStorageFailure(err)
 		}
 		return 0
+	}
+	// A configuration-only repair must remain reachable before a data root
+	// exists. Its structured stdout receipt does not require a disk journal.
+	if sub == "install" && slices.Equal(args, []string{"refresh-owned", "--agent", "dsh"}) {
+		if _, err := os.Lstat(state.Dir()); os.IsNotExist(err) {
+			return reportOwnedDSHRefresh(false)
+		}
 	}
 	if rc, handled := doctorStorageEntry(sub, args); handled {
 		return rc

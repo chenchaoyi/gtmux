@@ -25,6 +25,8 @@ LEG-f0e447d6d59b,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,
 LEG-719a9427867d,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,334,Test,TestHookAndRendererStepsKeepTheOriginalBackup,False,legacy-not-retrospectively-reviewed
 LEG-660aed6940d9,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,356,Test,TestPinKeepsBigNumbersAndLiteralCharacters,False,legacy-not-retrospectively-reviewed
 LEG-57fb770dae38,G,Go core / CLI / server,internal/app/doctor_claudetui_test.go,388,Test,TestNullSettingsAreUnreadableNotACrash,False,legacy-not-retrospectively-reviewed
+MAP-f196eacf58d7,G,reviewed implementation,internal/app/doctor_purpose_dsh_test.go,11,reviewed-selector,TestFreshDoctorDSHRepair,False,PBS-006
+MAP-d121b5c97e97,G,reviewed implementation,internal/app/doctor_purpose_dsh_test.go,57,reviewed-selector,TestFreshDoctorForeignDSH,False,PBS-006
 MAP-1ecd8e274933,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,48,reviewed-selector,TestPurposeDoctorRegisteredCLI,False,"PBS-004,PBS-005"
 MAP-8538b9be04f0,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,81,reviewed-selector,TestPurposeDoctorResumesPublishedGroup,False,"PBS-004,PBS-005"
 MAP-58736df6454b,G,reviewed implementation,internal/app/doctor_purpose_revision_test.go,121,reviewed-selector,TestPurposeDoctorOpenHandle,False,"PBS-004,PBS-005"

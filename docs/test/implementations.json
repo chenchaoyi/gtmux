@@ -1,4 +1,8 @@
 {
+  "internal/app/doctor_purpose_dsh_test.go": {
+    "cases": ["PBS-006"],
+    "selectors": ["TestFreshDoctorDSHRepair", "TestFreshDoctorForeignDSH"]
+  },
   "internal/app/doctor_purpose_revision_test.go": {
     "cases": ["PBS-004", "PBS-005"],
     "selectors": ["TestPurposeDoctorRegisteredCLI", "TestPurposeDoctorResumesPublishedGroup", "TestPurposeDoctorOpenHandle", "TestPurposeDoctorFirstRead"]

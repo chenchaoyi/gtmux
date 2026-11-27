@@ -127,6 +127,8 @@ Run `gtmux doctor` to check an existing installation. After reboot, before resto
 
 On a new installation, ordinary Doctor inspection leaves the data root absent. The first CLI writer or menu bar launch initializes the categories. On macOS, migration checks the actual CLI registered for each managed gtmux service before stopping jobs. Close any terminal-input or capture client keeping the old store open.
 
+If a previous DSH installation remains, both the CLI and menu bar check its compatibility before initializing storage. Run the displayed `gtmux install refresh-owned --agent dsh` command to update the recognized bridge. A terminal-only v1.0.203 file is updated on its own. Other standalone files require verification of their source.
+
 Historical upload references and installed log paths keep their original spelling through verified relative directory links. Existing upload retention still applies (7 days or the 200 MiB budget). Producers use the physical directories. The bootstrap locks retain their stable inodes and paths. Cleanup preserves unknown files, delivery outcomes and outstanding service recovery records.
 
 For an intentional downgrade, review `gtmux doctor --flatten-storage` with the current CLI before opening tmux. Reopen the older version after verification. An existing independent input-store cutover requires review and keeps its original receipt and queue.
