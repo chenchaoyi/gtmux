@@ -1,0 +1,46 @@
+{
+  "id": "purpose-based-storage-20261127",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner, author self-review",
+    "date": "2026-11-27",
+    "decision": "Verify path identity and behavior through independent readback before offering repair.",
+    "notes": "Temporary homes only. Production migration and physical device behavior are outside unit evidence."
+  },
+  "cases": [
+    {
+      "id": "PBS-001",
+      "layer": "G",
+      "description": "Shared notification icon",
+      "setup": "Use an isolated private home with known files and inode witnesses.",
+      "action": "Post two notifications for the same built-in agent and request an unknown icon.",
+      "expected": "Use the canonical private cache path, preserve inode on cache hit and return no thumbnail for an unknown agent.",
+      "planned_files": [
+        "internal/hook/notifyicon_test.go"
+      ]
+    },
+    {
+      "id": "PBS-002",
+      "layer": "G",
+      "description": "Recognized empty migration scaffold",
+      "setup": "Use an isolated private home with known files and inode witnesses.",
+      "action": "Inspect then clean the verified grouped store; repeat with changed identity or a newly parked file.",
+      "expected": "Only the verified empty scaffold is removed, cleanup is repeatable and replaced or populated directories survive.",
+      "planned_files": [
+        "internal/state/workflow_residue_test.go"
+      ]
+    },
+    {
+      "id": "PBS-003",
+      "layer": "G",
+      "description": "Stable category migration and recovery",
+      "setup": "Use an isolated private home with known files and inode witnesses.",
+      "action": "Exercise a fresh root, legacy root, migrated root, interrupted move and conflict.",
+      "expected": "Verify placement, identities, old references, refusal on conflict and idempotence; ordinary inspection must not write.",
+      "planned_files": [
+        "internal/state/purpose_layout_test.go"
+      ]
+    }
+  ],
+  "seal": "35de1a0f8a28f922163a485385352bfb8a87de0c9067cbe23815fd043a55d901"
+}
