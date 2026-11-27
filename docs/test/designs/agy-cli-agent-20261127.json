@@ -124,7 +124,49 @@
       "surfaces": [
         "HQ knowledge mining"
       ]
+    },
+    {
+      "id": "AGY-009",
+      "layer": "L1",
+      "description": "Usage source coverage declares agy token accounting without inventing an account quota",
+      "setup": "Synthetic executable lookup reporting the agy CLI as installed and an empty usage report.",
+      "action": "Compute usageSources for the registry.",
+      "expected": "The Antigravity source is listed as installed with tokens=true and account=unsupported; an uninstalled, unobserved agy is omitted.",
+      "planned_files": [
+        "internal/radar/usagesources_agy_test.go"
+      ],
+      "surfaces": [
+        "Usage CLI / API / Mac and phone usage sheets"
+      ]
+    },
+    {
+      "id": "AGY-010",
+      "layer": "L2",
+      "description": "One-time context-window backfill learns agy model windows from existing transcript tails",
+      "setup": "Isolated HOME and AGY_HOME with a historical agy transcript.jsonl whose PLANNER_RESPONSE held about 900k context tokens.",
+      "action": "Run BackfillWindows, then resolve windowFor for a smaller agy context of the same model.",
+      "expected": "The agy model window resolves to the 1M tier instead of the 200k guess, and the backfill does not rescan logs written afterwards.",
+      "planned_files": [
+        "internal/usage/agy_backfill_test.go"
+      ],
+      "surfaces": [
+        "Usage ctx figure / HQ self-rotate ctx"
+      ]
+    },
+    {
+      "id": "AGY-011",
+      "layer": "L2",
+      "description": "Doctor and automatic install selection offer the Antigravity hook only when the agy CLI is discoverable, and doctor --fix installs it",
+      "setup": "Isolated HOME with synthetic executable lookup toggling the agy CLI and an executable hook binary fixture.",
+      "action": "Inspect installable/detected hook agents and doctor agent hook checks, then run the doctor fix step for agy.",
+      "expected": "agy is installable; it is detected and gets an Antigravity hook doctor row only when discoverable; the fix step writes a healthy gtmux entry in hooks.json.",
+      "planned_files": [
+        "internal/app/agy_doctor_test.go"
+      ],
+      "surfaces": [
+        "CLI doctor / doctor --fix / install hooks --agent auto"
+      ]
     }
   ],
-  "seal": "1e9fa4bda1b2fcb556b15d50999275d8441f338d344976f08de77407af2d5763"
+  "seal": "e117b7c9c8851e0a5b813589145a16115d2bd122e8e1a641cb80c360da212ada"
 }
