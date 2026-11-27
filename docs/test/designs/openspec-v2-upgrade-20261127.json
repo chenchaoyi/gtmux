@@ -1,0 +1,106 @@
+{
+  "change": "openspec-v2-upgrade-20261127",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (self-review against @fission-ai/openspec@2.2.0 JSON validator contract and fail-closed launcher rules)",
+    "date": "2026-11-27",
+    "decision": "Proceed with upgrading pinned OpenSpec validator to 2.2.0 while enforcing all structural, Purpose, RFC-2119, and WHEN/THEN warnings and tolerating legacy >500-char prose advisories in main specs",
+    "notes": "Verified @fission-ai/openspec@2.2.0 Validator.createReport JSON schema, exit codes (0 when valid, 1 when warnings/errors fail strict mode), and fail-closed handling of launcher crashes or mismatched totals."
+  },
+  "evidence_limits": [
+    "Unit tests validate openspec_check.py verdict classification and subprocess error handling against deterministic JSON fixtures; live npx @fission-ai/openspec@2.2.0 execution is exercised by ./scripts/check-design.sh."
+  ],
+  "cases": [
+    {
+      "id": "OSV-001",
+      "layer": "G",
+      "description": "Invalid spec report is classified as invalid spec drift rather than a tool launcher failure",
+      "setup": "JSON validation report for the current checkout containing a spec with valid=false and a blocking error or warning.",
+      "action": "Call openspec_check.verdict(1, stdout, Path.cwd()).",
+      "expected": "Returns status 'invalid'.",
+      "planned_files": [
+        "scripts/openspec_check.py",
+        "scripts/openspec_check_test.py"
+      ],
+      "surfaces": [
+        "CI policy / OpenSpec gate"
+      ]
+    },
+    {
+      "id": "OSV-002",
+      "layer": "G",
+      "description": "Launcher cache errors, missing binaries, and non-zero exits on valid reports fail closed as tool errors",
+      "setup": "Non-JSON npm cache error stderr/stdout, exit 127 empty stdout, and exit 1 with an all-valid JSON report.",
+      "action": "Call openspec_check.verdict on each output.",
+      "expected": "Each returns status 'tool' rather than 'ok' or 'invalid'.",
+      "planned_files": [
+        "scripts/openspec_check.py",
+        "scripts/openspec_check_test.py"
+      ],
+      "surfaces": [
+        "CI policy / OpenSpec gate"
+      ]
+    },
+    {
+      "id": "OSV-003",
+      "layer": "G",
+      "description": "False-green exit codes, mismatched summary totals, and foreign checkout roots fail closed",
+      "setup": "Exit 0 with a blocking invalid spec, exit 0 with mismatched summary.totals.failed, and exit 0 with root.path pointing at another checkout.",
+      "action": "Call openspec_check.verdict on each malformed report.",
+      "expected": "Blocking invalid spec returns 'invalid'; mismatched summary and foreign root return 'tool'.",
+      "planned_files": [
+        "scripts/openspec_check.py",
+        "scripts/openspec_check_test.py"
+      ],
+      "surfaces": [
+        "CI policy / OpenSpec gate"
+      ]
+    },
+    {
+      "id": "OSV-004",
+      "layer": "G",
+      "description": "Missing or timed-out npx launcher reports tool/setup failure with exit code 2",
+      "setup": "Mock subprocess.run raising FileNotFoundError and subprocess.TimeoutExpired.",
+      "action": "Run openspec_check.main().",
+      "expected": "Returns exit code 2 and prints tool/setup failure message without claiming drifted specs.",
+      "planned_files": [
+        "scripts/openspec_check.py",
+        "scripts/openspec_check_test.py"
+      ],
+      "surfaces": [
+        "CI policy / OpenSpec gate"
+      ]
+    },
+    {
+      "id": "OSV-005",
+      "layer": "G",
+      "description": "Clean machine-readable JSON report is required for ok verdict",
+      "setup": "Exit 0 with complete valid JSON report versus exit 0 with plain text 'success'.",
+      "action": "Call openspec_check.verdict on both outputs.",
+      "expected": "Valid JSON returns 'ok'; plain text returns 'tool'.",
+      "planned_files": [
+        "scripts/openspec_check.py",
+        "scripts/openspec_check_test.py"
+      ],
+      "surfaces": [
+        "CI policy / OpenSpec gate"
+      ]
+    },
+    {
+      "id": "OSV-006",
+      "layer": "G",
+      "description": "OpenSpec 2.2.0 legacy >500-char prose length warnings pass when no other warnings or errors exist, while Purpose/SHALL/scenario warnings still fail",
+      "setup": "OpenSpec 2.2.0 strict JSON reports: (a) spec failing strict mode solely with REQUIREMENT_TOO_LONG (>500 characters) warning and exit 1, (b) same report with unexpected exit 2, and (c) spec with both REQUIREMENT_TOO_LONG and a placeholder Purpose or missing SHALL warning.",
+      "action": "Call openspec_check.verdict on each 2.2.0 report.",
+      "expected": "Case (a) returns 'ok', case (b) returns 'tool', and case (c) returns 'invalid' preserving only blocking issues for error reporting.",
+      "planned_files": [
+        "scripts/openspec_check.py",
+        "scripts/openspec_check_test.py"
+      ],
+      "surfaces": [
+        "CI policy / OpenSpec gate"
+      ]
+    }
+  ],
+  "seal": "9dc27b3d2b8be0d3aa93fd92fc9c3c6971830ad0913bc38305ee879b98576ba8"
+}

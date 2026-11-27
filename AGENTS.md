@@ -5,8 +5,8 @@
 ## Mandatory workflow (every agent harness — read before editing code)
 
 1. **Branch & identity**: Work in a clean branch/worktree off `origin/main` (never commit to `main`). Use public author/committer identity (`python3 mobileapp/scripts/release-preflight.py --identity-only`).
-2. **OpenSpec SDD lifecycle** (works in any harness — `.agents/skills/openspec-*` for Antigravity `agy` / Codex / OpenCode / Kimi / Gemini / Cursor / Copilot; `.claude/{skills,commands/opsx}` for Claude Code; or direct CLI `npx --yes @fission-ai/openspec@1.10.0 <new|status|instructions|validate|archive>`):
-   - **Non-trivial change** (new capability, new agent integration, new CLI command/flag, cross-surface behavior, or >3 packages / architecture change): **MUST** start with `openspec new change <id>` → write `proposal.md` (with `## Surfaces` covering terminal, menubar, phone, iPad, Web), `design.md`, `specs/` deltas, and `tasks.md` → validate with `npx --yes @fission-ai/openspec@1.10.0 validate <id> --strict` → implement → archive in the same PR with `npx --yes @fission-ai/openspec@1.10.0 archive <id> --yes`.
+2. **OpenSpec SDD lifecycle** (works in any harness — `.agents/skills/openspec*` for Antigravity `agy` / Codex / OpenCode / Kimi / Gemini / Cursor / Copilot; `.claude/skills/openspec*` for Claude Code; or direct CLI `npx --yes @fission-ai/openspec@2.2.0 <new|status|instructions|validate|archive>`):
+   - **Non-trivial change** (new capability, new agent integration, new CLI command/flag, cross-surface behavior, or >3 packages / architecture change): **MUST** start with `openspec new change <id>` → write `proposal.md` (with `## Surfaces` covering terminal, menubar, phone, iPad, Web), `design.md`, `specs/` deltas, and `tasks.md` → validate with `npx --yes @fission-ai/openspec@2.2.0 validate <id> --strict` → implement → archive in the same PR with `npx --yes @fission-ai/openspec@2.2.0 archive <id> --yes`.
    - **Small change** (doc typo, localized bugfix, 1-sentence spec clarification): may edit `openspec/specs/<capability>/spec.md` directly and note the small-change rationale in the PR's `## OpenSpec` section.
 3. **Test design before test code** (`docs/test/DESIGN-WORKFLOW.md`): Before creating or modifying any test file, record and review cases in `docs/test/designs/<change>.json`, seal it (`python3 scripts/test_design.py --seal-plan ...`), and **commit the sealed design first**. Then implement code & tests, map selectors in `docs/test/implementations.json`, refresh (`python3 scripts/test_design.py --refresh`), and verify PR commit ordering (`python3 scripts/test_design.py --pr-history --base <base> --head <head>`).
 4. **Gates & PR**: Run `make check` and `./scripts/check-design.sh` (`CGO_ENABLED=0 go build ./cmd/gtmux`, English code comments, bilingual en+zh doc pairs, valid OpenSpec specs). Open PRs using `--body-file <path>` (never `--body "$(...)"`) filling out `## Surfaces`, `## OpenSpec`, `## Verification`, and `## Test design`.
@@ -378,10 +378,9 @@ holds the current capability specs (the source of truth for what IS built);
 `openspec/changes/` holds in-flight change proposals. For any non-trivial
 feature, **propose a change first**, implement against it, then sync/archive:
 
-- **Shared `.agents/skills/`** (Antigravity `agy`, Codex, OpenCode, Kimi, Gemini, Cursor, Copilot): `/openspec-propose`, `/openspec-apply-change`, `/openspec-sync-specs`, `/openspec-archive-change`, `/openspec-explore`.
-- **Claude Code** (`.claude/{skills,commands/opsx}`): `/opsx:propose`, `/opsx:apply`, `/opsx:sync`, `/opsx:archive`, `/opsx:explore`.
-- **Any harness (direct CLI)**: `npx --yes @fission-ai/openspec@1.10.0 new change <id>` → `status` / `instructions` → `validate <id> --strict` → `archive <id> --yes`.
-- Refresh cross-harness skills when bumping the pinned OpenSpec version: `npx --yes @fission-ai/openspec@1.10.0 init --tools agents,claude --no-animation`.
+- **Shared `.agents/skills/` & `.claude/skills/`** (Antigravity `agy`, Claude Code, Codex, OpenCode, Kimi, Gemini, Cursor, Copilot): `/openspec`, `/openspec-propose`, `/openspec-apply-change`, `/openspec-sync-specs`, `/openspec-archive-change`, `/openspec-explore`.
+- **Any harness (direct CLI)**: `npx --yes @fission-ai/openspec@2.2.0 new change <id>` → `status` / `instructions` → `validate <id> --strict` → `archive <id> --yes`.
+- Refresh cross-harness skills when bumping the pinned OpenSpec version (materializing regular files in `.claude/skills/` because CI forbids symlinks): `npx --yes @fission-ai/openspec@2.2.0 init --scope project --tools agents --no-animation && rm -rf .claude/skills/openspec* && cp -R .agents/skills/openspec* .claude/skills/`.
 
 Keep specs aligned with the code: when behavior changes, update the relevant
 `openspec/specs/<capability>/spec.md`. Capabilities are backfilled for the major
@@ -444,7 +443,7 @@ and keep its `tasks.md` checkboxes truthful as you go. Invariant: `specs/` = wha
 built · `changes/` = ONLY truly in-flight work · `changes/archive/` = the audit
 trail. An implemented change left in `changes/` (or unchecked tasks over shipped
 code) is exactly the drift we are eliminating. **The PR that finishes a change archives
-it** with `npx @fission-ai/openspec@1.10.0 archive <id> --yes`, which also applies its
+it** with `npx @fission-ai/openspec@2.2.0 archive <id> --yes`, which also applies its
 spec delta. Never write "open a PR / wait for CI / merge" as a task: the PR doing the
 work can never tick it, and on 2026-10-03 that one line had left 6 merged changes sitting
 in `changes/` with their deltas never synced. One feature, one change: implementing a

@@ -55,9 +55,11 @@ class ScopeTests(unittest.TestCase):
             "GEMINI.md",
             "openspec/config.yaml",
             ".agents/skills/.openspec-target",
+            ".agents/skills/openspec/SKILL.md",
+            ".agents/skills/openspec/references/answers.md",
             ".agents/skills/openspec-propose/SKILL.md",
+            ".claude/skills/openspec/SKILL.md",
             ".claude/skills/openspec-propose/SKILL.md",
-            ".claude/commands/opsx/propose.md",
         ]
         self.assertEqual(ci.classify(docs)["selected"], [])
         for path in [".agents/skills/openspec-propose/run.sh", ".agents/hooks.json", ".claude/settings.json"]:

@@ -2,7 +2,7 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1530 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1531 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ The catalogue covers 1530 test/harness source files. Each CSV row lists stable I
 | L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
-| G · Qualification guards | 517 | [G.csv](cases/G.csv) |
+| G · Qualification guards | 523 | [G.csv](cases/G.csv) |
 
 Numbers are not passes. The legacy 6,223 positions came from the 4fad6119 inventory (declarations, subtests, dynamic templates); explicit new cases, native oracles and reviewed selectors are indexed separately. Dynamic instances are not expanded. Harnesses without named cases retain their hashes. Legacy layers are structural triage; mixed boundaries need semantic review when touched, not fictional historical review/results. A reviewed-selector is not a framework-discovered declaration. Gates catch source/index/mapping drift; names cannot prove assertion quality.
 
@@ -637,6 +637,12 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | RFD-001 | Missing operation may use existing conservative activityOperation fallback: one direct command, no single-command outline/tab clutter, cleaned terminal presentation. Explicit operation wins, original copy/raw and opaque numeric text remain exact; unknown tool data is not inferred as shell. |
 | RFD-002 | One concise explanation, one clear44pt retry, optional secondary action of lower prominence. Retry is busy/disabled while the parent owns request, original callbacks remain scope-owned and no automatic write/association occurs. Shared loader is decorative inside the labeled action; copy avoids internal association/session-log language. |
 | SID-009 | Default URLs and malformed empty result remain exactly compatible. Detail/HQ transcript call sites explicitly opt in; pane Trace opts in only when the supplied agent contains observed_conversation metadata. Preserve recent/context/cursor/conditional headers and the existing TraceReader three-argument call contract. Last-known state survives 304; verified removes restriction. External session routes retain exact identity and never receive observation fallback. Input paths unchanged; no network/session/device operations. |
+| OSV-001 | Returns status 'invalid'. |
+| OSV-002 | Each returns status 'tool' rather than 'ok' or 'invalid'. |
+| OSV-003 | Blocking invalid spec returns 'invalid'; mismatched summary and foreign root return 'tool'. |
+| OSV-004 | Returns exit code 2 and prints tool/setup failure message without claiming drifted specs. |
+| OSV-005 | Valid JSON returns 'ok'; plain text returns 'tool'. |
+| OSV-006 | Case (a) returns 'ok', case (b) returns 'tool', and case (c) returns 'invalid' preserving only blocking issues for error reporting. |
 | PCP-001 | No historical fact request without a message timestamp and no false assertion that metadata was read and empty. Current process read is on demand and must match exact source SID and explicit source agent (historical profile agent when actually available, otherwise recorded turn.agent); unknown source identity cannot borrow radar agent or cause futile retry. Current model/tier never fills message facts. Correct same-source chain displays/copies; wrong or rotated source cannot display/copy and has actionable explanation. Retry visibly enters loading, requests once, times out in 15s including uncooperative body/transport, ignores late answers and can recover. UI uses a44pt accessible retry with visible busy status and the shared three-pane loading mark; reduced motion is static; no service, binding, auth or send writes. |
 | STOR-007 | Legacy facts remain readable before the new observer runs. Clearing persists even when it leaves no facts. Old files and lock namespaces remain independent. The later model-only write may advance model time while its carried-forward effort stays hidden. A genuinely later option observation is accepted. |
 | STOR-010 | Both model changes leave effort empty even when the current generation still records the old A effort. The later effort is accepted under the latest A selection. |
