@@ -1,0 +1,30 @@
+{
+  "change": "agy-official-icon-20261127",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (self-review against assets/agent-icons/SOURCES.md provenance rules and UsageAgent widget hash invariants)",
+    "date": "2026-11-27",
+    "decision": "Proceed with committing the official Antigravity application icon (assets/agent-icons/agy.png) and matching UsageAgent-agy widget copies",
+    "notes": "Extracted unchanged 512x512 PNG from com.google.antigravity 2.35.2 icon.icns (SHA-256 594726627f619305fbfd3ed5a4c0c25501daa6b37ce0ab2af5df79e6898be7ea); verified go:embed and widget canonical-copy hash rules."
+  },
+  "evidence_limits": [
+    "Unit test verifies non-empty embedded bytes for agy in assets.AgentIcon and AgentIconKeys; usage_widget_targets_test.rb verifies byte-for-byte identity across canonical and widget copies."
+  ],
+  "cases": [
+    {
+      "id": "AGY-ICON-001",
+      "layer": "L1",
+      "description": "Embedded agent icon registry includes non-empty official Antigravity (agy) artwork while unknown keys still return nil",
+      "setup": "Compiled assets package embedding assets/agent-icons/*.png.",
+      "action": "Call assets.AgentIcon for opencode, codex, gemini, agy, nope, and empty string, and inspect assets.AgentIconKeys().",
+      "expected": "AgentIcon('agy') and existing committed keys return non-empty PNG bytes; unknown and empty keys return nil.",
+      "planned_files": [
+        "assets/icons_test.go"
+      ],
+      "surfaces": [
+        "CLI / Menu-bar / Web / Mobile / Widgets"
+      ]
+    }
+  ],
+  "seal": "087a9f627ec94fc86ec7b378a9fa5bef5e1d9aee0a20047ee68e99e4aa597100"
+}

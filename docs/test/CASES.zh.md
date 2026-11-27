@@ -59,6 +59,7 @@
 | AGY-009 | The Antigravity source is listed as installed with tokens=true and account=unsupported; an uninstalled, unobserved agy is omitted. |
 | AGY-010 | The agy model window resolves to the 1M tier instead of the 200k guess, and the backfill does not rescan logs written afterwards. |
 | AGY-011 | agy is installable; it is detected and gets an Antigravity hook doctor row only when discoverable; the fix step writes a healthy gtmux entry in hooks.json. |
+| AGY-ICON-001 | AgentIcon('agy') and existing committed keys return non-empty PNG bytes; unknown and empty keys return nil. |
 | ACP-001 | Fresh enabled Deny elements only; ignored first click can use one further explicit click in the same camera dialog, maximum two; no click starts after 10s; no unrelated permission acted upon; original command error preserved; no permission grant or settings mutation. |
 | ACP-002 | New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged. |
 | ACP-003 | Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions. |

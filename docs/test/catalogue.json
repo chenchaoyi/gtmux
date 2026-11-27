@@ -2,7 +2,7 @@
   "classification": "Legacy boundary labels are structural triage, not individual semantic review or runtime passes. Reviewed new designs take precedence.",
   "files": {
     "assets/icons_test.go": {
-      "sha256": "532bfde5e01763a6fdbb70d0d611021d9482eeb35cf7407ee2ff49102e0e6f21",
+      "sha256": "c1122d4a17d65c5acfaf82181b4769f28f8a78377b40f9b7d32ce4fd05ce6489",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [

@@ -142,7 +142,7 @@ var manifests = []Manifest{
 		// ~/.gemini/config/hooks.json (camelCase payloads, JSON stdout required).
 		// Transcripts live at ~/.gemini/antigravity-cli/brain/<conversation-id>/.system_generated/logs/transcript.jsonl.
 		Key: "agy", Aliases: []string{"antigravity", "antigravity-cli"}, Label: "Antigravity",
-		Detect: []string{"agy"},
+		Detect: []string{"agy"}, // icon: committed assets/agent-icons/agy.png (official Antigravity mark)
 		Resume: []string{"agy", "--resume"}, Resource: "agy",
 		HookDisplay: true, Hooked: true, Content: "agy", Semantics: true,
 		Instructions: "~/.gemini/config/GEMINI.md", InstructionsEnv: "AGY_CONFIG_DIR",

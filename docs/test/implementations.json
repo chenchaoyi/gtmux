@@ -6167,5 +6167,13 @@
       "test_success_requires_complete_machine_output",
       "test_v2_legacy_length_advisories_pass_while_other_warnings_fail"
     ]
+  },
+  "assets/icons_test.go": {
+    "cases": [
+      "AGY-ICON-001"
+    ],
+    "selectors": [
+      "TestAgentIconEmbedded"
+    ]
   }
 }
