@@ -17,14 +17,20 @@ JOBS = {
     "ios-native": "ios", **dict.fromkeys(sorted(ANDROID_JOBS), "android"),
 }
 DOC_FILES = {"README.md", "README.zh.md", "CONTRIBUTING.md", "SECURITY.md", "LICENSE",
-             "CLAUDE.md", ".github/pull_request_template.md"}
+             "AGENTS.md", "CLAUDE.md", "GEMINI.md", "openspec/config.yaml",
+             ".github/pull_request_template.md"}
 DOC_IMAGES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
 def document(path):
     p = PurePosixPath(path)
     test_record = bool(re.fullmatch(r'docs/test/(?:catalogue\.json|implementations\.json|CASES\.csv|cases/(?:L[1-4]|G|M)\.csv|designs/[a-z0-9][a-z0-9-]*\.json)', path))
-    return (test_record or path in DOC_FILES or
+    openspec_skill = bool(
+        re.fullmatch(r'(?:\.agents|\.claude)/skills/openspec-[a-z0-9-]+/SKILL\.md', path) or
+        path == '.agents/skills/.openspec-target' or
+        re.fullmatch(r'\.claude/commands/opsx/[a-z0-9-]+\.md', path)
+    )
+    return (test_record or openspec_skill or path in DOC_FILES or
             (path.startswith(("docs/", "openspec/")) and
              (p.suffix == ".md" or (path.startswith("docs/") and p.suffix in DOC_IMAGES))) or
             (path.startswith(("mobileapp/", "macapp/", "relay-worker/", "tunnel-worker/")) and p.suffix == ".md") or

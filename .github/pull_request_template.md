@@ -7,6 +7,10 @@
 - iPad：
 - Web：
 
+## OpenSpec
+
+- Archived change (`openspec/changes/archive/<date>-<id>/`) or small-change direct-spec rationale:
+
 ## Verification
 
 - Relevant tests and results:

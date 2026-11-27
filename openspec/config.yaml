@@ -1,40 +1,42 @@
 schema: spec-driven
 
 context: |
-  gtmux — a command center for tmux sessions and coding agents, across three
-  surfaces over one Go core:
-    - CLI: cmd/gtmux (Go, MUST stay cgo-free). Logic in internal/.
-    - macOS menu-bar app: macapp/ (Swift, AppKit + NSStatusItem + NSPopover +
-      SwiftUI). A pure consumer of `gtmux agents --json` + `gtmux focus`.
-    - Mobile app: mobileapp/ (bare React Native + TypeScript). A read-only remote
-      consumer of `gtmux serve` (HTTP+SSE) with APNs push via relay/.
+  gtmux — a command center for tmux sessions and coding agents, one product across
+  five surfaces over one Go core (single source of truth in AGENTS.md):
+    - Terminal (CLI + remote attach): cmd/gtmux (Go, MUST stay cgo-free). Logic in internal/.
+    - macOS menu-bar app: macapp/ (Swift, AppKit + NSStatusItem + NSPopover + SwiftUI).
+    - Phone & iPad: mobileapp/ (bare React Native + TypeScript, iOS/iPad/Android).
+    - Web: internal/server/web/ (embedded browser workspace served by `gtmux serve`).
 
-  Tech stack: Go 1.24+ (cgo-free CLI), Swift/AppKit/SwiftUI, React Native 0.86 +
-  TypeScript. Push relay is Go (ES256 JWT + HTTP/2 APNs).
+  Tech stack: Go 1.27+ (cgo-free CLI), Swift/AppKit/SwiftUI, React Native +
+  TypeScript, Cloudflare Workers (relay-worker/, tunnel-worker/, download-worker/).
 
-  Conventions:
-    - Run `make check` before every commit (gofmt + go vet + staticcheck + go
-      test -race). The CLI must build with CGO_ENABLED=0.
-    - Workflow: branch → PR → CI green → squash-merge. Never commit to main.
-    - Every user-facing CLI string is en+zh via internal/i18n (GTMUX_LANG).
+  Conventions (canonical guide: AGENTS.md):
+    - Run `make check` and `./scripts/check-design.sh` before every PR. The CLI must
+      build with CGO_ENABLED=0.
+    - Workflow: clean branch/worktree → OpenSpec propose (for non-trivial changes) →
+      sealed test design (`docs/test/designs/`) committed BEFORE test edits →
+      implement & verify → archive OpenSpec change in the same PR → PR → CI green →
+      squash-merge. Never commit to main.
+    - Every user-facing CLI string is en+zh via internal/i18n (GTMUX_LANG); user docs,
+      guides, and design docs ship in en+zh pairs in the same PR; code comments are English.
     - The status language is triple-encoded (color + shape + glyph), identical on
       every surface: waiting=#EF4444 red rounded-square + pause; working=#06B6D4
       cyan circle + static loading ring; idle=#22C55E green circle + check;
       running=#8E8E93 gray circle + dot. Color encodes status ONLY, never agent
       identity. Section order: waiting → working → idle → running.
 
-  Domain: detect coding agents (Claude Code, Codex, …) running INSIDE tmux,
-  surface who's waiting/working/idle, and jump to the right terminal tab + pane.
-
-  Stable contracts (don't break without versioning): the `gtmux agents --json`
-  shape; state paths under ~/.local/share/gtmux/; hook events
-  Stop/Notification/UserPromptSubmit; bundle id com.gtmux.menubar; the remote
-  HTTP/SSE contract api/contract.md v0.
+  Stable contracts (don't break without versioning): the `gtmux agents --json`,
+  `gtmux digest --json`, and `gtmux usage --json` shapes; state paths under
+  ~/.local/share/gtmux/; hook events Stop/Notification/UserPromptSubmit; bundle id
+  com.gtmux.menubar; the remote HTTP/SSE contract api/contract.md v0.
 
 rules:
   proposal:
     - State the why and the user-visible behavior change up front; keep it tight.
-    - Include a "Non-goals" note when scope could creep (e.g. read-only invariants).
+    - Include a "Non-goals" note when scope could creep.
+    - Include a "## Surfaces" section naming all five surfaces (terminal, menubar, phone, iPad, Web).
   tasks:
     - Each task should be independently verifiable (a build, a test, a manual check).
-    - Call out anything needing a real device / Apple account / the menu bar.
+    - Never put "open a PR", "wait for CI", or "merge" as a task; archive the change in the PR that finishes it.
+    - Call out anything needing a real device / Apple account / the menu bar under acceptance limits.

@@ -2,11 +2,11 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1529 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1530 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3825 | [L1.csv](cases/L1.csv) |
+| L1 · 单元/纯逻辑 | 3831 | [L1.csv](cases/L1.csv) |
 | L2 · 组件/契约 | 2785 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 171 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
@@ -289,6 +289,10 @@
 | GSS-017 | The new group inode and original group are retained, and the rollback stops before moving live stores or retiring the journal. |
 | GSS-018 | A genuine full disabled-services block establishes evidence, while truncated or ambiguous replies are refused. |
 | GSS-019 | Both failed attempts leave each original group and the journal available. The retry sync is required even when the marker is absent. The ordinary retry finishes with intact store identity and any staging retained. |
+| WFG-001 | Returns zero errors. |
+| WFG-002 | Each malformed fixture returns a non-empty error list naming the offending file and invariant. |
+| WFG-003 | Returns errors naming both missing/empty skill paths. |
+| WFG-004 | Recognized instruction/skill/config docs select no heavy platform jobs (quality only); an unrecognized executable/script under .agents/ broadens to full CI. |
 | CAS-008 | HQ passes associationFailed=true and keeps the already loaded reply after failure; its visible Retry handler performs another read and clears associationFailed on success. Existing HQScreen.poll.test.tsx/UR-001 source, selectors and catalogue metadata remain byte-for-byte the base versions. No arbitrary old delivery is replayed and no real session input occurs. |
 | HQBC-001 | Exact language-specific titles are lifted. The original number, short first-line quote and group are retained. An explicit recommendation is recognized. Removal leaves the other item and its number intact. An empty decision section produces no actionable item. |
 | MC-HQ-CHOICE | Choosing a current HQ option immediately prepares and focuses the same-matter draft without IPC or auto-send; edited text is preserved and stale questions have explicit feedback. |

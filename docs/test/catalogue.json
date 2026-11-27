@@ -61712,7 +61712,7 @@
       "cases": [
         {
           "id": "MAP-41a5bc78e4e8",
-          "line": 34,
+          "line": 40,
           "kind": "reviewed-selector",
           "name": "confirmed_unit_test_isolation",
           "dynamic": false,
@@ -61727,12 +61727,30 @@
           "dynamic": false,
           "layer": "G",
           "design": "CT-SCOPE,ACS-001"
+        },
+        {
+          "id": "MAP-a4f326b77fc6",
+          "line": 25,
+          "kind": "reviewed-selector",
+          "name": "document",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "WFG-004"
+        },
+        {
+          "id": "MAP-43e91d565746",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "DOC_FILES",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "WFG-004"
         }
       ],
-      "sha256": "b89fcd1e08edf0ba96ce3f2272318480818fb89a035a244ccecd1e554d73b55a"
+      "sha256": "65dd357b347635d54f1edb354896d9b3900c6b8d651c5d1281a20666f4c2b0cc"
     },
     "scripts/ci_test.py": {
-      "sha256": "9850049d8449df8aa4fe651782728a57dda789cb05a0b4c4e986a0d036513977",
+      "sha256": "bca6aa5821d90af18bc1cafe5504d5ba4e51319af0afee3a2eb2810f5470d772",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -61746,7 +61764,7 @@
         },
         {
           "id": "LEG-5e8793132c96",
-          "line": 51,
+          "line": 66,
           "kind": "unittest",
           "name": "test_shared_or_unknown_impact_is_full",
           "dynamic": true,
@@ -61754,7 +61772,7 @@
         },
         {
           "id": "LEG-7bbcfe8992be",
-          "line": 62,
+          "line": 77,
           "kind": "unittest",
           "name": "test_recognized_modules_include_consumers",
           "dynamic": false,
@@ -61762,7 +61780,7 @@
         },
         {
           "id": "LEG-bbdfd85a9000",
-          "line": 71,
+          "line": 86,
           "kind": "unittest",
           "name": "test_nul_parser_preserves_names_and_old_rename_path",
           "dynamic": true,
@@ -61770,7 +61788,7 @@
         },
         {
           "id": "LEG-30f2f4661935",
-          "line": 79,
+          "line": 94,
           "kind": "unittest",
           "name": "test_actual_git_rename_deletion_and_symlink",
           "dynamic": false,
@@ -61778,7 +61796,7 @@
         },
         {
           "id": "LEG-a0a184955335",
-          "line": 105,
+          "line": 120,
           "kind": "unittest",
           "name": "test_missing_refs_force_full_cli_outputs",
           "dynamic": false,
@@ -61786,7 +61804,7 @@
         },
         {
           "id": "LEG-513d57a7489a",
-          "line": 116,
+          "line": 131,
           "kind": "unittest",
           "name": "test_workflow_jobs_cannot_grow_outside_aggregation",
           "dynamic": false,
@@ -61794,7 +61812,7 @@
         },
         {
           "id": "LEG-1f71c99fb4dc",
-          "line": 128,
+          "line": 143,
           "kind": "unittest",
           "name": "test_unsigned_ios_preserves_arm64_target_and_verifies_products",
           "dynamic": false,
@@ -61802,7 +61820,7 @@
         },
         {
           "id": "LEG-2514a184abce",
-          "line": 140,
+          "line": 155,
           "kind": "unittest",
           "name": "test_android_package_is_built_once_and_both_devices_use_its_output",
           "dynamic": false,
@@ -61810,7 +61828,7 @@
         },
         {
           "id": "LEG-76200ceafcf2",
-          "line": 193,
+          "line": 208,
           "kind": "unittest",
           "name": "test_docs_can_skip_heavy_jobs_but_require_quality",
           "dynamic": false,
@@ -61818,7 +61836,7 @@
         },
         {
           "id": "LEG-ecfb4bf818ba",
-          "line": 199,
+          "line": 214,
           "kind": "unittest",
           "name": "test_missing_skipped_failed_cancelled_required_job_never_green",
           "dynamic": true,
@@ -61826,7 +61844,7 @@
         },
         {
           "id": "LEG-252965413bf3",
-          "line": 215,
+          "line": 230,
           "kind": "unittest",
           "name": "test_bad_plans_or_unselected_failure_are_rejected",
           "dynamic": false,
@@ -61834,7 +61852,7 @@
         },
         {
           "id": "LEG-8a6a845c7484",
-          "line": 227,
+          "line": 242,
           "kind": "unittest",
           "name": "test_mac_host_keeps_both_architectures_and_native_checks",
           "dynamic": false,
@@ -61842,7 +61860,7 @@
         },
         {
           "id": "LEG-28f4d1551b14",
-          "line": 244,
+          "line": 259,
           "kind": "unittest",
           "name": "test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection",
           "dynamic": false,
@@ -61868,12 +61886,21 @@
         },
         {
           "id": "MAP-1d7d386ae4bf",
-          "line": 208,
+          "line": 223,
           "kind": "reviewed-selector",
           "name": "test_android_aggregation_requires_the_entire_job_family",
           "dynamic": false,
           "layer": "G",
           "design": "CT-SCOPE,ACS-001"
+        },
+        {
+          "id": "MAP-1897df85f0b4",
+          "line": 51,
+          "kind": "reviewed-selector",
+          "name": "test_harness_instructions_and_openspec_skills_are_policy_only",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "WFG-004"
         }
       ]
     },
@@ -71663,6 +71690,40 @@
         }
       ],
       "sha256": "c6a4836b12094f3d1c9b7c3ac2ad202791448f89f1cb1feb558c60ca24e3c15c"
+    },
+    "scripts/workflow_guard_test.py": {
+      "layer": "L1",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-05e06432b6d4",
+          "line": 23,
+          "kind": "reviewed-selector",
+          "name": "test_real_repo_passes_workflow_guard",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "WFG-001,WFG-002,WFG-003"
+        },
+        {
+          "id": "MAP-767be48b9bde",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "test_rejects_missing_symlinked_or_bloated_instructions",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "WFG-001,WFG-002,WFG-003"
+        },
+        {
+          "id": "MAP-dacff1eecb4d",
+          "line": 52,
+          "kind": "reviewed-selector",
+          "name": "test_rejects_missing_or_empty_cross_harness_openspec_skills",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "WFG-001,WFG-002,WFG-003"
+        }
+      ],
+      "sha256": "3720ff5b14a38c8e8e2db2a9a9823adeac90f3c5318d521c21fa8816c5b2e37f"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

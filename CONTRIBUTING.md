@@ -1,6 +1,7 @@
 # Contributing to gtmux
 
-Build and gate commands live in `CLAUDE.md`. Run `make check` before every commit;
+Build and gate commands live in `AGENTS.md` (`CLAUDE.md` and `GEMINI.md` are thin
+`@AGENTS.md` pointers). Run `make check` before every commit;
 `scripts/check-design.sh` is the design and architecture half of the same gate.
 OpenSpec invocation failures fail with a tool/setup diagnosis; only complete structured
 results from this checkout establish an invalid-spec verdict.
@@ -21,7 +22,7 @@ their English/Chinese pairs. See [review language](docs/ci.md#review-language)
 
 This file is a maintainer document and stays in English, like
 `docs/TROUBLESHOOTING.md` and `docs/release-signing.md`. The bilingual rule covers user
-docs; see CLAUDE.md.
+docs; see `AGENTS.md`.
 
 For native development and verification, follow the [local build storage workflow](docs/development-storage.md) ([中文](docs/development-storage.zh.md)): register output ownership and budgets, reuse compatible caches, preserve evidence, and complete authorized task cleanup before handoff.
 

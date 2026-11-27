@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Code comments are English (CLAUDE.md, "CODE IS ENGLISH", 2026-09-13).
+"""Code comments are English (AGENTS.md, "CODE IS ENGLISH", 2026-09-13).
 
 A comment may QUOTE Chinese — a user report, a product string, a pane name — because the
 evidence is worth keeping verbatim. What it may not be is written in Chinese. The line
@@ -73,7 +73,7 @@ def main():
             if prose_in_chinese(l):
                 bad.append(f'{f}:{n}: {l[:100]}')
     if bad:
-        print('comment-language: comments are English; a quoted Chinese report is fine, Chinese prose is not (CLAUDE.md "CODE IS ENGLISH"):')
+        print('comment-language: comments are English; a quoted Chinese report is fine, Chinese prose is not (AGENTS.md "CODE IS ENGLISH"):')
         for b in bad:
             print('  ' + b)
         return 1
