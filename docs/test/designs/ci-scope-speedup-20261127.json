@@ -1,0 +1,76 @@
+{
+  "change": "ci-scope-speedup-20261127",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (self-review against .github/workflows/ci.yml job consumers, hermetic HTTP contracts, and delivery_source.py boundaries)",
+    "date": "2026-11-27",
+    "decision": "Proceed with classifying .openspec.yaml and quality-only guard scripts as policy-only, scoping Go core/CLI packages to test+cross-build, and retaining explicit HTTP/artifact/relay downstream suites and fail-closed defaults",
+    "notes": "Verified internal/app/client_contract_test.go enforces tests/contracts/http-contract.json in the Go test job, LocalArtifactPreviewTests.swift exercises internal/artifact + serve in menubar, relay-worker shares APNs shape with relay/, and scripts/ci.py + api/contract.md + tests/contracts/ remain full-matrix."
+  },
+  "evidence_limits": [
+    "Unit tests in scripts/ci_test.py verify deterministic path classification, rename/deletion preservation, and workflow job aggregation; real GitHub Actions execution is exercised on the PR itself."
+  ],
+  "cases": [
+    {
+      "id": "CIS-001",
+      "layer": "G",
+      "description": "OpenSpec .openspec.yaml metadata files and quality-only guard scripts select policy/docs only without triggering platform builds",
+      "setup": "Paths including openspec/changes/foo/.openspec.yaml, openspec/changes/archive/2026-11-27-foo/.openspec.yaml, scripts/openspec_check.py, scripts/workflow_guard.py, scripts/test_design.py, and scripts/check-comment-language.py.",
+      "action": "Call scripts/ci.classify on the policy/guard path list and on unknown scripts.",
+      "expected": "Recognized OpenSpec metadata and quality-job guards select [] (policy/docs only); scripts/check-design.sh and Go security guards select ['test']; scripts/ci.py and unknown scripts still force full CI.",
+      "planned_files": [
+        "scripts/ci.py",
+        "scripts/ci_test.py"
+      ],
+      "surfaces": [
+        "CI scope selection"
+      ]
+    },
+    {
+      "id": "CIS-002",
+      "layer": "G",
+      "description": "Non-HTTP Go core/CLI packages select test and cross-build while HTTP server, artifact, and relay packages include their exact downstream consumers",
+      "setup": "Paths in cmd/gtmux/main.go, internal/radar/agents.go, internal/hq/playbook/en/workspace.md, internal/server/server.go, internal/artifact/store.go, and relay/apns.go.",
+      "action": "Call scripts/ci.classify on each Go path group.",
+      "expected": "CLI/core Go and embedded HQ playbook select ['cross-build', 'test']; relay Go adds 'relay-worker'; artifact Go adds 'menubar' and 'web'; server Go adds 'menubar', 'mobile', and 'web'; api/contract.md, tests/contracts/, assets/, and go.mod remain full.",
+      "planned_files": [
+        "scripts/ci.py",
+        "scripts/ci_test.py"
+      ],
+      "surfaces": [
+        "CI scope selection"
+      ]
+    },
+    {
+      "id": "CIS-003",
+      "layer": "G",
+      "description": "Git rename and deletion classification preserves Go/contract scope and rejects symlinks",
+      "setup": "NUL-delimited git diff records and a temporary git repository renaming Go/contract files into docs/ and adding a symlink.",
+      "action": "Run ci.parse_diff, ci.changed_files, and ci.classify.",
+      "expected": "Renaming a Go file into docs/ retains Go checks rather than collapsing to docs-only; renaming api/contract.md into docs/ remains full; symlink changes raise ValueError.",
+      "planned_files": [
+        "scripts/ci.py",
+        "scripts/ci_test.py"
+      ],
+      "surfaces": [
+        "CI scope selection"
+      ]
+    },
+    {
+      "id": "CIS-004",
+      "layer": "G",
+      "description": "Full-impact shared contracts, dependencies, CI selector edits, and missing/skipped required jobs remain fail-closed",
+      "setup": "Shared contract/dependency paths (api/contract.md, go.mod, scripts/ci.py, tunnel-worker/src/index.ts) and simulated CI job result maps with missing/skipped/failed/cancelled entries.",
+      "action": "Call ci.classify and ci.verdict.",
+      "expected": "Shared/uncertain paths select all CI jobs and any non-success required job fails ci.verdict.",
+      "planned_files": [
+        "scripts/ci.py",
+        "scripts/ci_test.py"
+      ],
+      "surfaces": [
+        "CI scope selection / result aggregation"
+      ]
+    }
+  ],
+  "seal": "bbef65b9575f025d7ec46bb5207f783acf7e67983a870a4f3a2f449d7023104d"
+}

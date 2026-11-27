@@ -54,30 +54,50 @@ class ScopeTests(unittest.TestCase):
             "CLAUDE.md",
             "GEMINI.md",
             "openspec/config.yaml",
+            "openspec/changes/foo-bar/.openspec.yaml",
+            "openspec/changes/archive/2026-11-27-foo-bar/.openspec.yaml",
             ".agents/skills/.openspec-target",
             ".agents/skills/openspec/SKILL.md",
             ".agents/skills/openspec/references/answers.md",
             ".agents/skills/openspec-propose/SKILL.md",
             ".claude/skills/openspec/SKILL.md",
             ".claude/skills/openspec-propose/SKILL.md",
+            "scripts/openspec_check.py",
+            "scripts/openspec_check_test.py",
+            "scripts/workflow_guard.py",
+            "scripts/workflow_guard_test.py",
+            "scripts/test_design.py",
+            "scripts/check-comment-language.py",
         ]
         self.assertEqual(ci.classify(docs)["selected"], [])
-        for path in [".agents/skills/openspec-propose/run.sh", ".agents/hooks.json", ".claude/settings.json"]:
+        self.assertEqual(ci.classify(["scripts/check-design.sh", "scripts/vulncheck.sh"])["selected"], ["test"])
+        for path in [".agents/skills/openspec-propose/run.sh", ".agents/hooks.json", ".claude/settings.json",
+                     "openspec/changes/foo/other.yaml", "scripts/unknown_helper.py"]:
             self.assertTrue(ci.classify([path])["full"])
 
     def test_shared_or_unknown_impact_is_full(self):
-        for path in ["internal/radar/agents.go", "api/contract.md", "go.mod", "go.sum",
-                     ".github/workflows/ci.yml", "scripts/ci.py", "new-component/code.ts",
-                     "mobileapp/package-lock.json", "macapp/Package.swift", "mobileapp/.ruby-version",
-                     "mobileapp/ios/Podfile", "mobileapp/ios/GtmuxMobile.xcodeproj/project.pbxproj",
-                     "mobileapp/src/api/client.ts", "tunnel-worker/src/index.ts",
-                     "macapp/unclassified/foo.bin", "../docs/foo.md", "/docs/foo.md"]:
+        for path in ["api/contract.md", "tests/contracts/http-contract.json", "assets/agent-icons/codex.png",
+                     "go.mod", "go.sum", ".github/workflows/ci.yml", "scripts/ci.py", "scripts/ci_test.py",
+                     "new-component/code.ts", "mobileapp/package-lock.json", "macapp/Package.swift",
+                     "mobileapp/.ruby-version", "mobileapp/ios/Podfile",
+                     "mobileapp/ios/GtmuxMobile.xcodeproj/project.pbxproj", "mobileapp/src/api/client.ts",
+                     "tunnel-worker/src/index.ts", "macapp/unclassified/foo.bin", "../docs/foo.md", "/docs/foo.md"]:
             with self.subTest(path=path):
                 self.assertEqual(set(ci.classify([path])["selected"]), set(ci.JOBS))
         self.assertTrue(ci.classify([])["full"])
 
     def test_recognized_modules_include_consumers(self):
         self.assertEqual(ci.classify(["internal/radar/agents_test.go"])["selected"], ["test"])
+        self.assertEqual(set(ci.classify(["cmd/gtmux/main.go", "internal/radar/agents.go",
+                                          "internal/hq/playbook/en/workspace.md",
+                                          "internal/knowledge/testdata/golden/out.md"])["selected"]),
+                         {"test", "cross-build"})
+        self.assertEqual(set(ci.classify(["relay/apns.go", "internal/relay/client.go"])["selected"]),
+                         {"test", "cross-build", "relay-worker"})
+        self.assertEqual(set(ci.classify(["internal/artifact/store.go"])["selected"]),
+                         {"test", "cross-build", "menubar", "web"})
+        self.assertEqual(set(ci.classify(["internal/server/server.go"])["selected"]),
+                         {"test", "cross-build", "web", "mobile", "menubar"})
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
                          {"mobile", "web", "ios-native", "android-native", "android-phone", "android-emulator-shards", "android-emulator"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
@@ -88,7 +108,8 @@ class ScopeTests(unittest.TestCase):
     def test_nul_parser_preserves_names_and_old_rename_path(self):
         names = ci.parse_diff(b"R100\0internal/radar/a.go\0docs/a.md\0D\0docs/deleted.md\0M\0docs/\xe4\xb8\xad\xe6\x96\x87\n$(oops).md\0")
         self.assertEqual(names[-1], "docs/中文\n$(oops).md")
-        self.assertTrue(ci.classify(names)["full"])
+        self.assertEqual(set(ci.classify(names)["selected"]), {"test", "cross-build"})
+        self.assertTrue(ci.classify(ci.parse_diff(b"R100\0api/contract.md\0docs/a.md\0"))["full"])
         for value in [b"M\0foo", b"R100\0foo\0", b"U\0foo\0", b"M\0\0", b"M\0\xff\0"]:
             with self.subTest(value=value), self.assertRaises((ValueError, UnicodeError)):
                 ci.parse_diff(value)
@@ -110,7 +131,7 @@ class ScopeTests(unittest.TestCase):
                 run.side_effect = lambda *args, **kwargs: real_run(*args, cwd=temp, **kwargs)
                 paths = ci.changed_files(base, head, "pull_request")
                 self.assertEqual(set(paths), {"internal/radar/a.go", "docs/a.md"})
-                self.assertTrue(ci.classify(paths)["full"])
+                self.assertEqual(set(ci.classify(paths)["selected"]), {"test", "cross-build"})
                 Path(temp, "docs/a.md").unlink()
                 git("add", "."); git("commit", "-m", "delete"); deleted = git("rev-parse", "HEAD")
                 self.assertEqual(ci.changed_files(head, deleted, "push"), ["docs/a.md"])
@@ -214,7 +235,7 @@ class ResultTests(unittest.TestCase):
         self.assertTrue(ci.verdict(plan, needs))
 
     def test_missing_skipped_failed_cancelled_required_job_never_green(self):
-        plan = ci.classify(["internal/radar/agents.go"])
+        plan = ci.classify(["api/contract.md"])
         self.assertEqual(ci.verdict(plan, self.results(ci.JOBS)), [])
         for name in ("scope", "quality", *ci.JOBS):
             for result in (None, "skipped", "failure", "cancelled"):

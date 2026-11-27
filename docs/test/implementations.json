@@ -13,19 +13,32 @@
   },
   "scripts/ci_test.py": {
     "cases": [
-      "WFG-004"
+      "CIS-001",
+      "CIS-002",
+      "CIS-003",
+      "CIS-004"
     ],
     "selectors": [
-      "test_harness_instructions_and_openspec_skills_are_policy_only"
+      "test_harness_instructions_and_openspec_skills_are_policy_only",
+      "test_shared_or_unknown_impact_is_full",
+      "test_recognized_modules_include_consumers",
+      "test_nul_parser_preserves_names_and_old_rename_path",
+      "test_actual_git_rename_deletion_and_symlink",
+      "test_missing_skipped_failed_cancelled_required_job_never_green"
     ]
   },
   "scripts/ci.py": {
     "cases": [
-      "WFG-004"
+      "CIS-001",
+      "CIS-002",
+      "CIS-003",
+      "CIS-004"
     ],
     "selectors": [
+      "QUALITY_ONLY_SCRIPTS",
+      "GO_GATE_SCRIPTS",
       "document",
-      "DOC_FILES"
+      "classify"
     ]
   },
   "internal/radar/usagesources_agy_test.go": {
