@@ -58,6 +58,9 @@ func messageTimeIn(agent, buf string, last bool) int64 {
 	if normalizeAgent(agent) == "codex" && last {
 		return codexActivityTimeIn(buf)
 	}
+	if normalizeAgent(agent) == "agy" {
+		return agyMessageTimeIn(buf, last)
+	}
 	if normalizeAgent(agent) == "kimi" {
 		out := int64(0)
 		for _, ln := range strings.Split(buf, "\n") {
@@ -298,6 +301,9 @@ func LastMessageError(agent, sessionID string) (bool, string) {
 		s, e := dsh.Sessions.Resolve(sessionID)
 		return e == nil && s.EndReason == "error", ""
 	}
+	if normalizeAgent(agent) == "agy" {
+		return agyLastMessageError(LogPath(agent, sessionID))
+	}
 	path, _ := resolveLog(agent, sessionID)
 	if path == "" {
 		return false, ""
@@ -523,7 +529,7 @@ func AgentForSession(sessionID string) string {
 		return ""
 	}
 	var found string
-	for _, agent := range []string{"claude", "codex", "kimi", "opencode"} {
+	for _, agent := range []string{"claude", "codex", "kimi", "opencode", "agy"} {
 		if LogPath(agent, sessionID) == "" {
 			continue
 		}
@@ -551,6 +557,8 @@ func resolveLog(agent, sessionID string) (string, stepFn) {
 		return opencodeLogPath(sessionID), opencodeStep
 	case "kimi":
 		return kimiLogPath(sessionID), kimiStep
+	case "agy":
+		return agyLogPath(sessionID), agyStep
 	}
 	return "", nil
 }
@@ -933,6 +941,8 @@ func normalizeAgent(agent string) string {
 		return "dsh"
 	case strings.Contains(a, "kimi"):
 		return "kimi"
+	case a == "agy" || strings.Contains(a, "antigravity"):
+		return "agy"
 	}
 	return a
 }

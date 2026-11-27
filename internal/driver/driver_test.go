@@ -20,7 +20,7 @@ func TestRegistryMatchesFormerHookAgents(t *testing.T) {
 	// Agents onboarded SINCE the migration. The guard is still exact — an agent that
 	// gains the event-first path by accident fails here — but a deliberate onboarding
 	// is one line, named, rather than a number nobody can read back.
-	since := []string{"kimi", "dsh", "deepseek-harness"}
+	since := []string{"kimi", "dsh", "deepseek-harness", "agy", "antigravity", "antigravity-cli"}
 	for _, k := range append(append([]string{}, former...), since...) {
 		if For(k).Receipt == nil {
 			t.Errorf("For(%q).Receipt = nil; it is expected to be hook-equipped", k)
@@ -123,7 +123,7 @@ func writeConfig(t *testing.T, content string) {
 // re-wiring of transcript.Load — and switches off independently.
 func TestContentRegistration(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
-	for _, k := range []string{"claude", "codex"} {
+	for _, k := range []string{"claude", "codex", "agy"} {
 		if For(k).Content == nil {
 			t.Errorf("For(%q).Content = nil; a parser exists for it", k)
 		}

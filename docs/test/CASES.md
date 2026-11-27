@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1520 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1526 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3824 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2774 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2783 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -48,6 +48,14 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | ASC-010 | Deadline/disconnect/stop close transport and original descriptors and release request slots without waiting for an SDK callback. At most one actual SDK call remains outstanding across host restart; an outstanding background phase keeps its bounded permit and owned duplicate until it really exits, with no unbounded replacement queue. Late completion cannot write a returned artifact or open editor; cancellation before the editor commit point refuses. Slow image/IO work does not block MainActor. Normal callbacks resolve once, preserve existing descriptor validation and output bytes; stale tasks cannot close a reused fd. Isolated synthetic tests do not certify real ScreenCaptureKit cancellation, filesystem interruption, TCC or native window interaction. |
 | ASC-012 | Every preview pixel intersected under actual preview_width/point_width and preview_height/point_height is opaque black independent of original colors. Neither axis may borrow the other axis rounded scale. Region/frame transforms and original image remain unchanged; ordinary scale and existing annotations keep their assertions. This is the actual synthetic production rendering path, without a ScreenCaptureKit capture or TCC claim. |
 | ASC-013 | The duplicate is already closed before admission return for both success and error. Caller success preserves the value, original caller descriptor stays open, and no permit is lost/double-released. Negative control retains the pre-fix success order with only the observation seam and fails on an open duplicate; no probabilistic scheduler race or actual OS leak is claimed. Existing cancellation and SDK quarantine tests retain their assertions. |
+| AGY-001 | agy appears in all Tier 2 projections, resolves antigravity and antigravity-cli aliases, and maps agy binary to canonical key agy. |
+| AGY-002 | Named gtmux hook writes flat SessionStart/PreInvocation/Stop and grouped PostToolUse with matcher *, omits PreToolUse, preserves foreign hooks, respects enabled:false, detects missing/wrong bindings, and cleanly removes only gtmux on uninstall. |
+| AGY-003 | PreInvocation 1 opens turn with cleaned lastUserInput; PreInvocation >1 resolves as Resumed; Stop maps USER_CANCELED to Interrupt and ERROR/MAX_INVOCATIONS to StopFailure; non-detached invocations emit valid JSON stdout ({} or {"decision":"stop"}). |
+| AGY-004 | Extracts clean user request text without metadata tags, ignores SYSTEM_MESSAGE and errored PLANNER_RESPONSE partial text, parses tool_calls into inspectable steps, reads RFC3339 created_at timestamps, reports terminal ERROR_MESSAGE, and rejects unsafe session IDs. |
+| AGY-005 | Accumulates non-cached input and output deltas across turns and reports last turn input_tokens + cache_read_tokens as CtxTok. |
+| AGY-006 | Records model fact from both native hook and session log without retaining prompts or unrelated fields. |
+| AGY-007 | agy carrier resolves to $HOME/.gemini/config/GEMINI.md, receives the managed machine knowledge block, stays idempotent on resync, and participates in serialized sync without lock leaks. |
+| AGY-008 | Emits one correction candidate attributed to agent agy and conversation ID with context from the completed reply, excluding compaction summaries, system messages, and errored drafts. |
 | ACP-001 | Fresh enabled Deny elements only; ignored first click can use one further explicit click in the same camera dialog, maximum two; no click starts after 10s; no unrelated permission acted upon; original command error preserved; no permission grant or settings mutation. |
 | ACP-002 | New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged. |
 | ACP-003 | Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions. |

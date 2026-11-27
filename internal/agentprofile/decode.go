@@ -10,6 +10,10 @@ func decode(agent string, raw []byte) point {
 	var e struct {
 		Type           string          `json:"type"`
 		Timestamp      string          `json:"timestamp"`
+		CreatedAt      string          `json:"created_at"`
+		Status         string          `json:"status"`
+		Content        string          `json:"content"`
+		ToolCalls      json.RawMessage `json:"tool_calls"`
 		Time           int64           `json:"time"`
 		Version        string          `json:"version"`
 		AgentID        string          `json:"agentId"`
@@ -32,6 +36,9 @@ func decode(agent string, raw []byte) point {
 	at := e.Time
 	if at == 0 {
 		at = stamp(e.Timestamp)
+	}
+	if at == 0 {
+		at = stamp(e.CreatedAt)
 	}
 	x := point{At: at}
 	add := func(k, v string) { x.Facts = append(x.Facts, fact(k, v, "session_log", at)) }
@@ -148,6 +155,14 @@ func decode(agent string, raw []byte) point {
 		case "turn.ended":
 			x.End = true
 		}
+	case "agy":
+		if e.Type != "PLANNER_RESPONSE" {
+			return x
+		}
+		if e.Model != "" {
+			add("model", e.Model)
+		}
+		x.End = e.Status == "DONE" && len(e.ToolCalls) == 0 && e.Content != ""
 	}
 	return x
 }
@@ -156,6 +171,7 @@ func decode(agent string, raw []byte) point {
 func HookFacts(agent string, raw []byte, at int64) []Fact {
 	var v struct {
 		Model      string `json:"model"`
+		ModelName  string `json:"modelName"`
 		ModelID    string `json:"model_id"`
 		ToModel    string `json:"to_model"`
 		Permission string `json:"permission_mode"`
@@ -246,6 +262,10 @@ func HookFacts(agent string, raw []byte, at int64) []Fact {
 					add("thinking_budget", strconv.Itoa(*t.Budget))
 				}
 			}
+		}
+	case "agy":
+		if v.ModelName != "" {
+			add("model", v.ModelName)
 		}
 	case "opencode":
 		if v.Profile != nil {

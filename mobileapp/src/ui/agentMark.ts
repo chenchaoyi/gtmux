@@ -14,6 +14,8 @@ const MARKS: Record<string, string> = {
   opencode: 'oc',
   'kimi code': 'Ki',
   kimi: 'Ki',
+  antigravity: 'Ag',
+  agy: 'Ag',
   cursor: 'Cu',
   crush: 'Cr',
   amp: 'Am',

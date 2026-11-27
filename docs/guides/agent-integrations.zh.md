@@ -26,7 +26,7 @@ order: 6
    事件转换为提示提交、工作、等待、恢复、成功、中断或失败，供状态、通知和 HQ 使用。
    工具开始执行不一定表示正在等人批准，中断也不能记成成功完成。
 3. **已保存的对话。** 读取器把经过核实的会话身份映射到本地文件。Claude、Codex、
-   OpenCode、Kimi、DSH 有结构化内容读取器。其中 Codex 和 DSH 还有专门的外部对话适配器，
+   OpenCode、Kimi、DSH 和 Antigravity（`agy`）有结构化内容读取器。其中 Codex 和 DSH 还有专门的外部对话适配器，
    不依赖 tmux 或已加载的 hook 就能发现历史；其他 tmux 外会话的观测依赖 hook 上报。
 
 交互式 **tmux 会话**的输入始终走 pane：先检查输入框，再粘贴、提交。匹配到提示提交事件
@@ -138,6 +138,7 @@ Mac 菜单栏的“外部会话”和“不在 tmux”均可点击标题展开�
 | `copilot` | 无 | 命令 hook | 无 | 有恢复命令；无一次性执行 |
 | `kiro` | 无 | V3 全局 hook / 旧版 agent profile | 无 | 有恢复命令；无一次性执行 |
 | `dsh` | 核验终端客户端绑定；安装探测 `dsh`/`dst` | DSH 原生组件 | v4 文件；共享 pane 与外部读取器 | dst 原生输入、恢复；Web 只读；无一次性执行 |
+| `agy` | `agy` | 命令 hook（`hooks.json`） | `transcript.jsonl` + 用量增量 | 可恢复；无一次性执行 |
 | `hermes-agent` | 无 | 仅事件分类器，无安装器 | 无 | 仅有恢复命令 |
 | `grok` | 无 | 无 | 无 | 仅有恢复命令 |
 | `aider` | `aider` | 无 | 无 | 均无 |
@@ -318,6 +319,30 @@ harness、数据目录、会话、pane 和客户端进程实例。开始、提�
 这项能力由适配器声明，换社区客户端时 harness 身份仍为 `dsh`；其他接入保留各自文档说明的回退。
 已跟踪但仍卡在输入框中的未投递目标，继续使用独立的投递等待判断。
 
+## Antigravity CLI — `agy`
+
+雷达识别 `agy` 进程（别名 `antigravity`、`antigravity-cli`）并归集进程资源。安装器在
+`$AGY_CONFIG_DIR/hooks.json`（默认 `~/.gemini/config/hooks.json`）中只维护顶层
+`"gtmux"` 对象，保留其余命名 hook，并将 `"enabled": false` 视为用户禁用策略。
+
+`SessionStart`、`PreInvocation` 和 `Stop` 使用扁平命令数组（10 秒超时），`PostToolUse`
+使用分组 matcher 数组（`"matcher": "*"`）。刻意不注册 `PreToolUse`，因为 `agy` 要求
+`PreToolUse` 输出明确的权限裁决（`allow`/`deny`/`ask`/`force_ask`），观察型桥接不得代作权限审批。
+由于 `agy` 同步执行 hook 并校验 stdout JSON，`gtmux hook --agent agy` 会立即输出 `{}`
+（`Stop` 输出 `{"decision":"stop"}`）并将状态写入与通知转入后台。`PreInvocation` 仅在
+`invocationNum <= 1` 时开启新用户回合，同一轮内的后续模型调用归类为 `Resumed`；`Stop`
+按 `terminationReason` 把 `USER_CANCELED` 映射为中断，把错误和预算上限类原因映射为 `StopFailure`。
+
+Tier 2 对话读取器解析 `$AGY_HOME/brain/<conversation-id>/.system_generated/logs/transcript.jsonl`
+（默认 `~/.gemini/antigravity-cli`），解包 `<USER_REQUEST>`，跳过附加元数据、压缩摘要与失败的
+`PLANNER_RESPONSE` 草稿，并为对话、轨迹和 HQ 知识采矿标准化工具参数。Token 用量
+（`input_tokens`、`cache_read_tokens`、`output_tokens`）与观测到的模型信息直接来自
+`PLANNER_RESPONSE`（Tier 2+）。交互输入走 tmux，恢复命令为 `agy --resume ID`，未接入无头一次性执行。
+知识载体写入 `$AGY_CONFIG_DIR/GEMINI.md`（默认 `~/.gemini/config/GEMINI.md`）。
+
+实现：[hook 安装器](../../internal/app/agy_hooks.go)、[hook 运行时](../../internal/hook/agy.go)、
+[对话读取器](../../internal/transcript/agy.go)、[用量解析](../../internal/usage/parse.go)。
+
 
 ## Hermes — `hermes-agent`
 
@@ -354,7 +379,7 @@ LLM、工具和审批回调的专用事件语义。没有内置进程规则、ho
 
 ## 安装、诊断与实现分工
 
-有安装器的 9 个 agent，可以用上面的准确 key 选择：
+有安装器的 10 个 agent，可以用上面的准确 key 选择：
 
 ```sh
 gtmux install hooks --agent codex
@@ -378,7 +403,7 @@ agent 需要实际运行新 hook，Codex 可能还需审阅信任，DSH 要显�
 | 实现位置 | 负责什么 |
 | --- | --- |
 | [Agent 注册表](../../internal/agents/registry.go) | Key、别名、进程与安装探测、恢复命令、能力声明 |
-| [通用 hook 安装器](../../internal/app/agent_hooks.go)、[Claude](../../internal/app/hooks.go)、[Kimi](../../internal/app/kimi_hooks.go)、[DSH](../../internal/app/dsh_hooks.go) | 写哪些文件、配置格式、归属迁移 |
+| [通用 hook 安装器](../../internal/app/agent_hooks.go)、[Claude](../../internal/app/hooks.go)、[Kimi](../../internal/app/kimi_hooks.go)、[DSH](../../internal/app/dsh_hooks.go)、[Antigravity](../../internal/app/agy_hooks.go) | 写哪些文件、配置格式、归属迁移 |
 | [事件分类器](../../internal/hook/classify.go) | 原生事件的含义，包括等待与取消证据的边界 |
 | [雷达](../../internal/radar/agents.go)、[能力驱动](../../internal/driver/driver.go) | 进程与状态感知、回执、就绪、内容和一次性执行接线 |
 | [对话读取器](../../internal/transcript/transcript.go)、[外部对话适配器](../../internal/conversation/provider.go) | 内容解析及数据目录、会话身份核实 |

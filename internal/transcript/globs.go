@@ -15,5 +15,6 @@ func LogGlobs() map[string][]string {
 		},
 		"kimi":     {filepath.Join(kimiHome(), "sessions", "*", "*", "agents", "main", "wire.jsonl")},
 		"opencode": {filepath.Join(opencodeDir(), "*.jsonl")},
+		"agy":      {filepath.Join(agyHome(), "brain", "*", ".system_generated", "logs", "transcript.jsonl")},
 	}
 }

@@ -179,7 +179,7 @@ The ledger is private to the machine, but it grows entries bigger than the machi
 
 The `machine` master copy is rendered by gtmux, which then maintains a managed block, with sentinels and a hash, in every supported agent's global instruction file:
 Claude Code `~/.claude/CLAUDE.md`, Codex `$CODEX_HOME/AGENTS.md`, opencode `~/.config/opencode/AGENTS.md`,
-Kimi Code `$KIMI_CODE_HOME/AGENTS.md` (paths recorded in the agent registry `internal/agents`).
+Kimi Code `$KIMI_CODE_HOME/AGENTS.md`, DeepSeek Harness `$DSH_HOME/AGENTS.md`, Antigravity CLI `$AGY_CONFIG_DIR/GEMINI.md` (paths recorded in the agent registry `internal/agents`).
 
 The block carries each entry's kind, title, ID and up to 120 runes of its first body line,
 plus the master path. It does not copy whole bodies, but its total size still grows with

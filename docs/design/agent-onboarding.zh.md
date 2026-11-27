@@ -20,15 +20,15 @@ gtmux 对 agent 的支持分层，但这些层级是接入工作的划分，不�
 | 0 · 可感知 | tmux 雷达行、focus 和输入；声明了 resume 命令才能恢复会话。 | 带检测命令的 manifest（可选：idle 字形、图标、resume argv）。 |
 | 1 · 事件对齐 | hook 驱动的 `waiting`/`done`、回执校验、通知和 HQ 唤醒。 | 把生命周期事件送进 gtmux 的安装器；agent 还必须实际执行这些 hook。 |
 | 2 · 摘要对齐 | digest 中来自 transcript 的 `goal`/`last`，以及 HQ 会话年龄所用的首条消息时间。 | 会话映射和 transcript 解析器。`ask` 另从 waiting pane 的编号选项读取。 |
-| 2+ · 用量对齐 | 上下文/消耗数字（`gtmux usage`）和 HQ 自轮换的 `ctx` 判据。 | 能定位到的会话日志，包含解析器支持的用量记录：Claude 的逐消息用量，或 Codex 的累计 `token_count`。用量不受 driver 的 `content` 开关控制。 |
+| 2+ · 用量对齐 | 上下文/消耗数字（`gtmux usage`）和 HQ 自轮换的 `ctx` 判据。 | 能定位到的会话日志，包含解析器支持的用量记录：Claude 的逐消息用量、Codex 的累计 `token_count` 或 Antigravity（`agy`）的 `PLANNER_RESPONSE` 逐调用增量。用量不受 driver 的 `content` 开关控制。 |
 
 HQ 传感器首先需要能解析出的会话 ID；三个判据各自取证：
 
 | 判据 | 来源 | 当前覆盖 |
 |---|---|---|
 | `turns` | 传感器为当前会话建立观测窗口之后，HQ pane 的 `UserPromptSubmit` 事件。 | 实际发出这些事件的 hook agent；不会从完整 transcript 补算此前轮次。 |
-| `age` | 建立观测窗口时，能读到就用 transcript 的首条消息时间，否则用传感器首次看到这个会话的时间。 | Claude、Codex、opencode、Kimi 有 transcript 读取器；其他有映射的会话也会累计年龄，但兜底时间会低估已有会话的年龄。 |
-| `ctx` | 用量解析器（`internal/usage/parse.go`）。 | 有可用 token 记录的 Claude、Codex 日志；没有记录就没有上下文数字。 |
+| `age` | 建立观测窗口时，能读到就用 transcript 的首条消息时间，否则用传感器首次看到这个会话的时间。 | Claude、Codex、opencode、Kimi、Antigravity（`agy`）有 transcript 读取器；其他有映射的会话也会累计年龄，但兜底时间会低估已有会话的年龄。 |
+| `ctx` | 用量解析器（`internal/usage/parse.go`）。 | 有可用 token 记录的 Claude、Codex、Antigravity（`agy`）日志；没有记录就没有上下文数字。 |
 
 唤醒行不显示非正的上下文比例和年龄，也不显示未知（负数）的轮次；开始计数后可以显示 `0 轮`。
 没有用量数据不等于会话还有上下文余量。

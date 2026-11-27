@@ -110,6 +110,8 @@ func readerFor(agent string) reader {
 		return readOpencode
 	case "kimi":
 		return readKimi
+	case "agy":
+		return readAgy
 	}
 	return nil
 }
@@ -261,6 +263,7 @@ func DefaultRoots() []Root {
 		{Agent: "codex", Dir: filepath.Join(transcript.CodexHome(), "sessions"), Glob: filepath.Join("*", "*", "*", "*.jsonl")},
 		{Agent: "opencode", Dir: transcript.OpencodeDir(), Glob: "*.jsonl"},
 		{Agent: "kimi", Dir: filepath.Join(transcript.KimiHome(), "sessions"), Glob: filepath.Join("*", "*", "agents", "main", "wire.jsonl")},
+		{Agent: "agy", Dir: filepath.Join(transcript.AgyHome(), "brain"), Glob: filepath.Join("*", ".system_generated", "logs", "transcript.jsonl")},
 	}
 }
 

@@ -44,6 +44,9 @@ func classifyPayload(agent, event, tool string, raw []byte) Class {
 		}
 		return Class{}
 	}
+	if agent == "agy" {
+		return classifyAgyPayload(event, c, raw)
+	}
 	return c
 }
 

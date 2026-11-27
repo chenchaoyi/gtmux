@@ -150,7 +150,7 @@ gtmux 不给盘上的知识库加密。导出默认要求口令（hq-export-pass
 
 `machine` 的正本由 gtmux 渲染，然后往每个已支持 agent 的全局指令文件里维护一个带哨兵和哈希的托管块：
 Claude Code `~/.claude/CLAUDE.md`、Codex `$CODEX_HOME/AGENTS.md`、opencode `~/.config/opencode/AGENTS.md`、
-Kimi Code `$KIMI_CODE_HOME/AGENTS.md`（路径记在 agent 注册表 `internal/agents`）。
+Kimi Code `$KIMI_CODE_HOME/AGENTS.md`、DeepSeek Harness `$DSH_HOME/AGENTS.md`、Antigravity CLI `$AGY_CONFIG_DIR/GEMINI.md`（路径记在 agent 注册表 `internal/agents`）。
 
 块里放每条的种类、标题、ID 和正文首行最多 120 个字符，加上正本路径，不抄整篇正文。
 分发条目越多，索引仍会越长，没有总长度上限；详情由 agent 读取正本。块外的内容一律不动；块被手改过的，`sync` 拒绝覆盖，

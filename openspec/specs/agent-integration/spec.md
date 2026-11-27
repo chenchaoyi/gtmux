@@ -415,3 +415,38 @@ full-input retrieval across Chat and Trace. Results and reasoning remain exclude
 
 - **WHEN** a recorded edit contains an empty replacement string
 - **THEN** the inspector retains that selected empty argument and the full original input remains session-scoped
+
+### Requirement: Antigravity CLI (`agy`) integration follows its named-hook and transcript contracts
+
+Antigravity CLI (`agy`, aliases `antigravity` and `antigravity-cli`) SHALL be registered as a
+Tier 2+ agent with process detection, resume recipe (`agy --resume ID`), resource attribution,
+global knowledge carrier (`$AGY_CONFIG_DIR/GEMINI.md`, default `~/.gemini/config/GEMINI.md`),
+dedicated hook installer, lifecycle classifier, transcript reader, usage parser, profile reader
+and transcript miner. The hook installer SHALL own only the top-level `"gtmux"` object in
+`$AGY_CONFIG_DIR/hooks.json`, preserving all foreign named hooks and honoring `"enabled": false`
+as a user policy choice. Observational hooks SHALL NOT register `PreToolUse` (which requires a
+permission verdict). Synchronous hook execution SHALL emit valid JSON on stdout (`{}` or
+`{"decision":"stop"}` on `Stop`) and detach heavy state/notification work. `PreInvocation`
+SHALL open a user prompt turn only on `invocationNum <= 1` and classify subsequent in-turn model
+calls as `Resumed`; `Stop` SHALL classify `USER_CANCELED` as interruption and terminal error or
+budget termination reasons as `StopFailure`. The transcript reader SHALL read
+`$AGY_HOME/brain/<conversation-id>/.system_generated/logs/transcript.jsonl`, unwrap
+`<USER_REQUEST>` blocks, reject unsafe session IDs, skip compaction summaries and errored
+`PLANNER_RESPONSE` drafts, and feed token deltas and observed model facts from `PLANNER_RESPONSE`
+records.
+
+#### Scenario: Antigravity hooks install without disturbing foreign named hooks or approval policy
+
+- **WHEN** `gtmux install hooks --agent agy` writes `$AGY_CONFIG_DIR/hooks.json` containing other named hooks
+- **THEN** only the top-level `"gtmux"` entry is written with flat `SessionStart`/`PreInvocation`/`Stop` and grouped `PostToolUse` (`matcher: "*"`)
+- **AND** `PreToolUse` is not registered, foreign named hooks remain intact, and uninstall removes only `"gtmux"`
+
+#### Scenario: Mid-turn PreInvocation and non-success Stop outcomes
+
+- **WHEN** `agy` emits `PreInvocation` with `invocationNum: 2` or `Stop` with `terminationReason: "USER_CANCELED"` or `"ERROR"`
+- **THEN** stdout receives valid JSON (`{}` or `{"decision":"stop"}`), `invocationNum: 2` classifies as `Resumed`, `USER_CANCELED` classifies as `Interrupt`, and `"ERROR"` classifies as `StopFailure`
+
+#### Scenario: Transcript, usage and mining read Antigravity logs cleanly
+
+- **WHEN** an `agy` conversation writes `USER_INPUT`, `PLANNER_RESPONSE` (including token counters and an errored draft), and `ERROR_MESSAGE` lines to `transcript.jsonl`
+- **THEN** the transcript reader unwraps `<USER_REQUEST>`, skips errored drafts and compaction summaries, records normalized tool steps, parses per-call token deltas and model facts, and surfaces human corrections to the miner without accepting path-traversal session IDs

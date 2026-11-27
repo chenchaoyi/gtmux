@@ -320,6 +320,23 @@ var agentEventSemantics = map[string]map[string]semantic{
 	},
 	// Kiro tool-start hooks also run on authorized tools. Actual approval waits
 	// must be read from the screen; tool side effects alone do not prove a wait.
+	"agy": {
+		// Antigravity CLI (`agy`) fires PreInvocation before every model call;
+		// classifyAgyPayload maps invocationNum <= 1 to UserPromptSubmit and > 1
+		// to Resumed, and refines Stop via terminationReason. PreToolUse stays pure
+		// telemetry and is not installed by gtmux because agy requires an explicit
+		// permission decision from PreToolUse hooks.
+		"SessionStart":     semSessionStart,
+		"PreInvocation":    semPromptSubmit,
+		"PostInvocation":   semToolEnd,
+		"PreToolUse":       semToolStart,
+		"PostToolUse":      semToolEndResume,
+		"UserPromptSubmit": semPromptSubmit,
+		"Stop":             semResponse,
+		"StopFailure":      semResponseFailure,
+		"Interrupt":        semInterrupt,
+		"SessionEnd":       semSessionEnd,
+	},
 	"kiro": {
 		"PreToolUse":       semToolStartDedicatedOnly,
 		"PostToolUse":      semToolEndResume,

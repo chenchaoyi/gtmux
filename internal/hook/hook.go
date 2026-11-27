@@ -523,6 +523,10 @@ func shouldDetachCodexHook(agentKey string, args []string) bool {
 	return agentKey == "codex" && !argsHave(args, "--detached")
 }
 
+func shouldDetachSyncHook(agentKey string, args []string) bool {
+	return (agentKey == "codex" || agentKey == "agy") && !argsHave(args, "--detached")
+}
+
 func argsHave(args []string, flag string) bool {
 	for _, a := range args {
 		if a == flag {
@@ -610,6 +614,9 @@ func Run(stdin io.Reader, args []string) int {
 			}
 		}
 	}
+	defer func() {
+		writeAgyHookResponse(agentKey, rawEvent, args)
+	}()
 	if !stdinIsTerminal(stdin) {
 		if agentKey == "dsh" && rawEvent == "Usage" {
 			raw, _ = io.ReadAll(io.LimitReader(stdin, (64<<10)+1))
@@ -639,10 +646,14 @@ func Run(stdin io.Reader, args []string) int {
 	originEvent := rawEvent
 	if originEvent == "" {
 		var head struct {
-			Event string `json:"hook_event_name"`
+			Event      string `json:"hook_event_name"`
+			EventCamel string `json:"hookEventName"`
 		}
 		_ = json.Unmarshal(raw, &head)
 		originEvent = head.Event
+		if originEvent == "" {
+			originEvent = head.EventCamel
+		}
 	}
 	// Capture allowlisted profile facts before a worker loses its parent chain.
 	if !argsHave(args, "--detached") {
@@ -659,13 +670,10 @@ func Run(stdin io.Reader, args []string) int {
 	}
 	origin := hookLaunchHost(agentKey, originEvent, argsHave(args, "--detached"))
 	process := hookAgentProcess(agentKey, argsHave(args, "--detached"))
-	// Codex hooks are installed SYNC (Codex 0.146.0 SKIPS async hooks — see
-	// agent_hooks.go), so a codex hook BLOCKS Codex's turn until this process returns. Keep
-	// the turn fast: re-exec ourselves DETACHED to do the slow (tmux-capturing) work and
-	// return immediately. `--detached` marks the worker so it never re-detaches; gated to
-	// codex so Claude/others' hook path is untouched. On any detach failure we fall through
-	// and run synchronously with the already-buffered `raw`.
-	if shouldDetachCodexHook(agentKey, args) && startHookWorker(args, raw, origin, process) {
+	// Codex and Antigravity CLI hooks run synchronously, so a hook blocks the turn
+	// until this process returns. Re-exec ourselves DETACHED to do slow work and
+	// return immediately (after emitting agy's JSON stdout via defer).
+	if shouldDetachSyncHook(agentKey, args) && startHookWorker(args, raw, origin, process) {
 		return 0
 	}
 	// A detached worker that read nothing lost its payload on the way: say so, or the event
@@ -674,16 +682,20 @@ func Run(stdin io.Reader, args []string) int {
 		diag.For("hook").Warn("hook.payload.empty", "a detached hook worker read no payload", "agent", agentKey, "event", rawEvent)
 	}
 	var payload struct {
-		HookEventName    string          `json:"hook_event_name"`
-		OpencodeV2       bool            `json:"opencode_v2"`
-		OpencodePrivate  bool            `json:"opencode_private"`
-		Transcript       json.RawMessage `json:"transcript"`
-		TurnID           string          `json:"turn_id"`
-		SessionID        string          `json:"session_id"` // the agent's session id (Claude); "" otherwise
-		TerminalClient   string          `json:"terminal_client"`
-		ClientPID        int             `json:"client_pid"`
-		ClientInstance   string          `json:"client_instance"`
-		ToolName         string          `json:"tool_name"`         // the tool a PreToolUse refers to (Claude)
+		HookEventName      string          `json:"hook_event_name"`
+		HookEventNameCamel string          `json:"hookEventName"`
+		OpencodeV2         bool            `json:"opencode_v2"`
+		OpencodePrivate    bool            `json:"opencode_private"`
+		Transcript         json.RawMessage `json:"transcript"`
+		TurnID             string          `json:"turn_id"`
+		SessionID          string          `json:"session_id"` // the agent's session id (Claude); "" otherwise
+		TerminalClient     string          `json:"terminal_client"`
+		ClientPID          int             `json:"client_pid"`
+		ClientInstance     string          `json:"client_instance"`
+		ToolName           string          `json:"tool_name"` // the tool a PreToolUse refers to (Claude)
+		ToolCall           *struct {
+			Name string `json:"name"`
+		} `json:"toolCall"`
 		Cwd              string          `json:"cwd"`               // the agent's working dir (Claude)
 		NotificationType string          `json:"notification_type"` // Claude Notification kind (permission_prompt / idle_prompt / …)
 		// Why a compaction ran (Claude's PreCompact/PostCompact): "auto" when the context
@@ -698,10 +710,11 @@ func Run(stdin io.Reader, args []string) int {
 		// design, so one unknown field never costs the rest of the payload) — which on
 		// Kimi meant every prompt reached gtmux with no text: no goal, no summary, and
 		// a `goal-changed` wake that could not say what changed.
-		Prompt       json.RawMessage `json:"prompt"`
-		Assistant    string          `json:"assistant"` // the final assistant text (opencode Stop) — gtmux-owned transcript (Tier 2)
-		Error        json.RawMessage `json:"error"`     // Agents send either a string or an object.
-		ErrorMessage string          `json:"error_message"`
+		Prompt        json.RawMessage `json:"prompt"`
+		LastUserInput string          `json:"lastUserInput"` // Antigravity CLI camelCase prompt
+		Assistant     string          `json:"assistant"`     // the final assistant text (opencode Stop) — gtmux-owned transcript (Tier 2)
+		Error         json.RawMessage `json:"error"`         // Agents send either a string or an object.
+		ErrorMessage  string          `json:"error_message"`
 		// Claude's Stop/SubagentStop payload lists in-flight background work still
 		// registered in the session ("running/pending + backgrounded"), so a hook can
 		// tell "session is done" from "session is paused waiting for background work".
@@ -723,8 +736,17 @@ func Run(stdin io.Reader, args []string) int {
 	}
 	errorText := hookError(payload.Error, payload.ErrorMessage)
 	promptText := textOfPrompt(payload.Prompt)
+	if promptText == "" && payload.LastUserInput != "" {
+		promptText = cleanAgyPromptText(payload.LastUserInput)
+	}
 	if rawEvent == "" {
 		rawEvent = payload.HookEventName
+		if rawEvent == "" {
+			rawEvent = payload.HookEventNameCamel
+		}
+	}
+	if payload.ToolName == "" && payload.ToolCall != nil {
+		payload.ToolName = payload.ToolCall.Name
 	}
 	agentSession := payload.SessionID
 	resumeCwd := payload.Cwd
