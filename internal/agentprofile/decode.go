@@ -3,6 +3,7 @@ package agentprofile
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
 )
 
 // decode selects only public metadata; raw messages, prompts and options are not retained.
@@ -264,7 +265,7 @@ func HookFacts(agent string, raw []byte, at int64) []Fact {
 			}
 		}
 	case "agy":
-		if v.ModelName != "" {
+		if v.ModelName != "" && !strings.EqualFold(strings.TrimSpace(v.ModelName), "auto") {
 			add("model", v.ModelName)
 		}
 	case "opencode":

@@ -11493,7 +11493,7 @@
       ]
     },
     "internal/dispatch/region_test.go": {
-      "sha256": "6df2512eb742d1532daf752a1fd48733e1950a6f2b93c28dcb07283aba7ed1b6",
+      "sha256": "d93442943cbf26f5c985f2d25751e529faf186c8c8e272a6ec2ebaad1b715821",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -11584,6 +11584,15 @@
           "name": "TestSplitInputRegion_TopRuleDraftBelowUnchanged",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-e9d754f989e4",
+          "line": 247,
+          "kind": "reviewed-selector",
+          "name": "TestSplitInputRegion_AuxiliaryTaskDrawerBelowComposer",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "AGY-UX-001"
         }
       ]
     },
@@ -14476,17 +14485,26 @@
       ]
     },
     "internal/hook/profile_test.go": {
-      "sha256": "8c6ddaf19a46063c00b57022c8ad168a666b0b7251a9b1ded5a3716267f1a174",
+      "sha256": "7f45813d5c1f3632e911d7edb0827a46df4b413c8d5ee64a9788089ec010fcf8",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-f9c5ccde0132",
-          "line": 9,
+          "line": 12,
           "kind": "Test",
           "name": "TestProfileObserverRetainsMetadataWithoutLifecycle",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-8ee11ff44f5e",
+          "line": 35,
+          "kind": "reviewed-selector",
+          "name": "TestAgyPreDetachLifecycleCapturesLaunchHostAndProfile",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "AGY-UX-004"
         }
       ]
     },
@@ -23661,13 +23679,13 @@
       "sha256": "c1b68825831e08167c1d904d4fe561780a5e91680b4cda099f0bdc45a0fcc9fe"
     },
     "internal/radar/gather_test.go": {
-      "sha256": "49c382017e84cd11b51617be69270968a26134e65bce7403d0de2dd5bf1468a5",
+      "sha256": "20d8ea9dde80d8a6c113a0fb688e6926551925be2d1c720022d9b64c0add38f7",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-9f0692cf9b21",
-          "line": 52,
+          "line": 47,
           "kind": "Test",
           "name": "TestGatherAgentsFixture",
           "dynamic": false,
@@ -23691,7 +23709,7 @@
         },
         {
           "id": "LEG-2a5d17f7657e",
-          "line": 274,
+          "line": 269,
           "kind": "Test",
           "name": "TestGatherAgents_DedupsSharedWindow",
           "dynamic": false,
@@ -23699,7 +23717,7 @@
         },
         {
           "id": "LEG-cdc9df94e2f5",
-          "line": 303,
+          "line": 300,
           "kind": "Test",
           "name": "TestGatherDigestFixtureLedgerJoin",
           "dynamic": false,
@@ -23800,6 +23818,15 @@
           "name": "TestIsShellCommand",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-19aca51592fa",
+          "line": 763,
+          "kind": "reviewed-selector",
+          "name": "TestGatherAgentsAgyPlaceholderStripAndSavedTitles",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "AGY-UX-003"
         }
       ]
     },
@@ -31730,7 +31757,7 @@
       "cases": [
         {
           "id": "MAP-3cff5fa16242",
-          "line": 78,
+          "line": 83,
           "kind": "reviewed-selector",
           "name": "TestASA001RecordedSkillIdentityAcrossFiveAdapters",
           "dynamic": false,
@@ -31739,7 +31766,7 @@
         },
         {
           "id": "MAP-005983dcced4",
-          "line": 96,
+          "line": 101,
           "kind": "reviewed-selector",
           "name": "TestASA001ShellTextAndBareNamesDoNotInventSkillReads",
           "dynamic": false,
@@ -31748,7 +31775,7 @@
         },
         {
           "id": "MAP-6f4234fa9eea",
-          "line": 111,
+          "line": 116,
           "kind": "reviewed-selector",
           "name": "TestASA002WebIntentUsesExplicitMethodsOrCompleteActions",
           "dynamic": false,
@@ -31757,7 +31784,7 @@
         },
         {
           "id": "MAP-86e4d7539d34",
-          "line": 145,
+          "line": 155,
           "kind": "reviewed-selector",
           "name": "TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput",
           "dynamic": false,
@@ -31766,7 +31793,7 @@
         },
         {
           "id": "MAP-4ebad51532c4",
-          "line": 188,
+          "line": 198,
           "kind": "reviewed-selector",
           "name": "TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands",
           "dynamic": false,
@@ -31775,7 +31802,7 @@
         },
         {
           "id": "MAP-82d0542c06e1",
-          "line": 221,
+          "line": 231,
           "kind": "reviewed-selector",
           "name": "TestASA003ActionMetadataParticipatesInRetentionBudget",
           "dynamic": false,
@@ -31783,7 +31810,7 @@
           "design": "ASA-001,ASA-002,ASA-003"
         }
       ],
-      "sha256": "8a26e607db151040b7528901e41441afee71ef10f0a5f59e5bad46c9de38e5ac"
+      "sha256": "3c43384283e93560fa2f28cc38a38016403890c25252ebe32d998c7f4ec9270a"
     },
     "internal/transcript/activity_dsh_identity_test.go": {
       "layer": "L2",
@@ -32634,7 +32661,7 @@
       ]
     },
     "internal/transcript/titles_test.go": {
-      "sha256": "b3c6fe333a68dffa8bd6c72307a60d39f2c2bb704b3fb05471b29bf4dd775324",
+      "sha256": "cdbec1a542b194d8987ded4c1ab582a4704a6e555ffd93ee1ca2f84e6d257a59",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -32653,6 +32680,15 @@
           "name": "TestSessionTitlesBoundedTail",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-9d8c1277dff6",
+          "line": 58,
+          "kind": "reviewed-selector",
+          "name": "TestSessionTitlesAgyAnnotations",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "AGY-UX-002"
         }
       ]
     },
@@ -71562,15 +71598,24 @@
       "cases": [
         {
           "id": "MAP-d3825db0a2cf",
-          "line": 5,
+          "line": 9,
           "kind": "reviewed-selector",
           "name": "TestAgyProfileHookAndTranscript",
           "dynamic": false,
           "layer": "L2",
           "design": "AGY-006"
+        },
+        {
+          "id": "MAP-0c742b9b0429",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "TestAgyAutoModelRouterGuardAndHomeIsolation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-006,AGY-UX-005"
         }
       ],
-      "sha256": "8e23206c49f0d796807489ddd4039c4d505865c5ee6d691d574ef38f5df13e81"
+      "sha256": "f87796aab1c16a510d60fe62c071907998a3c886b81d081182a6d51974995847"
     },
     "internal/app/agy_hooks_test.go": {
       "layer": "L2",
@@ -71618,9 +71663,18 @@
           "dynamic": false,
           "layer": "L2",
           "design": "AGY-003"
+        },
+        {
+          "id": "MAP-f6a4b269ba75",
+          "line": 116,
+          "kind": "reviewed-selector",
+          "name": "TestAgySubagentHookIgnoredWithoutMutatingParent",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-003,AGY-UX-004"
         }
       ],
-      "sha256": "4f72f39abdd0afcbbfab11eca142c5a000dd887bdf0911b367a672cffac2a27e"
+      "sha256": "5b40f9b1a0c205051457d4f926cc5777b4c81ef2c8af2f7c7263d046b163cc9a"
     },
     "internal/mine/agy_test.go": {
       "layer": "L2",
@@ -71659,9 +71713,27 @@
           "dynamic": false,
           "layer": "L2",
           "design": "AGY-004"
+        },
+        {
+          "id": "MAP-0525b4b3f08a",
+          "line": 107,
+          "kind": "reviewed-selector",
+          "name": "TestAgySessionTitlePbtxtEscapesAndSafety",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-004,AGY-UX-002,AGY-UX-006"
+        },
+        {
+          "id": "MAP-e190428c9de3",
+          "line": 127,
+          "kind": "reviewed-selector",
+          "name": "TestAgySystemMessageFilteringAndToolActions",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-004,AGY-UX-002,AGY-UX-006"
         }
       ],
-      "sha256": "cf6cf4c8e4e0829a8124e0f5d40c9860bba83450edb2c3817e4278d3a9747e0e"
+      "sha256": "59b9844d5b3a4de23b2860e20d79c00a7deed5c2dfa63b95979302e9ddb2345f"
     },
     "internal/usage/agy_test.go": {
       "layer": "L2",

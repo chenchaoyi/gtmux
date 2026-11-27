@@ -103,3 +103,54 @@ func TestAgyTranscriptErrorAndPathTraversalGuard(t *testing.T) {
 		}
 	}
 }
+
+func TestAgySessionTitlePbtxtEscapesAndSafety(t *testing.T) {
+	agyHome := t.TempDir()
+	t.Setenv("AGY_HOME", agyHome)
+	annDir := filepath.Join(agyHome, "annotations")
+	if err := os.MkdirAll(annDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(annDir, "conv-1.pbtxt"), []byte(`title:"Quote \"A\" and hex \x42"`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := AgySessionTitle("conv-1"); got != `Quote "A" and hex B` {
+		t.Fatalf("AgySessionTitle(conv-1) = %q", got)
+	}
+	for _, bad := range []string{"", ".", "..", "../conv-1", "a/b", `a\b`} {
+		if got := AgySessionTitle(bad); got != "" {
+			t.Errorf("AgySessionTitle(%q) = %q, want empty", bad, got)
+		}
+	}
+}
+
+func TestAgySystemMessageFilteringAndToolActions(t *testing.T) {
+	const sid = "sys-filter-sess"
+	logContent := strings.Join([]string{
+		`{"step_index":0,"source":"USER_EXPLICIT","type":"USER_INPUT","status":"DONE","created_at":"2026-11-27T04:00:00Z","content":"The following is a <SYSTEM_MESSAGE> not actually sent by the user.\n\n<SYSTEM_MESSAGE>\nTask finished\n</SYSTEM_MESSAGE>"}`,
+		`{"step_index":1,"source":"USER_EXPLICIT","type":"USER_INPUT","status":"DONE","created_at":"2026-11-27T04:01:00Z","content":"Inspect search tools\n\nThe following is a <SYSTEM_MESSAGE> not actually sent by the user.\n<SYSTEM_MESSAGE>Reminder: work efficiently.</SYSTEM_MESSAGE>"}`,
+		`{"step_index":2,"source":"MODEL","type":"PLANNER_RESPONSE","status":"DONE","created_at":"2026-11-27T04:01:05Z","model":"gemini-4-carbon-medium","tool_calls":[{"id":"tc1","name":"search_web","args":{"query":"\"openspec 2.2\""}},{"id":"tc2","name":"grep_search","args":{"Query":"SplitInputRegion","SearchPath":"/repo/internal"}}],"content":"Checked both."}`,
+	}, "\n") + "\n"
+	installAgyFixture(t, sid, logContent)
+
+	turns, err := Load("agy", sid, 10)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(turns) != 1 {
+		t.Fatalf("standalone <SYSTEM_MESSAGE> must not open a turn; got %d turns: %+v", len(turns), turns)
+	}
+	if turns[0].Prompt != "Inspect search tools" {
+		t.Fatalf("Prompt = %q, want %q", turns[0].Prompt, "Inspect search tools")
+	}
+	steps := turns[0].Segments[0].Steps
+	if len(steps) != 2 {
+		t.Fatalf("steps = %+v, want 2 tool steps", steps)
+	}
+	if steps[0].Operation != "web" || steps[0].Action != "web_search" || steps[0].Detail != "openspec 2.2" {
+		t.Fatalf("search_web step = %#v, want Operation=web Action=web_search Detail='openspec 2.2'", steps[0])
+	}
+	if steps[1].Operation != "search" || steps[1].Title != "Grep" || steps[1].Detail != "SplitInputRegion" {
+		t.Fatalf("grep_search step = %#v, want Operation=search Title=Grep Detail=SplitInputRegion", steps[1])
+	}
+}

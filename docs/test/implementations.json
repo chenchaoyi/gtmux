@@ -102,20 +102,24 @@
   },
   "internal/hook/agy_test.go": {
     "cases": [
-      "AGY-003"
+      "AGY-UX-004"
     ],
     "selectors": [
       "TestAgyClassifyPayload",
-      "TestAgyHookRunEmitsContractJSONAndRecordsState"
+      "TestAgyHookRunEmitsContractJSONAndRecordsState",
+      "TestAgySubagentHookIgnoredWithoutMutatingParent"
     ]
   },
   "internal/transcript/agy_test.go": {
     "cases": [
-      "AGY-004"
+      "AGY-UX-002",
+      "AGY-UX-006"
     ],
     "selectors": [
       "TestAgyTranscriptLoadAndMetadata",
-      "TestAgyTranscriptErrorAndPathTraversalGuard"
+      "TestAgyTranscriptErrorAndPathTraversalGuard",
+      "TestAgySessionTitlePbtxtEscapesAndSafety",
+      "TestAgySystemMessageFilteringAndToolActions"
     ]
   },
   "internal/usage/agy_test.go": {
@@ -128,10 +132,11 @@
   },
   "internal/agentprofile/agy_profile_test.go": {
     "cases": [
-      "AGY-006"
+      "AGY-UX-005"
     ],
     "selectors": [
-      "TestAgyProfileHookAndTranscript"
+      "TestAgyProfileHookAndTranscript",
+      "TestAgyAutoModelRouterGuardAndHomeIsolation"
     ]
   },
   "internal/mine/agy_test.go": {
@@ -2445,9 +2450,7 @@
   },
   "internal/transcript/activity_action_test.go": {
     "cases": [
-      "ASA-001",
-      "ASA-002",
-      "ASA-003"
+      "AGY-UX-006"
     ],
     "selectors": [
       "TestASA001RecordedSkillIdentityAcrossFiveAdapters",
@@ -6187,6 +6190,38 @@
     ],
     "selectors": [
       "TestAgentIconEmbedded"
+    ]
+  },
+  "internal/dispatch/region_test.go": {
+    "cases": [
+      "AGY-UX-001"
+    ],
+    "selectors": [
+      "TestSplitInputRegion_AuxiliaryTaskDrawerBelowComposer"
+    ]
+  },
+  "internal/transcript/titles_test.go": {
+    "cases": [
+      "AGY-UX-002"
+    ],
+    "selectors": [
+      "TestSessionTitlesAgyAnnotations"
+    ]
+  },
+  "internal/radar/gather_test.go": {
+    "cases": [
+      "AGY-UX-003"
+    ],
+    "selectors": [
+      "TestGatherAgentsAgyPlaceholderStripAndSavedTitles"
+    ]
+  },
+  "internal/hook/profile_test.go": {
+    "cases": [
+      "AGY-UX-004"
+    ],
+    "selectors": [
+      "TestAgyPreDetachLifecycleCapturesLaunchHostAndProfile"
     ]
   }
 }

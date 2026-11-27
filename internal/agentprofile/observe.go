@@ -40,6 +40,14 @@ func observationPath(agent, session, home string) string {
 			config = os.Getenv("CURSOR_HOME")
 		case "gemini":
 			config = os.Getenv("GEMINI_CLI_HOME")
+		case "agy":
+			if h := os.Getenv("AGY_HOME"); h != "" {
+				if config != "" {
+					config = h + "\x00" + config
+				} else {
+					config = h
+				}
+			}
 		}
 		home = state.Home() + "\x00" + config
 	}

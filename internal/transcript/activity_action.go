@@ -120,7 +120,7 @@ func applyActivityFacts(step *Step, name string, args map[string]any, provider s
 		readTargetFacts(step, []string{step.fullInput})
 	}
 	switch method {
-	case "websearch", "web_search":
+	case "websearch", "web_search", "search_web":
 		step.Action = "web_search"
 		if value := activityText(args["query"]); value != "" {
 			step.Detail = activityDetail(value)

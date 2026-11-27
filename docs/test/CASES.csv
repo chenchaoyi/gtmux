@@ -97,7 +97,8 @@ LEG-094ecbc739d4,L1,Go core / CLI / server,internal/agentenv/agentenv_test.go,40
 LEG-fea3974f4eef,L1,Go core / CLI / server,internal/agentenv/agentenv_test.go,52,Test,TestNonURLIsNone,False,legacy-not-retrospectively-reviewed
 LEG-04d292ec0526,L1,Go core / CLI / server,internal/agentenv/agentenv_test.go,65,Test,TestEnvOverride,False,legacy-not-retrospectively-reviewed
 LEG-decdb5947ab5,L1,Go core / CLI / server,internal/agentenv/agentenv_test.go,80,Test,TestWrapNoDouble,False,legacy-not-retrospectively-reviewed
-MAP-d3825db0a2cf,L2,reviewed implementation,internal/agentprofile/agy_profile_test.go,5,reviewed-selector,TestAgyProfileHookAndTranscript,False,AGY-006
+MAP-d3825db0a2cf,L2,reviewed implementation,internal/agentprofile/agy_profile_test.go,9,reviewed-selector,TestAgyProfileHookAndTranscript,False,AGY-006
+MAP-0c742b9b0429,L2,reviewed implementation,internal/agentprofile/agy_profile_test.go,26,reviewed-selector,TestAgyAutoModelRouterGuardAndHomeIsolation,False,"AGY-006,AGY-UX-005"
 MAP-60af8cd5535c,L2,reviewed implementation,internal/agentprofile/mixed_effort_reset_test.go,13,reviewed-selector,TestMixedProfileEffortResetSurvivesLegacyRefresh,False,STOR-007
 MAP-5ac8306c6077,L2,reviewed implementation,internal/agentprofile/mixed_effort_reset_test.go,76,reviewed-selector,TestMixedProfileEffortResetPersistsWithoutOtherFacts,False,STOR-007
 MAP-f8fc1aa4a521,L2,reviewed implementation,internal/agentprofile/mixed_effort_review_test.go,10,reviewed-selector,TestMixedProfileLegacyEffortOnlyAfterReset,False,STOR-009
@@ -1382,6 +1383,7 @@ LEG-00e66104fd0e,L1,Go core / CLI / server,internal/dispatch/region_test.go,146,
 LEG-afed0b556ac9,L1,Go core / CLI / server,internal/dispatch/region_test.go,190,Test,TestSplitInputRegion_OpencodeLeftEdgeBox,False,legacy-not-retrospectively-reviewed
 LEG-5065e532f556,L1,Go core / CLI / server,internal/dispatch/region_test.go,219,Test,TestIsBoxBorder_OpencodeRuleNotBanner,False,legacy-not-retrospectively-reviewed
 LEG-f8e85568416b,L1,Go core / CLI / server,internal/dispatch/region_test.go,235,Test,TestSplitInputRegion_TopRuleDraftBelowUnchanged,False,legacy-not-retrospectively-reviewed
+MAP-e9d754f989e4,L1,Go core / CLI / server,internal/dispatch/region_test.go,247,reviewed-selector,TestSplitInputRegion_AuxiliaryTaskDrawerBelowComposer,False,AGY-UX-001
 LEG-b982fdaba080,L1,Go core / CLI / server,internal/dispatch/resend_test.go,9,Test,TestPayloadHash_StableAndDistinct,False,legacy-not-retrospectively-reviewed
 LEG-280ed7f613c3,L1,Go core / CLI / server,internal/dispatch/resend_test.go,22,Test,TestIsDuplicate_Window,False,legacy-not-retrospectively-reviewed
 LEG-b4f6a33b328b,L1,Go core / CLI / server,internal/dispatch/resend_test.go,41,Test,TestRecentSend_RoundTrip,False,legacy-not-retrospectively-reviewed
@@ -1571,6 +1573,7 @@ LEG-08c3a16bf6be,L1,Go core / CLI / server,internal/ghostty/title_identity_test.
 LEG-5432cbe27ad3,L1,Go core / CLI / server,internal/ghostty/title_identity_test.go,20,Test,TestScriptResultTokensKeepExistingContract,False,legacy-not-retrospectively-reviewed
 MAP-040f67f36421,L2,reviewed implementation,internal/hook/agy_test.go,13,reviewed-selector,TestAgyClassifyPayload,False,AGY-003
 MAP-ba3519dd7ee0,L2,reviewed implementation,internal/hook/agy_test.go,42,reviewed-selector,TestAgyHookRunEmitsContractJSONAndRecordsState,False,AGY-003
+MAP-f6a4b269ba75,L2,reviewed implementation,internal/hook/agy_test.go,116,reviewed-selector,TestAgySubagentHookIgnoredWithoutMutatingParent,False,"AGY-003,AGY-UX-004"
 LEG-85922709a9da,L1,Go core / CLI / server,internal/hook/background_test.go,12,Test,TestSummarizeBackground,False,legacy-not-retrospectively-reviewed
 LEG-52406ced4735,L1,Go core / CLI / server,internal/hook/background_test.go,58,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-6798dd584245,L1,Go core / CLI / server,internal/hook/background_test.go,69,Test,TestSummarizeBackgroundLabelCap,False,legacy-not-retrospectively-reviewed
@@ -1687,7 +1690,8 @@ LEG-038fc3ba1d20,L1,Go core / CLI / server,internal/hook/paneidentity_test.go,10
 LEG-20d804608bdf,L1,Go core / CLI / server,internal/hook/paneidentity_test.go,109,Test,TestZeroPIDsDoNotMatch,False,legacy-not-retrospectively-reviewed
 LEG-a67c7474ce76,L1,Go core / CLI / server,internal/hook/paneidentity_test.go,120,Test,TestResolvePaneRefusesAmbiguityAcrossAncestors,False,legacy-not-retrospectively-reviewed
 LEG-2b2ea1123c82,L1,Go core / CLI / server,internal/hook/paneidentity_test.go,150,Test,TestNativeStateAfterACrash,False,legacy-not-retrospectively-reviewed
-LEG-f9c5ccde0132,L1,Go core / CLI / server,internal/hook/profile_test.go,9,Test,TestProfileObserverRetainsMetadataWithoutLifecycle,False,legacy-not-retrospectively-reviewed
+LEG-f9c5ccde0132,L1,Go core / CLI / server,internal/hook/profile_test.go,12,Test,TestProfileObserverRetainsMetadataWithoutLifecycle,False,legacy-not-retrospectively-reviewed
+MAP-8ee11ff44f5e,L1,Go core / CLI / server,internal/hook/profile_test.go,35,reviewed-selector,TestAgyPreDetachLifecycleCapturesLaunchHostAndProfile,False,AGY-UX-004
 LEG-59234c05c8b8,L1,Go core / CLI / server,internal/hook/prompt_shape_test.go,19,Test,TestTextOfPromptReadsEitherShape,False,legacy-not-retrospectively-reviewed
 LEG-d1f5be4e6b74,L1,Go core / CLI / server,internal/hook/prompt_shape_test.go,34,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-26f0c8142123,G,Go core / CLI / server,internal/hook/prompt_shape_test.go,44,Test,TestKimiPromptReachesTheGoalMarker,False,legacy-not-retrospectively-reviewed
@@ -2752,11 +2756,11 @@ LEG-000ae331abbb,L1,Go core / CLI / server,internal/radar/dsh_test.go,97,subtest
 MAP-981c45e6de6f,L2,reviewed implementation,internal/radar/energy_gather_test.go,8,reviewed-selector,TestPWR002GatherSharesFramesOnlyInsideOnePass,False,PWR-002
 MAP-0670bffd7c6c,L1,reviewed implementation,internal/radar/energy_snapshot_test.go,12,reviewed-selector,TestPWR001ProducerSharesFreshSnapshotAndKeepsBoundaries,False,PWR-001
 MAP-e4331da4fa54,L1,reviewed implementation,internal/radar/energy_snapshot_test.go,62,reviewed-selector,TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST,False,PWR-001
-LEG-9f0692cf9b21,L1,Go core / CLI / server,internal/radar/gather_test.go,52,Test,TestGatherAgentsFixture,False,legacy-not-retrospectively-reviewed
+LEG-9f0692cf9b21,L1,Go core / CLI / server,internal/radar/gather_test.go,47,Test,TestGatherAgentsFixture,False,legacy-not-retrospectively-reviewed
 LEG-bea59f311606,L1,Go core / CLI / server,internal/radar/gather_test.go,104,Test,TestGatherAgentsSharesOneCodexPathDiscovery,False,legacy-not-retrospectively-reviewed
 LEG-02002b43132f,L1,Go core / CLI / server,internal/radar/gather_test.go,247,Test,TestScopedLastMessageHelpersRecognizeCodexKeyAndLabel,False,legacy-not-retrospectively-reviewed
-LEG-2a5d17f7657e,L1,Go core / CLI / server,internal/radar/gather_test.go,274,Test,TestGatherAgents_DedupsSharedWindow,False,legacy-not-retrospectively-reviewed
-LEG-cdc9df94e2f5,L1,Go core / CLI / server,internal/radar/gather_test.go,303,Test,TestGatherDigestFixtureLedgerJoin,False,legacy-not-retrospectively-reviewed
+LEG-2a5d17f7657e,L1,Go core / CLI / server,internal/radar/gather_test.go,269,Test,TestGatherAgents_DedupsSharedWindow,False,legacy-not-retrospectively-reviewed
+LEG-cdc9df94e2f5,L1,Go core / CLI / server,internal/radar/gather_test.go,300,Test,TestGatherDigestFixtureLedgerJoin,False,legacy-not-retrospectively-reviewed
 LEG-838258a11bcc,L1,Go core / CLI / server,internal/radar/gather_test.go,345,Test,TestGatherDigestLedgerJoin_UndeliveredNeverBorrowsThePane,False,legacy-not-retrospectively-reviewed
 LEG-42e30516184e,L1,Go core / CLI / server,internal/radar/gather_test.go,379,Test,TestGatherAgents_SupervisorRoleFollowsTheStamp,False,legacy-not-retrospectively-reviewed
 LEG-ab5ae6bf88eb,L1,Go core / CLI / server,internal/radar/gather_test.go,408,Test,TestGatherAgents_CwdFallbackWhenNoStamp,False,legacy-not-retrospectively-reviewed
@@ -2769,6 +2773,7 @@ LEG-8f112109801f,L1,Go core / CLI / server,internal/radar/gather_test.go,611,Tes
 LEG-571b449afbee,L1,Go core / CLI / server,internal/radar/gather_test.go,668,Test,TestGatherAgentsSpinnerOverShell,False,legacy-not-retrospectively-reviewed
 LEG-8c1a667ecad5,L1,Go core / CLI / server,internal/radar/gather_test.go,732,Test,TestAgentFromCommandReadsOnlyWhatRuns,False,legacy-not-retrospectively-reviewed
 LEG-667903d37214,L1,Go core / CLI / server,internal/radar/gather_test.go,750,Test,TestIsShellCommand,False,legacy-not-retrospectively-reviewed
+MAP-19aca51592fa,L1,Go core / CLI / server,internal/radar/gather_test.go,763,reviewed-selector,TestGatherAgentsAgyPlaceholderStripAndSavedTitles,False,AGY-UX-003
 LEG-77c9beacb598,L1,Go core / CLI / server,internal/radar/gitinfo_test.go,9,Test,TestGitInfo,False,legacy-not-retrospectively-reviewed
 LEG-9d4d1c575995,L1,Go core / CLI / server,internal/radar/gitinfo_test.go,35,Test,TestGitInfoWorktree,False,legacy-not-retrospectively-reviewed
 LEG-c8c53650be59,L1,Go core / CLI / server,internal/radar/hosttitle_test.go,8,Test,TestStripDefaultTitle,False,legacy-not-retrospectively-reviewed
@@ -3657,17 +3662,19 @@ LEG-56fd929bfb15,L1,Go core / CLI / server,internal/toolpath/toolpath_test.go,29
 LEG-208e026e1468,L1,Go core / CLI / server,internal/toolpath/toolpath_test.go,47,Test,TestLookToolReportsAGenuinelyAbsentTool,False,legacy-not-retrospectively-reviewed
 LEG-fc7d6bd84d17,L1,Go core / CLI / server,internal/toolpath/toolpath_test.go,56,Test,TestLookToolIgnoresANonExecutable,False,legacy-not-retrospectively-reviewed
 LEG-6fcc51131be5,L1,Go core / CLI / server,internal/toolpath/toolpath_test.go,72,Test,TestNVMDiscoveryUsesDefaultThenNumericVersionOrder,False,legacy-not-retrospectively-reviewed
-MAP-3cff5fa16242,L2,reviewed implementation,internal/transcript/activity_action_test.go,78,reviewed-selector,TestASA001RecordedSkillIdentityAcrossFiveAdapters,False,"ASA-001,ASA-002,ASA-003"
-MAP-005983dcced4,L2,reviewed implementation,internal/transcript/activity_action_test.go,96,reviewed-selector,TestASA001ShellTextAndBareNamesDoNotInventSkillReads,False,"ASA-001,ASA-002,ASA-003"
-MAP-6f4234fa9eea,L2,reviewed implementation,internal/transcript/activity_action_test.go,111,reviewed-selector,TestASA002WebIntentUsesExplicitMethodsOrCompleteActions,False,"ASA-001,ASA-002,ASA-003"
-MAP-86e4d7539d34,L2,reviewed implementation,internal/transcript/activity_action_test.go,145,reviewed-selector,TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput,False,"ASA-001,ASA-002,ASA-003"
-MAP-4ebad51532c4,L2,reviewed implementation,internal/transcript/activity_action_test.go,188,reviewed-selector,TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands,False,"ASA-001,ASA-002,ASA-003"
-MAP-82d0542c06e1,L2,reviewed implementation,internal/transcript/activity_action_test.go,221,reviewed-selector,TestASA003ActionMetadataParticipatesInRetentionBudget,False,"ASA-001,ASA-002,ASA-003"
+MAP-3cff5fa16242,L2,reviewed implementation,internal/transcript/activity_action_test.go,83,reviewed-selector,TestASA001RecordedSkillIdentityAcrossFiveAdapters,False,"ASA-001,ASA-002,ASA-003"
+MAP-005983dcced4,L2,reviewed implementation,internal/transcript/activity_action_test.go,101,reviewed-selector,TestASA001ShellTextAndBareNamesDoNotInventSkillReads,False,"ASA-001,ASA-002,ASA-003"
+MAP-6f4234fa9eea,L2,reviewed implementation,internal/transcript/activity_action_test.go,116,reviewed-selector,TestASA002WebIntentUsesExplicitMethodsOrCompleteActions,False,"ASA-001,ASA-002,ASA-003"
+MAP-86e4d7539d34,L2,reviewed implementation,internal/transcript/activity_action_test.go,155,reviewed-selector,TestASA003NativeTargetCountEnrichesOneCallAndKeepsScopedInput,False,"ASA-001,ASA-002,ASA-003"
+MAP-4ebad51532c4,L2,reviewed implementation,internal/transcript/activity_action_test.go,198,reviewed-selector,TestASA003NativeTargetsStayDistinctWithoutGuessingMixedCommands,False,"ASA-001,ASA-002,ASA-003"
+MAP-82d0542c06e1,L2,reviewed implementation,internal/transcript/activity_action_test.go,231,reviewed-selector,TestASA003ActionMetadataParticipatesInRetentionBudget,False,"ASA-001,ASA-002,ASA-003"
 MAP-eb016323a1eb,L2,reviewed implementation,internal/transcript/activity_dsh_identity_test.go,8,reviewed-selector,TestASA009DSHDoesNotBorrowOpenCodeIdentity,False,ASA-009
 MAP-528289833275,L2,reviewed implementation,internal/transcript/activity_native_facts_test.go,9,reviewed-selector,TestASA006NativeSkillSchema,False,"ASA-006,ASA-007"
 MAP-fe36601b6e24,L2,reviewed implementation,internal/transcript/activity_native_facts_test.go,41,reviewed-selector,TestASA007NativeQueriesSchema,False,"ASA-006,ASA-007"
 MAP-7a9d698b805e,L2,reviewed implementation,internal/transcript/agy_test.go,27,reviewed-selector,TestAgyTranscriptLoadAndMetadata,False,AGY-004
 MAP-9ded5f3706ea,L2,reviewed implementation,internal/transcript/agy_test.go,91,reviewed-selector,TestAgyTranscriptErrorAndPathTraversalGuard,False,AGY-004
+MAP-0525b4b3f08a,L2,reviewed implementation,internal/transcript/agy_test.go,107,reviewed-selector,TestAgySessionTitlePbtxtEscapesAndSafety,False,"AGY-004,AGY-UX-002,AGY-UX-006"
+MAP-e190428c9de3,L2,reviewed implementation,internal/transcript/agy_test.go,127,reviewed-selector,TestAgySystemMessageFilteringAndToolActions,False,"AGY-004,AGY-UX-002,AGY-UX-006"
 LEG-7f066e9629ff,L1,Go core / CLI / server,internal/transcript/cache_budget_test.go,23,Test,TestTranscriptCacheEvictsSessionsAndReadsThemAgain,False,legacy-not-retrospectively-reviewed
 LEG-78cf0a18e433,L1,Go core / CLI / server,internal/transcript/cache_budget_test.go,60,Test,TestTranscriptCacheHasByteBudget,False,legacy-not-retrospectively-reviewed
 LEG-29e9ae4eccad,L1,Go core / CLI / server,internal/transcript/cache_budget_test.go,82,Test,TestTranscriptCacheKeepsRecentlyUsedAndExpiresIdle,False,legacy-not-retrospectively-reviewed
@@ -3754,6 +3761,7 @@ MAP-8bab4244dbb9,L2,reviewed implementation,internal/transcript/startup_director
 MAP-76e251a582e3,L2,reviewed implementation,internal/transcript/startup_witness_test.go,12,reviewed-selector,TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix,False,"HSP-001,HSP-002"
 LEG-e83034b94b32,L1,Go core / CLI / server,internal/transcript/titles_test.go,10,Test,TestSessionTitles,False,legacy-not-retrospectively-reviewed
 LEG-31e07de7e8be,L1,Go core / CLI / server,internal/transcript/titles_test.go,44,Test,TestSessionTitlesBoundedTail,False,legacy-not-retrospectively-reviewed
+MAP-9d8c1277dff6,L1,Go core / CLI / server,internal/transcript/titles_test.go,58,reviewed-selector,TestSessionTitlesAgyAnnotations,False,AGY-UX-002
 MAP-d8d563bbd03e,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,11,reviewed-selector,TestNativeCallDetailsAreLazyScopedAndRedacted,False,"TCV-001,TCV-002"
 MAP-78516b06d8fd,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,64,reviewed-selector,TestNativeCallMirrorPreservesOriginalInputAndResultReference,False,"TCV-001,TCV-002"
 MAP-4895957e9e8f,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,97,reviewed-selector,TestNativeCallMissingResultIsNotAnEmptyResult,False,"TCV-001,TCV-002"

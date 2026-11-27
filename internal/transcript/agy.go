@@ -100,7 +100,8 @@ func agyStep(line string, st *parseState) {
 }
 
 // CleanAgyUserContent extracts the human prompt from Antigravity's USER_INPUT wrapper,
-// stripping harness tags and returning "" for compaction-only summaries.
+// stripping harness tags and returning "" for compaction-only summaries or standalone
+// <SYSTEM_MESSAGE> injections.
 func CleanAgyUserContent(raw string) string {
 	s := strings.TrimSpace(raw)
 	if s == "" {
@@ -118,12 +119,182 @@ func CleanAgyUserContent(raw string) string {
 	if strings.HasPrefix(s, "<CONTEXT_SUMMARY>") {
 		return ""
 	}
+	s = stripAgySystemMessages(s)
 	for _, marker := range []string{"<ADDITIONAL_METADATA>", "<USER_SETTINGS_CHANGE>"} {
 		if idx := strings.Index(s, marker); idx >= 0 {
 			s = strings.TrimSpace(s[:idx])
 		}
 	}
+	return strings.TrimSpace(s)
+}
+
+func stripAgySystemMessages(s string) string {
+	const sysPreamble = "The following is a <SYSTEM_MESSAGE> not actually sent by the user."
+	if idx := strings.Index(s, sysPreamble); idx >= 0 {
+		s = strings.TrimSpace(s[:idx])
+	}
+	for {
+		start := strings.Index(s, "<SYSTEM_MESSAGE>")
+		if start < 0 {
+			break
+		}
+		end := strings.Index(s[start:], "</SYSTEM_MESSAGE>")
+		if end < 0 {
+			s = strings.TrimSpace(s[:start])
+			break
+		}
+		s = strings.TrimSpace(s[:start] + "\n" + s[start+end+len("</SYSTEM_MESSAGE>"):])
+	}
 	return s
+}
+
+const (
+	maxAgyAnnotationBytes = 16 << 10
+	maxAgyAnnotationFiles = 2048
+)
+
+// AgySessionTitle reads a saved conversation title (from /rename or auto-summary) stored
+// in $AGY_HOME/annotations/<sessionID>.pbtxt. Missing, unsafe, or untitled files return "".
+func AgySessionTitle(sessionID string) string {
+	if !safeAgySessionID(sessionID) {
+		return ""
+	}
+	return readAgyAnnotationTitle(filepath.Join(agyHome(), "annotations", sessionID+".pbtxt"))
+}
+
+func agySessionTitles() map[string]string {
+	dir := filepath.Join(agyHome(), "annotations")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	out := make(map[string]string)
+	count := 0
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".pbtxt") {
+			continue
+		}
+		count++
+		if count > maxAgyAnnotationFiles {
+			break
+		}
+		sid := strings.TrimSuffix(e.Name(), ".pbtxt")
+		if !safeAgySessionID(sid) {
+			continue
+		}
+		if title := readAgyAnnotationTitle(filepath.Join(dir, e.Name())); title != "" {
+			out[sid] = title
+		}
+	}
+	return out
+}
+
+func readAgyAnnotationTitle(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil || !fi.Mode().IsRegular() || fi.Size() <= 0 || fi.Size() > maxAgyAnnotationBytes {
+		return ""
+	}
+	buf := make([]byte, fi.Size())
+	n, err := io.ReadFull(f, buf)
+	if err != nil && err != io.EOF && err != io.ErrUnexpectedEOF {
+		return ""
+	}
+	return parsePbtxtTitle(string(buf[:n]))
+}
+
+// parsePbtxtTitle extracts a top-level `title: "..."` string literal from a protobuf
+// textformat ConversationAnnotations file, decoding C/octal/hex byte escapes into UTF-8.
+func parsePbtxtTitle(raw string) string {
+	for _, line := range strings.Split(raw, "\n") {
+		s := strings.TrimSpace(line)
+		if !strings.HasPrefix(s, "title") {
+			continue
+		}
+		rest := strings.TrimSpace(strings.TrimPrefix(s, "title"))
+		if !strings.HasPrefix(rest, ":") {
+			continue
+		}
+		rest = strings.TrimSpace(strings.TrimPrefix(rest, ":"))
+		if len(rest) < 2 || (rest[0] != '"' && rest[0] != '\'') {
+			continue
+		}
+		if unq, ok := unquotePbtxtString(rest); ok {
+			return strings.Join(strings.Fields(strings.ToValidUTF8(unq, "")), " ")
+		}
+	}
+	return ""
+}
+
+func unquotePbtxtString(s string) (string, bool) {
+	quote := s[0]
+	var out []byte
+	for i := 1; i < len(s); i++ {
+		c := s[i]
+		if c == quote {
+			return string(out), true
+		}
+		if c != '\\' {
+			out = append(out, c)
+			continue
+		}
+		i++
+		if i >= len(s) {
+			return "", false
+		}
+		switch s[i] {
+		case 'n':
+			out = append(out, '\n')
+		case 'r':
+			out = append(out, '\r')
+		case 't':
+			out = append(out, '\t')
+		case '\\', '"', '\'':
+			out = append(out, s[i])
+		case 'x', 'X':
+			if i+2 >= len(s) {
+				return "", false
+			}
+			hi, ok1 := hexVal(s[i+1])
+			lo, ok2 := hexVal(s[i+2])
+			if !ok1 || !ok2 {
+				return "", false
+			}
+			out = append(out, (hi<<4)|lo)
+			i += 2
+		default:
+			if s[i] >= '0' && s[i] <= '7' {
+				val := int(s[i] - '0')
+				consumed := 0
+				for consumed < 2 && i+1 < len(s) && s[i+1] >= '0' && s[i+1] <= '7' {
+					i++
+					consumed++
+					val = val*8 + int(s[i]-'0')
+				}
+				out = append(out, byte(val))
+			} else {
+				out = append(out, s[i])
+			}
+		}
+	}
+	return "", false
+}
+
+func hexVal(b byte) (byte, bool) {
+	switch {
+	case b >= '0' && b <= '9':
+		return b - '0', true
+	case b >= 'a' && b <= 'f':
+		return b - 'a' + 10, true
+	case b >= 'A' && b <= 'F':
+		return b - 'A' + 10, true
+	default:
+		return 0, false
+	}
 }
 
 func agyToolStep(tc agyToolCall) Step {
@@ -135,16 +306,28 @@ func agyToolTitle(name string) string {
 	switch name {
 	case "run_command":
 		return "Shell"
-	case "read_file":
+	case "read_file", "view_file_outline", "read_resource":
 		return "Read"
 	case "edit_file":
 		return "Edit"
 	case "write_file":
 		return "Write"
+	case "grep_search":
+		return "Grep"
+	case "find_by_name":
+		return "Glob"
+	case "list_dir", "list_resources":
+		return "List"
 	case "search_web":
 		return "WebSearch"
-	case "invoke_subagent":
+	case "invoke_subagent", "manage_subagents", "send_message":
 		return "Subagent"
+	case "manage_task":
+		return "Task"
+	case "update_steps":
+		return "Plan"
+	case "call_mcp_tool":
+		return "MCP"
 	default:
 		return name
 	}
@@ -184,8 +367,11 @@ func normalizeAgyToolArgs(name string, raw json.RawMessage) (json.RawMessage, st
 	if cmd := str("CommandLine", "command"); cmd != "" {
 		norm["command"] = cmd
 	}
-	if p := str("Path", "path"); p != "" {
+	if p := str("Path", "path", "SearchPath", "SearchDirectory", "DirectoryPath"); p != "" {
 		norm["path"] = p
+	}
+	if pat := str("Pattern", "pattern"); pat != "" {
+		norm["pattern"] = pat
 	}
 	if t := str("Target", "old_string"); t != "" {
 		norm["old_string"] = t
@@ -210,14 +396,20 @@ func normalizeAgyToolArgs(name string, raw json.RawMessage) (json.RawMessage, st
 	switch name {
 	case "run_command":
 		detail = clip(str("CommandLine", "toolSummary", "command"), 80)
-	case "read_file", "edit_file", "write_file":
-		detail = clip(str("Path", "path"), 80)
+	case "read_file", "edit_file", "write_file", "view_file_outline", "list_dir":
+		detail = clip(str("Path", "DirectoryPath", "path"), 80)
+	case "grep_search", "find_by_name":
+		detail = clip(str("Query", "Pattern", "query", "pattern", "SearchPath", "SearchDirectory"), 80)
 	case "search_web":
 		detail = clip(str("query", "Query"), 80)
 	case "invoke_subagent":
 		detail = clip(str("Role", "Prompt", "TypeName"), 80)
+	case "call_mcp_tool":
+		detail = clip(str("ToolName", "ServerName"), 80)
+	case "read_resource", "list_resources":
+		detail = clip(str("Uri", "ServerName"), 80)
 	default:
-		detail = clip(str("toolSummary", "Path", "CommandLine", "query", "Description", "Action"), 80)
+		detail = clip(str("toolSummary", "Path", "CommandLine", "query", "Query", "Description", "Action"), 80)
 	}
 	encoded, err := json.Marshal(norm)
 	if err != nil {

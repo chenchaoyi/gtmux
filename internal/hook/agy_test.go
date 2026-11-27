@@ -112,3 +112,43 @@ func TestAgyHookRunEmitsContractJSONAndRecordsState(t *testing.T) {
 		t.Fatalf("detached worker wrote stdout %q, want empty", buf.String())
 	}
 }
+
+func TestAgySubagentHookIgnoredWithoutMutatingParent(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("TMUX_PANE", "%92")
+
+	origStdout := agyHookStdout
+	origStart := startHookWorker
+	defer func() {
+		agyHookStdout = origStdout
+		startHookWorker = origStart
+	}()
+	startHookWorker = func([]string, []byte, launchhost.Evidence, launchhost.AgentProcess) bool { return false }
+
+	var buf bytes.Buffer
+	agyHookStdout = &buf
+
+	// Start parent turn on %92.
+	parentPayload := `{"conversationId":"parent-conv","rootConversationId":"parent-conv","cwd":"/tmp/work","invocationNum":1,"hookEventName":"PreInvocation","lastUserInput":"Parent task"}`
+	if rc := Run(strings.NewReader(parentPayload), []string{"--agent", "agy", "PreInvocation"}); rc != 0 {
+		t.Fatalf("parent PreInvocation rc = %d", rc)
+	}
+	if got := state.ReadMarker(state.ActivePath("%92")); got != "parent-conv" {
+		t.Fatalf("active marker = %q, want parent-conv", got)
+	}
+
+	// Subagent Stop carrying rootConversationId != conversationId must still emit valid JSON
+	// stdout ({"decision":"stop"}) while leaving parent active marker untouched.
+	buf.Reset()
+	subStopPayload := `{"conversationId":"child-subagent","rootConversationId":"parent-conv","cwd":"/tmp/work","terminationReason":"NO_TOOL_CALL","hookEventName":"Stop"}`
+	if rc := Run(strings.NewReader(subStopPayload), []string{"--agent", "agy", "Stop"}); rc != 0 {
+		t.Fatalf("subagent Stop rc = %d", rc)
+	}
+	if got := strings.TrimSpace(buf.String()); got != `{"decision":"stop"}` {
+		t.Fatalf("subagent Stop stdout = %q, want decision=stop JSON", got)
+	}
+	if got := state.ReadMarker(state.ActivePath("%92")); got != "parent-conv" {
+		t.Fatalf("subagent Stop clobbered parent active marker: %q", got)
+	}
+}

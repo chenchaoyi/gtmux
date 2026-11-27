@@ -631,8 +631,8 @@ func Run(stdin io.Reader, args []string) int {
 		limits.ObserveDSHAccount(raw, time.Now())
 		return 0
 	}
-	// Subagent hooks carry the parent's session_id. They must never change the
-	// parent's lifecycle, profile, binding or HQ wake state.
+	// Subagent hooks carry the parent's session_id or a distinct rootConversationId.
+	// They must never change the parent's lifecycle, profile, binding or HQ wake state.
 	if agentKey == "codex" {
 		var child struct {
 			ID string `json:"agent_id"`
@@ -642,18 +642,43 @@ func Run(stdin io.Reader, args []string) int {
 			return 0
 		}
 	}
+	if agentKey == "agy" {
+		var child struct {
+			ConversationID     string `json:"conversationId"`
+			RootConversationID string `json:"rootConversationId"`
+		}
+		_ = json.Unmarshal(raw, &child)
+		if child.RootConversationID != "" && child.ConversationID != "" && child.RootConversationID != child.ConversationID {
+			return 0
+		}
+	}
 	// Capture historical ancestry before setsid/reparenting loses the launch chain.
 	originEvent := rawEvent
-	if originEvent == "" {
+	originTool := ""
+	{
 		var head struct {
 			Event      string `json:"hook_event_name"`
 			EventCamel string `json:"hookEventName"`
+			ToolName   string `json:"tool_name"`
+			ToolCall   *struct {
+				Name string `json:"name"`
+			} `json:"toolCall"`
 		}
 		_ = json.Unmarshal(raw, &head)
-		originEvent = head.Event
 		if originEvent == "" {
-			originEvent = head.EventCamel
+			originEvent = head.Event
+			if originEvent == "" {
+				originEvent = head.EventCamel
+			}
 		}
+		originTool = head.ToolName
+		if originTool == "" && head.ToolCall != nil {
+			originTool = head.ToolCall.Name
+		}
+	}
+	originLifecycle := classifyPayload(agentKey, originEvent, originTool, raw).Lifecycle
+	if originLifecycle == "" {
+		originLifecycle = originEvent
 	}
 	// Capture allowlisted profile facts before a worker loses its parent chain.
 	if !argsHave(args, "--detached") {
@@ -665,10 +690,10 @@ func Run(stdin io.Reader, args []string) int {
 			if agentKey == "dsh" {
 				home = dsh.HomeID()
 			}
-			agentprofile.Observe(agentKey, sid, home, originEvent, raw, true)
+			agentprofile.Observe(agentKey, sid, home, originLifecycle, raw, true)
 		}
 	}
-	origin := hookLaunchHost(agentKey, originEvent, argsHave(args, "--detached"))
+	origin := hookLaunchHost(agentKey, originLifecycle, argsHave(args, "--detached"))
 	process := hookAgentProcess(agentKey, argsHave(args, "--detached"))
 	// Codex and Antigravity CLI hooks run synchronously, so a hook blocks the turn
 	// until this process returns. Re-exec ourselves DETACHED to do slow work and
@@ -1076,7 +1101,7 @@ func Run(stdin io.Reader, args []string) int {
 				pid, comm = agentAncestorPID()
 			}
 			host := previous.LaunchHost
-			if launchIdentityEvent(originEvent) {
+			if launchIdentityEvent(originLifecycle) {
 				host = origin
 			}
 			// Skip an agent's internal warm-spare/pool process (Claude's "bg-spare"):

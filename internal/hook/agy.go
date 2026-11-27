@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
+
+	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
 // agyHookStdout is where agy hook contract JSON responses are written. Replaced in tests.
@@ -58,25 +59,7 @@ func classifyAgyPayload(event string, c Class, raw []byte) Class {
 }
 
 // cleanAgyPromptText unwraps the <USER_REQUEST> envelope agy writes around user input
-// while keeping plain prompts untouched.
+// and strips standalone <SYSTEM_MESSAGE> blocks using the shared transcript cleaner.
 func cleanAgyPromptText(raw string) string {
-	s := strings.TrimSpace(raw)
-	if s == "" {
-		return ""
-	}
-	const openTag = "<USER_REQUEST>"
-	const closeTag = "</USER_REQUEST>"
-	if start := strings.Index(s, openTag); start >= 0 {
-		rest := s[start+len(openTag):]
-		if end := strings.Index(rest, closeTag); end >= 0 {
-			return strings.TrimSpace(rest[:end])
-		}
-		return strings.TrimSpace(rest)
-	}
-	for _, marker := range []string{"<ADDITIONAL_METADATA>", "<USER_SETTINGS_CHANGE>"} {
-		if idx := strings.Index(s, marker); idx >= 0 {
-			s = strings.TrimSpace(s[:idx])
-		}
-	}
-	return s
+	return transcript.CleanAgyUserContent(raw)
 }

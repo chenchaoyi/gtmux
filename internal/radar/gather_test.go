@@ -759,3 +759,68 @@ func TestIsShellCommand(t *testing.T) {
 		}
 	}
 }
+
+func TestGatherAgentsAgyPlaceholderStripAndSavedTitles(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	agyHome := t.TempDir()
+	t.Setenv("AGY_HOME", agyHome)
+
+	annDir := filepath.Join(agyHome, "annotations")
+	if err := os.MkdirAll(annDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(annDir, "agy-bound.pbtxt"), []byte(`title:"gtmux agy dev"`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(annDir, "agy-native.pbtxt"), []byte(`title:"Native Agy Review"`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create on-disk transcript for native agy row so positive-evidence gate admits it.
+	now := time.Now().UTC()
+	nativeLogDir := filepath.Join(agyHome, "brain", "agy-native", ".system_generated", "logs")
+	if err := os.MkdirAll(nativeLogDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	nativeLog := `{"step_index":0,"source":"USER_EXPLICIT","type":"USER_INPUT","status":"DONE","created_at":"` + now.Format(time.RFC3339Nano) + `","content":"hello"}` + "\n"
+	if err := os.WriteFile(filepath.Join(nativeLogDir, "transcript.jsonl"), []byte(nativeLog), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := resume.Save("gtmux antigravity:0.0", resume.Record{
+		Agent: "agy", SessionID: "agy-bound", Cwd: "/tmp/gtmux-repo", UpdatedAt: now.Unix(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := native.Save(native.Record{
+		Agent: "agy", SessionID: "agy-native", Cwd: "/tmp/other-repo", State: "idle", UpdatedAt: now.Unix(), PID: os.Getpid(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	lines := []string{
+		paneLine("%20", "gtmux antigravity", "0", "0", "agy", "agy", now.Unix(), 900020, "/tmp/gtmux-repo"),
+		paneLine("%21", "scratch session", "0", "0", "agy", "agy", now.Unix(), 900021, "/tmp/scratch"),
+	}
+
+	var got []Pane
+	withFixture(t, lines, func() { got = GatherAgents() })
+
+	byKey := map[string]Pane{}
+	for _, p := range got {
+		key := p.PaneID
+		if key == "" {
+			key = "native:" + p.sessionID
+		}
+		byKey[key] = p
+	}
+	if p, ok := byKey["%20"]; !ok || p.Agent != "Antigravity" || p.Task != "gtmux agy dev" {
+		t.Fatalf("bound agy pane %%20 = %+v (ok=%v), want Antigravity with Task='gtmux agy dev'", p, ok)
+	}
+	if p, ok := byKey["%21"]; !ok || p.Agent != "Antigravity" || p.Task != "" {
+		t.Fatalf("unbound agy pane %%21 = %+v (ok=%v), want placeholder 'agy' stripped to Task=''", p, ok)
+	}
+	if p, ok := byKey["native:agy-native"]; !ok || p.Agent != "Antigravity" || p.Task != "Native Agy Review" {
+		t.Fatalf("native agy row = %+v (ok=%v), want Task='Native Agy Review'", p, ok)
+	}
+}
