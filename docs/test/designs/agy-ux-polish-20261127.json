@@ -1,0 +1,103 @@
+{
+  "change": "agy-ux-polish-20261127",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner (self-review against agent-dispatch, agent-radar, agent-integration, and agent-profiles contracts)",
+    "date": "2026-11-27",
+    "decision": "Proceed with composer auxiliary-drawer handling, Antigravity annotation title resolution, pre-detach hook lifecycle ancestry, subagent isolation, and transcript/profile polish",
+    "notes": "Covers 3 live-reproduced Antigravity UX regressions: 3-border background-task drawer false draft detection, bare 'agy' pane title and .pbtxt conversation title lookup, and missing hook launch-chain / 'auto' model / subagent / <SYSTEM_MESSAGE> / search_web handling."
+  },
+  "evidence_limits": [
+    "Unit and fixture tests exercise deterministic Go parsers, hook execution, radar assembly, and SGR composer captures; live tmux/menu-bar validation occurs after local installation."
+  ],
+  "cases": [
+    {
+      "id": "AGY-UX-001",
+      "layer": "L1",
+      "description": "SplitInputRegion, DraftOfColored, and BoxEmpty select the upper prompt composer box when an auxiliary non-prompt task drawer box is rendered directly beneath it",
+      "setup": "Multi-border terminal captures modeled on Antigravity CLI with 1+ running background tasks below the '> ' composer (both empty composer and typed user draft).",
+      "action": "Call SplitInputRegion, DraftOfColored, and BoxEmpty on empty-composer and non-empty-composer captures with a lower background-task box.",
+      "expected": "Empty composer returns draft='' and BoxEmpty=true; typed composer returns exact user draft without task-drawer text and BoxEmpty=false.",
+      "planned_files": [
+        "internal/dispatch/region_test.go"
+      ],
+      "surfaces": [
+        "CLI / Menu-bar / Web / Mobile"
+      ]
+    },
+    {
+      "id": "AGY-UX-002",
+      "layer": "L1",
+      "description": "AgySessionTitle and SessionTitles('agy') decode protobuf textformat titles from $AGY_HOME/annotations/*.pbtxt safely",
+      "setup": "Synthetic $AGY_HOME/annotations directory containing ASCII, octal-escaped UTF-8 Chinese, escaped-quote, multiline, and malformed .pbtxt files plus path-traversal IDs.",
+      "action": "Call AgySessionTitle for individual IDs (including '../escape') and SessionTitles('agy').",
+      "expected": "Valid annotations return decoded single-line UTF-8 titles; unsafe IDs and malformed files return empty strings.",
+      "planned_files": [
+        "internal/transcript/titles_test.go",
+        "internal/transcript/agy_test.go"
+      ],
+      "surfaces": [
+        "CLI / Menu-bar / Web / Mobile"
+      ]
+    },
+    {
+      "id": "AGY-UX-003",
+      "layer": "L1",
+      "description": "Radar strips bare 'agy'/'antigravity' placeholder pane titles and populates bound tmux and native Antigravity rows from saved annotation titles",
+      "setup": "Injected tmux panes running agy (one bound to a resume record with an annotations/<id>.pbtxt title, one unbound with pane_title 'agy') and a native agy record.",
+      "action": "Run GatherAgents() over the fixture.",
+      "expected": "Bound tmux pane reports Task equal to the saved annotation title; unbound tmux pane strips 'agy' to Task=''; native agy row carries its saved annotation title.",
+      "planned_files": [
+        "internal/radar/gather_test.go"
+      ],
+      "surfaces": [
+        "CLI / Menu-bar / Web / Mobile"
+      ]
+    },
+    {
+      "id": "AGY-UX-004",
+      "layer": "L1",
+      "description": "Antigravity hooks classify pre-detach lifecycle events for launch-chain collection and ignore subagent callbacks carrying a distinct rootConversationId",
+      "setup": "Isolated HOME/TMUX state with a parent agy session and synthetic PreInvocation, PostToolUse, and subagent hook payloads.",
+      "action": "Run hook.Run for root PreInvocation/PostToolUse hooks and for a subagent hook where rootConversationId != conversationId.",
+      "expected": "Root PreInvocation/PostToolUse pass canonical UserPromptSubmit/Resumed lifecycle events to profile/launch observation; subagent hook emits '{}' on stdout and leaves parent resume/state/profile untouched.",
+      "planned_files": [
+        "internal/hook/agy_test.go",
+        "internal/hook/profile_test.go"
+      ],
+      "surfaces": [
+        "CLI / Web / Mobile"
+      ]
+    },
+    {
+      "id": "AGY-UX-005",
+      "layer": "L1",
+      "description": "Antigravity participant profile ignores 'auto' router modelName in hooks while preserving concrete PLANNER_RESPONSE models and AGY_HOME scoping",
+      "setup": "Synthetic agy transcript recording PLANNER_RESPONSE model 'gemini-4-carbon-medium' and hook observation carrying modelName 'auto' vs explicit concrete modelName under isolated AGY_HOME.",
+      "action": "Evaluate HookFacts, Observe, ReadLogs, and Current for the agy session across two AGY_HOME roots.",
+      "expected": "Hook modelName 'auto' does not clobber 'gemini-4-carbon-medium'; concrete hook modelName is recorded; distinct AGY_HOME directories do not share profile snapshots.",
+      "planned_files": [
+        "internal/agentprofile/agy_profile_test.go"
+      ],
+      "surfaces": [
+        "Web / Mobile"
+      ]
+    },
+    {
+      "id": "AGY-UX-006",
+      "layer": "L1",
+      "description": "Antigravity transcript parser drops standalone <SYSTEM_MESSAGE> injections and normalizes search_web and workspace tools into Activity action facts",
+      "setup": "Synthetic agy transcript containing a <SYSTEM_MESSAGE>-only USER_INPUT, a mixed user prompt with trailing <SYSTEM_MESSAGE>, and PLANNER_RESPONSE tool calls including search_web and grep_search.",
+      "action": "Load turns with transcript.Load('agy', ...) and inspect prompts and tool Step Action/Operation/Detail fields.",
+      "expected": "Standalone <SYSTEM_MESSAGE> opens no turn; user prompt strips trailing system blocks; search_web sets Operation='web', Action='web_search', and query Detail.",
+      "planned_files": [
+        "internal/transcript/agy_test.go",
+        "internal/transcript/activity_action_test.go"
+      ],
+      "surfaces": [
+        "CLI / Web / Mobile"
+      ]
+    }
+  ],
+  "seal": "c61bb105f34db58a208cfa051fa9dd3aff9a417b8423277c700c82bc3ed33ecd"
+}
