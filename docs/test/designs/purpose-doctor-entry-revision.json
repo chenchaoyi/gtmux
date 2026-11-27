@@ -1,0 +1,35 @@
+{
+  "id": "purpose-doctor-entry-revision",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Implementation owner after independent review of 335f5d76",
+    "date": "2026-11-27",
+    "decision": "Check launch targets, transaction completion and first admission at their real entry points.",
+    "notes": "Only isolated homes and operator-owned processes."
+  },
+  "cases": [
+    {
+      "id": "PBS-004",
+      "layer": "G",
+      "description": "Doctor offline admission and recovery",
+      "setup": "Use a private home, a saved service plan, known launch targets and original data identity.",
+      "action": "Check incompatible and updated binaries, an open writer, and resume after the old group marker has been published.",
+      "expected": "Refuse the old binary or an open writer before mutation. Finish the recorded group before the next layout and preserve data identity.",
+      "planned_files": [
+        "internal/app/doctor_purpose_revision_test.go"
+      ]
+    },
+    {
+      "id": "PBS-005",
+      "layer": "G",
+      "description": "Initial read-only Doctor admission",
+      "setup": "Start in a home with no existing storage root.",
+      "action": "Inspect using the normal Doctor admission, then enter through the CLI writer or menu initialization.",
+      "expected": "The inspection leaves the root absent. Both first writers observe the verified purpose layout.",
+      "planned_files": [
+        "internal/app/doctor_purpose_revision_test.go"
+      ]
+    }
+  ],
+  "seal": "f5273b114d74473271ba358836ce7fb3ab0c150cb8a9b071b5efdb7d96c99815"
+}
