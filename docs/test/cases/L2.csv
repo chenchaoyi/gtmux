@@ -2018,6 +2018,8 @@ LEG-bcc2d0a178eb,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,1
 LEG-e1120af9573d,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,25,it,"draws the brand cyan on the GLYPH, never as a fill",False,legacy-not-retrospectively-reviewed
 LEG-c63cab8036f8,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,41,it,"shares its accent with the other floating control, and with the palette",False,legacy-not-retrospectively-reviewed
 LEG-da0fe5a3e36e,L2,RN / mobile harness,mobileapp/src/ui/JumpToBottom.test.tsx,47,it,renders nothing when you are already at the bottom,False,legacy-not-retrospectively-reviewed
+MAP-e129168cc06f,L2,reviewed implementation,mobileapp/src/ui/LiveProgress.chunks.test.tsx,13,reviewed-selector,"LVR-006 1,000-line Live scrollback partitions into bounded column chunks below GPU texture limits",False,"LVR-006,LVR-007"
+MAP-373cb5908d9b,L2,reviewed implementation,mobileapp/src/ui/LiveProgress.chunks.test.tsx,64,reviewed-selector,LVR-007 normal wide rows stay unwrapped while pathological overwide lines split at 320 cells,False,"LVR-006,LVR-007"
 MAP-496865bad8ad,L2,reviewed implementation,mobileapp/src/ui/LiveProgress.resizeFollow.test.tsx,12,reviewed-selector,a measured %s change resumes Live when the held frame fits,False,LVR-005
 MAP-2a9c1d7d589d,L2,reviewed implementation,mobileapp/src/ui/LoadingMark.motion.test.tsx,33,reviewed-selector,BLP-001 cyan focus visits all three fixed panes and wraps continuously (%s),False,"BLP-001,BLP-002,BLP-003"
 MAP-745c98cb52b9,L2,reviewed implementation,mobileapp/src/ui/LoadingMark.motion.test.tsx,51,reviewed-selector,BLP-002 unresolved and live Reduce Motion settings govern foreground-only motion,False,"BLP-001,BLP-002,BLP-003"

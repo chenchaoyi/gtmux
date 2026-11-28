@@ -1,0 +1,35 @@
+{
+  "id": "mobile-live-scrollback-chunks-20261128",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Antigravity implementation owner, design self-review",
+    "date": "2026-11-28",
+    "decision": "Partition mobile Live scrollback into bounded vertical Text chunks and cap pathological line widths below GPU backing-store limits",
+    "notes": "PR #1954 joined up to 1,000 scrollback lines into one selectable RCTParagraphTextView drawRect layer (18,000pt = 54,000px on @3x iPhones), exceeding Metal's 16,384px 2D texture ceiling on any pane past ~303 lines and rendering a blank dark panel. Verify chunk row/column bounds, column stacking inside horizontal ScrollView, ANSI span preservation, and held-frame stability."
+  },
+  "cases": [
+    {
+      "id": "LVR-006",
+      "layer": "L2",
+      "description": "Long Live scrollback partitions rendered text into bounded vertical chunks below GPU texture limits",
+      "setup": "Render an expanded LiveProgress preview with 1,000 captured terminal lines at 13-point font inside a 720-point viewport.",
+      "action": "Inspect the horizontal scroll content container, its vertical column wrapper, and every selectable chunk Text node across initial render, held scrollback, and incremental tail updates.",
+      "expected": "The 1,000-line capture renders inside a column View as bounded selectable Text chunks of at most 32 rows each so no single native paragraph layer approaches the 16,384-pixel GPU texture height limit on @3x displays. Unchanged leading chunks keep stable memoized props when new lines append below 1,000 lines, and held scrollback preserves the frozen chunks until resumed.",
+      "planned_files": [
+        "mobileapp/src/ui/LiveProgress.chunks.test.tsx"
+      ]
+    },
+    {
+      "id": "LVR-007",
+      "layer": "L2",
+      "description": "Overwide Live terminal lines split at the chunk column ceiling while normal wide rows stay unwrapped",
+      "setup": "Render an expanded LiveProgress preview containing a 200-column styled row alongside a pathological 900-column styled row with ANSI color, bold, and CJK characters.",
+      "action": "Inspect the rendered chunk rows and styled spans inside LiveProgress.",
+      "expected": "The 200-column row stays on a single unwrapped line for horizontal scrolling, while the 900-column row wraps cleanly at the 320-cell ceiling without splitting surrogate pairs or losing ANSI color/bold styles, keeping every chunk within both width and height GPU texture bounds.",
+      "planned_files": [
+        "mobileapp/src/ui/LiveProgress.chunks.test.tsx"
+      ]
+    }
+  ],
+  "seal": "a198d3bb9d3b80d1a9fd759427be5130c42aa70e2fb6c64ba01c19e089d05e0a"
+}

@@ -12,6 +12,17 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.206',
+    en: [
+      '- Fix Live View rendering blank when expanding conversations with long terminal scrollback.',
+      '- Show the official Antigravity (agy) icon across sessions, conversations, and usage widgets.',
+    ],
+    zh: [
+      '- 修复终端回滚较长时，对话页展开 Live View 不显示实时内容的问题。',
+      '- 会话列表、对话页和用量小组件现已显示 Antigravity（agy）官方图标。',
+    ],
+  },
+  {
     version: '1.0.203',
     en: [
       '- Scroll through earlier terminal output in Live View. When the expanded panel fits all the output you were reading, it resumes following new lines.',

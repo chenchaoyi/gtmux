@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1531 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1532 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3835 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2789 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2791 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -607,6 +607,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | KRDS-002 | Historical subheadings can stay in history; same/higher following headings cause conservative whole-body current fallback, retaining original order and all text. Non-heading code/quote lookalikes do not end history |
 | KRDS-003 | Hidden comment markers/content never become visible. Conservative whole-body fallback retains the exact source. Ordinary supported split still retains guidance and history; existing reference-definition fallback stays unchanged |
 | LVR-005 | The latest capture and both later frames display without another scroll. If old content still overflows, browsing stays held until the reader reaches the bottom at the new viewport height. Unknown or zero dimensions cannot establish a fit. |
+| LVR-006 | The 1,000-line capture renders inside a column View as bounded selectable Text chunks of at most 32 rows each so no single native paragraph layer approaches the 16,384-pixel GPU texture height limit on @3x displays. Unchanged leading chunks keep stable memoized props when new lines append below 1,000 lines, and held scrollback preserves the frozen chunks until resumed. |
+| LVR-007 | The 200-column row stays on a single unwrapped line for horizontal scrolling, while the 900-column row wraps cleanly at the 320-cell ceiling without splitting surrogate pairs or losing ANSI color/bold styles, keeping every chunk within both width and height GPU texture bounds. |
 | LVR-001 | The grip shares the header row with the status and close control, with a 44-point touch target. Upward drag expands the panel and shows earlier captured output while retaining the latest row. Downward drag shrinks it. Viewport changes clamp the effective height and restoring space restores the selected size. Accessible actions use the same bounds. |
 | LVR-002 | The selection survives redraw, folding and temporary idle within the same scope. A new scope starts folded at its default size. Resizing does not create an input action or change pane identity. |
 | LVR-003 | Only the collapsed row occupies layout space in the transcript. The expanded card sits above the composer and below the top controls as a sibling layer with an opaque surface. Its resize leaves the scroll subtree, footer space and reading state stable. The fixed fold action keeps its normal touch target and the closed Live disclosure returns. |

@@ -4,7 +4,7 @@ import type {Palette} from './theme';
 import React from 'react';
 import {PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
 import type {AnsiLine, Span} from './ansi';
-import {MOBILE_SCROLLBACK_LINES} from './term';
+import {MOBILE_SCROLLBACK_LINES, charCells, wrapLine} from './term';
 import type {NativeScrollEvent, NativeSyntheticEvent} from 'react-native';
 import {BrandLoader} from './BrandLoader';
 import {Chevron} from './Icons';
@@ -13,11 +13,55 @@ import {ChromeText} from './ChromeText';
 import {Lang} from '../i18n';
 
 export const COLLAPSED_LIVE_ROW_HEIGHT = 48;
+export const LIVE_CHUNK_MAX_ROWS = 32;
+export const LIVE_CHUNK_MAX_COLS = 320;
 const DEFAULT_LIVE_PREVIEW_HEIGHT = 220;
 const MIN_LIVE_PREVIEW_HEIGHT = 132;
 const LIVE_RESIZE_STEP = 56;
 const HEADER_HEIGHT = 44;
 const PANEL_PADDING = 6;
+
+function rowExceedsCols(row: AnsiLine, maxCols: number): boolean {
+  let codeUnits = 0;
+  for (const span of row) codeUnits += span.text.length;
+  // Every code point occupies at most 2 cells, so <= maxCols / 2 UTF-16 units cannot exceed maxCols.
+  if (codeUnits * 2 <= maxCols) return false;
+  let cells = 0;
+  for (const span of row) {
+    for (const ch of span.text) {
+      cells += charCells(ch);
+      if (cells > maxCols) return true;
+    }
+  }
+  return false;
+}
+
+export function partitionLiveRows(lines: AnsiLine[]): AnsiLine[][] {
+  const rows: AnsiLine[] = [];
+  for (const line of lines) {
+    if (rowExceedsCols(line, LIVE_CHUNK_MAX_COLS)) rows.push(...wrapLine(line, LIVE_CHUNK_MAX_COLS));
+    else rows.push(line);
+  }
+  const chunks: AnsiLine[][] = [];
+  for (let i = 0; i < rows.length; i += LIVE_CHUNK_MAX_ROWS) {
+    chunks.push(rows.slice(i, i + LIVE_CHUNK_MAX_ROWS));
+  }
+  return chunks;
+}
+
+function sameChunkRows(a: AnsiLine[], b: AnsiLine[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const ra = a[i], rb = b[i];
+    if (ra === rb) continue;
+    if (ra.length !== rb.length) return false;
+    for (let j = 0; j < ra.length; j++) {
+      if (ra[j].text !== rb[j].text || ra[j].color !== rb[j].color || ra[j].bold !== rb[j].bold) return false;
+    }
+  }
+  return true;
+}
 
 /** The conversation owns disclosure state; this row can disappear between observations. */
 export function LiveProgress({avatar, label, lines, problem, fontSize, fontFamily, lang, open, onToggle, working = true, inspectAvailable = true, sourceLabel, heightLimit, savedHeight, onResize}: {
@@ -138,6 +182,30 @@ export function LiveProgress({avatar, label, lines, problem, fontSize, fontFamil
   </View>;
 }
 
+// Native paragraph views draw into a single non-tiled CALayer backing store, which fails
+// GPU 2D texture allocation past 16,384px (~303 lines at 13pt on @3x iPhones). Partition
+// the scrollback into small vertical chunks so every layer stays well below texture limits.
+const LiveChunk = React.memo(function LiveChunk({rows, fontSize, lineHeight, fontFamily}: {
+  rows: AnsiLine[]; fontSize: number; lineHeight: number; fontFamily?: string;
+}) {
+  const runs = React.useMemo(() => {
+    const merged: Span[] = [];
+    function append(value: string, color: string, bold?: boolean) {
+      const last = merged[merged.length - 1];
+      if (last && last.color === color && last.bold === bold) last.text += value;
+      else merged.push({text: value, color, bold});
+    }
+    rows.forEach((row, i) => {
+      if (i > 0) merged[merged.length - 1].text += '\n';
+      if (!row.length) append(' ', '#D6D6DA');
+      for (const span of row) append(span.text, span.color, span.bold);
+    });
+    return merged.map((run, i) => <Text key={i} style={{color: run.color, fontWeight: run.bold ? '700' : '400'}}>{run.text}</Text>);
+  }, [rows]);
+  return <Text testID="chat-live-chunk" selectable style={[historyStyles.mono, {fontFamily, fontSize, lineHeight}]}>{runs}</Text>;
+}, (prev, next) => prev.fontSize === next.fontSize && prev.lineHeight === next.lineHeight &&
+  prev.fontFamily === next.fontFamily && sameChunkRows(prev.rows, next.rows));
+
 // The viewport can resize independently of the bounded capture. Keep the displayed
 // frame while browsing: a rotating buffer can otherwise replace the row under a finger.
 function LiveScrollback({lines, height, fontSize, lineHeight, fontFamily}: {
@@ -149,22 +217,7 @@ function LiveScrollback({lines, height, fontSize, lineHeight, fontFamily}: {
   const following = React.useRef(true);
   const measured = React.useRef({viewport: 0, content: 0});
   const displayed = held ?? live;
-  const text = React.useMemo(() => {
-    // Plain terminal output often has hundreds of identically styled lines.
-    // Keep selection continuous without building a native Text node per line.
-    const runs: Span[] = [];
-    function append(value: string, color: string, bold?: boolean) {
-      const last = runs[runs.length - 1];
-      if (last && last.color === color && last.bold === bold) last.text += value;
-      else runs.push({text: value, color, bold});
-    }
-    displayed.forEach((row, i) => {
-      if (i > 0) runs[runs.length - 1].text += '\n';
-      if (!row.length) append(' ', '#D6D6DA');
-      for (const span of row) append(span.text, span.color, span.bold);
-    });
-    return runs.map((run, i) => <Text key={i} style={{color: run.color, fontWeight: run.bold ? '700' : '400'}}>{run.text}</Text>);
-  }, [displayed]);
+  const chunks = React.useMemo(() => partitionLiveRows(displayed), [displayed]);
   const resume = () => {
     following.current = true;
     setHeld(null);
@@ -189,7 +242,9 @@ function LiveScrollback({lines, height, fontSize, lineHeight, fontFamily}: {
     onScrollBeginDrag={() => {following.current = false; setHeld(displayed);}}
     onScrollEndDrag={settle} onMomentumScrollEnd={settle}>
     <ScrollView horizontal nestedScrollEnabled contentContainerStyle={historyStyles.screen}>
-      <Text selectable style={[historyStyles.mono, {fontFamily, fontSize, lineHeight}]}>{text}</Text>
+      <View testID="chat-live-column" style={historyStyles.column}>
+        {chunks.map((rows, i) => <LiveChunk key={i} rows={rows} fontSize={fontSize} lineHeight={lineHeight} fontFamily={fontFamily} />)}
+      </View>
     </ScrollView>
   </ScrollView>;
 }
@@ -215,6 +270,7 @@ const makeStyles = (pal: Palette) => StyleSheet.create({
 const historyStyles = StyleSheet.create({
   viewport: {backgroundColor: '#17171A'},
   screen: {paddingVertical: 4},
+  column: {flexDirection: 'column'},
   mono: {color: '#D6D6DA'},
   empty: {padding: 12, backgroundColor: '#17171A', color: 'rgba(235,235,245,0.6)', fontSize: 12},
 });
