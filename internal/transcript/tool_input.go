@@ -173,11 +173,11 @@ func toolOperation(name string) string {
 		name = name[i+1:]
 	}
 	switch strings.ToLower(name) {
-	case "read", "readfile", "read_file", "read_text_file", "github_fetch_file", "github_fetch_blob":
+	case "read", "readfile", "read_file", "read_text_file", "view_file_outline", "read_resource", "github_fetch_file", "github_fetch_blob":
 		return "read"
-	case "ls", "list", "list_files", "list_directory", "glob":
+	case "ls", "list", "list_files", "list_directory", "list_dir", "list_resources", "glob":
 		return "list"
-	case "grep", "rg", "search", "search_query", "find", "find_files":
+	case "grep", "grep_search", "rg", "search", "search_query", "find", "find_files", "find_by_name":
 		return "search"
 	case "bash", "shell", "exec", "exec_command", "local_shell", "run_command":
 		return "command"

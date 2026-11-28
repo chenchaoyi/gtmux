@@ -559,10 +559,26 @@ func classifyAgent(title, cmd string, profiles []agentProfile) (isAgent bool, ag
 	if (spinner || idle || leadingDecoration(rs)) && len(rs) > 1 {
 		task = strings.TrimSpace(string(rs[1:]))
 	}
-	if task == agent { // title is just the placeholder name, not a real task
+	if isAgentPlaceholderTitle(task, agent) { // title is just the placeholder name/command, not a real task
 		task = ""
 	}
 	return true, agent, status, task
+}
+
+func isAgentPlaceholderTitle(task, agent string) bool {
+	if task == "" {
+		return false
+	}
+	if task == agent {
+		return true
+	}
+	if agents.KeyForLabel(agent) == "agy" {
+		switch strings.ToLower(strings.TrimSpace(task)) {
+		case "agy", "antigravity", "antigravity-cli":
+			return true
+		}
+	}
+	return false
 }
 
 // procInfo is one process row: its parent pid, cumulative CPU seconds, and full
@@ -984,6 +1000,9 @@ func identifyPane(f []string, procs map[int]procInfo, children map[int][]int, pr
 					} else if !isAgent {
 						id.sample, id.panePid = true, panePid
 						isAgent, task = true, strings.TrimSpace(f[4])
+						if isAgentPlaceholderTitle(task, agent) {
+							task = ""
+						}
 					}
 				}
 			}
@@ -1430,6 +1449,14 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 		}
 		if attachment, ok := terminal[id]; ok {
 			task = terminalTask(attachment, f[4], task)
+		}
+		if agents.KeyForLabel(agent) == "agy" {
+			loc := fmt.Sprintf("%s:%s.%s", f[1], f[2], f[3])
+			if rec, ok := boundResume(loc, agent); ok && (rec.Cwd == "" || cwd == "" || hqpane.SameDir(rec.Cwd, cwd)) {
+				if title := transcript.AgySessionTitle(rec.SessionID); title != "" {
+					task = title
+				}
+			}
 		}
 		usageWarn := state.ReadMarker(state.UsageWarnPath(id))
 		inMode := len(f) >= 11 && f[10] == "1"

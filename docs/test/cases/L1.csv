@@ -1006,6 +1006,7 @@ LEG-00e66104fd0e,L1,Go core / CLI / server,internal/dispatch/region_test.go,146,
 LEG-afed0b556ac9,L1,Go core / CLI / server,internal/dispatch/region_test.go,190,Test,TestSplitInputRegion_OpencodeLeftEdgeBox,False,legacy-not-retrospectively-reviewed
 LEG-5065e532f556,L1,Go core / CLI / server,internal/dispatch/region_test.go,219,Test,TestIsBoxBorder_OpencodeRuleNotBanner,False,legacy-not-retrospectively-reviewed
 LEG-f8e85568416b,L1,Go core / CLI / server,internal/dispatch/region_test.go,235,Test,TestSplitInputRegion_TopRuleDraftBelowUnchanged,False,legacy-not-retrospectively-reviewed
+MAP-e9d754f989e4,L1,Go core / CLI / server,internal/dispatch/region_test.go,247,reviewed-selector,TestSplitInputRegion_AuxiliaryTaskDrawerBelowComposer,False,AGY-UX-001
 LEG-b982fdaba080,L1,Go core / CLI / server,internal/dispatch/resend_test.go,9,Test,TestPayloadHash_StableAndDistinct,False,legacy-not-retrospectively-reviewed
 LEG-280ed7f613c3,L1,Go core / CLI / server,internal/dispatch/resend_test.go,22,Test,TestIsDuplicate_Window,False,legacy-not-retrospectively-reviewed
 LEG-b4f6a33b328b,L1,Go core / CLI / server,internal/dispatch/resend_test.go,41,Test,TestRecentSend_RoundTrip,False,legacy-not-retrospectively-reviewed
@@ -1275,7 +1276,8 @@ LEG-038fc3ba1d20,L1,Go core / CLI / server,internal/hook/paneidentity_test.go,10
 LEG-20d804608bdf,L1,Go core / CLI / server,internal/hook/paneidentity_test.go,109,Test,TestZeroPIDsDoNotMatch,False,legacy-not-retrospectively-reviewed
 LEG-a67c7474ce76,L1,Go core / CLI / server,internal/hook/paneidentity_test.go,120,Test,TestResolvePaneRefusesAmbiguityAcrossAncestors,False,legacy-not-retrospectively-reviewed
 LEG-2b2ea1123c82,L1,Go core / CLI / server,internal/hook/paneidentity_test.go,150,Test,TestNativeStateAfterACrash,False,legacy-not-retrospectively-reviewed
-LEG-f9c5ccde0132,L1,Go core / CLI / server,internal/hook/profile_test.go,9,Test,TestProfileObserverRetainsMetadataWithoutLifecycle,False,legacy-not-retrospectively-reviewed
+LEG-f9c5ccde0132,L1,Go core / CLI / server,internal/hook/profile_test.go,12,Test,TestProfileObserverRetainsMetadataWithoutLifecycle,False,legacy-not-retrospectively-reviewed
+MAP-8ee11ff44f5e,L1,Go core / CLI / server,internal/hook/profile_test.go,35,reviewed-selector,TestAgyPreDetachLifecycleCapturesLaunchHostAndProfile,False,AGY-UX-004
 LEG-59234c05c8b8,L1,Go core / CLI / server,internal/hook/prompt_shape_test.go,19,Test,TestTextOfPromptReadsEitherShape,False,legacy-not-retrospectively-reviewed
 LEG-d1f5be4e6b74,L1,Go core / CLI / server,internal/hook/prompt_shape_test.go,34,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-073293e92e6b,L1,Go core / CLI / server,internal/hook/reapcandidates_test.go,47,Test,TestTheSweepReadsTheJournalOnceHoweverManySurvive,False,legacy-not-retrospectively-reviewed
@@ -2045,11 +2047,11 @@ LEG-9332e607dcbe,L1,Go core / CLI / server,internal/radar/dsh_test.go,91,Test,Te
 LEG-000ae331abbb,L1,Go core / CLI / server,internal/radar/dsh_test.go,97,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 MAP-0670bffd7c6c,L1,reviewed implementation,internal/radar/energy_snapshot_test.go,12,reviewed-selector,TestPWR001ProducerSharesFreshSnapshotAndKeepsBoundaries,False,PWR-001
 MAP-e4331da4fa54,L1,reviewed implementation,internal/radar/energy_snapshot_test.go,62,reviewed-selector,TestPWR001ConcurrentProducerCannotBeOverwrittenByOlderREST,False,PWR-001
-LEG-9f0692cf9b21,L1,Go core / CLI / server,internal/radar/gather_test.go,52,Test,TestGatherAgentsFixture,False,legacy-not-retrospectively-reviewed
+LEG-9f0692cf9b21,L1,Go core / CLI / server,internal/radar/gather_test.go,47,Test,TestGatherAgentsFixture,False,legacy-not-retrospectively-reviewed
 LEG-bea59f311606,L1,Go core / CLI / server,internal/radar/gather_test.go,104,Test,TestGatherAgentsSharesOneCodexPathDiscovery,False,legacy-not-retrospectively-reviewed
 LEG-02002b43132f,L1,Go core / CLI / server,internal/radar/gather_test.go,247,Test,TestScopedLastMessageHelpersRecognizeCodexKeyAndLabel,False,legacy-not-retrospectively-reviewed
-LEG-2a5d17f7657e,L1,Go core / CLI / server,internal/radar/gather_test.go,274,Test,TestGatherAgents_DedupsSharedWindow,False,legacy-not-retrospectively-reviewed
-LEG-cdc9df94e2f5,L1,Go core / CLI / server,internal/radar/gather_test.go,303,Test,TestGatherDigestFixtureLedgerJoin,False,legacy-not-retrospectively-reviewed
+LEG-2a5d17f7657e,L1,Go core / CLI / server,internal/radar/gather_test.go,269,Test,TestGatherAgents_DedupsSharedWindow,False,legacy-not-retrospectively-reviewed
+LEG-cdc9df94e2f5,L1,Go core / CLI / server,internal/radar/gather_test.go,300,Test,TestGatherDigestFixtureLedgerJoin,False,legacy-not-retrospectively-reviewed
 LEG-838258a11bcc,L1,Go core / CLI / server,internal/radar/gather_test.go,345,Test,TestGatherDigestLedgerJoin_UndeliveredNeverBorrowsThePane,False,legacy-not-retrospectively-reviewed
 LEG-42e30516184e,L1,Go core / CLI / server,internal/radar/gather_test.go,379,Test,TestGatherAgents_SupervisorRoleFollowsTheStamp,False,legacy-not-retrospectively-reviewed
 LEG-ab5ae6bf88eb,L1,Go core / CLI / server,internal/radar/gather_test.go,408,Test,TestGatherAgents_CwdFallbackWhenNoStamp,False,legacy-not-retrospectively-reviewed
@@ -2062,6 +2064,7 @@ LEG-8f112109801f,L1,Go core / CLI / server,internal/radar/gather_test.go,611,Tes
 LEG-571b449afbee,L1,Go core / CLI / server,internal/radar/gather_test.go,668,Test,TestGatherAgentsSpinnerOverShell,False,legacy-not-retrospectively-reviewed
 LEG-8c1a667ecad5,L1,Go core / CLI / server,internal/radar/gather_test.go,732,Test,TestAgentFromCommandReadsOnlyWhatRuns,False,legacy-not-retrospectively-reviewed
 LEG-667903d37214,L1,Go core / CLI / server,internal/radar/gather_test.go,750,Test,TestIsShellCommand,False,legacy-not-retrospectively-reviewed
+MAP-19aca51592fa,L1,Go core / CLI / server,internal/radar/gather_test.go,763,reviewed-selector,TestGatherAgentsAgyPlaceholderStripAndSavedTitles,False,AGY-UX-003
 LEG-77c9beacb598,L1,Go core / CLI / server,internal/radar/gitinfo_test.go,9,Test,TestGitInfo,False,legacy-not-retrospectively-reviewed
 LEG-9d4d1c575995,L1,Go core / CLI / server,internal/radar/gitinfo_test.go,35,Test,TestGitInfoWorktree,False,legacy-not-retrospectively-reviewed
 LEG-c8c53650be59,L1,Go core / CLI / server,internal/radar/hosttitle_test.go,8,Test,TestStripDefaultTitle,False,legacy-not-retrospectively-reviewed
@@ -2471,6 +2474,7 @@ LEG-a28b4888288e,L1,Go core / CLI / server,internal/transcript/sessionbinding_te
 LEG-e4a2949ee7df,L1,Go core / CLI / server,internal/transcript/sessionbinding_test.go,41,Test,TestCodexBindingReadsBoundedRolloutTail,False,legacy-not-retrospectively-reviewed
 LEG-e83034b94b32,L1,Go core / CLI / server,internal/transcript/titles_test.go,10,Test,TestSessionTitles,False,legacy-not-retrospectively-reviewed
 LEG-31e07de7e8be,L1,Go core / CLI / server,internal/transcript/titles_test.go,44,Test,TestSessionTitlesBoundedTail,False,legacy-not-retrospectively-reviewed
+MAP-9d8c1277dff6,L1,Go core / CLI / server,internal/transcript/titles_test.go,58,reviewed-selector,TestSessionTitlesAgyAnnotations,False,AGY-UX-002
 MAP-d8d563bbd03e,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,11,reviewed-selector,TestNativeCallDetailsAreLazyScopedAndRedacted,False,"TCV-001,TCV-002"
 MAP-78516b06d8fd,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,64,reviewed-selector,TestNativeCallMirrorPreservesOriginalInputAndResultReference,False,"TCV-001,TCV-002"
 MAP-4895957e9e8f,L1,reviewed implementation,internal/transcript/tool_call_detail_test.go,97,reviewed-selector,TestNativeCallMissingResultIsNotAnEmptyResult,False,"TCV-001,TCV-002"

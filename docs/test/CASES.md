@@ -6,8 +6,8 @@ The catalogue covers 1531 test/harness source files. Each CSV row lists stable I
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3831 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2785 | [L2.csv](cases/L2.csv) |
+| L1 · Unit / pure logic | 3835 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 2789 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -60,6 +60,12 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | AGY-010 | The agy model window resolves to the 1M tier instead of the 200k guess, and the backfill does not rescan logs written afterwards. |
 | AGY-011 | agy is installable; it is detected and gets an Antigravity hook doctor row only when discoverable; the fix step writes a healthy gtmux entry in hooks.json. |
 | AGY-ICON-001 | AgentIcon('agy') and existing committed keys return non-empty PNG bytes; unknown and empty keys return nil. |
+| AGY-UX-001 | Empty composer returns draft='' and BoxEmpty=true; typed composer returns exact user draft without task-drawer text and BoxEmpty=false. |
+| AGY-UX-002 | Valid annotations return decoded single-line UTF-8 titles; unsafe IDs and malformed files return empty strings. |
+| AGY-UX-003 | Bound tmux pane reports Task equal to the saved annotation title; unbound tmux pane strips 'agy' to Task=''; native agy row carries its saved annotation title. |
+| AGY-UX-004 | Root PreInvocation/PostToolUse pass canonical UserPromptSubmit/Resumed lifecycle events to profile/launch observation; subagent hook emits '{}' on stdout and leaves parent resume/state/profile untouched. |
+| AGY-UX-005 | Hook modelName 'auto' does not clobber 'gemini-4-carbon-medium'; concrete hook modelName is recorded; distinct AGY_HOME directories do not share profile snapshots. |
+| AGY-UX-006 | Standalone <SYSTEM_MESSAGE> opens no turn; user prompt strips trailing system blocks; search_web sets Operation='web', Action='web_search', and query Detail. |
 | ACP-001 | Fresh enabled Deny elements only; ignored first click can use one further explicit click in the same camera dialog, maximum two; no click starts after 10s; no unrelated permission acted upon; original command error preserved; no permission grant or settings mutation. |
 | ACP-002 | New case survives a single lost OS denial touch; old frozen callback fails. Missing alert, grant=true, wrong/stuck system dialog still fail. Original App alert 30s remains; read-only QA CAMERA granted=false is required. Other 30 journeys and case orchestration unchanged. |
 | ACP-003 | Both sizes retain complete suite and existing expectations; no denied permission granted, hidden blocked results or inflated timing budget. Failed driver evidence remains separate from product assertions. |

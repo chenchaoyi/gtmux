@@ -243,3 +243,56 @@ func TestSplitInputRegion_TopRuleDraftBelowUnchanged(t *testing.T) {
 		t.Fatalf("top-rule case regressed: structured=%v draft=%q", structured, draft)
 	}
 }
+
+func TestSplitInputRegion_AuxiliaryTaskDrawerBelowComposer(t *testing.T) {
+	rule := strings.Repeat("─", 72)
+	emptyComposer := strings.Join([]string{
+		"● Explored 1 file (mac_widget_test.py) (ctrl+o to expand)",
+		"▸ 另外session的title的识别好像也有问题 (alt+m to send immediately)",
+		rule,
+		"> ",
+		rule,
+		" ● [19:56:02] cd /Users/ccy/meituan/chenchaoyi/gtmux && ls -la shared/ running",
+		rule,
+		" Press up to edit queued messages      auto · Gemini 4 Carbon · medium · 1 task(s) · /tasks",
+	}, "\n")
+	history, draft, structured := SplitInputRegion(emptyComposer)
+	if !structured {
+		t.Fatal("stacked composer + task drawer must be structured")
+	}
+	if draft != "" {
+		t.Fatalf("empty composer above task drawer misread as draft: %q", draft)
+	}
+	if !strings.Contains(history, "Explored 1 file") {
+		t.Fatalf("history lost transcript above upper composer border: %q", history)
+	}
+	if !BoxEmpty(IO{CaptureColor: func() string { return emptyComposer }}) {
+		t.Fatal("BoxEmpty must permit screenshot/send into empty composer above running task drawer")
+	}
+
+	typedComposer := strings.Join([]string{
+		"● Explored 1 file (mac_widget_test.py) (ctrl+o to expand)",
+		rule,
+		"> half-written user thought",
+		"  second line of draft",
+		rule,
+		" ● [19:56:02] cd /Users/ccy/meituan/chenchaoyi/gtmux && ls -la shared/ running",
+		rule,
+		" Press up to edit queued messages      auto · Gemini 4 Carbon · medium · 1 task(s) · /tasks",
+	}, "\n")
+	history, draft, structured = SplitInputRegion(typedComposer)
+	if !structured {
+		t.Fatal("typed composer above task drawer must be structured")
+	}
+	wantDraft := "half-written user thought\nsecond line of draft"
+	if draft != wantDraft {
+		t.Fatalf("draft = %q, want %q", draft, wantDraft)
+	}
+	if strings.Contains(history, "half-written") {
+		t.Fatalf("typed draft leaked into history: %q", history)
+	}
+	reason, ok := Reach(IO{CaptureColor: func() string { return typedComposer }})
+	if ok || reason != ReachDraft {
+		t.Fatalf("Reach(typedComposer) = (%q, %v), want (%q, false)", reason, ok, ReachDraft)
+	}
+}

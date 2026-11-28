@@ -25,6 +25,9 @@ func SessionTitles(agent string) map[string]string {
 		}
 		return out
 	}
+	if normalizeAgent(agent) == "agy" {
+		return agySessionTitles()
+	}
 	if normalizeAgent(agent) != "codex" {
 		return nil
 	}

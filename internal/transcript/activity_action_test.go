@@ -39,6 +39,8 @@ func providerAction(t *testing.T, provider, name string, args json.RawMessage) S
 		record = map[string]any{"type": "context.append_message", "agentId": "main", "message": map[string]any{"role": "assistant", "toolCalls": []any{map[string]string{"name": name, "arguments": string(args)}}}}
 	case "dsh":
 		record = map[string]any{"seq": 1, "type": "tool/call", "surfaceOp": "append", "data": map[string]string{"name": name, "arguments": string(args)}}
+	case "agy":
+		record = map[string]any{"step_index": 1, "source": "MODEL", "type": "PLANNER_RESPONSE", "status": "DONE", "tool_calls": []any{map[string]any{"id": "fixture-call", "name": name, "args": args}}}
 	case "opencode":
 		t.Setenv("HOME", t.TempDir())
 		t.Setenv("XDG_DATA_HOME", "")
@@ -65,6 +67,9 @@ func providerAction(t *testing.T, provider, name string, args json.RawMessage) S
 			if err := dshStep(b, st); err != nil {
 				t.Fatal(err)
 			}
+		case "agy":
+			st.open("prompt", "2026-11-27T00:00:00Z")
+			agyStep(string(b), st)
 		}
 	}
 	st.flush()
@@ -111,6 +116,7 @@ func TestASA001ShellTextAndBareNamesDoNotInventSkillReads(t *testing.T) {
 func TestASA002WebIntentUsesExplicitMethodsOrCompleteActions(t *testing.T) {
 	for _, tc := range []struct{ name, args, action, detail string }{
 		{"WebSearch", `{"query":"official metrics"}`, "web_search", "official metrics"},
+		{"search_web", `{"query":"antigravity hooks"}`, "web_search", "antigravity hooks"},
 		{"WebFetch", `{"url":"https://example.org/guide"}`, "web_open", "https://example.org/guide"},
 		{"web.run", `{"search_query":[{"q":"delivery metrics"}],"response_length":"short"}`, "web_search", "delivery metrics"},
 		{"web.run", `{"open":[{"ref_id":"https://example.org"}]}`, "web_open", "https://example.org"},
@@ -132,9 +138,13 @@ func TestASA002WebIntentUsesExplicitMethodsOrCompleteActions(t *testing.T) {
 			}
 		})
 	}
-	for _, provider := range []string{"claude", "codex", "kimi", "dsh", "opencode"} {
+	for _, provider := range []string{"claude", "codex", "kimi", "dsh", "opencode", "agy"} {
 		t.Run(provider, func(t *testing.T) {
-			s := providerAction(t, provider, "WebSearch", json.RawMessage(`{"query":"provider query"}`))
+			method := "WebSearch"
+			if provider == "agy" {
+				method = "search_web"
+			}
+			s := providerAction(t, provider, method, json.RawMessage(`{"query":"provider query"}`))
 			if a, _ := actionFacts(t, s); a != "web_search" {
 				t.Fatal(s)
 			}

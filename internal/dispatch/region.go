@@ -99,9 +99,57 @@ func SplitInputRegion(capture string) (history, draft string, structured bool) {
 		}
 		return strings.Join(lines[:bottom], "\n"), stripBoxChrome(lines[bottom+1:]), true
 	}
+	if !anyPromptLine(lines[top+1 : bottom]) {
+		if prevTop := adjacentUpperPromptBox(lines, top); prevTop >= 0 {
+			return strings.Join(lines[:prevTop], "\n"), stripBoxChrome(lines[prevTop+1 : top]), true
+		}
+	}
 	history = strings.Join(lines[:top], "\n")
 	draft = stripBoxChrome(lines[top+1 : bottom])
 	return history, draft, true
+}
+
+// maxComposerBoxLines bounds how far above an auxiliary drawer border we scan for the
+// real prompt composer's top border. Real composers are compact; conversation transcripts
+// higher up must not be mistaken for an adjacent composer box.
+const maxComposerBoxLines = 32
+
+func anyPromptLine(lines []string) bool {
+	for _, l := range lines {
+		if isPromptLine(l) {
+			return true
+		}
+	}
+	return false
+}
+
+// adjacentUpperPromptBox detects a stacked two-box footer where an agent TUI (such as
+// Antigravity CLI with background tasks running) renders a non-prompt task/status drawer
+// box directly beneath the real prompt-bearing composer box. It returns the upper box's
+// top border index only when the nearest border within maxComposerBoxLines above lowerTop
+// encloses a region whose first non-empty line is a recognized prompt marker.
+func adjacentUpperPromptBox(lines []string, lowerTop int) int {
+	limit := max(0, lowerTop-maxComposerBoxLines)
+	prevTop := -1
+	for i := lowerTop - 1; i >= limit; i-- {
+		if isBoxBorder(lines[i]) {
+			prevTop = i
+			break
+		}
+	}
+	if prevTop < 0 {
+		return -1
+	}
+	for _, l := range lines[prevTop+1 : lowerTop] {
+		if strings.TrimSpace(l) == "" {
+			continue
+		}
+		if isPromptLine(l) {
+			return prevTop
+		}
+		return -1
+	}
+	return -1
 }
 
 // splitByPrompt is the no-box degrade path: the draft is the tail starting at the

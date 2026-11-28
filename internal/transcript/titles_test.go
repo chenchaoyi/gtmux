@@ -54,3 +54,37 @@ func TestSessionTitlesBoundedTail(t *testing.T) {
 		t.Fatalf("bounded tail: %v", got)
 	}
 }
+
+func TestSessionTitlesAgyAnnotations(t *testing.T) {
+	agyHome := t.TempDir()
+	t.Setenv("AGY_HOME", agyHome)
+	if got := SessionTitles("agy"); len(got) != 0 {
+		t.Fatalf("missing annotations dir should yield empty map, got %v", got)
+	}
+	annDir := filepath.Join(agyHome, "annotations")
+	if err := os.MkdirAll(annDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{
+		"s1.pbtxt": `title:"gtmux agy dev"`,
+		"s2.pbtxt": "tags: \"work\"\ntitle: \"  Multi\\n  line\\t summary  \"\narchived: false\n",
+		"s3.pbtxt": `title:"\344\274\232\350\257\235\346\240\207\351\242\230"`, // UTF-8 octal for "会话标题"
+		"s4.pbtxt": `archived: true`,
+		"s5.pbtxt": `title: "unterminated`,
+	}
+	for name, body := range files {
+		if err := os.WriteFile(filepath.Join(annDir, name), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got := SessionTitles("Antigravity")
+	if got["s1"] != "gtmux agy dev" || got["s2"] != "Multi line summary" || got["s3"] != "会话标题" {
+		t.Fatalf("SessionTitles(Antigravity) = %#v", got)
+	}
+	if _, exists := got["s4"]; exists {
+		t.Fatalf("untitled annotation should be omitted: %#v", got)
+	}
+	if _, exists := got["s5"]; exists {
+		t.Fatalf("malformed annotation should be omitted: %#v", got)
+	}
+}
