@@ -1,0 +1,118 @@
+{
+  "id": "core-hq-hardening-20261128",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Antigravity implementation owner, design self-review",
+    "date": "2026-11-28",
+    "decision": "Harden Go core event/state atomicity, hqnudge archival and draft holds, hub/radar/transcript/attach hot paths, HTTP/SSE/APNs boundaries, and HQ/mine/codex-frontend/serve parity",
+    "notes": "Covers approved Batch A + Batch B items 1.2, 1.3, 1.4-Go, 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3, 5.1, 5.2, and 5.3-Go in isolated Go unit/component tests without touching real ~/.local/share/gtmux or ~/.config/gtmux."
+  },
+  "cases": [
+    {
+      "id": "CHH-001",
+      "layer": "L2",
+      "description": "hqnudge archives aged or excess terminal wake files and retires uncertain native intents and pins, reconciles aged colliding slots cleanly, and holds draft or question refusals without permanent retry exhaustion",
+      "setup": "Create isolated temp HOME directories with terminal .refused/.native-uncertain/.legacy-uncertain files beyond retention bounds, aged colliding X.sending + X.native-uncertain slots, and native wake drains returning InputDraftPresent or InputQuestion.",
+      "action": "Run Drain/drainInto recovery, terminal archival, colliding-slot reconciliation, and repeated draft/question refusal retries.",
+      "expected": "Aged or excess (>32 or >24h) terminal wake files are archived into bounded JSONL segments while retiring uncertain nativeIntent JSON and .pin anchors well below the 200/1600 budgets; aged colliding slots archive the older retained file with both digests, settle the pending claim, and allow clean recovery to clear claim-conflict; and InputDraftPresent/InputQuestion refusals requeue with bounded backoff without exhausting into .refused after three attempts.",
+      "planned_files": [
+        "internal/hqnudge/hardening_test.go"
+      ]
+    },
+    {
+      "id": "CHH-002",
+      "layer": "L2",
+      "description": "events.Append serializes sequence allocation, rotation, and append under one flock, while markers, watermarks, tasks, and outcome tallies update atomically without truncation races or lost outcomes",
+      "setup": "Configure isolated temp HOME state with a small events cap, concurrent appenders, missing vs corrupt consumed-seq watermarks, concurrent task mutations, and concurrent AddOutcome/ConsumeTick calls.",
+      "action": "Run parallel events.Append across rotation boundaries, hqwake.Consumed/Consume, dispatch.AddTask/SetDisposition/SnoozeTask, and hqwake.AddOutcome/ConsumeTick.",
+      "expected": "Concurrent appends commit contiguous in-order Seq records across rotation without double-rotating events.1.jsonl or triggering false sequence-gap flags; markers and task JSON files publish atomically via private temp+rename; Consumed distinguishes missing (-1) from corrupt/empty (0) and serializes monotonic Consume; and ConsumeTick renames tally.log under lock so concurrent outcomes are never lost.",
+      "planned_files": [
+        "internal/events/hardening_test.go",
+        "internal/state/hardening_test.go",
+        "internal/hqwake/hardening_test.go",
+        "internal/dispatch/hardening_test.go"
+      ]
+    },
+    {
+      "id": "CHH-003",
+      "layer": "L2",
+      "description": "events.ReadSince and events.Read scan backwards from the active tail before touching rotated history while preserving ordering and gap detection, and workspace reconciliation short-circuits caught-up event cursors",
+      "setup": "Populate multi-chunk events.jsonl and events.1.jsonl fixtures covering active-only tails, cross-rotation tails, leading/internal sequence gaps, legacy seq=0 records, and caught-up hqworkspace event cursors.",
+      "action": "Execute ReadSince(cursor), Read(sinceSecs, now), and ingestWorkspaceObservations when cursor >= CurrentSeq().",
+      "expected": "Tail reads return identical oldest-first records and gap verdicts without scanning events.1.jsonl when events.jsonl already reaches Seq <= cursor or Ts < cutoff, fall back across events.1.jsonl when needed, and skip ReadSince entirely in workspace reconciliation when cursor >= CurrentSeq().",
+      "planned_files": [
+        "internal/events/hardening_test.go",
+        "internal/app/hardening_test.go"
+      ]
+    },
+    {
+      "id": "CHH-004",
+      "layer": "L2",
+      "description": "OnTally dispatches silent badge pushes asynchronously, hub.run executes onSlowTick in a single-flight goroutine followed by checkServerMode without blocking fast/radar/ping ticks, and Collection.Agents memoizes its pane snapshot within one collection",
+      "setup": "Construct a PushManager with a blocking relay, a hub with a blocking onSlowTick and fast tick/status/awake hooks, and a radar Collection shared across ordered sweeps.",
+      "action": "Invoke OnTally, run hub while onSlowTick blocks, and call Collection.Agents multiple times alongside Digest.",
+      "expected": "OnTally returns without waiting on relay badge HTTP calls; hub continues firing radar ticks, fast ticks, and pings while single-flight guarding overlapping slow ticks and running checkServerMode when each slow tick completes; and Collection.Agents memoizes its pane slice per Collection while Digest still resamples fresh content.",
+      "planned_files": [
+        "internal/server/hardening_test.go",
+        "internal/server/push_test.go",
+        "internal/radar/collection_test.go",
+        "internal/radar/hardening_test.go"
+      ]
+    },
+    {
+      "id": "CHH-005",
+      "layer": "L2",
+      "description": "idleSince short-circuits marked non-Codex panes, transcript caches log paths/errors/titles by stat identity and uses O(1) AgySessionTitle, /api/transcript short-circuits matching If-None-Match before byte-budget marshaling and strips struct context without re-unmarshaling, push status source uses cached snapshots, and tmux commands enforce bounded timeouts",
+      "setup": "Seed non-Codex finished markers, Claude/Codex/Agy transcript fixtures, HTTP /api/transcript conditional GETs with and without context=1, multi-device done push alerts, and a hanging fake tmux binary.",
+      "action": "Query idleSince, LastMessageError, SessionTitles, native Agy row titles, /api/transcript with If-None-Match, PushManager done alerts, and tmux.Run under timeout.",
+      "expected": "Marked non-Codex idle panes return immediately without transcript reads; unchanged files hit stat-keyed caches and native Agy rows read only their own .pbtxt title; conditional GETs return 304 with accurate metadata headers without marshaling turn budgets while public reads strip Context on structs; done alerts reuse cached snapshots; and hung tmux commands time out cleanly.",
+      "planned_files": [
+        "internal/radar/hardening_test.go",
+        "internal/transcript/hardening_test.go",
+        "internal/server/hardening_test.go",
+        "internal/app/hardening_test.go",
+        "internal/tmux/hardening_test.go"
+      ]
+    },
+    {
+      "id": "CHH-006",
+      "layer": "L2",
+      "description": "GET /api/attach enforces WebSocket ping/pong read/write deadlines and frame size limits to reap dead clients on quiet panes, while gating AttachCursor sampling on pause state, idle quiescence, and predict=0 opt-out",
+      "setup": "Start an isolated /api/attach server with a quiet PTY command, controllable ping/idle intervals, and a counting AttachCursor callback.",
+      "action": "Connect clients that stop answering pings, send oversized frames, pause flow, sit idle past quiescence, or pass predict=0 via connect attach URL.",
+      "expected": "Unresponsive or oversized WebSocket peers are closed promptly and their PTY child processes reaped even when the pane prints nothing; AttachCursor never forks when predict=0, while paused, or once idle quiescence is reached, and resumes on fresh activity when prediction is enabled.",
+      "planned_files": [
+        "internal/server/hardening_test.go",
+        "internal/connect/hardening_test.go"
+      ]
+    },
+    {
+      "id": "CHH-007",
+      "layer": "L2",
+      "description": "SSE streams disconnect revoked devices and expired guests on subsequent events, /api/addresses rejects guests, guest radar strips host paths/icons, JSON POST handlers bound body sizes and push token lengths, and PushManager retires dead iOS APNs tokens and hashes oversized native collapse IDs",
+      "setup": "Configure an isolated Server with EnrollManager, ShareManager, PushManager, and HTTPRelay returning APNs 410, 400 BadDeviceToken, and 400 PayloadTooLarge responses.",
+      "action": "Revoke/expire tokens on open /api/events streams, call /api/addresses and /api/agents as guest, POST >64 KiB JSON bodies and >512-byte push tokens, dispatch iOS pushes, and compute native collapse IDs >64 bytes.",
+      "expected": "Revoked device and expired guest SSE streams close on the next event/ping; /api/addresses returns 403 to guests; guest /api/agents omits cwd, icon, and launch_host; oversized POST bodies and >512-byte tokens return 400; iOS tokens are retired on 410 or 400 BadDeviceToken but retained on other errors; and oversized native collapse IDs hash to <=64 ASCII hex bytes.",
+      "planned_files": [
+        "internal/server/hardening_test.go"
+      ]
+    },
+    {
+      "id": "CHH-008",
+      "layer": "L2",
+      "description": "HQ board enforces UTF-8 truncation, size/line warnings, and playbook v70 handoff caps; snapshots read validated receipts without double-decompressing archives; private inspection and hygiene handle codex-frontends symlinks and retired entries; hqworkspace logs error details; mine serializes and bounds ledgers with fast LastPassAt and error backoff; prompt normalizes agent labels and all startup choosers; and /api/send marks undelivered tasks, audits non-user actors, and batches pane metadata",
+      "setup": "Prepare isolated HQ boards (multibyte boundary + >32 KiB/>250 lines), automatic snapshots, codex-frontends client sockets and >128 retired receipts, failing workspace ops, corrupted/large mine ledgers, display-label prompt frames, and /api/send calls from non-user actors on undelivered tasks.",
+      "action": "Run Board/OversizeBoard/rowHQBoard/selfCheckSensor, Snapshot, InspectPrivateTree/diskHygieneSweep/ConversationRecord, workspace op logging, mine.Run/mineSensor, BootBannerLine/WaitingOptions, and sendToPaneObserved/handlePane.",
+      "expected": "Board truncates cleanly on valid UTF-8 runes and flags >32 KiB or >250 lines while playbook v70 caps handoff entries to 10; managedSnapshotPoints validates receipts without reading tar.gz archives twice; valid codex-frontends socket symlinks pass inspection while dead sockets and retired receipts are reaped/ignored past 128 files; hqworkspace logs error attributes; mine locks, bounds emitted IDs, reads LastPassAt cheaply, and backs off on errors; prompt matches display labels and all registered choosers; and /api/send marks delivered tasks, audits non-user actors, and reads width+cursor in one tmux query.",
+      "planned_files": [
+        "internal/hq/hardening_test.go",
+        "internal/state/hardening_test.go",
+        "internal/resume/hardening_test.go",
+        "internal/mine/hardening_test.go",
+        "internal/prompt/hardening_test.go",
+        "internal/app/hardening_test.go"
+      ]
+    }
+  ],
+  "seal": "292170658b6959e2259bd79ac3a07d3f90dc2f1634fefdf41356bce9edb44aef"
+}
