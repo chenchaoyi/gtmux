@@ -66,6 +66,14 @@ crons = ["0 4 * * *"]
 name = "STANDARD_DEVICES"
 class_name = "StandardDevice"
 
+[[durable_objects.bindings]]
+name = "DIRECT_REGISTRY"
+class_name = "DirectRegistry"
+
 [[migrations]]
 tag = "standard-device-v1"
 new_sqlite_classes = ["StandardDevice"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["DirectRegistry"]

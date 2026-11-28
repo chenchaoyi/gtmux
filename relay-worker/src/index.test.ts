@@ -10,8 +10,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import worker, {type Env} from './index.ts';
-import {buildApnsRequest, buildLiveActivityAps} from './index.ts';
+import worker, {type Env, buildApnsRequest, buildLiveActivityAps, normalizeRelayClientIP, resetRelayRateLimit} from './index.ts';
 
 const JWT = 'jwt-abc';
 const TOPIC = 'com.gtmux.app';
@@ -110,7 +109,8 @@ test('actual Worker requests match the shared Go/Worker APNs contract', async ()
       let calls = 0;
       globalThis.fetch = async (input, init) => {
         calls++;
-        assert.equal(String(input), 'https://api.push.apple.com/3/device/fixture');
+        assert.equal(String(input), 'https://api.push.apple.com/3/device/' + fixture.intent.token);
+        assert.ok(init?.signal instanceof AbortSignal, 'APNs fetch must carry AbortSignal.timeout');
         const headers = Object.fromEntries(new Headers(init?.headers));
         assert.match(headers.authorization, /^bearer [^.]+\.[^.]+\.[^.]+$/);
         headers.authorization = 'bearer ' + JWT;
@@ -146,4 +146,138 @@ test('relay rejects missing configuration and oversized or invalid objects befor
     assert.equal((await worker.fetch(request('not json',{Authorization:'Bearer invalid'}),env)).status,401);
     assert.equal(calls,0);
   }finally{globalThis.fetch=oldFetch;}
+});
+
+test('relay validates APNs hex tokens strictly and accepts POST / alongside POST /push', async () => {
+  resetRelayRateLimit();
+  const pair = await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify']);
+  const pem = Buffer.from(await crypto.subtle.exportKey('pkcs8', pair.privateKey)).toString('base64');
+  const env: Env = {
+    RELAY_TOKEN: 'secret-token',
+    APNS_KEY: `-----BEGIN PRIVATE KEY-----\n${pem}\n-----END PRIVATE KEY-----`,
+    APNS_KEY_ID: 'K',
+    APNS_TEAM_ID: 'T',
+    APNS_TOPIC: TOPIC,
+    APNS_ENV: 'production',
+  };
+  const validHex = 'a1b2c3d4e5f60718293a4b5c6d7e8f90';
+  const oldFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    return new Response('', {status: 200});
+  };
+  try {
+    for (const badToken of [
+      'fixture',
+      '0123456789abcdef0123456789abcde', // 31 chars (<32)
+      '0'.repeat(513), // 513 chars (>512)
+      '0123456789abcdef0123456789abcdeg', // non-hex 'g'
+      '../../other/endpoint/0123456789abcdef', // path traversal
+      validHex + '?foo=bar',
+    ]) {
+      const res = await worker.fetch(new Request('https://relay.example.test/push', {
+        method: 'POST',
+        headers: {Authorization: 'Bearer secret-token'},
+        body: JSON.stringify({token: badToken}),
+      }), env);
+      assert.equal(res.status, 400, badToken);
+      assert.deepEqual(await res.json(), {error: 'bad token'});
+    }
+    assert.equal(calls, 0);
+
+    for (const path of ['/', '/push']) {
+      const ok = await worker.fetch(new Request('https://relay.example.test' + path, {
+        method: 'POST',
+        headers: {Authorization: 'Bearer secret-token'},
+        body: JSON.stringify({token: validHex, title: 'ok'}),
+      }), env);
+      assert.equal(ok.status, 200, path);
+    }
+    assert.equal(calls, 2);
+  } finally {
+    globalThis.fetch = oldFetch;
+  }
+});
+
+test('relay bounds APNs fetches with an 8s timeout signal and returns 502 on timeout', async () => {
+  resetRelayRateLimit();
+  const pair = await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify']);
+  const pem = Buffer.from(await crypto.subtle.exportKey('pkcs8', pair.privateKey)).toString('base64');
+  const env: Env = {
+    RELAY_TOKEN: 'secret-token',
+    APNS_KEY: `-----BEGIN PRIVATE KEY-----\n${pem}\n-----END PRIVATE KEY-----`,
+    APNS_KEY_ID: 'K',
+    APNS_TEAM_ID: 'T',
+    APNS_TOPIC: TOPIC,
+    APNS_ENV: 'production',
+  };
+  const validHex = '0123456789abcdef0123456789abcdef';
+  const oldFetch = globalThis.fetch;
+  let signals = 0;
+  globalThis.fetch = async (_input, init) => {
+    assert.ok(init?.signal instanceof AbortSignal);
+    signals++;
+    throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+  };
+  try {
+    for (const liveActivity of [false, true]) {
+      const res = await worker.fetch(new Request('https://relay.example.test/push', {
+        method: 'POST',
+        headers: {Authorization: 'Bearer secret-token'},
+        body: JSON.stringify({token: validHex, liveActivity}),
+      }), env);
+      assert.equal(res.status, 502);
+    }
+    assert.equal(signals, 2);
+  } finally {
+    globalThis.fetch = oldFetch;
+  }
+});
+
+test('relay compares bearer tokens in constant time and enforces per-IP /64 sliding-window rate limits', async () => {
+  resetRelayRateLimit();
+  assert.equal(normalizeRelayClientIP('2001:db8:11:22::1'), '2001:0db8:0011:0022::/64');
+  assert.equal(normalizeRelayClientIP('::ffff:198.51.100.4'), '198.51.100.4');
+
+  const pair = await crypto.subtle.generateKey({name: 'ECDSA', namedCurve: 'P-256'}, true, ['sign', 'verify']);
+  const pem = Buffer.from(await crypto.subtle.exportKey('pkcs8', pair.privateKey)).toString('base64');
+  const env: Env = {
+    RELAY_TOKEN: 'correct-horse-battery-staple',
+    RELAY_IP_RPM: '2',
+    APNS_KEY: `-----BEGIN PRIVATE KEY-----\n${pem}\n-----END PRIVATE KEY-----`,
+    APNS_KEY_ID: 'K',
+    APNS_TEAM_ID: 'T',
+    APNS_TOPIC: TOPIC,
+    APNS_ENV: 'production',
+  };
+  const validHex = 'fedcba9876543210fedcba9876543210';
+  const oldFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('', {status: 200});
+  try {
+    // Unauthorized requests of different lengths return 401 and do not consume IP rate-limit slots.
+    for (const hdr of ['', 'Bearer x', 'Bearer correct-horse-battery-stapl', 'Bearer ' + 'a'.repeat(1025)]) {
+      const res = await worker.fetch(new Request('https://relay.example.test/push', {
+        method: 'POST',
+        headers: {'CF-Connecting-IP': '2001:db8:aa:bb::1', ...(hdr ? {Authorization: hdr} : {})},
+        body: JSON.stringify({token: validHex}),
+      }), env);
+      assert.equal(res.status, 401);
+    }
+
+    const pushFrom = (ip: string) => worker.fetch(new Request('https://relay.example.test/push', {
+      method: 'POST',
+      headers: {Authorization: 'Bearer correct-horse-battery-staple', 'CF-Connecting-IP': ip},
+      body: JSON.stringify({token: validHex}),
+    }), env);
+
+    assert.equal((await pushFrom('2001:db8:aa:bb::1')).status, 200);
+    assert.equal((await pushFrom('2001:0DB8:00AA:00BB:1234:5678:9abc:def0')).status, 200);
+    const throttled = await pushFrom('2001:db8:aa:bb:ffff:ffff:ffff:ffff');
+    assert.equal(throttled.status, 429);
+    assert.equal((await pushFrom('198.51.100.9')).status, 200, 'another IP is unaffected');
+  } finally {
+    globalThis.fetch = oldFetch;
+    resetRelayRateLimit();
+  }
 });

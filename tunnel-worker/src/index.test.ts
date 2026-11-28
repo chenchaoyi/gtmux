@@ -4,7 +4,7 @@
 //   node --experimental-strip-types --test src/index.test.ts
 import { test, type TestContext } from "node:test";
 import assert from "node:assert/strict";
-import worker, { shouldReap, reconcileActiveCount, reapDevice, type CFTunnel, type Env } from "./index.ts";
+import worker, { shouldReap, reconcileActiveCount, reapDevice, normalizeClientIP, type CFTunnel, type Env } from "./index.ts";
 
 const NOW = Date.parse("2026-08-01T00:00:00Z");
 const hoursAgo = (h: number) => new Date(NOW - h * 3600_000).toISOString();
@@ -380,4 +380,142 @@ test('incoming handlers reject oversized objects before KV or provider work', as
     }
     assert.equal(io,0);
   }finally{globalThis.fetch=oldFetch;}
+});
+
+test("POST /direct/servers requires matching device secret to disclose current and code-reserved servers", async () => {
+  const code = "gtd-0123456789abcdef01234567";
+  const deviceId = "device-direct-0001";
+  const store = new Map<string, string>([
+    [code, JSON.stringify({ label: "paid" })],
+    ["servers:v1", JSON.stringify({
+      servers: [
+        { id: "la", url: "https://la.example.dev", accepting: true, sync: "s-la" },
+        { id: "vip", url: "https://vip.example.dev", codes: [code], sync: "s-vip" },
+      ],
+    })],
+  ]);
+  const kv = {
+    get: async (k: string) => store.get(k) ?? null,
+    put: async (k: string, v: string) => { store.set(k, v); },
+    delete: async (k: string) => { store.delete(k); },
+  };
+  const env = { DIRECT_CODES: kv, DIRECT_URL: "https://la.example.dev" } as unknown as Env;
+
+  const redeemed = await worker.fetch(new Request("https://api.example.dev/direct/redeem", {
+    method: "POST",
+    body: JSON.stringify({ code, deviceId, server: "vip" }),
+  }), env);
+  assert.equal(redeemed.status, 200);
+  const { secret } = await redeemed.json() as { secret: string };
+
+  // DeviceId alone must not reveal current server or vip server reserved for acct.code.
+  const withoutSecret = await (await worker.fetch(new Request("https://api.example.dev/direct/servers", {
+    method: "POST",
+    body: JSON.stringify({ deviceId }),
+  }), env)).json() as { servers: { id: string }[]; current?: string };
+  assert.deepEqual(withoutSecret.servers.map(s => s.id), ["la"]);
+  assert.equal(withoutSecret.current, undefined);
+
+  // Wrong secret also returns only public servers with no existence oracle.
+  const wrongSecret = await (await worker.fetch(new Request("https://api.example.dev/direct/servers", {
+    method: "POST",
+    body: JSON.stringify({ deviceId, secret: "dwrong:0000" }),
+  }), env)).json() as { servers: { id: string }[]; current?: string };
+  assert.deepEqual(wrongSecret.servers.map(s => s.id), ["la"]);
+  assert.equal(wrongSecret.current, undefined);
+
+  // Valid matching secret discloses both current and code-reserved servers.
+  const withSecret = await (await worker.fetch(new Request("https://api.example.dev/direct/servers", {
+    method: "POST",
+    body: JSON.stringify({ deviceId, secret }),
+  }), env)).json() as { servers: { id: string }[]; current?: string };
+  assert.deepEqual(withSecret.servers.map(s => s.id), ["la", "vip"]);
+  assert.equal(withSecret.current, "vip");
+});
+
+test("POST /direct/revoke enforces constant-time admin/sync bearer auth and removes minted accounts", async () => {
+  const code = "gtd-abcdef0123456789abcdef01";
+  const other = "gtd-999999998888888877777777";
+  const store = new Map<string, string>([
+    [code, JSON.stringify({ label: "revoke-me" })],
+    [other, JSON.stringify({ label: "keep-me" })],
+    ["servers:v1", JSON.stringify({
+      servers: [{ id: "la", url: "https://la.example.dev", accepting: true, sync: "per-server-sync" }],
+    })],
+  ]);
+  const kv = {
+    get: async (k: string) => store.get(k) ?? null,
+    put: async (k: string, v: string) => { store.set(k, v); },
+    delete: async (k: string) => { store.delete(k); },
+  };
+  const baseEnv = { DIRECT_CODES: kv, DIRECT_URL: "https://la.example.dev" } as unknown as Env;
+
+  // Unconfigured revoke returns 503.
+  assert.equal((await worker.fetch(new Request("https://api.example.dev/direct/revoke", {
+    method: "POST", headers: { Authorization: "Bearer anything" }, body: JSON.stringify({ code }),
+  }), baseEnv)).status, 503);
+
+  const env = { ...baseEnv, DIRECT_ADMIN_TOKEN: "admin-secret", DIRECT_SYNC_TOKEN: "legacy-sync" } as Env;
+  await worker.fetch(new Request("https://api.example.dev/direct/redeem", {
+    method: "POST", body: JSON.stringify({ code, deviceId: "device-revoke-0001" }),
+  }), env);
+  await worker.fetch(new Request("https://api.example.dev/direct/redeem", {
+    method: "POST", body: JSON.stringify({ code: other, deviceId: "device-revoke-0002" }),
+  }), env);
+
+  // Per-server sync tokens and legacy sync token must not authorize revoke when DIRECT_ADMIN_TOKEN is set.
+  for (const bad of ["", "per-server-sync", "legacy-sync", "admin-secret-extra"]) {
+    const res = await worker.fetch(new Request("https://api.example.dev/direct/revoke", {
+      method: "POST",
+      headers: bad ? { Authorization: `Bearer ${bad}` } : {},
+      body: JSON.stringify({ code }),
+    }), env);
+    assert.equal(res.status, 401);
+  }
+
+  const ok = await worker.fetch(new Request("https://api.example.dev/direct/revoke", {
+    method: "POST",
+    headers: { Authorization: "Bearer admin-secret" },
+    body: JSON.stringify({ code }),
+  }), env);
+  assert.equal(ok.status, 200);
+  assert.deepEqual(await ok.json(), { ok: true, code, removed: 1 });
+  assert.equal(store.has(code), false);
+  const reg = JSON.parse(store.get("registry:v1")!);
+  assert.equal(Object.keys(reg.accounts).length, 1);
+  assert.ok(reg.accounts["device-revoke-0002"]);
+});
+
+test("Standard provision caps normalize IPv6 /64 prefixes while unwrapping IPv4-mapped addresses", async t => {
+  assert.equal(normalizeClientIP("2001:db8:abcd:12:1111:2222:3333:4444"), "2001:0db8:abcd:0012::/64");
+  assert.equal(normalizeClientIP("2001:0DB8:ABCD:0012::1"), "2001:0db8:abcd:0012::/64");
+  assert.equal(normalizeClientIP("2001:db8:abcd:12:ffff:ffff:ffff:ffff%eth0"), "2001:0db8:abcd:0012::/64");
+  assert.equal(normalizeClientIP("::ffff:203.0.113.7"), "203.0.113.7");
+  assert.equal(normalizeClientIP("203.0.113.7"), "203.0.113.7");
+  assert.equal(normalizeClientIP("unknown"), "unknown");
+
+  const f = repairFixture(t, { existing: false });
+  f.env.PROVISION_IP_CAP = "2";
+  const provisionFrom = (deviceId: string, ip: string) => worker.fetch(new Request("https://control.example/provision", {
+    method: "POST",
+    headers: { "x-gtmux-reg": "test-gate", "CF-Connecting-IP": ip, "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceId }),
+  }), f.env);
+
+  assert.equal((await provisionFrom("ipv6-device-000001", "2001:db8:cafe:42::1")).status, 200);
+  assert.equal((await provisionFrom("ipv6-device-000002", "2001:db8:cafe:42:aaaa:bbbb:cccc:dddd")).status, 200);
+  // Third new device from a different interface ID in the same /64 hits the 24h IP cap.
+  const third = await provisionFrom("ipv6-device-000003", "2001:0DB8:CAFE:0042:9999:8888:7777:6666");
+  assert.equal(third.status, 429);
+  assert.equal(f.store.get("cap:ip:2001:0db8:cafe:0042::/64"), "2");
+});
+
+test("reapDevice fast-skips already-reaped non-pending tombstones with zero Cloudflare API calls", async t => {
+  const f = repairFixture(t);
+  f.store.set(DEVICE, JSON.stringify({ ...record, reaped: true }));
+  t.mock.method(globalThis, "fetch", async () => {
+    throw new Error("tombstone must not trigger Cloudflare API subrequests");
+  });
+  assert.equal(await reapDevice(f.env, DEVICE), false);
+  assert.deepEqual(f.writes, []);
 });

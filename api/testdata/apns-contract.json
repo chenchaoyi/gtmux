@@ -3,7 +3,7 @@
     "name": "empty alert",
     "now": 1700000000,
     "intent": {
-      "token": "fixture"
+      "token": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
     },
     "payload": {
       "aps": {
@@ -29,7 +29,7 @@
     "name": "waiting choices",
     "now": 1700000000,
     "intent": {
-      "token": "fixture",
+      "token": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "kind": "waiting",
       "options": 2,
       "title": "Agent",
@@ -63,7 +63,7 @@
     "name": "silent badge zero",
     "now": 1700000000,
     "intent": {
-      "token": "fixture",
+      "token": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "silent": true,
       "badge": 0,
       "collapseId": "%4"
@@ -90,7 +90,7 @@
     "name": "live update",
     "now": 1700000000,
     "intent": {
-      "token": "fixture",
+      "token": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "liveActivity": true,
       "contentState": {
         "waiting": 2
@@ -119,7 +119,7 @@
     "name": "live end",
     "now": 1700000000,
     "intent": {
-      "token": "fixture",
+      "token": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "liveActivity": true,
       "event": "end",
       "silent": true,

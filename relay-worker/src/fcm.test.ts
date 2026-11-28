@@ -23,6 +23,27 @@ test('unsupported activities, oversized bodies and malformed credentials fail cl
   assert.equal((await sendFCM({token:'t'}, JSON.stringify({type:'service_account',project_id:'../../other',client_email:'fake@example.test',private_key:'x'}))).status,502);
 });
 
+test('client-side FCM validation errors return 400 while unconfigured returns 503 and bad server credentials return 502', async () => {
+  const validConfig = JSON.stringify({type:'service_account',project_id:'../../other',client_email:'fake@example.test',private_key:'x'});
+  for (const invalidIntent of [
+    {token: 'synthetic-token', liveActivity: true},
+    {token: 'synthetic-token', body: 'x'.repeat(5000)},
+    {token: 'token with spaces'},
+    {token: 't'.repeat(4097)},
+  ]) {
+    const res = await sendFCM(invalidIntent, validConfig);
+    assert.equal(res.status, 400);
+    const viaWorker = await relay.fetch(new Request('https://relay.test/', {
+      method: 'POST',
+      headers: {authorization: 'Bearer synthetic'},
+      body: JSON.stringify({platform: 'android', ...invalidIntent}),
+    }), {RELAY_TOKEN: 'synthetic', FCM_SERVICE_ACCOUNT: validConfig} as any);
+    assert.equal(viaWorker.status, 400);
+  }
+  assert.equal((await sendFCM({token: 'synthetic-token'}, undefined)).status, 503);
+  assert.equal((await sendFCM({token: 'synthetic-token'}, validConfig)).status, 502);
+});
+
 test('FCM signs scoped RS256 assertions, caches OAuth and normalizes revoked tokens', async () => {
   const keys = await crypto.subtle.generateKey({name:'RSASSA-PKCS1-v1_5',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['sign','verify']);
   const der = Buffer.from(await crypto.subtle.exportKey('pkcs8',keys.privateKey)).toString('base64');

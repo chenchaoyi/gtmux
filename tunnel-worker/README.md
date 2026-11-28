@@ -36,8 +36,9 @@ The phone enrolls with `gtmux pair` through the returned address. On the Mac,
 | `POST /standard/recover` | Stable-address recovery for the automatic watcher; requires `recover: true`, an existing device identity and the registration header. Older Workers return 404 without side effects. |
 | `POST /provision` | Header `x-gtmux-reg: <REG_SECRET>`; body `{ deviceId, name?, force?, recover? }`; returns `{ url, hostname, token }`. Reuses an existing tunnel. `force` repairs in place; `recover` repairs first and replaces only a confirmed missing/deleted tunnel. The two flags cannot both be true. |
 | `POST /direct/redeem` | Body `{ code, deviceId, server?, region? }`; validates a code and returns that Mac's account and route. |
-| `POST /direct/servers` | Optional body `{ code?, deviceId? }`; returns offered servers and, when known, the device's current server. |
+| `POST /direct/servers` | Optional body `{ code?, deviceId?, secret? }`; returns offered public servers, plus `current` and code-reserved servers when `secret` matches `deviceId` (or `code` is supplied). |
 | `POST /direct/move` | Body `{ deviceId, secret, server }`; authenticates the existing account and moves the Mac to a permitted server. |
+| `POST /direct/revoke` | Admin bearer (`DIRECT_ADMIN_TOKEN`, or `DIRECT_SYNC_TOKEN` fallback) + body `{ code }`; atomically removes minted accounts in `DirectRegistry` and deletes the code. |
 | `GET /direct/authfile` | A server-specific bearer sync token selects that server's chisel accounts. For server setup, see [self-tunnel](../deploy/self-tunnel/README.md). |
 
 Sources: [`src/index.ts`](src/index.ts) for routing/provisioning and

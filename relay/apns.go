@@ -14,9 +14,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"sync"
 	"time"
 )
+
+var (
+	apnsTokenPattern = regexp.MustCompile(`^[0-9a-fA-F]{32,512}$`)
+	errBadAPNSToken  = errors.New("bad token")
+)
+
+func validAPNSToken(token string) bool {
+	return apnsTokenPattern.MatchString(token)
+}
 
 // apnsProd / apnsSandbox are Apple's push endpoints. Sandbox is for development
 // builds signed for development; production is for Ad Hoc / App Store / TestFlight.
@@ -56,12 +66,15 @@ func newAPNSPusher(baseURL, topic, keyID, teamID string, p8 []byte) (*apnsPusher
 		teamID:  teamID,
 		key:     key,
 		// APNs requires HTTP/2; net/http negotiates h2 over TLS automatically.
-		client: &http.Client{Timeout: 10 * time.Second},
+		client: &http.Client{Timeout: 8 * time.Second},
 	}, nil
 }
 
 // Push sends an alert, badge sync or Live Activity update to APNs for req.Token.
 func (a *apnsPusher) Push(ctx context.Context, req pushRequest) error {
+	if !validAPNSToken(req.Token) {
+		return errBadAPNSToken
+	}
 	jwt, err := a.bearer()
 	if err != nil {
 		return err

@@ -3,13 +3,14 @@ import {PUBLIC_KEY} from './public-key.mjs';
 const MAX_MANIFEST = 65536;
 const MAX_ASSET = 256 * 1024 * 1024;
 const MAX_UPLOAD = 90 * 1024 * 1024;
+const MAX_CACHED_KEYS = 16;
 const VERSION = /^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})$/;
 const SHA = /^[0-9a-f]{64}$/;
 const encoder = new TextEncoder();
+const keyCache = new Map();
 class Failure extends Error {constructor(status, message) {super(message); this.status = status;}}
 const fail = (status, text) => {throw new Failure(status, text);};
 const hex = data => [...new Uint8Array(data)].map(x => x.toString(16).padStart(2, '0')).join('');
-const digest = async data => hex(await crypto.subtle.digest('SHA-256', data));
 export function assetNames(version) {
   return ['darwin', 'linux'].flatMap(os => ['amd64', 'arm64'].map(arch => `gtmux-${version}-${os}-${arch}.tar.gz`))
     .concat([`Gtmux-${version}-macos.zip`, 'SHASUMS256.txt', 'install.sh']);
@@ -21,16 +22,26 @@ function decode64(value) {
 function exactKeys(object, keys) {
   return object && typeof object === 'object' && !Array.isArray(object) && Object.keys(object).sort().join(',') === [...keys].sort().join(',');
 }
+function importVerifyKey(publicKey) {
+  let pending = keyCache.get(publicKey);
+  if (!pending) {
+    const der = decode64(publicKey.replace(/-----[^-]+-----|\s/g, ''));
+    pending = crypto.subtle.importKey('spki', der, {name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256'}, false, ['verify'])
+      .catch(error => { keyCache.delete(publicKey); throw error; });
+    if (keyCache.size >= MAX_CACHED_KEYS) keyCache.delete(keyCache.keys().next().value);
+    keyCache.set(publicKey, pending);
+  }
+  return pending;
+}
 export async function verifyEnvelope(raw, publicKey = PUBLIC_KEY) {
   if (raw.byteLength > MAX_MANIFEST) fail(413, 'Metadata too large');
   let envelope;
   try {envelope = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(raw));} catch {fail(422, 'Invalid signed metadata');}
   if (!exactKeys(envelope, ['payload', 'signature'])) fail(422, 'Invalid signed metadata');
   const payload = decode64(envelope.payload), signature = decode64(envelope.signature);
-  const der = decode64(publicKey.replace(/-----[^-]+-----|\s/g, ''));
   let verified = false;
   try {
-    const key = await crypto.subtle.importKey('spki', der, {name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256'}, false, ['verify']);
+    const key = await importVerifyKey(publicKey);
     verified = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, signature, payload);
   } catch { /* A failed verification never promotes metadata. */ }
   if (!verified) fail(422, 'Invalid release signature');
@@ -154,31 +165,75 @@ function rangeOf(header, size) {
   if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start > end || start >= size) fail(416, 'Unsatisfiable range');
   return {offset: start, length: end - start + 1};
 }
-async function readArtifact(request, env, key, alias = false) {
-  const head = await env.RELEASES.head(key); if (!head) fail(404, 'Artifact not found');
-  const headers = {'Content-Type': head.httpMetadata?.contentType ?? contentType(key.split('/').pop()), ETag: head.httpEtag,
-    'Last-Modified': head.uploaded.toUTCString(), 'Accept-Ranges': 'bytes', 'Cache-Control': alias || key === 'gtmux/stable.json' ? 'public, max-age=60, no-transform' : 'public, max-age=31536000, immutable, no-transform'};
-  if (request.headers.has('If-Match') && !etagMatches(request.headers.get('If-Match'), head.httpEtag)) return response(null, 412, headers);
-  if (etagMatches(request.headers.get('If-None-Match'), head.httpEtag, true)) return response(null, 304, headers);
+function artifactHeaders(meta, key, alias) {
+  return {
+    'Content-Type': meta.httpMetadata?.contentType ?? contentType(key.split('/').pop()),
+    ETag: meta.httpEtag,
+    'Last-Modified': meta.uploaded.toUTCString(),
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': alias || key === 'gtmux/stable.json'
+      ? 'public, max-age=60, no-transform'
+      : 'public, max-age=31536000, immutable, no-transform',
+  };
+}
+function preconditionStatus(request, meta) {
+  if (request.headers.has('If-Match') && !etagMatches(request.headers.get('If-Match'), meta.httpEtag)) return 412;
+  if (etagMatches(request.headers.get('If-None-Match'), meta.httpEtag, true)) return 304;
   const modified = Date.parse(request.headers.get('If-Modified-Since') ?? '');
   const unmodified = Date.parse(request.headers.get('If-Unmodified-Since') ?? '');
-  const clock = Math.floor(head.uploaded.getTime() / 1000) * 1000;
-  if (!request.headers.has('If-None-Match') && Number.isFinite(modified) && clock <= modified) return response(null, 304, headers);
-  if (!request.headers.has('If-Match') && Number.isFinite(unmodified) && clock > unmodified) return response(null, 412, headers);
-  let rangeHeader = request.method === 'HEAD' ? null : request.headers.get('Range');
-  const ifRange = request.headers.get('If-Range');
-  if (ifRange && ifRange !== head.httpEtag && !(Number.isFinite(Date.parse(ifRange)) && clock <= Date.parse(ifRange))) rangeHeader = null;
-  let range;
-  try {range = rangeOf(rangeHeader, head.size);} catch (error) {if (error.status === 416) return response(null, 416, {...headers, 'Content-Range': `bytes */${head.size}`}); throw error;}
-  headers['Content-Length'] = String(range?.length ?? head.size);
-  if (range) headers['Content-Range'] = `bytes ${range.offset}-${range.offset + range.length - 1}/${head.size}`;
-  if (request.method === 'HEAD') return response(null, 200, headers);
-  const object = await env.RELEASES.get(key, {onlyIf: {etagMatches: head.etag}, ...(range ? {range} : {})});
-  if (!object?.body) fail(503, 'Artifact changed; retry the request');
-  return response(object.body, range ? 206 : 200, headers);
+  const clock = Math.floor(meta.uploaded.getTime() / 1000) * 1000;
+  if (!request.headers.has('If-None-Match') && Number.isFinite(modified) && clock <= modified) return 304;
+  if (!request.headers.has('If-Match') && Number.isFinite(unmodified) && clock > unmodified) return 412;
+  return 0;
+}
+async function readArtifact(request, env, key, alias = false, ctx = undefined) {
+  const immutable = !alias && key !== 'gtmux/stable.json';
+  const hasConditionals = ['If-Match', 'If-None-Match', 'If-Modified-Since', 'If-Unmodified-Since'].some(h => request.headers.has(h));
+  if (request.method === 'GET' && !request.headers.has('Range')) {
+    const edgeCache = immutable && !hasConditionals ? globalThis.caches?.default : null;
+    const cacheKey = edgeCache ? new Request(request.url, {method: 'GET'}) : null;
+    if (edgeCache && cacheKey) {
+      const hit = await edgeCache.match(cacheKey);
+      if (hit) return hit;
+    }
+    const object = await env.RELEASES.get(key);
+    if (!object) fail(404, 'Artifact not found');
+    const headers = artifactHeaders(object, key, alias);
+    const cond = preconditionStatus(request, object);
+    if (cond) {
+      try {await object.body?.cancel?.();} catch { /* stream cleanup only */ }
+      return response(null, cond, headers);
+    }
+    headers['Content-Length'] = String(object.size);
+    const res = response(object.body, 200, headers);
+    if (edgeCache && cacheKey) {
+      const store = edgeCache.put(cacheKey, res.clone()).catch(() => undefined);
+      if (ctx?.waitUntil) ctx.waitUntil(store);
+      else await store;
+    }
+    return res;
+  }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const head = await env.RELEASES.head(key); if (!head) fail(404, 'Artifact not found');
+    const headers = artifactHeaders(head, key, alias);
+    const cond = preconditionStatus(request, head);
+    if (cond) return response(null, cond, headers);
+    let rangeHeader = request.method === 'HEAD' ? null : request.headers.get('Range');
+    const ifRange = request.headers.get('If-Range');
+    const clock = Math.floor(head.uploaded.getTime() / 1000) * 1000;
+    if (ifRange && ifRange !== head.httpEtag && !(Number.isFinite(Date.parse(ifRange)) && clock <= Date.parse(ifRange))) rangeHeader = null;
+    let range;
+    try {range = rangeOf(rangeHeader, head.size);} catch (error) {if (error.status === 416) return response(null, 416, {...headers, 'Content-Range': `bytes */${head.size}`}); throw error;}
+    headers['Content-Length'] = String(range?.length ?? head.size);
+    if (range) headers['Content-Range'] = `bytes ${range.offset}-${range.offset + range.length - 1}/${head.size}`;
+    if (request.method === 'HEAD') return response(null, 200, headers);
+    const object = await env.RELEASES.get(key, {onlyIf: {etagMatches: head.etag}, ...(range ? {range} : {})});
+    if (object?.body) return response(object.body, range ? 206 : 200, headers);
+  }
+  fail(503, 'Artifact changed; retry the request');
 }
 export function createHandler({publicKey = PUBLIC_KEY} = {}) {
-  return {async fetch(request, env) {
+  return {async fetch(request, env, ctx) {
     try {
       const url = new URL(request.url);
       if (url.protocol !== 'https:' || url.port || url.search || url.username || url.password) fail(400, 'Invalid request');
@@ -188,11 +243,11 @@ export function createHandler({publicKey = PUBLIC_KEY} = {}) {
       }
       if (!['GET', 'HEAD'].includes(request.method)) return response(null, 405, {Allow: 'GET, HEAD'});
       if (!(env.DOWNLOAD_HOSTS ?? '').split(',').includes(url.hostname)) fail(404, 'Not found');
-      if (url.pathname === '/gtmux/stable.json') return await readArtifact(request, env, 'gtmux/stable.json');
+      if (url.pathname === '/gtmux/stable.json') return await readArtifact(request, env, 'gtmux/stable.json', false, ctx);
       if (url.pathname === '/gtmux/install' || url.pathname.startsWith('/gtmux/latest/')) {
         const stable = await env.RELEASES.get('gtmux/stable.json'); if (!stable) fail(404, 'No complete release');
         const manifest = await verifyEnvelope(await readBounded(stable.body, MAX_MANIFEST), publicKey);
-        if (url.pathname === '/gtmux/install') return await readArtifact(request, env, `gtmux/v${manifest.version}/install.sh`, true);
+        if (url.pathname === '/gtmux/install') return await readArtifact(request, env, `gtmux/v${manifest.version}/install.sh`, true, ctx);
         const short = url.pathname.slice('/gtmux/latest/'.length);
         let name;
         if (short === 'macos.zip') name = `Gtmux-${manifest.version}-macos.zip`;
@@ -204,7 +259,7 @@ export function createHandler({publicKey = PUBLIC_KEY} = {}) {
       if (!url.pathname.startsWith('/gtmux/')) fail(404, 'Unknown artifact');
       const target = objectPath(url.pathname);
       if (!target) fail(404, 'Unknown artifact');
-      return await readArtifact(request, env, target.key);
+      return await readArtifact(request, env, target.key, false, ctx);
     } catch (error) {
       return response(error instanceof Failure ? error.message : 'Distribution temporarily unavailable', error instanceof Failure ? error.status : 503);
     }

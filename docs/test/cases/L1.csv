@@ -3803,8 +3803,8 @@ LEG-483418e96a4d,L1,RN / mobile harness,mobileapp/src/usage/UsageWidgetBridge.te
 LEG-e694b8d31044,L1,Go core / CLI / server,relay/apns_contract_test.go,36,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-de09a2af7303,L1,Go core / CLI / server,relay/fcm_test.go,36,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-9437d12d0839,L1,Go core / CLI / server,relay/fcm_test.go,128,Test,TestFCMRejectsUnsupportedOrOverlongIntents,False,legacy-not-retrospectively-reviewed
-LEG-05e2857a501c,L1,Go core / CLI / server,relay/relay_test.go,81,Test,TestRelayPushGatewayError,False,legacy-not-retrospectively-reviewed
-LEG-444702381167,L1,Go core / CLI / server,relay/relay_test.go,92,Test,TestSignProviderJWT,False,legacy-not-retrospectively-reviewed
+LEG-05e2857a501c,L1,Go core / CLI / server,relay/relay_test.go,89,Test,TestRelayPushGatewayError,False,legacy-not-retrospectively-reviewed
+LEG-444702381167,L1,Go core / CLI / server,relay/relay_test.go,98,Test,TestSignProviderJWT,False,legacy-not-retrospectively-reviewed
 MAP-a4f326b77fc6,L1,reviewed implementation,scripts/ci.py,43,reviewed-selector,document,False,WFG-004
 MAP-43e91d565746,L1,reviewed implementation,scripts/ci.py,25,reviewed-selector,DOC_FILES,False,WFG-004
 MAP-1897df85f0b4,L1,CI / tooling,scripts/ci_test.py,51,reviewed-selector,test_harness_instructions_and_openspec_skills_are_policy_only,False,WFG-004

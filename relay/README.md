@@ -71,9 +71,10 @@ Replace the credential placeholders before running. Then point the Mac at it: `g
 | `APNS_TEAM_ID` | your Apple Developer Team ID |
 | `APNS_TOPIC` | the app's bundle id (`apns-topic`) |
 | `APNS_ENV` | fallback when request `env` is absent: `sandbox` → dev endpoint; anything else → production |
+| `FCM_SERVICE_ACCOUNT_PATH` | optional path to Firebase HTTP v1 service account JSON (`0600`) for Android pushes |
 
-With the `APNS_*` vars unset the relay still starts (so you can deploy first):
-`/health` works and `/push` for `ios` returns `unsupported platform` until
+With the `APNS_*` / `FCM_*` vars unset the relay still starts (so you can deploy first):
+`/health` works, `/push` for `android` returns `503`, and `/push` for `ios` returns `unsupported platform` until
 credentials are added (and the required relay bearer is configured).
 
 ## HTTP contract
@@ -83,18 +84,22 @@ credentials are added (and the required relay bearer is configured).
 200 {"service":"gtmux-relay","status":"ok"}
 ```
 
-### `POST /push`
-Auth: `Authorization: Bearer <GTMUX_RELAY_TOKEN>` is required. Without configured relay credentials, `/push` returns 503 and `/health` remains available.
+### `POST /push` (and `POST /`)
+Auth: `Authorization: Bearer <GTMUX_RELAY_TOKEN>` is required (compared in constant time over SHA-256 digests). Without configured relay credentials, `/` and `/push` return 503 and `/health` remains available.
 ```
 body: {"token","platform","title","body","pane","kind"}   // platform defaults to ios
 optional: {"subtitle","options","silent","badge","collapseId","env","liveActivity","event","contentState","staleDate"}
 200 {"status":"ok"}
 400 {"error":"invalid request"}            // missing device token / bad body
-400 {"error":"unsupported platform: …"}    // no gateway for that platform
+400 {"error":"bad token"}                  // APNs token outside /^[0-9a-fA-F]{32,512}$/ or invalid FCM token
+400 {"error":"Live Activity is iOS-only"}  // client FCM validation failure (or >4096B FCM payload)
+400 {"error":"unsupported platform: …"}    // unknown platform
 401 {"error":"unauthorized"}               // bad/absent caller bearer
 413 {"error":"request too large"}          // JSON body exceeds 64 KiB
 503 {"error":"relay unavailable"}          // relay token is not configured
+503 {"error":"android push is not configured"} // Android FCM service account is not configured
 502 {"error":"apns","status":410,"detail":"…"} // APNs rejected it; preserve its status
+502 {"error":"fcm","status":404,"code":"UNREGISTERED"} // FCM rejected it
 502 {"error":"push failed: …"}             // transport/other gateway failure
 ```
 

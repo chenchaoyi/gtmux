@@ -3266,7 +3266,7 @@
       "replaces the index with results, rather than showing both",
       "says so when nothing matches, naming what was typed",
       "gives the index back when the query is cleared",
-      "is closed by default \u2014 it is read once, then it is just height",
+      "is closed by default — it is read once, then it is just height",
       "opens on tap",
       "describes the result instead of the ledger verb",
       "write-it-in sends carry with no text, after one confirmation",
@@ -3522,7 +3522,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane\u2019s different current runtime",
+      "a stitched older session never requests the pane’s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -5409,7 +5409,7 @@
       "DFR-002"
     ],
     "selectors": [
-      "Dark and \u4e2d\u6587 apply at once and survive a relaunch"
+      "Dark and 中文 apply at once and survive a relaunch"
     ]
   },
   "mobileapp/e2e/setup/global-setup-target.test.ts": {
@@ -6287,6 +6287,94 @@
     ],
     "selectors": [
       "TestAGYSEL002_HasPendingAskSupportsLiveScreenWaitBeforeSlowTick"
+    ]
+  },
+  "tunnel-worker/test/lifecycle.spec.ts": {
+    "cases": [
+      "WKH-001"
+    ],
+    "selectors": [
+      "DirectRegistry SQLite coordinator serializes concurrent redeem, move, servers, authfile, and revoke without KV 429 loss",
+      "DirectRegistry hydrates legacy registry:v1 once, omits authfile claim before initialization, and survives reconstruction",
+      "scheduled sweep honors wall-clock budget, preserves unvisited cursor progress, and still runs reconcileActiveCount"
+    ]
+  },
+  "tunnel-worker/src/index.test.ts": {
+    "cases": [
+      "WKH-002"
+    ],
+    "selectors": [
+      "POST /direct/servers requires matching device secret to disclose current and code-reserved servers",
+      "POST /direct/revoke enforces constant-time admin/sync bearer auth and removes minted accounts",
+      "Standard provision caps normalize IPv6 /64 prefixes while unwrapping IPv4-mapped addresses",
+      "reapDevice fast-skips already-reaped non-pending tombstones with zero Cloudflare API calls"
+    ]
+  },
+  "tunnel-worker/src/direct.test.ts": {
+    "cases": [
+      "WKH-002"
+    ],
+    "selectors": [
+      "revokeDirectCode validates code format and removes minted accounts before deleting the code key"
+    ]
+  },
+  "relay-worker/src/index.test.ts": {
+    "cases": [
+      "WKH-003"
+    ],
+    "selectors": [
+      "relay validates APNs hex tokens strictly and accepts POST / alongside POST /push",
+      "relay bounds APNs fetches with an 8s timeout signal and returns 502 on timeout",
+      "relay compares bearer tokens in constant time and enforces per-IP /64 sliding-window rate limits"
+    ]
+  },
+  "relay-worker/src/fcm.test.ts": {
+    "cases": [
+      "WKH-003"
+    ],
+    "selectors": [
+      "client-side FCM validation errors return 400 while unconfigured returns 503 and bad server credentials return 502"
+    ]
+  },
+  "relay/relay_test.go": {
+    "cases": [
+      "WKH-004"
+    ],
+    "selectors": [
+      "TestRelayParityAndAPNSTokenValidation"
+    ]
+  },
+  "relay/apns_contract_test.go": {
+    "cases": [
+      "WKH-004"
+    ],
+    "selectors": [
+      "TestAPNSContractRejectsNonHexTokensBeforeGateway"
+    ]
+  },
+  "relay/body_bounds_test.go": {
+    "cases": [
+      "WKH-004"
+    ],
+    "selectors": [
+      "TestRelayRootEndpointSharesBodyAndAuthBounds"
+    ]
+  },
+  "relay/fcm_test.go": {
+    "cases": [
+      "WKH-004"
+    ],
+    "selectors": [
+      "TestRelayFCMHandlerValidationAndUnconfiguredParity"
+    ]
+  },
+  "download-worker/test/service.test.mjs": {
+    "cases": [
+      "WKH-005"
+    ],
+    "selectors": [
+      "verifyEnvelope memoizes RSA-3072 CryptoKey per publicKey and evicts invalid keys",
+      "standard GET uses one atomic R2 get without head or spurious TOCTOU 503 while caching only immutable 200 GETs"
     ]
   }
 }
