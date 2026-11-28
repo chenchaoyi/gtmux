@@ -1,27 +1,58 @@
-// Generated from mobileapp/src/documents/references.ts; SHA256 1d529054756bd34565353058fb7e3a9d7162de65d377d85c593d3676d34742a8
+// Generated from mobileapp/src/documents/references.ts; SHA256 03520d548c0b5fd769816f26b44efb582ad3e3b58f895a94583c0c9f2df09834
 (function(root){var exports={};
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DocumentError = exports.MAX_DOCUMENT_BYTES = void 0;
+exports.parseFileURI = parseFileURI;
 exports.documentReference = documentReference;
 exports.parseDocument = parseDocument;
 exports.documentErrorMessage = documentErrorMessage;
+// RFC 8089 local file URI parser. Never use runtime new URL() for file: URIs:
+// React Native's Blob URL polyfill returns pathname="/" and hostname="" for file://.
+function parseFileURI(raw) {
+    if (!raw || raw.length > 4096 || /[\u0000-\u001f\u007f]/.test(raw) || !/^file:\/\//i.test(raw))
+        return null;
+    const rest = raw.slice(7);
+    const hash = rest.indexOf('#');
+    const body = hash >= 0 ? rest.slice(0, hash) : rest;
+    if (body.includes('?'))
+        return null;
+    const slash = body.indexOf('/');
+    if (slash < 0)
+        return null;
+    const authority = body.slice(0, slash);
+    if (authority !== '' && authority.toLowerCase() !== 'localhost')
+        return null;
+    try {
+        const decoded = decodeURIComponent(body.slice(slash));
+        if (!decoded || decoded.startsWith('//') || /[\u0000-\u001f\u007f]/.test(decoded))
+            return null;
+        return decoded;
+    }
+    catch {
+        return null;
+    }
+}
 function documentReference(href) {
     if (!href || href.length > 4096 || /[\u0000-\u001f\u007f]/.test(href))
         return null;
     if (/^gtmux-file:[a-f0-9]{32}$/.test(href))
         return { reference: href, name: '', path: '' };
-    let path = href;
-    if (/^file:/i.test(path)) {
-        try {
-            const url = new URL(path);
-            if (url.hostname && url.hostname !== 'localhost' || url.search || url.hash)
-                return null;
-            path = decodeURIComponent(url.pathname);
-        }
-        catch {
+    let path;
+    if (/^file:/i.test(href)) {
+        const parsed = parseFileURI(href);
+        if (!parsed)
             return null;
-        }
+        path = parsed;
+    }
+    else {
+        if (/^[a-z][a-z\d+.-]*:/i.test(href) || href.startsWith('//'))
+            return null;
+        const hash = href.indexOf('#');
+        const rawPath = hash >= 0 ? href.slice(0, hash) : href;
+        if (!rawPath || rawPath.includes('?'))
+            return null;
+        path = rawPath;
     }
     if (/^[a-z][a-z\d+.-]*:/i.test(path) || path.startsWith('//'))
         return null;

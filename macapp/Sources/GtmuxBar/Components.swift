@@ -28,14 +28,25 @@ func agentMonogram(_ name: String) -> String {
 struct StatusBadge: View {
     let status: Status
     var size: CGFloat = Theme.Size.badge
+    @Environment(\.surfaceVisibility) private var surfaceVisibility
+    // errored-idle: an amber ⚠ modifier replacing the green ✓ (the idle session
+    // ended on an error). Never for non-idle states.
+    var errored = false
+
+    var body: some View {
+        StatusBadgeContent(status: status, size: size, errored: errored, visibility: surfaceVisibility)
+    }
+}
+
+private struct StatusBadgeContent: View {
+    let status: Status
+    let size: CGFloat
+    let errored: Bool
     /// Drives the working ring's rotation. Honours the system's Reduce Motion — a
     /// preference a glance tool has no business overriding.
     @State private var spin = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @ObservedObject private var visibility = MenuVisibility.shared
-    // errored-idle: an amber ⚠ modifier replacing the green ✓ (the idle session
-    // ended on an error). Never for non-idle states.
-    var errored = false
+    @ObservedObject var visibility: SurfaceVisibility
 
     var body: some View {
         ZStack {
@@ -357,8 +368,23 @@ enum PopoverClick {
 /// What works without either cost: swap the VIEW. When this goes false the animated ring
 /// is replaced by a still one — a different view, so SwiftUI destroys the animated one and
 /// the animation goes with it — while the rest of the tree stays alive and measured.
-final class MenuVisibility: ObservableObject {
-    static let shared = MenuVisibility()
+final class SurfaceVisibility: ObservableObject {
+    static let shared = SurfaceVisibility()
+    static let inactive = SurfaceVisibility()
     @Published private(set) var visible = false
+    init(visible: Bool = false) { self.visible = visible }
     func setVisible(_ on: Bool) { if visible != on { visible = on } }
+}
+
+typealias MenuVisibility = SurfaceVisibility
+
+private struct SurfaceVisibilityKey: EnvironmentKey {
+    static let defaultValue = SurfaceVisibility.inactive
+}
+
+extension EnvironmentValues {
+    var surfaceVisibility: SurfaceVisibility {
+        get { self[SurfaceVisibilityKey.self] }
+        set { self[SurfaceVisibilityKey.self] = newValue }
+    }
 }

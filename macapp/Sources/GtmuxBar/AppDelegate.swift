@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// redrawing a static icon. 8fps is plenty for a slow fade and costs nothing.
     private var awakeTimer: Timer?
     private var awakePhase: CGFloat = 0
+    private var systemSleeping = false
     private let popover = NSPopover()
     private lazy var menuPresentation = MenuPopoverPresentation(popover: popover)
     private let store = AgentStore()
@@ -175,7 +176,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // once/day inside Updater). If one exists, the popover shows a "new version"
         // banner the user can click to install — same effect as `gtmux update`.
         WhatsNewStore.shared.prepareLaunch()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
             Updater.shared.autoCheck()
             EnvironmentHealth.shared.autoCheck()
         }
@@ -201,9 +202,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // terminal via AppleScript, so not on the 1.5s poll) so `gtmux restore`
         // can replay your tab arrangement instead of tmux's alphabetical order.
         saveTabOrder()
-        tabOrderTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: true) { [weak self] _ in
-            self?.saveTabOrder()
-        }
+        startTabOrderTimer()
+        observeWorkspaceSleep()
 
         // Live-apply preference changes (refresh interval, status-bar display mode).
         settings.objectWillChange.receive(on: RunLoop.main).sink { [weak self] in
@@ -267,8 +267,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onSend: { [weak self] agent, n in self?.sendReply(agent, n) })
     }
 
+    private func startTabOrderTimer() {
+        guard !systemSleeping, tabOrderTimer == nil else { return }
+        tabOrderTimer = Timer.scheduledTimer(withTimeInterval: 12, repeats: true) { [weak self] _ in
+            self?.saveTabOrder()
+        }
+    }
+
+    private func observeWorkspaceSleep() {
+        let ws = NSWorkspace.shared.notificationCenter
+        let sleepNames: [Notification.Name] = [
+            NSWorkspace.screensDidSleepNotification,
+            NSWorkspace.willSleepNotification,
+        ]
+        let wakeNames: [Notification.Name] = [
+            NSWorkspace.screensDidWakeNotification,
+            NSWorkspace.didWakeNotification,
+        ]
+        for name in sleepNames {
+            ws.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                guard let self else { return }
+                self.systemSleeping = true
+                self.awakeTimer?.invalidate()
+                self.awakeTimer = nil
+                self.tabOrderTimer?.invalidate()
+                self.tabOrderTimer = nil
+            }
+        }
+        for name in wakeNames {
+            ws.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                guard let self, self.systemSleeping else { return }
+                self.systemSleeping = false
+                self.startTabOrderTimer()
+                self.syncAwakeTimer(self.serverMode.status?.isOn == true)
+                self.store.refresh()
+            }
+        }
+    }
+
     private func saveTabOrder() {
-        guard tabOrderPoll.begin(now: ProcessInfo.processInfo.systemUptime) else { return }
+        guard !systemSleeping, tabOrderPoll.begin(now: ProcessInfo.processInfo.systemUptime) else { return }
         DispatchQueue.global(qos: .utility).async {
             let result = GtmuxCLI.captureTabOrder()
             guard let event = self.tabOrderPoll.finish(result, now: ProcessInfo.processInfo.systemUptime) else { return }
@@ -284,9 +322,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func resetTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: settings.refreshInterval, repeats: true) { [weak self] _ in
-            self?.store.refresh()
-            RemoteAccess.shared.refreshClients() // keep the remote-viewer indicator live
-            ShareStore.shared.refresh()          // keep the shared-input exposure indicator live
+            guard let self, !self.systemSleeping else { return }
+            self.store.refresh()
+            if self.popover.isShown {
+                RemoteAccess.shared.refreshClients() // keep the remote-viewer indicator live while open
+                ShareStore.shared.refresh()          // keep the shared-input exposure indicator live while open
+            }
         }
     }
 
@@ -382,7 +423,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Start the breathing timer when server mode turns on, and — just as important —
     /// tear it down the moment it turns off, so an idle gtmux is idle.
     private func syncAwakeTimer(_ awake: Bool) {
-        if awake, awakeTimer == nil {
+        if awake, !systemSleeping, awakeTimer == nil {
             awakeTimer = Timer.scheduledTimer(withTimeInterval: 0.125, repeats: true) { [weak self] _ in
                 guard let self, let button = self.statusItem.button else { return }
                 // 2.4s cycle: slow enough to read as breathing rather than blinking.
@@ -393,7 +434,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     mostUrgent: self.store.mostUrgent, empty: self.store.total == 0,
                     dark: dark, awake: true, phase: self.awakePhase)
             }
-        } else if !awake, let t = awakeTimer {
+        } else if !awake || systemSleeping, let t = awakeTimer {
             t.invalidate()
             awakeTimer = nil
             awakePhase = 0
@@ -484,6 +525,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The popover and the center-screen command palette must never coexist.
         CommandPaletteController.shared.dismiss()
         store.refresh()
+        RemoteAccess.shared.refreshClients()
+        ShareStore.shared.refresh()
         store.refreshRestorePlan()
         EnvironmentHealth.shared.refreshIfStale()
         // Check for a new release each time the menu is opened (throttled inside

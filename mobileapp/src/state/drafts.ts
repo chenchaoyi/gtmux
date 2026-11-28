@@ -28,6 +28,26 @@ export function draftKeyFor(server: string, pane: string, session = ''): string 
   return JSON.stringify(['draft-v2', server.replace(/\/+$/, ''), pane, session]);
 }
 
+export function parseDraftKey(key?: string): {server: string; pane: string; session: string} | null {
+  if (!key) return null;
+  try {
+    const parsed = JSON.parse(key);
+    if (
+      Array.isArray(parsed) &&
+      parsed.length === 4 &&
+      parsed[0] === 'draft-v2' &&
+      typeof parsed[1] === 'string' &&
+      typeof parsed[2] === 'string' &&
+      typeof parsed[3] === 'string'
+    ) {
+      return {server: parsed[1], pane: parsed[2], session: parsed[3]};
+    }
+  } catch {
+    // Non-JSON synthetic test keys stay opaque.
+  }
+  return null;
+}
+
 
 /** How many panes may hold a draft. Beyond this the oldest are dropped. */
 export const DRAFT_CAP = 20;
@@ -90,4 +110,16 @@ export async function saveDrafts(map: DraftMap): Promise<void> {
   } catch {
     // best-effort: a lost draft is the status quo, never an error to show
   }
+}
+
+let draftMutationChain: Promise<void> = Promise.resolve();
+
+/** Serialize read-modify-write draft mutations so unmount flushes, migrations, and clears never clobber each other. */
+export function mutateDrafts(mutator: (map: DraftMap) => DraftMap): Promise<void> {
+  const next = draftMutationChain.then(async () => {
+    const current = await loadDrafts();
+    await saveDrafts(mutator(current));
+  });
+  draftMutationChain = next.catch(() => {});
+  return next;
 }

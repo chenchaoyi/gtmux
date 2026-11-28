@@ -151,6 +151,7 @@ export function AgentsProvider({
   const confirmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const revokeReported = useRef(false);
   const refreshRef = useRef<() => void>(() => {});
+  const reopenStreamRef = useRef<() => void>(() => {});
 
   // One bounded read lane per client. Keep one trailing request when a stream
   // event arrives during a fetch; dropping it could leave a newer fleet unseen.
@@ -178,6 +179,7 @@ export function AgentsProvider({
       refusals.current = 0;
       updateRead({agents: a, lastUpdated: Date.now(), hasValue: true, error: null});
       setConn('live');
+      reopenStreamRef.current();
       // keep the iOS Live Activity (lock screen / Dynamic Island) in step,
       // leading with the session that needs you (bold) + its prompt (detail),
       // and LISTING the top in-flight sessions (concrete names + relative time).
@@ -327,10 +329,13 @@ export function AgentsProvider({
     let unsub: Unsubscribe | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let attempt = 0;
-    let foreground = AppState.currentState !== 'background' && AppState.currentState !== 'inactive';
+    let authErrors = 0;
+    // Keep SSE open across transient iOS 'inactive' system-sheet / Notification Center states;
+    // tear down only when the app actually enters 'background'.
+    let foreground = AppState.currentState !== 'background';
 
     const open = () => {
-      if (!live || !foreground) return;
+      if (!live || !foreground || unsub) return;
       unsub = subscribe(base, token, {
         onAgents: () => { if (live && clientRef.current === client) refresh(); },
         onAlert: a => {
@@ -343,6 +348,7 @@ export function AgentsProvider({
         onOpen: () => {
           if (!live || clientRef.current !== client) return;
           attempt = 0;
+          authErrors = 0;
           setConn('live');
           // A stream that just came back may have missed changes while it was gone —
           // the fleet's and server mode's alike.
@@ -357,19 +363,38 @@ export function AgentsProvider({
         // (simulator, 2026-10-05).
         onError: status => {
           if (!live || clientRef.current !== client) return;
-          setConn(status === 401 || status === 403 ? 'unauthorized' : 'offline');
+          // Close immediately so react-native-sse does not keep polling every 5s during backoff.
+          unsub?.();
+          unsub = null;
+          const isAuth = status === 401 || status === 403;
+          setConn(isAuth ? 'unauthorized' : 'offline');
+          if (isAuth) {
+            authErrors++;
+            if (authErrors >= 2) return;
+          } else {
+            authErrors = 0;
+          }
           retry();
         },
       });
     };
 
+    reopenStreamRef.current = () => {
+      if (!live || !foreground || unsub || timer) return;
+      if (authErrors >= 2) {
+        authErrors = 0;
+        attempt = 0;
+        open();
+      }
+    };
+
     const retry = () => {
-      if (!live || !foreground || timer) return;
+      if (!live || !foreground || timer || authErrors >= 2) return;
       const wait = Math.min(3000 * 2 ** attempt, 30_000);
       attempt++;
       timer = setTimeout(() => {
         timer = null;
-        if (!live) return;
+        if (!live || !foreground || authErrors >= 2) return;
         unsub?.();
         unsub = null;
         refresh(); // the fleet over HTTP, whether or not the stream comes back this time
@@ -394,36 +419,33 @@ export function AgentsProvider({
     };
 
     const appState = AppState.addEventListener('change', state => {
-      const active = state === 'active';
-      if (active === foreground) return;
-      foreground = active;
-      if (timer) clearTimeout(timer);
-      timer = null;
-      unsub?.();
-      unsub = null;
-      if (foreground) {attempt = 0; refresh(); open();}
+      if (state === 'background') {
+        if (!foreground) return;
+        foreground = false;
+        if (timer) clearTimeout(timer);
+        timer = null;
+        unsub?.();
+        unsub = null;
+        return;
+      }
+      if (state === 'active' && !foreground) {
+        foreground = true;
+        attempt = 0;
+        authErrors = 0;
+        refresh();
+        open();
+      }
     });
     if (foreground) {refresh(); open();}
     return () => {
       live = false;
+      reopenStreamRef.current = () => {};
       appState.remove();
       if (timer) clearTimeout(timer);
       unsub?.();
       if (bannerTimer.current) clearTimeout(bannerTimer.current);
     };
   }, [base, token, client, refresh, setConn]);
-
-  // Refetch the moment the app returns to the foreground. iOS suspends the SSE
-  // stream while backgrounded, and on reconnect the server only re-pushes on the
-  // NEXT change — so the cached agents go stale and the session list showed the
-  // last-known state until a manual pull-to-refresh. An immediate HTTP refresh on
-  // 'active' makes the list current every time you come back, independent of SSE.
-  useEffect(() => {
-    const sub = AppState.addEventListener('change', s => {
-      if (s === 'active') refresh();
-    });
-    return () => sub.remove();
-  }, [refresh]);
 
   // End the Live Activity when this Mac is unpaired (the provider unmounts).
   useEffect(() => () => LiveActivity.stop(), []);
@@ -513,38 +535,66 @@ export function AgentsProvider({
   }, [client, liveActivity]);
 
   // Resolve the caller's scope authoritatively from GET /api/share (all:true ⇒
-  // owner). Re-reads when the client changes and on every successful agents refresh
-  // (lastUpdated) so a mid-session widen/narrow of the host's allowlist tracks. A
-  // failed read keeps the current (hint-seeded) value — never widens on error.
+  // owner). Re-reads on every successful agents refresh for guests so a mid-session
+  // widen/narrow of the host's allowlist tracks, while confirmed owners throttle
+  // repeat checks. A failed read keeps the current value — never widens on error.
+  const shareCheckRef = useRef<{client: GtmuxClient | null; confirmedOwnerAt: number}>({client: null, confirmedOwnerAt: 0});
   useEffect(() => {
+    if (shareCheckRef.current.client !== client) {
+      shareCheckRef.current = {client, confirmedOwnerAt: 0};
+    } else if (!isGuest && shareCheckRef.current.confirmedOwnerAt > 0 && Date.now() - shareCheckRef.current.confirmedOwnerAt < 60_000) {
+      return;
+    }
     let alive = true;
     client
       .share()
       .then(cap => {
         if (!alive) return;
-        setAccess({client, isGuest: !cap.all, shareStale: !cap.all && !!cap.stale,
-          inputPanes: !cap.all && cap.stale ? [] : cap.panes});
+        const nextIsGuest = !cap.all;
+        const nextStale = !cap.all && !!cap.stale;
+        const nextPanes = !cap.all && cap.stale ? [] : cap.panes;
+        shareCheckRef.current = {client, confirmedOwnerAt: cap.all ? Date.now() : 0};
+        setAccess(prev => {
+          if (
+            prev.client === client &&
+            prev.isGuest === nextIsGuest &&
+            prev.shareStale === nextStale &&
+            prev.inputPanes.length === nextPanes.length &&
+            prev.inputPanes.every((pane, index) => pane === nextPanes[index])
+          ) {
+            return prev;
+          }
+          return {client, isGuest: nextIsGuest, shareStale: nextStale, inputPanes: nextPanes};
+        });
       })
       .catch(() => {});
     return () => {
       alive = false;
     };
-  }, [client, lastUpdated]);
+  }, [client, isGuest, lastUpdated]);
 
-  const value: AgentsContextValue = {
-    client,
-    agents,
-    conn,
-    lastUpdated,
-    read: {hasValue: ownSnapshot.hasValue, refreshing: ownSnapshot.refreshing, error: ownSnapshot.error},
-    banner,
-    dismissBanner: () => setBanner(null),
-    refresh,
-    isGuest,
-    shareStale,
-    inputPanes,
-    serverModeRev,
-  };
+  const dismissBanner = React.useCallback(() => setBanner(null), []);
+  const read = useMemo<AgentListReadState>(
+    () => ({hasValue: ownSnapshot.hasValue, refreshing: ownSnapshot.refreshing, error: ownSnapshot.error}),
+    [ownSnapshot.hasValue, ownSnapshot.refreshing, ownSnapshot.error],
+  );
+  const value: AgentsContextValue = useMemo(
+    () => ({
+      client,
+      agents,
+      conn,
+      lastUpdated,
+      read,
+      banner,
+      dismissBanner,
+      refresh,
+      isGuest,
+      shareStale,
+      inputPanes,
+      serverModeRev,
+    }),
+    [client, agents, conn, lastUpdated, read, banner, dismissBanner, refresh, isGuest, shareStale, inputPanes, serverModeRev],
+  );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

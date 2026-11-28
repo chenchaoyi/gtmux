@@ -1,2 +1,3 @@
-- Fix Live View rendering blank when expanding conversations with long terminal scrollback.
-- Show the official Antigravity (agy) icon across sessions, conversations, and usage widgets.
+- Fix opening conversation file links that use file:// URLs or #L line anchors.
+- Preserve unsent message drafts and staged attachments while a session finishes connecting.
+- Reduce background network polling, battery usage, and chat scrolling lag during active turns.

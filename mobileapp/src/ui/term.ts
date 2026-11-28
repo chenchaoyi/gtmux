@@ -125,6 +125,14 @@ export function paneLines(text: string, opts?: AnsiOpts): AnsiLine[] {
   return parseAnsi(normalizeGlyphs(text), opts);
 }
 
+/** Cheap check whether a raw capture has any visible non-whitespace text outside ANSI SGR/OSC sequences. */
+export function hasPaneOutput(text: string): boolean {
+  if (!text) return false;
+  // eslint-disable-next-line no-control-regex
+  const stripped = text.replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '').replace(/(?:\x1b\[|\u009b)[0-?]*[ -/]*[@-~]/g, '');
+  return /\S/.test(stripped);
+}
+
 // Both mobile terminal surfaces retain the same bounded history.
 export const MOBILE_SCROLLBACK_LINES = 1000;
 

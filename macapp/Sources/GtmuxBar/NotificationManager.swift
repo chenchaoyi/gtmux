@@ -20,6 +20,7 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     private let options: (String) -> [ReplyOption]
     private let bundleIdentifier: String?
     private let now: () -> Date
+    private let postQueue = DispatchQueue(label: "com.gtmux.menubar.notify-post", qos: .userInitiated)
     @Published private(set) var authorization = DesktopNotificationAuthorization(permission: .checking)
     enum TestState { case idle, sending, accepted, blocked, failed }
     @Published private(set) var testState = TestState.idle
@@ -295,6 +296,25 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     }
 
     private func post(_ req: Request) {
+        let isInput = req.kind == "input"
+        let needOptions = isInput && !req.pane.isEmpty
+        let pane = req.pane, kind = req.kind, icon = req.icon
+        if !needOptions && icon.isEmpty {
+            finishPost(req, replyOptions: [], attachment: nil)
+            return
+        }
+        postQueue.async { [weak self] in
+            guard let self else { return }
+            let opts = needOptions ? self.options(pane) : []
+            let att = icon.isEmpty ? nil : self.attachment(icon, kind: kind)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.finishPost(req, replyOptions: opts, attachment: att)
+            }
+        }
+    }
+
+    private func finishPost(_ req: Request, replyOptions: [ReplyOption], attachment att: UNNotificationAttachment?) {
         // Each consumed queue file is an event. Stable system identifiers replace
         // an older banner without suppressing a later turn on the same pane.
         let content = UNMutableNotificationContent()
@@ -303,14 +323,14 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
         content.body = req.body
         content.userInfo = ["pane": req.pane]
         if !req.session.isEmpty { content.threadIdentifier = req.session } // coalesce per session
-        if let att = attachment(req.icon, kind: req.kind) { content.attachments = [att] }
+        if let att { content.attachments = [att] }
 
         let isInput = req.kind == "input"
         let id: String
         if isInput, !req.pane.isEmpty {
             // Build this pane's reply buttons from the agent's real 1/2/3 labels
-            // (shared parser via `gtmux options`), plus a free-text reply.
-            content.categoryIdentifier = replyCategory(for: req.pane)
+            // (resolved off-main via `gtmux options`), plus a free-text reply.
+            content.categoryIdentifier = replyCategory(for: req.pane, options: replyOptions)
             content.sound = .default
             content.interruptionLevel = .active // respect the user's Focus settings
             id = waitID(req.pane)
@@ -444,8 +464,7 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     /// Register (and return the id of) a per-pane category whose action buttons are
     /// the agent's actual choices: "1 · Yes", "2 · …", … + a free-text reply. Falls
     /// back to text-reply + Jump when no menu parses.
-    private func replyCategory(for pane: String) -> String {
-        let opts = options(pane)
+    private func replyCategory(for pane: String, options opts: [ReplyOption]) -> String {
         var actions = opts.prefix(3).map { o in
             UNNotificationAction(identifier: "\(replyPrefix)\(o.n)",
                                  title: "\(o.n) · \(o.label)", options: [])
@@ -468,13 +487,20 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     /// Build the notification thumbnail: the agent icon with a STATUS badge in the
     /// corner (kind-specific, matching the popover rows) so a needs-you banner reads
     /// differently at a glance from a finished one — waiting = red "stop" square with
-    /// two bars, done = green ✓ disc. Rendered to a fresh temp PNG (the attachment
-    /// moves the file, so the shared agent icon must stay at its original path).
+    /// two bars, done = green ✓ disc. Rendered off-main into an explicit bitmap rep and
+    /// written atomically to a fresh temp PNG (UNNotificationAttachment moves the file).
     private func attachment(_ iconPath: String, kind: String) -> UNNotificationAttachment? {
         guard !iconPath.isEmpty, let base = NSImage(contentsOfFile: iconPath) else { return nil }
-        let s: CGFloat = 96
-        let img = NSImage(size: NSSize(width: s, height: s))
-        img.lockFocus()
+        let px = 96
+        let s = CGFloat(px)
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: px, pixelsHigh: px,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0
+        ), let ctx = NSGraphicsContext(bitmapImageRep: rep) else { return nil }
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = ctx
         base.draw(in: NSRect(x: 0, y: 0, width: s, height: s))
         // badge bottom-right (AppKit origin is bottom-left), like .badge in the popover
         let d: CGFloat = 42
@@ -504,14 +530,13 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
             p.line(to: NSPoint(x: rect.minX + d * 0.74, y: rect.minY + d * 0.66))
             NSColor.white.setStroke(); p.stroke()
         }
-        img.unlockFocus()
+        NSGraphicsContext.restoreGraphicsState()
 
-        guard let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
-              let png = rep.representation(using: .png, properties: [:]) else { return nil }
+        guard let png = rep.representation(using: .png, properties: [:]) else { return nil }
         let tmp = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("gtmux-icon-\(UUID().uuidString).png")
         do {
-            try png.write(to: tmp)
+            try png.write(to: tmp, options: .atomic)
             return try UNNotificationAttachment(identifier: "icon", url: tmp, options: nil)
         } catch {
             dbg("notifications: attachment failed \(error)")
@@ -520,7 +545,7 @@ final class NotificationManager: NSObject, ObservableObject, UNUserNotificationC
     }
 
     static func readOptions(_ pane: String) -> [ReplyOption] {
-        let data = GtmuxCLI.capture(["options", pane]) ?? Data("[]".utf8)
+        let data = GtmuxCLI.capturePoll(["options", pane], timeout: 3) ?? Data("[]".utf8)
         return (try? JSONDecoder().decode([ReplyOption].self, from: data)) ?? []
     }
 

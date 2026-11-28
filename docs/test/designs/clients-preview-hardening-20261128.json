@@ -1,0 +1,136 @@
+{
+  "id": "clients-preview-hardening-20261128",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Antigravity implementation owner (agent self-review, not independent approval)",
+    "date": "2026-11-28",
+    "decision": "Proceed after design review",
+    "notes": "Self-reviewed by agent before editing any test source. Covers RFC 8089 file URI and fragment parsing under React Native's URL polyfill across Mobile and Web, mobile polling cadences and navigation/AppState gating, SSE error teardown and auth retry cap, ChatView 1s clock isolation and Composer session-binding draft retention, Web visibility/ETag polling guards, and macOS independent surface visibility plus off-main notification option reads. All tests run in isolated in-memory harnesses with synthetic inputs only."
+  },
+  "cases": [
+    {
+      "id": "CPH-001",
+      "layer": "L1",
+      "description": "Mobile RFC 8089 file URI and fragment parser resolves local file:// and path links without relying on React Native's broken URL polyfill while rejecting remote authorities and queries",
+      "setup": "Import production documentReference and parseFileURI from mobileapp/src/documents/references.ts and displayWorkdir from mobileapp/src/ui/toolPresentation.ts; include a synthetic globalThis.URL shim reproducing React Native Libraries/Blob/URL.js returning pathname='/' and hostname='' for file: URLs.",
+      "action": "Evaluate file:///abs/path, file://localhost/abs/path, percent-encoded spaces/CJK, #L10-L20 and #section fragments on file: and plain local paths, remote file://evil/tmp/a, ?query suffixes, and gtmux-file:<32hex> with and without fragments.",
+      "expected": "Valid local file URIs and local paths resolve to decoded fragment-free paths even under the broken RN URL polyfill; remote authorities, file queries, non-file schemes, and fragmented gtmux-file IDs return null or remain literal in displayWorkdir.",
+      "planned_files": [
+        "mobileapp/src/documents/references.test.ts",
+        "mobileapp/src/documents/references.ts",
+        "mobileapp/src/ui/toolPresentation.ts"
+      ],
+      "surfaces": [
+        "phone",
+        "iPad"
+      ]
+    },
+    {
+      "id": "CPH-002",
+      "layer": "L1",
+      "description": "Generated Web documents.js matches mobile references.ts SHA256 and enforces identical RFC 8089 file:// and #fragment parsing",
+      "setup": "Load internal/server/web/documents.js and mobileapp/src/documents/references.ts in Node test runner with no network or browser runtime.",
+      "action": "Verify embedded SHA256 header against references.ts and test documentReference on file:///..., file://localhost/..., #L10-L20 anchors, local relative/absolute anchored paths, remote file://other-host/..., ?query, and fragmented gtmux-file IDs.",
+      "expected": "SHA256 matches references.ts; anchored file:// and local paths return clean decoded paths and filenames while remote hosts, queries, javascript: URLs, and fragmented gtmux-file IDs return null.",
+      "planned_files": [
+        "internal/server/web/documents.test.cjs",
+        "internal/server/web/documents.js"
+      ],
+      "surfaces": [
+        "Web"
+      ]
+    },
+    {
+      "id": "CPH-003",
+      "layer": "L2",
+      "description": "Mobile HQ, Detail, and Radar screens decouple slow/fast polling cadences, pause background reads when unfocused or off-overview, and preserve held failed text prompts across control keys",
+      "setup": "Mount HQView, HQWorkspaceView, DetailView, and RadarPanel in react-test-renderer with fake timers, synthetic GtmuxClient mocks, and controllable NavigationContext focus listeners.",
+      "action": "Advance timers across 6s, 10s, and 30s intervals in legacy and workspaceMode HQ views, toggle screen focus blur/focus on HQ/Detail/Radar, and send a terminal control key while a failed HQ text send is held in SendFailedBar.",
+      "expected": "HQ polls usage/board/knowledge at 30s and digest/events at 6s (skipping digest/events in workspaceMode), HQWorkspaceView pauses periodic polling on console and refreshes on return to overview, unfocused screens pause polling and resume on focus, and control keys never clear held failed text prompts.",
+      "planned_files": [
+        "mobileapp/src/screens/HQScreen.poll.test.tsx",
+        "mobileapp/src/screens/HQWorkspaceView.test.tsx",
+        "mobileapp/src/screens/ScreenFocusPolling.test.tsx",
+        "mobileapp/src/screens/HQScreen.tsx",
+        "mobileapp/src/screens/HQWorkspaceView.tsx",
+        "mobileapp/src/screens/DetailScreen.tsx",
+        "mobileapp/src/screens/RadarPanel.tsx"
+      ],
+      "surfaces": [
+        "phone",
+        "iPad"
+      ]
+    },
+    {
+      "id": "CPH-004",
+      "layer": "L2",
+      "description": "AgentsProvider closes errored SSE streams before backoff, stops infinite SSE retries on confirmed 401/403, ignores transient inactive AppState, and avoids redundant owner share updates",
+      "setup": "Mount AgentsProvider in react-test-renderer with mocked subscribe(), GtmuxClient, and controllable AppState listeners under fake timers.",
+      "action": "Trigger SSE onError with network errors and consecutive 401/403 statuses, emit AppState inactive vs background/active transitions, and trigger repeated identical owner share() / refresh() cycles.",
+      "expected": "onError immediately unsubscribes the broken EventSource before backoff, consecutive >=2 401/403 SSE failures stop further retry timers, inactive keeps SSE open while background closes and active reopens once, and unchanged share capabilities do not trigger redundant context re-renders.",
+      "planned_files": [
+        "mobileapp/src/state/AgentsContext.hardening.test.tsx",
+        "mobileapp/src/state/AgentsContext.tsx"
+      ],
+      "surfaces": [
+        "phone",
+        "iPad"
+      ]
+    },
+    {
+      "id": "CPH-005",
+      "layer": "L2",
+      "description": "ChatView isolates the 1-second working elapsed timer inside LiveProgress without re-rendering MarkdownView/ToolSteps, and Composer retains drafts/attachments across empty-to-bound session transitions",
+      "setup": "Render ChatView with historical Markdown/tool turns while working under fake timers, and render Composer / DetailView transitioning draftKey from empty session to bound session_id with unsent text and staged attachments.",
+      "action": "Advance 1s clock ticks on working ChatView while counting Markdown/tool renders; type text and stage attachments before session_id resolves, transition draftKey to bound session_id, unmount dirty Composer, and send text.",
+      "expected": "LiveProgress updates elapsed seconds while historical MarkdownView and ToolSteps skip re-rendering; Composer keeps typed text and attachments without remounting when session_id resolves, migrates stored drafts, flushes dirty drafts on unmount, and deletes stored drafts immediately on send.",
+      "planned_files": [
+        "mobileapp/src/ui/ChatView.perf.test.tsx",
+        "mobileapp/src/ui/Composer.draft.test.tsx",
+        "mobileapp/src/ui/ChatView.tsx",
+        "mobileapp/src/ui/LiveProgress.tsx",
+        "mobileapp/src/ui/MarkdownView.tsx",
+        "mobileapp/src/ui/ToolSteps.tsx",
+        "mobileapp/src/ui/Composer.tsx"
+      ],
+      "surfaces": [
+        "phone",
+        "iPad"
+      ]
+    },
+    {
+      "id": "CPH-006",
+      "layer": "L2",
+      "description": "Web workbench and focus pollers gate on active workbench and !document.hidden, refresh on visibilitychange, and short-circuit unchanged chat transcripts via ETag / 304",
+      "setup": "Load internal/server/web/app.js in the Node VM harness with controllable document.hidden, visibilitychange listeners, and mocked fetch responses returning ETag headers and 304 statuses.",
+      "action": "Invoke tilePollPane when WB.on is false or document.hidden is true, invoke pollWB/pollRadar/pollPane/pollChat/tilePollChat/pollOptions while hidden then dispatch visibilitychange, and poll focused/tile chat across 200 ETag and 304 Not Modified responses.",
+      "expected": "Hidden or inactive-workbench polls issue zero network requests, returning to visible immediately refreshes the active surface, and second chat polls send If-None-Match and skip JSON parsing and DOM redraws on 304.",
+      "planned_files": [
+        "internal/server/web/app.test.cjs",
+        "internal/server/web/app.js"
+      ],
+      "surfaces": [
+        "Web"
+      ]
+    },
+    {
+      "id": "CPH-007",
+      "layer": "L2",
+      "description": "macOS GtmuxBar isolates MenuView and PaneBrowserController surface visibility states and reads notification reply options off the main actor",
+      "setup": "Instantiate independent SurfaceVisibility / MenuVisibility objects with PaneBrowserController and NotificationManager with an injected off-main assertion options reader and FixtureNotificationCenter.",
+      "action": "Open and close PaneBrowserController while MenuVisibility.shared is visible, and drain an input notification request verifying thread affinity of options(pane) vs center.add.",
+      "expected": "Closing PaneBrowserController turns off only its own SurfaceVisibility without mutating MenuVisibility.shared, and NotificationManager calls options(pane) off the main thread before registering the reply category and adding the notification on the main thread.",
+      "planned_files": [
+        "macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift",
+        "macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift",
+        "macapp/Sources/GtmuxBar/Components.swift",
+        "macapp/Sources/GtmuxBar/NotificationManager.swift",
+        "macapp/Sources/GtmuxBar/PaneBrowser.swift"
+      ],
+      "surfaces": [
+        "menubar"
+      ]
+    }
+  ],
+  "seal": "d43b16874a0b3fd6aadcc3ff31bc9ee5baf64682788309095a05487bd7c8c4f7"
+}

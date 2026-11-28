@@ -20,6 +20,8 @@
   var MARKS = {'deepseek harness':'DS', dsh:'DS', 'claude code': 'CC', claude: 'CC', codex: 'Cx', gemini: 'G', antigravity: 'Ag', agy: 'Ag', aider: 'Ai', opencode: 'oc', cursor: 'Cu', crush: 'Cr', amp: 'Am', cline: 'Cl'};
 
   var $ = function (id) { return document.getElementById(id); };
+  function isDocHidden() { return typeof document !== 'undefined' && !!document.hidden; }
+  var UNCHANGED_CHAT = {};
   var token = null, radarTimer = null, paneTimer = null, selIdx = -1;
   var viewEpoch = 0, readSeq = {}, appliedSeq = {};
   // A response belongs to the view and credential that requested it. A newer read
@@ -773,6 +775,7 @@
   }
 
   function pollRadar() {
+    if (isDocHidden()) return;
     runRead('radar', function (signal) {
       var current = currentRead('radar', signal);
       return api('/api/agents', {signal: signal}).then(function (r) {
@@ -845,6 +848,7 @@
     $('panes-search').focus();
   }
   function pollPanes() {
+    if (isDocHidden()) return;
     runRead('panes', function (signal) {
       var current = currentRead('panes', signal);
       return Promise.all([
@@ -1663,6 +1667,7 @@
   }
 
   function pollPane() {
+    if (isDocHidden()) return;
     if (curAgent && (curAgent.agent || readableConversation(curAgent))) pollConversationStatus();
     runRead('pane', function (signal) {
       if (!curPane) return;
@@ -2328,7 +2333,7 @@
     syncModeButtons();
     if (paneMode !== 'term') {
       clearInterval(paneTimer); paneTimer = null;
-      show('chat'); chatSig = ''; chatReadFailure = ''; lastTurns = []; chatHistory = null; chatExpanded = {}; curTurnIdx = 1e9;
+      show('chat'); chatSig = ''; chatEtag = ''; chatEtagScope = ''; chatReadFailure = ''; lastTurns = []; chatHistory = null; chatExpanded = {}; curTurnIdx = 1e9;
       showChatLoader();
       showFocusChrome(false);
       pollChat(); clearInterval(chatTimer); chatTimer = setInterval(pollChat, 2500);
@@ -2361,7 +2366,7 @@
   // ---- chat (对话 mode) -------------------------------------------------
   // Renders the parsed transcript (GET /api/transcript) as prompt → collapsed
   // steps → final response, mirroring the phone's ChatView. Input uses the shared composer.
-  var chatReadFailure = '', chatReload = null;
+  var chatReadFailure = '', chatReload = null, chatEtag = '', chatEtagScope = '';
   function chatReadResponse(r) {
     if (r.ok) return r.json();
     return r.json().catch(function () { return null; }).then(function (body) {
@@ -2383,7 +2388,7 @@
   function reloadConversation() {
     chatReload = {scope: chatScope(curAgent), credential: token, busy: true, attempted: true};
     cancelRead(readableConversation(curAgent) ? 'conversation' : 'chat');
-    externalEtag = ''; chatSig = ''; drawChat(lastTurns);
+    externalEtag = ''; chatEtag = ''; chatEtagScope = ''; chatSig = ''; drawChat(lastTurns);
     if (readableConversation(curAgent)) pollConversation(); else pollChat();
   }
   function settleConversationReload(reload) {
@@ -2392,32 +2397,56 @@
     }
   }
   function pollChat() {
+    if (isDocHidden()) return;
     var reload = chatReload, requestedScope = chatScope(curAgent);
     pollConversationStatus();
     runRead('chat', function (signal) {
       if (!curPane) return;
       var scope = chatScope(curAgent), read = currentRead('chat', signal), reset;
       var current = function (visible) { return read(visible) && scope === chatScope(curAgent); };
-      return api(transcriptPath(curAgent), {signal: signal}).then(function (r) {
+      var sendEtag = chatEtagScope === scope && chatEtag ? chatEtag : '';
+      var headers = sendEtag ? {'If-None-Match': sendEtag} : {};
+      return api(transcriptPath(curAgent), {signal: signal, headers: headers}).then(function (r) {
         if (!current()) return null;
-        if (r.status === 401) { token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
-        if (r.status === 403) { chatHistory = null; lastTurns = []; throw new Error('forbidden'); }
-        if (r.status === 404) { setConn(true); return []; } // no resume record / not available
+        if (r.status === 401) { chatEtag = ''; chatEtagScope = ''; token = null; localStorage.removeItem(TOKEN_KEY); gate('expired'); return null; }
+        if (r.status === 403) { chatEtag = ''; chatEtagScope = ''; chatHistory = null; lastTurns = []; throw new Error('forbidden'); }
+        if (r.status === 304) {
+          if (r.headers && r.headers.get) {
+            var tag304 = r.headers.get('ETag');
+            if (tag304) { chatEtag = tag304; chatEtagScope = scope; }
+            if (r.headers.get('X-Gtmux-Conversation-State')) {
+              curAgent.history_read_only = r.headers.get('X-Gtmux-Conversation-State') === 'last-known';
+              updateInputBar();
+            }
+          }
+          return UNCHANGED_CHAT;
+        }
+        if (r.status === 404) { chatEtag = ''; chatEtagScope = ''; setConn(true); return []; } // no resume record / not available
         curAgent.history_read_only = r.headers.get('X-Gtmux-Conversation-State') === 'last-known'; updateInputBar();
         reset = liveResetMarker(r);
-        return chatReadResponse(r);
+        return chatReadResponse(r).then(function (turns) {
+          var tag = (r.headers && r.headers.get && r.headers.get('ETag')) || '';
+          if (current()) { chatEtag = tag; chatEtagScope = tag ? scope : ''; }
+          return turns;
+        });
       }).then(function (turns) {
         if (turns === null || !current(true)) return;
-        setConn(true); hideChatLoader(); chatReadFailure = '';
+        setConn(true); hideChatLoader();
+        if (turns === UNCHANGED_CHAT) {
+          if (chatReadFailure) { chatReadFailure = ''; chatSig = ''; renderChat(lastTurns); }
+          return;
+        }
+        chatReadFailure = '';
         if (confirmLiveTranscript(curAgent, turns, reset)) chatSig = '';
         renderChat(turns || []);
       }).catch(function (error) {
         if (!current()) return;
+        chatEtag = ''; chatEtagScope = '';
         hideChatLoader(); chatReadFailure = error.association ? 'association' : 'failed';
         if (releaseUnconfirmedLive(curAgent, error.association)) chatSig = '';
         renderChat(lastTurns);
       });
-    }, 15000, function () { if (requestedScope !== chatScope(curAgent)) return; setConn(false); hideChatLoader(); releaseUnconfirmedLive(curAgent, false); chatReadFailure = 'failed'; chatSig = ''; renderChat(lastTurns); }, function () {settleConversationReload(reload);});
+    }, 15000, function () { if (requestedScope !== chatScope(curAgent)) return; chatEtag = ''; chatEtagScope = ''; setConn(false); hideChatLoader(); releaseUnconfirmedLive(curAgent, false); chatReadFailure = 'failed'; chatSig = ''; renderChat(lastTurns); }, function () {settleConversationReload(reload);});
   }
 
   // The same bounded history contract and stable merge as App/Trace. Each reader
@@ -4090,6 +4119,7 @@
   function setWbConn(ok) { renderConn($('wb-conn'), connStateFor(ok)); }
 
   function pollWB() {
+    if (isDocHidden()) return;
     runRead('workbench', function (signal) {
       var current = currentRead('workbench', signal);
       return api('/api/agents', {signal: signal}).then(function (r) {
@@ -4419,8 +4449,8 @@
     clearInterval(t.timer); t.timer = null; t.body.innerHTML = '';
     if (t.termBoundsDispose) { t.termBoundsDispose(); t.termBoundsDispose = null; } if (t.term) { try { disposeTerminal(t.term); } catch (e) {} t.term = null; }
     t.body.appendChild(brandLoaderEl(null)); // cleared on first frame (or by a chat/diff re-render)
-    if (m === 'term') { tileTermStart(t); }
-    else { t.chatSig = ''; tilePollChat(t); t.timer = setInterval(function () { tilePollChat(t); }, 2500); }
+    if (m === 'term') { t.chatEtag = ''; t.chatEtagScope = ''; tileTermStart(t); }
+    else { t.chatSig = ''; t.chatEtag = ''; t.chatEtagScope = ''; tilePollChat(t); t.timer = setInterval(function () { tilePollChat(t); }, 2500); }
     tileInputSync(t); // show the input row only in term mode for an allowed pane
     wbSave();
   }
@@ -4448,6 +4478,7 @@
     t.term.write(text, function () { var nb = t.term.buffer.active; if (wasBottom) t.term.scrollToBottom(); else { try { t.term.scrollToLine(Math.max(0, nb.baseY - fromBottom)); } catch (e) {} } });
   }
   function tilePollPane(t) {
+    if (t.removed || !WB.on || isDocHidden()) return;
     runRead('tile:' + t.id, function (signal) {
       var epoch = t.readEpoch;
       return api('/api/pane?id=' + encodeURIComponent(t.id), {signal: signal}).then(function (r) { return r.ok ? r.json() : null; })
@@ -4463,35 +4494,61 @@
 
   function reloadTileConversation(t) {
     t.chatReload = {busy: true, attempted: true}; cancelRead('tile:' + t.id);
+    t.chatEtag = ''; t.chatEtagScope = '';
     t.chatSig = ''; renderTileChat(t, t.lastTurns || []); tilePollChat(t);
   }
   function tilePollChat(t) {
-    if (t.removed || !WB.on) return;
+    if (t.removed || !WB.on || isDocHidden()) return;
     if (t.mode === 'chat') { var host = t.body.querySelector('.conversation-main'); if (host) syncChatLive(host, t.agent, function () { return WB.on && !t.removed && t.mode === 'chat' && !!t.agent.status; }); }
     var reload = t.chatReload, readEpoch = t.readEpoch, readScope = chatScope(t.agent);
     runRead('tile:' + t.id, function (signal) {
       var epoch = t.readEpoch, scope = chatScope(t.agent), reset;
-      return api(transcriptPath(t.agent), {signal: signal}).then(function (r) {
+      var sendEtag = t.chatEtagScope === scope && t.chatEtag ? t.chatEtag : '';
+      var headers = sendEtag ? {'If-None-Match': sendEtag} : {};
+      return api(transcriptPath(t.agent), {signal: signal, headers: headers}).then(function (r) {
         if(signal.aborted || t.removed || epoch !== t.readEpoch || scope !== chatScope(t.agent)) return null;
-        if(r.status === 401) {token=null;localStorage.removeItem(TOKEN_KEY);gate('expired');return null;}
-        if(r.status === 403 || readableConversation(t.agent) && (r.status === 404 || r.status === 422)) {removeTile(t);return null;}
+        if(r.status === 401) {t.chatEtag='';t.chatEtagScope='';token=null;localStorage.removeItem(TOKEN_KEY);gate('expired');return null;}
+        if(r.status === 403 || readableConversation(t.agent) && (r.status === 404 || r.status === 422)) {t.chatEtag='';t.chatEtagScope='';removeTile(t);return null;}
+        if(r.status === 304) {
+          if (r.headers && r.headers.get) {
+            var tag304 = r.headers.get('ETag');
+            if (tag304) { t.chatEtag = tag304; t.chatEtagScope = scope; }
+            if (r.headers.get('X-Gtmux-Conversation-State')) {
+              t.agent.history_read_only = r.headers.get('X-Gtmux-Conversation-State') === 'last-known';
+              tileInputSync(t);
+            }
+          }
+          return UNCHANGED_CHAT;
+        }
         t.agent.history_read_only = r.headers.get('X-Gtmux-Conversation-State') === 'last-known'; tileInputSync(t);
         t.dropped = Number(r.headers.get('X-Gtmux-Turns-Dropped') || 0) || 0;
         reset = liveResetMarker(r);
-        return r.status === 404 ? [] : chatReadResponse(r);
+        if (r.status === 404) { t.chatEtag = ''; t.chatEtagScope = ''; return []; }
+        return chatReadResponse(r).then(function (turns) {
+          var tag = (r.headers && r.headers.get && r.headers.get('ETag')) || '';
+          if (!signal.aborted && !t.removed && epoch === t.readEpoch && scope === chatScope(t.agent)) {
+            t.chatEtag = tag; t.chatEtagScope = tag ? scope : '';
+          }
+          return turns;
+        });
       }).then(function (turns) {
         if (signal.aborted || turns === null || t.removed || epoch !== t.readEpoch || scope !== chatScope(t.agent) || t.mode !== 'chat') return;
+        if (turns === UNCHANGED_CHAT) {
+          if (t.chatReadFailure) { t.chatReadFailure = ''; t.chatSig = ''; renderTileChat(t, t.lastTurns || []); }
+          return;
+        }
         if (confirmLiveTranscript(t.agent, turns, reset)) t.chatSig = '';
         t.chatReadFailure = ''; t.history = historyState(t.history, t.agent); turns = chatTail(t.history, turns || []);
         var sig = JSON.stringify([turns, t.dropped || 0, t.chatReadFailure, observedReadOnly(t.agent)]); if (sig === t.chatSig) return; t.chatSig = sig; renderTileChat(t, turns);
       }).catch(function (error) {
         if (!signal.aborted && !t.removed && epoch === t.readEpoch && scope === chatScope(t.agent) && t.mode === 'chat') {
+          t.chatEtag = ''; t.chatEtagScope = '';
           releaseUnconfirmedLive(t.agent, error.association);
           t.chatReadFailure = error.association ? 'association' : 'failed'; t.chatSig = ''; renderTileChat(t, t.lastTurns || []);
         }
       });
     }, 15000, function () {
-      if (!t.removed && readEpoch === t.readEpoch && readScope === chatScope(t.agent) && t.mode === 'chat') {releaseUnconfirmedLive(t.agent, false); t.chatReadFailure = 'failed'; t.chatSig = ''; renderTileChat(t, t.lastTurns || []);}
+      if (!t.removed && readEpoch === t.readEpoch && readScope === chatScope(t.agent) && t.mode === 'chat') {t.chatEtag = ''; t.chatEtagScope = ''; releaseUnconfirmedLive(t.agent, false); t.chatReadFailure = 'failed'; t.chatSig = ''; renderTileChat(t, t.lastTurns || []);}
     }, function () {
       if (!t.removed && reload && reload === t.chatReload && readEpoch === t.readEpoch && readScope === chatScope(t.agent) && t.mode === 'chat') {
         reload.busy = false; if (t.chatReadFailure) {t.chatSig = ''; renderTileChat(t, t.lastTurns || []);}
@@ -4617,7 +4674,7 @@
   }
   // waiting options — drive BOTH the term reply bar and the chat approval card.
   function pollOptions() {
-
+    if (isDocHidden()) return;
     if (!curPane) return;
     var inTerm = !$('pane').hidden && paneMode === 'term';
     var inChat = !$('chat').hidden && paneMode !== 'term';
@@ -4919,7 +4976,34 @@
   // switch both route through here.
   function home() { if (isWide()) startWorkbench(); else startRadar(); }
 
+  function refreshVisibleView() {
+    if (isDocHidden()) return;
+    if (WB.on) {
+      pollWB();
+      WB.tiles.forEach(function (t) {
+        if (t.removed) return;
+        if (t.mode === 'term') tilePollPane(t);
+        else if (t.mode === 'chat') tilePollChat(t);
+      });
+      return;
+    }
+    if (curPane && !$('pane').hidden) { pollPane(); pollOptions(); return; }
+    if ((curPane || readableConversation(curAgent)) && !$('chat').hidden) {
+      if (readableConversation(curAgent)) pollConversation(); else pollChat();
+      if (curPane) pollOptions();
+      return;
+    }
+    if (!$('panes').hidden && panesTimer) { pollPanes(); return; }
+    if (!$('radar').hidden && token) pollRadar();
+  }
+  function setupVisibility() {
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', refreshVisibleView);
+    }
+  }
+
   function boot() {
+    setupVisibility();
     window.addEventListener('pagehide', function () { flushCompose(composeCache); });
     if (window.visualViewport) {
       var viewport = window.visualViewport;

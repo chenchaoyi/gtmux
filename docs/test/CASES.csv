@@ -3427,6 +3427,8 @@ LEG-1307ca617db3,L2,Browser,internal/server/web/app.test.cjs,1341,test,radar key
 MAP-e2feefc515a3,L3,Browser,internal/server/web/app.test.cjs,1352,reviewed-selector,CAS004 focused and tile chats disclose association failures and recover without losing messages,False,CAS-004
 MAP-328002d4dfc3,L3,Browser,internal/server/web/app.test.cjs,1379,reviewed-selector,CAS004 stale tile association failure cannot repaint a changed target,False,CAS-004
 MAP-58ebad908f81,L1,Browser,internal/server/web/app.test.cjs,1282,reviewed-selector,"live preview keeps up to 2,000 captured rows and removes terminal control sequences",False,"CAS-004,CRX-007,WHS-005,WLI-005"
+MAP-f2006bf17fc8,L2,Browser,internal/server/web/app.test.cjs,1388,reviewed-selector,CPH006 tilePollPane stops when workbench is off and document.hidden pauses web pollers until visibilitychange,False,"CAS-004,CRX-007,WHS-005,WLI-005,CPH-006"
+MAP-a0ed9c78b238,L2,Browser,internal/server/web/app.test.cjs,1447,reviewed-selector,CPH006 pollChat and tilePollChat send If-None-Match ETag and short-circuit 304 Not Modified before JSON parsing,False,"CAS-004,CRX-007,WHS-005,WLI-005,CPH-006"
 MAP-3bd1a5cb9551,L1,reviewed implementation,internal/server/web/argv-reading.test.cjs,2,reviewed-selector,ARGV-001 browser uses,False,ARGV-001
 MAP-837adcf0e185,L2,reviewed implementation,internal/server/web/artifact-open.test.cjs,5,reviewed-selector,LAP-003 canonical startup keeps the original scope and pairing stays separate,False,LAP-003
 MAP-e4b832555966,L2,reviewed implementation,internal/server/web/artifact-open.test.cjs,10,reviewed-selector,LAP-003 rejects ambiguous or malformed ,False,LAP-003
@@ -4262,15 +4264,16 @@ LEG-27aac7a6ac6c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NewSessionC
 LEG-4da97fd3772c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,77,XCTest,testBareOrTestHostNeverStartsTheSystemDeliveryPath,False,legacy-not-retrospectively-reviewed
 LEG-a0ac61a80b4c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,91,XCTest,testLaterTurnsOnTheSamePaneAreNotSilenced,False,legacy-not-retrospectively-reviewed
 LEG-ca8398f9394e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,110,XCTest,testAnAsynchronousFailureDoesNotPoisonTheNextTurn,False,legacy-not-retrospectively-reviewed
-LEG-3f7e830cbf9e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,122,XCTest,testResolvedWaitsWithdrawEvenWhenAcceptanceIsLate,False,legacy-not-retrospectively-reviewed
-LEG-5256316b25fe,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,199,XCTest,testStartupWaitsForPermissionAndDrainsEventsFromThatGap,False,legacy-not-retrospectively-reviewed
-LEG-a33a1fd43325,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,212,XCTest,testPermissionCanRecoverWithoutRestartingTheApp,False,legacy-not-retrospectively-reviewed
-LEG-de67024e42e1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,228,XCTest,testPermissionRefreshKeepsTheQueueUntilTheFreshVerdict,False,legacy-not-retrospectively-reviewed
-LEG-66c4149c72a4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,243,XCTest,testAnUndecidedPermissionIsRequestedOnce,False,legacy-not-retrospectively-reviewed
-LEG-85ba98704b83,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,253,XCTest,testOffAndStaleRequestsDoNotPost,False,legacy-not-retrospectively-reviewed
-LEG-563fd6673864,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,263,XCTest,testExplicitTestHasNoAgentTargetAndReportsAcceptanceOnly,False,legacy-not-retrospectively-reviewed
-MAP-aed926f4a8fc,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,143,reviewed-selector,testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance,False,HND-003
-MAP-1a382996af6d,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,169,reviewed-selector,testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly,False,HND-003
+LEG-3f7e830cbf9e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,123,XCTest,testResolvedWaitsWithdrawEvenWhenAcceptanceIsLate,False,legacy-not-retrospectively-reviewed
+LEG-5256316b25fe,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,201,XCTest,testStartupWaitsForPermissionAndDrainsEventsFromThatGap,False,legacy-not-retrospectively-reviewed
+LEG-a33a1fd43325,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,214,XCTest,testPermissionCanRecoverWithoutRestartingTheApp,False,legacy-not-retrospectively-reviewed
+LEG-de67024e42e1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,230,XCTest,testPermissionRefreshKeepsTheQueueUntilTheFreshVerdict,False,legacy-not-retrospectively-reviewed
+LEG-66c4149c72a4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,245,XCTest,testAnUndecidedPermissionIsRequestedOnce,False,legacy-not-retrospectively-reviewed
+LEG-85ba98704b83,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,255,XCTest,testOffAndStaleRequestsDoNotPost,False,legacy-not-retrospectively-reviewed
+LEG-563fd6673864,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,265,XCTest,testExplicitTestHasNoAgentTargetAndReportsAcceptanceOnly,False,legacy-not-retrospectively-reviewed
+MAP-aed926f4a8fc,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,144,reviewed-selector,testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance,False,HND-003
+MAP-1a382996af6d,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,171,reviewed-selector,testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly,False,HND-003
+MAP-63df7f9b4531,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,284,reviewed-selector,testInputNotificationResolvesOptionsOffMainActorBeforePosting,False,"HND-003,CPH-007"
 LEG-d80028d0991c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationPreferencesLayoutTests.swift,32,XCTest,testTestFeedbackAndPermissionStatesRemainVisible,False,legacy-not-retrospectively-reviewed
 MAP-79ce2b9cc2d9,M,reviewed implementation,macapp/Tests/GtmuxBarTests/ObservedIdentityTests.swift,5,reviewed-selector,testSID008HistoryNeverPopulatesCurrentIdentity,False,SID-008
 LEG-659408c65bf3,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/PairStoreTests.swift,8,XCTest,testParseDevicesFiltersGuests,False,legacy-not-retrospectively-reviewed
@@ -4485,11 +4488,12 @@ MAP-47650912eb8d,L2,reviewed implementation,macapp/Tests/GtmuxBarTests/StateDura
 MAP-65d132bc45c7,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift,18,reviewed-selector,testKeyStatesHaveDifferentGeometryWithoutUsingColor,False,DFC-008
 MAP-a1c39b6f044d,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift,26,reviewed-selector,testAwakeModifierDoesNotEraseTheStatusDifference,False,DFC-008
 LEG-5761910660c9,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,28,XCTest,testVisibilityIsOffUntilASurfaceOpens,False,legacy-not-retrospectively-reviewed
-LEG-3dd66bcf03b4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,33,XCTest,testItTracksOpenAndClose,False,legacy-not-retrospectively-reviewed
+LEG-3dd66bcf03b4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,34,XCTest,testItTracksOpenAndClose,False,legacy-not-retrospectively-reviewed
 LEG-ff08152b6882,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,46,XCTest,testTheWindowAndItsContentSurviveAClose,False,legacy-not-retrospectively-reviewed
-LEG-8d065dec033b,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,69,XCTest,testTheOpenThatFollowsItsOwnCloseIsIgnored,False,legacy-not-retrospectively-reviewed
-LEG-ced77fb5e9ad,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,78,XCTest,testADeliberateReopenIsNotSwallowed,False,legacy-not-retrospectively-reviewed
-LEG-669306d7b2e0,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,86,XCTest,testTheFirstEverClickOpens,False,legacy-not-retrospectively-reviewed
+LEG-8d065dec033b,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,92,XCTest,testTheOpenThatFollowsItsOwnCloseIsIgnored,False,legacy-not-retrospectively-reviewed
+LEG-ced77fb5e9ad,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,101,XCTest,testADeliberateReopenIsNotSwallowed,False,legacy-not-retrospectively-reviewed
+LEG-669306d7b2e0,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,109,XCTest,testTheFirstEverClickOpens,False,legacy-not-retrospectively-reviewed
+MAP-df2f3b5544be,L2,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,61,reviewed-selector,testClosingPaneBrowserLeavesMenuPopoverVisibilityUntouched,False,CPH-007
 LEG-f2b057270e7a,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/TabOrderPollTests.swift,6,XCTest,testConcurrentTicksAdmitOneRead,False,legacy-not-retrospectively-reviewed
 LEG-964d67f75e78,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/TabOrderPollTests.swift,18,XCTest,testFailureBackoffPreservesCountsAndRecoversOnce,False,legacy-not-retrospectively-reviewed
 LEG-3e213b31a30f,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/TabOrderPollTests.swift,40,XCTest,testChangedFailureIsVisibleAndRetryIsCapped,False,legacy-not-retrospectively-reviewed
@@ -5143,6 +5147,10 @@ MAP-5cee3909c2b1,L2,reviewed implementation,mobileapp/src/documents/availability
 MAP-2a69d818015d,L2,reviewed implementation,mobileapp/src/documents/availability.test.ts,10,reviewed-selector,clearer recovery text preserves strict session,False,DFC-009
 LEG-ca6b3a4df0d0,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,3,test,local report destinations remain data instead of launchable OS URLs,False,legacy-not-retrospectively-reviewed
 LEG-cca6fc710d75,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,13,test,download metadata must match conversation identity and a bounded content hash,False,legacy-not-retrospectively-reviewed
+MAP-34cde66a7a6a,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,5,reviewed-selector,parseFileURI resolves empty and localhost authorities and strips fragments before decoding,False,CPH-001
+MAP-8b88acd2d455,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,12,reviewed-selector,"parseFileURI rejects missing double-slash, non-localhost authorities, queries, UNC paths, and bad escapes",False,CPH-001
+MAP-150254dcab9a,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,31,reviewed-selector,documentReference strips fragments on file:// and local paths while keeping gtmux-file strict,False,CPH-001
+MAP-493e57a067f1,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,59,reviewed-selector,documentReference and displayWorkdir work when globalThis.URL has React Native Blob URL file:// bug,False,CPH-001
 LEG-bc4c3f256c44,L1,RN / mobile harness,mobileapp/src/i18n/index.test.ts,16,it,reads AppleLocale on iOS and maps zh* -> zh,False,legacy-not-retrospectively-reviewed
 LEG-d928ded3278e,L1,RN / mobile harness,mobileapp/src/i18n/index.test.ts,22,it,falls back to AppleLanguages[0] on iOS,False,legacy-not-retrospectively-reviewed
 LEG-5bceac37bc98,L1,RN / mobile harness,mobileapp/src/i18n/index.test.ts,28,it,maps any non-zh iOS locale to en,False,legacy-not-retrospectively-reviewed
@@ -5452,6 +5460,7 @@ MAP-70f5d7f57ea0,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test
 MAP-8a3e8378dfee,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,354,reviewed-selector,"a stalled usage read retires at its own deadline, then a new read recovers",False,UR-001
 MAP-517de42c0dfa,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,292,reviewed-selector,shortcut distinguishes loading and failed reads from an empty resource,False,UR-001
 MAP-ec30d4e015f6,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,369,reviewed-selector,the Usage sheet retry action starts a new read immediately after failure,False,UR-001
+MAP-0bcfcec88caa,L2,RN / mobile harness,mobileapp/src/screens/HQScreen.poll.test.tsx,524,reviewed-selector,HQ console decouples 30s resource reads from 6s digest reads and keeps failed text recovery across control keys,False,"UR-001,CPH-003"
 MAP-915625a761e2,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,30,reviewed-selector,MSD-008 old HQ %s cannot replace a newer accepted message,False,MSD-008
 MAP-237c6db2e2b9,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,38,reviewed-selector,MSD-008 HQ old reply and old retry cannot cross a session change,False,MSD-008
 MAP-e29e72e87767,L2,reviewed implementation,mobileapp/src/screens/HQSendOrdering.test.tsx,46,reviewed-selector,MSD-008 a later %s key does not leave the current HQ text Sending,False,MSD-008
@@ -5461,19 +5470,20 @@ MAP-d2c0d68a6059,L2,reviewed implementation,mobileapp/src/screens/HQSendReceipt.
 LEG-b6b3543d24b4,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,99,test,"overview opens a matter, distinguishes delivery from completion and only prefills input",False,legacy-not-retrospectively-reviewed
 LEG-3eb43796d7e1,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,126,test,resource summaries lead the overview with real facts and keep resource navigation,False,legacy-not-retrospectively-reviewed
 LEG-d8c2e0716810,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,143,test,an unavailable workspace in the conversation stays unknown instead of becoming an empty legacy queue,False,legacy-not-retrospectively-reviewed
-LEG-ac50c9b90e4a,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,158,test,wide overviews flow current matters together while expansion remains reversible,False,legacy-not-retrospectively-reviewed
-LEG-b98c82161f0b,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,191,test,"slow summaries are independent, serialized and cannot leak across a client switch",False,legacy-not-retrospectively-reviewed
-LEG-584b419022f8,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,220,test,briefing cards distinguish current assessment from a historical result and preserve matter identity,False,legacy-not-retrospectively-reviewed
-LEG-a41727636256,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,254,test,"a transient resource failure marks previous readings, an auth failure clears all private data",False,legacy-not-retrospectively-reviewed
-LEG-b79eae4d6153,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,266,test,a resource auth failure retires an older workspace response as well,False,legacy-not-retrospectively-reviewed
-LEG-46dfd73f25be,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,290,test,refresh failure retains content; authorization revocation clears it,False,legacy-not-retrospectively-reviewed
-LEG-3aa072be2262,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,303,test,switching clients retires old requests and private content,False,legacy-not-retrospectively-reviewed
-LEG-64095c8cc2eb,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,326,test,older servers retain existing HQ and guests never request workspace data,False,legacy-not-retrospectively-reviewed
-LEG-87573caa688a,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,339,test,old-server capability can recover without navigating away from a conversation,False,legacy-not-retrospectively-reviewed
-LEG-9a31f6099f2a,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,356,test,"participants require the original live agent/home/thread, not a recycled pane",False,legacy-not-retrospectively-reviewed
-LEG-bac98f7862bc,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,391,test,overview previews share the Markdown parser without showing formatting syntax or link targets,False,legacy-not-retrospectively-reviewed
-LEG-d22e65fd05b5,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,399,test,a failed older page can return to latest without reopening the matter,False,legacy-not-retrospectively-reviewed
-LEG-a6d4bed85074,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,421,test,closing a resource returns to its originating overview; composing from it stays in HQ,False,legacy-not-retrospectively-reviewed
+LEG-ac50c9b90e4a,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,175,test,wide overviews flow current matters together while expansion remains reversible,False,legacy-not-retrospectively-reviewed
+LEG-b98c82161f0b,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,208,test,"slow summaries are independent, serialized and cannot leak across a client switch",False,legacy-not-retrospectively-reviewed
+LEG-584b419022f8,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,237,test,briefing cards distinguish current assessment from a historical result and preserve matter identity,False,legacy-not-retrospectively-reviewed
+LEG-a41727636256,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,271,test,"a transient resource failure marks previous readings, an auth failure clears all private data",False,legacy-not-retrospectively-reviewed
+LEG-b79eae4d6153,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,283,test,a resource auth failure retires an older workspace response as well,False,legacy-not-retrospectively-reviewed
+LEG-46dfd73f25be,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,307,test,refresh failure retains content; authorization revocation clears it,False,legacy-not-retrospectively-reviewed
+LEG-3aa072be2262,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,320,test,switching clients retires old requests and private content,False,legacy-not-retrospectively-reviewed
+LEG-64095c8cc2eb,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,343,test,older servers retain existing HQ and guests never request workspace data,False,legacy-not-retrospectively-reviewed
+LEG-87573caa688a,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,356,test,old-server capability can recover without navigating away from a conversation,False,legacy-not-retrospectively-reviewed
+LEG-9a31f6099f2a,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,373,test,"participants require the original live agent/home/thread, not a recycled pane",False,legacy-not-retrospectively-reviewed
+LEG-bac98f7862bc,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,408,test,overview previews share the Markdown parser without showing formatting syntax or link targets,False,legacy-not-retrospectively-reviewed
+LEG-d22e65fd05b5,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,416,test,a failed older page can return to latest without reopening the matter,False,legacy-not-retrospectively-reviewed
+LEG-a6d4bed85074,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,438,test,closing a resource returns to its originating overview; composing from it stays in HQ,False,legacy-not-retrospectively-reviewed
+MAP-dc827bff21af,L2,RN / mobile harness,mobileapp/src/screens/HQWorkspaceView.test.tsx,160,reviewed-selector,conversation page pauses periodic workspace polling until returning to overview,False,CPH-003
 MAP-f38035a7c2fe,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,112,reviewed-selector,pending HQ question opens the original matter,False,"CT-DRAFT,CT-HQ"
 MAP-f119dbaabb64,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,162,reviewed-selector,late HQ overview and matter responses,False,"CT-DRAFT,CT-HQ"
 MAP-acb5ed213eb0,L2,reviewed implementation,mobileapp/src/screens/HQWorkspaceWorkflow.test.tsx,209,reviewed-selector,a prepared HQ question stays scoped,False,"CT-DRAFT,CT-HQ"
@@ -5601,6 +5611,7 @@ MAP-157d7028a843,L2,reviewed implementation,mobileapp/src/screens/RestoreSession
 MAP-f59c85149c2b,L2,reviewed implementation,mobileapp/src/screens/RestoreSessionsSheet.visibility.test.tsx,15,reviewed-selector,RRV003 shows timeout and original uncertainty in %s,False,RRV-003
 LEG-387d5b0c6c01,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,13,test.each(),scan window leaves controls reachable at %i × %i,True,legacy-not-retrospectively-reviewed
 LEG-1cb0f6c7d8ad,L2,RN / mobile harness,mobileapp/src/screens/ScanScreen.repeat.test.tsx,24,test,native camera callbacks emit once; cancel makes a queued frame inert,False,legacy-not-retrospectively-reviewed
+MAP-61d8afae7661,L2,reviewed implementation,mobileapp/src/screens/ScreenFocusPolling.test.tsx,117,reviewed-selector,"RadarPanel, DetailView, and HQView pass AbortSignal, pause polling on blur or background, and resume on focus",False,CPH-003
 MAP-751a1129956a,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.authDraft.test.tsx,37,reviewed-selector,SFR-008 %s refusal %i preserves a newer draft and staged photos exactly once,False,SFR-008
 MAP-fb1ca220a1d0,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.test.tsx,31,reviewed-selector,SFR-006 %s retries once with the same ID and retains visible busy feedback,False,SFR-006
 MAP-95d48bdd6e53,L2,reviewed implementation,mobileapp/src/screens/SendRecovery.test.tsx,46,reviewed-selector,SFR-006 %s failed retry updates its reason and Edit keeps a newer composer draft,False,SFR-006
@@ -5962,6 +5973,7 @@ LEG-26fdef392a94,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.te
 LEG-5eeb3f5fa726,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,40,test,a late response from the previous Mac cannot populate the new Mac,False,legacy-not-retrospectively-reviewed
 LEG-41532acf05f3,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,48,test,choices appear before probes; a late probe cannot undo a move,False,legacy-not-retrospectively-reviewed
 LEG-27e3a51521d5,L2,RN / mobile harness,mobileapp/src/screens/useRouteChoices.test.tsx,57,test,guest/offline callers make no requests,False,legacy-not-retrospectively-reviewed
+MAP-a901b821fe88,L2,reviewed implementation,mobileapp/src/state/AgentsContext.hardening.test.tsx,69,reviewed-selector,"SSE unsubscribes immediately on error, stops retrying after confirmed 401/403, and survives transient inactive AppState",False,CPH-004
 LEG-1d362d67d68f,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.liveActivity.test.tsx,50,test,on: the card is kept in step and its token reaches the Mac,False,legacy-not-retrospectively-reviewed
 LEG-d8fc4d4ae3c0,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.liveActivity.test.tsx,58,test,"turned off: the Mac forgets the token, the card ends, and nothing restarts it",False,legacy-not-retrospectively-reviewed
 LEG-b3168453fd95,L1,RN / mobile harness,mobileapp/src/state/AgentsContext.liveActivity.test.tsx,77,test,"off from the start: no card, and an unreachable Mac still loses the card here",False,legacy-not-retrospectively-reviewed
@@ -6225,6 +6237,7 @@ LEG-acfa5e4f58f6,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.
 LEG-a9597d6f59dc,L2,RN / mobile harness,mobileapp/src/ui/ChatView.markdown.test.tsx,53,test,"local references use the preview adapter, never an OS file URL or script",False,legacy-not-retrospectively-reviewed
 MAP-eee81c4abb59,L3,reviewed implementation,mobileapp/src/ui/ChatView.observed.test.tsx,7,reviewed-selector,SID006 last-known history is explicitly read only in both languages,False,SID-006
 MAP-23239eea42c8,L3,reviewed implementation,mobileapp/src/ui/ChatView.pendingLive.test.tsx,13,reviewed-selector,LPV001,False,LPV-001
+MAP-6dbc7dd010a0,L2,reviewed implementation,mobileapp/src/ui/ChatView.perf.test.tsx,43,reviewed-selector,1-second working elapsed timer updates LiveProgress without re-rendering historical MarkdownView or ToolSteps,False,CPH-005
 LEG-24dc79367b63,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,33,test,no seam under the session-start line when the break is on the first shown turn,False,legacy-not-retrospectively-reviewed
 LEG-203affee0cef,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,37,test,a seam between two shown turns when the later one began a session,False,legacy-not-retrospectively-reviewed
 LEG-b2b057903399,L2,RN / mobile harness,mobileapp/src/ui/ChatView.seam.test.tsx,41,test,HQ history keeps Claude and Codex replies under their own agents,False,legacy-not-retrospectively-reviewed
@@ -6264,6 +6277,8 @@ LEG-2472f87bf898,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx
 LEG-e21a3201ffea,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx,133,test,"the history picker shows this scope first, topped up from elsewhere",False,legacy-not-retrospectively-reviewed
 LEG-a780c6bf8b23,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx,167,test,a different scope does not show the first one’s entries at the top,False,legacy-not-retrospectively-reviewed
 LEG-28f705f86458,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx,198,test,switching Macs with the same pane discards the mounted box and never imports its draft,False,legacy-not-retrospectively-reviewed
+MAP-86d816cbc380,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx,221,reviewed-selector,binding an empty session_id preserves unsent text and staged attachments and migrates stored drafts,False,CPH-005
+MAP-73a3325bdf6e,L2,RN / mobile harness,mobileapp/src/ui/Composer.draft.test.tsx,294,reviewed-selector,"mounting an untouched composer does not rewrite drafts, unmount flushes dirty text, and send clears stored draft immediately",False,CPH-005
 MAP-291296b7e5bc,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto.test.tsx,44,reviewed-selector,batch photos stage in picker order and one edit replaces only its thumbnail,False,"MPU-001,MPU-002,MPU-004"
 MAP-88c2a76e87c4,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto.test.tsx,68,reviewed-selector,cancelling or failing a later selection preserves caption and staged batch,False,"MPU-001,MPU-002,MPU-004"
 MAP-0e806a0076e7,L2,reviewed implementation,mobileapp/src/ui/Composer.multiPhoto.test.tsx,80,reviewed-selector,a late picker result after unmount cannot stage or submit images,False,"MPU-001,MPU-002,MPU-004"

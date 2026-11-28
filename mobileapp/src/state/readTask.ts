@@ -1,4 +1,6 @@
+import {useContext, useEffect, useState} from 'react';
 import {AppState} from 'react-native';
+import {NavigationContext} from '@react-navigation/native';
 import {abortAtDeadline} from '../api/requestAbort';
 
 export class ReadDeadlineError extends Error {
@@ -6,6 +8,32 @@ export class ReadDeadlineError extends Error {
     super('read deadline exceeded');
     this.name = 'ReadDeadlineError';
   }
+}
+
+type FocusNavigation = {
+  isFocused?: () => boolean;
+  addListener?: (event: 'focus' | 'blur', callback: () => void) => (() => void) | {remove?: () => void};
+};
+
+/** Screen focus state; defaults to true outside NavigationContainer or partial test mocks. */
+export function useScreenFocused(): boolean {
+  const nav = useContext(NavigationContext) as FocusNavigation | undefined;
+  const canTrack = typeof nav?.isFocused === 'function' && typeof nav?.addListener === 'function';
+  const [focused, setFocused] = useState(() => (canTrack ? !!nav!.isFocused!() : true));
+  useEffect(() => {
+    if (!canTrack) {
+      setFocused(true);
+      return;
+    }
+    setFocused(!!nav!.isFocused!());
+    const unsubFocus = nav!.addListener!('focus', () => setFocused(true));
+    const unsubBlur = nav!.addListener!('blur', () => setFocused(false));
+    return () => {
+      if (typeof unsubFocus === 'function') unsubFocus(); else unsubFocus?.remove?.();
+      if (typeof unsubBlur === 'function') unsubBlur(); else unsubBlur?.remove?.();
+    };
+  }, [nav, canTrack]);
+  return canTrack ? focused : true;
 }
 
 /** One read lane per resource and scope. Mutations must not use this helper. */

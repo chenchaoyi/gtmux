@@ -314,7 +314,7 @@ test.each(['usage', 'knowledge'] as const)(
     expect(
       tree!.root.findAllByProps({ testID: `${page}-load-state` }).length,
     ).toBeGreaterThan(0);
-    await act(async () => jest.advanceTimersByTime(3000));
+    await act(async () => jest.advanceTimersByTime(30_000));
     expect(sheet().props[error]).toBe(false);
     if (page === 'usage') {
       expect(sheet().props.unsupported).toBe(true);
@@ -359,7 +359,7 @@ test('a stalled usage read retires at its own deadline, then a new read recovers
   await mount('idle', 'compact');
   await act(async () => {jest.advanceTimersByTime(90_000);});
   expect(tree!.root.findByType(UsageSheet).props.failure?.kind).toBe('timeout');
-  await act(async () => {jest.advanceTimersByTime(3000);});
+  await act(async () => {jest.advanceTimersByTime(30_000);});
   expect(tree!.root.findByType(UsageSheet).props.usage?.history?.today_out).toBe(42);
   await act(async () => answerOld({sessions: [], types: [], history: {today_out: 1}}));
   expect(tree!.root.findByType(UsageSheet).props.usage?.history?.today_out).toBe(42);
@@ -493,6 +493,9 @@ test('workspace-backed conversations use the same matters and keep them current 
   expect(header().props.backLabel).toBe('Overview');
   expect(header().props.showContext).toBe(false);
   expect(tree!.root.findByType(ChatView).props.acts).toBeUndefined();
+  const callsOnEnterConsole = mockClient.hqWorkspace!.mock.calls.length;
+  mockClient.digest.mockClear();
+  mockClient.hqEvents.mockClear();
   data = {
     ...data,
     matters: data.matters.map(m =>
@@ -500,11 +503,74 @@ test('workspace-backed conversations use the same matters and keep them current 
     ),
   };
   await act(async () => jest.advanceTimersByTime(10000));
-  expect(header().props.model.verdict).toBe('1 needs input · 1 ongoing');
-  expect(header().props.pendingMatters).toBe(1);
-  expect(mockClient.hqWorkspace!.mock.calls.length).toBeGreaterThanOrEqual(2);
+  expect(mockClient.hqWorkspace!.mock.calls.length).toBe(callsOnEnterConsole);
+  expect(mockClient.digest).not.toHaveBeenCalled();
+  expect(mockClient.hqEvents).not.toHaveBeenCalled();
   await act(async () => header().props.onBack());
   expect(
     tree!.root.findAllByProps({ testID: 'hq-overview-talk' }).length,
   ).toBeGreaterThan(0);
+  expect(mockClient.hqWorkspace!.mock.calls.length).toBe(
+    callsOnEnterConsole + 1,
+  );
+  await act(async () =>
+    tree!.root
+      .findAllByProps({ testID: 'hq-overview-talk' })[0]
+      .props.onPress(),
+  );
+  expect(header().props.model.verdict).toBe('1 needs input · 1 ongoing');
+});
+
+test('HQ console decouples 30s resource reads from 6s digest reads and keeps failed text recovery across control keys', async () => {
+  const { Composer } = require('../ui/Composer');
+  const { SendFailedBar } = require('../ui/SendFailedBar');
+  mockClient.usage.mockClear();
+  mockClient.hqBoard.mockClear();
+  mockClient.hqKnowledge.mockClear();
+  mockClient.digest.mockClear();
+  mockClient.hqEvents.mockClear();
+  (mockClient as any).sendResult = jest
+    .fn()
+    .mockResolvedValueOnce({
+      ok: false,
+      reason: 'Draft present in pane',
+      code: 'refused-draft',
+    })
+    .mockResolvedValueOnce({ ok: true });
+  mockClient.transcript.mockResolvedValue({ turns: [] });
+
+  await mount('idle', 'compact');
+  expect(mockClient.usage).toHaveBeenCalledTimes(1);
+  expect(mockClient.hqBoard).toHaveBeenCalledTimes(1);
+  expect(mockClient.hqKnowledge).toHaveBeenCalledTimes(1);
+  expect(mockClient.digest).toHaveBeenCalledTimes(1);
+  expect(mockClient.hqEvents).toHaveBeenCalledTimes(1);
+
+  await act(async () => jest.advanceTimersByTime(6_000));
+  expect(mockClient.digest).toHaveBeenCalledTimes(2);
+  expect(mockClient.hqEvents).toHaveBeenCalledTimes(2);
+  expect(mockClient.usage).toHaveBeenCalledTimes(1);
+  expect(mockClient.hqBoard).toHaveBeenCalledTimes(1);
+  expect(mockClient.hqKnowledge).toHaveBeenCalledTimes(1);
+
+  await act(async () => jest.advanceTimersByTime(24_000));
+  expect(mockClient.usage).toHaveBeenCalledTimes(2);
+  expect(mockClient.hqBoard).toHaveBeenCalledTimes(2);
+  expect(mockClient.hqKnowledge).toHaveBeenCalledTimes(2);
+
+  await act(async () => {
+    tree!.root.findByType(Composer).props.onSend({
+      text: 'keep my failed prompt',
+      enter: true,
+    });
+  });
+  expect(tree!.root.findByType(SendFailedBar).props.text).toBe(
+    'keep my failed prompt',
+  );
+  await act(async () => {
+    tree!.root.findByType(Composer).props.onSend({ key: 'Escape' });
+  });
+  expect(tree!.root.findByType(SendFailedBar).props.text).toBe(
+    'keep my failed prompt',
+  );
 });

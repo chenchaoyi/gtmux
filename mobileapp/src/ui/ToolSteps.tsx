@@ -24,17 +24,7 @@ import { toolCodeHint } from './codeReading';
 import { useToolInput } from './useToolInput';
 import { ChromeText } from './ChromeText';
 
-/** A call is evidence of an action, not evidence that it succeeded. */
-export function ToolSteps({
-  steps,
-  client,
-  session,
-  home,
-  open,
-  onToggle,
-  lang,
-  fontSize,
-}: {
+type ToolStepsProps = {
   steps: TranscriptStep[];
   client?: GtmuxClient;
   session?: string;
@@ -43,7 +33,23 @@ export function ToolSteps({
   onToggle: () => void;
   lang: 'en' | 'zh';
   fontSize: number;
-}) {
+};
+
+/** A call is evidence of an action, not evidence that it succeeded. */
+export function ToolSteps(props: ToolStepsProps) {
+  return <MemoToolStepsBody {...props} />;
+}
+
+const MemoToolStepsBody = React.memo(function ToolStepsBody({
+  steps,
+  client,
+  session,
+  home,
+  open,
+  onToggle,
+  lang,
+  fontSize,
+}: ToolStepsProps) {
   const pal = useReadingPalette();
   const styles = React.useMemo(() => makeStyles(pal), [pal]);
   const [selected, setSelected] = useState<number | null>(null);
@@ -183,7 +189,16 @@ export function ToolSteps({
       )}
     </View>
   );
-}
+}, (prev, next) =>
+  prev.steps === next.steps &&
+  prev.client === next.client &&
+  prev.session === next.session &&
+  prev.home === next.home &&
+  prev.open === next.open &&
+  prev.onToggle === next.onToggle &&
+  prev.lang === next.lang &&
+  prev.fontSize === next.fontSize
+);
 
 function ToolInput({
   step: original,

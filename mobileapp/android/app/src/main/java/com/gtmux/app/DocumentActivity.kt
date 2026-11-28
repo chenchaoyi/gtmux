@@ -65,7 +65,10 @@ class DocumentActivity : Activity() {
   private val dark get() = when (request.appearance) {"dark" -> true; "light" -> false; else -> resources.configuration.uiMode and 0x30 == 0x20}
   private var current: LocalDocument? = null
   private var web: WebView? = null
+  private val pdfLock = Any()
   private var pdf: PdfRenderer? = null
+  private var pdfFd: ParcelFileDescriptor? = null
+  private var pdfList: RecyclerView? = null
   private var scripts = false
   private var source = false
   private val images = java.util.concurrent.ConcurrentHashMap<String, String>()
@@ -123,8 +126,19 @@ class DocumentActivity : Activity() {
     content.removeAllViews()
     content.addView(TextView(this).apply { text = message; textSize = 16f; gravity = android.view.Gravity.CENTER; setPadding(dp(24), dp(24), dp(24), dp(24)); setTextColor(if (dark) Color.LTGRAY else Color.DKGRAY) }, FrameLayout.LayoutParams(-1, -1))
   }
+  private fun closePdf() {
+    pdfList?.adapter = null
+    pdfList = null
+    synchronized(pdfLock) {
+      runCatching { pdf?.close() }
+      pdf = null
+      runCatching { pdfFd?.close() }
+      pdfFd = null
+    }
+  }
   private fun render() {
     val doc = current ?: return
+    closePdf()
     web?.destroy(); web = null; content.removeAllViews(); images.clear(); links.clear(); imageCache.clear(); imageBudget.set(0)
     mode.visibility = if (doc.kind == "html" || doc.kind == "markdown") View.VISIBLE else View.GONE
     mode.text = if (doc.kind == "markdown") { if (source) tr("Preview", "预览") else tr("Source", "原文") }
@@ -284,29 +298,84 @@ class DocumentActivity : Activity() {
   }
   private fun renderPDF(doc: LocalDocument) {
     try {
-      pdf?.close(); val renderer = PdfRenderer(ParcelFileDescriptor.open(doc.file, ParcelFileDescriptor.MODE_READ_ONLY)); pdf = renderer
-      val list = RecyclerView(this); list.layoutManager = LinearLayoutManager(this)
-      list.isVerticalScrollBarEnabled = true; list.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+      closePdf()
+      val fd = ParcelFileDescriptor.open(doc.file, ParcelFileDescriptor.MODE_READ_ONLY)
+      val renderer = try { PdfRenderer(fd) } catch (error: Exception) { runCatching { fd.close() }; throw error }
+      synchronized(pdfLock) { pdf = renderer; pdfFd = fd }
+      val pageCount = renderer.pageCount
+      val screenWidth = minOf(1600, resources.displayMetrics.widthPixels).coerceAtLeast(1)
+      val list = RecyclerView(this).apply {
+        layoutManager = LinearLayoutManager(this@DocumentActivity)
+        isVerticalScrollBarEnabled = true
+        scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+      }
+      pdfList = list
+      val placeholderHeight = (resources.displayMetrics.heightPixels * 3 / 4).coerceAtLeast(dp(320))
       list.adapter = object : RecyclerView.Adapter<PageHolder>() {
-        override fun getItemCount() = renderer.pageCount
-        override fun onCreateViewHolder(parent: ViewGroup, type: Int) = PageHolder(ImageView(this@DocumentActivity).apply { adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_CENTER; layoutParams = ViewGroup.LayoutParams(-1, -2) })
+        override fun getItemCount() = pageCount
+        override fun onCreateViewHolder(parent: ViewGroup, type: Int) = PageHolder(ImageView(this@DocumentActivity).apply {
+          adjustViewBounds = true
+          scaleType = ImageView.ScaleType.FIT_CENTER
+          minimumHeight = placeholderHeight
+          layoutParams = ViewGroup.LayoutParams(-1, -2)
+        })
         override fun onBindViewHolder(holder: PageHolder, position: Int) {
-          renderer.openPage(position).use { page ->
-            val width = minOf(1600, resources.displayMetrics.widthPixels); val height = (page.height.toLong() * width / page.width).toInt().coerceAtMost(4096)
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888); bitmap.eraseColor(Color.WHITE)
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            holder.bitmap?.recycle(); holder.bitmap = bitmap; holder.image.setImageBitmap(bitmap)
-            holder.image.contentDescription = tr("Page ${position + 1} of ${renderer.pageCount}", "第 ${position + 1} 页，共 ${renderer.pageCount} 页")
+          holder.boundPosition = position
+          holder.image.contentDescription = null
+          holder.image.minimumHeight = placeholderHeight
+          holder.image.setImageDrawable(null)
+          holder.bitmap?.recycle()
+          holder.bitmap = null
+          worker.execute {
+            if (isFinishing || isDestroyed || holder.boundPosition != position) return@execute
+            val renderedBitmap = try {
+              synchronized(pdfLock) {
+                if (pdf !== renderer || isFinishing || isDestroyed || holder.boundPosition != position) null
+                else renderer.openPage(position).use { page ->
+                  val pageWidth = page.width.coerceAtLeast(1)
+                  val height = (page.height.toLong() * screenWidth / pageWidth).toInt().coerceIn(1, 4096)
+                  val bmp = Bitmap.createBitmap(screenWidth, height, Bitmap.Config.ARGB_8888)
+                  try {
+                    bmp.eraseColor(Color.WHITE)
+                    page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                    bmp
+                  } catch (error: Throwable) {
+                    bmp.recycle()
+                    throw error
+                  }
+                }
+              }
+            } catch (_: Throwable) { null } ?: return@execute
+            runOnUiThread {
+              if (isFinishing || isDestroyed || pdf !== renderer || holder.boundPosition != position) {
+                renderedBitmap.recycle()
+                return@runOnUiThread
+              }
+              holder.bitmap?.recycle()
+              holder.bitmap = renderedBitmap
+              holder.image.minimumHeight = 0
+              holder.image.setImageBitmap(renderedBitmap)
+              holder.image.contentDescription = tr("Page ${position + 1} of $pageCount", "第 ${position + 1} 页，共 $pageCount 页")
+            }
           }
         }
-        override fun onViewRecycled(holder: PageHolder) { holder.image.setImageDrawable(null); holder.bitmap?.recycle(); holder.bitmap = null }
+        override fun onViewRecycled(holder: PageHolder) {
+          holder.boundPosition = RecyclerView.NO_POSITION
+          holder.image.contentDescription = null
+          holder.image.setImageDrawable(null)
+          holder.bitmap?.recycle()
+          holder.bitmap = null
+        }
       }
       content.addView(list)
-    } catch (_: Exception) { showStatus(failure("invalid")) }
+    } catch (_: Exception) { closePdf(); showStatus(failure("invalid")) }
   }
-  class PageHolder(val image: ImageView) : RecyclerView.ViewHolder(image) { var bitmap: Bitmap? = null }
+  class PageHolder(val image: ImageView) : RecyclerView.ViewHolder(image) {
+    var bitmap: Bitmap? = null
+    @Volatile var boundPosition: Int = RecyclerView.NO_POSITION
+  }
   override fun onDestroy() {
-    web?.stopLoading(); web?.destroy(); pdf?.close(); worker.shutdownNow()
+    web?.stopLoading(); web?.destroy(); closePdf(); worker.shutdownNow()
     if (::transport.isInitialized) transport.close()
     imageCache.clear(); super.onDestroy()
   }

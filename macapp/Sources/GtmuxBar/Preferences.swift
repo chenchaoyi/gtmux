@@ -969,13 +969,20 @@ struct PreferencesView: View {
 // languages — `tab-alert = on` / `tab-alert = off` — which is what this parses; the prose
 // after it is localized and deliberately not depended on.
 extension PreferencesView {
-    var tabAlertQueryOn: Bool {
-        guard let out = GtmuxCLI.capture(["config", "tab-alert"]),
+    private static func readTabAlertOn() -> Bool {
+        guard let out = GtmuxCLI.capturePoll(["config", "tab-alert"], timeout: 4),
               let s = String(data: out, encoding: .utf8) else { return false }
         return s.hasPrefix("tab-alert = on")
     }
 
-    func refreshTabAlert() { tabAlertOn = tabAlertQueryOn }
+    func refreshTabAlert() {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let actual = Self.readTabAlertOn()
+            DispatchQueue.main.async {
+                tabAlertOn = actual
+            }
+        }
+    }
 
     /// Writes through the CLI, then RE-READS rather than trusting the write. Enabling can
     /// legitimately fail (no tmux server) and disabling deliberately refuses when the user
@@ -985,7 +992,7 @@ extension PreferencesView {
         tabAlertBusy = true
         DispatchQueue.global(qos: .userInitiated).async {
             _ = GtmuxCLI.capture(["config", "tab-alert", on ? "on" : "off"])
-            let actual = tabAlertQueryOn
+            let actual = Self.readTabAlertOn()
             DispatchQueue.main.async {
                 tabAlertOn = actual
                 tabAlertBusy = false

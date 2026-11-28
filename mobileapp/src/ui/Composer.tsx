@@ -29,7 +29,7 @@ import {
 } from 'react-native';
 import {LoadingMark} from './LoadingMark';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {getDraft, loadDrafts, putDraft, saveDrafts} from '../state/drafts';
+import {getDraft, loadDrafts, mutateDrafts, parseDraftKey, putDraft} from '../state/drafts';
 import {ChromeText} from './ChromeText';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {ErrorCode, launchCamera, launchImageLibrary} from 'react-native-image-picker';
@@ -292,10 +292,18 @@ export const Composer = React.memo(function Composer({
 }) {
   const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
+  const textRef = useRef(text);
+  textRef.current = text;
   // Restoring a draft must never race the typing it is restoring: if the load
   // lands after the first keystroke it would wipe it, so it only applies while
   // the box is still untouched.
   const typed = useRef(false);
+  const dirtyRef = useRef(false);
+  const draftKeyRef = useRef(draftKey);
+  draftKeyRef.current = draftKey;
+  const demoRef = useRef(demo);
+  demoRef.current = demo;
+  const prevDraftKey = useRef<string | undefined>(draftKey);
   const inputRef = useRef<TextInput>(null);
   const ownKeys = useTerminalKeys(keyController ? undefined : keyTarget, enabled, keyController ? undefined : onLoadKeys, keyController ? undefined : onSendKey);
   const terminalKeys = keyController ?? ownKeys;
@@ -319,6 +327,8 @@ export const Composer = React.memo(function Composer({
   useEffect(() => {
     if (!prefill || !prefill.text) return;
     typed.current = true; // a hand-off outranks a stored draft
+    dirtyRef.current = true;
+    textRef.current = prefill.text;
     setText(prefill.text);
     // The field only exists while composing. A hand-off into the resting key row filled
     // a box nobody could see (simulator, 2026-09-14: 「我来说…」 on a board item put the
@@ -332,36 +342,117 @@ export const Composer = React.memo(function Composer({
     if (!restore || restored.current === restore.at) return;
     restored.current = restore.at;
     typed.current = true;
-    if (restore.text) setText(current => current === restore.text ? current : current ? `${current}\n\n${restore.text}` : restore.text);
+    dirtyRef.current = true;
+    if (restore.text) {
+      setText(current => {
+        const next = current === restore.text ? current : current ? `${current}\n\n${restore.text}` : restore.text;
+        textRef.current = next;
+        return next;
+      });
+    }
     setComposing(true);
     const timer = setTimeout(() => inputRef.current?.focus(), 50);
     return () => clearTimeout(timer);
   }, [restore]);
+  // Staged attachments (iMessage-style): picked/edited but NOT uploaded yet. They
+  // upload on SEND, together with the typed text — never on pick. `sending` guards
+  // the upload; `progress` is the per-attachment fraction; `sendError` surfaces a
+  // failure so nothing is lost and the user can retry.
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   useEffect(() => {
+    const oldKey = prevDraftKey.current;
+    const keyChanged = oldKey !== draftKey;
+    prevDraftKey.current = draftKey;
+    if (keyChanged) {
+      const oldParts = parseDraftKey(oldKey);
+      const newParts = parseDraftKey(draftKey);
+      const sessionResolved =
+        !!oldParts &&
+        !!newParts &&
+        oldParts.server === newParts.server &&
+        oldParts.pane === newParts.pane &&
+        oldParts.session === '' &&
+        newParts.session !== '';
+      if (sessionResolved) {
+        // Keep in-memory text and staged attachments when a pane binds its session_id.
+        if (!demo && oldKey && draftKey) {
+          if (typed.current || textRef.current.length > 0) {
+            dirtyRef.current = false;
+            const snapshot = textRef.current;
+            void mutateDrafts(m => {
+              const now = Date.now();
+              return putDraft(putDraft(m, oldKey, '', now), draftKey, snapshot, now);
+            });
+            return;
+          }
+          let alive = true;
+          loadDrafts().then(m => {
+            const now = Date.now();
+            const bound = getDraft(m, draftKey, now);
+            const unbound = getDraft(m, oldKey, now);
+            const chosen = bound || unbound;
+            if (alive && chosen && !typed.current) {
+              textRef.current = chosen;
+              setText(chosen);
+            }
+            if (!bound && unbound) {
+              void mutateDrafts(cur => putDraft(putDraft(cur, oldKey, '', now), draftKey, unbound, now));
+            }
+          });
+          return () => {
+            alive = false;
+          };
+        }
+        return;
+      }
+      if (!demo && oldKey && dirtyRef.current) {
+        dirtyRef.current = false;
+        const snapshot = textRef.current;
+        void mutateDrafts(m => putDraft(m, oldKey, snapshot, Date.now()));
+      }
+      typed.current = false;
+      dirtyRef.current = false;
+      textRef.current = '';
+      setText('');
+      setAttachments([]);
+      setProgress({});
+      setFailedUpload(null);
+      setSendError(null);
+    }
     if (!draftKey || demo) return;
     let alive = true;
     loadDrafts().then(m => {
       const d = getDraft(m, draftKey, Date.now());
-      if (alive && d && !typed.current) setText(d);
+      if (alive && d && !typed.current) {
+        textRef.current = d;
+        setText(d);
+      }
     });
     return () => {
       alive = false;
     };
   }, [draftKey, demo]);
   // Persisted a beat after you stop typing, not per keystroke: a draft only has
-  // to survive leaving the screen, and this runs on every character.
+  // to survive leaving the screen, and this runs only when the user actually edited.
   useEffect(() => {
-    if (!draftKey || demo) return;
+    if (!draftKey || demo || !typed.current || !dirtyRef.current) return;
+    const key = draftKey;
+    const snapshot = text;
     const id = setTimeout(() => {
-      loadDrafts().then(m => saveDrafts(putDraft(m, draftKey, text, Date.now())));
+      dirtyRef.current = false;
+      void mutateDrafts(m => putDraft(m, key, snapshot, Date.now()));
     }, 400);
     return () => clearTimeout(id);
   }, [text, draftKey, demo]);
-  // Staged attachments (iMessage-style): picked/edited but NOT uploaded yet. They
-  // upload on SEND, together with the typed text — never on pick. `sending` guards
-  // the upload; `progress` is the per-attachment fraction; `sendError` surfaces a
-  // failure so nothing is lost and the user can retry.
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  // Flush any dirty unsaved draft immediately on unmount before the 400ms timer expires.
+  useEffect(() => () => {
+    const key = draftKeyRef.current;
+    if (key && !demoRef.current && dirtyRef.current) {
+      dirtyRef.current = false;
+      const snapshot = textRef.current;
+      void mutateDrafts(m => putDraft(m, key, snapshot, Date.now()));
+    }
+  }, []);
   const [sending, setSending] = useState(false);
   const sendInFlight = useRef(false);
   const photoReadInFlight = useRef(false);
@@ -504,7 +595,14 @@ export const Composer = React.memo(function Composer({
         return next;
       });
     }
+    dirtyRef.current = false;
+    typed.current = false;
+    textRef.current = '';
     setText('');
+    if (draftKey && !demo) {
+      const key = draftKey;
+      void mutateDrafts(m => putDraft(m, key, '', Date.now()));
+    }
     setAttachments(current => current.filter(a => !sentAttachmentIDs.has(a.id)));
     setProgress({});
     setSendError(null);
@@ -533,7 +631,13 @@ export const Composer = React.memo(function Composer({
     } finally {clipboardReading.current = false;}
     const s = await Clipboard.getString();
     if (s && mounted.current) {
-      setText(t => (t ? t + s : s));
+      typed.current = true;
+      dirtyRef.current = true;
+      setText(t => {
+        const next = t ? t + s : s;
+        textRef.current = next;
+        return next;
+      });
       openCompose();
     }
   };
@@ -729,6 +833,8 @@ export const Composer = React.memo(function Composer({
         value={text}
         onChangeText={t => {
           typed.current = true;
+          dirtyRef.current = true;
+          textRef.current = t;
           setText(t);
         }}
         editable={enabled || draftOnly}
@@ -830,7 +936,13 @@ export const Composer = React.memo(function Composer({
         pal={pal}
         lang={lang}
         onPick={h => {
-          setText(t => (t ? t + h : h));
+          typed.current = true;
+          dirtyRef.current = true;
+          setText(t => {
+            const next = t ? t + h : h;
+            textRef.current = next;
+            return next;
+          });
           setHistoryOpen(false);
           openCompose();
         }}
@@ -917,6 +1029,8 @@ export const Composer = React.memo(function Composer({
             value={text}
             onChangeText={t => {
           typed.current = true;
+          dirtyRef.current = true;
+          textRef.current = t;
           setText(t);
         }}
             editable={enabled || draftOnly}

@@ -94,11 +94,11 @@ function harness(reply, language = 'en-US', stored = {}, pathname = '/p8765/') {
   const marker = "  if (document.readyState === 'loading')";
   assert.ok(source.includes(marker), 'web boot marker changed');
   const script = source.replace(marker, `
-    var realFetchShare = fetchShare, realPollChat = pollChat;
-    globalThis.__test = {enableChatPolling: () => {pollChat = realPollChat;}, fetchShare, enableShare: () => {fetchShare = realFetchShare;}, share: () => SHARE, pollWB, paneCanInput, copyText, clipboardAction, toolStepsEl, updateInputBar, setupFocus,
+    var realFetchShare = fetchShare, realPollChat = pollChat, realPollPane = pollPane, realPollOptions = pollOptions;
+    globalThis.__test = {enableChatPolling: () => {pollChat = realPollChat;}, enablePanePolling: () => {pollPane = realPollPane; pollOptions = realPollOptions;}, fetchShare, enableShare: () => {fetchShare = realFetchShare;}, share: () => SHARE, pollWB, paneCanInput, copyText, clipboardAction, toolStepsEl, updateInputBar, setupFocus, setupVisibility, refreshVisibleView,
       setupKeyboard, openConversation, pollConversation, conversationControls, readableConversation, nativeSourceLabel, nativeEvidenceLabel, launchHost, setExternalSettings: s => {externalSettings=s;},
       promptObservations, pendingPromptRecorded, setCredential: value => {token = value; localStorage.setItem(TOKEN_KEY, value);}, flushComposer: () => saveCompose(composeCache, true), drawChat, renderTileChat, liveTail, mdRender, labelChrome, setupCodeBox, connStateFor, makeComposer, isHQPane, paneSessionTitle, paneToAgent, renderPanes, renderRadar,
-      show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
+      show, gate, runRead, cancelReads, pollPane, pollChat, pollRadar, renderChat, tilePollPane, tilePollChat, renderTree, treeRow, renderCmdk, cyclePane,
       onDraw: fn => {drawChat = fn;},
       setWorkbenchAgents: rows => {WB.agents = rows;},
       setTiles: tiles => {WB.tiles = tiles;},
@@ -1383,4 +1383,128 @@ test('CAS004 stale tile association failure cannot repaint a changed target', as
   h.api.tilePollChat(tile); tile.agent = {pane_id: '%2', agent: 'Codex'};
   answer({ok: false, status: 409, headers: {get: () => null}, json: async () => ({code: 'conversation-unassociated'})});
   await flush(); assert.equal(tile.chatReadFailure, undefined); assert.equal(tile.body.children.length, 0);
+});
+
+test('CPH006 tilePollPane stops when workbench is off and document.hidden pauses web pollers until visibilitychange', async () => {
+  const h = harness({ok: true, status: 200, headers: {get: () => null}, json: async () => []});
+  h.api.enableChatPolling();
+  h.api.enablePanePolling();
+  h.api.setupVisibility();
+  h.api.setCredential('owner-token');
+
+  const agent = {pane_id: '%1', agent: 'Codex', status: 'waiting'};
+  const termTile = {
+    id: '%1',
+    agent,
+    mode: 'term',
+    readEpoch: 1,
+    removed: false,
+    el: h.context.document.createElement('div'),
+    body: h.node('term-tile-body'),
+    term: {
+      buffer: {active: {viewportY: 0, baseY: 0}},
+      write(_t, cb) { if (cb) cb(); },
+      reset() {},
+      scrollToBottom() {},
+    },
+  };
+
+  // Workbench OFF -> tilePollPane must not issue /api/pane requests.
+  h.api.workbench().on = false;
+  h.api.tilePollPane(termTile);
+  assert.equal(h.requests.length, 0);
+
+  // Workbench ON, document.hidden = true -> all pollers skip network requests.
+  h.api.workbench().on = true;
+  h.api.setTiles([termTile]);
+  h.context.document.hidden = true;
+  h.api.pollWB();
+  h.api.tilePollPane(termTile);
+  h.api.pollRadar();
+  h.api.setPin('%1', agent, 'term', []);
+  h.api.setPaneShown();
+  h.api.pollPane();
+  h.api.pollOptions();
+  h.api.setPin('%1', agent, 'chat', []);
+  h.node('pane').hidden = true;
+  h.node('chat').hidden = false;
+  h.api.pollChat();
+  const chatTile = {id: '%2', agent: {pane_id: '%2', agent: 'Codex', status: 'idle'}, mode: 'chat', readEpoch: 1, removed: false, body: h.node('chat-tile-body')};
+  h.api.tilePollChat(chatTile);
+  assert.equal(h.requests.length, 0);
+
+  // Returning to visible triggers immediate refresh of active Workbench + tiles.
+  h.api.setTiles([termTile, chatTile]);
+  h.context.document.hidden = false;
+  h.documentHandlers.get('visibilitychange')();
+  await flush();
+  const urls = h.requests.map(r => r.url);
+  assert.ok(urls.some(u => u.endsWith('/api/agents')), 'visibilitychange refreshes workbench roster');
+  assert.ok(urls.some(u => u.includes('/api/pane?id=%251')), 'visibilitychange refreshes term tile');
+  assert.ok(urls.some(u => u.includes('/api/transcript?id=%252')), 'visibilitychange refreshes chat tile');
+});
+
+test('CPH006 pollChat and tilePollChat send If-None-Match ETag and short-circuit 304 Not Modified before JSON parsing', async () => {
+  for (const tileMode of [false, true]) {
+    const h = harness({});
+    h.api.enableChatPolling();
+    const agent = {pane_id: '%7', agent: 'Codex', status: 'idle'};
+    h.api.setPin('%7', agent, 'chat', []);
+    h.node('pane').hidden = true;
+    h.node('chat').hidden = false;
+    h.api.workbench().on = true;
+    const tile = {id: '%7', agent, mode: 'chat', readEpoch: 1, removed: false, body: h.node('tile-etag-body')};
+
+    let jsonReads = 0;
+    let respond304 = false;
+    const transcriptRequests = [];
+    h.context.fetch = async (url, options) => {
+      if (!url.includes('/transcript')) {
+        return {ok: true, status: 200, headers: {get: () => null}, json: async () => []};
+      }
+      transcriptRequests.push({url, headers: (options && options.headers) || {}});
+      if (respond304) {
+        return {
+          ok: false,
+          status: 304,
+          headers: {get: name => (name === 'ETag' ? 'W/"etag-7"' : null)},
+          json: async () => {
+            jsonReads++;
+            throw new Error('304 response must not call r.json()');
+          },
+        };
+      }
+      return {
+        ok: true,
+        status: 200,
+        headers: {get: name => (name === 'ETag' ? 'W/"etag-7"' : null)},
+        json: async () => {
+          jsonReads++;
+          return [{prompt: 'hello', response: 'cached world'}];
+        },
+      };
+    };
+
+    const poll = () => (tileMode ? h.api.tilePollChat(tile) : h.api.pollChat());
+    poll();
+    await flush();
+    assert.equal(transcriptRequests.length, 1);
+    assert.equal(transcriptRequests[0].headers['If-None-Match'], undefined);
+    assert.equal(jsonReads, 1);
+
+    let drawsOn304 = 0;
+    if (!tileMode) h.api.onDraw(() => { drawsOn304++; });
+    respond304 = true;
+    poll();
+    await flush();
+    assert.equal(transcriptRequests.length, 2);
+    assert.equal(transcriptRequests[1].headers['If-None-Match'], 'W/"etag-7"');
+    assert.equal(jsonReads, 1, '304 must short-circuit before r.json()');
+    assert.equal(drawsOn304, 0, '304 must not repaint unchanged chat');
+    if (tileMode) {
+      assert.equal(tile.lastTurns[0].response, 'cached world');
+    } else {
+      assert.equal(h.api.turns()[0].response, 'cached world');
+    }
+  }
 });

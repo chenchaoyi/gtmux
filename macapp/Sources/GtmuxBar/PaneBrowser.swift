@@ -209,6 +209,7 @@ final class PaneBrowserStore: ObservableObject {
         }
     }
     private var timer: Timer?
+    private let refreshGate = AgentRefreshGate()
 
     func start() {
         refresh()
@@ -219,10 +220,12 @@ final class PaneBrowserStore: ObservableObject {
     func stop() { timer?.invalidate(); timer = nil }
 
     func refresh() {
+        guard refreshGate.enter() else { return }
         DispatchQueue.global(qos: .userInitiated).async {
-            let rows = Self.parsePanes(GtmuxCLI.capture(["panes", "--json"]))
+            defer { self.refreshGate.leave() }
+            let rows = Self.parsePanes(GtmuxCLI.capturePoll(["panes", "--json"], timeout: 4))
             var w = Set<String>()
-            if let d = GtmuxCLI.capture(["panes", "--watched"]),
+            if let d = GtmuxCLI.capturePoll(["panes", "--watched"], timeout: 4),
                let s = String(data: d, encoding: .utf8) {
                 for line in s.split(separator: "\n") { w.insert(String(line).trimmingCharacters(in: .whitespaces)) }
             }
@@ -248,9 +251,12 @@ final class PaneBrowserController {
     /// exactly that: window kept, graph gone.
     private(set) var window: NSWindow?
     private let browserStore = PaneBrowserStore()
+    /// Independent surface visibility so closing All Panes never stops an open popover's rings (or vice versa).
+    let visibility = SurfaceVisibility()
     /// What the content wants to be — published by the view, consumed by fitWindow.
     private let contentSize = PanelSize()
     private var cancellables = Set<AnyCancellable>()
+    private var observers: [NSObjectProtocol] = []
     /// Set once the user drags the window's edge. From then on the size is theirs and
     /// this stops touching it — a window is not a popover; the user is in charge of it.
     private var userSized = false
@@ -264,6 +270,12 @@ final class PaneBrowserController {
     private var fitUntil: Date?
     private static let fitWindow: TimeInterval = 2.5
 
+    deinit {
+        browserStore.stop()
+        visibility.setVisible(false)
+        observers.forEach(NotificationCenter.default.removeObserver)
+    }
+
     func show(l10n: L10n, radar: AgentStore) {
         if window == nil {
             let w = NSWindow(
@@ -271,19 +283,22 @@ final class PaneBrowserController {
                 styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
             w.contentViewController = NSHostingController(
                 rootView: PaneBrowserView(l10n: l10n, store: browserStore, size: contentSize,
-                                          radar: radar))
+                                          radar: radar)
+                    .environment(\.surfaceVisibility, visibility))
             w.isReleasedWhenClosed = false
             w.center()
             window = w
-            NotificationCenter.default.addObserver(
-                forName: NSWindow.willCloseNotification, object: w, queue: .main) { [weak self] _ in
-                self?.browserStore.stop()
-                MenuVisibility.shared.setVisible(false)
-            }
-            NotificationCenter.default.addObserver(
+            let store = browserStore
+            let vis = visibility
+            observers.append(NotificationCenter.default.addObserver(
+                forName: NSWindow.willCloseNotification, object: w, queue: nil) { _ in
+                store.stop()
+                vis.setVisible(false)
+            })
+            observers.append(NotificationCenter.default.addObserver(
                 forName: NSWindow.didEndLiveResizeNotification, object: w, queue: .main) { [weak self] _ in
                 self?.userSized = true
-            }
+            })
             contentSize.$height
                 .receive(on: RunLoop.main)
                 .sink { [weak self] h in self?.fitWindow(to: h) }
@@ -292,7 +307,7 @@ final class PaneBrowserController {
         window?.title = l10n.tr("gtmux · All panes", "gtmux · 所有 pane")
         fitUntil = Date().addingTimeInterval(Self.fitWindow)
         browserStore.start()
-        MenuVisibility.shared.setVisible(true)
+        visibility.setVisible(true)
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

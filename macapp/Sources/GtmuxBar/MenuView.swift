@@ -137,6 +137,7 @@ struct MenuView: View {
             return .handled
         }
         .onAppear { selected = 0; if !searchActive { rootFocused = true }; remote.refresh() }
+        .environment(\.surfaceVisibility, visibility)
     }
 
     // MARK: header

@@ -523,11 +523,13 @@
   },
   "macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift": {
     "cases": [
-      "HND-003"
+      "HND-003",
+      "CPH-007"
     ],
     "selectors": [
       "testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance",
-      "testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly"
+      "testHQAttentionRestartWithdrawsOwnedLegacyAndResolvedNoticesOnly",
+      "testInputNotificationResolvesOptionsOffMainActorBeforePosting"
     ]
   },
   "macapp/Tests/GtmuxBarTests/HQAttentionSweepRecoveryTests.swift": {
@@ -2368,7 +2370,8 @@
       "CAS-004",
       "CRX-007",
       "WHS-005",
-      "WLI-005"
+      "WLI-005",
+      "CPH-006"
     ],
     "selectors": [
       "CAS004 focused and tile chats disclose association failures and recover without losing messages",
@@ -2376,7 +2379,9 @@
       "rejected code stays editable and shows a clear error",
       "the rejected-code message also applies to the owner pairing a browser",
       "slow reads coalesce and a later completed read replaces them",
-      "live preview keeps up to 2,000 captured rows and removes terminal control sequences"
+      "live preview keeps up to 2,000 captured rows and removes terminal control sequences",
+      "CPH006 tilePollPane stops when workbench is off and document.hidden pauses web pollers until visibilitychange",
+      "CPH006 pollChat and tilePollChat send If-None-Match ETag and short-circuit 304 Not Modified before JSON parsing"
     ]
   },
   "internal/server/web/argv-reading.test.cjs": {
@@ -3204,13 +3209,15 @@
   },
   "mobileapp/src/screens/HQScreen.poll.test.tsx": {
     "cases": [
-      "UR-001"
+      "UR-001",
+      "CPH-003"
     ],
     "selectors": [
       "a slow HQ usage answer is kept when the Mac takes longer than 15 seconds",
       "a stalled usage read retires at its own deadline, then a new read recovers",
       "shortcut distinguishes loading and failed reads from an empty resource",
-      "the Usage sheet retry action starts a new read immediately after failure"
+      "the Usage sheet retry action starts a new read immediately after failure",
+      "HQ console decouples 30s resource reads from 6s digest reads and keeps failed text recovery across control keys"
     ]
   },
   "mobileapp/src/screens/HQSendOrdering.test.tsx": {
@@ -3266,7 +3273,7 @@
       "replaces the index with results, rather than showing both",
       "says so when nothing matches, naming what was typed",
       "gives the index back when the query is cleared",
-      "is closed by default — it is read once, then it is just height",
+      "is closed by default \u2014 it is read once, then it is just height",
       "opens on tap",
       "describes the result instead of the ledger verb",
       "write-it-in sends carry with no text, after one confirmation",
@@ -3522,7 +3529,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane’s different current runtime",
+      "a stitched older session never requests the pane\u2019s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -5409,7 +5416,7 @@
       "DFR-002"
     ],
     "selectors": [
-      "Dark and 中文 apply at once and survive a relaunch"
+      "Dark and \u4e2d\u6587 apply at once and survive a relaunch"
     ]
   },
   "mobileapp/e2e/setup/global-setup-target.test.ts": {
@@ -6375,6 +6382,74 @@
     "selectors": [
       "verifyEnvelope memoizes RSA-3072 CryptoKey per publicKey and evicts invalid keys",
       "standard GET uses one atomic R2 get without head or spurious TOCTOU 503 while caching only immutable 200 GETs"
+    ]
+  },
+  "mobileapp/src/documents/references.test.ts": {
+    "cases": [
+      "CPH-001"
+    ],
+    "selectors": [
+      "parseFileURI resolves empty and localhost authorities and strips fragments before decoding",
+      "parseFileURI rejects missing double-slash, non-localhost authorities, queries, UNC paths, and bad escapes",
+      "documentReference strips fragments on file:// and local paths while keeping gtmux-file strict",
+      "documentReference and displayWorkdir work when globalThis.URL has React Native Blob URL file:// bug"
+    ]
+  },
+  "internal/server/web/documents.test.cjs": {
+    "cases": [
+      "CPH-002"
+    ],
+    "selectors": [
+      "browser document references and validation are generated from the App contract"
+    ]
+  },
+  "mobileapp/src/screens/HQWorkspaceView.test.tsx": {
+    "cases": [
+      "CPH-003"
+    ],
+    "selectors": [
+      "conversation page pauses periodic workspace polling until returning to overview"
+    ]
+  },
+  "mobileapp/src/screens/ScreenFocusPolling.test.tsx": {
+    "cases": [
+      "CPH-003"
+    ],
+    "selectors": [
+      "RadarPanel, DetailView, and HQView pass AbortSignal, pause polling on blur or background, and resume on focus"
+    ]
+  },
+  "mobileapp/src/state/AgentsContext.hardening.test.tsx": {
+    "cases": [
+      "CPH-004"
+    ],
+    "selectors": [
+      "SSE unsubscribes immediately on error, stops retrying after confirmed 401/403, and survives transient inactive AppState"
+    ]
+  },
+  "mobileapp/src/ui/ChatView.perf.test.tsx": {
+    "cases": [
+      "CPH-005"
+    ],
+    "selectors": [
+      "1-second working elapsed timer updates LiveProgress without re-rendering historical MarkdownView or ToolSteps"
+    ]
+  },
+  "mobileapp/src/ui/Composer.draft.test.tsx": {
+    "cases": [
+      "CPH-005"
+    ],
+    "selectors": [
+      "binding an empty session_id preserves unsent text and staged attachments and migrates stored drafts",
+      "mounting an untouched composer does not rewrite drafts, unmount flushes dirty text, and send clears stored draft immediately"
+    ]
+  },
+  "macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift": {
+    "cases": [
+      "CPH-007"
+    ],
+    "selectors": [
+      "testClosingPaneBrowserLeavesMenuPopoverVisibilityUntouched"
     ]
   }
 }

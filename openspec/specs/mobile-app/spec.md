@@ -3145,3 +3145,10 @@ Mobile expanded Live terminal scrollback SHALL partition its up-to-1,000 capture
 - **WHEN** a reader expands Live on a pane with 1,000 captured lines on a `@3x` phone or `@2x` tablet
 - **THEN** the scrollback renders in stacked chunks of at most 32 rows without exceeding native backing-store limits
 - **AND** wide terminal lines up to 320 cells scroll horizontally while pathological wider lines wrap without losing ANSI styling
+
+### Requirement: Foreground-gated polling cadences and bounded SSE retries
+Mobile screens SHALL gate periodic reads on navigation focus and `AppState === 'active'` with `AbortSignal`. `HQConsoleView` SHALL poll resources at 30s and activity at 6s (skipping hidden feeds in `workspaceMode`), while `HQWorkspaceView` pauses periodic polling on the console. `AgentsProvider` SHALL close errored SSE streams before backoff, cap consecutive `401`/`403` retries at two, keep SSE open on `inactive`, and throttle owner `share` reads.
+
+#### Scenario: Backgrounded or unauthorized mobile session
+- **WHEN** a screen loses focus, enters `background`, or receives two consecutive `401`/`403` SSE responses
+- **THEN** unfocused/backgrounded pollers and errored SSE streams stop immediately, `inactive` keeps SSE open, and confirmed `401`/`403` retries halt

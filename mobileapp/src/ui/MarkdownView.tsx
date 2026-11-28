@@ -841,89 +841,126 @@ function BlockView({
   }
 }
 
-export function MarkdownView({
-  source,
-  colors,
-  fontSize = 14,
-  selectable,
-  selectionColor,
-  fontFamily,
-  calmEmphasis,
-  foldRows,
-  clampProse,
-  lang,
-  openFile,
-}: Props) {
-  const blocks = React.useMemo(() => parseBlocks(source), [source]);
-  const feedback = React.useContext(CopyFeedbackContext);
-  const continuous =
-    feedback && selectable && nativeRangeAvailable && !clampProse;
-  const groups: Block[][] = [];
-  for (const block of blocks) {
-    if (
-      continuous &&
-      block.t === 'p' &&
-      groups.length &&
-      groups[groups.length - 1].every(b => b.t === 'p')
-    )
-      groups[groups.length - 1].push(block);
-    else groups.push([block]);
-  }
+function sameColors(a: MdColors, b: MdColors): boolean {
   return (
-    <RangeSourceContext.Provider value={source}>
-      <View>
-        {groups.map((group, i) =>
-          continuous && group[0].t === 'p' ? (
-            <CopyableText
-              key={i}
-              lang={lang}
-              selectable={selectable}
-              selectionColor={selectionColor}
-              style={[
-                styles.block,
-                {
-                  color: colors.text,
-                  fontFamily,
-                  fontSize,
-                  lineHeight: fontSize * 1.45,
-                },
-              ]}
-            >
-              {group.map((b, n) =>
-                b.t === 'p' ? (
-                  <Text key={n}>
-                    {n ? '\n\n' : ''}
-                    {renderSpans(
-                      b.spans,
-                      colors,
-                      fontSize,
-                      calmEmphasis,
-                      openFile,
-                    )}
-                  </Text>
-                ) : null,
-              )}
-            </CopyableText>
-          ) : (
-            <BlockView
-              key={i}
-              b={group[0]}
-              c={colors}
-              fs={fontSize}
-              sel={selectable}
-              sc={selectionColor}
-              ff={fontFamily}
-              calm={calmEmphasis}
-              fold={foldRows}
-              clampProse={clampProse}
-              lang={lang}
-              openFile={openFile}
-            />
-          ),
-        )}
-      </View>
-    </RangeSourceContext.Provider>
+    a === b ||
+    (a.text === b.text &&
+      a.dim === b.dim &&
+      a.code === b.code &&
+      a.codeBg === b.codeBg &&
+      a.border === b.border &&
+      a.link === b.link)
   );
+}
+
+const MemoMarkdownBody = React.memo(
+  function MarkdownBody({
+    source,
+    colors,
+    fontSize = 14,
+    selectable,
+    selectionColor,
+    fontFamily,
+    calmEmphasis,
+    foldRows,
+    clampProse,
+    lang,
+    openFile,
+  }: Props) {
+    const openFileRef = React.useRef(openFile);
+    openFileRef.current = openFile;
+    const stableOpenFile = React.useCallback(
+      (reference: string) => openFileRef.current?.(reference),
+      [],
+    );
+    const activeOpenFile = openFile ? stableOpenFile : undefined;
+    const blocks = React.useMemo(() => parseBlocks(source), [source]);
+    const feedback = React.useContext(CopyFeedbackContext);
+    const continuous =
+      feedback && selectable && nativeRangeAvailable && !clampProse;
+    const groups: Block[][] = [];
+    for (const block of blocks) {
+      if (
+        continuous &&
+        block.t === 'p' &&
+        groups.length &&
+        groups[groups.length - 1].every(b => b.t === 'p')
+      )
+        groups[groups.length - 1].push(block);
+      else groups.push([block]);
+    }
+    return (
+      <RangeSourceContext.Provider value={source}>
+        <View>
+          {groups.map((group, i) =>
+            continuous && group[0].t === 'p' ? (
+              <CopyableText
+                key={i}
+                lang={lang}
+                selectable={selectable}
+                selectionColor={selectionColor}
+                style={[
+                  styles.block,
+                  {
+                    color: colors.text,
+                    fontFamily,
+                    fontSize,
+                    lineHeight: fontSize * 1.45,
+                  },
+                ]}
+              >
+                {group.map((b, n) =>
+                  b.t === 'p' ? (
+                    <Text key={n}>
+                      {n ? '\n\n' : ''}
+                      {renderSpans(
+                        b.spans,
+                        colors,
+                        fontSize,
+                        calmEmphasis,
+                        activeOpenFile,
+                      )}
+                    </Text>
+                  ) : null,
+                )}
+              </CopyableText>
+            ) : (
+              <BlockView
+                key={i}
+                b={group[0]}
+                c={colors}
+                fs={fontSize}
+                sel={selectable}
+                sc={selectionColor}
+                ff={fontFamily}
+                calm={calmEmphasis}
+                fold={foldRows}
+                clampProse={clampProse}
+                lang={lang}
+                openFile={activeOpenFile}
+              />
+            ),
+          )}
+        </View>
+      </RangeSourceContext.Provider>
+    );
+  },
+  (prev, next) =>
+    prev.source === next.source &&
+    sameColors(prev.colors, next.colors) &&
+    (prev.fontSize ?? 14) === (next.fontSize ?? 14) &&
+    prev.selectable === next.selectable &&
+    prev.selectionColor === next.selectionColor &&
+    prev.fontFamily === next.fontFamily &&
+    prev.calmEmphasis === next.calmEmphasis &&
+    prev.foldRows === next.foldRows &&
+    prev.clampProse === next.clampProse &&
+    prev.lang === next.lang &&
+    Boolean(prev.openFile) === Boolean(next.openFile),
+);
+
+export function MarkdownView(props: Props) {
+  return <MemoMarkdownBody {...props} />;
 }
 
 const styles = StyleSheet.create({

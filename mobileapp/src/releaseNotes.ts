@@ -12,6 +12,19 @@ export interface ReleaseNote {
 
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.0.208',
+    en: [
+      '- Fix opening conversation file links that use file:// URLs or #L line anchors.',
+      '- Preserve unsent message drafts and staged attachments while a session finishes connecting.',
+      '- Reduce background network polling, battery usage, and chat scrolling lag during active turns.',
+    ],
+    zh: [
+      '- 修复会话中带 file:// 协议或 #L 行号锚点的文件链接无法打开预览的问题。',
+      '- 会话连接完成时保留输入框中未发送的草稿与已添加的附件。',
+      '- 降低后台轮询与电量消耗，提升对话在运行中的滚动流畅度。',
+    ],
+  },
+  {
     version: '1.0.206',
     en: [
       '- Fix Live View rendering blank when expanding conversations with long terminal scrollback.',

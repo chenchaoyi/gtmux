@@ -217,3 +217,134 @@ test('switching Macs with the same pane discards the mounted box and never impor
   expect(saved[draftKeyFor('https://mac-b.invalid', '%7', 's')!].text).toBe('only for Mac B');
   act(() => t!.unmount());
 });
+
+test('binding an empty session_id preserves unsent text and staged attachments and migrates stored drafts', async () => {
+  const {AttachSheet} = require('./AttachSheet');
+  const {pick} = require('@react-native-documents/picker');
+  const unbound = draftKeyFor('https://mac-a.invalid', '%7', '');
+  const bound = draftKeyFor('https://mac-a.invalid', '%7', 'sess-1');
+  const store: Record<string, string> = {
+    'gtmux.drafts': JSON.stringify({[unbound!]: {text: 'older saved text', at: Date.now()}}),
+  };
+  (AsyncStorage.getItem as jest.Mock).mockImplementation(async (k: string) => store[k] ?? null);
+  (AsyncStorage.setItem as jest.Mock).mockImplementation(async (k: string, v: string) => {
+    store[k] = v;
+  });
+  (pick as jest.Mock).mockResolvedValueOnce([
+    {uri: 'file:///tmp/spec.pdf', name: 'spec.pdf', type: 'application/pdf'},
+  ]);
+
+  let t!: renderer.ReactTestRenderer;
+  act(() => {
+    t = renderer.create(
+      <Composer
+        key="https://mac-a.invalid|%7"
+        draftKey={unbound}
+        paneId="%7"
+        pal={paletteFor('dark')}
+        lang="en"
+        onSend={() => {}}
+      />,
+    );
+  });
+  await flush();
+  const initialBox = openBox(t)[0];
+  act(() => {
+    initialBox.props.onChangeText('draft typed before session bound');
+  });
+  act(() => {
+    t.root.findByProps({testID: TestIds.composer.attach}).props.onPress();
+  });
+  await act(async () => {
+    await t.root.findByType(AttachSheet).props.onFile();
+  });
+  expect(
+    t.root
+      .findAll(n => typeof n.props?.children === 'string')
+      .map(n => n.props.children),
+  ).toContain('spec.pdf');
+
+  act(() => {
+    t.update(
+      <Composer
+        key="https://mac-a.invalid|%7"
+        draftKey={bound}
+        paneId="%7"
+        pal={paletteFor('dark')}
+        lang="en"
+        onSend={() => {}}
+      />,
+    );
+  });
+  await flush();
+
+  expect(openBox(t)[0].props.value).toBe('draft typed before session bound');
+  expect(
+    t.root
+      .findAll(n => typeof n.props?.children === 'string')
+      .map(n => n.props.children),
+  ).toContain('spec.pdf');
+
+  const savedAfterBind = JSON.parse(store['gtmux.drafts']);
+  expect(savedAfterBind[unbound!]).toBeUndefined();
+  expect(savedAfterBind[bound!].text).toBe('draft typed before session bound');
+  act(() => t.unmount());
+});
+
+test('mounting an untouched composer does not rewrite drafts, unmount flushes dirty text, and send clears stored draft immediately', async () => {
+  const key = draftKeyFor('https://mac-a.invalid', '%9', 'sess-9')!;
+  const store: Record<string, string> = {};
+  (AsyncStorage.getItem as jest.Mock).mockImplementation(async (k: string) => store[k] ?? null);
+  (AsyncStorage.setItem as jest.Mock).mockImplementation(async (k: string, v: string) => {
+    store[k] = v;
+  });
+
+  const sent: any[] = [];
+  let t!: renderer.ReactTestRenderer;
+  act(() => {
+    t = renderer.create(
+      <Composer
+        draftKey={key}
+        paneId="%9"
+        returnSends
+        pal={paletteFor('dark')}
+        lang="en"
+        onSend={p => sent.push(p)}
+      />,
+    );
+  });
+  await flush();
+  await settleDebounce();
+  expect(wroteDrafts()).toBe(false);
+
+  const dirtyBox = openBox(t)[0];
+  act(() => {
+    dirtyBox.props.onChangeText('unmount before debounce');
+  });
+  act(() => t.unmount());
+  await flush();
+  expect(JSON.parse(store['gtmux.drafts'])[key].text).toBe('unmount before debounce');
+
+  act(() => {
+    t = renderer.create(
+      <Composer
+        draftKey={key}
+        paneId="%9"
+        returnSends
+        pal={paletteFor('dark')}
+        lang="en"
+        onSend={p => sent.push(p)}
+      />,
+    );
+  });
+  await flush();
+  const restoredBox = openBox(t)[0];
+  expect(restoredBox.props.value).toBe('unmount before debounce');
+  await act(async () => {
+    await restoredBox.props.onSubmitEditing();
+  });
+  await flush();
+  expect(sent).toHaveLength(1);
+  expect(JSON.parse(store['gtmux.drafts'])[key]).toBeUndefined();
+  act(() => t.unmount());
+});
