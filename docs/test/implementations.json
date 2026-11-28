@@ -6264,5 +6264,29 @@
     "selectors": [
       "test_RWN_001_release_tag_requires_verified_ci_and_bilingual_whatsnew_blocks"
     ]
+  },
+  "internal/prompt/prompt_test.go": {
+    "cases": [
+      "AGY-SEL-001"
+    ],
+    "selectors": [
+      "TestAGYSEL001_AntigravityApprovalAndWrappedOptions"
+    ]
+  },
+  "internal/radar/agy_wait_test.go": {
+    "cases": [
+      "AGY-SEL-002"
+    ],
+    "selectors": [
+      "TestAGYSEL002_AntigravityScreenWaitLifecycleAndDigest"
+    ]
+  },
+  "internal/app/pendingask_test.go": {
+    "cases": [
+      "AGY-SEL-002"
+    ],
+    "selectors": [
+      "TestAGYSEL002_HasPendingAskSupportsLiveScreenWaitBeforeSlowTick"
+    ]
   }
 }

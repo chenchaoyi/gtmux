@@ -143,6 +143,7 @@ MAP-c746f11a537e,L2,reviewed implementation,internal/app/hqworkspace_stored_test
 MAP-73814841a1bf,L2,reviewed implementation,internal/app/hqworkspace_triage_test.go,19,reviewed-selector,TestWorkspaceTriageIngestion,False,HPT-002
 MAP-acfe376abd7d,L2,reviewed implementation,internal/app/input_archive_doctor_test.go,11,reviewed-selector,TestSPL025ArchiveDoctorWarnsAboutCapacityAndRepair,False,SPL-025
 MAP-a528c4dea12f,L2,reviewed implementation,internal/app/input_spool_doctor_test.go,12,reviewed-selector,TestInputSpoolDoctorShowsWeightedSaturation,False,SPL-INCIDENT-003
+MAP-b370d4df896e,L2,Go core / CLI / server,internal/app/pendingask_test.go,55,reviewed-selector,TestAGYSEL002_HasPendingAskSupportsLiveScreenWaitBeforeSlowTick,False,AGY-SEL-002
 MAP-7a5ae9fb2039,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,10,reviewed-selector,TestMSD002PhoneInputOptsIntoDirectUserDeliveryAndKeepsDraftProtection,False,MSD-002
 MAP-308489bd281c,L2,reviewed implementation,internal/app/phone_delivery_receipt_test.go,20,reviewed-selector,TestMSD002PhoneReceiptCacheKeepsQueueMeaningAndExpiry,False,MSD-002
 MAP-6616de8ce6d1,L2,reviewed implementation,internal/app/recent_transcript_test.go,14,reviewed-selector,TestLCL002RecentPaneKeepsOrdinalsCursorAndFullDefault,False,LCL-002
@@ -506,6 +507,7 @@ MAP-ef51509f7325,L2,reviewed implementation,internal/native/closed_frontend_reus
 MAP-1176b6e7ceff,L2,reviewed implementation,internal/native/closed_frontend_test.go,10,reviewed-selector,TestClosedFrontendObservationRequiresExactSnapshotAndGoneProcess,False,HXF-001
 MAP-c381a2b0e2db,L2,reviewed implementation,internal/prompt/prompt_codex_folder_access_test.go,10,reviewed-selector,TestWTR004CurrentFolderAccessBlocksReadiness,False,WTR-004
 MAP-ecbb737dd817,L2,reviewed implementation,internal/prompt/prompt_codex_folder_access_test.go,20,reviewed-selector,TestWTR004ReportsAndSettledComposersAreNotConsent,False,WTR-004
+MAP-e248f9628d3a,L2,reviewed implementation,internal/radar/agy_wait_test.go,13,reviewed-selector,TestAGYSEL002_AntigravityScreenWaitLifecycleAndDigest,False,AGY-SEL-002
 MAP-e88c0ded5ae1,L2,reviewed implementation,internal/radar/closed_frontend_test.go,18,reviewed-selector,TestClosedBoundResumedWorkerHistoryAndPreservation,False,HXF-002
 MAP-8c62d9a14381,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,15,reviewed-selector,TestForeignActiveRequiresCurrentIdentityEndedTurnAndReadyFrame,False,CORE-CODEX-FOREIGN-ACTIVE
 MAP-d562c313395b,L2,reviewed implementation,internal/radar/codex_foreign_marker_test.go,107,reviewed-selector,TestForeignActiveProductionReaderRejectsLegacyResumeWithoutFrontend,False,CORE-CODEX-FOREIGN-ACTIVE

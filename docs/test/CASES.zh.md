@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1533 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1534 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3835 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2791 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3836 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2793 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 171 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -60,6 +60,8 @@
 | AGY-010 | The agy model window resolves to the 1M tier instead of the 200k guess, and the backfill does not rescan logs written afterwards. |
 | AGY-011 | agy is installable; it is detected and gets an Antigravity hook doctor row only when discoverable; the fix step writes a healthy gtmux entry in hooks.json. |
 | AGY-ICON-001 | AgentIcon('agy') and existing committed keys return non-empty PNG bytes; unknown and empty keys return nil. |
+| AGY-SEL-001 | WaitingOptions and ParseOptions extract all four complete unwrapped Antigravity choices and mark them OptionsReplyable; Markdown blockquotes without menu navigation chrome and answered menus above a redrawn composer return nil; and Do you trust the contents of this project? matches IsStartupGate for agy. |
+| AGY-SEL-002 | GatherAgents and GatherDigest report status waiting with kind permission and replyable Ask options immediately; hasPendingAsk returns true for the live screen-wait pane before slow-tick writes waiting/<pane> while keeping startup, draft, and empty markers false; and clearing the menu immediately restores working or idle. |
 | AGY-UX-001 | Empty composer returns draft='' and BoxEmpty=true; typed composer returns exact user draft without task-drawer text and BoxEmpty=false. |
 | AGY-UX-002 | Valid annotations return decoded single-line UTF-8 titles; unsafe IDs and malformed files return empty strings. |
 | AGY-UX-003 | Bound tmux pane reports Task equal to the saved annotation title; unbound tmux pane strips 'agy' to Task=''; native agy row carries its saved annotation title. |
