@@ -1,0 +1,46 @@
+{
+  "id": "hq-rotation-startup-boundary-20261128",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Codex implementation owner, design self-review",
+    "date": "2026-11-28",
+    "decision": "Use the bounded original Codex rollout prefix only to recover the first start for an already recorded and currently verified successor.",
+    "notes": "Read actual synthetic JSONL in an isolated HOME and CODEX_HOME. Use the resident rotation state machine with a fixed clock and an input spy to test the persisted handoff outcome. A separate reader case checks strict rollout identity and bounded parsing. This verifies the proposed failure mechanism without diagnosing the cause of any individual live timeout."
+  },
+  "cases": [
+    {
+      "id": "HROT-START-001",
+      "layer": "L2",
+      "description": "Rotation can confirm from a persisted in-window first start after it leaves the rollout tail",
+      "setup": "Record a sent rotation and its observed Codex successor. In the successor rollout, follow a first start with more than 256 KiB of complete records. Keep one variant running and finish another after the handoff deadline.",
+      "action": "Verify the ordinary tail no longer reports the start. Process the rotation using the real tail and recovery readers. Process the same snapshot again.",
+      "expected": "The start at or after reset submission and within the original deadline confirms the same successor exactly once, even on a delayed tick. The request clears with zero paste or Enter calls.",
+      "planned_files": [
+        "internal/hq/rotation_startup_boundary_test.go"
+      ]
+    },
+    {
+      "id": "HROT-START-002",
+      "layer": "L2",
+      "description": "Missing or unrelated first starts cannot confirm a Codex rotation",
+      "setup": "Reuse the rotation fixture with a start before the nanosecond submission fence, a start after the deadline, metadata for a different session, competing original rollouts, missing history, only a hook, a changed live successor, or no live successor. Include an available history with no turn.",
+      "action": "Process before the deadline where the binding still matches, then at or after the deadline. Repeat the terminal tick.",
+      "expected": "No successful rotation is recorded. With the same target, the request holds before expiry and times out at its original deadline. A changed live successor fails the request. No reset or briefing input is sent in these fixtures.",
+      "planned_files": [
+        "internal/hq/rotation_startup_boundary_test.go"
+      ]
+    },
+    {
+      "id": "HROT-START-003",
+      "layer": "L2",
+      "description": "Prefix evidence requires a complete first start in a unique original rollout",
+      "setup": "Place candidate original, archived, or continued rollouts in an isolated Codex home. Include an alias of the same file, a separate file with the same basename, a continuation, conflicting metadata IDs, a malformed row before the start, a boundary without a turn ID, an oversized prefix, and a start without its final newline.",
+      "action": "Read the first persisted start by exact session ID, including a rollout whose first boundary is an end event followed by a start.",
+      "expected": "A complete first start in the single original is returned with nanosecond precision. Same-file aliases are accepted. Separate competing files, uncertain identities and incomplete or out-of-budget evidence yield no start.",
+      "planned_files": [
+        "internal/transcript/rotation_startup_boundary_test.go"
+      ]
+    }
+  ],
+  "seal": "a7d5bd27305cdb355e6c2e10a39c0fa89cf7e5d76bf1c3f524aa09e4263428f4"
+}

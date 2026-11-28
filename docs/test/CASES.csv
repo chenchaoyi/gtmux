@@ -1986,6 +1986,8 @@ MAP-9192fb7864f6,L2,reviewed implementation,internal/hq/rotation_evidence_window
 MAP-88042fd021cb,L2,reviewed implementation,internal/hq/rotation_evidence_window_test.go,40,reviewed-selector,TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow,False,HRB-012
 MAP-5ca00611b9a2,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,8,reviewed-selector,TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity,False,HRW-012
 MAP-5c6873f6e524,L2,reviewed implementation,internal/hq/rotation_priority_test.go,13,reviewed-selector,TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert,False,HRW-006
+MAP-d5ae891d3df7,L2,reviewed implementation,internal/hq/rotation_startup_boundary_test.go,58,reviewed-selector,TestRotationConfirmsFromFirstStartOutsideTail,False,"HROT-START-001,HROT-START-002"
+MAP-cc9be9645a16,L2,reviewed implementation,internal/hq/rotation_startup_boundary_test.go,93,reviewed-selector,TestRotationRejectsUnprovenStartupBoundary,False,"HROT-START-001,HROT-START-002"
 MAP-9456c2d5c416,L2,reviewed implementation,internal/hq/rotation_submit_witness_test.go,12,reviewed-selector,TestLegacyRotationWitnessOrdersSameSecondPrecisely,False,HRB-014
 MAP-96f5ef1aaf3a,L2,reviewed implementation,internal/hq/rotation_submit_witness_test.go,24,reviewed-selector,TestSentRotationWithNoCompletedKeyFenceFailsWithoutInput,False,HRB-014
 MAP-66c72832a3b6,L2,reviewed implementation,internal/hq/rotation_transient_identity_test.go,14,reviewed-selector,TestSentRotationWaitsThroughTransientIdentityGaps,False,"HRB-007,HRB-008"
@@ -3788,6 +3790,7 @@ LEG-88c9db5c3fde,L1,Go core / CLI / server,internal/transcript/question_reply_te
 LEG-eaa055e6661b,L1,Go core / CLI / server,internal/transcript/recordid_test.go,10,Test,TestRecordIdentitySurvivesTailReadsAndStreaming,False,legacy-not-retrospectively-reviewed
 LEG-4067639a8141,L1,Go core / CLI / server,internal/transcript/recordid_test.go,21,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-57f4663d09ab,L1,Go core / CLI / server,internal/transcript/revision_test.go,13,Test,TestTheCacheAndTheRevisionSeeEveryKindOfChange,False,legacy-not-retrospectively-reviewed
+MAP-49c566bee712,L2,reviewed implementation,internal/transcript/rotation_startup_boundary_test.go,11,reviewed-selector,TestCodexFirstTurnStartRequiresUniqueCompleteOriginal,False,HROT-START-003
 LEG-a28b4888288e,L1,Go core / CLI / server,internal/transcript/sessionbinding_test.go,12,Test,TestCodexBindingReadsOnlySubmittedUserMessages,False,legacy-not-retrospectively-reviewed
 LEG-e4a2949ee7df,L1,Go core / CLI / server,internal/transcript/sessionbinding_test.go,41,Test,TestCodexBindingReadsBoundedRolloutTail,False,legacy-not-retrospectively-reviewed
 MAP-b642bcb9f926,L2,reviewed implementation,internal/transcript/startup_context_witness_test.go,12,reviewed-selector,TestHSP004StartupContextRecordsKeepFirstInputUnambiguous,False,HSP-004

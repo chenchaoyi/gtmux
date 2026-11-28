@@ -352,6 +352,8 @@ MAP-9192fb7864f6,L2,reviewed implementation,internal/hq/rotation_evidence_window
 MAP-88042fd021cb,L2,reviewed implementation,internal/hq/rotation_evidence_window_test.go,40,reviewed-selector,TestLateTickOnlyConfirmsHistoryFromTheOriginalRotationWindow,False,HRB-012
 MAP-5ca00611b9a2,L2,reviewed implementation,internal/hq/rotation_identity_diagnostic_test.go,8,reviewed-selector,TestHRW012ExactIdentityRecoveryStillHonorsDraftAndChangedIdentity,False,HRW-012
 MAP-5c6873f6e524,L2,reviewed implementation,internal/hq/rotation_priority_test.go,13,reviewed-selector,TestHRW006TimeoutAlertsIndependentlyAndStaleSnapshotIsInert,False,HRW-006
+MAP-d5ae891d3df7,L2,reviewed implementation,internal/hq/rotation_startup_boundary_test.go,58,reviewed-selector,TestRotationConfirmsFromFirstStartOutsideTail,False,"HROT-START-001,HROT-START-002"
+MAP-cc9be9645a16,L2,reviewed implementation,internal/hq/rotation_startup_boundary_test.go,93,reviewed-selector,TestRotationRejectsUnprovenStartupBoundary,False,"HROT-START-001,HROT-START-002"
 MAP-9456c2d5c416,L2,reviewed implementation,internal/hq/rotation_submit_witness_test.go,12,reviewed-selector,TestLegacyRotationWitnessOrdersSameSecondPrecisely,False,HRB-014
 MAP-96f5ef1aaf3a,L2,reviewed implementation,internal/hq/rotation_submit_witness_test.go,24,reviewed-selector,TestSentRotationWithNoCompletedKeyFenceFailsWithoutInput,False,HRB-014
 MAP-66c72832a3b6,L2,reviewed implementation,internal/hq/rotation_transient_identity_test.go,14,reviewed-selector,TestSentRotationWaitsThroughTransientIdentityGaps,False,"HRB-007,HRB-008"
@@ -1053,6 +1055,7 @@ MAP-e190428c9de3,L2,reviewed implementation,internal/transcript/agy_test.go,127,
 MAP-79929223fc37,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,13,reviewed-selector,TestLCL001LargeCodexTailStaysCachedAndEarlierHistoryRemainsReadable,False,LCL-001
 MAP-9661b1f33d22,L2,reviewed implementation,internal/transcript/codex_large_cache_test.go,112,reviewed-selector,TestLCL001IndividuallyOversizedTurnIsCompleteAndUncached,False,LCL-001
 MAP-7a3a056eb5f9,L2,reviewed implementation,internal/transcript/hardening_test.go,9,reviewed-selector,TestCHH005_StatCachesAndO1AgySessionTitle,False,CHH-005
+MAP-49c566bee712,L2,reviewed implementation,internal/transcript/rotation_startup_boundary_test.go,11,reviewed-selector,TestCodexFirstTurnStartRequiresUniqueCompleteOriginal,False,HROT-START-003
 MAP-b642bcb9f926,L2,reviewed implementation,internal/transcript/startup_context_witness_test.go,12,reviewed-selector,TestHSP004StartupContextRecordsKeepFirstInputUnambiguous,False,HSP-004
 MAP-8bab4244dbb9,L2,reviewed implementation,internal/transcript/startup_directory_witness_test.go,5,reviewed-selector,TestHSP005DirectoryQualifiedContextRequiresVerifiedMetadata,False,HSP-005
 MAP-76e251a582e3,L2,reviewed implementation,internal/transcript/startup_witness_test.go,12,reviewed-selector,TestHSP001HSP002StartupWitnessUsesOneContinuousPrefix,False,"HSP-001,HSP-002"

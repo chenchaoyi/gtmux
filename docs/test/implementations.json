@@ -5870,6 +5870,24 @@
       "TestRotationQueuesOneGuardedHandoffAfterReleasingInput"
     ]
   },
+  "internal/hq/rotation_startup_boundary_test.go": {
+    "cases": [
+      "HROT-START-001",
+      "HROT-START-002"
+    ],
+    "selectors": [
+      "TestRotationConfirmsFromFirstStartOutsideTail",
+      "TestRotationRejectsUnprovenStartupBoundary"
+    ]
+  },
+  "internal/transcript/rotation_startup_boundary_test.go": {
+    "cases": [
+      "HROT-START-003"
+    ],
+    "selectors": [
+      "TestCodexFirstTurnStartRequiresUniqueCompleteOriginal"
+    ]
+  },
   "internal/hqnudge/rotation_brief_recovery_test.go": {
     "cases": [
       "HRB-003",

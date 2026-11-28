@@ -296,8 +296,17 @@ func advanceHQRotationWithClock(r rotationRequest, pane, agent, sid string, io d
 			ready := r.Agent != "codex"
 			if !ready {
 				kind, boundaryAt = boundary(sid)
-				ready = transcript.CodexRecovery(sid).State == transcript.RecoveryReady && kind != "" &&
-					boundaryAt.UnixNano() >= r.SubmittedAtNS && !boundaryAt.After(time.Unix(deadline, 0))
+				submittedAt, cutoff := time.Unix(0, r.SubmittedAtNS), time.Unix(deadline, 0)
+				inWindow := func(at time.Time) bool { return !at.Before(submittedAt) && !at.After(cutoff) }
+				if transcript.CodexRecovery(sid).State == transcript.RecoveryReady {
+					ready = kind != "" && inWindow(boundaryAt)
+					if !ready && sid == r.Successor && r.SwitchedAt > 0 {
+						// A long first turn can push its start out of the tail.
+						// Recover that boundary for the already observed successor.
+						boundaryAt = transcript.CodexFirstTurnStart(sid)
+						ready = inWindow(boundaryAt)
+					}
+				}
 			}
 			checkedAt := clock()
 			if ready && !boundaryAt.After(checkedAt) {

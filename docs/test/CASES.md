@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1552 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1554 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
 | L1 · Unit / pure logic | 3840 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2846 | [L2.csv](cases/L2.csv) |
+| L2 · Component / contract | 2849 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 174 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -419,6 +419,9 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | HRW-006 | Exactly one original routine failure audit with reason and one independent owner desktop-notification request where supported; queued is not proven presentation. Session/history/draft/queue remain, no reset input, stale replay does nothing. Production fast-tick priority wiring is reviewed statically, not claimed actual scheduler/TUI execution. |
 | HRW-007 | No new pending request or input while another writer owns admission. After release one durable request is accepted; retries do not change ID/deadline, conflicts do not overwrite it. Claim cannot pass an unsent request registered before its lease. Identity validation before actual reset remains unchanged. |
 | HRW-008 | No persistent native future queue input, no delivered/consumed audit on busy or unknown, no watermark advance or removal of source important events. Typed fresh-idle input acceptance (not causal turn-start proof) is distinct from exact confirmed delivery; retained priorities/key updates survive. Existing source notifications/quiet/follow policy are not bypassed; runtime desktop delivery is an installation acceptance limit. |
+| HROT-START-001 | The start at or after reset submission and within the original deadline confirms the same successor exactly once, even on a delayed tick. The request clears with zero paste or Enter calls. |
+| HROT-START-002 | No successful rotation is recorded. With the same target, the request holds before expiry and times out at its original deadline. A changed live successor fails the request. No reset or briefing input is sent in these fixtures. |
+| HROT-START-003 | A complete first start in the single original is returned with nanosecond precision. Same-file aliases are accepted. Separate competing files, uncertain identities and incomplete or out-of-budget evidence yield no start. |
 | HRW-016 | At61s exactly one attempt at an attention warning preserves the same pending request and original30-minute deadline with no input. Reload/cause change/recovery do not repeat warning or extend time. At62s exact recovery only advances once when every original guard passes; draft/active/waiting/boundary/target conflicts cannot grant input. At original expiry a request settles failed without reset even if identity just recovered or warning would be later. Real nonempty changed identities remain hard failures. Unknown publication is not replay permission, and no notification claims shown/read. New requests have separate ownership. |
 | HQR-007 | Standalone marker is validated before value consumption/actions; every incompatible combination exits2 without seed/enroll/launch/tmux/writes. Ordinary legitimate agent/language values and existing read-only help semantics remain. |
 | HQR-008 | Bounded no-follow verification returns conflict for changed identity; source and replacement bytes/inode remain, no unlink of an uncertain path, no blocking FIFO or arbitrary reads. A failed partial owned backup may remain visibly retained. Negative control reintroduces old path-read/unlink semantics at the same seam; not claimed old-binary concurrency. |
