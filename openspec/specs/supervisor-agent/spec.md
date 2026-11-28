@@ -2065,7 +2065,10 @@ unsent snapshot cannot repeat a reset. This lease SHALL NOT replace draft guards
 ### Requirement: Codex HQ rotation confirms a durable handoff
 A different in-memory thread ID SHALL establish switched state only. Codex rotation
 completion SHALL additionally require same-home durable history and successor turn activity
-after the sent reset. The existing startup briefing MAY continue the handoff once through
+within the original confirmation window after reset submission. If the rollout tail lacks
+an in-window boundary for the already observed, still-bound successor, a complete first
+turn start in the bounded prefix of its unique original rollout SHALL qualify within the
+same window. The existing startup briefing MAY continue the handoff once through
 the shared guarded input channel, respecting quiet startup and protecting drafts. The
 attempt SHALL be durable before delivery; uncertain input SHALL not be blindly retried.
 The prior recovery generation SHALL not be discarded solely for a new unsaved ID.

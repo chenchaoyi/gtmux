@@ -1,7 +1,6 @@
 package transcript
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -55,7 +54,7 @@ func codexWakeWitness(session, turn, prompt string, since time.Time, mode wakePr
 	var paths []string
 	if mode == wakeFirstTurnPrefix {
 		candidates := matchingCodexLogPaths(session, enumerateCodexCandidates())
-		if !unambiguousWakeOriginal(session, candidates) {
+		if !unambiguousCodexOriginal(session, candidates) {
 			mode = wakeTailOnly
 		}
 		paths = foldCodexLogPaths(candidates)
@@ -78,40 +77,9 @@ func codexWakeWitness(session, turn, prompt string, since time.Time, mode wakePr
 	return result
 }
 
-// Chat folds matching basenames for display. The workspace prefix needs one
-// original rollout, so same-name paths may coexist only as aliases of one file.
-func unambiguousWakeOriginal(session string, paths []string) bool {
-	if len(paths) == 0 {
-		return false
-	}
-	name := filepath.Base(paths[0])
-	if base, _ := codexRolloutName(name, session); !base {
-		return false
-	}
-	if len(paths) == 1 {
-		return true
-	}
-	first, err := os.Stat(paths[0])
-	if err != nil || !first.Mode().IsRegular() {
-		return false
-	}
-	for _, path := range paths[1:] {
-		if filepath.Base(path) != name {
-			return false
-		}
-		info, err := os.Stat(path)
-		if err != nil || !os.SameFile(first, info) {
-			return false
-		}
-	}
-	return true
-}
-
 func wakeWitnessIn(path, turn, prompt string, since time.Time) WakeWitness {
 	return wakeWitnessInSession(path, "", turn, prompt, since, wakeTailOnly)
 }
-
-const wakeWitnessBudget int64 = 256 << 10
 
 type startupProofScope struct {
 	turn      string
@@ -135,13 +103,10 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time, m
 	if expectWake {
 		var meta codexPayload
 		if mode != wakeTailOnly {
-			header := bufio.NewReader(io.NewSectionReader(f, 0, min(info.Size(), codexSessionMetaBudget)))
-			row, err := header.ReadBytes('\n')
-			if err != nil {
+			meta, headerEnd = readCodexStartupHeader(f, info.Size())
+			if headerEnd == 0 {
 				return WakeWitness{}
 			}
-			meta = parseCodexSessionMeta(row)
-			headerEnd = int64(len(row))
 			if filepath.IsAbs(meta.Cwd) && !strings.ContainsAny(meta.Cwd, "\x00\r\n") {
 				scope.cwd = meta.Cwd
 			}
@@ -159,7 +124,7 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time, m
 			headerEnd = 0 // Never extend an ambiguous metadata identity.
 		}
 	}
-	offset := max(0, info.Size()-wakeWitnessBudget)
+	offset := max(0, info.Size()-codexWitnessBudget)
 	buf := make([]byte, info.Size()-offset)
 	if _, err := f.ReadAt(buf, offset); err != nil && (err != io.EOF || mode != wakeTailOnly) {
 		return WakeWitness{}
@@ -177,10 +142,7 @@ func wakeWitnessInSession(path, session, turn, prompt string, since time.Time, m
 	}
 	// Prove the complete start-to-input sequence inside one range. The tail
 	// cannot fill a gap or supply a partial record from beyond the budget.
-	prefix := make([]byte, min(wakeWitnessBudget, info.Size()-headerEnd))
-	if _, err := f.ReadAt(prefix, headerEnd); err != nil {
-		return WakeWitness{}
-	}
+	prefix := readCodexStartupRows(f, info.Size(), headerEnd)
 	witness, _ = scanWakeWitness(prefix, turn, prompt, since, true, &scope)
 	if !witness.Delivered.IsZero() {
 		witness.StartupPrefix = mode == wakeStartupPrefix
