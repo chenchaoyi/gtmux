@@ -9,14 +9,18 @@ package hq
 
 import (
 	"bytes"
+	"errors"
 	"io"
+	"net"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/chenchaoyi/gtmux/internal/resume"
 	"github.com/chenchaoyi/gtmux/internal/state"
 	"github.com/chenchaoyi/gtmux/internal/tmux"
 )
@@ -96,9 +100,74 @@ func diskHygieneSweep(now int64) {
 			})
 		}
 	}
-	// 4) privacy and the log store: other processes write under the roots with their own
+	// 4) dead Codex frontend socket dirs and retired frontend receipts.
+	pruneCodexFrontendSockets(nowT)
+	resume.PruneCodexFrontends(nowT)
+	// 5) privacy and the log store: other processes write under the roots with their own
 	// umask (the HQ agent writes its board), so modes are re-narrowed every sweep.
 	Housekeep()
+}
+
+// pruneCodexFrontendSockets reaps orphaned client-* socket directories under
+// codex-frontends whose Unix socket is missing or refuses connections past a 60s
+// startup grace. It never follows symlinks or recursively deletes non-empty trees.
+func pruneCodexFrontendSockets(now time.Time) {
+	root := state.RootStorePath("codex-frontends")
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return
+	}
+	uid := os.Geteuid()
+	daemonDir := "codex-daemon-" + strconv.Itoa(uid)
+	evalTmp, _ := filepath.EvalSymlinks("/tmp")
+
+	for _, entry := range entries {
+		if !strings.HasPrefix(entry.Name(), "client-") || entry.Type()&os.ModeSymlink != 0 || !entry.IsDir() {
+			continue
+		}
+		clientDir := filepath.Join(root, entry.Name())
+		info, err := os.Lstat(clientDir)
+		if err != nil || !info.IsDir() || now.Sub(info.ModTime()) <= time.Minute {
+			continue
+		}
+		sockPath := filepath.Join(clientDir, "frontend.sock")
+		sockInfo, err := os.Lstat(sockPath)
+		if errors.Is(err, os.ErrNotExist) {
+			_ = os.Remove(clientDir)
+			continue
+		}
+		if err != nil || sockInfo.Mode()&os.ModeSymlink == 0 {
+			continue
+		}
+		target, rlErr := os.Readlink(sockPath)
+		if rlErr != nil || !filepath.IsAbs(target) || filepath.Clean(target) != target {
+			continue
+		}
+		tDir := filepath.Dir(target)
+		if tDir != filepath.Join("/tmp", daemonDir) && (evalTmp == "" || tDir != filepath.Join(evalTmp, daemonDir)) {
+			continue
+		}
+		if tInfo, stErr := os.Lstat(target); errors.Is(stErr, os.ErrNotExist) {
+			_ = os.Remove(sockPath)
+			_ = os.Remove(clientDir)
+			continue
+		} else if stErr != nil || tInfo.Mode()&os.ModeSocket == 0 {
+			continue
+		} else if st, ok := tInfo.Sys().(*syscall.Stat_t); !ok || int(st.Uid) != uid {
+			continue
+		}
+		conn, dialErr := net.DialTimeout("unix", sockPath, 200*time.Millisecond)
+		if dialErr == nil {
+			_ = conn.Close()
+			continue
+		}
+		if !errors.Is(dialErr, syscall.ECONNREFUSED) && !errors.Is(dialErr, syscall.ENOENT) && !errors.Is(dialErr, os.ErrNotExist) {
+			continue
+		}
+		_ = os.Remove(target)
+		_ = os.Remove(sockPath)
+		_ = os.Remove(clientDir)
+	}
 }
 
 // trimFileTail caps path at maxBytes by rewriting it to keep only its last keepBytes

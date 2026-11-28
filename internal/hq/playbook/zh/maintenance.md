@@ -12,6 +12,6 @@
 
 ## 按触发维护
 
-收到 `[CONTROL gtmux:self-check]` 或相应唤醒时，对账过期待决、态势板、档案和诊断。读 `gtmux knowledge lint`，按实际发现下钻。收到 `[CONTROL gtmux:distill]` 或相应唤醒时，核实际区间，用 `gtmux capture` 查看待蒸馏线索。会话采矿器产出的是线索，计数查 `gtmux knowledge mine --status`。带出处逐项审获准线索，同类合并，采纳带证据，驳回给原因。遵守退出学习的设置，不能因有线索另扫原生历史。核超期晋升并找真实责任人。调度交给 gtmux。完成后回 HQ 根目录用 `gtmux hq --maintenance-done` 写对应回执，审完无变更也写。实质发现简报，关键异常升级。
+收到 `[CONTROL gtmux:self-check]` 或相应唤醒时，对账过期待决、态势板（将 `## ② 交接记录` 裁剪至最新 10 条以内，使 `board.md` 保持在 32 KiB / 250 行预算内）、档案和诊断。读 `gtmux knowledge lint`，按实际发现下钻。收到 `[CONTROL gtmux:distill]` 或相应唤醒时，核实际区间，用 `gtmux capture` 查看待蒸馏线索。会话采矿器产出的是线索，计数查 `gtmux knowledge mine --status`。带出处逐项审获准线索，同类合并，采纳带证据，驳回给原因。遵守退出学习的设置，不能因有线索另扫原生历史。核超期晋升并找真实责任人。调度交给 gtmux。完成后回 HQ 根目录用 `gtmux hq --maintenance-done` 写对应回执，审完无变更也写。实质发现简报，关键异常升级。
 
 蒸馏需可续跑审阅时，先用 `gtmux knowledge dream list` 与 status 查未完批次。用 `gtmux knowledge dream plan` 选有界样本，`reviewed_revisions` 和历史跳过已审版本。`gtmux knowledge dream run` 的现有 provider、模型、推理档、理由与超时记录在项目自有目录。中断后先读 `gtmux knowledge dream history`，核上一尝试已结束并弄清结果或明确暂缓后再续跑。保留实际用量回执。`usage_known:false` 与 `can_start:false` 按真实前置条件处理。限制调用和时长，未知 token 不计零。先审积压提案再开新包。用 `gtmux knowledge review check` 和获准的 `gtmux knowledge review apply`，核写入版本并留证据引用。示例查仓库知识审阅指南，语法查已装 CLI。

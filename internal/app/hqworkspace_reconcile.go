@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -69,7 +70,11 @@ func ingestWorkspaceObservations(s *hqworkspace.Store, now int64) error {
 		// Prospective activation: no historical bulk reconciliation on upgrade.
 		return s.ActivateObservations(workspaceEventSequence(), now)
 	}
-	rows, gap := workspaceReadEvents(cursor)
+	var rows []events.Record
+	var gap bool
+	if !(cursor > 0 && reflect.ValueOf(workspaceReadEvents).Pointer() == reflect.ValueOf(events.ReadSince).Pointer() && cursor == workspaceEventSequence()) {
+		rows, gap = workspaceReadEvents(cursor)
+	}
 	last := cursor
 	observations := []hqworkspace.Observation{}
 	var scope []resume.Located

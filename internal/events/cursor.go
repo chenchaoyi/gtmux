@@ -1,6 +1,10 @@
 package events
 
-import "sort"
+import (
+	"encoding/json"
+	"os"
+	"sort"
+)
 
 // ReadSince returns the retained events with Seq greater than cursor, ordered by
 // sequence, together with whether a GAP was detected — the perception feed's
@@ -20,7 +24,13 @@ import "sort"
 // Legacy records without a seq (Seq == 0) are excluded once the cursor is positive
 // — they predate the sequence and cannot be positioned against it.
 func ReadSince(cursor int64) (recs []Record, gap bool) {
-	recs, gap = readSinceFrom(readMatching(func(r Record) bool { return r.Seq > cursor }), cursor)
+	var raw []Record
+	if cursor > 0 {
+		raw = readTailSinceSeq(cursor)
+	} else {
+		raw = readMatching(func(r Record) bool { return r.Seq > cursor })
+	}
+	recs, gap = readSinceFrom(raw, cursor)
 	// An empty tail is not proof of no loss: the sequence counter survives the log
 	// files, so a positive cursor BEHIND the counter with nothing retained means
 	// every event in between died unread — the severest gap, and the quietest
@@ -30,6 +40,58 @@ func ReadSince(cursor int64) (recs []Record, gap bool) {
 		gap = true
 	}
 	return recs, gap
+}
+
+func readTailSinceSeq(cursor int64) []Record {
+	var out []Record
+	var seen []os.FileInfo
+	for _, path := range []string{Path(), rotatedPath()} {
+		f, err := os.Open(path)
+		if err != nil {
+			continue
+		}
+		fi, err := f.Stat()
+		duplicate := false
+		for _, prev := range seen {
+			if err == nil && os.SameFile(prev, fi) {
+				duplicate = true
+			}
+		}
+		if err != nil || duplicate {
+			f.Close()
+			continue
+		}
+		seen = append(seen, fi)
+		belowRun := 0
+		complete := newestLines(f, fi.Size(), func(line []byte) bool {
+			var hdr struct {
+				Seq int64 `json:"seq"`
+			}
+			if json.Unmarshal(line, &hdr) != nil {
+				return true
+			}
+			if hdr.Seq > cursor {
+				belowRun = 0
+				var r Record
+				if json.Unmarshal(line, &r) == nil {
+					out = append(out, r)
+				}
+				return true
+			}
+			if hdr.Seq > 0 {
+				belowRun++
+				if belowRun >= tailStopRun {
+					return false
+				}
+			}
+			return true
+		})
+		f.Close()
+		if !complete {
+			break
+		}
+	}
+	return out
 }
 
 // readSinceFrom is the pure core of ReadSince over an in-memory record set — the

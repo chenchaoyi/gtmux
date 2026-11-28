@@ -6,6 +6,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sort"
+	"syscall"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
@@ -74,14 +76,73 @@ func loadLedger(dir string) (*ledger, error) {
 	return l, nil
 }
 
+const maxEmittedIDs = 8192
+
+func lockMineDir(dir string) (func(), error) {
+	if err := state.MkdirAll(dir, 0o755); err != nil {
+		return nil, err
+	}
+	lockPath := filepath.Join(dir, "mine.lock")
+	var f *os.File
+	var err error
+	if state.IsManagedPath(lockPath) {
+		f, err = state.OpenPrivateLock(lockPath)
+	} else {
+		f, err = state.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o600)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+		_ = f.Close()
+		return nil, err
+	}
+	return func() {
+		_ = syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+		_ = f.Close()
+	}, nil
+}
+
+func (l *ledger) boundedEmittedIDs() []string {
+	var activeErrIDs []string
+	var otherIDs []string
+	for id := range l.Emitted {
+		if e, ok := l.Errors[id]; ok && e.EmittedAt != 0 {
+			activeErrIDs = append(activeErrIDs, id)
+		} else {
+			otherIDs = append(otherIDs, id)
+		}
+	}
+	sort.Strings(activeErrIDs)
+	sort.Strings(otherIDs)
+	if len(activeErrIDs)+len(otherIDs) > maxEmittedIDs {
+		keepOther := maxEmittedIDs - len(activeErrIDs)
+		if keepOther <= 0 {
+			otherIDs = nil
+			if len(activeErrIDs) > maxEmittedIDs {
+				activeErrIDs = activeErrIDs[len(activeErrIDs)-maxEmittedIDs:]
+			}
+		} else if len(otherIDs) > keepOther {
+			otherIDs = otherIDs[len(otherIDs)-keepOther:]
+		}
+		l.Emitted = make(map[string]bool, len(activeErrIDs)+len(otherIDs))
+		for _, id := range activeErrIDs {
+			l.Emitted[id] = true
+		}
+		for _, id := range otherIDs {
+			l.Emitted[id] = true
+		}
+	}
+	ids := append(activeErrIDs, otherIDs...)
+	sort.Strings(ids)
+	return ids
+}
+
 func (l *ledger) save(dir string) error {
 	if err := state.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	ids := make([]string, 0, len(l.Emitted))
-	for id := range l.Emitted {
-		ids = append(ids, id)
-	}
+	ids := l.boundedEmittedIDs()
 	if err := writeJSON(filepath.Join(dir, "sources.json"), l.Sources); err != nil {
 		return err
 	}
@@ -91,11 +152,15 @@ func (l *ledger) save(dir string) error {
 	if err := writeJSON(filepath.Join(dir, "errors.json"), l.Errors); err != nil {
 		return err
 	}
-	f, err := state.OpenFile(filepath.Join(dir, "passes.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	var newestPass int64
+	f, err := state.OpenFile(filepath.Join(dir, "passes.jsonl"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
 	}
 	for _, p := range l.Passes {
+		if p.At > newestPass {
+			newestPass = p.At
+		}
 		b, _ := json.Marshal(p)
 		if _, err := f.Write(append(b, '\n')); err != nil {
 			f.Close()
@@ -104,6 +169,9 @@ func (l *ledger) save(dir string) error {
 	}
 	f.Close()
 	l.Passes = nil
+	if newestPass > 0 {
+		_ = state.WriteInt64Marker(filepath.Join(dir, "last-pass"), newestPass)
+	}
 	return rotatePasses(filepath.Join(dir, "passes.jsonl"))
 }
 
@@ -159,11 +227,7 @@ func rotatePasses(path string) error {
 		return nil
 	}
 	kept := bytes.Join(lines[len(lines)-passesKeep:], nil)
-	tmp := path + ".tmp"
-	if err := state.WriteFile(tmp, kept, 0o600); err != nil {
-		return err
-	}
-	return os.Rename(tmp, path)
+	return writeAtomicLedgerBytes(path, kept)
 }
 
 // Status is the ledger as a read: for `gtmux knowledge mine --status` and doctor.
@@ -217,7 +281,12 @@ func ReadStatus(dir string, top int) Status {
 }
 
 // LastPassAt is the cheap gate the sensor reads before opening any log.
-func LastPassAt(dir string) int64 { return ReadStatus(dir, 0).LastPass }
+func LastPassAt(dir string) int64 {
+	if ts := state.ReadInt64Marker(filepath.Join(dir, "last-pass")); ts > 0 {
+		return ts
+	}
+	return ReadStatus(dir, 0).LastPass
+}
 
 func readJSON(path string, v any) error {
 	b, err := os.ReadFile(path)
@@ -236,8 +305,28 @@ func writeJSON(path string, v any) error {
 	if err != nil {
 		return err
 	}
-	tmp := path + ".tmp"
-	if err := state.WriteFile(tmp, b, 0o644); err != nil {
+	return writeAtomicLedgerBytes(path, b)
+}
+
+func writeAtomicLedgerBytes(path string, data []byte) error {
+	if state.IsManagedPath(path) {
+		return state.WritePrivateFile(path, data)
+	}
+	dir := filepath.Dir(path)
+	if err := state.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	f, err := state.CreateTemp(dir, ".mine-*")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	if _, err := f.Write(data); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
 		return err
 	}
 	return os.Rename(tmp, path)

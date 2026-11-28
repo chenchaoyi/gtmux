@@ -2,9 +2,11 @@ package transcript
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -60,9 +62,39 @@ type claudeBlock struct {
 	Content json.RawMessage `json:"content"` // tool_result payload (string | block[])
 }
 
+const claudePathCacheCap = 512
+
+var (
+	claudePathMu    sync.Mutex
+	claudePathHome  string
+	claudePathCache = map[string]string{}
+)
+
 func claudeLogPath(sessionID string) string {
-	matches, _ := filepath.Glob(filepath.Join(claudeProjectsDir(), "*", sessionID+".jsonl"))
+	if sessionID == "" {
+		return ""
+	}
+	projectsDir := claudeProjectsDir()
+	claudePathMu.Lock()
+	if claudePathHome != projectsDir {
+		claudePathHome = projectsDir
+		claudePathCache = map[string]string{}
+	}
+	cached := claudePathCache[sessionID]
+	claudePathMu.Unlock()
+	if cached != "" {
+		if fi, err := os.Stat(cached); err == nil && !fi.IsDir() {
+			return cached
+		}
+	}
+	matches, _ := filepath.Glob(filepath.Join(projectsDir, "*", sessionID+".jsonl"))
 	if len(matches) > 0 {
+		claudePathMu.Lock()
+		if len(claudePathCache) >= claudePathCacheCap {
+			claudePathCache = map[string]string{}
+		}
+		claudePathCache[sessionID] = matches[0]
+		claudePathMu.Unlock()
 		return matches[0]
 	}
 	return ""

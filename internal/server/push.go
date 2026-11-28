@@ -557,7 +557,7 @@ func (p *PushManager) alertStillCurrent(a Alert) bool {
 func (p *PushManager) OnTally(t Tally) {
 	p.RememberTally(t)
 	p.PushLiveActivity(t)
-	p.pushBadge(t.Waiting)
+	go p.pushBadge(t.Waiting)
 }
 
 // pushBadge fans a silent, absolute-badge push out to every registered device so a
@@ -577,12 +577,18 @@ func (p *PushManager) pushBadge(waiting int) {
 	}
 }
 
-// sendNotification retires only an Android token explicitly revoked by FCM.
-// A relay/network/configuration failure never says the user's device is gone.
+// sendNotification retires tokens only when the upstream push provider
+// definitively reports the device registration gone (FCM UNREGISTERED, or APNs
+// 410 Unregistered / 400 BadDeviceToken). Transient or config errors keep it.
 func (p *PushManager) sendNotification(intent PushIntent) {
 	err := p.relay.Send(intent)
 	var failure *FCMError
 	if intent.Platform == "android" && errors.As(err, &failure) && failure.Code == "UNREGISTERED" {
+		p.Unregister(intent.Token)
+		return
+	}
+	var apnsFailure *APNsError
+	if (intent.Platform == "" || intent.Platform == "ios") && errors.As(err, &apnsFailure) && apnsFailure.DeadDeviceToken() {
 		p.Unregister(intent.Token)
 	}
 }
@@ -632,6 +638,11 @@ func (p *PushManager) copy(a Alert) (string, string, int) {
 	return name + " finished", a.Task, -1
 }
 
+const (
+	maxJSONControlBodyBytes = 64 << 10
+	maxPushTokenBytes       = 512
+)
+
 // handleRegister implements POST /api/push/register. 503 when push is unconfigured
 // (no PushManager), so the app can detect remote push isn't available.
 func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -650,7 +661,7 @@ func (s *Server) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var d DeviceToken
-	if err := json.NewDecoder(r.Body).Decode(&d); err != nil || d.Token == "" {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxJSONControlBodyBytes)).Decode(&d); err != nil || d.Token == "" || len(d.Token) > maxPushTokenBytes {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid token"))
 		return
 	}
@@ -693,7 +704,7 @@ func (s *Server) handleUnregister(w http.ResponseWriter, r *http.Request) {
 		Token         string `json:"token"`
 		ActivityToken string `json:"activityToken"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&d); err != nil || (d.Token == "" && d.ActivityToken == "") {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxJSONControlBodyBytes)).Decode(&d); err != nil || (d.Token == "" && d.ActivityToken == "") || len(d.Token) > maxPushTokenBytes || len(d.ActivityToken) > maxPushTokenBytes {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid token"))
 		return
 	}
@@ -801,7 +812,7 @@ func (s *Server) handleForget(w http.ResponseWriter, r *http.Request) {
 		Orphans  bool   `json:"orphans"`
 		All      bool   `json:"all"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || (body.DeviceID == "" && !body.Orphans && !body.All) {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxJSONControlBodyBytes)).Decode(&body); err != nil || (body.DeviceID == "" && !body.Orphans && !body.All) {
 		writeJSON(w, http.StatusBadRequest, errBody("give deviceId, orphans, or all"))
 		return
 	}
@@ -838,7 +849,7 @@ func (s *Server) handleActivityRegister(w http.ResponseWriter, r *http.Request) 
 		Token string `json:"token"`
 		Env   string `json:"env"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Token == "" {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxJSONControlBodyBytes)).Decode(&body); err != nil || body.Token == "" || len(body.Token) > maxPushTokenBytes {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid token"))
 		return
 	}
@@ -895,13 +906,14 @@ func (r *HTTPRelay) Send(intent PushIntent) error {
 		// that cannot tell that from "the relay is down" keeps pushing to a dead card
 		// forever. Switching phones between Macs produces exactly that (2026-09-10).
 		var v struct {
-			Error  string `json:"error"`
-			Status int    `json:"status"`
-			Code   string `json:"code"`
+			Error  string          `json:"error"`
+			Status int             `json:"status"`
+			Code   string          `json:"code"`
+			Detail json.RawMessage `json:"detail"`
 		}
 		if json.Unmarshal(body, &v) == nil && v.Status > 0 {
 			if v.Error == "apns" {
-				return &APNsError{Status: v.Status}
+				return &APNsError{Status: v.Status, Reason: parseAPNsReason(v.Detail)}
 			}
 			if v.Error == "fcm" && intent.Platform == "android" {
 				code := "REJECTED"
@@ -916,6 +928,25 @@ func (r *HTTPRelay) Send(intent PushIntent) error {
 	return nil
 }
 
+func parseAPNsReason(raw json.RawMessage) string {
+	if len(raw) == 0 {
+		return ""
+	}
+	var obj struct {
+		Reason string `json:"reason"`
+	}
+	if json.Unmarshal(raw, &obj) == nil && obj.Reason != "" {
+		return obj.Reason
+	}
+	var str string
+	if json.Unmarshal(raw, &str) == nil && str != "" {
+		if json.Unmarshal([]byte(str), &obj) == nil {
+			return obj.Reason
+		}
+	}
+	return ""
+}
+
 // FCMError carries a bounded provider verdict without the provider's private message.
 type FCMError struct {
 	Status int
@@ -925,15 +956,28 @@ type FCMError struct {
 func (e *FCMError) Error() string { return fmt.Sprintf("fcm status %d (%s)", e.Status, e.Code) }
 
 // APNsError is APNs's own rejection, forwarded through the relay.
-type APNsError struct{ Status int }
+type APNsError struct {
+	Status int
+	Reason string
+}
 
-func (e *APNsError) Error() string { return fmt.Sprintf("apns status %d", e.Status) }
+func (e *APNsError) Error() string {
+	if e.Reason != "" {
+		return fmt.Sprintf("apns status %d (%s)", e.Status, e.Reason)
+	}
+	return fmt.Sprintf("apns status %d", e.Status)
+}
 
-// Gone reports whether APNs said this token will never work again, so the caller
-// should forget it rather than retry. 410 is Apple's "Unregistered"; 400 covers a
-// malformed/expired device token.
+// Gone reports whether APNs said an activity/device token will never work again.
 func (e *APNsError) Gone() bool {
-	return e.Status == http.StatusGone || e.Status == http.StatusBadRequest
+	return e.Status == http.StatusGone || (e.Status == http.StatusBadRequest && (e.Reason == "" || e.Reason == "BadDeviceToken"))
+}
+
+// DeadDeviceToken reports whether APNs explicitly identified a persisted device
+// token as unregistered (410) or invalid/bad (400 BadDeviceToken). Other 400
+// errors (such as TopicDisallowed or PayloadTooLarge) do not retire the token.
+func (e *APNsError) DeadDeviceToken() bool {
+	return e.Status == http.StatusGone || (e.Status == http.StatusBadRequest && e.Reason == "BadDeviceToken")
 }
 
 // optionCount turns the formatter's count into the wire field: nil when the count is
@@ -957,7 +1001,12 @@ func alertCollapseID(a Alert) string {
 			sum := sha256.Sum256([]byte("native\x00" + a.HomeID + "\x00" + a.SessionID))
 			return fmt.Sprintf("%x", sum)
 		}
-		return "native:" + a.SessionID
+		id := "native:" + a.SessionID
+		if len(id) > 64 {
+			sum := sha256.Sum256([]byte("native\x00\x00" + a.SessionID))
+			return fmt.Sprintf("%x", sum)
+		}
+		return id
 	}
 	return ""
 }

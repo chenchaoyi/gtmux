@@ -385,6 +385,7 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		HasPendingAsk: hasPendingAsk,
 		PaneCursor:    paneCursor,
 		PaneColumns:   paneColumns,
+		PaneGeometry:  paneGeometry,
 		// attach-predictive-echo: the pane's cursor CELL + alt-screen flag, streamed as
 		// OpCursor frames so the attach client has the authoritative cursor without
 		// emulating a terminal. `alternate_on` is the precise full-screen-TUI signal.
@@ -413,15 +414,16 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 			// internal/tmux uses for the radar.
 			return []string{tmux.Bin, "-u", "attach-session", "-t", session}, true
 		},
-		Upload:             saveUpload,
-		Icon:               agentIconPNG,
-		Diff:               diffForPane,
-		Transcript:         transcriptForPane,
-		TranscriptWindow:   transcriptWindowForPane,
-		TranscriptObserved: transcriptObservedForPane,
-		ToolInput:          fullToolInput,
-		ArtifactResolve:    resolveConversationDocument,
-		ArtifactRelated:    artifact.Related,
+		Upload:                saveUpload,
+		Icon:                  agentIconPNG,
+		Diff:                  diffForPane,
+		Transcript:            transcriptForPane,
+		TranscriptConditional: transcriptPaneReadConditional,
+		TranscriptWindow:      transcriptWindowForPane,
+		TranscriptObserved:    transcriptObservedForPane,
+		ToolInput:             fullToolInput,
+		ArtifactResolve:       resolveConversationDocument,
+		ArtifactRelated:       artifact.Related,
 		ArtifactContent: func(id, sid, home string) (artifact.File, io.ReadSeekCloser, error) {
 			f, err := artifact.Resolve("gtmux-file:"+id, sid, home)
 			if err != nil {
@@ -432,6 +434,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 		ParticipantProfile: participantProfile,
 		SessionTranscript: func(id, home string) ([]byte, server.TranscriptMeta, error) {
 			return desktopTranscriptRead(id, "", home)
+		},
+		SessionTranscriptConditional: func(id, home, ifNoneMatch string, includeContext bool) ([]byte, server.TranscriptMeta, error) {
+			return desktopTranscriptReadConditional(id, home, ifNoneMatch, includeContext, false)
 		},
 		HQBoard:     hq.Board,
 		HQWorkspace: workspaceHTTPRead,
@@ -496,7 +501,9 @@ func newServeServer(bind string, port int, token, relayURL, relayToken string) *
 	deps.Enroll.MigrateGuestScopes(st.ViewPanes, st.Panes)
 	deps.Share.OnBroadcast(deps.Enroll.BroadcastGuestScopes)
 
-	return server.New(server.Config{Addr: addr, Token: token}, deps)
+	srv := server.New(server.Config{Addr: addr, Token: token}, deps)
+	deps.Push.SetStatusSource(serveCachedAgentStatuses)
+	return srv
 }
 
 func serveUsageErr() int {
@@ -575,6 +582,21 @@ func paneColumns(id string) int {
 		return 0
 	}
 	return n
+}
+
+func paneGeometry(id string) (cols, x, up int, visible, cursorOK bool) {
+	if tmux.Bin == "" {
+		return 0, 0, 0, false, false
+	}
+	f := strings.Fields(tmux.Display(id, "#{pane_width} #{cursor_x} #{cursor_y} #{pane_height} #{cursor_flag}"))
+	if len(f) != 5 {
+		return 0, 0, 0, false, false
+	}
+	if n, err := strconv.Atoi(f[0]); err == nil && n > 0 {
+		cols = n
+	}
+	x, up, visible, cursorOK = cursorFromFields(f[1:])
+	return cols, x, up, visible, cursorOK
 }
 
 // cursorFromFields is the pure half of paneCursor: it turns tmux's
@@ -889,6 +911,14 @@ func transcriptWindowForPane(id string, earlier int, historyOnly bool) ([]byte, 
 }
 
 func transcriptPaneRead(id string, earlier, limit int) ([]byte, server.TranscriptMeta, error) {
+	return transcriptPaneReadFull(id, earlier, limit, "", false, true)
+}
+
+func transcriptPaneReadConditional(id string, earlier, limit int, ifNoneMatch string, includeContext bool) ([]byte, server.TranscriptMeta, error) {
+	return transcriptPaneReadFull(id, earlier, limit, ifNoneMatch, includeContext, false)
+}
+
+func transcriptPaneReadFull(id string, earlier, limit int, ifNoneMatch string, includeContext, rawContext bool) ([]byte, server.TranscriptMeta, error) {
 	empty := []byte("[]")
 	var meta server.TranscriptMeta
 	if tmux.Bin == "" || tmux.Display(id, "#{pane_id}") == "" {
@@ -909,12 +939,16 @@ func transcriptPaneRead(id string, earlier, limit int) ([]byte, server.Transcrip
 	if !ok {
 		return empty, meta, server.ErrConversationUnassociated
 	}
-	return transcriptRecordRead(id, rec, recovered, earlier, limit)
+	return transcriptRecordReadFull(id, rec, recovered, earlier, limit, ifNoneMatch, includeContext, rawContext)
 }
 
 func transcriptRecordRead(id string, rec resume.Record, recovered bool, earlier, limit int) ([]byte, server.TranscriptMeta, error) {
+	return transcriptRecordReadFull(id, rec, recovered, earlier, limit, "", false, true)
+}
+
+func transcriptRecordReadFull(id string, rec resume.Record, recovered bool, earlier, limit int, ifNoneMatch string, includeContext, rawContext bool) ([]byte, server.TranscriptMeta, error) {
 	empty := []byte("[]")
-	meta := server.TranscriptMeta{AssociationRecovered: recovered}
+	meta := server.TranscriptMeta{AssociationRecovered: recovered, ContextPrepared: !rawContext}
 	meta.History = func(ctx context.Context, before string) ([]byte, server.TranscriptMeta, error) {
 		sid := transcript.HistorySession(before)
 		agent := rec.Agent
@@ -999,8 +1033,20 @@ func transcriptRecordRead(id string, rec resume.Record, recovered bool, earlier,
 	var relayRevision string
 	turns, relayRevision = stampRelaySenders(turns, rec.HomeID)
 	senderRevision += relayRevision
+	baseEtag := ""
 	if revision := transcript.LogRevision(rec.Agent, rec.SessionID); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v6-window%d-%s-%s-%s-%s", limit, rec.SessionID, revision, oldest, senderRevision))
+		baseEtag = fmt.Sprintf("W/%q", fmt.Sprintf("profile-v6-window%d-%s-%s-%s-%s", limit, rec.SessionID, revision, oldest, senderRevision))
+	}
+	hasContext := turnsHaveContext(turns)
+	cacheKey := fmt.Sprintf("pane:%s:%s:%d:%d:%t", id, rec.SessionID, limit, earlier, includeContext)
+	if rawContext {
+		meta.Etag = baseEtag
+	} else {
+		meta.Etag = contextETag(baseEtag, hasContext, includeContext)
+		if dropped, ok := lookupTranscriptETagMeta(cacheKey, ifNoneMatch, meta.Etag); ok {
+			meta.Dropped = dropped
+			return nil, meta, nil
+		}
 	}
 	// Who put each prompt there, for the ones gtmux delivered on someone else's behalf
 	// (who-sent-this-turn). After the stitch, so an earlier session's turns are attributed
@@ -1008,6 +1054,9 @@ func transcriptRecordRead(id string, rec resume.Record, recovered bool, earlier,
 	// adds bytes). A turn the budget then drops has still been looked up.
 	if rec.Agent != "dsh" {
 		turns = stampSenders(turns, id, now)
+	}
+	if !rawContext && hasContext && !includeContext {
+		turns = stripTurnsContext(turns)
 	}
 	// The budget grows with the sessions asked for, else the stitched history would be
 	// cut back to the newest turns and the earlier session never reach the reader.
@@ -1017,6 +1066,9 @@ func transcriptRecordRead(id string, rec resume.Record, recovered bool, earlier,
 		if kept[0].Ordinal > 0 {
 			dropped = max(dropped, kept[0].Ordinal-1)
 		}
+	}
+	if !rawContext {
+		storeTranscriptETagMeta(cacheKey, meta.Etag, dropped)
 	}
 	b, err := json.Marshal(kept)
 	if err != nil {
@@ -1242,6 +1294,11 @@ func sendToPaneObserved(id, text, key string, enter bool, sendID string, observe
 		}
 		if observe != nil {
 			observe(result)
+		}
+		now := time.Now().Unix()
+		dispatch.MarkDelivered(id, text, now)
+		if actor := diag.Caller(); actor == "hq" || strings.HasPrefix(actor, "agent:") {
+			events.AuditSend(id, string(result.State), text, now)
 		}
 		dispatch.MarkAwaited(id)
 		return nil
@@ -1512,7 +1569,17 @@ func serveHostInfo() any {
 // stream (%12, 2026-10-06). With no server the radar scans no panes, and its orphan-marker
 // sweep does not run on an empty scan.
 func serveAgentStatuses() []server.AgentStatus {
-	panes := radar.RefreshAgentsSnapshot()
+	return agentStatusesFromPanes(radar.RefreshAgentsSnapshot())
+}
+
+// serveCachedAgentStatuses reads the 1.5s-cached radar snapshot so fan-out callers
+// (such as APNs alert suppression across N paired devices) do not trigger 1+N full
+// tmux/transcript scans on one completion event.
+func serveCachedAgentStatuses() []server.AgentStatus {
+	return agentStatusesFromPanes(radar.CachedAgents())
+}
+
+func agentStatusesFromPanes(panes []radar.Pane) []server.AgentStatus {
 	out := make([]server.AgentStatus, 0, len(panes))
 	for _, p := range panes {
 		revision := int64(0)

@@ -115,14 +115,8 @@ func TestCollectionSharesPathsButResamplesFactsBetweenOrderedGathers(t *testing.
 		}
 		file.Close()
 		second := c.Agents()
-		working := false
-		for _, row := range second {
-			if row.sessionID == "collect-one" && row.Status == "working" {
-				working = true
-			}
-		}
-		if !working {
-			t.Fatalf("collection cached mutable status: %+v", second)
+		if len(second) != len(first) || second[0].Status != first[0].Status {
+			t.Fatalf("collection did not memoize Agents() across sweeps in one operation: %+v vs %+v", first, second)
 		}
 		for _, row := range c.Digest() {
 			if row.SessionID == "collect-one" && row.Goal != "new goal" {
@@ -133,6 +127,16 @@ func TestCollectionSharesPathsButResamplesFactsBetweenOrderedGathers(t *testing.
 			t.Fatalf("ordered gathers enumerated %d times", got)
 		}
 		next := NewCollection()
+		resampled := next.Agents()
+		working := false
+		for _, row := range resampled {
+			if row.sessionID == "collect-one" && row.Status == "working" {
+				working = true
+			}
+		}
+		if !working {
+			t.Fatalf("new collection did not resample mutable status: %+v", resampled)
+		}
 		_ = next.Digest()
 		if got := transcript.CodexCandidateDiscoveryCount() - before; got != 2 {
 			t.Fatalf("next operation did not rediscover: %d", got)

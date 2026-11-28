@@ -60,7 +60,10 @@ func nativeAttemptID(id string, retry retryState) string {
 	if retry.Number == 0 {
 		return id // original native delivery ID is backward compatible
 	}
-	return fmt.Sprintf("%s-r%d-%s", id, retry.Number, retry.Target[:12])
+	if retry.Number == 1 {
+		return fmt.Sprintf("%s-r%d-%s", id, retry.Number, retry.Target[:12])
+	}
+	return fmt.Sprintf("%s-r%d-%d-%s", id, retry.Number, retry.At, retry.Target[:12])
 }
 
 // Keep budgets per generation. A newly arrived entry never inherits the retry
@@ -139,7 +142,8 @@ func setNativeWakeOutcome(intent *nativeIntent, result dispatch.Result, retry re
 		if nativeRefusalReason(result) == "" || !validWakeTarget(target) {
 			return
 		}
-		if retry.Number+1 >= nativeAttemptLimit {
+		userInputHold := result.FailureCode == dispatch.InputDraftPresent || result.FailureCode == dispatch.InputQuestion
+		if !userInputHold && retry.Number+1 >= nativeAttemptLimit {
 			intent.Reason = issueRetryExhausted
 			return
 		}
@@ -148,7 +152,9 @@ func setNativeWakeOutcome(intent *nativeIntent, result dispatch.Result, retry re
 		if retry.Number > 0 {
 			delay = 15 * time.Second
 		}
-		intent.Retry = retryState{Number: retry.Number + 1, At: now + int64(delay), Target: target}
+		nextNum := min(retry.Number+1, nativeAttemptLimit-1)
+		at := max(now, retry.At) + int64(delay)
+		intent.Retry = retryState{Number: nextNum, At: at, Target: target}
 		intent.Reason = nativeRefusalReason(result)
 	}
 }

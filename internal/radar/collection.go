@@ -1,16 +1,19 @@
 package radar
 
 import (
+	"slices"
 	"sync"
 
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
-// Collection owns discovery for one operation, never a cached fleet or its facts.
-// A sequence of ordered sensors can reuse it and still sample fresh mutable state.
+// Collection owns discovery and one agent snapshot for a single operation (such
+// as one slow-tick sweep), while Digest/Usage still sample fresh transcript content.
 type Collection struct {
-	once  sync.Once
-	paths *transcript.CodexPathScope
+	once       sync.Once
+	paths      *transcript.CodexPathScope
+	agentsOnce sync.Once
+	panes      []Pane
 }
 
 func NewCollection() *Collection { return &Collection{} }
@@ -21,6 +24,8 @@ func (c *Collection) codexPaths() *transcript.CodexPathScope {
 }
 
 func (c *Collection) Agents() []Pane {
-	panes, _ := gatherAgentsWithCodexScope(c.codexPaths())
-	return panes
+	c.agentsOnce.Do(func() {
+		c.panes, _ = gatherAgentsWithCodexScope(c.codexPaths())
+	})
+	return slices.Clone(c.panes)
 }

@@ -21,7 +21,12 @@ package hqwake
 // unadvanced watermark is a debt gtmux keeps collecting on.
 
 import (
+	"errors"
+	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"syscall"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -36,12 +41,24 @@ const WatermarkUnset = int64(-1)
 // watermarkPath stores the consumed-through sequence (decimal text).
 func watermarkPath() string { return filepath.Join(dir(), "consumed-seq") }
 
+func watermarkLockPath() string { return filepath.Join(dir(), "consumed-seq.lock") }
+
 // Consumed returns HQ's watermark, or WatermarkUnset when none is recorded.
+// Only os.ErrNotExist reads as WatermarkUnset; an empty or corrupt file reads as 0
+// rather than triggering bootstrap adoption of the stream tail.
 func Consumed() int64 {
-	if state.ReadMarker(watermarkPath()) == "" {
-		return WatermarkUnset
+	b, err := os.ReadFile(watermarkPath())
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return WatermarkUnset
+		}
+		return 0
 	}
-	return state.ReadInt64Marker(watermarkPath())
+	n, err := strconv.ParseInt(strings.TrimSpace(string(b)), 10, 64)
+	if err != nil || n < 0 {
+		return 0
+	}
+	return n
 }
 
 // Consume advances the watermark to seq. Monotonic: a lower value is ignored, so an
@@ -51,10 +68,20 @@ func Consume(seq int64) bool {
 	if seq < 0 {
 		return false
 	}
-	if cur := Consumed(); cur >= seq {
+	if err := state.MkdirAll(dir(), 0o700); err != nil {
 		return false
 	}
-	if err := state.MkdirAll(dir(), 0o755); err != nil {
+	lock, err := state.OpenFile(watermarkLockPath(), os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return false
+	}
+	defer lock.Close()
+	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
+		return false
+	}
+	defer syscall.Flock(int(lock.Fd()), syscall.LOCK_UN)
+
+	if cur := Consumed(); cur >= seq {
 		return false
 	}
 	return state.WriteInt64Marker(watermarkPath(), seq) == nil

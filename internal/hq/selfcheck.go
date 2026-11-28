@@ -8,6 +8,7 @@
 package hq
 
 import (
+	"fmt"
 	"github.com/chenchaoyi/gtmux/internal/knowledge"
 	"strconv"
 
@@ -100,8 +101,12 @@ func selfCheckSensor(now int64) {
 	recentAttn := recentAttentionEvent(now)
 	openLedger := len(dispatch.ListTasks())
 	journalOver := events.OverCeiling()
+	boardBytes, boardLines, boardOver := OversizeBoard()
 	_, gap := events.ReadSince(hqwake.Consumed())
 	fire, reason := shouldSelfCheck(now, lastCheck, recentAttn, openLedger, journalOver, gap)
+	if !fire && boardOver {
+		fire, reason = true, "threshold"
+	}
 	if !fire {
 		return
 	}
@@ -117,6 +122,15 @@ func selfCheckSensor(now int64) {
 	hint := ""
 	if rep, err := knowledge.Lint(now); err == nil {
 		hint = rep.Summary()
+	}
+	if boardOver {
+		boardHint := fmt.Sprintf("board oversize (%dB, %d lines > %dB/%d lines): prune handoff log to <=10",
+			boardBytes, boardLines, BoardByteBudget, BoardLineBudget)
+		if hint != "" {
+			hint += "; " + boardHint
+		} else {
+			hint = boardHint
+		}
 	}
 	raiseMaintenance(pane, hqwake.ClassSelfCheck, hqsurface.ControlSelfCheck, "due ("+reason+")",
 		"review feed/ledger/memory health, clean silently, brief only on real action",

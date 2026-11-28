@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/creack/pty"
@@ -18,6 +19,14 @@ import (
 // attachCursorInterval paces the OpCursor sampler — fast enough to reconcile a
 // prediction quickly, slow enough that a `display-message` per tick is negligible.
 const attachCursorInterval = 120 * time.Millisecond
+
+var (
+	attachPingInterval     = 20 * time.Second
+	attachPongWait         = 45 * time.Second
+	attachWriteWait        = 10 * time.Second
+	attachIdleCursorWindow = 2 * time.Second
+	attachMaxReadBytes     = int64(64 << 10)
+)
 
 // GuestAttachRefused is the refusal a share link gets from /api/attach; see handleAttach.
 const GuestAttachRefused = "forbidden: a share link cannot open a terminal: it would show the whole tmux session, not only the shared panes. Open the link in a browser instead."
@@ -68,11 +77,25 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, errBody("pane not found"))
 		return
 	}
+	pingInterval := attachPingInterval
+	pongWait := attachPongWait
+	writeWait := attachWriteWait
+	idleCursorWindow := attachIdleCursorWindow
+	maxReadBytes := attachMaxReadBytes
+	recheckInterval := attachRecheckInterval
+	noticeWait := attachNoticeWait
+
 	conn, err := attachUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return // Upgrade already wrote the error
 	}
 	defer conn.Close()
+	conn.SetReadLimit(maxReadBytes)
+	_ = conn.SetReadDeadline(time.Now().Add(pongWait))
+	conn.SetPongHandler(func(string) error {
+		_ = conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Env = attachEnv(resolveTerm(r.URL.Query().Get("term")))
@@ -138,6 +161,8 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	// flow is the client's PAUSE/RESUME, per connection (remote-terminal-client: the
 	// bridge honors them).
 	flow := newFlowGate()
+	var lastActivityNano atomic.Int64
+	lastActivityNano.Store(time.Now().UnixNano())
 
 	// PTY → WS: read raw pane bytes and send OUTPUT frames. WriteMessage is
 	// synchronous, so a slow client backpressures this read (TCP → pty → tmux),
@@ -159,6 +184,7 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 			}
 			n, err := ptmx.Read(buf)
 			if n > 0 {
+				lastActivityNano.Store(time.Now().UnixNano())
 				for {
 					if !flow.wait(stop, exited) {
 						return
@@ -169,6 +195,7 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 					}
 					wmu.Unlock() // paused while we waited for the lock: wait again
 				}
+				_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 				werr := conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, buf[:n]))
 				wmu.Unlock()
 				if werr != nil {
@@ -181,13 +208,41 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
+	var bg sync.WaitGroup
+
+	// WebSocket keepalive: promptly detect silently dropped peers on quiet panes so
+	// the server-side PTY and tmux client are reaped instead of leaking indefinitely.
+	bg.Add(1)
+	go func() {
+		defer bg.Done()
+		t := time.NewTicker(pingInterval)
+		defer t.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-t.C:
+				wmu.Lock()
+				_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
+				werr := conn.WriteMessage(websocket.PingMessage, nil)
+				wmu.Unlock()
+				if werr != nil {
+					end()
+					return
+				}
+			}
+		}
+	}()
+
 	// Cursor sampler → WS (attach-predictive-echo): stream the pane's tmux cursor +
 	// alt-screen flag so the client has the AUTHORITATIVE cursor without emulating a
-	// terminal. Coalesced (sent only when it changed) and TryLock'd (skipped whenever
-	// the output pump is mid-write) — a dropped sample is harmless, the next tick
-	// carries it. Absent the dep, no frames are sent and clients never predict.
-	if s.deps.AttachCursor != nil {
+	// terminal. Coalesced (sent only when it changed), gated when paused or idle, and
+	// TryLock'd (skipped whenever the output pump is mid-write) — a dropped sample is
+	// harmless, the next tick carries it. Opt-out via ?predict=0 skips it entirely.
+	if s.deps.AttachCursor != nil && r.URL.Query().Get("predict") != "0" {
+		bg.Add(1)
 		go func() {
+			defer bg.Done()
 			t := time.NewTicker(attachCursorInterval)
 			defer t.Stop()
 			var last connect.Cursor
@@ -197,6 +252,9 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 				case <-done:
 					return
 				case <-t.C:
+					if flow.paused() || time.Now().UnixNano()-lastActivityNano.Load() > int64(idleCursorWindow) {
+						continue
+					}
 					x, y, alt, ok := s.deps.AttachCursor(id)
 					if !ok {
 						continue
@@ -212,6 +270,7 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 						wmu.Unlock()
 						continue // the client asked for nothing more until RESUME
 					}
+					_ = conn.SetWriteDeadline(time.Now().Add(writeWait))
 					werr := conn.WriteMessage(websocket.BinaryMessage, connect.EncodeCursor(x, y, alt))
 					wmu.Unlock()
 					if werr != nil {
@@ -230,8 +289,10 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 	// does not change while it runs, so only enrolled tokens are re-checked.
 	if tok := bearerToken(r); tok != "" && s.deps.Enroll != nil &&
 		subtle.ConstantTimeCompare([]byte(tok), []byte(s.cfg.Token)) != 1 {
+		bg.Add(1)
 		go func() {
-			t := time.NewTicker(attachRecheckInterval)
+			defer bg.Done()
+			t := time.NewTicker(recheckInterval)
 			defer t.Stop()
 			for {
 				select {
@@ -249,8 +310,8 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 					// reproduction, 2026-10-06). The session ends whether or not the
 					// notice was written: closing the connection is what releases a
 					// stuck write.
-					if tryLockFor(&wmu, attachNoticeWait) {
-						_ = conn.SetWriteDeadline(time.Now().Add(attachNoticeWait))
+					if tryLockFor(&wmu, noticeWait) {
+						_ = conn.SetWriteDeadline(time.Now().Add(noticeWait))
 						_ = conn.WriteMessage(websocket.BinaryMessage, connect.Encode(connect.OpOutput, []byte("\r\n[gtmux] access revoked\r\n")))
 						wmu.Unlock()
 					}
@@ -263,13 +324,16 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 
 	// WS → PTY: input + resize. Runs in its own goroutine so input (e.g. Ctrl-C) is
 	// never blocked behind output backpressure.
+	bg.Add(1)
 	go func() {
+		defer bg.Done()
 		for {
 			mt, data, err := conn.ReadMessage()
 			if err != nil {
 				end()
 				return
 			}
+			_ = conn.SetReadDeadline(time.Now().Add(pongWait))
 			if mt != websocket.BinaryMessage {
 				continue
 			}
@@ -279,8 +343,10 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 			}
 			switch op {
 			case connect.OpInput:
+				lastActivityNano.Store(time.Now().UnixNano())
 				_, _ = ptmx.Write(payload)
 			case connect.OpResize:
+				lastActivityNano.Store(time.Now().UnixNano())
 				if cols, rows, ok := connect.DecodeResize(payload); ok {
 					_ = pty.Setsize(ptmx, &pty.Winsize{Rows: uint16(rows), Cols: uint16(cols)})
 				}
@@ -288,12 +354,15 @@ func (s *Server) handleAttach(w http.ResponseWriter, r *http.Request) {
 				// Flow control, not input: any caller may pause its own stream.
 				flow.pause()
 			case connect.OpResume:
+				lastActivityNano.Store(time.Now().UnixNano())
 				flow.resume()
 			}
 		}
 	}()
 
 	<-done
+	end()
+	bg.Wait()
 }
 
 // flowGate is one attach connection's PAUSE/RESUME state. Repeated frames are

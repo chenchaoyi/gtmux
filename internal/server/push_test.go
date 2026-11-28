@@ -330,6 +330,20 @@ func TestOnTallyBadgeSync(t *testing.T) {
 	pm := NewPushManager(relay, []DeviceToken{{Token: "a", Origin: originMaster}, {Token: "b", Origin: originMaster}}, nil, "", nil)
 	pm.OnTally(Tally{Waiting: 2, Working: 1})
 
+	deadline := time.Now().Add(2 * time.Second)
+	for time.Now().Before(deadline) {
+		silent := 0
+		for _, in := range relay.intents() {
+			if in.Silent {
+				silent++
+			}
+		}
+		if silent == 2 {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+
 	silent := 0
 	for _, in := range relay.intents() {
 		if !in.Silent {

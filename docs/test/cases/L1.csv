@@ -2022,7 +2022,7 @@ LEG-f180950a54c0,L1,Go core / CLI / server,internal/radar/codexterminalerror_tes
 LEG-2046cbd3a4ca,L1,Go core / CLI / server,internal/radar/collection_test.go,64,Test,TestCompleteProducersShareDiscoveryThroughContentAndAccounting,False,legacy-not-retrospectively-reviewed
 LEG-b7b4e130b423,L1,Go core / CLI / server,internal/radar/collection_test.go,68,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-f3e903f89806,L1,Go core / CLI / server,internal/radar/collection_test.go,95,Test,TestCollectionSharesPathsButResamplesFactsBetweenOrderedGathers,False,legacy-not-retrospectively-reviewed
-LEG-a01106328151,L1,Go core / CLI / server,internal/radar/collection_test.go,143,Test,TestCollectionDoesNotCacheFollowPermission,False,legacy-not-retrospectively-reviewed
+LEG-a01106328151,L1,Go core / CLI / server,internal/radar/collection_test.go,147,Test,TestCollectionDoesNotCacheFollowPermission,False,legacy-not-retrospectively-reviewed
 LEG-9c51a5d07241,L1,Go core / CLI / server,internal/radar/completion_test.go,15,Test,TestInferredFinishStaysUnconfirmed,False,legacy-not-retrospectively-reviewed
 LEG-f2482b866bea,L1,Go core / CLI / server,internal/radar/completion_test.go,47,Test,TestNativeStopConfirmsCompletion,False,legacy-not-retrospectively-reviewed
 LEG-d11a3add49fc,L1,Go core / CLI / server,internal/radar/completion_test.go,77,Test,TestCompletionProofMatchesSessionAndTurn,False,legacy-not-retrospectively-reviewed

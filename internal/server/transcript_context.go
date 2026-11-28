@@ -11,6 +11,9 @@ import (
 // links keep the original public-message shape. A format error fails closed;
 // opaque ETags distinguish context-bearing reads from public-message caches.
 func traceContextBody(body []byte, meta TranscriptMeta, includeContext bool) ([]byte, TranscriptMeta, error) {
+	if meta.ContextPrepared {
+		return body, meta, nil
+	}
 	hasContext := bytes.Contains(body, []byte(`"context"`))
 	if meta.Etag != "" && hasContext {
 		variant := "context-v1-reader:"

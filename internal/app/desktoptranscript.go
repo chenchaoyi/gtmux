@@ -2,9 +2,11 @@ package app
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/i18n"
@@ -13,17 +15,103 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 )
 
+type transcriptETagCacheEntry struct {
+	etag    string
+	dropped int
+}
+
+const transcriptETagCacheCap = 256
+
+var (
+	transcriptETagMu    sync.Mutex
+	transcriptETagCache = map[string]transcriptETagCacheEntry{}
+)
+
+func lookupTranscriptETagMeta(cacheKey, ifNoneMatch, etag string) (int, bool) {
+	if ifNoneMatch == "" || etag == "" || ifNoneMatch != etag {
+		return 0, false
+	}
+	transcriptETagMu.Lock()
+	defer transcriptETagMu.Unlock()
+	got, ok := transcriptETagCache[cacheKey]
+	if ok && got.etag == etag {
+		return got.dropped, true
+	}
+	return 0, false
+}
+
+func storeTranscriptETagMeta(cacheKey, etag string, dropped int) {
+	if etag == "" {
+		return
+	}
+	transcriptETagMu.Lock()
+	if len(transcriptETagCache) >= transcriptETagCacheCap {
+		transcriptETagCache = map[string]transcriptETagCacheEntry{}
+	}
+	transcriptETagCache[cacheKey] = transcriptETagCacheEntry{etag: etag, dropped: dropped}
+	transcriptETagMu.Unlock()
+}
+
+func turnsHaveContext(turns []transcript.Turn) bool {
+	for i := range turns {
+		for j := range turns[i].Segments {
+			if turns[i].Segments[j].Context != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func contextETag(baseEtag string, hasContext, includeContext bool) string {
+	if baseEtag == "" || !hasContext {
+		return baseEtag
+	}
+	variant := "context-v1-reader:"
+	if !includeContext {
+		variant = "context-v1-public:"
+	}
+	return fmt.Sprintf(`W/"%x"`, sha256.Sum256([]byte(variant+baseEtag)))
+}
+
+func stripTurnsContext(turns []transcript.Turn) []transcript.Turn {
+	out := make([]transcript.Turn, len(turns))
+	for i := range turns {
+		t := turns[i]
+		if len(t.Segments) > 0 {
+			kept := make([]transcript.Segment, 0, len(t.Segments))
+			for _, seg := range t.Segments {
+				if seg.Context == nil {
+					kept = append(kept, seg)
+					continue
+				}
+				seg.Context = nil
+				if seg.Text != "" || len(seg.Steps) > 0 {
+					kept = append(kept, seg)
+				}
+			}
+			t.Segments = kept
+		}
+		out[i] = t
+	}
+	return out
+}
+
 // This user-initiated read never enrolls the conversation for HQ observation.
 func transcriptForDesktop(id string) ([]byte, server.TranscriptMeta, error) {
 	return desktopTranscriptRead(id, "")
 }
 
 func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.TranscriptMeta, error) {
-	var meta server.TranscriptMeta
 	home := ""
 	if len(homes) > 0 {
 		home = homes[0]
 	}
+	return desktopTranscriptReadConditional(id, home, etag, false, true)
+}
+
+func desktopTranscriptReadConditional(id, home, etag string, includeContext, rawContext bool) ([]byte, server.TranscriptMeta, error) {
+	var meta server.TranscriptMeta
 	if !sessionpolicy.ValidRequest(id, home) {
 		return nil, meta, sessionpolicy.ErrUnverified
 	}
@@ -44,12 +132,18 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	if ref.Agent == "dsh" {
 		senders, senderRevision = events.Sends.MessageSenders(ref.Agent, ref.HomeID, id)
 	}
+	cacheKey := fmt.Sprintf("desktop:%s:%s:%t", ref.HomeID, id, includeContext)
 	// Read the validator before content: an append during parsing must force another
 	// read, not mark older content with a newer revision.
+	baseEtag := ""
 	if revision := transcript.LogRevision(ref.Agent, id); revision != "" {
-		meta.Etag = fmt.Sprintf("W/%q", "profile-v4-trace-history-"+ref.HomeID+"-"+id+"-"+revision+"-"+senderRevision)
+		baseEtag = fmt.Sprintf("W/%q", "profile-v4-trace-history-"+ref.HomeID+"-"+id+"-"+revision+"-"+senderRevision)
 	}
-	if ref.Agent != "codex" && etag != "" && meta.Etag == etag {
+	if !rawContext {
+		meta.ContextPrepared = true
+	}
+	if rawContext && ref.Agent != "codex" && etag != "" && baseEtag == etag {
+		meta.Etag = baseEtag
 		return nil, meta, nil
 	}
 	var turns []transcript.Turn
@@ -63,6 +157,18 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	if err != nil {
 		return nil, meta, err
 	}
+	hasContext := turnsHaveContext(turns)
+	if ref.Agent != "codex" {
+		if rawContext {
+			meta.Etag = baseEtag
+		} else {
+			meta.Etag = contextETag(baseEtag, hasContext, includeContext)
+			if dropped, ok := lookupTranscriptETagMeta(cacheKey, etag, meta.Etag); ok {
+				meta.Dropped = dropped
+				return nil, meta, nil
+			}
+		}
+	}
 	turns = append([]transcript.Turn(nil), turns...)
 	for i := range turns {
 		turns[i].Agent = ref.Agent
@@ -72,10 +178,22 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 	if ref.Agent == "codex" {
 		var revision string
 		turns, revision = stampRelaySenders(turns, ref.HomeID)
-		meta.Etag = fmt.Sprintf("W/%q", "profile-v5-relay-"+ref.HomeID+"-"+id+"-"+transcript.LogRevision(ref.Agent, id)+"-"+revision)
-		if etag != "" && etag == meta.Etag {
-			return nil, meta, nil
+		baseEtag = fmt.Sprintf("W/%q", "profile-v5-relay-"+ref.HomeID+"-"+id+"-"+transcript.LogRevision(ref.Agent, id)+"-"+revision)
+		if rawContext {
+			meta.Etag = baseEtag
+			if etag != "" && etag == meta.Etag {
+				return nil, meta, nil
+			}
+		} else {
+			meta.Etag = contextETag(baseEtag, hasContext, includeContext)
+			if dropped, ok := lookupTranscriptETagMeta(cacheKey, etag, meta.Etag); ok {
+				meta.Dropped = dropped
+				return nil, meta, nil
+			}
 		}
+	}
+	if !rawContext && hasContext && !includeContext {
+		turns = stripTurnsContext(turns)
 	}
 	kept, dropped := turnsWithinBudget(turns, transcriptByteBudget)
 	if kept == nil {
@@ -87,6 +205,9 @@ func desktopTranscriptRead(id, etag string, homes ...string) ([]byte, server.Tra
 		if kept[0].Ordinal > 0 {
 			meta.Dropped = max(meta.Dropped, kept[0].Ordinal-1)
 		}
+	}
+	if !rawContext {
+		storeTranscriptETagMeta(cacheKey, meta.Etag, meta.Dropped)
 	}
 	b, err := json.Marshal(kept)
 	return b, meta, err

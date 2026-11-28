@@ -1561,6 +1561,12 @@ func rowHQBoard(now int64) dcheck {
 	// — and the operator's reaction to it on the phone was that the board had become
 	// unreadable (2026-09-08). The charter now gives a cell a budget; this row is how
 	// anyone SEES it being broken, because a rule nothing measures is a rule nobody keeps.
+	if bytes, lines, over := hq.OversizeBoard(); over {
+		return dcheck{stRec, label, val, fmt.Sprintf(i18n.Tr(
+			"board exceeds budget (%s, %d lines; limit %s / %d lines). Ask HQ to prune ## ② Handoff log to at most 10 recent entries and move older history to notes or knowledge.",
+			"态势板超出预算（%s，%d 行；上限 %s / %d 行）。请让 HQ 将 ## ② 交接记录裁剪至最新 10 条以内，将历史迁入笔记或知识库。"),
+			humanBytes(int64(bytes)), lines, humanBytes(hq.BoardByteBudget), hq.BoardLineBudget)}
+	}
 	if n, longest := hq.OversizeBoardCells(); n > 0 {
 		return dcheck{stRec, label, val, fmt.Sprintf(i18n.Tr(
 			"%d board entries exceed the length limit (longest: %d characters). Ask HQ to keep conclusions on the board and move supporting details to its notes or knowledge base.",

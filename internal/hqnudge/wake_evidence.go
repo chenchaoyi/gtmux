@@ -120,6 +120,7 @@ func retainAcceptedWake(r nativeIntent) error {
 // ObserveWakeEvidence does not use the wake queue, current HQ pane, or any
 // input operation. Accepted means only the receiver attested admission.
 func ObserveWakeEvidence(now time.Time) {
+	defer pruneTerminalWakeEvidence(now)
 	files, err := os.ReadDir(acceptedWakeDir())
 	if errors.Is(err, os.ErrNotExist) || (err == nil && len(files) == 0) {
 		return

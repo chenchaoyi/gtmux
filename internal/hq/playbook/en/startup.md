@@ -4,7 +4,7 @@
 
 Apply the entry charter and LOCAL first. Read the board, task ledger, `gtmux digest --json` and the workspace runbook. Reconcile existing goals before acting. Briefly identify HQ, show the current state, prioritize user decisions and flag any unknown coverage. Record each live pane's purpose, state and dispatch channel. Use an in-scope transcript opening once if the digest cannot establish the goal. A `new-session` knock calls for an incremental enrollment of that session only.
 
-On a genuinely new home with a still-blank LOCAL, ask once, when useful, about key projects, reporting and quiet hours. Record preferences the user actually gives. On upgrade, restart or reset, preserve existing policies and handoff. Use the board's existing language and seeded headings. Keep one compact row per live pane in `## ① Now — live panes`, and dated handoffs newest first under `## ② Handoff log — newest first`. Use the actual pane ID. Keep detail in source records. The board carries current judgment and references. Durable lessons belong in knowledge.
+On a genuinely new home with a still-blank LOCAL, ask once, when useful, about key projects, reporting and quiet hours. Record preferences the user actually gives. On upgrade, restart or reset, preserve existing policies and handoff. Use the board's existing language and seeded headings. Keep one compact row per live pane in `## ① Now — live panes`, and at most the 10 newest dated handoffs under `## ② Handoff log — newest first` (keep `board.md` within 32 KiB / 250 lines; move older history to notes or knowledge). Use the actual pane ID. Keep detail in source records. The board carries current judgment and references. Durable lessons belong in knowledge.
 
 ## Legacy board decisions
 

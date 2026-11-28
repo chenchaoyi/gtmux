@@ -4,13 +4,19 @@
 package tmux
 
 import (
+	"context"
 	"errors"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 )
+
+// CommandTimeout bounds non-interactive tmux CLI invocations so a wedged tmux
+// server cannot block HTTP handlers or radar ticks indefinitely.
+var CommandTimeout = 5 * time.Second
 
 // Bin is the resolved path to the tmux binary (may be "" if not found).
 // tmux can be absent from PATH when invoked from a bare popup environment, so
@@ -40,6 +46,17 @@ func command(args ...string) *exec.Cmd {
 	c := exec.Command(Bin, append([]string{"-u"}, args...)...)
 	c.Env = utf8Env()
 	return c
+}
+
+func commandWithTimeout(args ...string) (*exec.Cmd, context.CancelFunc) {
+	if CommandTimeout <= 0 {
+		return command(args...), func() {}
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), CommandTimeout)
+	c := exec.CommandContext(ctx, Bin, append([]string{"-u"}, args...)...)
+	c.Env = utf8Env()
+	c.WaitDelay = 500 * time.Millisecond
+	return c, cancel
 }
 
 // DefaultUTF8Locale is the platform's baseline UTF-8 locale for tmux input and
@@ -74,7 +91,9 @@ func Run(args ...string) (string, error) {
 	if Bin == "" {
 		return "", exec.ErrNotFound
 	}
-	out, err := command(args...).Output()
+	c, cancel := commandWithTimeout(args...)
+	defer cancel()
+	out, err := c.Output()
 	return strings.TrimRight(string(out), "\n"), err
 }
 
@@ -86,7 +105,9 @@ func runRaw(args ...string) (string, error) {
 	if Bin == "" {
 		return "", exec.ErrNotFound
 	}
-	out, err := command(args...).Output()
+	c, cancel := commandWithTimeout(args...)
+	defer cancel()
+	out, err := c.Output()
 	return string(out), err
 }
 
@@ -95,7 +116,9 @@ func OK(args ...string) bool {
 	if Bin == "" {
 		return false
 	}
-	return command(args...).Run() == nil
+	c, cancel := commandWithTimeout(args...)
+	defer cancel()
+	return c.Run() == nil
 }
 
 // ServerUp reports whether a tmux server is running.
@@ -240,7 +263,8 @@ func Paste(pane, text string) error {
 	}
 	buf := "gtmux-dispatch-" + strconv.Itoa(os.Getpid()) + "-" +
 		strconv.FormatUint(atomic.AddUint64(&pasteSeq, 1), 10)
-	load := command("load-buffer", "-b", buf, "-")
+	load, cancel := commandWithTimeout("load-buffer", "-b", buf, "-")
+	defer cancel()
 	load.Stdin = strings.NewReader(text)
 	if err := load.Run(); err != nil {
 		return err

@@ -38,20 +38,27 @@ func frontendRecord(f CodexFrontend) Record {
 	return Record{Agent: "codex", HomeID: f.HomeID, SessionID: f.SessionID, Cwd: f.ThreadCwd, Frontend: f.Instance, UpdatedAt: f.UpdatedAt / 1000}
 }
 
+const (
+	maxStoredFrontendFiles = 4096
+	maxActiveFrontends     = 128
+)
+
 // Bounded exceptional path, not a global history scan. Unreadable receipts,
 // ambiguous frontends and oversized stores cannot establish unique ownership.
+// Retired receipts do not count against the active-frontend ceiling.
 func conversationFrontend(loc string) (CodexFrontend, bool) {
 	dir, err := os.Open(filepath.Join(Dir(), "codex-frontends"))
 	if err != nil {
 		return CodexFrontend{}, false
 	}
-	entries, err := dir.ReadDir(129)
+	entries, err := dir.ReadDir(maxStoredFrontendFiles + 1)
 	_ = dir.Close()
-	if err != nil && err != io.EOF || len(entries) > 128 {
+	if err != nil && err != io.EOF || len(entries) > maxStoredFrontendFiles {
 		return CodexFrontend{}, false
 	}
 	var found CodexFrontend
 	var observed []CodexFrontend
+	active := 0
 	now := time.Now().UnixMilli()
 	for _, entry := range entries {
 		if !strings.HasSuffix(entry.Name(), ".json") {
@@ -61,7 +68,14 @@ func conversationFrontend(loc string) (CodexFrontend, bool) {
 		if !ok {
 			return CodexFrontend{}, false
 		}
-		if f.Retired || f.Loc != loc {
+		if f.Retired {
+			continue
+		}
+		active++
+		if active > maxActiveFrontends {
+			return CodexFrontend{}, false
+		}
+		if f.Loc != loc {
 			continue
 		}
 		observed = append(observed, f)

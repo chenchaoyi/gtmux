@@ -61,23 +61,32 @@ func writeAttempt(r attemptRecord) (string, error) {
 // Retain orphan claims from either terminal transport. Age establishes that a
 // process is gone, and says nothing about whether its input reached the receiver.
 func holdOrphanClaims(x io, protected map[string]bool) bool {
+	nowNano := x.nowNano()
 	for _, e := range readQueue() {
-		if protected[e.Name()] || !isOrphanClaim(e) {
+		if protected[e.Name()] || !isOrphanClaimAt(e, nowNano) {
 			continue
 		}
 		src := filepath.Join(queueDir(), e.Name())
-		err := parkNativeClaimAt(src, claimBase(src)+legacyUncertainSuffix)
+		dst := claimBase(src) + legacyUncertainSuffix
+		err := parkNativeClaimAt(src, dst)
+		if errors.Is(err, errNativeClaimConflict) {
+			if ok, recErr := reconcileAgedSlotCollision(src, dst, nowNano); recErr != nil {
+				err = recErr
+			} else if ok {
+				err = parkNativeClaimAt(src, dst)
+			}
+		}
 		if err != nil {
 			diag.ReportStoreFailure("hq-wake-queue", err)
 			if !errors.Is(err, errNativeClaimConflict) {
-				recordIssue(issueRecoveryUnsafe, x.nowNano())
+				recordIssue(issueRecoveryUnsafe, nowNano)
 				return false
 			}
 			protected[e.Name()] = true
-			recordIssue(issueClaimConflict, x.nowNano())
+			recordIssue(issueClaimConflict, nowNano)
 			continue
 		}
-		recordIssue(issueUnknownLegacyInput, x.nowNano())
+		recordIssue(issueUnknownLegacyInput, nowNano)
 		wakeStage("act.wake.outcome.unknown", claimBase(src), "", diag.Failed, "orphaned-claim")
 	}
 	return true

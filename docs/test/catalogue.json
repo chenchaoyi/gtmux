@@ -23402,7 +23402,7 @@
       ]
     },
     "internal/radar/collection_test.go": {
-      "sha256": "5754dbb0f8558035a6c783fdeadc3c10f744d944fb0a3c709a0a8e11d35a413e",
+      "sha256": "a622331ac573e1fe84dfa9ef41ea8867bab5c56497c1eef64dbd6fb94cd0bc96",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -23432,7 +23432,7 @@
         },
         {
           "id": "LEG-a01106328151",
-          "line": 143,
+          "line": 147,
           "kind": "Test",
           "name": "TestCollectionDoesNotCacheFollowPermission",
           "dynamic": false,
@@ -27707,7 +27707,7 @@
       ]
     },
     "internal/server/push_test.go": {
-      "sha256": "03dbe278d680b4b80cbdde13fb31837282ee5f6ebf68d42026e4476997198bd6",
+      "sha256": "ed3dc67ca27a41b4b0bb89e2a0686a3f75b147f1c1951eb035a946081527d81b",
       "layer": "L2",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -27785,7 +27785,7 @@
         },
         {
           "id": "LEG-14adc3a60eca",
-          "line": 316,
+          "line": 314,
           "kind": "Test",
           "name": "TestWaitingAlertCollapses",
           "dynamic": false,
@@ -27793,7 +27793,7 @@
         },
         {
           "id": "LEG-23d4818d04b1",
-          "line": 328,
+          "line": 326,
           "kind": "Test",
           "name": "TestOnTallyBadgeSync",
           "dynamic": false,
@@ -27801,7 +27801,7 @@
         },
         {
           "id": "LEG-290e18a9d494",
-          "line": 351,
+          "line": 365,
           "kind": "Test",
           "name": "TestPushManagerFormatter",
           "dynamic": false,
@@ -27809,7 +27809,7 @@
         },
         {
           "id": "LEG-128741411e4e",
-          "line": 362,
+          "line": 376,
           "kind": "Test",
           "name": "TestHandleRegister",
           "dynamic": false,
@@ -27817,7 +27817,7 @@
         },
         {
           "id": "LEG-0ceecb641d3b",
-          "line": 399,
+          "line": 413,
           "kind": "Test",
           "name": "TestHandleRegisterPushDisabled",
           "dynamic": false,
@@ -27825,7 +27825,7 @@
         },
         {
           "id": "LEG-b7cfb52fcd8f",
-          "line": 410,
+          "line": 424,
           "kind": "Test",
           "name": "TestHTTPRelaySend",
           "dynamic": false,
@@ -27833,7 +27833,7 @@
         },
         {
           "id": "LEG-fb5fc726f47d",
-          "line": 438,
+          "line": 452,
           "kind": "Test",
           "name": "TestHTTPRelaySendNon2xx",
           "dynamic": false,
@@ -27841,7 +27841,7 @@
         },
         {
           "id": "LEG-946ee69d5254",
-          "line": 453,
+          "line": 467,
           "kind": "Test",
           "name": "TestUnregisterByDevice",
           "dynamic": false,
@@ -27849,7 +27849,7 @@
         },
         {
           "id": "LEG-547771ec069c",
-          "line": 479,
+          "line": 493,
           "kind": "Test",
           "name": "TestPushForgetSelectors",
           "dynamic": false,
@@ -27857,7 +27857,7 @@
         },
         {
           "id": "LEG-8b0903801390",
-          "line": 502,
+          "line": 516,
           "kind": "Test",
           "name": "TestRedactToken",
           "dynamic": false,
@@ -27865,7 +27865,7 @@
         },
         {
           "id": "LEG-f3dbf61ba5bd",
-          "line": 532,
+          "line": 546,
           "kind": "Test",
           "name": "TestPushRegisterBindsAndRevokeDrops",
           "dynamic": false,
@@ -27873,7 +27873,7 @@
         },
         {
           "id": "LEG-adaf9f727271",
-          "line": 552,
+          "line": 566,
           "kind": "Test",
           "name": "TestPushTokensForgetMasterOnly",
           "dynamic": false,
@@ -27881,7 +27881,7 @@
         },
         {
           "id": "LEG-7b7e451991ca",
-          "line": 569,
+          "line": 583,
           "kind": "Test",
           "name": "TestPushTokensRedacted",
           "dynamic": false,
@@ -27889,7 +27889,7 @@
         },
         {
           "id": "LEG-d1ee91dcb15f",
-          "line": 582,
+          "line": 596,
           "kind": "Test",
           "name": "TestActivityStatusReportsTheLink",
           "dynamic": false,
@@ -27897,7 +27897,7 @@
         },
         {
           "id": "LEG-32923ee8a0f4",
-          "line": 610,
+          "line": 624,
           "kind": "Test",
           "name": "TestARegisteredActivityIsHandedTheCurrentState",
           "dynamic": false,
@@ -27905,7 +27905,7 @@
         },
         {
           "id": "LEG-1868c3387c30",
-          "line": 631,
+          "line": 645,
           "kind": "Test",
           "name": "TestAReconnectedPhoneIsHandedTheCurrentState",
           "dynamic": false,
@@ -27913,7 +27913,7 @@
         },
         {
           "id": "LEG-a6e520a5bce0",
-          "line": 648,
+          "line": 662,
           "kind": "Test",
           "name": "TestADeadActivityTokenIsDropped",
           "dynamic": false,
@@ -27921,7 +27921,7 @@
         },
         {
           "id": "LEG-6f63a8e0b030",
-          "line": 659,
+          "line": 673,
           "kind": "Test",
           "name": "TestAnOrdinaryFailureKeepsTheToken",
           "dynamic": false,
@@ -27929,7 +27929,7 @@
         },
         {
           "id": "LEG-8d009deee7d0",
-          "line": 694,
+          "line": 708,
           "kind": "Test",
           "name": "TestAndroidRevokedTokenRetiredButTransientFailureRetained",
           "dynamic": false,
@@ -27945,7 +27945,7 @@
         },
         {
           "id": "LEG-7d75dda42b28",
-          "line": 714,
+          "line": 728,
           "kind": "Test",
           "name": "TestAndroidBadgeCarriesOwnerAndNoAPNsEnvironment",
           "dynamic": false,
@@ -72349,6 +72349,354 @@
         }
       ],
       "sha256": "ccf7ebe20fbcbf50fb7b50b755d36b5d67fc8aa70b0495cadefea73459d30fee"
+    },
+    "internal/app/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-0b56eb46a4f4",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "TestCHH003_WorkspaceObservationIngestShortCircuitsCaughtUpCursor",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-003,CHH-005,CHH-008"
+        },
+        {
+          "id": "MAP-f9162fd9ec08",
+          "line": 45,
+          "kind": "reviewed-selector",
+          "name": "TestCHH005_TranscriptConditionalETagShortCircuitAndSinglePaneGeometryQuery",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-003,CHH-005,CHH-008"
+        },
+        {
+          "id": "MAP-c8975e8b3fec",
+          "line": 106,
+          "kind": "reviewed-selector",
+          "name": "TestCHH008_DoctorOversizeBoardAndWorkspaceErrorLogging",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-003,CHH-005,CHH-008"
+        }
+      ],
+      "sha256": "0714fcd342c8bc594439aef315b03ebc84f3834109d3c770591ae42f70e106ac"
+    },
+    "internal/connect/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3e51272e8fb2",
+          "line": 8,
+          "kind": "reviewed-selector",
+          "name": "TestCHH006_AttachWSURLCarriesExplicitPredictFlag",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-006"
+        }
+      ],
+      "sha256": "e12230a1a62fc18d151509e3594b5fc8622666a1a83705885752924025cf86c6"
+    },
+    "internal/dispatch/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-9cf885979d34",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestCHH002_ConcurrentTaskUpdatesSerializeCleanly",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-002"
+        }
+      ],
+      "sha256": "64fa382da000b178cc1d957b3ba0a931d10cb3687c988a5785079594b2ce2b70"
+    },
+    "internal/events/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-84dfd88c6ab3",
+          "line": 12,
+          "kind": "reviewed-selector",
+          "name": "TestCHH002_ConcurrentAppendAcrossRotationPreservesContiguousSequence",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-002,CHH-003"
+        },
+        {
+          "id": "MAP-6808fa5ad99a",
+          "line": 62,
+          "kind": "reviewed-selector",
+          "name": "TestCHH003_TailReadSinceAndReadSkipRotatedGenerationWhenCovered",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-002,CHH-003"
+        }
+      ],
+      "sha256": "bdfe54ee4809f90790545a007d905a4336a5d7fbab3f173c5a9495ba24d99a86"
+    },
+    "internal/hq/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d05c83523017",
+          "line": 19,
+          "kind": "reviewed-selector",
+          "name": "TestCHH008_BoardUTF8TruncationAndOversizeBudget",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-008"
+        },
+        {
+          "id": "MAP-c94c27b769bc",
+          "line": 57,
+          "kind": "reviewed-selector",
+          "name": "TestCHH008_ManagedSnapshotPointsSkipsArchiveDecompression",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-008"
+        },
+        {
+          "id": "MAP-0bf991e05831",
+          "line": 78,
+          "kind": "reviewed-selector",
+          "name": "TestCHH008_PruneDeadCodexFrontendSocketsAndMineErrorBackoff",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-008"
+        }
+      ],
+      "sha256": "fb984065f23c921541e41c3575ba5a129a5c94de8bf2abff1b8427a37b22ffec"
+    },
+    "internal/hqnudge/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-164f0dc7b9bd",
+          "line": 17,
+          "kind": "reviewed-selector",
+          "name": "TestCHH001_TerminalWakeArchivalCapsIntentsAndPins",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-001"
+        },
+        {
+          "id": "MAP-01e0f0d2a0d2",
+          "line": 68,
+          "kind": "reviewed-selector",
+          "name": "TestCHH001_CollidingSlotReconcilesAndClearsClaimConflict",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-001"
+        },
+        {
+          "id": "MAP-12d087a72139",
+          "line": 160,
+          "kind": "reviewed-selector",
+          "name": "TestCHH001_DraftAndQuestionRefusalsHoldWithoutExhausting",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-001"
+        }
+      ],
+      "sha256": "d84d413f6091afbcfe77c7804a3ffdd93c462029b63c7c130ed8b16fcdc75dac"
+    },
+    "internal/hqwake/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-24220c5c1e3e",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestCHH002_ConsumedDistinguishesMissingFromCorruptAndSerializesConsume",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-002"
+        },
+        {
+          "id": "MAP-71be234af5df",
+          "line": 45,
+          "kind": "reviewed-selector",
+          "name": "TestCHH002_ConcurrentAddOutcomeAndConsumeTickLoseZeroOutcomes",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-002"
+        }
+      ],
+      "sha256": "93bd0e7a7411ba3bea105ffb6c274c7c667ac5a1b7034faa00d7e26177973461"
+    },
+    "internal/mine/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-dc9b7e7bf5de",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestCHH008_MineRunLockLastPassMarkerAndBoundedEmitted",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-008"
+        }
+      ],
+      "sha256": "09a8dfb76c282f1f304a08316f63a2d4aa2731b78c8a48ce9213c1edfac95931"
+    },
+    "internal/prompt/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-44bf0280e6d4",
+          "line": 5,
+          "kind": "reviewed-selector",
+          "name": "TestCHH008_BootBannerDisplayLabelAndAllStartupChoosers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-008"
+        }
+      ],
+      "sha256": "7ecea08435eef6f612851af73abb22b17836eb9c65ea4289abb2335470f4172b"
+    },
+    "internal/radar/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-345866479160",
+          "line": 15,
+          "kind": "reviewed-selector",
+          "name": "TestCHH005_IdleSinceFastPathAndCachedAgentsSnapshot",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-004,CHH-005"
+        }
+      ],
+      "sha256": "452b558628e20b3c72c63c88e364eeb2c54da78a67060a0c8e38b3c0479eaa78"
+    },
+    "internal/resume/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d66d84cb72bc",
+          "line": 11,
+          "kind": "reviewed-selector",
+          "name": "TestCHH008_RetiredFrontendsDoNotExhaustActiveCapAndArePruned",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-008"
+        }
+      ],
+      "sha256": "330ae37f275c553232aaf02708f858b248ff2307b9821b92b42d24006b9130b4"
+    },
+    "internal/server/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-27875ab19077",
+          "line": 37,
+          "kind": "reviewed-selector",
+          "name": "TestCHH004_OnTallyAsyncBadgeAndHubSlowTickNonBlocking",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-004,CHH-005,CHH-006,CHH-007"
+        },
+        {
+          "id": "MAP-1cd108ff35a4",
+          "line": 114,
+          "kind": "reviewed-selector",
+          "name": "TestCHH005_TranscriptConditionalETagAndPreparedContextFastPath",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-004,CHH-005,CHH-006,CHH-007"
+        },
+        {
+          "id": "MAP-b77c2fcdcd10",
+          "line": 168,
+          "kind": "reviewed-selector",
+          "name": "TestCHH006_AttachDeadPeerReapAndCursorSamplerGating",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-004,CHH-005,CHH-006,CHH-007"
+        },
+        {
+          "id": "MAP-e1bc2352800f",
+          "line": 252,
+          "kind": "reviewed-selector",
+          "name": "TestCHH007_SSERevocationGuestRedactionBodyCapsAndAPNsCleanup",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-004,CHH-005,CHH-006,CHH-007"
+        }
+      ],
+      "sha256": "6003d9f5fd57a3606f132ae91bcc6328f8efd3ebf73f85a53abfc405030cb780"
+    },
+    "internal/state/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-d7491fb9bc6a",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestCHH002_AtomicMarkersAndWaitingSetIgnorePrivateTemps",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-002,CHH-008"
+        },
+        {
+          "id": "MAP-c2c52f23019e",
+          "line": 43,
+          "kind": "reviewed-selector",
+          "name": "TestCHH008_InspectPrivateTreeAllowsManagedCodexFrontendSymlinkOnly",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-002,CHH-008"
+        }
+      ],
+      "sha256": "df242cd249cb0fbf44a852b72650e1fae0e51cf7a2752391e69a7552953b514a"
+    },
+    "internal/tmux/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-5742c32c97ef",
+          "line": 10,
+          "kind": "reviewed-selector",
+          "name": "TestCHH005_CommandTimeoutBoundsHungTmuxBinary",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-005"
+        }
+      ],
+      "sha256": "2868ceb534ab3a042b45889b95fe1a9cbf883981e2fda28378805f33cb05b4a1"
+    },
+    "internal/transcript/hardening_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-7a3a056eb5f9",
+          "line": 9,
+          "kind": "reviewed-selector",
+          "name": "TestCHH005_StatCachesAndO1AgySessionTitle",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "CHH-005"
+        }
+      ],
+      "sha256": "d9eb6e9c18e2f57fab8761f8a962628eddd8009c2f05e2325170f5a9f316bdd1"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

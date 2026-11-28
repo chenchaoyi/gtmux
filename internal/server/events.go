@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -246,9 +248,12 @@ type hub struct {
 	now          func() time.Time // injectable clock (tests)
 
 	// serverModeSig reports the server-mode signature the slow tick last read; a change
-	// becomes an `awake` event. lastServerModeSig is touched only in the run goroutine.
+	// becomes an `awake` event. modeMu serializes checkServerMode across the single-flight
+	// slow-tick goroutine and direct test calls.
 	serverModeSig     func() string
+	modeMu            sync.Mutex
 	lastServerModeSig string
+	slowRunning       atomic.Bool
 
 	mu   sync.Mutex
 	subs map[chan sseEvent]ClientInfo
@@ -552,10 +557,29 @@ func (h *hub) checkServerMode() {
 	if sig == "" {
 		return
 	}
-	if h.lastServerModeSig != "" && sig != h.lastServerModeSig {
+	h.modeMu.Lock()
+	prev := h.lastServerModeSig
+	h.lastServerModeSig = sig
+	h.modeMu.Unlock()
+	if prev != "" && sig != prev {
 		h.broadcast(awakeEvent())
 	}
-	h.lastServerModeSig = sig
+}
+
+func (h *hub) runSlowTickAsync() {
+	if h.onSlowTick == nil && h.serverModeSig == nil {
+		return
+	}
+	if !h.slowRunning.CompareAndSwap(false, true) {
+		return
+	}
+	go func() {
+		defer h.slowRunning.Store(false)
+		if h.onSlowTick != nil {
+			h.onSlowTick()
+		}
+		h.checkServerMode()
+	}()
 }
 
 // agentsEvent frames an `agents` change signal carrying the new revision.
@@ -585,10 +609,7 @@ func (h *hub) run(ctx context.Context) {
 	defer slow.Stop()
 	defer fast.Stop()
 	defer beat.Stop()
-	if h.onSlowTick != nil {
-		h.onSlowTick() // an initial evaluation right away
-	}
-	h.checkServerMode()
+	h.runSlowTickAsync()
 	for {
 		select {
 		case <-ctx.Done():
@@ -598,10 +619,7 @@ func (h *hub) run(ctx context.Context) {
 		case <-ping.C:
 			h.broadcast(sseEvent{name: "ping", data: []byte("{}")})
 		case <-slow.C:
-			if h.onSlowTick != nil {
-				h.onSlowTick()
-			}
-			h.checkServerMode() // after the tick, which is what reads the state
+			h.runSlowTickAsync()
 		case <-fast.C:
 			if h.onFastTick != nil {
 				h.onFastTick()
@@ -650,6 +668,9 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	defer func() { s.recordAccess(r, "live_close", http.StatusOK, time.Since(opened)) }()
 
 	ctx := r.Context()
+	tok := bearerToken(r)
+	recheckToken := tok != "" && s.deps.Enroll != nil &&
+		subtle.ConstantTimeCompare([]byte(tok), []byte(s.cfg.Token)) != 1
 	for {
 		select {
 		case <-ctx.Done():
@@ -657,6 +678,11 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 		case ev, ok := <-ch:
 			if !ok {
 				return
+			}
+			if recheckToken {
+				if _, valid := s.deps.Enroll.TokenScope(tok); !valid {
+					return
+				}
 			}
 			if guest && (ev.name == "alert" || ev.name == "awake") {
 				// Don't leak non-viewable sessions to a guest, nor the machine-level

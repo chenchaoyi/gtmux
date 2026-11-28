@@ -369,6 +369,10 @@ func inspectQueue() ([]os.DirEntry, error) {
 // gone: a `.sending` whose drainer died, or a `.stuck` whose repair marker was
 // lost (a live repair rewrites/removes its marker well inside this window).
 func isOrphanClaim(e os.DirEntry) bool {
+	return isOrphanClaimAt(e, time.Now().UnixNano())
+}
+
+func isOrphanClaimAt(e os.DirEntry, nowNano int64) bool {
 	switch {
 	case strings.HasSuffix(e.Name(), sendingSuffix):
 	case strings.HasSuffix(e.Name(), stuckSuffix):
@@ -379,7 +383,7 @@ func isOrphanClaim(e os.DirEntry) bool {
 		return false
 	}
 	info, err := e.Info()
-	return err == nil && time.Since(info.ModTime()) > orphanClaimAge
+	return err == nil && effectiveWakeNowNano(nowNano)-info.ModTime().UnixNano() > int64(orphanClaimAge)
 }
 
 // claimBase strips a claim suffix (`.sending` / `.stuck`), returning the entry's
@@ -604,7 +608,7 @@ func drainInto(x io, pane string) {
 	}
 	// Recover possible native submissions before ordinary orphan handling, even
 	// if the current pane now selects a legacy route. A restart is not a retry.
-	protected, err := recoverNativeIntentsWithProtection()
+	protected, err := recoverNativeIntentsWithProtectionAt(x.nowNano())
 	if err != nil {
 		diag.ReportStoreFailure("hq-native-wake", err)
 		if protected == nil {
@@ -631,6 +635,7 @@ func drainInto(x io, pane string) {
 	if len(protected) == 0 {
 		noteCleanRecovery(x.nowNano())
 	}
+	defer pruneTerminalWakeEvidence(time.Unix(0, x.nowNano()))
 	if !settleEarlierAttempts(x, pane, protected) {
 		return
 	}

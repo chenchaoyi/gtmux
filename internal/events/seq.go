@@ -16,49 +16,53 @@ import (
 // position independent of file byte offsets (which rotation invalidates).
 func seqPath() string { return state.StorePath("events.seq") }
 
-// nextSeq atomically increments and returns the next sequence number, serialized
-// across concurrent hook processes with an advisory file lock (flock — cgo-free on
-// darwin/linux). It returns 0 on any failure; Append reports that as a failed
-// journal write. The lock
-// is held only for the tiny read-increment-write, so contention is microseconds on
-// an uncontended local file.
-func nextSeq() int64 { return advanceSequence(os.O_RDWR | os.O_CREATE) }
-
 func advanceSequence(flags int) (seq int64) {
-	// The counter file doubles as the lock target.
+	_ = withSequenceLock(flags, func(advance func() int64) error {
+		seq = advance()
+		return nil
+	})
+	return seq
+}
+
+// withSequenceLock holds an exclusive advisory flock on events.seq across fn so
+// sequence allocation, size rotation, and O_APPEND writes execute atomically in
+// sequence order across concurrent writers.
+func withSequenceLock(flags int, fn func(advance func() int64) error) (retErr error) {
 	f, err := state.OpenFile(seqPath(), flags, 0o644)
 	if err != nil {
-		return 0
+		return err
 	}
 	defer func() {
-		if f.Close() != nil {
-			seq = 0
+		if cerr := f.Close(); cerr != nil && retErr == nil {
+			retErr = cerr
 		}
 	}()
 	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
-		return 0
+		return err
 	}
 	defer syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
 
-	buf := make([]byte, 32)
-	n, readErr := f.ReadAt(buf, 0)
-	if readErr != nil && readErr != io.EOF {
-		return 0
+	advance := func() int64 {
+		buf := make([]byte, 32)
+		n, readErr := f.ReadAt(buf, 0)
+		if readErr != nil && readErr != io.EOF {
+			return 0
+		}
+		cur, parseErr := strconv.ParseInt(strings.TrimSpace(string(buf[:n])), 10, 64)
+		if (n > 0 || flags&os.O_CREATE == 0) && (parseErr != nil || cur <= 0) {
+			return 0
+		}
+		next := cur + 1
+		b := []byte(strconv.FormatInt(next, 10))
+		if n, err := f.WriteAt(b, 0); err != nil || n != len(b) {
+			return 0
+		}
+		if flags&os.O_CREATE == 0 && f.Sync() != nil {
+			return 0
+		}
+		return next
 	}
-	cur, parseErr := strconv.ParseInt(strings.TrimSpace(string(buf[:n])), 10, 64)
-	if (n > 0 || flags&os.O_CREATE == 0) && (parseErr != nil || cur <= 0) {
-		return 0
-	}
-	next := cur + 1
-	// Rewrite from the start (the value only grows, so length is non-decreasing).
-	b := []byte(strconv.FormatInt(next, 10))
-	if n, err := f.WriteAt(b, 0); err != nil || n != len(b) {
-		return 0
-	}
-	if flags&os.O_CREATE == 0 && f.Sync() != nil {
-		return 0
-	}
-	return next
+	return fn(advance)
 }
 
 // CurrentSeq returns the last sequence number ASSIGNED — a single small file read,
