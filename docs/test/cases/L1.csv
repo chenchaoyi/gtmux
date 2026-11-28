@@ -1975,6 +1975,7 @@ LEG-fb8bccc2fc27,L1,Go core / CLI / server,internal/prompt/prompt_test.go,453,Te
 LEG-fe58fc68d2e2,L1,Go core / CLI / server,internal/prompt/prompt_test.go,481,Test,TestParseOptions_ProseWithArrowIsNotAMenu,False,legacy-not-retrospectively-reviewed
 LEG-ac5c66648a95,L1,Go core / CLI / server,internal/prompt/prompt_test.go,492,Test,TestParseOptions_RealMenusStillParse,False,legacy-not-retrospectively-reviewed
 LEG-323818bd7f9a,L1,Go core / CLI / server,internal/prompt/prompt_test.go,507,Test,TestSelectorLeads,False,legacy-not-retrospectively-reviewed
+MAP-cbb4fc10afb1,L1,Go core / CLI / server,internal/prompt/prompt_test.go,527,reviewed-selector,TestAGYSEL001_AntigravityApprovalAndWrappedOptions,False,AGY-SEL-001
 LEG-800e5b255bfa,L1,Go core / CLI / server,internal/prompt/startuppicker_test.go,13,Test,TestIsStartupPicker,False,legacy-not-retrospectively-reviewed
 LEG-5a91cf2f426e,L1,Go core / CLI / server,internal/prompt/startuppicker_test.go,33,Test,TestIsStartupPicker_QuotedInScrollbackIsNotAPicker,False,legacy-not-retrospectively-reviewed
 LEG-904cb4d206e9,L1,Go core / CLI / server,internal/prompt/startuppicker_test.go,48,Test,TestIsStartupPicker_FaintTextIsNotChrome,False,legacy-not-retrospectively-reviewed

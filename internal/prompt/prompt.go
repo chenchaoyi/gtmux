@@ -34,34 +34,56 @@ func ParseOptions(text string) []Option {
 	var opts []Option
 	want := 1
 	selected := false // did this run carry a selector glyph — i.e. is it a LIVE menu?
+	prevRaw := ""
+	inCont := false
 	for _, raw := range strings.Split(text, "\n") {
 		line := clean(raw)
 		m := numbered.FindStringSubmatch(line)
-		if m == nil {
+		if m != nil {
+			// Note the cursor BEFORE clean() discards it. An interactive menu marks its
+			// highlighted row (❯ 1. Yes); prose never does. The glyph must LEAD the row —
+			// see selectorLeads for the false approval card that "anywhere on the line"
+			// produced out of an agent's own findings list.
+			glyph := selectorLeads(raw, promptGlyphs)
+			n := 0
+			for _, c := range m[1] {
+				n = n*10 + int(c-'0')
+			}
+			label := strings.TrimSpace(m[2])
+			if n == 1 {
+				// a new menu started — restart the run.
+				opts = []Option{{N: 1, Label: label}}
+				want = 2
+				selected = glyph
+				prevRaw = raw
+				inCont = true
+				continue
+			}
+			if n == want {
+				opts = append(opts, Option{N: n, Label: label})
+				want++
+				selected = selected || glyph
+				prevRaw = raw
+				inCont = true
+				continue
+			}
+			inCont = false
 			continue
 		}
-		// Note the cursor BEFORE clean() discards it. An interactive menu marks its
-		// highlighted row (❯ 1. Yes); prose never does. The glyph must LEAD the row —
-		// see selectorLeads for the false approval card that "anywhere on the line"
-		// produced out of an agent's own findings list.
-		glyph := selectorLeads(raw, promptGlyphs)
-		n := 0
-		for _, c := range m[1] {
-			n = n*10 + int(c-'0')
+		if inCont && len(opts) > 0 && canContinueOption(prevRaw, raw) {
+			stripped := ansi.Strip(raw)
+			cont := strings.TrimSpace(strings.TrimRight(strings.TrimLeft(stripped, "│ \t"), "│ \t"))
+			if cont != "" {
+				sep := ""
+				if strings.HasPrefix(stripped, " ") || strings.HasPrefix(stripped, "\t") || strings.HasPrefix(stripped, "│") {
+					sep = " "
+				}
+				opts[len(opts)-1].Label += sep + cont
+				prevRaw = raw
+				continue
+			}
 		}
-		label := strings.TrimSpace(m[2])
-		if n == 1 {
-			// a new menu started — restart the run.
-			opts = []Option{{N: 1, Label: label}}
-			want = 2
-			selected = glyph
-			continue
-		}
-		if n == want {
-			opts = append(opts, Option{N: n, Label: label})
-			want++
-			selected = selected || glyph
-		}
+		inCont = false
 	}
 	// A run with NO selector glyph anywhere is a numbered LIST, not a menu.
 	//
@@ -76,6 +98,49 @@ func ParseOptions(text string) []Option {
 		return nil
 	}
 	return opts
+}
+
+const (
+	minWrappedOptionCols    = 40
+	maxReplyableOptionRunes = 240
+)
+
+func canContinueOption(prevRaw, raw string) bool {
+	prev := strings.TrimRight(ansi.Strip(prevRaw), " \t")
+	if len([]rune(prev)) < minWrappedOptionCols || strings.HasSuffix(prev, "│") {
+		return false
+	}
+	stripped := ansi.Strip(raw)
+	trimmed := strings.TrimSpace(stripped)
+	if trimmed == "" || clean(raw) == "" {
+		return false
+	}
+	if strings.HasPrefix(trimmed, "╭") || strings.HasPrefix(trimmed, "╰") || strings.HasPrefix(trimmed, "─") {
+		return false
+	}
+	if isBareComposerLine(stripped) || isMenuFooterHint(trimmed) {
+		return false
+	}
+	// tmux soft-wraps long option rows to column 0; hard-wrapped option bodies align
+	// under the option text (>= 4 leading spaces). Unindented or 2-space footer/prose
+	// rows after a short line were already excluded by minWrappedOptionCols above.
+	spaces := len(stripped) - len(strings.TrimLeft(stripped, " "))
+	return spaces == 0 || spaces >= 4
+}
+
+func isBareComposerLine(stripped string) bool {
+	s := strings.TrimRight(strings.TrimLeft(stripped, boxChrome), "│ \t")
+	return strings.HasPrefix(s, "› ") || strings.HasPrefix(s, "❯ ") || strings.HasPrefix(s, "> ") ||
+		s == "›" || s == "❯" || s == ">"
+}
+
+func isMenuFooterHint(trimmed string) bool {
+	lt := strings.ToLower(trimmed)
+	return strings.Contains(lt, "↑/↓") ||
+		strings.HasPrefix(lt, "enter to ") ||
+		strings.HasPrefix(lt, "press enter") ||
+		strings.HasPrefix(lt, "esc to cancel") ||
+		strings.Contains(lt, "· esc to cancel")
 }
 
 // OptionsReplyable reports whether a parsed option run is a CLEAN, SINGLE-select,
@@ -94,7 +159,7 @@ func ParseOptions(text string) []Option {
 func OptionsReplyable(opts []Option) bool {
 	for _, o := range opts {
 		label := strings.TrimSpace(o.Label)
-		if strings.ContainsRune(label, '│') || strings.ContainsRune(label, '┃') || len([]rune(label)) > 100 {
+		if strings.ContainsRune(label, '│') || strings.ContainsRune(label, '┃') || len([]rune(label)) > maxReplyableOptionRunes {
 			return false
 		}
 		if strings.HasPrefix(label, "[ ]") || strings.HasPrefix(label, "[x]") || strings.HasPrefix(label, "[X]") {
@@ -163,6 +228,9 @@ var startupGates = map[string][]string{
 	"codex": {
 		"Do you trust the contents of this directory", // directory trust gate ("› 1. Yes, continue / 2. No, quit")
 		"Hooks need review",                           // hooks trust gate after a hooks.json change ("› 1. Review hooks / 2. Trust all …")
+	},
+	"agy": {
+		"Do you trust the contents of this project?", // Antigravity CLI project trust gate
 	},
 }
 
@@ -526,6 +594,17 @@ func looksLikeStartupChooser(window string) bool {
 	return IsStartupGate(window, "") || IsStartupPicker(window, "")
 }
 
+// hasMenuNavigationFooter reports whether the lines below an option block carry
+// interactive menu navigation hints (such as Antigravity's "↑/↓ Navigate" or
+// "Enter to select"). Used to distinguish a real "> 1. ..." menu cursor from a
+// Markdown blockquote in prose.
+func hasMenuNavigationFooter(lines []string) bool {
+	compact := strings.ReplaceAll(strings.ToLower(ansi.Strip(strings.Join(lines, "\n"))), "\n", "")
+	return (strings.Contains(compact, "↑/↓") && strings.Contains(compact, "navigate")) ||
+		strings.Contains(compact, "enter to select") ||
+		strings.Contains(compact, "enter to confirm")
+}
+
 // WaitingOptions returns the on-screen choice block ONLY when it looks like an
 // ACTIVE approval menu the agent is blocked on: a run of ≥2 numbered options in
 // the bottom of the capture, with a selector cursor present. It's deliberately
@@ -535,13 +614,13 @@ func looksLikeStartupChooser(window string) bool {
 func WaitingOptions(text string) []Option {
 	lines := strings.Split(text, "\n")
 	end := len(lines)
-	for end > 0 && clean(lines[end-1]) == "" {
-		end-- // ignore trailing blank / chrome-only lines
+	for end > 0 && clean(lines[end-1]) == "" && !isBareComposerLine(ansi.Strip(lines[end-1])) {
+		end-- // ignore trailing blank / chrome-only lines without swallowing an empty composer prompt
 	}
 	if end == 0 {
 		return nil
 	}
-	lo := end - 14 // only the bottom of the screen — the active prompt lives there
+	lo := end - 28 // wide enough for 4-option menus soft-wrapped on narrow mobile panes
 	if lo < 0 {
 		lo = 0
 	}
@@ -554,28 +633,57 @@ func WaitingOptions(text string) []Option {
 	if len(opts) < 2 {
 		return nil // a real menu has ≥2 choices; a lone "1." is likely a list item
 	}
+	// Track the LAST menu run in window (restarting whenever "1." appears) so both
+	// the highlighted row and the bottom-most option row belong to the active menu.
+	runWant := 1
 	selectedAt := -1
+	selectedASCII := false
+	lastOptAt := -1
 	for i, l := range window {
-		// The selector cursor must LEAD a numbered choice ("❯ 1. Yes") — that's a live
-		// menu. A bare "❯ " input prompt (Claude idle) also carries the glyph, so
-		// requiring the number too avoids flagging an idle pane whose recent OUTPUT
-		// happens to contain a numbered list above the prompt; requiring the glyph to
-		// come FIRST (selectorLeads) stops a prose bullet that merely contains a `→`
-		// from passing as the highlighted row.
-		if selectorLeads(l, selectorGlyphs) && numbered.MatchString(clean(l)) {
-			selectedAt = i
+		m := numbered.FindStringSubmatch(clean(l))
+		if m == nil {
+			continue
+		}
+		n := 0
+		for _, c := range m[1] {
+			n = n*10 + int(c-'0')
+		}
+		unicodeSel := selectorLeads(l, selectorGlyphs)
+		asciiSel := !unicodeSel && selectorLeads(l, ">")
+		if n == 1 {
+			runWant = 2
+			lastOptAt = i
+			selectedAt = -1
+			selectedASCII = false
+			if unicodeSel || asciiSel {
+				selectedAt = i
+				selectedASCII = asciiSel
+			}
+			continue
+		}
+		if n == runWant {
+			runWant++
+			lastOptAt = i
+			if unicodeSel || asciiSel {
+				selectedAt = i
+				selectedASCII = asciiSel
+			}
 		}
 	}
-	if selectedAt < 0 {
+	// Keep the recency bound anchored on the menu's LAST option row so buried
+	// scrollback menus (>14 non-blank lines above current output) still return nil
+	// even when wrapped options above it needed the 28-line window.
+	if selectedAt < 0 || lastOptAt < 0 || len(window)-1-lastOptAt >= 14 {
 		return nil
 	}
-	// An answered menu can remain in the last 14 lines above a NEW composer.
+	if selectedASCII && !hasMenuNavigationFooter(window[lastOptAt+1:]) {
+		return nil
+	}
+	// An answered menu can remain near the bottom above a NEW composer.
 	// Its old highlighted option is still visible, but the later input prompt
 	// proves the agent is no longer asking for that choice.
-	for _, l := range window[selectedAt+1:] {
-		s := strings.TrimLeft(ansi.Strip(l), boxChrome)
-		if (strings.HasPrefix(s, "› ") || strings.HasPrefix(s, "❯ ") || strings.HasPrefix(s, "> ")) &&
-			!numbered.MatchString(clean(l)) {
+	for _, l := range window[lastOptAt+1:] {
+		if isBareComposerLine(ansi.Strip(l)) && !numbered.MatchString(clean(l)) {
 			return nil
 		}
 	}

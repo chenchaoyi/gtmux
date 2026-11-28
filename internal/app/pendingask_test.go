@@ -51,3 +51,21 @@ func TestHasPendingAsk(t *testing.T) {
 		t.Error("an empty kind is the absence of evidence, not evidence of an ask")
 	}
 }
+
+func TestAGYSEL002_HasPendingAskSupportsLiveScreenWaitBeforeSlowTick(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	if err := os.MkdirAll(state.WaitingDir(), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Non-existent / idle panes without a marker stay false, and explicit startup/draft
+	// markers written by slow-tick never fall through to screen-ask opening.
+	if hasPendingAsk("%999999") {
+		t.Fatal("unmatched pane without marker or screen wait must return false")
+	}
+	if err := state.WriteMarker(state.WaitingPath("%999999"), "startup"); err != nil {
+		t.Fatal(err)
+	}
+	if hasPendingAsk("%999999") {
+		t.Fatal("startup marker must still block pending-ask options")
+	}
+}

@@ -634,6 +634,9 @@ func menuHints(draft string) bool {
 		if strings.HasPrefix(l, "Enter to select") && (strings.Contains(l, "Esc to cancel") || strings.Contains(l, "to navigate")) {
 			return true
 		}
+		if strings.Contains(l, "↑/↓ Navigate") {
+			return true
+		}
 	}
 	return false
 }

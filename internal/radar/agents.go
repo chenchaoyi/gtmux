@@ -93,23 +93,58 @@ func StuckDispatchKind(paneID, agent string) string {
 	return classifyStuck(tmux.CaptureFullColor(paneID), agent, true)
 }
 
-// CodexScreenWaitKind is a narrow fallback for a Codex PermissionRequest that
-// arrives without session identity. Its hook cannot safely trust the inherited
-// pane, but a live numbered approval menu can be read from the actual pane on
-// the next poll. WaitingOptions rejects prose lists and answered menus above a
-// ready composer; no other screen text is promoted to a user wait.
+func usesScreenApprovalWait(agent string) bool {
+	switch agents.KeyForLabel(agent) {
+	case "codex", "agy", "kiro":
+		return true
+	default:
+		return false
+	}
+}
+
+// ScreenWaitKind detects a live numbered approval menu on screen for agents whose
+// permission/choice prompts emit no dedicated waiting hook (Antigravity, Kiro, or an
+// ownerless Codex PermissionRequest). WaitingOptions rejects prose lists and answered
+// menus above a ready composer; no other screen text is promoted to a user wait.
+func ScreenWaitKind(paneID, agent string) string {
+	if !usesScreenApprovalWait(agent) {
+		return ""
+	}
+	return screenWaitKind(agent, paneCapture(paneID))
+}
+
+// CodexScreenWaitKind preserves compatibility for callers checking Codex specifically.
 func CodexScreenWaitKind(paneID, agent string) string {
 	if agents.KeyForLabel(agent) != "codex" {
 		return ""
 	}
-	return codexScreenWaitKind(agent, tmux.CapturePane(paneID))
+	return screenWaitKind(agent, paneCapture(paneID))
 }
 
 func codexScreenWaitKind(agent, frame string) string {
-	if agents.KeyForLabel(agent) == "codex" && prompt.WaitingOptions(frame) != nil {
+	if agents.KeyForLabel(agent) != "codex" {
+		return ""
+	}
+	return screenWaitKind(agent, frame)
+}
+
+func screenWaitKind(agent, frame string) string {
+	if usesScreenApprovalWait(agent) && prompt.WaitingOptions(frame) != nil {
 		return "permission"
 	}
 	return ""
+}
+
+// PaneHasScreenAsk reports whether a live pane belongs to a screen-approval agent
+// currently displaying an active approval menu, bridging the window before the slow
+// tick persists waiting/<pane>.
+func PaneHasScreenAsk(paneID string) bool {
+	for _, p := range GatherPaneAgents(paneID) {
+		if p.PaneID == paneID && p.Status == "waiting" && ScreenWaitKind(paneID, p.Agent) != "" {
+			return true
+		}
+	}
+	return false
 }
 
 // classifyStuck is the pure decision behind StuckDispatchKind: given a pane's COLOR
@@ -1236,8 +1271,8 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			// askOnScreen: is the agent's numbered question still up? Lazy — only the narrow
 			// "fresh mark over a live-working pane" branch pays for the capture.
 			askOnScreen := func() bool {
-				frame := tmux.CapturePane(id)
-				if agents.KeyForLabel(agent) == "codex" {
+				frame := paneCapture(id)
+				if usesScreenApprovalWait(agent) {
 					return prompt.WaitingOptions(frame) != nil
 				}
 				return len(prompt.ParseOptions(frame)) > 0
@@ -1247,6 +1282,21 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			if clearMark {
 				state.Remove(state.WaitingPath(id))
 				delete(waiting, id)
+			}
+			// Antigravity emits no PermissionRequest hook: any permission marker on its
+			// pane came from a screen menu. Once that menu leaves the screen, restore
+			// working (leaving the marker for resolvedTransitionSweep/hook cleanup) or
+			// clear back to idle if no turn is active.
+			if agents.KeyForLabel(agent) == "agy" && status == "waiting" &&
+				state.ReadMarker(state.WaitingPath(id)) == "permission" &&
+				prompt.WaitingOptions(capture(id)) == nil {
+				if turnInProgress(id, activityAt, now) {
+					status = "working"
+				} else {
+					state.Remove(state.WaitingPath(id))
+					delete(waiting, id)
+					status = "idle"
+				}
 			}
 			// A shared Codex app-server can deliver an ownerless PermissionRequest
 			// with another pane's inherited TMUX_PANE. Older hooks wrote that wait
@@ -1279,10 +1329,10 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 					status = "idle"
 				}
 			}
-			// A Codex approval with no session/cwd is deliberately left pane-less by
-			// the hook. Once its menu appears in a pane, the screen itself supplies
-			// the missing identity. The slow tick persists this as a normal wait.
-			if status != "waiting" && agents.KeyForLabel(agent) == "codex" && codexScreenWaitKind(agent, capture(id)) != "" {
+			// Screen-only approval menus (an ownerless Codex PermissionRequest, or agents
+			// like Antigravity/Kiro that emit no permission-wait hook) supply waiting
+			// directly from the pane frame; the slow tick persists the marker and wake.
+			if status != "waiting" && usesScreenApprovalWait(agent) && screenWaitKind(agent, capture(id)) != "" {
 				status = "waiting"
 			}
 			// STUCK-DISPATCH GUARD: a dispatched worker blocked BEFORE running a turn (a

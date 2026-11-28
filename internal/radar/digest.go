@@ -24,7 +24,6 @@ import (
 	"github.com/chenchaoyi/gtmux/internal/resource"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
 	"github.com/chenchaoyi/gtmux/internal/state"
-	"github.com/chenchaoyi/gtmux/internal/tmux"
 	"github.com/chenchaoyi/gtmux/internal/transcript"
 	uwatch "github.com/chenchaoyi/gtmux/internal/usage"
 )
@@ -263,10 +262,13 @@ func digestForScoped(panes []Pane, procs map[int]procInfo, paths *transcript.Cod
 		}
 		if p.Status == "waiting" && p.PaneID != "" {
 			row.Kind = state.ReadMarker(state.WaitingPath(p.PaneID))
+			if row.Kind == "" {
+				row.Kind = ScreenWaitKind(p.PaneID, p.Agent)
+			}
 			// Only surface an Ask line for a CLEAN, replyable menu — a rich picker
 			// (AskUserQuestion beside preview panels) parses to garbage labels, so it
 			// gets no fake "1.x · 2.y" ask (the user replies in the terminal).
-			if opts := prompt.ParseOptions(tmux.CapturePane(p.PaneID)); prompt.OptionsReplyable(opts) {
+			if opts := prompt.ParseOptions(paneCapture(p.PaneID)); prompt.OptionsReplyable(opts) {
 				row.Ask = joinAsk(opts)
 			}
 		}

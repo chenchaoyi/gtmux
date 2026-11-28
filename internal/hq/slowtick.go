@@ -278,7 +278,7 @@ func stuckDispatchSweep(gather func() []radar.Pane) {
 		src := hqnudge.WaitingSourceForPane(p.PaneID)
 		kind := radar.StuckDispatchKind(p.PaneID, p.Agent)
 		if kind == "" {
-			kind = radar.CodexScreenWaitKind(p.PaneID, p.Agent)
+			kind = radar.ScreenWaitKind(p.PaneID, p.Agent)
 		}
 		if kind == "" {
 			continue

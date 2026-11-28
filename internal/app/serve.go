@@ -1469,7 +1469,10 @@ func reachableHosts(bind string) []string {
 // Named (not an inline closure) so the wiring itself is testable — "which predicate is
 // actually wired here" is the thing that regressed.
 func hasPendingAsk(id string) bool {
-	return hook.IsAskKind(state.ReadMarker(state.WaitingPath(id)))
+	if state.Exists(state.WaitingPath(id)) {
+		return hook.IsAskKind(state.ReadMarker(state.WaitingPath(id)))
+	}
+	return radar.PaneHasScreenAsk(id)
 }
 
 // phoneDeliverOpts are the delivery options for a phone send (POST /api/send). Its

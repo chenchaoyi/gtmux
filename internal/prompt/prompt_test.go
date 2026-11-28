@@ -45,7 +45,7 @@ func TestOptionsReplyable_RejectsSideBySidePreviewPicker(t *testing.T) {
 		t.Error("WaitingOptions must still DETECT the picker (for hasPromptLine)")
 	}
 	// A genuinely long single-column label also reads as not-a-simple-menu.
-	if OptionsReplyable([]Option{{1, strings.Repeat("x", 120)}, {2, "no"}}) {
+	if OptionsReplyable([]Option{{1, strings.Repeat("x", 260)}, {2, "no"}}) {
 		t.Error("an implausibly long option label is not replyable")
 	}
 	// A MULTI-select picker marks each option with a checkbox — the one-tap card can't
@@ -521,5 +521,66 @@ func TestSelectorLeads(t *testing.T) {
 		if selectorLeads(l, promptGlyphs) {
 			t.Errorf("selectorLeads(%q) = true, want false (the glyph is prose)", l)
 		}
+	}
+}
+
+func TestAGYSEL001_AntigravityApprovalAndWrappedOptions(t *testing.T) {
+	// Live-captured 46-column narrow mobile screen from Antigravity CLI (agy).
+	narrowWrapped := "gh release edit v1.0.206 -R chenchaoyi/gtmux\n\n" +
+		"Run this command?\n" +
+		"> 1. Yes, run command\n" +
+		"  2. Yes, and always allow in this conversatio\n" +
+		"n for commands that start with 'python3 -c 'im\n" +
+		"port json,sys; d=json.load(sys.stdin); print(\"\n" +
+		"published_through:\",...'\n" +
+		"  3. Yes, and always allow for commands that s\n" +
+		"tart with 'python3 -c 'import json,sys; d=json\n" +
+		".load(sys.stdin); print(\"published_through:\",.\n" +
+		"..'' (Persist to settings.json)\n" +
+		"  4. No, cancel\n\n" +
+		"  ↑/↓ Navigate · tab Amend · ctrl+g edit/expan\n" +
+		"d command · ctrl+r Review\n" +
+		"  esc to cancel\n\n" +
+		"                     auto · Gemini 4 Carbon · m\n" +
+		"edium\n"
+
+	want := []Option{
+		{N: 1, Label: "Yes, run command"},
+		{N: 2, Label: `Yes, and always allow in this conversation for commands that start with 'python3 -c 'import json,sys; d=json.load(sys.stdin); print("published_through:",...'`},
+		{N: 3, Label: `Yes, and always allow for commands that start with 'python3 -c 'import json,sys; d=json.load(sys.stdin); print("published_through:",...'' (Persist to settings.json)`},
+		{N: 4, Label: "No, cancel"},
+	}
+	got := WaitingOptions(narrowWrapped)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("WaitingOptions(narrow agy) =\n%#v\nwant:\n%#v", got, want)
+	}
+	if !OptionsReplyable(got) {
+		t.Fatalf("OptionsReplyable(narrow agy) = false, want true")
+	}
+
+	// Markdown blockquotes in prose start with "> 1." but have no menu navigation
+	// chrome below them — they must NEVER trigger WaitingOptions.
+	blockquote := "Summary of points:\n" +
+		"> 1. First quoted recommendation\n" +
+		"> 2. Second quoted recommendation\n\n" +
+		"Let me apply those changes now.\n"
+	if got := WaitingOptions(blockquote); got != nil {
+		t.Fatalf("Markdown blockquote triggered WaitingOptions: %#v", got)
+	}
+
+	// Answered Antigravity menu above a redrawn 3-border composer must clear.
+	answered := narrowWrapped + "\n──────────────────────────────────────────────\n>\n──────────────────────────────────────────────\n"
+	if got := WaitingOptions(answered); got != nil {
+		t.Fatalf("answered agy menu above composer = %#v, want nil", got)
+	}
+
+	// Antigravity project trust gate matches both IsStartupGate and WaitingOptions
+	// (like Codex trust gates) so phone/Web users can also tap 1/2 to answer it.
+	trustGate := "Do you trust the contents of this project?\n\n> 1. Yes, trust this project\n  2. No, exit\n\n  ↑/↓ Navigate · esc to cancel\n"
+	if !IsStartupGate(trustGate, "agy") || !IsStartupGate(trustGate, "Antigravity") {
+		t.Fatal("expected Antigravity project trust prompt to match IsStartupGate")
+	}
+	if got := WaitingOptions(trustGate); len(got) != 2 {
+		t.Fatalf("WaitingOptions(trustGate) = %#v, want 2 choices", got)
 	}
 }

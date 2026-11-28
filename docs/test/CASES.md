@@ -2,12 +2,12 @@
 
 [中文](CASES.zh.md) · [Test system](TEST-PLAN.md) · [Complete CSV](CASES.csv)
 
-The catalogue covers 1533 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
+The catalogue covers 1534 test/harness source files. Each CSV row lists stable ID, layer, stack, source/line, original description, dynamic flag and design origin. Layer links contain the complete lists for filtering/spreadsheets; names remain verbatim for source lookup.
 
 | Layer | Static index entries | Complete case list |
 | --- | --- | --- |
-| L1 · Unit / pure logic | 3835 | [L1.csv](cases/L1.csv) |
-| L2 · Component / contract | 2791 | [L2.csv](cases/L2.csv) |
+| L1 · Unit / pure logic | 3836 | [L1.csv](cases/L1.csv) |
+| L2 · Component / contract | 2793 | [L2.csv](cases/L2.csv) |
 | L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
@@ -60,6 +60,8 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | AGY-010 | The agy model window resolves to the 1M tier instead of the 200k guess, and the backfill does not rescan logs written afterwards. |
 | AGY-011 | agy is installable; it is detected and gets an Antigravity hook doctor row only when discoverable; the fix step writes a healthy gtmux entry in hooks.json. |
 | AGY-ICON-001 | AgentIcon('agy') and existing committed keys return non-empty PNG bytes; unknown and empty keys return nil. |
+| AGY-SEL-001 | WaitingOptions and ParseOptions extract all four complete unwrapped Antigravity choices and mark them OptionsReplyable; Markdown blockquotes without menu navigation chrome and answered menus above a redrawn composer return nil; and Do you trust the contents of this project? matches IsStartupGate for agy. |
+| AGY-SEL-002 | GatherAgents and GatherDigest report status waiting with kind permission and replyable Ask options immediately; hasPendingAsk returns true for the live screen-wait pane before slow-tick writes waiting/<pane> while keeping startup, draft, and empty markers false; and clearing the menu immediately restores working or idle. |
 | AGY-UX-001 | Empty composer returns draft='' and BoxEmpty=true; typed composer returns exact user draft without task-drawer text and BoxEmpty=false. |
 | AGY-UX-002 | Valid annotations return decoded single-line UTF-8 titles; unsafe IDs and malformed files return empty strings. |
 | AGY-UX-003 | Bound tmux pane reports Task equal to the saved annotation title; unbound tmux pane strips 'agy' to Task=''; native agy row carries its saved annotation title. |

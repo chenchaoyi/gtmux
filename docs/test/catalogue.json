@@ -4713,7 +4713,7 @@
       ]
     },
     "internal/app/pendingask_test.go": {
-      "sha256": "d3b7854d39bd8659ef5759a71b9163538966ff99dacdd2c2a7c343adcc178b6c",
+      "sha256": "96f9deced66f0da4b1ec25ff5d33cca74f8a01b268faa15da8a5fa45a1d0d1c6",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -4724,6 +4724,15 @@
           "name": "TestHasPendingAsk",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-b370d4df896e",
+          "line": 55,
+          "kind": "reviewed-selector",
+          "name": "TestAGYSEL002_HasPendingAskSupportsLiveScreenWaitBeforeSlowTick",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-SEL-002"
         }
       ]
     },
@@ -22646,7 +22655,7 @@
       ]
     },
     "internal/prompt/prompt_test.go": {
-      "sha256": "231814ef230051752dabd989c1dc7f02c6bcdb3422c295cd0ec00ee770df28ff",
+      "sha256": "8a7481bc2da08a2642554574a55e97519515d099efcbc71fe1ceb8cc78fd3324",
       "layer": "L1",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -22849,6 +22858,15 @@
           "name": "TestSelectorLeads",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-cbb4fc10afb1",
+          "line": 527,
+          "kind": "reviewed-selector",
+          "name": "TestAGYSEL001_AntigravityApprovalAndWrappedOptions",
+          "dynamic": false,
+          "layer": "L1",
+          "design": "AGY-SEL-001"
         }
       ]
     },
@@ -71997,6 +72015,22 @@
         }
       ],
       "sha256": "da3a1a1d14de01732f1deab73fdfbd9d444abf6bfd6687c1faef6ee26b5fae17"
+    },
+    "internal/radar/agy_wait_test.go": {
+      "layer": "L2",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-e248f9628d3a",
+          "line": 13,
+          "kind": "reviewed-selector",
+          "name": "TestAGYSEL002_AntigravityScreenWaitLifecycleAndDigest",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "AGY-SEL-002"
+        }
+      ],
+      "sha256": "1adbb53f444386f3bed43e8b1b3df9ce68cc0b404c8d84e0cb8da62e071a0b61"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",
