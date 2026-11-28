@@ -25,6 +25,80 @@ def gh(path):
     return json.loads(subprocess.check_output(['gh', 'api', f'repos/{REPO}/{path}']))
 
 
+USER_MARKERS = ('user-zh:', 'user:')
+
+
+def matched_marker(trimmed):
+    lower = trimmed.lower()
+    for marker in USER_MARKERS:
+        if lower == marker or lower.startswith(marker + ' '):
+            return marker, trimmed[len(marker):].strip()
+    return None, ''
+
+
+def marker_lines(body, target):
+    lines = body.replace('\r\n', '\n').split('\n')
+    out, in_block, fenced = [], False, False
+    for raw in lines:
+        trimmed = raw.strip()
+        if trimmed.startswith(('```', '~~~')):
+            fenced = not fenced
+            if in_block:
+                break
+            continue
+        if fenced:
+            continue
+        if trimmed.startswith(('-----BEGIN PGP SIGNATURE-----', '-----BEGIN SSH SIGNATURE-----')):
+            break
+        if not in_block:
+            marker, rest = matched_marker(trimmed)
+            if marker == target:
+                in_block = True
+                if rest:
+                    out.append(rest)
+            continue
+        if trimmed == '' or trimmed.startswith('#'):
+            break
+        marker, _ = matched_marker(trimmed)
+        if marker is not None:
+            break
+        item = trimmed.lstrip('-*• \t').strip()
+        if item:
+            out.append(item)
+    return out
+
+
+def validate_tag_notes(message):
+    """Require contiguous non-empty user: and user-zh: What's New blocks."""
+    require(isinstance(message, str) and message.strip() != '', "Annotated tag message with user:/user-zh: What's New blocks required")
+    lines = message.replace('\r\n', '\n').split('\n')
+    in_block, fenced = False, False
+    for raw in lines:
+        trimmed = raw.strip()
+        if trimmed.startswith(('```', '~~~')):
+            fenced = not fenced
+            if in_block:
+                in_block = False
+            continue
+        if fenced:
+            continue
+        if trimmed.startswith(('-----BEGIN PGP SIGNATURE-----', '-----BEGIN SSH SIGNATURE-----', '## ')):
+            break
+        marker, _ = matched_marker(trimmed)
+        if marker is not None:
+            in_block = True
+            continue
+        if trimmed == '' or trimmed.startswith('#'):
+            in_block = False
+            continue
+        if not in_block and trimmed.startswith(('- ', '* ', '• ')):
+            raise ValueError("Orphan release-note bullet outside user:/user-zh: block; add headers and keep bullets contiguous")
+    en = marker_lines(message, 'user:')
+    zh = marker_lines(message, 'user-zh:')
+    require(len(en) > 0 and len(zh) > 0, "Annotated tag must include non-empty user: and user-zh: What's New blocks")
+    return en, zh
+
+
 def recovery(tag, definition, api=gh, *, before_build=True):
     """Read-only proof; a CLI success never substitutes for Mac signing or stapling."""
     require(TAG.fullmatch(tag) and SHA.fullmatch(definition), 'Exact stable tag and definition required')
@@ -79,6 +153,16 @@ def resolve(env, api=gh):
     require((release and env.get('GITHUB_EVENT_NAME') == 'push' and TAG.fullmatch(ref[10:])) or
             (not release and env.get('GITHUB_EVENT_NAME') == 'workflow_dispatch' and ref.startswith('refs/heads/')),
             'Expected a tag push or branch snapshot')
+    if release:
+        tag_name = ref[10:]
+        ref_obj = api('git/ref/tags/' + tag_name)['object']
+        require(ref_obj.get('type') == 'tag' and SHA.fullmatch(ref_obj.get('sha', '')), 'Annotated product tag required')
+        annotated = api('git/tags/' + ref_obj['sha'])
+        product = annotated.get('object', {})
+        require(annotated.get('tag') == tag_name and product.get('type') == 'commit' and product.get('sha') == env['GITHUB_SHA'],
+                'Product tag must name the exact release commit')
+        validate_ci(env['GITHUB_SHA'], api(f"actions/workflows/ci.yml/runs?head_sha={env['GITHUB_SHA']}&event=push&per_page=100")['workflow_runs'])
+        validate_tag_notes(annotated.get('message', ''))
     return {'source': env['GITHUB_SHA'], 'ref': ref, 'tag': ref[10:] if release else '',
             'definition': env['GITHUB_SHA'], 'recovery': 'false', 'release': str(release).lower(), 'cli_run': ''}
 
@@ -131,6 +215,12 @@ def attach(env, api=gh, upload=subprocess.run):
 
 def main():
     try:
+        if len(sys.argv) == 3 and sys.argv[1] == '--check-notes':
+            note_path = Path(sys.argv[2])
+            require(note_path.is_file() and not note_path.is_symlink(), 'Readable release-notes file required')
+            en, zh = validate_tag_notes(note_path.read_text(encoding='utf-8'))
+            print(json.dumps({'ok': True, 'en_items': len(en), 'zh_items': len(zh)}, sort_keys=True))
+            return
         if sys.argv[1:] == ['attach']:
             attach(os.environ)
             print('Exact Mac artifact attached or identical existing upload verified')
@@ -142,7 +232,8 @@ def main():
                 output.write(f'{key}={value}\n')
         print(json.dumps(result, sort_keys=True))
     except (DeliveryError, ValueError, KeyError, OSError, subprocess.SubprocessError) as error:
-        raise SystemExit('Release source resolution failed: ' + type(error).__name__) from None
+        detail = f': {error}' if isinstance(error, (ValueError, DeliveryError)) else ''
+        raise SystemExit('Release source resolution failed: ' + type(error).__name__ + detail) from None
 
 
 if __name__ == '__main__':

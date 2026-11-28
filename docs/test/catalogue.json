@@ -61748,7 +61748,7 @@
       "cases": [
         {
           "id": "MAP-41a5bc78e4e8",
-          "line": 83,
+          "line": 84,
           "kind": "reviewed-selector",
           "name": "confirmed_unit_test_isolation",
           "dynamic": false,
@@ -61766,7 +61766,7 @@
         },
         {
           "id": "MAP-a4f326b77fc6",
-          "line": 42,
+          "line": 43,
           "kind": "reviewed-selector",
           "name": "document",
           "dynamic": false,
@@ -61793,7 +61793,7 @@
         },
         {
           "id": "MAP-38dd12ab9f25",
-          "line": 36,
+          "line": 37,
           "kind": "reviewed-selector",
           "name": "GO_GATE_SCRIPTS",
           "dynamic": false,
@@ -61802,7 +61802,7 @@
         },
         {
           "id": "MAP-515053c33d08",
-          "line": 100,
+          "line": 101,
           "kind": "reviewed-selector",
           "name": "classify",
           "dynamic": false,
@@ -61810,10 +61810,10 @@
           "design": "CIS-001,CIS-002,CIS-003,CIS-004"
         }
       ],
-      "sha256": "84a025a1516898810fd65c13045320bc2bba53dac08753a3ff4bbabc48e85ee7"
+      "sha256": "ad40c0f86752c3d1d5aadc3b5d541304927ea8ab3ed71548f8310d1bfa219442"
     },
     "scripts/ci_test.py": {
-      "sha256": "399d22a270f2077370ec86e995fb41298e5d7f2babd9effc5d7811899b65faa3",
+      "sha256": "0fb799ac1ca216c5b20eedc3d23130283a9b893b35043f0e86465782fc04dae4",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -61827,7 +61827,7 @@
         },
         {
           "id": "LEG-5e8793132c96",
-          "line": 93,
+          "line": 98,
           "kind": "unittest",
           "name": "test_shared_or_unknown_impact_is_full",
           "dynamic": true,
@@ -61835,7 +61835,7 @@
         },
         {
           "id": "LEG-7bbcfe8992be",
-          "line": 104,
+          "line": 109,
           "kind": "unittest",
           "name": "test_recognized_modules_include_consumers",
           "dynamic": false,
@@ -61843,7 +61843,7 @@
         },
         {
           "id": "LEG-bbdfd85a9000",
-          "line": 123,
+          "line": 128,
           "kind": "unittest",
           "name": "test_nul_parser_preserves_names_and_old_rename_path",
           "dynamic": true,
@@ -61851,7 +61851,7 @@
         },
         {
           "id": "LEG-30f2f4661935",
-          "line": 132,
+          "line": 137,
           "kind": "unittest",
           "name": "test_actual_git_rename_deletion_and_symlink",
           "dynamic": false,
@@ -61859,7 +61859,7 @@
         },
         {
           "id": "LEG-a0a184955335",
-          "line": 158,
+          "line": 163,
           "kind": "unittest",
           "name": "test_missing_refs_force_full_cli_outputs",
           "dynamic": false,
@@ -61867,7 +61867,7 @@
         },
         {
           "id": "LEG-513d57a7489a",
-          "line": 169,
+          "line": 174,
           "kind": "unittest",
           "name": "test_workflow_jobs_cannot_grow_outside_aggregation",
           "dynamic": false,
@@ -61875,7 +61875,7 @@
         },
         {
           "id": "LEG-1f71c99fb4dc",
-          "line": 181,
+          "line": 186,
           "kind": "unittest",
           "name": "test_unsigned_ios_preserves_arm64_target_and_verifies_products",
           "dynamic": false,
@@ -61883,7 +61883,7 @@
         },
         {
           "id": "LEG-2514a184abce",
-          "line": 193,
+          "line": 198,
           "kind": "unittest",
           "name": "test_android_package_is_built_once_and_both_devices_use_its_output",
           "dynamic": false,
@@ -61891,7 +61891,7 @@
         },
         {
           "id": "LEG-76200ceafcf2",
-          "line": 251,
+          "line": 256,
           "kind": "unittest",
           "name": "test_docs_can_skip_heavy_jobs_but_require_quality",
           "dynamic": false,
@@ -61899,7 +61899,7 @@
         },
         {
           "id": "LEG-ecfb4bf818ba",
-          "line": 257,
+          "line": 262,
           "kind": "unittest",
           "name": "test_missing_skipped_failed_cancelled_required_job_never_green",
           "dynamic": true,
@@ -61907,7 +61907,7 @@
         },
         {
           "id": "LEG-252965413bf3",
-          "line": 276,
+          "line": 281,
           "kind": "unittest",
           "name": "test_bad_plans_or_unselected_failure_are_rejected",
           "dynamic": false,
@@ -61915,7 +61915,7 @@
         },
         {
           "id": "LEG-8a6a845c7484",
-          "line": 286,
+          "line": 291,
           "kind": "unittest",
           "name": "test_mac_host_keeps_both_architectures_and_native_checks",
           "dynamic": false,
@@ -61949,7 +61949,7 @@
         },
         {
           "id": "MAP-1d7d386ae4bf",
-          "line": 266,
+          "line": 271,
           "kind": "reviewed-selector",
           "name": "test_android_aggregation_requires_the_entire_job_family",
           "dynamic": false,
@@ -61967,7 +61967,7 @@
         },
         {
           "id": "MAP-abc39513e700",
-          "line": 78,
+          "line": 83,
           "kind": "reviewed-selector",
           "name": "test_WFH_002_mobile_release_metadata_and_web_shared_boundaries",
           "dynamic": false,
@@ -61976,12 +61976,21 @@
         },
         {
           "id": "MAP-871c9155622c",
-          "line": 304,
+          "line": 309,
           "kind": "reviewed-selector",
           "name": "test_ios_delivery_and_store_assets_pin_arm_toolchain_and_sha_actions",
           "dynamic": false,
           "layer": "G",
           "design": "CIS-001,CIS-002,CIS-003,CIS-004,WFH-002,WFH-003"
+        },
+        {
+          "id": "MAP-9986bcf32af7",
+          "line": 78,
+          "kind": "reviewed-selector",
+          "name": "test_RWN_002_release_source_guard_scripts_are_policy_only",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CIS-001,CIS-002,CIS-003,CIS-004,WFH-002,WFH-003,RWN-002"
         }
       ]
     },
@@ -62254,13 +62263,13 @@
       ]
     },
     "scripts/macos_release_source_test.py": {
-      "sha256": "bb12ea517b2b245d5b15c7e3742b01ec4ba8b85fac311ed0a5665a9a287fe049",
+      "sha256": "f9403bf6406d8d2c9eff66a8ae29a6d6a4462fdd56c12e7388e86c2ae0c31d69",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
         {
           "id": "LEG-f25be4639f14",
-          "line": 47,
+          "line": 48,
           "kind": "unittest",
           "name": "test_exact_product_is_separate_from_workflow_definition",
           "dynamic": false,
@@ -62268,7 +62277,7 @@
         },
         {
           "id": "LEG-df83a87677f8",
-          "line": 52,
+          "line": 53,
           "kind": "unittest",
           "name": "test_normal_tag_and_snapshot_do_not_fetch_recovery_authority",
           "dynamic": false,
@@ -62276,7 +62285,7 @@
         },
         {
           "id": "LEG-024e8902532b",
-          "line": 59,
+          "line": 108,
           "kind": "unittest",
           "name": "test_dispatch_identity_branch_and_tag_cannot_inject_source",
           "dynamic": true,
@@ -62284,7 +62293,7 @@
         },
         {
           "id": "LEG-3ec53d8da2ff",
-          "line": 65,
+          "line": 114,
           "kind": "unittest",
           "name": "test_moved_main_lightweight_tag_or_wrong_annotated_target_refused",
           "dynamic": true,
@@ -62292,7 +62301,7 @@
         },
         {
           "id": "LEG-d287d08892e1",
-          "line": 74,
+          "line": 123,
           "kind": "unittest",
           "name": "test_both_latest_product_and_definition_main_ci_required",
           "dynamic": true,
@@ -62300,7 +62309,7 @@
         },
         {
           "id": "LEG-7d91fb17352f",
-          "line": 82,
+          "line": 131,
           "kind": "unittest",
           "name": "test_cli_assets_and_current_stable_release_required",
           "dynamic": true,
@@ -62308,7 +62317,7 @@
         },
         {
           "id": "LEG-0f5c2d90cdb7",
-          "line": 90,
+          "line": 139,
           "kind": "unittest",
           "name": "test_existing_mac_is_not_rebuilt",
           "dynamic": false,
@@ -62316,7 +62325,7 @@
         },
         {
           "id": "LEG-6e59738888f6",
-          "line": 95,
+          "line": 144,
           "kind": "unittest",
           "name": "test_newer_failed_cli_cannot_reuse_old_success",
           "dynamic": false,
@@ -62324,7 +62333,7 @@
         },
         {
           "id": "LEG-7398b7442e11",
-          "line": 99,
+          "line": 148,
           "kind": "unittest",
           "name": "test_wrong_cli_source_run_failure_or_successful_mac_refused",
           "dynamic": true,
@@ -62332,7 +62341,7 @@
         },
         {
           "id": "LEG-4581141dbca6",
-          "line": 106,
+          "line": 155,
           "kind": "unittest",
           "name": "test_recovery_publication_requires_independent_staple_and_all_jobs",
           "dynamic": true,
@@ -62340,7 +62349,7 @@
         },
         {
           "id": "LEG-5b769fb296e9",
-          "line": 120,
+          "line": 169,
           "kind": "unittest",
           "name": "test_publication_is_bound_to_its_reviewed_definition_if_main_advances",
           "dynamic": false,
@@ -62348,7 +62357,7 @@
         },
         {
           "id": "LEG-5aad5158d068",
-          "line": 125,
+          "line": 174,
           "kind": "unittest",
           "name": "test_definition_and_product_cannot_be_swapped_at_publication",
           "dynamic": false,
@@ -62356,11 +62365,20 @@
         },
         {
           "id": "LEG-49bb706f9b27",
-          "line": 130,
+          "line": 179,
           "kind": "unittest",
           "name": "test_attach_is_idempotent_only_for_identical_published_bytes",
           "dynamic": false,
           "layer": "G"
+        },
+        {
+          "id": "MAP-ce8ff863ddc5",
+          "line": 69,
+          "kind": "reviewed-selector",
+          "name": "test_RWN_001_release_tag_requires_verified_ci_and_bilingual_whatsnew_blocks",
+          "dynamic": false,
+          "layer": "G",
+          "design": "RWN-001"
         }
       ]
     },
@@ -71954,6 +71972,31 @@
         }
       ],
       "sha256": "1132252f6a6e11f251020f4ff669b4c73e89f42369122ea5a6f09429b035c5c8"
+    },
+    "scripts/macos_release_source.py": {
+      "layer": "G",
+      "stack": "reviewed implementation",
+      "cases": [
+        {
+          "id": "MAP-3522d769fcb9",
+          "line": 71,
+          "kind": "reviewed-selector",
+          "name": "def validate_tag_notes(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "RWN-001"
+        },
+        {
+          "id": "MAP-88aeb1cc998e",
+          "line": 144,
+          "kind": "reviewed-selector",
+          "name": "def resolve(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "RWN-001"
+        }
+      ],
+      "sha256": "da3a1a1d14de01732f1deab73fdfbd9d444abf6bfd6687c1faef6ee26b5fae17"
     }
   },
   "legacy_inventory_source": "4fad611907cb740412d05cc48376de0801dce1c2",

@@ -237,7 +237,7 @@ The cgo-free CLI/server supports macOS and Linux amd64/arm64; the native menu-ba
 - Physical iPhone acceptance: read `mobileapp/e2e/REAL-DEVICE.md` before choosing screenshot/automation tools. Preserve pairings and use isolated WDA resources; screenshots, AX checks and VoiceOver speech are separate results.
 - The CLI MUST stay cgo-free — `CGO_ENABLED=0 go build ./cmd/gtmux` must pass.
   Only the Swift app is native; nothing in `internal/` may pull in cgo.
-- Release: push a tag `vX.Y.Z` → goreleaser ships the CLI tarballs and a macOS
+- Release: push an annotated tag `vX.Y.Z` whose message contains contiguous, non-empty `user:` and `user-zh:` What's New blocks (verify locally before tagging with `python3 scripts/macos_release_source.py --check-notes <file>`; `release.yml` fails closed without both blocks or passing `main` push CI) → goreleaser ships the CLI tarballs and a macOS
   job runs `macapp/build.sh` to ship `Gtmux-<v>-macos.zip`. CI builds the app
   but **can't see the menu bar** — smoke-test on real macOS before trusting a tag.
 - **Signing & notarization:** `build.sh` signs ad-hoc by default (Gatekeeper-blocked

@@ -30,8 +30,10 @@ python3 mobileapp/scripts/release-preflight.py --identity-only
    只选择实际交付的平台；CLI/Mac 专属版本使用 `--platform none`。预检读取版本、原生
    marketing version、双语说明、Apple 生成历史及源码指纹；不修改文件、不创建标签，
    也不替代设计检查、CI、签名和交付范围判断。
-4. 填版本后再跑正常检查，将说明和生成文件一起提交，再开 PR。创建正式附注标签前，
-   重新核远端版本占用和活动流水线。
+4. 填版本后再跑正常检查，将说明和生成文件一起提交，再开 PR。合入并等待 `main` 推送检查全绿后，
+   创建正式附注标签前须重新核远端版本占用与活动流水线，并用
+   `python3 scripts/macos_release_source.py --check-notes <说明文件>` 校验附注标签正文同时包含非空且连续的
+   `user:` 与 `user-zh:` 更新内容段落（`release.yml` 首步门禁会直接拒绝缺少任一段落或未通过 `main` CI 的标签）。
 
 ## 构建一次，分别验证
 

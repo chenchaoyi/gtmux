@@ -18,7 +18,8 @@
       "CIS-003",
       "CIS-004",
       "WFH-002",
-      "WFH-003"
+      "WFH-003",
+      "RWN-002"
     ],
     "selectors": [
       "test_harness_instructions_and_openspec_skills_are_policy_only",
@@ -28,7 +29,8 @@
       "test_actual_git_rename_deletion_and_symlink",
       "test_missing_skipped_failed_cancelled_required_job_never_green",
       "test_WFH_002_mobile_release_metadata_and_web_shared_boundaries",
-      "test_ios_delivery_and_store_assets_pin_arm_toolchain_and_sha_actions"
+      "test_ios_delivery_and_store_assets_pin_arm_toolchain_and_sha_actions",
+      "test_RWN_002_release_source_guard_scripts_are_policy_only"
     ]
   },
   "scripts/ci.py": {
@@ -37,7 +39,8 @@
       "CIS-002",
       "CIS-003",
       "CIS-004",
-      "WFH-002"
+      "WFH-002",
+      "RWN-002"
     ],
     "selectors": [
       "QUALITY_ONLY_SCRIPTS",
@@ -6243,6 +6246,23 @@
     "selectors": [
       "LVR-006 1,000-line Live scrollback partitions into bounded column chunks below GPU texture limits",
       "LVR-007 normal wide rows stay unwrapped while pathological overwide lines split at 320 cells"
+    ]
+  },
+  "scripts/macos_release_source.py": {
+    "cases": [
+      "RWN-001"
+    ],
+    "selectors": [
+      "def validate_tag_notes(",
+      "def resolve("
+    ]
+  },
+  "scripts/macos_release_source_test.py": {
+    "cases": [
+      "RWN-001"
+    ],
+    "selectors": [
+      "test_RWN_001_release_tag_requires_verified_ci_and_bilingual_whatsnew_blocks"
     ]
   }
 }

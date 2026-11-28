@@ -37,8 +37,12 @@ This prevents new disclosures; it does not erase metadata already published.
    generated Apple history and its source fingerprint. It writes nothing, creates
    no tag and does not replace design, CI, signing or delivery-scope gates.
 4. Run the normal required checks after stamping. Commit the prepared notes and
-   generated files together, then open the PR. Recheck remote version occupancy and
-   active workflows immediately before creating the official annotated tag.
+   generated files together, then open the PR. After merging and confirming green
+   `main` push CI, recheck remote version occupancy and active workflows, and verify
+   that the annotated tag message file carries contiguous, non-empty `user:` and
+   `user-zh:` What's New blocks (`python3 scripts/macos_release_source.py --check-notes <file>`)
+   immediately before creating and pushing `vX.Y.Z` (`release.yml` rejects tags missing
+   either block or green `main` CI).
 
 ## Build once, verify independently
 
