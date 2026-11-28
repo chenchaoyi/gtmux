@@ -3273,7 +3273,7 @@
       "replaces the index with results, rather than showing both",
       "says so when nothing matches, naming what was typed",
       "gives the index back when the query is cleared",
-      "is closed by default \u2014 it is read once, then it is just height",
+      "is closed by default — it is read once, then it is just height",
       "opens on tap",
       "describes the result instead of the ledger verb",
       "write-it-in sends carry with no text, after one confirmation",
@@ -3529,7 +3529,7 @@
       "message facts stay historical while a same-session launch chain loads on demand",
       "a tmux message can verify its chain when the radar row has no session id",
       "a current header shows recorded ancestry without implying a historical message",
-      "a stitched older session never requests the pane\u2019s different current runtime",
+      "a stitched older session never requests the pane’s different current runtime",
       "a current profile reuses its already-read chain and distinguishes an empty record"
     ]
   },
@@ -5416,7 +5416,7 @@
       "DFR-002"
     ],
     "selectors": [
-      "Dark and \u4e2d\u6587 apply at once and survive a relaunch"
+      "Dark and 中文 apply at once and survive a relaunch"
     ]
   },
   "mobileapp/e2e/setup/global-setup-target.test.ts": {
@@ -6450,6 +6450,162 @@
     ],
     "selectors": [
       "testClosingPaneBrowserLeavesMenuPopoverVisibilityUntouched"
+    ]
+  },
+  "internal/hqnudge/hardening_test.go": {
+    "cases": [
+      "CHH-001"
+    ],
+    "selectors": [
+      "TestCHH001_TerminalWakeArchivalCapsIntentsAndPins",
+      "TestCHH001_CollidingSlotReconcilesAndClearsClaimConflict",
+      "TestCHH001_DraftAndQuestionRefusalsHoldWithoutExhausting"
+    ]
+  },
+  "internal/events/hardening_test.go": {
+    "cases": [
+      "CHH-002",
+      "CHH-003"
+    ],
+    "selectors": [
+      "TestCHH002_ConcurrentAppendAcrossRotationPreservesContiguousSequence",
+      "TestCHH003_TailReadSinceAndReadSkipRotatedGenerationWhenCovered"
+    ]
+  },
+  "internal/state/hardening_test.go": {
+    "cases": [
+      "CHH-002",
+      "CHH-008"
+    ],
+    "selectors": [
+      "TestCHH002_AtomicMarkersAndWaitingSetIgnorePrivateTemps",
+      "TestCHH008_InspectPrivateTreeAllowsManagedCodexFrontendSymlinkOnly"
+    ]
+  },
+  "internal/hqwake/hardening_test.go": {
+    "cases": [
+      "CHH-002"
+    ],
+    "selectors": [
+      "TestCHH002_ConsumedDistinguishesMissingFromCorruptAndSerializesConsume",
+      "TestCHH002_ConcurrentAddOutcomeAndConsumeTickLoseZeroOutcomes"
+    ]
+  },
+  "internal/dispatch/hardening_test.go": {
+    "cases": [
+      "CHH-002"
+    ],
+    "selectors": [
+      "TestCHH002_ConcurrentTaskUpdatesSerializeCleanly"
+    ]
+  },
+  "internal/server/hardening_test.go": {
+    "cases": [
+      "CHH-004",
+      "CHH-005",
+      "CHH-006",
+      "CHH-007"
+    ],
+    "selectors": [
+      "TestCHH004_OnTallyAsyncBadgeAndHubSlowTickNonBlocking",
+      "TestCHH005_TranscriptConditionalETagAndPreparedContextFastPath",
+      "TestCHH006_AttachDeadPeerReapAndCursorSamplerGating",
+      "TestCHH007_SSERevocationGuestRedactionBodyCapsAndAPNsCleanup"
+    ]
+  },
+  "internal/server/push_test.go": {
+    "cases": [
+      "CHH-004"
+    ],
+    "selectors": [
+      "TestOnTallyBadgeSync"
+    ]
+  },
+  "internal/radar/collection_test.go": {
+    "cases": [
+      "CHH-004"
+    ],
+    "selectors": [
+      "TestCollectionSharesPathsButResamplesFactsBetweenOrderedGathers"
+    ]
+  },
+  "internal/radar/hardening_test.go": {
+    "cases": [
+      "CHH-004",
+      "CHH-005"
+    ],
+    "selectors": [
+      "TestCHH005_IdleSinceFastPathAndCachedAgentsSnapshot"
+    ]
+  },
+  "internal/transcript/hardening_test.go": {
+    "cases": [
+      "CHH-005"
+    ],
+    "selectors": [
+      "TestCHH005_StatCachesAndO1AgySessionTitle"
+    ]
+  },
+  "internal/tmux/hardening_test.go": {
+    "cases": [
+      "CHH-005"
+    ],
+    "selectors": [
+      "TestCHH005_CommandTimeoutBoundsHungTmuxBinary"
+    ]
+  },
+  "internal/connect/hardening_test.go": {
+    "cases": [
+      "CHH-006"
+    ],
+    "selectors": [
+      "TestCHH006_AttachWSURLCarriesExplicitPredictFlag"
+    ]
+  },
+  "internal/hq/hardening_test.go": {
+    "cases": [
+      "CHH-008"
+    ],
+    "selectors": [
+      "TestCHH008_BoardUTF8TruncationAndOversizeBudget",
+      "TestCHH008_ManagedSnapshotPointsSkipsArchiveDecompression",
+      "TestCHH008_PruneDeadCodexFrontendSocketsAndMineErrorBackoff"
+    ]
+  },
+  "internal/resume/hardening_test.go": {
+    "cases": [
+      "CHH-008"
+    ],
+    "selectors": [
+      "TestCHH008_RetiredFrontendsDoNotExhaustActiveCapAndArePruned"
+    ]
+  },
+  "internal/mine/hardening_test.go": {
+    "cases": [
+      "CHH-008"
+    ],
+    "selectors": [
+      "TestCHH008_MineRunLockLastPassMarkerAndBoundedEmitted"
+    ]
+  },
+  "internal/prompt/hardening_test.go": {
+    "cases": [
+      "CHH-008"
+    ],
+    "selectors": [
+      "TestCHH008_BootBannerDisplayLabelAndAllStartupChoosers"
+    ]
+  },
+  "internal/app/hardening_test.go": {
+    "cases": [
+      "CHH-003",
+      "CHH-005",
+      "CHH-008"
+    ],
+    "selectors": [
+      "TestCHH003_WorkspaceObservationIngestShortCircuitsCaughtUpCursor",
+      "TestCHH005_TranscriptConditionalETagShortCircuitAndSinglePaneGeometryQuery",
+      "TestCHH008_DoctorOversizeBoardAndWorkspaceErrorLogging"
     ]
   }
 }

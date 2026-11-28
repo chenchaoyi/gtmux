@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1537 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1552 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3840 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2819 | [L2.csv](cases/L2.csv) |
+| L2 · 组件/契约 | 2846 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 174 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -229,6 +229,14 @@
 | CRX-006 | One short state, no log/implementation tutorial, clear action only when available; failure never becomes empty; readonly and queued meaning survives. Existing permission, draft and identity checks unchanged. Include production string audit inventory with reviewed exclusions rather than claim all product strings rewritten. |
 | CRR-001 | Exact T UI must fail target assertions: earlier records cannot consume or label the new pending bubble, failure leaves the old row unchanged, and only a true new recent occurrence hands off the same rendered bubble. The new source record is located by exact session/record identity, independently of prepended indices. Original stable sendID/target/attempt and attachment distinction tests remain unchanged; no dispatch or input outside the fixture. |
 | CRR-002 | Exact T must fail ANSI and full-result copy target assertions. New expanded copy equals the complete recorded section including escapes and last marker, regardless of readable display/pagination; copy label stays truthful and reader snapshot stays internally consistent. Inline/Raw/default reader copies and existing code formatting/pagination remain valid. No real system clipboard, model success claim, file access or execution. |
+| CHH-001 | Aged or excess (>32 or >24h) terminal wake files are archived into bounded JSONL segments while retiring uncertain nativeIntent JSON and .pin anchors well below the 200/1600 budgets; aged colliding slots archive the older retained file with both digests, settle the pending claim, and allow clean recovery to clear claim-conflict; and InputDraftPresent/InputQuestion refusals requeue with bounded backoff without exhausting into .refused after three attempts. |
+| CHH-002 | Concurrent appends commit contiguous in-order Seq records across rotation without double-rotating events.1.jsonl or triggering false sequence-gap flags; markers and task JSON files publish atomically via private temp+rename; Consumed distinguishes missing (-1) from corrupt/empty (0) and serializes monotonic Consume; and ConsumeTick renames tally.log under lock so concurrent outcomes are never lost. |
+| CHH-003 | Tail reads return identical oldest-first records and gap verdicts without scanning events.1.jsonl when events.jsonl already reaches Seq <= cursor or Ts < cutoff, fall back across events.1.jsonl when needed, and skip ReadSince entirely in workspace reconciliation when cursor >= CurrentSeq(). |
+| CHH-004 | OnTally returns without waiting on relay badge HTTP calls; hub continues firing radar ticks, fast ticks, and pings while single-flight guarding overlapping slow ticks and running checkServerMode when each slow tick completes; and Collection.Agents memoizes its pane slice per Collection while Digest still resamples fresh content. |
+| CHH-005 | Marked non-Codex idle panes return immediately without transcript reads; unchanged files hit stat-keyed caches and native Agy rows read only their own .pbtxt title; conditional GETs return 304 with accurate metadata headers without marshaling turn budgets while public reads strip Context on structs; done alerts reuse cached snapshots; and hung tmux commands time out cleanly. |
+| CHH-006 | Unresponsive or oversized WebSocket peers are closed promptly and their PTY child processes reaped even when the pane prints nothing; AttachCursor never forks when predict=0, while paused, or once idle quiescence is reached, and resumes on fresh activity when prediction is enabled. |
+| CHH-007 | Revoked device and expired guest SSE streams close on the next event/ping; /api/addresses returns 403 to guests; guest /api/agents omits cwd, icon, and launch_host; oversized POST bodies and >512-byte tokens return 400; iOS tokens are retired on 410 or 400 BadDeviceToken but retained on other errors; and oversized native collapse IDs hash to <=64 ASCII hex bytes. |
+| CHH-008 | Board truncates cleanly on valid UTF-8 runes and flags >32 KiB or >250 lines while playbook v70 caps handoff entries to 10; managedSnapshotPoints validates receipts without reading tar.gz archives twice; valid codex-frontends socket symlinks pass inspection while dead sockets and retired receipts are reaped/ignored past 128 files; hqworkspace logs error attributes; mine locks, bounds emitted IDs, reads LastPassAt cheaply, and backs off on errors; prompt matches display labels and all registered choosers; and /api/send marks delivered tasks, audits non-user actors, and reads width+cursor in one tmux query. |
 | STOR-003 | A new in-project version path is accepted without creation. Escapes, aliases into either managed tree, managed project roots and missing project roots are rejected. Closeout enforces the same path boundary and the existing byte budget; read-only legacy inspection remains available. |
 | DFC-001 | Normal secondary text meets4.5:1; decorative/disabled tokens are separate, with no status-palette changes. |
 | DFC-002 | Each target is at least44pt/px, with separate remove/edit regions and correct action delivery. |

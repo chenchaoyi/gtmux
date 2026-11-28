@@ -41,6 +41,9 @@ func (s *Server) handleAddresses(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, errBody("GET only"))
 		return
 	}
+	if !s.fullOnly(w, r) {
+		return
+	}
 	addrs, srv := readTunnelAddresses()
 	reply := addressesReply{Addresses: addrs, Server: srv}
 	if len(addrs) > 0 {

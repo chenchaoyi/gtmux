@@ -189,11 +189,30 @@ func checkedPoint(path string) (snapshotPoint, error) {
 	}
 	return snapshotPoint{path, r, st.Size() + meta.Size()}, nil
 }
+func listedPoint(path string) (snapshotPoint, error) {
+	var r snapshotReceipt
+	if e := readSmallJSON(path+".json", &r); e != nil {
+		return snapshotPoint{}, e
+	}
+	if r.Format != "gtmux-hq-core-v1" || r.At <= 0 || r.Bytes <= 0 || len(r.SHA256) != 64 || r.Digest == "" {
+		return snapshotPoint{}, errors.New("unmanaged snapshot")
+	}
+	st, e := os.Lstat(path)
+	if e != nil || !st.Mode().IsRegular() || st.Size() != r.Bytes || (r.Modified != 0 && st.ModTime().UnixNano() != r.Modified) {
+		return snapshotPoint{}, errors.New("snapshot metadata mismatch")
+	}
+	meta, e := os.Stat(path + ".json")
+	if e != nil {
+		return snapshotPoint{}, e
+	}
+	return snapshotPoint{path, r, st.Size() + meta.Size()}, nil
+}
+
 func managedSnapshotPoints() []snapshotPoint {
 	names, _ := filepath.Glob(filepath.Join(automaticDir(), "hq-*.tar.gz"))
 	var out []snapshotPoint
 	for _, name := range names {
-		if p, e := checkedPoint(name); e == nil {
+		if p, e := listedPoint(name); e == nil {
 			out = append(out, p)
 		}
 	}

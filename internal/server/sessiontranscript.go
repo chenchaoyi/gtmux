@@ -28,11 +28,23 @@ func (s *Server) handleSessionTranscript(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	setAccessSession(r, id)
-	if s.deps.SessionTranscript == nil {
+	if s.deps.SessionTranscript == nil && s.deps.SessionTranscriptConditional == nil {
 		writeJSON(w, 503, errBody("desktop transcript not available"))
 		return
 	}
-	b, meta, err := s.deps.SessionTranscript(id, r.URL.Query().Get("home_id"))
+	includeContext := callerScope(r.Context()) != scopeGuest && r.URL.Query().Get("context") == "1"
+	ifNoneMatch := ""
+	if r.URL.Query().Get("before") == "" {
+		ifNoneMatch = r.Header.Get("If-None-Match")
+	}
+	var b []byte
+	var meta TranscriptMeta
+	var err error
+	if s.deps.SessionTranscriptConditional != nil {
+		b, meta, err = s.deps.SessionTranscriptConditional(id, r.URL.Query().Get("home_id"), ifNoneMatch, includeContext)
+	} else {
+		b, meta, err = s.deps.SessionTranscript(id, r.URL.Query().Get("home_id"))
+	}
 	if err != nil {
 		code := http.StatusInternalServerError
 		if errors.Is(err, sessionpolicy.ErrUnverified) {

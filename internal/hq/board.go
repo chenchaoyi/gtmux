@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"unicode/utf8"
 
 	"github.com/chenchaoyi/gtmux/internal/events"
 	"github.com/chenchaoyi/gtmux/internal/sessionpolicy"
@@ -53,9 +54,20 @@ func Board() (text string, modUnix int64, ok bool) {
 		return "", 0, false
 	}
 	if len(b) > boardMaxBytes {
-		b = b[:boardMaxBytes]
+		b = trimIncompleteUTF8Tail(b[:boardMaxBytes])
 	}
 	return string(b), fi.ModTime().Unix(), true
+}
+
+func trimIncompleteUTF8Tail(b []byte) []byte {
+	for i := 0; i < utf8.UTFMax && len(b) > 0; i++ {
+		r, size := utf8.DecodeLastRune(b)
+		if r != utf8.RuneError || size != 1 || b[len(b)-1] < 0x80 {
+			break
+		}
+		b = b[:len(b)-1]
+	}
+	return b
 }
 
 // EventsJSON returns the event ledger as a marshaled array at a severity FLOOR

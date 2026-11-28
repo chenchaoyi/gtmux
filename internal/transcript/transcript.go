@@ -296,13 +296,64 @@ func SessionOrigin(agent, sessionID string) (reset string, at int64) {
 // a short summary for display. Mid-turn retry errors that recovered are NOT flagged
 // (their last message is a normal assistant/user entry). Non-Claude or unreadable
 // logs → (false, ""). Reads the same tail as LastMessageTime.
+type lastErrCacheEntry struct {
+	ino       uint64
+	size      int64
+	mtimeNano int64
+	errored   bool
+	summary   string
+}
+
+const lastErrCacheCap = 512
+
+var (
+	lastErrMu    sync.Mutex
+	lastErrCache = map[string]lastErrCacheEntry{}
+)
+
+func cachedLastErr(path string, fi os.FileInfo) (lastErrCacheEntry, bool) {
+	key := lastErrCacheEntry{ino: fileIno(fi), size: fi.Size(), mtimeNano: fi.ModTime().UnixNano()}
+	lastErrMu.Lock()
+	defer lastErrMu.Unlock()
+	got, ok := lastErrCache[path]
+	if ok && got.ino == key.ino && got.size == key.size && got.mtimeNano == key.mtimeNano {
+		return got, true
+	}
+	return lastErrCacheEntry{}, false
+}
+
+func storeLastErr(path string, fi os.FileInfo, errored bool, summary string) (bool, string) {
+	entry := lastErrCacheEntry{
+		ino: fileIno(fi), size: fi.Size(), mtimeNano: fi.ModTime().UnixNano(),
+		errored: errored, summary: summary,
+	}
+	lastErrMu.Lock()
+	if len(lastErrCache) >= lastErrCacheCap {
+		lastErrCache = map[string]lastErrCacheEntry{}
+	}
+	lastErrCache[path] = entry
+	lastErrMu.Unlock()
+	return errored, summary
+}
+
 func LastMessageError(agent, sessionID string) (bool, string) {
 	if normalizeAgent(agent) == "dsh" {
 		s, e := dsh.Sessions.Resolve(sessionID)
 		return e == nil && s.EndReason == "error", ""
 	}
 	if normalizeAgent(agent) == "agy" {
-		return agyLastMessageError(LogPath(agent, sessionID))
+		path := LogPath(agent, sessionID)
+		if path == "" {
+			return false, ""
+		}
+		if fi, err := os.Stat(path); err == nil {
+			if hit, ok := cachedLastErr("agy:"+path, fi); ok {
+				return hit.errored, hit.summary
+			}
+			errored, summary := agyLastMessageError(path)
+			return storeLastErr("agy:"+path, fi, errored, summary)
+		}
+		return agyLastMessageError(path)
 	}
 	path, _ := resolveLog(agent, sessionID)
 	if path == "" {
@@ -316,6 +367,9 @@ func LastMessageError(agent, sessionID string) (bool, string) {
 	fi, err := f.Stat()
 	if err != nil {
 		return false, ""
+	}
+	if hit, ok := cachedLastErr(path, fi); ok {
+		return hit.errored, hit.summary
 	}
 	const tail = 64 << 10
 	start := int64(0)
@@ -342,11 +396,11 @@ func LastMessageError(agent, sessionID string) (bool, string) {
 			continue
 		}
 		if e.IsAPIError {
-			return true, errorSummary(e.Message.Content)
+			return storeLastErr(path, fi, true, errorSummary(e.Message.Content))
 		}
-		return false, "" // the last real message was normal → completed
+		return storeLastErr(path, fi, false, "") // the last real message was normal → completed
 	}
-	return false, ""
+	return storeLastErr(path, fi, false, "")
 }
 
 // errorSummary pulls a short, one-line error string out of a Claude error entry's

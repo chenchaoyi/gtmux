@@ -15,6 +15,9 @@ import (
 func idleSince(pane, loc, cwd, agent string, activityAt int64, scope *transcript.CodexPathScope) int64 {
 	path := state.FinishedPath(pane)
 	marked := FileMtime(path)
+	if marked > 0 && !isCodexAgent(agent) {
+		return marked
+	}
 	fallback := activityAt
 	if rec, ok := boundResume(loc, agent); ok && (rec.Agent != "codex" || hqpane.SameDir(rec.Cwd, cwd)) {
 		last := scopedLastMessageTime(scope, rec.Agent, rec.SessionID)

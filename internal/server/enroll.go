@@ -826,7 +826,7 @@ func (s *Server) handleRevoke(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		ID string `json:"id"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ID == "" {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxJSONControlBodyBytes)).Decode(&body); err != nil || body.ID == "" {
 		writeJSON(w, http.StatusBadRequest, errBody("invalid request"))
 		return
 	}

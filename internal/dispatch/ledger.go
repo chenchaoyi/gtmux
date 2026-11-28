@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
 )
@@ -180,11 +181,26 @@ func NewID(nowNano int64) string {
 	return "t" + strconv.FormatInt(nowNano, 36)
 }
 
-// AddTask writes a ledger entry (creating the dir).
-func AddTask(t Task) error {
-	if err := state.MkdirAll(tasksDir(), 0o755); err != nil {
-		return err
+func tasksLockPath() string { return filepath.Join(tasksDir(), ".tasks.lock") }
+
+func withTasksLock(fn func() bool) bool {
+	if err := state.MkdirAll(tasksDir(), 0o700); err != nil {
+		return false
 	}
+	lock, err := state.OpenFile(tasksLockPath(), os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return false
+	}
+	defer lock.Close()
+	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
+		return false
+	}
+	defer syscall.Flock(int(lock.Fd()), syscall.LOCK_UN)
+	return fn()
+}
+
+// AddTask writes a ledger entry atomically (creating the dir).
+func AddTask(t Task) error {
 	// Attention-ledger: default FirstSeen once (preserved across later re-saves).
 	if t.FirstSeen == 0 {
 		t.FirstSeen = t.CreatedAt
@@ -193,7 +209,7 @@ func AddTask(t Task) error {
 	if err != nil {
 		return err
 	}
-	return state.WriteFile(taskPath(t.ID), b, 0o644)
+	return state.WritePrivateFile(taskPath(t.ID), b)
 }
 
 // LoadTask returns a ledger entry by id.
@@ -332,13 +348,15 @@ func ReapDeclined(id string) bool { return state.Exists(reapDeclinedPath(id)) }
 // the reap-suggested marker so the suggestion can resume once the snooze lapses. A
 // missing task is a no-op returning false.
 func SnoozeTask(id string, until int64) bool {
-	t, ok := LoadTask(id)
-	if !ok {
-		return false
-	}
-	t.SnoozeUntil = until
-	state.Remove(reapSuggestedPath(id))
-	return AddTask(t) == nil
+	return withTasksLock(func() bool {
+		t, ok := LoadTask(id)
+		if !ok {
+			return false
+		}
+		t.SnoozeUntil = until
+		state.Remove(reapSuggestedPath(id))
+		return AddTask(t) == nil
+	})
 }
 
 // Snoozed reports whether a task's reap suggestion is currently silenced at `now`.

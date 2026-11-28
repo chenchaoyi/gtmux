@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/state"
@@ -28,6 +29,25 @@ func tickTimePath() string { return filepath.Join(dir(), "tick-time") }
 // tickSeqPath records the event sequence the last delivered tick covered up to.
 func tickSeqPath() string { return filepath.Join(dir(), "tick-seq") }
 
+func tallyLockPath() string { return filepath.Join(dir(), "tally.lock") }
+
+func withTallyLock(fn func()) bool {
+	if err := state.MkdirAll(dir(), 0o700); err != nil {
+		return false
+	}
+	lock, err := state.OpenFile(tallyLockPath(), os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return false
+	}
+	defer lock.Close()
+	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
+		return false
+	}
+	defer syscall.Flock(int(lock.Fd()), syscall.LOCK_UN)
+	fn()
+	return true
+}
+
 // AddOutcome appends one outcome ("done" | "gone" | …) to the pending tally.
 // Best-effort — perception bookkeeping must never fail a hook.
 func AddOutcome(kind string) {
@@ -35,15 +55,14 @@ func AddOutcome(kind string) {
 	if kind == "" {
 		return
 	}
-	if err := state.MkdirAll(dir(), 0o755); err != nil {
-		return
-	}
-	f, err := state.OpenFile(tallyPath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		return
-	}
-	_, _ = f.WriteString(kind + "\n")
-	_ = f.Close()
+	withTallyLock(func() {
+		f, err := state.OpenFile(tallyPath(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+		if err != nil {
+			return
+		}
+		_, _ = f.WriteString(kind + "\n")
+		_ = f.Close()
+	})
 }
 
 // TallyCount returns the number of pending outcomes (cheap line count).
@@ -92,7 +111,7 @@ func ConsumeTick(now, latestSeq int64) string {
 	}
 	fromSeq := readSeqMarker()
 	_ = state.WriteInt64Marker(tickSeqPath(), latestSeq)
-	_ = state.WriteFile(tickTimePath(), nil, 0o644)
+	_ = state.WriteMarker(tickTimePath(), "")
 	t := time.Unix(now, 0)
 	_ = os.Chtimes(tickTimePath(), t, t)
 
@@ -103,13 +122,24 @@ func ConsumeTick(now, latestSeq int64) string {
 	return Line(ClassTick, head, countsField(counts), PullHint(now, fromSeq))
 }
 
-// consumeTally reads + truncates the tally, returning counts by kind.
+// consumeTally atomically claims tally.log under the tally lock before reading
+// and deleting the claimed snapshot so concurrent AddOutcome appends are never lost.
 func consumeTally() map[string]int {
-	b, err := os.ReadFile(tallyPath())
+	claim := filepath.Join(dir(), fmt.Sprintf("tally.consuming.%d.%d", os.Getpid(), time.Now().UnixNano()))
+	claimed := false
+	withTallyLock(func() {
+		if os.Rename(tallyPath(), claim) == nil {
+			claimed = true
+		}
+	})
+	if !claimed {
+		return nil
+	}
+	defer os.Remove(claim)
+	b, err := os.ReadFile(claim)
 	if err != nil {
 		return nil
 	}
-	_ = os.Remove(tallyPath()) // consumed; a concurrent append recreates it for the NEXT tick
 	counts := map[string]int{}
 	for _, ln := range strings.Split(string(b), "\n") {
 		if k := strings.TrimSpace(ln); k != "" {

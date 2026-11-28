@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/chenchaoyi/gtmux/internal/diag"
@@ -349,9 +350,21 @@ func applyWorkspaceAction(s *hqworkspace.Store, a workspaceAction, now int64) (a
 		return nil, errors.New("unknown workspace operation")
 	}
 	if err != nil {
-		diag.Did("act.hq-workspace", a.Matter, diag.Failed, a.Op, "id", a.ID, "association", a.AssociationID)
+		outcome := diag.Refused
+		if isWorkspaceStorageError(err) {
+			outcome = diag.Failed
+		}
+		diag.Did("act.hq-workspace", a.Matter, outcome, a.Op, "id", a.ID, "association", a.AssociationID, "error", err.Error())
 		return nil, err
 	}
 	diag.Did("act.hq-workspace", a.Matter, diag.OK, a.Op, "id", a.ID, "association", a.AssociationID)
 	return result, nil
+}
+
+func isWorkspaceStorageError(err error) bool {
+	var pathErr *os.PathError
+	var linkErr *os.LinkError
+	var sysErr *os.SyscallError
+	var errno syscall.Errno
+	return errors.As(err, &pathErr) || errors.As(err, &linkErr) || errors.As(err, &sysErr) || errors.As(err, &errno)
 }

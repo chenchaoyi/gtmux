@@ -57,7 +57,7 @@ func (s *Server) handleRoutes(w http.ResponseWriter, r *http.Request) {
 		var body struct {
 			Route string `json:"route"`
 		}
-		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Route == "" {
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxJSONControlBodyBytes)).Decode(&body); err != nil || body.Route == "" {
 			writeJSON(w, http.StatusBadRequest, errBody("which route?"))
 			return
 		}

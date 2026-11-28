@@ -25,7 +25,6 @@ focus, launch, rotate or send input; combining another action SHALL be refused.
 - **WHEN** the existing file is missing/unmanaged/unsafe, the shared lock is held, or backup publication cannot complete
 - **THEN** it refuses without seeding a home or altering the existing instruction file, personal records or session markers; external manual editors are not claimed to participate in the lock
 
-
 ### Requirement: Direct Codex HQ retains terminal scrollback
 
 A direct interactive Codex HQ launch SHALL share the managed inline-screen default
@@ -2088,3 +2087,12 @@ Legacy clients without independent proof SHALL be reported as informational unce
 #### Scenario: A restored client shares its history directory with other sessions
 - **WHEN** its own live frontend proves the exact current thread
 - **THEN** unrelated newer history does not create a binding repair warning
+
+### Requirement: HQ board bounds, fast snapshot receipts, frontend hygiene, and miner resilience
+
+HQ SHALL truncate `Board()` on valid UTF-8 boundaries, warn when `board.md` exceeds 32 KiB or 250 lines, and cap playbook handoff logs to 10 entries. Snapshot listing SHALL validate `.json` receipts without re-decompressing existing archives. Hygiene and inspection SHALL accept valid `codex-frontends` socket symlinks and prune dead sockets and retired receipts, while `mine` SHALL lock, bound `emitted.json`, cache `last-pass`, and back off on errors.
+
+#### Scenario: Oversized or multibyte HQ board is handled safely
+
+- **WHEN** `board.md` exceeds 32 KiB or 250 lines or cuts across multibyte UTF-8 at the read cap
+- **THEN** `Board()` returns valid UTF-8 and `doctor` and `self-check` surface the size warning

@@ -121,6 +121,13 @@ func Run(dir string, o Options) (Report, error) {
 	if o.Now.IsZero() {
 		o.Now = time.Now()
 	}
+	if !o.DryRun {
+		unlock, err := lockMineDir(dir)
+		if err != nil {
+			return Report{}, err
+		}
+		defer unlock()
+	}
 	led, err := loadLedger(dir)
 	if err != nil {
 		return Report{}, err

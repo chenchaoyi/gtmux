@@ -98,6 +98,8 @@ type Deps struct {
 	// above the last captured line, plus whether it's visible. Optional: nil → the
 	// pane response omits the cursor (the renderer then shows none / its own).
 	PaneCursor func(id string) (x, up int, visible, ok bool)
+	// PaneGeometry optionally combines PaneColumns and PaneCursor in a single query.
+	PaneGeometry func(id string) (cols, x, up int, visible, cursorOK bool)
 
 	// AttachCursor returns the pane's cursor CELL (x,y) plus whether the pane is on
 	// the ALTERNATE screen — the attach bridge streams this as OpCursor frames so the
@@ -162,15 +164,17 @@ type Deps struct {
 	// log isn't found. Optional: nil → GET /api/transcript is 503.
 	// earlier is how many previous sessions to stitch in front of the current one
 	// (hq-console-history): 0 is the current session alone.
-	ToolInput  func(sessionID, homeID, ref string) ([]byte, error)
-	Transcript func(id string, earlier int) (turns []byte, meta TranscriptMeta, err error)
+	ToolInput             func(sessionID, homeID, ref string) ([]byte, error)
+	Transcript            func(id string, earlier int) (turns []byte, meta TranscriptMeta, err error)
+	TranscriptConditional func(id string, earlier, limit int, ifNoneMatch string, includeContext bool) (turns []byte, meta TranscriptMeta, err error)
 	// TranscriptWindow is opt-in recent20 or metadata-only history preparation.
 	// Authorization above it and the cursor policy below it remain unchanged.
 	TranscriptWindow func(id string, earlier int, historyOnly bool) (turns []byte, meta TranscriptMeta, err error)
 	// Owner opt-in only; this is history, never current input authority.
 	TranscriptObserved func(id string, earlier, limit int) (turns []byte, meta TranscriptMeta, err error)
 	// SessionTranscript reads verified desktop sessions, never arbitrary file paths.
-	SessionTranscript func(id, homeID string) (turns []byte, meta TranscriptMeta, err error)
+	SessionTranscript            func(id, homeID string) (turns []byte, meta TranscriptMeta, err error)
+	SessionTranscriptConditional func(id, homeID, ifNoneMatch string, includeContext bool) (turns []byte, meta TranscriptMeta, err error)
 	// Documents are snapshots of explicit publications or verified conversation links.
 	ArtifactResolve func(reference, sessionID, homeID string) (artifact.File, error)
 	ArtifactRelated func(reference, parentID, sessionID, homeID string) (artifact.File, error)
@@ -659,6 +663,9 @@ func filterAgentsForGuest(raw []byte, dev EnrolledDevice, stale bool) []byte {
 				continue
 			}
 			delete(fields, "observed_conversation")
+			delete(fields, "cwd")
+			delete(fields, "icon")
+			delete(fields, "launch_host")
 			row, _ = json.Marshal(fields)
 			kept = append(kept, row)
 		}
@@ -747,17 +754,31 @@ func (s *Server) handlePane(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp := paneResponse{ID: id, Text: text}
+	s.fillPaneGeometry(id, &resp.Cols, &resp.Cursor)
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (s *Server) fillPaneGeometry(id string, colsOut *int, cursorOut **paneCursor) {
+	if s.deps.PaneGeometry != nil {
+		cols, x, up, vis, ok := s.deps.PaneGeometry(id)
+		if cols > 0 {
+			*colsOut = cols
+		}
+		if ok {
+			*cursorOut = &paneCursor{X: x, Up: up, Visible: vis}
+		}
+		return
+	}
 	if s.deps.PaneColumns != nil {
 		if cols := s.deps.PaneColumns(id); cols > 0 {
-			resp.Cols = cols
+			*colsOut = cols
 		}
 	}
 	if s.deps.PaneCursor != nil {
 		if x, up, vis, ok := s.deps.PaneCursor(id); ok {
-			resp.Cursor = &paneCursor{X: x, Up: up, Visible: vis}
+			*cursorOut = &paneCursor{X: x, Up: up, Visible: vis}
 		}
 	}
-	writeJSON(w, http.StatusOK, resp)
 }
 
 // handleOptions returns a waiting pane's interactive 1/2/3 choice block as JSON
@@ -985,16 +1006,7 @@ func (s *Server) writeSendResponse(w http.ResponseWriter, id string, receipts ..
 		}
 		if text, ok := s.deps.PaneText(id); ok {
 			resp.Text = text
-			if s.deps.PaneColumns != nil {
-				if cols := s.deps.PaneColumns(id); cols > 0 {
-					resp.Cols = cols
-				}
-			}
-			if s.deps.PaneCursor != nil {
-				if x, up, vis, ok := s.deps.PaneCursor(id); ok {
-					resp.Cursor = &paneCursor{X: x, Up: up, Visible: vis}
-				}
-			}
+			s.fillPaneGeometry(id, &resp.Cols, &resp.Cursor)
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -1168,6 +1180,7 @@ var ErrConversationUnavailable = errors.New("conversation source unavailable")
 type TranscriptMeta struct {
 	AssociationRecovered bool
 	AssociationReadOnly  bool
+	ContextPrepared      bool
 
 	History func(context.Context, string) ([]byte, TranscriptMeta, error)
 
@@ -1199,7 +1212,7 @@ type TranscriptMeta struct {
 // handleTranscript serves the pane's parsed chat history (GET /api/transcript?id=%N)
 // as a JSON array of turns. Read-only.
 func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
-	if s.deps.Transcript == nil {
+	if s.deps.Transcript == nil && s.deps.TranscriptConditional == nil {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("transcript not available"))
 		return
 	}
@@ -1215,12 +1228,27 @@ func (s *Server) handleTranscript(w http.ResponseWriter, r *http.Request) {
 	if earlier < 0 {
 		earlier = 0
 	}
+	includeContext := callerScope(r.Context()) != scopeGuest && r.URL.Query().Get("context") == "1"
+	ifNoneMatch := ""
+	if r.URL.Query().Get("before") == "" {
+		ifNoneMatch = r.Header.Get("If-None-Match")
+	}
 	var b []byte
 	var meta TranscriptMeta
 	var err error
-	if s.deps.TranscriptWindow != nil && (r.URL.Query().Get("recent") == "1" || r.URL.Query().Get("before") != "") {
+	switch {
+	case s.deps.TranscriptConditional != nil:
+		limit := 300
+		if r.URL.Query().Get("recent") == "1" {
+			limit = 20
+		}
+		if r.URL.Query().Get("before") != "" {
+			limit = 0
+		}
+		b, meta, err = s.deps.TranscriptConditional(id, earlier, limit, ifNoneMatch, includeContext)
+	case s.deps.TranscriptWindow != nil && (r.URL.Query().Get("recent") == "1" || r.URL.Query().Get("before") != ""):
 		b, meta, err = s.deps.TranscriptWindow(id, earlier, r.URL.Query().Get("before") != "")
-	} else {
+	default:
 		b, meta, err = s.deps.Transcript(id, earlier)
 	}
 	if errors.Is(err, ErrConversationUnassociated) && callerScope(r.Context()) != scopeGuest && r.URL.Query().Get("observation") == "1" && s.deps.TranscriptObserved != nil {
@@ -1387,7 +1415,13 @@ func (s *Server) handleServerMode(w http.ResponseWriter, r *http.Request) {
 		var body struct {
 			On *bool `json:"on"`
 		}
-		_ = json.NewDecoder(r.Body).Decode(&body)
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxJSONControlBodyBytes)).Decode(&body); err != nil {
+			var tooLarge *http.MaxBytesError
+			if errors.As(err, &tooLarge) {
+				writeJSON(w, http.StatusRequestEntityTooLarge, errBody("request too large"))
+				return
+			}
+		}
 		if body.On == nil || *body.On {
 			// Refused for every client, owner devices included — see the doc comment.
 			writeJSON(w, http.StatusForbidden,

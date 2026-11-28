@@ -473,7 +473,13 @@ func BootBannerLine(capture, agent string) string { return bootBannerLine(captur
 func bootBannerLine(capture, agent string) string {
 	sigs := bootBanners[""]
 	if agent != "" {
-		sigs = append(append([]string(nil), sigs...), bootBanners[agent]...)
+		own, ok := bootBanners[agent]
+		if !ok {
+			own = bootBanners[agents.KeyForLabel(agent)]
+		}
+		if len(own) > 0 {
+			sigs = append(append([]string(nil), sigs...), own...)
+		}
 	}
 	for _, raw := range bottomLines(capture, 14) {
 		s := strings.TrimLeft(ansi.Strip(raw), "│╭╰╮╯─ \t")
@@ -588,10 +594,25 @@ func NotReadyReason(capture, agent string) string {
 }
 
 // looksLikeStartupChooser reports whether the bottom-of-screen menu is agent
-// session-startup chrome (a GATE or a PICKER) rather than a task-level approval — so
-// WaitingOptions doesn't flag either as an active task wait.
+// session-startup chrome (Claude's default hook-backed startup gate or any
+// registered agent's reopened-session picker) rather than an active menu the
+// user can answer via WaitingOptions. Codex and Antigravity trust gates stay in
+// WaitingOptions so phone/Web viewers see them as waiting and can tap 1/2.
 func looksLikeStartupChooser(window string) bool {
-	return IsStartupGate(window, "") || IsStartupPicker(window, "")
+	if IsStartupGate(window, "") {
+		return true
+	}
+	for _, raw := range bottomLines(ansi.StripDroppingFaint(window), gateRegionLines) {
+		line := strings.TrimLeft(raw, "│╭╰╮╯─ \t")
+		for _, sigs := range startupPickers {
+			for _, sig := range sigs {
+				if strings.Contains(line, sig) {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // hasMenuNavigationFooter reports whether the lines below an option block carry

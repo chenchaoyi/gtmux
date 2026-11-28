@@ -162,7 +162,7 @@ func WatchedPanes() []string {
 	}
 	var out []string
 	for _, e := range entries {
-		if !e.IsDir() {
+		if !e.IsDir() && !strings.HasPrefix(e.Name(), privateTempPrefix) {
 			out = append(out, e.Name())
 		}
 	}
@@ -204,7 +204,7 @@ func ReapOrphanTurnMarkers(live map[string]bool) int {
 		}
 		for _, e := range entries {
 			// Atomic publishers use temporary names; only pane snapshots are reaped.
-			if e.IsDir() || live[e.Name()] || dir == TerminalLifecycleDir() && !IsPaneID(e.Name()) {
+			if e.IsDir() || strings.HasPrefix(e.Name(), privateTempPrefix) || live[e.Name()] || dir == TerminalLifecycleDir() && !IsPaneID(e.Name()) {
 				continue
 			}
 			if os.Remove(filepath.Join(dir, e.Name())) == nil {
@@ -441,10 +441,31 @@ func Remove(path string) { _ = os.Remove(path) }
 // Touch, the marker carries a small payload — e.g. the active turn's agent
 // session id, so a late hook from a superseded session can be told apart.
 func WriteMarker(path, content string) error {
-	if err := MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	return writeAtomicMarker(path, []byte(content))
+}
+
+func writeAtomicMarker(path string, data []byte) error {
+	if managedRoot(path) != "" {
+		return WritePrivateFile(path, data)
+	}
+	dir := filepath.Dir(path)
+	if err := MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return WriteFile(path, []byte(content), 0o644)
+	f, err := CreateTemp(dir, privateTempPrefix+"*")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	defer os.Remove(tmp)
+	if _, err := f.Write(data); err != nil {
+		_ = f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }
 
 // ReadMarker returns a marker file's trimmed content ("" if missing/empty). An
@@ -474,10 +495,7 @@ func WriteInt64Marker(path string, n int64) error {
 
 // WriteLastFinished records pane as the most-recently-finished turn.
 func WriteLastFinished(pane string) error {
-	if err := MkdirAll(Dir(), 0o755); err != nil {
-		return err
-	}
-	return WriteFile(LastFinishedPath(), []byte(pane+"\n"), 0o644)
+	return writeAtomicMarker(LastFinishedPath(), []byte(pane+"\n"))
 }
 
 // ReadLastFinished returns the trimmed pane id from last-finished ("" if none).
@@ -494,7 +512,7 @@ func WaitingSet() map[string]bool {
 	m := map[string]bool{}
 	entries, _ := os.ReadDir(WaitingDir())
 	for _, e := range entries {
-		if !e.IsDir() {
+		if !e.IsDir() && !strings.HasPrefix(e.Name(), privateTempPrefix) {
 			m[e.Name()] = true
 		}
 	}

@@ -10,13 +10,15 @@ package dispatch
 // updateTask loads a LIVE task, applies mutate, stamps LastUpdate, and re-saves it.
 // A missing task is a no-op returning false.
 func updateTask(id string, now int64, mutate func(*Task)) bool {
-	t, ok := LoadTask(id)
-	if !ok {
-		return false
-	}
-	mutate(&t)
-	t.LastUpdate = now
-	return AddTask(t) == nil
+	return withTasksLock(func() bool {
+		t, ok := LoadTask(id)
+		if !ok {
+			return false
+		}
+		mutate(&t)
+		t.LastUpdate = now
+		return AddTask(t) == nil
+	})
 }
 
 // DispositionAwaitingCommander is the one disposition value gtmux itself knows by name

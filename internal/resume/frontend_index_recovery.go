@@ -47,12 +47,13 @@ func producerHasUniqueIndexProof(previous, next, saved CodexFrontend) bool {
 	if err != nil {
 		return false
 	}
-	entries, err := dir.ReadDir(129)
+	entries, err := dir.ReadDir(maxStoredFrontendFiles + 1)
 	_ = dir.Close()
-	if err != nil && err != io.EOF || len(entries) > 128 {
+	if err != nil && err != io.EOF || len(entries) > maxStoredFrontendFiles {
 		return false
 	}
 	now := time.Now().UnixMilli()
+	active := 0
 	ownerStillPresent := false
 	for _, entry := range entries {
 		if !strings.HasSuffix(entry.Name(), ".json") {
@@ -66,10 +67,21 @@ func producerHasUniqueIndexProof(previous, next, saved CodexFrontend) bool {
 			if other != saved {
 				return false
 			}
+			active++
+			if active > maxActiveFrontends {
+				return false
+			}
 			ownerStillPresent = true
 			continue
 		}
-		if other.Retired || other.Loc != next.Loc {
+		if other.Retired {
+			continue
+		}
+		active++
+		if active > maxActiveFrontends {
+			return false
+		}
+		if other.Loc != next.Loc {
 			continue
 		}
 		age := now - other.UpdatedAt

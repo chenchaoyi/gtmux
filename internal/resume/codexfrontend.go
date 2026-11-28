@@ -580,6 +580,61 @@ func CodexCwdMatches(pane string, r Record, cwd string) bool {
 	f, ok := CodexFrontendForPane(pane)
 	return ok && f.Instance == r.Frontend && f.SessionID == r.SessionID && sameCanonicalCwd(f.Cwd, cwd)
 }
+
+// PruneCodexFrontends removes retired or long-dead Codex frontend receipts once
+// any matching locator indices carry FrontendRetired, preventing historical
+// receipts from accumulating without bound.
+func PruneCodexFrontends(now time.Time) {
+	lease, err := tryResumePublication()
+	if err != nil {
+		return
+	}
+	defer lease.Close()
+
+	dir := filepath.Join(Dir(), "codex-frontends")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	located := AllLocated()
+	nowMilli := now.UnixMilli()
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		instance := strings.TrimSuffix(entry.Name(), ".json")
+		f, ok := readStoredFrontend(instance)
+		if !ok {
+			continue
+		}
+		deadBridge := f.BridgePID > 1 && errors.Is(syscall.Kill(f.BridgePID, 0), syscall.ESRCH)
+		aged := nowMilli-f.UpdatedAt > 60_000
+		if !f.Retired && (!deadBridge || !aged) {
+			continue
+		}
+		if !aged && !deadBridge {
+			continue
+		}
+		indexErr := false
+		for _, saved := range located {
+			if saved.Agent != "codex" || saved.HomeID != f.HomeID || saved.Frontend != f.Instance || saved.FrontendRetired {
+				continue
+			}
+			r, loaded := Load(saved.Loc)
+			if !loaded || r.Agent != "codex" || r.HomeID != f.HomeID || r.Frontend != f.Instance || r.FrontendRetired {
+				continue
+			}
+			r.FrontendRetired = true
+			if frontendRetirementWrite(fileFor(saved.Loc), r) != nil {
+				indexErr = true
+			}
+		}
+		if !indexErr {
+			_ = os.Remove(frontendPath(f.Instance))
+		}
+	}
+}
+
 func sameCanonicalCwd(a, b string) bool {
 	if a == "" || b == "" {
 		return false

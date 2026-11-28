@@ -168,6 +168,9 @@ func recoverNativeIntents() error {
 	return err
 }
 func recoverNativeIntentsWithProtection() (map[string]bool, error) {
+	return recoverNativeIntentsWithProtectionAt(time.Now().UnixNano())
+}
+func recoverNativeIntentsWithProtectionAt(nowNano int64) (map[string]bool, error) {
 	if err := state.MkdirAll(nativeIntentDir(), 0700); err != nil {
 		return nil, err
 	}
@@ -191,6 +194,9 @@ func recoverNativeIntentsWithProtection() (map[string]bool, error) {
 		} // unpublished private writer temporary
 		p := filepath.Join(nativeIntentDir(), e.Name())
 		b, err := readNativeBytes(p)
+		if errors.Is(err, os.ErrNotExist) {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -198,7 +204,7 @@ func recoverNativeIntentsWithProtection() (map[string]bool, error) {
 		if json.Unmarshal(b, &r) != nil || !validNativeIntent(r) || nativeIntentPath(r) != p {
 			return nil, errors.New("native wake recovery evidence invalid")
 		}
-		if err := recoverNativeIntent(r); err != nil {
+		if err := recoverNativeIntentAt(r, nowNano); err != nil {
 			if !errors.Is(err, errNativeClaimConflict) {
 				return nil, err
 			}
@@ -211,7 +217,7 @@ func recoverNativeIntentsWithProtection() (map[string]bool, error) {
 		} else if r.Outcome == "prepared" {
 			r.Outcome = "uncertain"
 			r.Reason = "interrupted-attempt"
-			recordWakeOutcome(r, time.Now().UnixNano())
+			recordWakeOutcome(r, nowNano)
 		}
 	}
 	return protected, errors.Join(conflicts...)
@@ -219,9 +225,9 @@ func recoverNativeIntentsWithProtection() (map[string]bool, error) {
 
 // A v2 refusal predates both the positive submission boundary and the saved
 // target. A matching pane number alone cannot authorize a post-upgrade attempt.
-func recoverNativeIntent(r nativeIntent) error {
+func recoverNativeIntentAt(r nativeIntent, nowNano int64) error {
 	if r.Outcome != "refused" || r.Retry.Number != 0 {
-		return settleNativeIntent(r)
+		return settleNativeIntentAt(r, nowNano)
 	}
 	for _, entry := range r.Entries {
 		if err := validateNativeClaim(r, entry); err != nil && !errors.Is(err, errNativeClaimConflict) {
@@ -238,15 +244,26 @@ func recoverNativeIntent(r nativeIntent) error {
 }
 
 func settleNativeIntent(r nativeIntent) error {
+	return settleNativeIntentAt(r, 0)
+}
+
+func settleNativeIntentAt(r nativeIntent, nowNano int64) error {
 	if r.Outcome == "accepted" && r.WakeReceipt != nil {
 		if err := retainAcceptedWake(r); err != nil {
 			return err
 		}
 	}
+	// If an already-parked uncertain intent now sees an aged distinct sending
+	// claim in its slot, let the active claim's recovery reconcile and archive
+	// this older intent once both sides are past orphanClaimAge.
+	if r.Outcome == "uncertain" && nowNano > 0 && agedParkedIntentReplacedByValidClaim(r, nowNano) {
+		return archiveSettledNativeIntent(r, "colliding-slot-older-intent", nowNano)
+	}
 	// A local conflict may protect an exact slot, but all members must still
 	// be checked for unsafe storage before any new submission can proceed.
 	var conflicts []error
 	var claims []nativeEntry
+	reconciled := false
 	for _, e := range r.Entries {
 		if err := validateNativeClaim(r, e); err != nil {
 			if !errors.Is(err, errNativeClaimConflict) {
@@ -266,9 +283,20 @@ func settleNativeIntent(r nativeIntent) error {
 		claims = append(claims, e)
 		if r.Outcome == "prepared" || r.Outcome == "uncertain" || r.Outcome == "held" {
 			p := filepath.Join(queueDir(), e.Name)
-			if err := checkNativeParkDestination(p, finalClaimPath(r, p)); err != nil {
+			dst := finalClaimPath(r, p)
+			if err := checkNativeParkDestination(p, dst); err != nil {
 				if !errors.Is(err, errNativeClaimConflict) {
 					return err
+				}
+				if nowNano > 0 {
+					ok, recErr := reconcileAgedSlotCollision(p, dst, nowNano)
+					if recErr != nil {
+						return recErr
+					}
+					if ok {
+						reconciled = true
+						continue
+					}
 				}
 				conflicts = append(conflicts, err)
 			}
@@ -302,9 +330,15 @@ func settleNativeIntent(r nativeIntent) error {
 	}
 	if r.Outcome == "prepared" {
 		r.Outcome = "uncertain"
+		if reconciled {
+			return archiveSettledNativeIntent(r, "colliding-slot-reconciled", nowNano)
+		}
 		return writeNativeIntent(r)
 	}
 	if r.Outcome == "uncertain" {
+		if reconciled {
+			return archiveSettledNativeIntent(r, "colliding-slot-reconciled", nowNano)
+		}
 		return nil
 	} // retain exact original payload/delivery identity
 	for _, entry := range r.Entries {
@@ -316,6 +350,40 @@ func settleNativeIntent(r nativeIntent) error {
 		return err
 	}
 	return ignoreNativeMissing(os.Remove(nativeIntentPath(r)))
+}
+
+func agedParkedIntentReplacedByValidClaim(r nativeIntent, nowNano int64) bool {
+	nowNano = effectiveWakeNowNano(nowNano)
+	for _, e := range r.Entries {
+		pin, err := nativeAnchor(e)
+		if err != nil || pin.SHA256 != e.SHA256 {
+			return false
+		}
+		src := filepath.Join(queueDir(), e.Name)
+		dst := finalClaimPath(r, src)
+		dstFP, err := nativeFingerprint(dst)
+		if err != nil || dstFP.FileID != e.FileID || dstFP.SHA256 != e.SHA256 {
+			return false
+		}
+		srcInfo, err := os.Lstat(src)
+		if err != nil || !srcInfo.Mode().IsRegular() {
+			return false
+		}
+		dstInfo, err := os.Lstat(dst)
+		if err != nil || !dstInfo.Mode().IsRegular() || os.SameFile(srcInfo, dstInfo) {
+			return false
+		}
+		if nowNano-srcInfo.ModTime().UnixNano() < int64(orphanClaimAge) ||
+			nowNano-dstInfo.ModTime().UnixNano() < int64(orphanClaimAge) {
+			return false
+		}
+		// Only retire this older parked intent if the replacement claim is a
+		// valid managed file (not foreign corrupt/unreadable content).
+		if _, err := nativeFingerprint(src); err != nil {
+			return false
+		}
+	}
+	return len(r.Entries) > 0
 }
 func validateNativeClaim(r nativeIntent, e nativeEntry) error {
 	p := filepath.Join(queueDir(), e.Name)

@@ -281,39 +281,44 @@ func appendWithCap(r Record, cap int64, required bool) (err error) {
 	if r.Severity == "" {
 		r.Severity = Severity(r)
 	}
-	// Assign the monotonic sequence at the source (hq-attention-system) so every
-	// event carries a durable, rotation-independent cursor position. Leave an
-	// explicitly-set value untouched. A 0 (counter unavailable) reads as
-	// sequence-unknown downstream — never fatal.
-	if r.Seq == 0 {
-		r.Seq = nextSeq()
-		if r.Seq == 0 {
-			return fmt.Errorf("sequence counter unavailable")
+	// Hold the exclusive sequence lock across sequence assignment, rotation, and
+	// O_APPEND write so concurrent writers cannot double-rotate events.1.jsonl or
+	// commit out-of-order Seq values.
+	return withSequenceLock(os.O_RDWR|os.O_CREATE, func(advance func() int64) error {
+		if r.Event == "UserPromptSubmit" || r.Event == "Stop" || r.Event == "StopFailure" {
+			r.RecordingPolicy = RecordingPolicy()
+			if size, err := configuredCapBytes(); err != nil || size <= 0 {
+				return fmt.Errorf("event recording policy changed during append")
+			}
 		}
-	}
-	if err := rotateIfNeeded(cap); err != nil {
-		return err
-	}
-	line, err := json.Marshal(r)
-	if err != nil {
-		return err
-	}
-	f, err := state.OpenFile(Path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
-	}
-	// O_APPEND + a single small write is atomic across concurrent hooks (one line
-	// never interleaves with another).
-	line = append(line, '\n')
-	n, werr := f.Write(line)
-	cerr := f.Close()
-	if werr != nil {
-		return werr
-	}
-	if n != len(line) {
-		return fmt.Errorf("short write: %d/%d bytes", n, len(line))
-	}
-	return cerr
+		if r.Seq == 0 {
+			r.Seq = advance()
+			if r.Seq == 0 {
+				return fmt.Errorf("sequence counter unavailable")
+			}
+		}
+		if err := rotateIfNeeded(cap); err != nil {
+			return err
+		}
+		line, err := json.Marshal(r)
+		if err != nil {
+			return err
+		}
+		f, err := state.OpenFile(Path(), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+		if err != nil {
+			return err
+		}
+		line = append(line, '\n')
+		n, werr := f.Write(line)
+		cerr := f.Close()
+		if werr != nil {
+			return werr
+		}
+		if n != len(line) {
+			return fmt.Errorf("short write: %d/%d bytes", n, len(line))
+		}
+		return cerr
+	})
 }
 
 // rotateIfNeeded renames the active file to the single rotated generation when it
@@ -353,11 +358,73 @@ func OverCeiling() bool {
 // oldest-first, spanning the rotated generation so a recent window isn't cut at
 // a rotation boundary. now is the reference time in unix seconds.
 func Read(sinceSecs, now int64) []Record {
-	cutoff := int64(0)
-	if sinceSecs > 0 {
-		cutoff = now - sinceSecs
+	if sinceSecs <= 0 {
+		return readMatching(func(Record) bool { return true })
 	}
-	return readMatching(func(r Record) bool { return cutoff <= 0 || r.Ts >= cutoff })
+	return readTailSinceCutoff(now - sinceSecs)
+}
+
+const tailStopRun = 64
+
+func readTailSinceCutoff(cutoff int64) []Record {
+	var perFile [][]Record
+	var seen []os.FileInfo
+	for _, path := range []string{Path(), rotatedPath()} {
+		f, err := os.Open(path)
+		if err != nil {
+			continue
+		}
+		fi, err := f.Stat()
+		duplicate := false
+		for _, prev := range seen {
+			if err == nil && os.SameFile(prev, fi) {
+				duplicate = true
+			}
+		}
+		if err != nil || duplicate {
+			f.Close()
+			continue
+		}
+		seen = append(seen, fi)
+		var rev []Record
+		oldRun := 0
+		complete := newestLines(f, fi.Size(), func(line []byte) bool {
+			var hdr struct {
+				Ts int64 `json:"ts"`
+			}
+			if json.Unmarshal(line, &hdr) != nil {
+				return true
+			}
+			if hdr.Ts >= cutoff {
+				oldRun = 0
+				var r Record
+				if json.Unmarshal(line, &r) == nil {
+					rev = append(rev, r)
+				}
+				return true
+			}
+			if hdr.Ts > 0 {
+				oldRun++
+				if oldRun >= tailStopRun {
+					return false
+				}
+			}
+			return true
+		})
+		f.Close()
+		for l, r := 0, len(rev)-1; l < r; l, r = l+1, r-1 {
+			rev[l], rev[r] = rev[r], rev[l]
+		}
+		perFile = append(perFile, rev)
+		if !complete {
+			break
+		}
+	}
+	var out []Record
+	for i := len(perFile) - 1; i >= 0; i-- {
+		out = append(out, perFile[i]...)
+	}
+	return out
 }
 
 // Filter while scanning, before retaining Record values and their strings. A

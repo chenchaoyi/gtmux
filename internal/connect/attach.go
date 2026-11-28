@@ -36,6 +36,13 @@ func wsURL(base, paneID string) string {
 		"&term=" + url.QueryEscape(os.Getenv("TERM"))
 }
 
+func attachWSURL(base, paneID string, predict bool) string {
+	if predict {
+		return wsURL(base, paneID) + "&predict=1"
+	}
+	return wsURL(base, paneID) + "&predict=0"
+}
+
 // RunAttach opens the attach WebSocket and passes the local terminal through to the
 // remote pane: raw mode, stdin→INPUT (unless readOnly), OUTPUT→stdout, SIGWINCH→RESIZE.
 // It ALWAYS restores the terminal on exit (normal detach, error, or signal).
@@ -43,7 +50,7 @@ func RunAttach(base, token, paneID string, readOnly, predict bool) error {
 	if !term.IsTerminal(int(os.Stdin.Fd())) {
 		return fmt.Errorf("gtmux attach needs an interactive terminal")
 	}
-	conn, resp, err := websocket.DefaultDialer.Dial(wsURL(base, paneID), http.Header{
+	conn, resp, err := websocket.DefaultDialer.Dial(attachWSURL(base, paneID, predict), http.Header{
 		"Authorization": {"Bearer " + token},
 	})
 	if err != nil {
@@ -58,6 +65,7 @@ func RunAttach(base, token, paneID string, readOnly, predict bool) error {
 		return fmt.Errorf("can't reach the server: %w", err)
 	}
 	defer conn.Close()
+	conn.SetReadLimit(1 << 20)
 
 	// Raw mode — and restore it no matter how we exit.
 	fd := int(os.Stdin.Fd())

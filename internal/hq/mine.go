@@ -30,10 +30,13 @@ const (
 	// mineDefaultWindow bounds CORRECTION candidates on a first run: the stock of old
 	// sessions would otherwise land as hundreds of spool lines nobody drains by hand.
 	// `gtmux knowledge mine --since all` is the explicit door to the stock.
-	mineDefaultWindow = 30 * 24 * time.Hour
+	mineDefaultWindow  = 30 * 24 * time.Hour
+	mineFailureBackoff = 3600
+	machineHeadsCap    = 4096
 )
 
-func mineDir() string { return state.StorePath("mine") }
+func mineDir() string         { return state.StorePath("mine") }
+func mineAttemptPath() string { return state.StorePath("mine", "last-attempt") }
 
 // mineSensor runs a pass from the serve slow tick once per interval, only when an HQ
 // home exists (the spool lives there). It raises no wake: the spool floor is the trigger.
@@ -48,7 +51,13 @@ func mineSensor(now int64) {
 	if last := mine.LastPassAt(mineDir()); last != 0 && now-last < hours*3600 {
 		return
 	}
-	_, _ = runMinePass(mine.Options{Now: time.Unix(now, 0), Since: mineSince(now, mineDefaultWindow)})
+	if attempt := state.ReadInt64Marker(mineAttemptPath()); attempt != 0 && now >= attempt && now-attempt < mineFailureBackoff {
+		return
+	}
+	_ = state.WriteInt64Marker(mineAttemptPath(), now)
+	if _, err := runMinePass(mine.Options{Now: time.Unix(now, 0), Since: mineSince(now, mineDefaultWindow)}); err == nil {
+		state.Remove(mineAttemptPath())
+	}
 }
 
 // mineSince is the correction window: a bound on the first pass; later passes are already
@@ -88,12 +97,12 @@ func runMinePass(o mine.Options) (mine.Report, error) {
 // journal is size-rotated, so a send older than the log is simply not subtracted — the
 // lexicon then decides, and HQ reads the survivor like any other lead.
 func machineHeads() map[string]bool {
-	recs, _ := events.ReadSince(0)
-	var sums []string
+	recs := events.Recent(0, 0, machineHeadsCap, func(r events.Record) bool {
+		return r.Event == events.AuditEventSend
+	})
+	sums := make([]string, 0, len(recs))
 	for _, r := range recs {
-		if r.Event == events.AuditEventSend {
-			sums = append(sums, r.Summary)
-		}
+		sums = append(sums, r.Summary)
 	}
 	return mine.HeadsFromSendSummaries(sums)
 }

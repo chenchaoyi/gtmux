@@ -1303,7 +1303,7 @@ func gatherAgentsScoped(codexScope *transcript.CodexPathScope, targetPane string
 			// marker to the innocent pane. A quiet Codex pane displaying its ready
 			// composer contradicts the marker; clear the false wait (and its orphan
 			// active marker) rather than keep telling the user to answer it.
-			if codexReadyContradictsWait(agent, status, observedStatus, tmux.CapturePane, id) {
+			if prompt.IsComposerReady(codexFrame, "codex") && codexReadyContradictsWait(agent, status, observedStatus, tmux.CapturePane, id) {
 				state.Remove(state.WaitingPath(id))
 				state.Remove(state.ActivePath(id))
 				delete(waiting, id)
@@ -1836,8 +1836,16 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 		if r.PID == 0 && lastMsg == 0 {
 			continue
 		}
-		if _, loaded := titles[r.Agent]; !loaded {
-			titles[r.Agent] = transcript.SessionTitles(r.Agent)
+		var rowTitle string
+		if r.Agent == "agy" {
+			if nativeReadableScope(r) {
+				rowTitle = transcript.AgySessionTitle(r.SessionID)
+			}
+		} else {
+			if _, loaded := titles[r.Agent]; !loaded {
+				titles[r.Agent] = transcript.SessionTitles(r.Agent)
+			}
+			rowTitle = nativeTitle(r, titles[r.Agent])
 		}
 		status, since := nativeStatus(codexScope, r)
 		if status == "idle" && lastMsg > 0 {
@@ -1903,7 +1911,7 @@ func nativePanesScoped(tmuxPanes []Pane, profiles []agentProfile, now int64, cod
 			Agent: name, Status: status, Confirmed: completionID != "", CompletionID: completionID, CompletedAt: completedAt, source: "native",
 			Errored: errored, ErrorText: errorText,
 			EndReason: failedTurnOutcome(nativeTurnOutcomeScoped(codexScope, r), errored),
-			Task:      nativeTitle(r, titles[r.Agent]),
+			Task:      rowTitle,
 			cwd:       r.Cwd, role: role,
 			terminal:   r.Terminal,
 			launchHost: r.LaunchHost.Display(), client: client, Follow: follow, homeID: r.HomeID, currentClient: currentClient, canReadConversation: conversation.Supports(r.Agent) && nativeReadableScope(r) && codexVerified,
