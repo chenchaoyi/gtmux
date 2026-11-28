@@ -1,0 +1,2 @@
+- Fix Live View rendering blank when expanding conversations with long terminal scrollback.
+- Show the official Antigravity (agy) icon across sessions, conversations, and usage widgets.

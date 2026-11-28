@@ -6223,5 +6223,15 @@
     "selectors": [
       "TestAgyPreDetachLifecycleCapturesLaunchHostAndProfile"
     ]
+  },
+  "mobileapp/src/ui/LiveProgress.chunks.test.tsx": {
+    "cases": [
+      "LVR-006",
+      "LVR-007"
+    ],
+    "selectors": [
+      "LVR-006 1,000-line Live scrollback partitions into bounded column chunks below GPU texture limits",
+      "LVR-007 normal wide rows stay unwrapped while pathological overwide lines split at 320 cells"
+    ]
   }
 }
