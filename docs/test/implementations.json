@@ -16,7 +16,9 @@
       "CIS-001",
       "CIS-002",
       "CIS-003",
-      "CIS-004"
+      "CIS-004",
+      "WFH-002",
+      "WFH-003"
     ],
     "selectors": [
       "test_harness_instructions_and_openspec_skills_are_policy_only",
@@ -24,7 +26,9 @@
       "test_recognized_modules_include_consumers",
       "test_nul_parser_preserves_names_and_old_rename_path",
       "test_actual_git_rename_deletion_and_symlink",
-      "test_missing_skipped_failed_cancelled_required_job_never_green"
+      "test_missing_skipped_failed_cancelled_required_job_never_green",
+      "test_WFH_002_mobile_release_metadata_and_web_shared_boundaries",
+      "test_ios_delivery_and_store_assets_pin_arm_toolchain_and_sha_actions"
     ]
   },
   "scripts/ci.py": {
@@ -32,7 +36,8 @@
       "CIS-001",
       "CIS-002",
       "CIS-003",
-      "CIS-004"
+      "CIS-004",
+      "WFH-002"
     ],
     "selectors": [
       "QUALITY_ONLY_SCRIPTS",
@@ -3631,7 +3636,8 @@
   "scripts/android_ci_results.py": {
     "cases": [
       "ACS-002",
-      "ACS-003"
+      "ACS-003",
+      "WFH-003"
     ],
     "selectors": [
       "def partition(",
@@ -3643,7 +3649,8 @@
   "scripts/android_ci_results_test.py": {
     "cases": [
       "ACS-002",
-      "ACS-003"
+      "ACS-003",
+      "WFH-003"
     ],
     "selectors": [
       "test_failed_only_rerun_binds_the_actual_execution_attempt",
@@ -3652,7 +3659,8 @@
       "test_both_device_suites_require_each_case_once_on_the_original_qa_package",
       "test_missing_or_invalid_case_and_lane_receipts_fail",
       "test_full_phone_rejects_any_selection_or_missing_scenario",
-      "test_partition_rejects_crossing_setup_groups_or_prerequisites"
+      "test_partition_rejects_crossing_setup_groups_or_prerequisites",
+      "test_WFH_003_both_device_suites_verify_sharded_coverage_on_the_original_qa_package"
     ]
   },
   "scripts/test_design.py": {
@@ -3661,7 +3669,8 @@
       "TD-002",
       "TD-003",
       "TD-004",
-      "TD-005"
+      "TD-005",
+      "WFH-001"
     ],
     "selectors": [
       "def validate(",
@@ -3676,7 +3685,8 @@
       "TD-003",
       "TD-004",
       "TD-005",
-      "ND-003"
+      "ND-003",
+      "WFH-001"
     ],
     "selectors": [
       "test_TD_001_valid_review_and_changed_source_guard",
@@ -3684,7 +3694,8 @@
       "test_TD_003_unlisted_test_missing_source_and_missing_case",
       "test_TD_004_history_rejects_same_commit_review_and_accepts_prior_review",
       "test_TD_005_removal_requires_rationale_and_absence",
-      "test_ND_003_native_runner_uses_production_sources_and_propagates_failures"
+      "test_ND_003_native_runner_uses_production_sources_and_propagates_failures",
+      "test_WFH_001_incremental_case_addition_preserves_untouched_historical_cases"
     ]
   },
   "tests/contracts/http-contract.cjs": {

@@ -33,7 +33,7 @@ jobs:
       ios: ${{ steps.plan.outputs.ios }}
       android: ${{ steps.plan.outputs.android }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -60,12 +60,12 @@ jobs:
           DESIGN_BASE: ${{ github.event.pull_request.base.sha }}
           DESIGN_HEAD: ${{ github.event.pull_request.head.sha }}
         run: python3 scripts/test_design.py --pr-history --base "$DESIGN_BASE" --head "$DESIGN_HEAD"
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: '1.27'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Scope, aggregation and scanner failure regression tests
         run: make ci-test publisher-test
       - name: Validate every workflow (no signing secrets)
@@ -90,9 +90,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: '1.27'
           cache: true
@@ -165,7 +165,7 @@ jobs:
 
       - name: Preserve coverage for review
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: go-coverage
           path: coverage.out
@@ -186,9 +186,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: '1.27'
           cache: true
@@ -209,11 +209,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
           cache-dependency-path: mobileapp/package-lock.json
 
@@ -248,20 +248,20 @@ jobs:
     env:
       GTMUX_SOURCE_SHA: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: mobileapp/package-lock.json
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           packages: platform-tools
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
       - name: Install JS dependencies
         working-directory: mobileapp
         run: |
@@ -284,7 +284,7 @@ jobs:
           receipt=$(jq -c . mobileapp/android/app/build/outputs/apk/qa/CI-PACKAGE.json)
           echo "receipt=$receipt" >> "$GITHUB_OUTPUT"
       - name: Preserve the checked QA package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.package.outputs.name }}
           path: |
@@ -293,20 +293,90 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  android-phone:
-    # Android delivery looks up this exact check name.
-    name: Android phone emulator flows
+  android-phone-shards:
+    name: Android phone emulator shard ${{ matrix.shard }}
     needs: [scope, android-native]
     if: needs.scope.outputs.android == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/android-emulator
         with:
           device: phone
+          shard: ${{ matrix.shard }}
           package: ${{ needs.android-native.outputs.package }}
           receipt: ${{ needs.android-native.outputs.receipt }}
+
+  android-phone:
+    # Android delivery looks up this exact check name.
+    name: Android phone emulator flows
+    needs: [scope, android-native, android-phone-shards]
+    if: always() && needs.scope.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    env:
+      ANDROID_DEVICE: phone
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+      - name: Resolve actual successful shard attempts
+        id: receipts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GTMUX_CI_JOB_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -o pipefail
+          endpoint="repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?filter=all&per_page=100"
+          for read in 1 2 3; do
+            if timeout 30s gh api --paginate --slurp "$endpoint" > "$RUNNER_TEMP/android-job-pages.json"; then
+              break
+            fi
+            test "$read" -lt 3 || exit 1
+            sleep 2
+          done
+          jq '[.[].jobs[]]' "$RUNNER_TEMP/android-job-pages.json" > "$RUNNER_TEMP/android-jobs.json"
+          python3 scripts/android_ci_results.py resolve --device "$ANDROID_DEVICE" \
+            --jobs "$RUNNER_TEMP/android-jobs.json" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        id: coverage_1
+        with:
+          name: android-emulator-coverage-phone-1-${{ github.run_id }}-${{ steps.receipts.outputs.attempt_1 }}
+          path: ${{ runner.temp }}/android-coverage/1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        id: coverage_2
+        with:
+          name: android-emulator-coverage-phone-2-${{ github.run_id }}-${{ steps.receipts.outputs.attempt_2 }}
+          path: ${{ runner.temp }}/android-coverage/2
+      - name: Require every case once on the verified QA APK
+        env:
+          GTMUX_ANDROID_QA_RECEIPT: ${{ needs.android-native.outputs.receipt }}
+          SHARD_1_ATTEMPT: ${{ steps.receipts.outputs.attempt_1 }}
+          SHARD_2_ATTEMPT: ${{ steps.receipts.outputs.attempt_2 }}
+        run: |
+          python3 scripts/android_ci_results.py verify --device "$ANDROID_DEVICE" \
+            --receipts "$RUNNER_TEMP/android-coverage" --attempt-1 "$SHARD_1_ATTEMPT" --attempt-2 "$SHARD_2_ATTEMPT"
+      - name: Explain recovery for unavailable shard coverage
+        if: failure() && (steps.coverage_1.outcome == 'failure' || steps.coverage_2.outcome == 'failure')
+        env:
+          COVERAGE_1: ${{ steps.coverage_1.outcome }}
+          COVERAGE_2: ${{ steps.coverage_2.outcome }}
+        run: |
+          if [[ "$COVERAGE_1" == failure ]]; then shard=1; else shard=2; fi
+          echo "Check the listed coverage artifact for this run. If it still exists, retry the phone summary."
+          echo "If missing or expired, rerun Android $ANDROID_DEVICE emulator shard $shard and its dependents."
+          echo "If the original QA APK is also unavailable, rerun Android QA build and native policies and its dependents."
 
   android-emulator-shards:
     name: Android tablet emulator shard ${{ matrix.shard }}
@@ -319,7 +389,7 @@ jobs:
       matrix:
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/android-emulator
         with:
           device: tablet
@@ -340,10 +410,10 @@ jobs:
     env:
       ANDROID_DEVICE: tablet
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
       - name: Resolve actual successful shard attempts
@@ -362,14 +432,14 @@ jobs:
             sleep 2
           done
           jq '[.[].jobs[]]' "$RUNNER_TEMP/android-job-pages.json" > "$RUNNER_TEMP/android-jobs.json"
-          python3 scripts/android_ci_results.py resolve \
+          python3 scripts/android_ci_results.py resolve --device "$ANDROID_DEVICE" \
             --jobs "$RUNNER_TEMP/android-jobs.json" >> "$GITHUB_OUTPUT"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         id: coverage_1
         with:
           name: android-emulator-coverage-tablet-1-${{ github.run_id }}-${{ steps.receipts.outputs.attempt_1 }}
           path: ${{ runner.temp }}/android-coverage/1
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         id: coverage_2
         with:
           name: android-emulator-coverage-tablet-2-${{ github.run_id }}-${{ steps.receipts.outputs.attempt_2 }}
@@ -380,7 +450,7 @@ jobs:
           SHARD_1_ATTEMPT: ${{ steps.receipts.outputs.attempt_1 }}
           SHARD_2_ATTEMPT: ${{ steps.receipts.outputs.attempt_2 }}
         run: |
-          python3 scripts/android_ci_results.py verify \
+          python3 scripts/android_ci_results.py verify --device "$ANDROID_DEVICE" \
             --receipts "$RUNNER_TEMP/android-coverage" --attempt-1 "$SHARD_1_ATTEMPT" --attempt-2 "$SHARD_2_ATTEMPT"
       - name: Explain recovery for unavailable shard coverage
         if: failure() && (steps.coverage_1.outcome == 'failure' || steps.coverage_2.outcome == 'failure')
@@ -400,10 +470,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
           cache-dependency-path: tests/web/package-lock.json
       - name: Web logic regressions
@@ -416,7 +486,7 @@ jobs:
         run: npm test
       - name: Browser failure evidence
         if: failure()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: web-failure-evidence
           path: tests/web/results/
@@ -424,7 +494,7 @@ jobs:
 
       - name: Branded loading synthetic render evidence
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: brand-loading-web-previews
           path: tests/web/results/brand-loading-*.png
@@ -440,7 +510,7 @@ jobs:
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Runner space and SDK preflight
@@ -450,12 +520,12 @@ jobs:
           python3 -c 'import shutil; n=shutil.disk_usage(".").free; print(f"Available: {n/1024**3:.1f} GiB"); assert n >= 25*1024**3, "Insufficient space for native CI build"'
           xcodebuild -version
           xcodebuild -showsdks
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
           cache-dependency-path: mobileapp/package-lock.json
-      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1
+      - uses: ruby/setup-ruby@145243922b4465b78e04dd66294782c7de45901f # v1.345.0
         with:
           working-directory: mobileapp
           bundler-cache: true
@@ -494,7 +564,7 @@ jobs:
           PY
       - name: Native build failure evidence
         if: failure()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ios-native-build-log
           path: ${{ runner.temp }}/gtmux-ios-build.log
@@ -507,11 +577,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
           cache-dependency-path: relay-worker/package-lock.json
 
@@ -535,11 +605,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '24'
           cache: npm
           cache-dependency-path: tunnel-worker/package-lock.json
 
@@ -564,7 +634,7 @@ jobs:
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Verify pinned Mac toolchain
         run: |
@@ -573,28 +643,30 @@ jobs:
           xcodebuild -version
           xcrun swift --version
 
-      # The menu-bar app is native Swift (macapp/); compile + unit-test it here so
-      # a PR can't break it unnoticed. (Linux jobs above can't build Swift/AppKit.)
-      - name: swift build (release)
-        run: cd macapp && swift build -c release --arch arm64 --arch x86_64
-
       - name: Usage widget snapshot and bounded native transport
         run: swift test --package-path shared/UsageWidgets
 
-      - name: Native Mac host, WidgetKit metadata and bundled resources (unsigned)
-        env:
-          GTMUX_UNIVERSAL: '1'
-        run: bash macapp/Widget/build-extension.sh
-
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version: '1.27'
           cache: true
 
-      - name: Package the app and its CLI for the desktop URL test
+      # macapp/build.sh invokes Widget/build-extension.sh (universal arm64 + x86_64
+      # xcodebuild of GtmuxBar + GtmuxUsageWidget + Widget/verify_bundle.py), builds
+      # the universal CLI, assembles Gtmux.app, and verifies strict ad-hoc signatures.
+      - name: Package universal app, WidgetKit extension and CLI
         env:
           GTMUX_UNIVERSAL: '1'
-        run: bash macapp/build.sh
+        run: |
+          bash macapp/build.sh
+          for bin in \
+            macapp/build/Gtmux.app/Contents/MacOS/GtmuxBar \
+            macapp/build/Gtmux.app/Contents/MacOS/gtmux \
+            macapp/build/Gtmux.app/Contents/PlugIns/GtmuxUsageWidget.appex/Contents/MacOS/GtmuxUsageWidget; do
+            archs="$(lipo -archs "$bin")"
+            echo "$bin: $archs"
+            [[ " $archs " == *" arm64 "* && " $archs " == *" x86_64 "* ]]
+          done
 
       - name: swift test (model + design conformance)
         env:
@@ -610,7 +682,7 @@ jobs:
       # These fixtures contain synthetic records only; never capture the installed app.
       - name: Mac branded loading synthetic render evidence
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: brand-loading-mac-previews
           path: ${{ runner.temp }}/brand-loading-mac-previews/*.png
@@ -619,7 +691,7 @@ jobs:
 
       - name: HQ synthetic UI previews
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: hq-workspace-previews
           path: ${{ runner.temp }}/hq-workspace-previews/*.png
@@ -628,7 +700,7 @@ jobs:
 
       - name: Native Mac widget synthetic previews
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mac-widget-previews
           path: ${{ runner.temp }}/mac-widget-previews/*.png
@@ -640,11 +712,11 @@ jobs:
 
   ci-required:
     if: always()
-    needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, android-phone, android-emulator-shards, android-emulator, relay-worker, tunnel-worker, menubar]
+    needs: [scope, quality, test, cross-build, mobile, web, ios-native, android-native, android-phone-shards, android-phone, android-emulator-shards, android-emulator, relay-worker, tunnel-worker, menubar]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Require successful selected checks
         env:
           CI_PLAN: ${{ needs.scope.outputs.plan }}

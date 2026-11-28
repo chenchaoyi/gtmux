@@ -61748,7 +61748,7 @@
       "cases": [
         {
           "id": "MAP-41a5bc78e4e8",
-          "line": 53,
+          "line": 83,
           "kind": "reviewed-selector",
           "name": "confirmed_unit_test_isolation",
           "dynamic": false,
@@ -61766,7 +61766,7 @@
         },
         {
           "id": "MAP-a4f326b77fc6",
-          "line": 38,
+          "line": 42,
           "kind": "reviewed-selector",
           "name": "document",
           "dynamic": false,
@@ -61775,7 +61775,7 @@
         },
         {
           "id": "MAP-43e91d565746",
-          "line": 19,
+          "line": 25,
           "kind": "reviewed-selector",
           "name": "DOC_FILES",
           "dynamic": false,
@@ -61784,7 +61784,7 @@
         },
         {
           "id": "MAP-95b2d459c856",
-          "line": 22,
+          "line": 28,
           "kind": "reviewed-selector",
           "name": "QUALITY_ONLY_SCRIPTS",
           "dynamic": false,
@@ -61793,7 +61793,7 @@
         },
         {
           "id": "MAP-38dd12ab9f25",
-          "line": 30,
+          "line": 36,
           "kind": "reviewed-selector",
           "name": "GO_GATE_SCRIPTS",
           "dynamic": false,
@@ -61802,7 +61802,7 @@
         },
         {
           "id": "MAP-515053c33d08",
-          "line": 70,
+          "line": 100,
           "kind": "reviewed-selector",
           "name": "classify",
           "dynamic": false,
@@ -61810,10 +61810,10 @@
           "design": "CIS-001,CIS-002,CIS-003,CIS-004"
         }
       ],
-      "sha256": "fe68bc5118b511c6ce2eec2f10192a756222822aadb41e9140f33691e6bfc8bc"
+      "sha256": "84a025a1516898810fd65c13045320bc2bba53dac08753a3ff4bbabc48e85ee7"
     },
     "scripts/ci_test.py": {
-      "sha256": "61634b69b219a719df0656dcd8c8a04641bc9dd37c53ea58e5878a5d37d400a9",
+      "sha256": "399d22a270f2077370ec86e995fb41298e5d7f2babd9effc5d7811899b65faa3",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -61827,7 +61827,7 @@
         },
         {
           "id": "LEG-5e8793132c96",
-          "line": 78,
+          "line": 93,
           "kind": "unittest",
           "name": "test_shared_or_unknown_impact_is_full",
           "dynamic": true,
@@ -61835,7 +61835,7 @@
         },
         {
           "id": "LEG-7bbcfe8992be",
-          "line": 89,
+          "line": 104,
           "kind": "unittest",
           "name": "test_recognized_modules_include_consumers",
           "dynamic": false,
@@ -61843,7 +61843,7 @@
         },
         {
           "id": "LEG-bbdfd85a9000",
-          "line": 108,
+          "line": 123,
           "kind": "unittest",
           "name": "test_nul_parser_preserves_names_and_old_rename_path",
           "dynamic": true,
@@ -61851,7 +61851,7 @@
         },
         {
           "id": "LEG-30f2f4661935",
-          "line": 117,
+          "line": 132,
           "kind": "unittest",
           "name": "test_actual_git_rename_deletion_and_symlink",
           "dynamic": false,
@@ -61859,7 +61859,7 @@
         },
         {
           "id": "LEG-a0a184955335",
-          "line": 143,
+          "line": 158,
           "kind": "unittest",
           "name": "test_missing_refs_force_full_cli_outputs",
           "dynamic": false,
@@ -61867,7 +61867,7 @@
         },
         {
           "id": "LEG-513d57a7489a",
-          "line": 154,
+          "line": 169,
           "kind": "unittest",
           "name": "test_workflow_jobs_cannot_grow_outside_aggregation",
           "dynamic": false,
@@ -61875,7 +61875,7 @@
         },
         {
           "id": "LEG-1f71c99fb4dc",
-          "line": 166,
+          "line": 181,
           "kind": "unittest",
           "name": "test_unsigned_ios_preserves_arm64_target_and_verifies_products",
           "dynamic": false,
@@ -61883,7 +61883,7 @@
         },
         {
           "id": "LEG-2514a184abce",
-          "line": 178,
+          "line": 193,
           "kind": "unittest",
           "name": "test_android_package_is_built_once_and_both_devices_use_its_output",
           "dynamic": false,
@@ -61891,7 +61891,7 @@
         },
         {
           "id": "LEG-76200ceafcf2",
-          "line": 231,
+          "line": 251,
           "kind": "unittest",
           "name": "test_docs_can_skip_heavy_jobs_but_require_quality",
           "dynamic": false,
@@ -61899,7 +61899,7 @@
         },
         {
           "id": "LEG-ecfb4bf818ba",
-          "line": 237,
+          "line": 257,
           "kind": "unittest",
           "name": "test_missing_skipped_failed_cancelled_required_job_never_green",
           "dynamic": true,
@@ -61907,7 +61907,7 @@
         },
         {
           "id": "LEG-252965413bf3",
-          "line": 253,
+          "line": 276,
           "kind": "unittest",
           "name": "test_bad_plans_or_unselected_failure_are_rejected",
           "dynamic": false,
@@ -61915,7 +61915,7 @@
         },
         {
           "id": "LEG-8a6a845c7484",
-          "line": 265,
+          "line": 286,
           "kind": "unittest",
           "name": "test_mac_host_keeps_both_architectures_and_native_checks",
           "dynamic": false,
@@ -61949,7 +61949,7 @@
         },
         {
           "id": "MAP-1d7d386ae4bf",
-          "line": 246,
+          "line": 266,
           "kind": "reviewed-selector",
           "name": "test_android_aggregation_requires_the_entire_job_family",
           "dynamic": false,
@@ -61964,6 +61964,24 @@
           "dynamic": false,
           "layer": "L1",
           "design": "WFG-004"
+        },
+        {
+          "id": "MAP-abc39513e700",
+          "line": 78,
+          "kind": "reviewed-selector",
+          "name": "test_WFH_002_mobile_release_metadata_and_web_shared_boundaries",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CIS-001,CIS-002,CIS-003,CIS-004,WFH-002,WFH-003"
+        },
+        {
+          "id": "MAP-871c9155622c",
+          "line": 304,
+          "kind": "reviewed-selector",
+          "name": "test_ios_delivery_and_store_assets_pin_arm_toolchain_and_sha_actions",
+          "dynamic": false,
+          "layer": "G",
+          "design": "CIS-001,CIS-002,CIS-003,CIS-004,WFH-002,WFH-003"
         }
       ]
     },
@@ -62537,7 +62555,7 @@
         },
         {
           "id": "MAP-c8a2197482da",
-          "line": 174,
+          "line": 188,
           "kind": "reviewed-selector",
           "name": "def refresh_catalogue(",
           "dynamic": false,
@@ -62545,10 +62563,10 @@
           "design": "TD-001,TD-002,TD-003,TD-004,TD-005"
         }
       ],
-      "sha256": "9b204d3c0f2b4bc06a1b40c2e6df822ca594837b140854f9a4b043c7b12cae72"
+      "sha256": "a06a2043c1cd9838ecae926d36c9c85d4ecf7ba342ddee0e92909a5112a163b9"
     },
     "scripts/test_design_test.py": {
-      "sha256": "68fdb3fbbf3dba605cb8c53cb1e962a16c6fb7f6f1fcd9859dd7b50abde07c71",
+      "sha256": "dc3fee005906e36408f5780100c209e7b46c7dc2016df431be59499c580bcf81",
       "layer": "G",
       "stack": "CI / tooling",
       "cases": [
@@ -62605,6 +62623,15 @@
           "dynamic": false,
           "layer": "G",
           "design": "ND-003"
+        },
+        {
+          "id": "MAP-569c13220e50",
+          "line": 150,
+          "kind": "reviewed-selector",
+          "name": "test_WFH_001_incremental_case_addition_preserves_untouched_historical_cases",
+          "dynamic": false,
+          "layer": "G",
+          "design": "TD-001,TD-002,TD-003,TD-004,TD-005,ND-003,WFH-001"
         }
       ]
     },
@@ -69590,15 +69617,24 @@
         },
         {
           "id": "MAP-775883bcc017",
-          "line": 141,
+          "line": 143,
           "kind": "reviewed-selector",
           "name": "def verify_device(",
           "dynamic": false,
           "layer": "G",
           "design": "ACS-002,ACS-003"
+        },
+        {
+          "id": "MAP-28da3d8816ef",
+          "line": 103,
+          "kind": "reviewed-selector",
+          "name": "def verify_lane(",
+          "dynamic": false,
+          "layer": "G",
+          "design": "ACS-002,ACS-003"
         }
       ],
-      "sha256": "68a623c4c0b5b508154d211d66fa37bd92eb3fac59a0b005f24541fceaccb4ed"
+      "sha256": "cebe70e4b60951516eb5920128d996688ea90210ab29060bdbd849b7f19f2061"
     },
     "scripts/android_ci_results_test.py": {
       "layer": "G",
@@ -69615,7 +69651,7 @@
         },
         {
           "id": "MAP-43c035de2a63",
-          "line": 35,
+          "line": 37,
           "kind": "reviewed-selector",
           "name": "test_current_failure_skip_cancel_incomplete_or_missing_never_uses_an_older_pass",
           "dynamic": false,
@@ -69624,7 +69660,7 @@
         },
         {
           "id": "MAP-3554c47a11e8",
-          "line": 43,
+          "line": 45,
           "kind": "reviewed-selector",
           "name": "test_duplicate_or_foreign_job_history_is_rejected",
           "dynamic": false,
@@ -69633,7 +69669,7 @@
         },
         {
           "id": "MAP-1804588ff80b",
-          "line": 94,
+          "line": 110,
           "kind": "reviewed-selector",
           "name": "test_both_device_suites_require_each_case_once_on_the_original_qa_package",
           "dynamic": false,
@@ -69642,7 +69678,7 @@
         },
         {
           "id": "MAP-64f8f0c39654",
-          "line": 108,
+          "line": 117,
           "kind": "reviewed-selector",
           "name": "test_missing_or_invalid_case_and_lane_receipts_fail",
           "dynamic": false,
@@ -69651,7 +69687,7 @@
         },
         {
           "id": "MAP-676f6d60af7f",
-          "line": 148,
+          "line": 156,
           "kind": "reviewed-selector",
           "name": "test_partition_rejects_crossing_setup_groups_or_prerequisites",
           "dynamic": false,
@@ -69660,15 +69696,24 @@
         },
         {
           "id": "MAP-7773ba2378e8",
-          "line": 135,
+          "line": 144,
           "kind": "reviewed-selector",
           "name": "test_full_phone_rejects_any_selection_or_missing_scenario",
           "dynamic": false,
           "layer": "G",
           "design": "ACS-002,ACS-003"
+        },
+        {
+          "id": "MAP-b90545d8b845",
+          "line": 96,
+          "kind": "reviewed-selector",
+          "name": "test_WFH_003_both_device_suites_verify_sharded_coverage_on_the_original_qa_package",
+          "dynamic": false,
+          "layer": "G",
+          "design": "ACS-002,ACS-003,WFH-003"
         }
       ],
-      "sha256": "f5051143806bb9540082e126d2c2564db246248b253566ab1f9c1755fdc600af"
+      "sha256": "4709c9f2246a4f2e9012d56cfcf0670b0aa20ab2bf86a130e7a271c7881a8907"
     },
     "internal/server/web/session-header.test.cjs": {
       "layer": "L2",

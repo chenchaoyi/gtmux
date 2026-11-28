@@ -5,7 +5,7 @@ inputs:
     description: Phone or tablet profile
     required: true
   shard:
-    description: 0 for the full suite or the tablet shard number
+    description: 0 for the full suite or the device shard number
     default: '0'
   package:
     description: Workflow artifact name from the Android QA build
@@ -21,16 +21,16 @@ runs:
       run: |
         echo "APPIUM_HOME=$RUNNER_TEMP/gtmux-appium" >> "$GITHUB_ENV"
         echo "GTMUX_ANDROID_E2E_OUTPUT=$RUNNER_TEMP/gtmux-android-evidence" >> "$GITHUB_ENV"
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: '24'
         cache: npm
         cache-dependency-path: mobileapp/package-lock.json
-    - uses: actions/setup-java@v4
+    - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
       with:
         distribution: temurin
         java-version: '17'
-    - uses: android-actions/setup-android@v3
+    - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
       with:
         packages: platform-tools
     - name: Install Android automation dependencies
@@ -39,7 +39,7 @@ runs:
       run: |
         npm ci
         npx appium driver install --source=local "$PWD/node_modules/appium-uiautomator2-driver"
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
       with:
         name: ${{ inputs.package }}
         path: mobileapp/android/app/build/outputs/apk/qa
@@ -69,7 +69,7 @@ runs:
         sudo udevadm control --reload-rules
         sudo udevadm trigger --name-match=kvm
     - name: Exercise the assigned synthetic scenarios
-      uses: reactivecircus/android-emulator-runner@v2
+      uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
       env:
         ANDROID_SHARD: ${{ inputs.shard }}
       with:
@@ -93,9 +93,9 @@ runs:
       run: |
         python3 scripts/android_ci_results.py verify-lane --device "$ANDROID_DEVICE" \
           --shard "$ANDROID_SHARD" --evidence "$GTMUX_ANDROID_E2E_OUTPUT"
-    - name: Preserve successful tablet shard coverage
-      if: inputs.device == 'tablet'
-      uses: actions/upload-artifact@v4
+    - name: Preserve successful shard coverage
+      if: inputs.shard != '0'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: android-emulator-coverage-${{ inputs.device }}-${{ inputs.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
         path: |
@@ -107,7 +107,7 @@ runs:
         retention-days: 35
     - name: Preserve synthetic emulator evidence
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
       with:
         name: android-emulator-${{ inputs.device }}-${{ inputs.shard }}-${{ github.run_id }}-${{ github.run_attempt }}
         path: ${{ runner.temp }}/gtmux-android-evidence

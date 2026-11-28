@@ -45,4 +45,4 @@ PR check is the evidence for development order. Do not treat main's snapshot as
 independent proof of chronology. If a design changes, commit its new reviewed seal
 before implementing that change, and keep earlier case expectations auditable.
 
-An existing test edit cannot reuse an entirely unchanged historical review seal: record and commit a fresh review first. Stable case IDs may remain; the review rationale/expectations and mapping must reflect this change.
+An existing test edit cannot reuse an entirely unchanged historical review seal: either append a newly reviewed case ID sealed in an earlier commit while keeping untouched historical case IDs mapped, or record and commit a fresh review seal on an existing mapped case first. Stable case IDs remain preserved across incremental additions.

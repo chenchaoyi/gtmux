@@ -42,11 +42,11 @@ This prevents new disclosures; it does not erase metadata already published.
 
 ## Build once, verify independently
 
-Android CI builds, lints, and tests the QA APK once. The phone runs the full suite,
-and the tablet runs two independent shards on the same package. The checks `Android phone emulator flows`
+Android CI builds, lints, and tests the QA APK once. Phone and tablet each run two
+independent shards on the same package. The checks `Android phone emulator flows`
 and `Android tablet emulator flows` verify that their device completed every case
 exactly once against the native build's receipt. A failed shard does not cancel its
-siblings. Failure-only reruns resolve retained tablet receipts to their actual
+siblings. Failure-only reruns resolve retained phone and tablet receipts to their actual
 execution attempts and use the original successful APK build output. The Android
 delivery gate continues to accept the complete legacy combined check or the
 native, phone, and tablet checks together.

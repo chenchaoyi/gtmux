@@ -11,7 +11,7 @@
 | L3 · 运行时集成 | 171 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
-| G · 质量门禁 | 526 | [G.csv](cases/G.csv) |
+| G · 质量门禁 | 531 | [G.csv](cases/G.csv) |
 
 数字不是通过数。存量 6,223 个位置来自 4fad6119 盘点（声明、子测试、动态模板），另加明确的新用例、原生过程入口和评审映射入口；动态实例不展开。没有具名用例的辅助文件仍保留摘要。存量层次是结构分类，混合边界在触及时需语义复核，不补造历史评审/运行结果。`reviewed-selector` 也不冒充框架发现的声明。源码/目录/映射漂移由门禁拦截，但测试名不能自动证明断言质量。
 
@@ -787,3 +787,6 @@
 | WHS-005 | The two in-flight lanes each issue one request. Roster completion paints the header without writing terminal content or fetching or drawing hidden Chat. Existing capture outputs remain first, second and newest, discarding the outdated capture. A deferred roster reply for a retired view cannot repaint it after completion. |
 | WWP-001 | Both panels remain visible and separate without moving the first. The 1024-pixel layout uses the room below. Chat histories and drafts stay with their own pane. The fixture receives exactly one request for the selected pane. |
 | WWP-002 | The two saved geometries stay exact while a third tile chooses open space. The fixture receives no message. |
+| WFH-001 | Appending a newly reviewed case ID to an existing test file passes without requiring the untouched historical plan to be re-sealed, while modifying an existing test file with neither a newly reviewed case nor a re-sealed existing case still fails closed. |
+| WFH-002 | Mobile release metadata (.srchash, android.json, GtmuxMobile.xcodeproj) selects mobile/iOS/Android gates without unrelated Go/menubar/Worker suites; non-shared RN UI files skip Web while Web-consumed mobileapp files still select Web; menubar verifies universal arm64+x86_64 binaries via build.sh without duplicate full Release builds; ios-store-assets pins macos-15 and Xcode 26.3; and workflows SHA-pin third-party actions. |
+| WFH-003 | Both phone and tablet split the 31-case suite cleanly across shards 1 and 2 without crossing setup groups, preserve per-shard receipts across failed-only reruns, and publish the exact required aggregate check names Android phone emulator flows and Android tablet emulator flows. |

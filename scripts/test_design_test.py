@@ -147,6 +147,43 @@ class TestDesignTests(unittest.TestCase):
         workflow = (td.ROOT / '.github/workflows/ci.yml').read_text()
         self.assertIn('python3 mobileapp/scripts/check-native-documents.py', workflow)
 
+    def test_WFH_001_incremental_case_addition_preserves_untouched_historical_cases(self):
+        self.git('init', '-q')
+        design_1 = self.root / self.plan_name
+        design_1.parent.mkdir(parents=True, exist_ok=True)
+        design_1.write_text(json.dumps(self.plan))
+        mapping_path = self.root / td.MAPPING
+        mapping_path.parent.mkdir(parents=True, exist_ok=True)
+        mapping_path.write_text(json.dumps(self.mappings))
+        cat_path = self.root / td.CATALOGUE
+        cat_path.write_text(json.dumps(self.catalogue))
+        base = self.commit()
+
+        # Commit 1: seal a new plan S-2 without touching historical sample.json (S-1).
+        plan_2_name = 'docs/test/designs/incremental.json'
+        plan_2 = {
+            'id': 'incremental',
+            'status': 'reviewed',
+            'review': {'reviewer': 'fixture self-review', 'date': '2026-11-28', 'decision': 'proceed', 'notes': 'incremental case'},
+            'cases': [{'id': 'S-2', 'layer': 'L1', 'description': 'new case', 'setup': 'synthetic', 'action': 'run', 'expected': 'pass', 'planned_files': [self.path]}],
+        }
+        plan_2['seal'] = td.seal(plan_2)
+        (self.root / plan_2_name).write_text(json.dumps(plan_2))
+        self.commit()
+
+        # Commit 2: append case B to existing sample.test.ts while keeping ['S-1', 'S-2'].
+        (self.root / self.path).write_text("test('case A', () => expect(1).toBe(1));\ntest('case B', () => expect(2).toBe(2));\n")
+        merged_mappings = {self.path: {'cases': ['S-1', 'S-2'], 'selectors': ['case A', 'case B']}}
+        mapping_path.write_text(json.dumps(merged_mappings))
+        head = self.commit()
+        plans = {self.plan_name: self.plan, plan_2_name: plan_2}
+        self.assertEqual(td.history_errors(self.root, base, head, merged_mappings, plans), [])
+
+        # Modifying the existing test file again without adding a case or re-sealing any mapped plan still fails closed.
+        (self.root / self.path).write_text("test('case A', () => expect(1).toBe(1));\ntest('case B', () => expect(3).toBe(3));\n")
+        unreviewed_head = self.commit()
+        self.assertTrue(td.history_errors(self.root, head, unreviewed_head, merged_mappings, plans))
+
 
 if __name__ == '__main__':
     unittest.main()

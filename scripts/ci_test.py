@@ -17,7 +17,7 @@ class ScopeTests(unittest.TestCase):
     def test_unit_test_scope_requires_immutable_product_exclusion(self):
         path = "mobileapp/src/screens/HQ.test.tsx"
         self.assertIn("android-emulator", ci.classify([path])["selected"])
-        self.assertEqual(ci.classify([path], unit_test_isolation=True)["selected"], ["mobile", "web"])
+        self.assertEqual(ci.classify([path], unit_test_isolation=True)["selected"], ["mobile"])
         for extra in ["mobileapp/e2e/fake-serve/server.ts", "mobileapp/src/ui/Composer.tsx"]:
             self.assertIn("android-emulator", ci.classify([path, extra], unit_test_isolation=True)["selected"])
         for extra in ["tests/contracts/http-contract.json", "mobileapp/metro.config.js", "mobileapp/package-lock.json"]:
@@ -75,12 +75,27 @@ class ScopeTests(unittest.TestCase):
                      "openspec/changes/foo/other.yaml", "scripts/unknown_helper.py"]:
             self.assertTrue(ci.classify([path])["full"])
 
+    def test_WFH_002_mobile_release_metadata_and_web_shared_boundaries(self):
+        self.assertEqual(set(ci.classify(["mobileapp/release-notes/1.0.206.srchash",
+                                          "mobileapp/ios/GtmuxMobile.xcodeproj/project.pbxproj"])["selected"]),
+                         {"mobile", "ios-native"})
+        self.assertEqual(set(ci.classify(["mobileapp/release-notes/android.json"])["selected"]),
+                         ci.ANDROID_JOBS | {"mobile"})
+        self.assertEqual(set(ci.classify(["mobileapp/src/ui/LiveProgress.tsx"])["selected"]),
+                         ci.ANDROID_JOBS | {"mobile", "ios-native"})
+        for shared in ["mobileapp/src/ui/term.ts", "mobileapp/src/ui/codeReading.ts",
+                       "mobileapp/src/documents/references.ts", "mobileapp/src/trace/model.ts",
+                       "mobileapp/src/ui/participantPresentation.json"]:
+            with self.subTest(shared=shared):
+                self.assertEqual(set(ci.classify([shared])["selected"]),
+                                 ci.ANDROID_JOBS | {"mobile", "web", "ios-native"})
+
     def test_shared_or_unknown_impact_is_full(self):
         for path in ["api/contract.md", "tests/contracts/http-contract.json", "assets/agent-icons/codex.png",
                      "go.mod", "go.sum", ".github/workflows/ci.yml", "scripts/ci.py", "scripts/ci_test.py",
                      "new-component/code.ts", "mobileapp/package-lock.json", "macapp/Package.swift",
                      "mobileapp/.ruby-version", "mobileapp/ios/Podfile",
-                     "mobileapp/ios/GtmuxMobile.xcodeproj/project.pbxproj", "mobileapp/src/api/client.ts",
+                     "mobileapp/src/api/client.ts",
                      "tunnel-worker/src/index.ts", "macapp/unclassified/foo.bin", "../docs/foo.md", "/docs/foo.md"]:
             with self.subTest(path=path):
                 self.assertEqual(set(ci.classify([path])["selected"]), set(ci.JOBS))
@@ -99,11 +114,11 @@ class ScopeTests(unittest.TestCase):
         self.assertEqual(set(ci.classify(["internal/server/server.go"])["selected"]),
                          {"test", "cross-build", "web", "mobile", "menubar"})
         self.assertEqual(set(ci.classify(["mobileapp/src/components/Chat.tsx"])["selected"]),
-                         {"mobile", "web", "ios-native", "android-native", "android-phone", "android-emulator-shards", "android-emulator"})
+                         ci.ANDROID_JOBS | {"mobile", "ios-native"})
         self.assertEqual(set(ci.classify(["mobileapp/ios/GtmuxWidget/Widget.swift"])["selected"]),
                          {"mobile", "ios-native"})
         self.assertEqual(set(ci.classify(["relay-worker/src/index.ts"])["selected"]),
-                         {"relay-worker", "test", "mobile", "android-native", "android-phone", "android-emulator-shards", "android-emulator"})
+                         ci.ANDROID_JOBS | {"relay-worker", "test", "mobile"})
 
     def test_nul_parser_preserves_names_and_old_rename_path(self):
         names = ci.parse_diff(b"R100\0internal/radar/a.go\0docs/a.md\0D\0docs/deleted.md\0M\0docs/\xe4\xb8\xad\xe6\x96\x87\n$(oops).md\0")
@@ -177,22 +192,25 @@ class ScopeTests(unittest.TestCase):
 
     def test_android_package_is_built_once_and_both_devices_use_its_output(self):
         text = (ROOT / ".github/workflows/ci.yml").read_text()
-        build, rest = text.split("  android-native:\n", 1)[1].split("  android-phone:\n", 1)
+        build, rest = text.split("  android-native:\n", 1)[1].split("  android-phone-shards:\n", 1)
+        phone_shards, rest = rest.split("  android-phone:\n", 1)
         phone, rest = rest.split("  android-emulator-shards:\n", 1)
-        shards, rest = rest.split("  android-emulator:\n", 1)
+        tablet_shards, rest = rest.split("  android-emulator:\n", 1)
         tablet = rest.split("  web:\n", 1)[0]
         action = (ROOT / ".github/actions/android-emulator/action.yml").read_text()
         self.assertEqual(text.count(":app:assembleQa"), 1)
+        self.assertIn("device: phone", phone_shards)
+        self.assertIn("shard: [1, 2]", phone_shards)
+        self.assertIn("fail-fast: false", phone_shards)
         self.assertIn("name: Android phone emulator flows\n", phone)
-        self.assertIn("device: phone", phone)
-        self.assertNotIn("shard:", phone)
+        self.assertIn("always() && needs.scope.outputs.android == 'true'", phone)
         self.assertIn("default: '0'", action)
-        self.assertIn("device: tablet", shards)
-        self.assertIn("shard: [1, 2]", shards)
-        self.assertIn("fail-fast: false", shards)
+        self.assertIn("device: tablet", tablet_shards)
+        self.assertIn("shard: [1, 2]", tablet_shards)
+        self.assertIn("fail-fast: false", tablet_shards)
         self.assertIn("steps.package.outputs.name", build)
         self.assertIn("steps.package.outputs.receipt", build)
-        for job in (phone, shards):
+        for job in (phone_shards, tablet_shards):
             self.assertIn("uses: ./.github/actions/android-emulator", job)
             self.assertIn("needs.android-native.outputs.package", job)
             self.assertIn("needs.android-native.outputs.receipt", job)
@@ -201,10 +219,11 @@ class ScopeTests(unittest.TestCase):
         self.assertIn("unset GTMUX_ANDROID_E2E_ONLY", action)
         self.assertIn("android_ci_results.py verify-lane", action)
         self.assertIn("name: Android tablet emulator flows\n", tablet)
-        self.assertIn("always() && needs.scope.outputs.android == 'true'", tablet)
-        self.assertIn("needs.android-native.outputs.receipt", tablet)
-        self.assertIn("android_ci_results.py resolve", tablet)
-        self.assertIn("android_ci_results.py verify", tablet)
+        for summary in (phone, tablet):
+            self.assertIn("always() && needs.scope.outputs.android == 'true'", summary)
+            self.assertIn("needs.android-native.outputs.receipt", summary)
+            self.assertIn("android_ci_results.py resolve", summary)
+            self.assertIn("android_ci_results.py verify", summary)
         required = text.split("  ci-required:\n", 1)[1]
         needs = re.search(r"needs: \[([^\]]+)", required)[1].split(", ")
         self.assertTrue(ci.ANDROID_JOBS.issubset(needs))
@@ -212,12 +231,13 @@ class ScopeTests(unittest.TestCase):
     def test_android_receipt_retention_spans_reruns_and_names_the_producer(self):
         workflow = (ROOT / ".github/workflows/ci.yml").read_text()
         action = (ROOT / ".github/actions/android-emulator/action.yml").read_text()
-        coverage, diagnostics = action.split("    - name: Preserve successful tablet shard coverage\n", 1)[1].split(
+        coverage, diagnostics = action.split("    - name: Preserve successful shard coverage\n", 1)[1].split(
             "    - name: Preserve synthetic emulator evidence\n", 1)
-        self.assertIn("if: inputs.device == 'tablet'", coverage)
+        self.assertIn("if: inputs.shard != '0'", coverage)
         self.assertIn("retention-days: 35", coverage)
         self.assertIn("retention-days: 7", diagnostics)
         self.assertRegex(workflow, r"if-no-files-found: error\n          retention-days: 7")
+        self.assertIn("retry the phone summary", workflow)
         self.assertIn("retry the tablet summary", workflow)
         self.assertIn("rerun Android $ANDROID_DEVICE emulator shard $shard", workflow)
         self.assertIn("rerun Android QA build and native policies", workflow)
@@ -244,7 +264,10 @@ class ResultTests(unittest.TestCase):
                     self.assertTrue(ci.verdict(plan, needs))
 
     def test_android_aggregation_requires_the_entire_job_family(self):
-        self.assertEqual(ci.ANDROID_JOBS, {"android-native", "android-phone", "android-emulator-shards", "android-emulator"})
+        self.assertEqual(ci.ANDROID_JOBS, {
+            "android-native", "android-phone-shards", "android-phone",
+            "android-emulator-shards", "android-emulator",
+        })
         for missing in ci.ANDROID_JOBS:
             with self.subTest(missing=missing):
                 partial = ci.ANDROID_JOBS - {missing}
@@ -259,8 +282,6 @@ class ResultTests(unittest.TestCase):
         self.assertTrue(ci.verdict(ci.classify(["README.md"]), needs))
 
 
-
-
 class MacHostContractTests(unittest.TestCase):
     def test_mac_host_keeps_both_architectures_and_native_checks(self):
         root = Path(__file__).resolve().parents[1]
@@ -269,17 +290,18 @@ class MacHostContractTests(unittest.TestCase):
         self.assertIn("runs-on: macos-26", block)
         self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer", block)
         self.assertIn('test "$(uname -m)" = arm64', block)
-        self.assertIn("swift build -c release --arch arm64 --arch x86_64", block)
+        self.assertNotIn("swift build -c release", block)
         self.assertIn("GTMUX_UNIVERSAL: '1'", block)
+        self.assertIn("bash macapp/build.sh", block)
+        self.assertIn("lipo -archs", block)
         self.assertIn("swift test --package-path shared/UsageWidgets", block)
         self.assertIn("swift test --parallel --num-workers 1", block)
-        self.assertIn("bash macapp/Widget/build-extension.sh", block)
         self.assertIn("./scripts/check-design.sh", block)
         # The pinned standard iOS image remains ARM, never the Intel Mac host.
-        ios = workflow.split("  ios-native:\n", 1)[1].split("\n  android-native:", 1)[0]
+        ios = workflow.split("  ios-native:\n", 1)[1].split("\n  relay-worker:", 1)[0]
         self.assertIn("runs-on: macos-15\n", ios)
 
-    def test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection(self):
+    def test_ios_delivery_and_store_assets_pin_arm_toolchain_and_sha_actions(self):
         root = Path(__file__).resolve().parents[1]
         text = (root / ".github/workflows/ios-test-delivery.yml").read_text()
         block = text.split("  delivery:\n", 1)[1]
@@ -290,6 +312,26 @@ class MacHostContractTests(unittest.TestCase):
         self.assertIn("hosted-signing.rb", block)
         self.assertIn("CODE_SIGN_IDENTITY='Apple Distribution'", block)
         self.assertNotIn("continue-on-error:", block)
+
+        store = (root / ".github/workflows/ios-store-assets.yml").read_text()
+        self.assertNotIn("macos-latest", store)
+        self.assertIn("runs-on: macos-15\n", store)
+        self.assertIn("DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer", store)
+
+        # Every third-party action across workflows and composite actions must be SHA-pinned,
+        # and Node setup steps must agree on Node 24 LTS.
+        workflow_files = [*sorted((root / ".github/workflows").glob("*.yml")),
+                          root / ".github/actions/android-emulator/action.yml"]
+        for wf in workflow_files:
+            body = wf.read_text()
+            for ref in re.findall(r"^\s*-?\s*uses:\s*([^\s#]+)", body, re.M):
+                if ref.startswith("./"):
+                    continue
+                with self.subTest(workflow=wf.name, action=ref):
+                    self.assertRegex(ref, r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_./-]+@[0-9a-f]{40}$")
+            for node_ver in re.findall(r"node-version:\s*'([^']+)'", body):
+                with self.subTest(workflow=wf.name, node_version=node_ver):
+                    self.assertEqual(node_ver, "24")
 
 
 if __name__ == "__main__":

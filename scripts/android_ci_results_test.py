@@ -12,8 +12,8 @@ PR_HEAD = "b" * 40
 RUN = 45020309125
 
 
-def job(part, attempt=1, conclusion="success"):
-    return {"name": f"Android tablet emulator shard {part}", "run_id": RUN,
+def job(part, attempt=1, conclusion="success", device="tablet"):
+    return {"name": f"Android {device} emulator shard {part}", "run_id": RUN,
             "head_sha": PR_HEAD, "run_attempt": attempt, "status": "completed", "conclusion": conclusion,
             "runner_id": part * 10 + attempt, "created_at": f"2026-11-22T12:{attempt*10:02d}:00Z",
             "started_at": f"2026-11-22T12:{attempt*10:02d}:01Z",
@@ -22,15 +22,17 @@ def job(part, attempt=1, conclusion="success"):
 
 class AndroidAttemptsTests(unittest.TestCase):
     def test_failed_only_rerun_binds_the_actual_execution_attempt(self):
-        first = job(1)
-        copied = {**first, "created_at": "2026-11-22T12:20:00Z", "run_attempt": 2}
-        rows = [first, copied, job(2, conclusion="failure"), job(2, attempt=2)]
-        self.assertEqual(gate.shard_attempts(rows, RUN, 2, PR_HEAD), {1: 1, 2: 2})
-        with self.assertRaisesRegex(ValueError, "no unique original execution"):
-            gate.shard_attempts(rows[1:], RUN, 2, PR_HEAD)
-        ambiguous = {**job(2, attempt=2), "created_at": "2026-11-22T12:10:00Z", "run_attempt": 1}
-        with self.assertRaisesRegex(ValueError, "no unique original execution"):
-            gate.shard_attempts([first, copied, ambiguous, job(2, attempt=2)], RUN, 2, PR_HEAD)
+        for device in gate.DEVICES:
+            with self.subTest(device=device):
+                first = job(1, device=device)
+                copied = {**first, "created_at": "2026-11-22T12:20:00Z", "run_attempt": 2}
+                rows = [first, copied, job(2, conclusion="failure", device=device), job(2, attempt=2, device=device)]
+                self.assertEqual(gate.shard_attempts(rows, RUN, 2, PR_HEAD, device=device), {1: 1, 2: 2})
+                with self.assertRaisesRegex(ValueError, "no unique original execution"):
+                    gate.shard_attempts(rows[1:], RUN, 2, PR_HEAD, device=device)
+                ambiguous = {**job(2, attempt=2, device=device), "created_at": "2026-11-22T12:10:00Z", "run_attempt": 1}
+                with self.assertRaisesRegex(ValueError, "no unique original execution"):
+                    gate.shard_attempts([first, copied, ambiguous, job(2, attempt=2, device=device)], RUN, 2, PR_HEAD, device=device)
 
     def test_current_failure_skip_cancel_incomplete_or_missing_never_uses_an_older_pass(self):
         baseline = [job(1), job(2), job(2, attempt=2)]
@@ -61,9 +63,9 @@ class AndroidCoverageTests(unittest.TestCase):
         self.attempts = {1: 1, 2: 2}
         self.package = {"source": SOURCE, "run": RUN, "attempt": 1, "sha256": "c"*64, "bytes": 123}
 
-    def receipts(self, device):
+    def receipts(self, device, sharded=True):
         cases, _ = self.inventory
-        for part in (0,) if device == "phone" else gate.PARTS:
+        for part in gate.PARTS if sharded else (0,):
             selected = gate.selected_cases(self.inventory, device, part)
             folder = self.root / str(part)
             folder.mkdir(exist_ok=True)
@@ -80,10 +82,10 @@ class AndroidCoverageTests(unittest.TestCase):
             (folder / "LANE.json").write_text(json.dumps(gate.lane(SOURCE, RUN, self.attempts.get(part, 1), device, part)))
             (folder / "APK.json").write_text(json.dumps({"file": "app-qa.apk", "bytes": 123, "sha256": "c"*64}))
 
-    def verify(self, device):
-        if device == "phone":
+    def verify(self, device, sharded=True):
+        if not sharded:
             return gate.verify_lane(self.root / "0", self.inventory, self.package, SOURCE, RUN, 1, device, 0)
-        return gate.verify_device(self.root, self.inventory, self.package, SOURCE, RUN, self.attempts)
+        return gate.verify_device(self.root, self.inventory, self.package, SOURCE, RUN, self.attempts, device=device)
 
     def poison(self, filename, change, part=2):
         path = self.root / str(part) / filename
@@ -91,19 +93,26 @@ class AndroidCoverageTests(unittest.TestCase):
         change(value)
         path.write_text(json.dumps(value))
 
+    def test_WFH_003_both_device_suites_verify_sharded_coverage_on_the_original_qa_package(self):
+        self.assertEqual(self.inventory[1], {1: list(range(1, 18)), 2: list(range(18, 32))})
+        for device in gate.DEVICES:
+            with self.subTest(device=device):
+                self.receipts(device, sharded=True)
+                self.assertEqual(self.verify(device, sharded=True), 31)
+                self.poison("APK.json", lambda value: value.update(sha256="d"*64), part=2)
+                with self.assertRaisesRegex(ValueError, "QA APK differs"):
+                    self.verify(device, sharded=True)
+        self.receipts("phone", sharded=True)
+        self.package["attempt"] = 2
+        with self.assertRaisesRegex(ValueError, "wrong product, device, or attempt"):
+            self.verify("phone", sharded=True)
+
     def test_both_device_suites_require_each_case_once_on_the_original_qa_package(self):
         self.assertEqual(self.inventory[1], {1: list(range(1, 18)), 2: list(range(18, 32))})
         for device in gate.DEVICES:
             with self.subTest(device=device):
-                self.receipts(device)
-                self.assertEqual(self.verify(device), 31)
-                self.poison("APK.json", lambda value: value.update(sha256="d"*64), part=0 if device == "phone" else 2)
-                with self.assertRaisesRegex(ValueError, "QA APK differs"):
-                    self.verify(device)
-        self.receipts("tablet")
-        self.package["attempt"] = 2
-        with self.assertRaisesRegex(ValueError, "wrong product, device, or attempt"):
-            self.verify("tablet")
+                self.receipts(device, sharded=True)
+                self.assertEqual(self.verify(device, sharded=True), 31)
 
     def test_missing_or_invalid_case_and_lane_receipts_fail(self):
         for name, change in (
@@ -134,16 +143,15 @@ class AndroidCoverageTests(unittest.TestCase):
 
     def test_full_phone_rejects_any_selection_or_missing_scenario(self):
         self.assertEqual(gate.selected_cases(self.inventory, "phone", 0), list(range(1, 32)))
-        for device, part in (("phone", 1), ("phone", 2), ("tablet", 0)):
-            with self.subTest(device=device, part=part), self.assertRaisesRegex(ValueError, "Invalid Android"):
-                gate.selected_cases(self.inventory, device, part)
+        with self.assertRaisesRegex(ValueError, "Invalid Android"):
+            gate.selected_cases(self.inventory, "tablet", 0)
         for change in (lambda x: x.update(selection=list(range(1, 18))),
                        lambda x: x["results"].pop(),
                        lambda x: x["results"][30].update(status="not-run", reason="Explicit subset")):
-            self.receipts("phone")
+            self.receipts("phone", sharded=False)
             self.poison("RESULTS.json", change, part=0)
             with self.assertRaises(ValueError):
-                self.verify("phone")
+                self.verify("phone", sharded=False)
 
     def test_partition_rejects_crossing_setup_groups_or_prerequisites(self):
         cases = list(copy.deepcopy(self.inventory[0]).values())
