@@ -1,0 +1,73 @@
+{
+  "id": "workers-hardening-20261128",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Antigravity implementation owner, design self-review",
+    "date": "2026-11-28",
+    "decision": "Coordinate Direct account registry mutations through a SQLite Durable Object, gate Direct server device disclosure on account secret, harden Standard IPv6 /64 quotas and reaper sweeps, enforce relay Worker/Go security and parity, and make download-worker GET reads single-step with memoized RSA verification keys",
+    "notes": "Self-reviewed by the agent implementation owner before modifying test files (not independent peer/user approval). Covers Batch D edge and self-host worker hardening items 1.1, 1.4-Worker, 2, 5.3-Worker, and 8, including fail-closed negative cases and cross-runtime contract parity."
+  },
+  "cases": [
+    {
+      "id": "WKH-001",
+      "layer": "L3",
+      "description": "tunnel-worker DirectRegistry SQLite Durable Object serializes Direct mutations, hydrates legacy registry:v1 once, tolerates KV shadow rate limits, and bounds scheduled reaper sweeps",
+      "setup": "Seed legacy DIRECT_CODES registry:v1 and Direct server records in workerd, configure Direct sync/admin secrets, and simulate concurrent Direct requests, KV 429 write contention, and slow reaper pages.",
+      "action": "Issue simultaneous POST /direct/redeem, POST /direct/move, POST /direct/revoke, POST /direct/servers, and GET /direct/authfile requests through entry.ts, reconstruct DirectRegistry from durable SQLite storage, and run scheduled sweep under a bounded wall-clock budget.",
+      "expected": "Concurrent redeems, moves, and revocations preserve every non-revoked account without cross-PoP overwrites, duplicate ports, or KV 429 failures; legacy registry:v1 imports once into SQLite storage while uninitialized deployments still omit X-Gtmux-Authfile; and scheduled sweeps persist reap:cursor cleanly and still run reconcileActiveCount when the time budget expires.",
+      "planned_files": [
+        "tunnel-worker/test/lifecycle.spec.ts"
+      ]
+    },
+    {
+      "id": "WKH-002",
+      "layer": "L2",
+      "description": "tunnel-worker gates /direct/servers account metadata on device secret, authenticates /direct/revoke, normalizes IPv6 /64 provision quotas, and fast-skips reaped tombstones",
+      "setup": "Configure tunnel-worker unit fixtures with public and code-reserved Direct servers, redeemed device accounts, IPv4/IPv6 client addresses across /64 interface rotations, and reaped vs pending-reaped Standard tunnel records.",
+      "action": "Call POST /direct/servers with and without valid device secrets, POST /direct/revoke with missing/wrong/valid bearer tokens, POST /provision across rotating IPv6 addresses in one /64 prefix, and reapDevice on already-reaped tombstones.",
+      "expected": "Unauthenticated or mismatched-secret /direct/servers requests return only public servers and omit current/reserved servers without leaking device existence, while valid device secrets disclose current and code-reserved servers; /direct/revoke enforces constant-time admin/sync bearer auth and removes accounts before deleting the code; rotating addresses within one IPv6 /64 share one cap:ip bucket; and reapDevice returns false immediately on non-pending tombstones with zero Cloudflare API calls.",
+      "planned_files": [
+        "tunnel-worker/src/index.test.ts",
+        "tunnel-worker/src/direct.test.ts"
+      ]
+    },
+    {
+      "id": "WKH-003",
+      "layer": "L2",
+      "description": "relay-worker enforces strict APNs hex tokens, 8s APNs timeouts, constant-time bearer auth, per-IP /64 rate limits, and HTTP 400 client FCM validation",
+      "setup": "Provide synthetic ECDSA P-256 APNs keys, RSA-2048 FCM credentials, shared APNs/FCM golden fixtures, and mocked fetch/clock hooks in relay-worker.",
+      "action": "Send push requests with malformed/path-traversal vs valid 32..512 hex APNs tokens, simulated APNs timeout/abort errors, invalid/varied-length bearer tokens, bursts exceeding RELAY_IP_RPM across IPv4 and IPv6 /64 addresses, and invalid Android FCM intents.",
+      "expected": "Invalid APNs tokens return 400 {\"error\":\"bad token\"} before provider calls; APNs fetch passes AbortSignal.timeout(8000) on alert and Live Activity paths and returns 502 on timeout; bearer tokens compare via SHA-256 digests in constant time; per-IP /64 bursts past RELAY_IP_RPM return 429; and client FCM validation errors (liveActivity, oversized >4096B payload, bad token) return 400 while unconfigured FCM returns 503 and bad server credentials return 502.",
+      "planned_files": [
+        "relay-worker/src/index.test.ts",
+        "relay-worker/src/fcm.test.ts"
+      ]
+    },
+    {
+      "id": "WKH-004",
+      "layer": "L2",
+      "description": "Go self-host relay matches relay-worker on strict APNs hex tokens, constant-time bearer auth, POST / and /push routing, 503 unconfigured Android FCM, and 400 FCM validation errors",
+      "setup": "Construct Go relayServer, apnsPusher, and fcmPusher test harnesses alongside shared api/testdata/apns-contract.json and fcm-contract.json fixtures.",
+      "action": "Exercise POST / and POST /push with valid and invalid APNs hex tokens, missing/invalid bearers, unconfigured Android vs unsupported platforms, and invalid FCM intents (liveActivity, >4096B payload, bad token).",
+      "expected": "Both POST / and POST /push accept authenticated intents using constant-time SHA-256 bearer comparison; non-hex or out-of-range APNs tokens fail with 400 {\"error\":\"bad token\"} before HTTP calls; unconfigured Android returns 503 while unknown platforms return 400; client FCM validation failures return 400; and shared APNs/FCM wire contracts remain identical.",
+      "planned_files": [
+        "relay/relay_test.go",
+        "relay/apns_contract_test.go",
+        "relay/body_bounds_test.go",
+        "relay/fcm_test.go"
+      ]
+    },
+    {
+      "id": "WKH-005",
+      "layer": "L2",
+      "description": "download-worker memoizes imported RSA-3072 verification keys, serves standard GETs in one atomic R2 get without TOCTOU 503s, and caches immutable artifacts at the edge",
+      "setup": "Configure download-worker with synthetic RSA-3072 keys, an instrumented R2 bucket tracking head/get calls and concurrent stable.json updates, and an optional edge Cache stub.",
+      "action": "Repeatedly verify signed manifests and fetch /gtmux/stable.json, /gtmux/install, and versioned artifacts across standard GET, HEAD, conditional headers, Range/If-Range/416 requests, and concurrent stable.json updates.",
+      "expected": "crypto.subtle.importKey runs once per distinct valid publicKey across repeated manifest verifications; standard GET requests execute a single atomic RELEASES.get with zero RELEASES.head calls and never fail with a spurious 503 when stable.json updates concurrently; HEAD, preconditions, and valid/invalid byte ranges keep exact 200/206/304/412/416 semantics; and only immutable versioned 200 GET responses populate edge cache while stable.json remains immediately fresh.",
+      "planned_files": [
+        "download-worker/test/service.test.mjs"
+      ]
+    }
+  ],
+  "seal": "e1fe16630fc41e38c757f1b436cd934e027620633ebc5d11918391559d82832d"
+}
