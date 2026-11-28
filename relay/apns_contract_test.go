@@ -63,7 +63,7 @@ func TestGoRelayRetiresAPNSGoneThroughRealClient(t *testing.T) {
 	}
 	relay := httptest.NewServer((&relayServer{token: "fixture-secret", pushers: map[string]Pusher{"ios": p}}).handler())
 	defer relay.Close()
-	err = server.NewHTTPRelay(relay.URL+"/push", "fixture-secret").Send(server.PushIntent{Token: "fixture", Platform: "ios"})
+	err = server.NewHTTPRelay(relay.URL+"/push", "fixture-secret").Send(server.PushIntent{Token: validTestToken, Platform: "ios"})
 	var gone *server.APNsError
 	if !errors.As(err, &gone) || !gone.Gone() || gone.Status != 410 {
 		t.Fatalf("dead-token verdict lost: %v", err)
@@ -88,7 +88,7 @@ func TestAPNSLiveActivityUsesDedicatedWireType(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := p.Push(context.Background(), pushRequest{Token: "fixture", LiveActivity: true, ContentState: map[string]any{"waiting": 2}, StaleDate: 1700002400}); err != nil {
+	if err := p.Push(context.Background(), pushRequest{Token: validTestToken, LiveActivity: true, ContentState: map[string]any{"waiting": 2}, StaleDate: 1700002400}); err != nil {
 		t.Fatal(err)
 	}
 	aps, _ := payload["aps"].(map[string]any)
@@ -100,5 +100,27 @@ func TestAPNSLiveActivityUsesDedicatedWireType(t *testing.T) {
 		if p.endpoint("sandbox") != apnsSandbox || p.endpoint("production") != apnsProd || p.endpoint("") != base {
 			t.Fatal("per-token environment was ignored")
 		}
+	}
+}
+
+func TestAPNSContractRejectsNonHexTokensBeforeGateway(t *testing.T) {
+	hits := 0
+	apple := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits++
+		w.WriteHeader(200)
+	}))
+	defer apple.Close()
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	p, err := newAPNSPusher(apple.URL, "com.gtmux.app", "K", "T", mustP8(t, key))
+	if err != nil {
+		t.Fatal(err)
+	}
+	relay := httptest.NewServer((&relayServer{token: "fixture-secret", pushers: map[string]Pusher{"ios": p}}).handler())
+	defer relay.Close()
+	if err := server.NewHTTPRelay(relay.URL+"/", "fixture-secret").Send(server.PushIntent{Token: "non-hex-token", Platform: "ios"}); err == nil {
+		t.Fatal("expected non-hex APNs token to fail")
+	}
+	if hits != 0 {
+		t.Fatalf("gateway received %d requests for invalid token", hits)
 	}
 }

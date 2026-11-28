@@ -1,5 +1,5 @@
 // gtmux tunnel control-plane Worker.
-import { redeem, move, authfile, authfileClaim, AUTHFILE_HEADER, loadRegistry, readRegistry, loadServers, offered, serverByToken, serverOf } from "./direct.ts";
+import { redeem, move, authfile, authfileClaim, AUTHFILE_HEADER, loadRegistry, readRegistry, loadServers, offered, serverByToken, serverOf, revokeDirectCode, sameSecret } from "./direct.ts";
 import {readJSONObject, jsonBodyStatus} from '../../shared/worker-json.mts';
 //
 // One endpoint that matters: POST /provision. It idempotently creates (or reuses)
@@ -31,6 +31,7 @@ export interface Env {
   DIRECT_CODES: KVNamespace; // codes (key = code, value = JSON {label, ...}) + the account registry
   DIRECT_URL: string; // secret: the Direct server base used when no server list is configured
   DIRECT_SYNC_TOKEN?: string; // secret: what the ONE legacy Direct server presents to fetch its authfile
+  DIRECT_ADMIN_TOKEN?: string; // secret: admin bearer for POST /direct/revoke (falls back to DIRECT_SYNC_TOKEN)
   DIRECT_DEVICES_PER_CODE?: string; // devices one code may mint accounts for (default 3)
 }
 
@@ -69,7 +70,10 @@ export default {
     if (req.method === "POST" && url.pathname === "/direct/move") {
       return directMove(req, env);
     }
-    if (req.method === "GET" && url.pathname === "/direct/authfile") {
+    if (req.method === "POST" && url.pathname === "/direct/revoke") {
+      return directRevoke(req, env);
+    }
+    if (req.method === "GET" && (url.pathname === "/direct/authfile" || url.pathname === "/direct/users")) {
       return directAuthfile(req, env);
     }
     return json({ error: "not found" }, 404);
@@ -295,11 +299,74 @@ function num(v: string | undefined, dflt: number): number {
   return Number.isFinite(n) && n > 0 ? n : dflt;
 }
 
+// Normalize client IPs so IPv6 /64 interface rotation shares one 24h cap bucket
+// while IPv4-mapped IPv6 addresses unwrap to their IPv4 identity.
+export function normalizeClientIP(raw: string): string {
+  const trimmed = (raw || "").trim();
+  if (!trimmed || trimmed === "unknown") return "unknown";
+  const v4 = parseIPv4(trimmed);
+  if (v4) return v4;
+  const noZone = trimmed.split("%")[0];
+  if (!noZone.includes(":")) return trimmed;
+  const groups = parseIPv6Groups(noZone);
+  if (!groups) return trimmed.toLowerCase();
+  if (groups[0] === 0 && groups[1] === 0 && groups[2] === 0 && groups[3] === 0 && groups[4] === 0 && groups[5] === 0xffff) {
+    return `${groups[6] >> 8}.${groups[6] & 0xff}.${groups[7] >> 8}.${groups[7] & 0xff}`;
+  }
+  return groups.slice(0, 4).map(g => g.toString(16).padStart(4, "0")).join(":") + "::/64";
+}
+
+function parseIPv4(s: string): string | null {
+  const parts = s.split(".");
+  if (parts.length !== 4) return null;
+  const nums: number[] = [];
+  for (const p of parts) {
+    if (!/^(?:0|[1-9]\d{0,2})$/.test(p)) return null;
+    const n = Number(p);
+    if (n < 0 || n > 255) return null;
+    nums.push(n);
+  }
+  return nums.join(".");
+}
+
+function parseIPv6Groups(s: string): number[] | null {
+  let working = s;
+  const lastColon = working.lastIndexOf(":");
+  if (lastColon !== -1 && working.slice(lastColon + 1).includes(".")) {
+    const v4 = parseIPv4(working.slice(lastColon + 1));
+    if (!v4) return null;
+    const octets = v4.split(".").map(Number);
+    const hi = ((octets[0] << 8) | octets[1]).toString(16);
+    const lo = ((octets[2] << 8) | octets[3]).toString(16);
+    working = working.slice(0, lastColon + 1) + hi + ":" + lo;
+  }
+  const halves = working.split("::");
+  if (halves.length > 2) return null;
+  const parseSide = (part: string): number[] | null => {
+    if (!part) return [];
+    const out: number[] = [];
+    for (const tok of part.split(":")) {
+      if (!/^[0-9a-fA-F]{1,4}$/.test(tok)) return null;
+      out.push(parseInt(tok, 16));
+    }
+    return out;
+  };
+  const left = parseSide(halves[0]);
+  if (!left) return null;
+  if (halves.length === 1) return left.length === 8 ? left : null;
+  const right = parseSide(halves[1]);
+  if (!right) return null;
+  const missing = 8 - left.length - right.length;
+  if (missing < 1) return null;
+  return [...left, ...new Array<number>(missing).fill(0), ...right];
+}
+
 // overCap returns a 429 Response when this IP's 24h new-tunnel count or the global
 // active count is at its ceiling, else null. ONLY the create path calls it (idempotent
 // re-provision is free), so a legit one-tunnel-per-Mac user never hits it.
 async function overCap(env: Env, ip: string, registeredDevice = false): Promise<Response | null> {
-  const ipCount = Number((await env.TUNNELS.get(`cap:ip:${ip}`)) ?? "0") || 0;
+  const ipKey = `cap:ip:${normalizeClientIP(ip)}`;
+  const ipCount = Number((await env.TUNNELS.get(ipKey)) ?? "0") || 0;
   if (!registeredDevice && ipCount >= num(env.PROVISION_IP_CAP, 5)) {
     return json({ error: "rate limited: too many new tunnels from your network today" }, 429);
   }
@@ -314,7 +381,7 @@ async function overCap(env: Env, ip: string, registeredDevice = false): Promise<
 // count. Best-effort (KV is eventually consistent; the daily reaper resets cap:active
 // to the true count, so drift self-corrects).
 async function bumpCap(env: Env, ip: string, registeredDevice = false): Promise<void> {
-  const ipKey = `cap:ip:${ip}`;
+  const ipKey = `cap:ip:${normalizeClientIP(ip)}`;
   const ipCount = Number((await env.TUNNELS.get(ipKey)) ?? "0") || 0;
   if (!registeredDevice) await env.TUNNELS.put(ipKey, String(ipCount + 1), { expirationTtl: 86400 });
   const active = Number((await env.TUNNELS.get("cap:active")) ?? "0") || 0;
@@ -352,6 +419,7 @@ export function shouldReap(t: CFTunnel, nowMs: number, neverConnectedH: number, 
 export async function reapDevice(env: Env, deviceId: string): Promise<boolean> {
   const rec = await env.TUNNELS.get<TunnelRecord>(deviceId, "json");
   if (!rec || !validRecord(rec, env)) return true; // unknown counts conservatively
+  if (rec.reaped && !rec.pending) return false;
   if (rec.pending && !rec.pending.id) {
     // An uncertain create response can leave an instance known only by its opaque
     // operation name. Resolve that exact name; never infer ownership from a prefix.
@@ -499,28 +567,58 @@ async function redeemDirect(req: Request, env: Env): Promise<Response> {
 // directServers lists the Direct servers this caller may use. The list is configuration
 // (src/direct.ts), read at run time, so a server the operator adds today is selectable by
 // installations that already exist — the point of the whole change. A code may be sent,
-// and only then do servers reserved for that code appear; a device id, and the answer
-// says which server that device is on.
+// and only then do servers reserved for that code appear; a device id paired with its
+// matching account secret discloses which server that device sits on and its code's servers.
 async function directServers(req: Request, env: Env): Promise<Response> {
-  let body: { code?: string; deviceId?: string } = {};
+  let body: { code?: string; deviceId?: string; secret?: string } = {};
   try {
-    body = await readJSONObject<{ code?: string; deviceId?: string }>(req, true);
+    body = await readJSONObject<{ code?: string; deviceId?: string; secret?: string }>(req, true);
   } catch (error) {
     return json({ error: "bad request" }, jsonBodyStatus(error));
   }
-  if ([body.code, body.deviceId].some(value => value !== undefined && typeof value !== "string")) return json({error: "bad request"}, 400);
+  if ([body.code, body.deviceId, body.secret].some(value => value !== undefined && typeof value !== "string")) return json({error: "bad request"}, 400);
   const servers = await loadServers(env.DIRECT_CODES, env.DIRECT_URL);
   let current: string | undefined;
   let code = (body.code || "").trim();
-  if (body.deviceId) {
+  const deviceId = (body.deviceId || "").trim();
+  const secret = body.secret || "";
+  if (deviceId && secret) {
     const reg = await loadRegistry(env.DIRECT_CODES);
-    const acct = reg.accounts[body.deviceId.trim()];
-    if (acct) {
+    const acct = reg.accounts[deviceId];
+    if (acct && sameSecret(secret, `${acct.user}:${acct.pass}`)) {
       current = serverOf(acct);
       if (!code) code = acct.code; // the device's own code, so its reserved servers show
     }
   }
   return json({ servers: offered(servers, code), current });
+}
+
+// directRevoke atomically drops every account minted by a code and removes the code.
+// Authenticated by DIRECT_ADMIN_TOKEN (or DIRECT_SYNC_TOKEN when no separate admin token is set);
+// per-server sync tokens from servers:v1 are never accepted for global revocation.
+async function directRevoke(req: Request, env: Env): Promise<Response> {
+  const expected = env.DIRECT_ADMIN_TOKEN || env.DIRECT_SYNC_TOKEN || "";
+  if (!expected) {
+    return json({ error: "direct revoke not configured" }, 503);
+  }
+  const auth = req.headers.get("Authorization") || "";
+  const got = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  if (!got || !sameSecret(got, expected)) {
+    return json({ error: "unauthorized" }, 401);
+  }
+  let body: { code?: string };
+  try {
+    body = await readJSONObject<{ code?: string }>(req, false, 4096);
+  } catch (error) {
+    return json({ error: "bad request" }, jsonBodyStatus(error));
+  }
+  if (typeof body.code !== "string") return json({ error: "bad request" }, 400);
+  try {
+    const r = await revokeDirectCode(body.code, { kv: env.DIRECT_CODES });
+    return json(r.body, r.status);
+  } catch {
+    return json({ error: "could not revoke code; try again" }, 503);
+  }
 }
 
 // directMove reassigns a device to another server, authenticated by the account that

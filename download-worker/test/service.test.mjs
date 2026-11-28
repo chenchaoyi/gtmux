@@ -12,13 +12,14 @@ const bytesOf = async body => {
   return new Uint8Array(body);
 };
 class Bucket {
-  objects = new Map(); writes = 0;
+  objects = new Map(); writes = 0; heads = 0; gets = 0;
   metadata(key) {
     const item = this.objects.get(key); if (!item) return null;
     return {key, size: item.bytes.length, etag: item.etag, httpEtag: `"${item.etag}"`, uploaded: new Date('2026-10-22T00:00:00Z'), checksums: {sha256: Uint8Array.from(Buffer.from(hash(item.bytes), 'hex')).buffer}, httpMetadata: item.httpMetadata};
   }
-  async head(key) {return this.metadata(key);}
+  async head(key) {this.heads++; return this.metadata(key);}
   async get(key, options = {}) {
+    this.gets++;
     const meta = this.metadata(key); if (!meta) return null;
     if (options.onlyIf?.etagMatches && options.onlyIf.etagMatches !== meta.etag) return meta;
     const bytes = this.objects.get(key).bytes;
@@ -136,4 +137,75 @@ test('metadata and artifact publication is bounded', async () => {
   assert.equal((await s.put('/publish/stable.json', Buffer.alloc(65537))).status, 413);
   assert.equal((await s.put('/publish/v1.2.3/install.sh', Buffer.from('x'), {'Content-Length': String(2 ** 21)})).status, 400);
   assert.equal(s.env.RELEASES.writes, 0);
+});
+test('verifyEnvelope memoizes RSA-3072 CryptoKey per publicKey and evicts invalid keys', async t => {
+  const freshPair = generateKeyPairSync('rsa', {modulusLength: 3072, publicKeyEncoding: {type: 'spki', format: 'pem'}, privateKeyEncoding: {type: 'pkcs8', format: 'pem'}});
+  const f = fixture('2.0.0');
+  const payload = Buffer.from(JSON.stringify(f.manifest, null, 2) + '\n');
+  const envelope = Buffer.from(JSON.stringify({payload: payload.toString('base64'), signature: sign('RSA-SHA256', payload, freshPair.privateKey).toString('base64')}));
+
+  let imports = 0;
+  const origImport = globalThis.crypto.subtle.importKey.bind(globalThis.crypto.subtle);
+  t.mock.method(globalThis.crypto.subtle, 'importKey', async (...args) => {
+    imports++;
+    return origImport(...args);
+  });
+
+  for (let i = 0; i < 5; i++) {
+    assert.equal((await verifyEnvelope(envelope, freshPair.publicKey)).version, '2.0.0');
+  }
+  assert.equal(imports, 1, 'RSA SPKI public key must be imported once and reused');
+
+  await assert.rejects(() => verifyEnvelope(envelope, '-----BEGIN PUBLIC KEY-----\nAAAA\n-----END PUBLIC KEY-----'), {status: 422});
+});
+test('standard GET uses one atomic R2 get without head or spurious TOCTOU 503 while caching only immutable 200 GETs', async () => {
+  const s = setup(), v1 = fixture('1.2.3'), v2 = fixture('1.2.4');
+  await s.upload(v1);
+  assert.equal((await s.put('/publish/stable.json', v1.envelope)).status, 200);
+  await s.upload(v2);
+
+  // Simulate concurrent stable.json promotion right before get() runs; single-step GET never sees head/get mismatch.
+  const origGet = s.env.RELEASES.get.bind(s.env.RELEASES);
+  let promoted = false;
+  s.env.RELEASES.get = async (key, options) => {
+    if (key === 'gtmux/stable.json' && !promoted) {
+      promoted = true;
+      await s.env.RELEASES.put('gtmux/stable.json', v2.envelope);
+    }
+    return origGet(key, options);
+  };
+  s.env.RELEASES.heads = 0;
+  s.env.RELEASES.gets = 0;
+  const stableRes = await s.request('/gtmux/stable.json');
+  assert.equal(stableRes.status, 200);
+  assert.equal((await verifyEnvelope(new Uint8Array(await stableRes.arrayBuffer()), pair.publicKey)).version, '1.2.4');
+  assert.equal(s.env.RELEASES.heads, 0, 'standard GET must not issue a preceding R2 head()');
+  assert.equal(s.env.RELEASES.gets, 1, 'standard GET must read in a single R2 get()');
+
+  // Verify edge cache caches immutable versioned 200 GETs while stable.json stays uncached.
+  const cacheStore = new Map();
+  const prevCaches = globalThis.caches;
+  globalThis.caches = {
+    default: {
+      async match(req) { const hit = cacheStore.get(req.url); return hit ? hit.clone() : undefined; },
+      async put(req, res) { cacheStore.set(req.url, res.clone()); },
+    },
+  };
+  try {
+    s.env.RELEASES.gets = 0;
+    const first = await s.request('/gtmux/v1.2.4/install.sh');
+    assert.equal(first.status, 200);
+    assert.equal(await first.text(), v2.contents['install.sh'].toString());
+    assert.equal(s.env.RELEASES.gets, 1);
+
+    const second = await s.request('/gtmux/v1.2.4/install.sh');
+    assert.equal(second.status, 200);
+    assert.equal(await second.text(), v2.contents['install.sh'].toString());
+    assert.equal(s.env.RELEASES.gets, 1, 'second immutable GET should be served from edge cache');
+
+    await s.request('/gtmux/stable.json');
+    assert.equal(cacheStore.has('https://downloads.ccy.dev/gtmux/stable.json'), false, 'mutable stable.json must not be pinned in edge cache');
+  } finally {
+    globalThis.caches = prevCaches;
+  }
 });

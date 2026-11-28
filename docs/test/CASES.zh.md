@@ -7,8 +7,8 @@
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
 | L1 · 单元/纯逻辑 | 3836 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2793 | [L2.csv](cases/L2.csv) |
-| L3 · 运行时集成 | 171 | [L3.csv](cases/L3.csv) |
+| L2 · 组件/契约 | 2808 | [L2.csv](cases/L2.csv) |
+| L3 · 运行时集成 | 174 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
 | G · 质量门禁 | 535 | [G.csv](cases/G.csv) |
@@ -791,6 +791,11 @@
 | WHS-005 | The two in-flight lanes each issue one request. Roster completion paints the header without writing terminal content or fetching or drawing hidden Chat. Existing capture outputs remain first, second and newest, discarding the outdated capture. A deferred roster reply for a retired view cannot repaint it after completion. |
 | WWP-001 | Both panels remain visible and separate without moving the first. The 1024-pixel layout uses the room below. Chat histories and drafts stay with their own pane. The fixture receives exactly one request for the selected pane. |
 | WWP-002 | The two saved geometries stay exact while a third tile chooses open space. The fixture receives no message. |
+| WKH-001 | Concurrent redeems, moves, and revocations preserve every non-revoked account without cross-PoP overwrites, duplicate ports, or KV 429 failures; legacy registry:v1 imports once into SQLite storage while uninitialized deployments still omit X-Gtmux-Authfile; and scheduled sweeps persist reap:cursor cleanly and still run reconcileActiveCount when the time budget expires. |
+| WKH-002 | Unauthenticated or mismatched-secret /direct/servers requests return only public servers and omit current/reserved servers without leaking device existence, while valid device secrets disclose current and code-reserved servers; /direct/revoke enforces constant-time admin/sync bearer auth and removes accounts before deleting the code; rotating addresses within one IPv6 /64 share one cap:ip bucket; and reapDevice returns false immediately on non-pending tombstones with zero Cloudflare API calls. |
+| WKH-003 | Invalid APNs tokens return 400 {"error":"bad token"} before provider calls; APNs fetch passes AbortSignal.timeout(8000) on alert and Live Activity paths and returns 502 on timeout; bearer tokens compare via SHA-256 digests in constant time; per-IP /64 bursts past RELAY_IP_RPM return 429; and client FCM validation errors (liveActivity, oversized >4096B payload, bad token) return 400 while unconfigured FCM returns 503 and bad server credentials return 502. |
+| WKH-004 | Both POST / and POST /push accept authenticated intents using constant-time SHA-256 bearer comparison; non-hex or out-of-range APNs tokens fail with 400 {"error":"bad token"} before HTTP calls; unconfigured Android returns 503 while unknown platforms return 400; client FCM validation failures return 400; and shared APNs/FCM wire contracts remain identical. |
+| WKH-005 | crypto.subtle.importKey runs once per distinct valid publicKey across repeated manifest verifications; standard GET requests execute a single atomic RELEASES.get with zero RELEASES.head calls and never fail with a spurious 503 when stable.json updates concurrently; HEAD, preconditions, and valid/invalid byte ranges keep exact 200/206/304/412/416 semantics; and only immutable versioned 200 GET responses populate edge cache while stable.json remains immediately fresh. |
 | WFH-001 | Appending a newly reviewed case ID to an existing test file passes without requiring the untouched historical plan to be re-sealed, while modifying an existing test file with neither a newly reviewed case nor a re-sealed existing case still fails closed. |
 | WFH-002 | Mobile release metadata (.srchash, android.json, GtmuxMobile.xcodeproj) selects mobile/iOS/Android gates without unrelated Go/menubar/Worker suites; non-shared RN UI files skip Web while Web-consumed mobileapp files still select Web; menubar verifies universal arm64+x86_64 binaries via build.sh without duplicate full Release builds; ios-store-assets pins macos-15 and Xcode 26.3; and workflows SHA-pin third-party actions. |
 | WFH-003 | Both phone and tablet split the 31-case suite cleanly across shards 1 and 2 without crossing setup groups, preserve per-shard receipts across failed-only reruns, and publish the exact required aggregate check names Android phone emulator flows and Android tablet emulator flows. |

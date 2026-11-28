@@ -1,11 +1,13 @@
 id,layer,stack,file,line,kind,description,dynamic,design
-LEG-dc83f4e46721,L2,Worker,download-worker/test/service.test.mjs,58,test,publication is authenticated and host/path scoped before bucket writes,False,legacy-not-retrospectively-reviewed
-LEG-3189bf281235,L2,Worker,download-worker/test/service.test.mjs,68,test,only complete signed releases advance stable; exact bytes stay on both hosts,False,legacy-not-retrospectively-reviewed
-LEG-4b11912130f3,L2,Worker,download-worker/test/service.test.mjs,87,test,"signature, exact asset schema and uploaded hashes fail closed",False,legacy-not-retrospectively-reviewed
-LEG-f0de792d23c8,L2,Worker,download-worker/test/service.test.mjs,100,test,published versions cannot be overwritten or downgraded,False,legacy-not-retrospectively-reviewed
-LEG-43437c4aac58,L2,Worker,download-worker/test/service.test.mjs,108,test,"GET/HEAD, conditional reads, ranges and If-Range are consistent",False,legacy-not-retrospectively-reviewed
-LEG-acf4b90662e1,L2,Worker,download-worker/test/service.test.mjs,125,test,stable promotion uses an atomic conditional write,False,legacy-not-retrospectively-reviewed
-LEG-e6e66ce49ff1,L2,Worker,download-worker/test/service.test.mjs,134,test,metadata and artifact publication is bounded,False,legacy-not-retrospectively-reviewed
+LEG-dc83f4e46721,L2,Worker,download-worker/test/service.test.mjs,59,test,publication is authenticated and host/path scoped before bucket writes,False,legacy-not-retrospectively-reviewed
+LEG-3189bf281235,L2,Worker,download-worker/test/service.test.mjs,69,test,only complete signed releases advance stable; exact bytes stay on both hosts,False,legacy-not-retrospectively-reviewed
+LEG-4b11912130f3,L2,Worker,download-worker/test/service.test.mjs,88,test,"signature, exact asset schema and uploaded hashes fail closed",False,legacy-not-retrospectively-reviewed
+LEG-f0de792d23c8,L2,Worker,download-worker/test/service.test.mjs,101,test,published versions cannot be overwritten or downgraded,False,legacy-not-retrospectively-reviewed
+LEG-43437c4aac58,L2,Worker,download-worker/test/service.test.mjs,109,test,"GET/HEAD, conditional reads, ranges and If-Range are consistent",False,legacy-not-retrospectively-reviewed
+LEG-acf4b90662e1,L2,Worker,download-worker/test/service.test.mjs,126,test,stable promotion uses an atomic conditional write,False,legacy-not-retrospectively-reviewed
+LEG-e6e66ce49ff1,L2,Worker,download-worker/test/service.test.mjs,135,test,metadata and artifact publication is bounded,False,legacy-not-retrospectively-reviewed
+MAP-927e831516e1,L2,Worker,download-worker/test/service.test.mjs,141,reviewed-selector,verifyEnvelope memoizes RSA-3072 CryptoKey per publicKey and evicts invalid keys,False,WKH-005
+MAP-43c4ce167e8d,L2,Worker,download-worker/test/service.test.mjs,161,reviewed-selector,standard GET uses one atomic R2 get without head or spurious TOCTOU 503 while caching only immutable 200 GETs,False,WKH-005
 MAP-62f498f7d987,L2,reviewed implementation,internal/agentclient/expected_target_test.go,9,reviewed-selector,TestASC004ExpectedHarnessIdentityRefusesBeforePreparingInput,False,ASC-004
 MAP-dbf0d0012d6d,L2,reviewed implementation,internal/agentclient/input_archive_bootstrap_test.go,14,reviewed-selector,TestSPL026ArchiveBootstrapSurvivesProcessExit,False,SPL-026
 MAP-c85de4153666,L2,reviewed implementation,internal/agentclient/input_archive_bootstrap_test.go,32,reviewed-selector,TestSPL026ArchiveBootstrapExitChild,False,SPL-026
@@ -2706,26 +2708,34 @@ MAP-08699e656120,L2,reviewed implementation,mobileapp/src/ui/useSendRecovery.tes
 LEG-18bbe205ead8,L2,Worker,relay-worker/src/fcm.test.ts,8,test,`FCM contract: ${row.name}`,True,legacy-not-retrospectively-reviewed
 LEG-71aba9531bf9,L2,Worker,relay-worker/src/fcm.test.ts,9,test,"Android never falls through to APNs, including missing FCM config",False,legacy-not-retrospectively-reviewed
 LEG-d69d7e5c069d,L2,Worker,relay-worker/src/fcm.test.ts,20,test,"unsupported activities, oversized bodies and malformed credentials fail closed",False,legacy-not-retrospectively-reviewed
-LEG-5337b4735cca,L2,Worker,relay-worker/src/fcm.test.ts,26,test,"FCM signs scoped RS256 assertions, caches OAuth and normalizes revoked tokens",False,legacy-not-retrospectively-reviewed
-LEG-b0f696691fdf,L2,Worker,relay-worker/src/index.test.ts,19,test,waiting alert → quick-reply category + mutable-content + routing fields,False,legacy-not-retrospectively-reviewed
-LEG-5e51c3095d37,L2,Worker,relay-worker/src/index.test.ts,43,test,non-waiting alert (done) → NO quick-reply category,False,legacy-not-retrospectively-reviewed
-LEG-5c4318bf80af,L2,Worker,relay-worker/src/index.test.ts,50,test,"silent badge-sync → content-available only, background priority, no alert",False,legacy-not-retrospectively-reviewed
-LEG-e97ff79fc330,L2,Worker,relay-worker/src/index.test.ts,65,test,badge rides along on an alert push too,False,legacy-not-retrospectively-reviewed
-LEG-640cea680e02,L2,Worker,relay-worker/src/index.test.ts,70,test,empty optionals default cleanly (no undefined leaks in the wire body),False,legacy-not-retrospectively-reviewed
-LEG-14d8300f2e11,L2,Worker,relay-worker/src/index.test.ts,80,test,live activity → timestamp + event + content-state + stale-date,False,legacy-not-retrospectively-reviewed
-LEG-4069af73c90d,L2,Worker,relay-worker/src/index.test.ts,93,test,live activity without a stale-date omits the key (no undefined leak),False,legacy-not-retrospectively-reviewed
+LEG-5337b4735cca,L2,Worker,relay-worker/src/fcm.test.ts,47,test,"FCM signs scoped RS256 assertions, caches OAuth and normalizes revoked tokens",False,legacy-not-retrospectively-reviewed
+MAP-dd004a40f53a,L2,Worker,relay-worker/src/fcm.test.ts,26,reviewed-selector,client-side FCM validation errors return 400 while unconfigured returns 503 and bad server credentials return 502,False,WKH-003
+LEG-b0f696691fdf,L2,Worker,relay-worker/src/index.test.ts,18,test,waiting alert → quick-reply category + mutable-content + routing fields,False,legacy-not-retrospectively-reviewed
+LEG-5e51c3095d37,L2,Worker,relay-worker/src/index.test.ts,42,test,non-waiting alert (done) → NO quick-reply category,False,legacy-not-retrospectively-reviewed
+LEG-5c4318bf80af,L2,Worker,relay-worker/src/index.test.ts,49,test,"silent badge-sync → content-available only, background priority, no alert",False,legacy-not-retrospectively-reviewed
+LEG-e97ff79fc330,L2,Worker,relay-worker/src/index.test.ts,64,test,badge rides along on an alert push too,False,legacy-not-retrospectively-reviewed
+LEG-640cea680e02,L2,Worker,relay-worker/src/index.test.ts,69,test,empty optionals default cleanly (no undefined leaks in the wire body),False,legacy-not-retrospectively-reviewed
+LEG-14d8300f2e11,L2,Worker,relay-worker/src/index.test.ts,79,test,live activity → timestamp + event + content-state + stale-date,False,legacy-not-retrospectively-reviewed
+LEG-4069af73c90d,L2,Worker,relay-worker/src/index.test.ts,92,test,live activity without a stale-date omits the key (no undefined leak),False,legacy-not-retrospectively-reviewed
 LEG-27fc550de261,L2,Worker,relay-worker/src/index.test.ts,133,test,relay rejects missing configuration and oversized or invalid objects before provider work,False,legacy-not-retrospectively-reviewed
+MAP-6f5c2875f1c7,L2,Worker,relay-worker/src/index.test.ts,151,reviewed-selector,relay validates APNs hex tokens strictly and accepts POST / alongside POST /push,False,WKH-003
+MAP-c565ddaa4b1e,L2,Worker,relay-worker/src/index.test.ts,203,reviewed-selector,relay bounds APNs fetches with an 8s timeout signal and returns 502 on timeout,False,WKH-003
+MAP-de3d7bb903a8,L2,Worker,relay-worker/src/index.test.ts,238,reviewed-selector,relay compares bearer tokens in constant time and enforces per-IP /64 sliding-window rate limits,False,WKH-003
 LEG-dfdc728c020a,L2,Go core / CLI / server,relay/apns_contract_test.go,53,Test,TestGoRelayRetiresAPNSGoneThroughRealClient,False,legacy-not-retrospectively-reviewed
 LEG-34dbe5bdf8e7,L2,Go core / CLI / server,relay/apns_contract_test.go,73,Test,TestAPNSLiveActivityUsesDedicatedWireType,False,legacy-not-retrospectively-reviewed
+MAP-901ee22b4503,L2,Go core / CLI / server,relay/apns_contract_test.go,106,reviewed-selector,TestAPNSContractRejectsNonHexTokensBeforeGateway,False,WKH-004
 LEG-8d579de9557c,L2,Go core / CLI / server,relay/body_bounds_test.go,10,Test,TestRelayMissingCredentialFailsClosedWithHealthAvailable,False,legacy-not-retrospectively-reviewed
 LEG-0b084245d668,L2,Go core / CLI / server,relay/body_bounds_test.go,22,Test,TestRelayRejectsLargeOrTrailingBodyBeforeProvider,False,legacy-not-retrospectively-reviewed
 LEG-5e09c8438ca5,L2,Go core / CLI / server,relay/body_bounds_test.go,35,subtest,[dynamic subtest],True,legacy-not-retrospectively-reviewed
 LEG-b08be47a801f,L2,Go core / CLI / server,relay/body_bounds_test.go,55,Test,TestRelayAuthenticatesBeforeOpeningBody,False,legacy-not-retrospectively-reviewed
+MAP-944094bdd521,L2,Go core / CLI / server,relay/body_bounds_test.go,64,reviewed-selector,TestRelayRootEndpointSharesBodyAndAuthBounds,False,WKH-004
 LEG-c70164e9d22d,L2,Go core / CLI / server,relay/fcm_test.go,50,Test,TestFCMOAuthAndDelivery,False,legacy-not-retrospectively-reviewed
-LEG-e04c0b1b373e,L2,Go core / CLI / server,relay/relay_test.go,44,Test,TestRelayPush,False,legacy-not-retrospectively-reviewed
-LEG-830df1204b31,L2,Go core / CLI / server,relay/relay_test.go,124,Test,TestAPNSPush,False,legacy-not-retrospectively-reviewed
-LEG-3adbdca9096b,L2,Go core / CLI / server,relay/relay_test.go,155,Test,TestAPNSSilentBadge,False,legacy-not-retrospectively-reviewed
-LEG-72ab23403100,L2,Go core / CLI / server,relay/relay_test.go,189,Test,TestAPNSPushError,False,legacy-not-retrospectively-reviewed
+MAP-616851bd596c,L2,Go core / CLI / server,relay/fcm_test.go,139,reviewed-selector,TestRelayFCMHandlerValidationAndUnconfiguredParity,False,WKH-004
+LEG-e04c0b1b373e,L2,Go core / CLI / server,relay/relay_test.go,49,Test,TestRelayPush,False,legacy-not-retrospectively-reviewed
+LEG-830df1204b31,L2,Go core / CLI / server,relay/relay_test.go,131,Test,TestAPNSPush,False,legacy-not-retrospectively-reviewed
+LEG-3adbdca9096b,L2,Go core / CLI / server,relay/relay_test.go,161,Test,TestAPNSSilentBadge,False,legacy-not-retrospectively-reviewed
+LEG-72ab23403100,L2,Go core / CLI / server,relay/relay_test.go,197,Test,TestAPNSPushError,False,legacy-not-retrospectively-reviewed
+MAP-69f30d171c6b,L2,Go core / CLI / server,relay/relay_test.go,211,reviewed-selector,TestRelayParityAndAPNSTokenValidation,False,WKH-004
 MAP-2a8e1df3263e,L2,reviewed implementation,tests/contracts/http-contract.cjs,5,reviewed-selector,async function observe,False,CT-HTTP
 MAP-c856d62bb0c7,L2,reviewed implementation,tests/contracts/http-contract.cjs,36,reviewed-selector,function verify,False,CT-HTTP
 MAP-aeaadc032b3b,L2,reviewed implementation,tests/contracts/http-contract.json,307,reviewed-selector,"""hq-overview""",False,HGD-007
@@ -2735,29 +2745,30 @@ MAP-c9d3762e7230,L2,reviewed implementation,tests/web/fixture.cjs,32,reviewed-se
 MAP-e5604b1208c7,L2,reviewed implementation,tests/web/http-contract-validator.test.cjs,4,reviewed-selector,"wire contract rejects type, permission, ordinal, omission and security-header drift",False,CT-HTTP
 MAP-7c302e814600,L2,reviewed implementation,tests/web/workbench-placement.test.cjs,15,reviewed-selector,WWP001 Opens two actionable workbench tiles,False,"WWP-001,WWP-002"
 MAP-6967230278b1,L2,reviewed implementation,tests/web/workbench-placement.test.cjs,57,reviewed-selector,WWP002 Preserves saved freeform geometry while placing a new tile,False,"WWP-001,WWP-002"
-LEG-69563fe32201,L2,Worker,tunnel-worker/src/direct.test.ts,36,test,the port formula is the client's: Go's crc32.ChecksumIEEE over the id,False,legacy-not-retrospectively-reviewed
-LEG-f3f8a76744ad,L2,Worker,tunnel-worker/src/direct.test.ts,49,test,"each device gets its own account, allowed its own port and nothing else",False,legacy-not-retrospectively-reviewed
-LEG-9986e056b831,L2,Worker,tunnel-worker/src/direct.test.ts,69,test,a device that redeems again gets the same account back,False,legacy-not-retrospectively-reviewed
-LEG-32ea17f24117,L2,Worker,tunnel-worker/src/direct.test.ts,77,test,a code mints accounts for at most `cap` devices,False,legacy-not-retrospectively-reviewed
-LEG-6834ff0e301b,L2,Worker,tunnel-worker/src/direct.test.ts,88,test,two devices whose derived ports collide never share one,False,legacy-not-retrospectively-reviewed
-LEG-195b68b3e901,L2,Worker,tunnel-worker/src/direct.test.ts,106,test,"if a race ever puts two accounts on one port, only the older can bind it",False,legacy-not-retrospectively-reviewed
-LEG-aebbacc62623,L2,Worker,tunnel-worker/src/direct.test.ts,116,test,"revoking a code removes the accounts it minted, and only those",False,legacy-not-retrospectively-reviewed
-LEG-db3a2918bcfc,L2,Worker,tunnel-worker/src/direct.test.ts,127,test,a device moving to another code keeps its account and port,False,legacy-not-retrospectively-reviewed
-LEG-4eeb2edcc889,L2,Worker,tunnel-worker/src/direct.test.ts,136,test,refusals mint nothing and say why,False,legacy-not-retrospectively-reviewed
-LEG-b23afc73a52f,L2,Worker,tunnel-worker/src/direct.test.ts,146,test,an account that could not be saved is never handed out,False,legacy-not-retrospectively-reviewed
-LEG-498011cef737,L2,Worker,tunnel-worker/src/direct.test.ts,152,test,the sync token comparison does not short-circuit,False,legacy-not-retrospectively-reviewed
-LEG-26d173e8c9c7,L2,Worker,tunnel-worker/src/direct.test.ts,176,test,"no server list configured: one server, the configured URL, exactly as before",False,legacy-not-retrospectively-reviewed
-LEG-3888cf7257eb,L2,Worker,tunnel-worker/src/direct.test.ts,188,test,a server added to the list is usable with no code change here,False,legacy-not-retrospectively-reviewed
-LEG-c75525c5957c,L2,Worker,tunnel-worker/src/direct.test.ts,196,test,a region preference picks a server in that region,False,legacy-not-retrospectively-reviewed
-LEG-28388065f5f4,L2,Worker,tunnel-worker/src/direct.test.ts,202,test,a server reserved for named codes is offered to those codes only,False,legacy-not-retrospectively-reviewed
-LEG-430c7d3e04e6,L2,Worker,tunnel-worker/src/direct.test.ts,214,test,what a client is told about a server never includes the server's own token,False,legacy-not-retrospectively-reviewed
-LEG-3c69f9784845,L2,Worker,tunnel-worker/src/direct.test.ts,222,test,an account file holds that server's tenants and no others,False,legacy-not-retrospectively-reviewed
-LEG-3f19c0578a69,L2,Worker,tunnel-worker/src/direct.test.ts,234,test,a server is named by the token it presents; an unknown token names none,False,legacy-not-retrospectively-reviewed
-LEG-7b66d462142b,L2,Worker,tunnel-worker/src/direct.test.ts,242,test,accounts minted before the list belong to the server that existed,False,legacy-not-retrospectively-reviewed
-LEG-ac6336f0f45d,L2,Worker,tunnel-worker/src/direct.test.ts,252,test,"moving needs the device's own account, and keeps its port",False,legacy-not-retrospectively-reviewed
-LEG-0aec42ca82a1,L2,Worker,tunnel-worker/src/direct.test.ts,271,test,moving to a server this code may not use is refused,False,legacy-not-retrospectively-reviewed
-LEG-4761b64c6fbe,L2,Worker,tunnel-worker/src/direct.test.ts,279,test,"a malformed server list falls back to the configured server, never to nothing",False,legacy-not-retrospectively-reviewed
-LEG-4ab4181bbfc8,L2,Worker,tunnel-worker/src/direct.test.ts,290,test,only a registry that exists can vouch for an empty authfile,False,legacy-not-retrospectively-reviewed
+LEG-69563fe32201,L2,Worker,tunnel-worker/src/direct.test.ts,38,test,the port formula is the client's: Go's crc32.ChecksumIEEE over the id,False,legacy-not-retrospectively-reviewed
+LEG-f3f8a76744ad,L2,Worker,tunnel-worker/src/direct.test.ts,51,test,"each device gets its own account, allowed its own port and nothing else",False,legacy-not-retrospectively-reviewed
+LEG-9986e056b831,L2,Worker,tunnel-worker/src/direct.test.ts,71,test,a device that redeems again gets the same account back,False,legacy-not-retrospectively-reviewed
+LEG-32ea17f24117,L2,Worker,tunnel-worker/src/direct.test.ts,79,test,a code mints accounts for at most `cap` devices,False,legacy-not-retrospectively-reviewed
+LEG-6834ff0e301b,L2,Worker,tunnel-worker/src/direct.test.ts,90,test,two devices whose derived ports collide never share one,False,legacy-not-retrospectively-reviewed
+LEG-195b68b3e901,L2,Worker,tunnel-worker/src/direct.test.ts,108,test,"if a race ever puts two accounts on one port, only the older can bind it",False,legacy-not-retrospectively-reviewed
+LEG-aebbacc62623,L2,Worker,tunnel-worker/src/direct.test.ts,118,test,"revoking a code removes the accounts it minted, and only those",False,legacy-not-retrospectively-reviewed
+LEG-db3a2918bcfc,L2,Worker,tunnel-worker/src/direct.test.ts,129,test,a device moving to another code keeps its account and port,False,legacy-not-retrospectively-reviewed
+LEG-4eeb2edcc889,L2,Worker,tunnel-worker/src/direct.test.ts,138,test,refusals mint nothing and say why,False,legacy-not-retrospectively-reviewed
+LEG-b23afc73a52f,L2,Worker,tunnel-worker/src/direct.test.ts,148,test,an account that could not be saved is never handed out,False,legacy-not-retrospectively-reviewed
+LEG-498011cef737,L2,Worker,tunnel-worker/src/direct.test.ts,154,test,the sync token comparison does not short-circuit,False,legacy-not-retrospectively-reviewed
+LEG-26d173e8c9c7,L2,Worker,tunnel-worker/src/direct.test.ts,178,test,"no server list configured: one server, the configured URL, exactly as before",False,legacy-not-retrospectively-reviewed
+LEG-3888cf7257eb,L2,Worker,tunnel-worker/src/direct.test.ts,190,test,a server added to the list is usable with no code change here,False,legacy-not-retrospectively-reviewed
+LEG-c75525c5957c,L2,Worker,tunnel-worker/src/direct.test.ts,198,test,a region preference picks a server in that region,False,legacy-not-retrospectively-reviewed
+LEG-28388065f5f4,L2,Worker,tunnel-worker/src/direct.test.ts,204,test,a server reserved for named codes is offered to those codes only,False,legacy-not-retrospectively-reviewed
+LEG-430c7d3e04e6,L2,Worker,tunnel-worker/src/direct.test.ts,216,test,what a client is told about a server never includes the server's own token,False,legacy-not-retrospectively-reviewed
+LEG-3c69f9784845,L2,Worker,tunnel-worker/src/direct.test.ts,224,test,an account file holds that server's tenants and no others,False,legacy-not-retrospectively-reviewed
+LEG-3f19c0578a69,L2,Worker,tunnel-worker/src/direct.test.ts,236,test,a server is named by the token it presents; an unknown token names none,False,legacy-not-retrospectively-reviewed
+LEG-7b66d462142b,L2,Worker,tunnel-worker/src/direct.test.ts,244,test,accounts minted before the list belong to the server that existed,False,legacy-not-retrospectively-reviewed
+LEG-ac6336f0f45d,L2,Worker,tunnel-worker/src/direct.test.ts,254,test,"moving needs the device's own account, and keeps its port",False,legacy-not-retrospectively-reviewed
+LEG-0aec42ca82a1,L2,Worker,tunnel-worker/src/direct.test.ts,273,test,moving to a server this code may not use is refused,False,legacy-not-retrospectively-reviewed
+LEG-4761b64c6fbe,L2,Worker,tunnel-worker/src/direct.test.ts,281,test,"a malformed server list falls back to the configured server, never to nothing",False,legacy-not-retrospectively-reviewed
+LEG-4ab4181bbfc8,L2,Worker,tunnel-worker/src/direct.test.ts,292,test,only a registry that exists can vouch for an empty authfile,False,legacy-not-retrospectively-reviewed
+MAP-15b7175b0a9e,L2,Worker,tunnel-worker/src/direct.test.ts,313,reviewed-selector,revokeDirectCode validates code format and removes minted accounts before deleting the code key,False,WKH-002
 LEG-dd4c8d1decac,L2,Worker,tunnel-worker/src/index.test.ts,18,test,"provider null active timestamp means offline, not never connected",False,legacy-not-retrospectively-reviewed
 LEG-745abd24c186,L2,Worker,tunnel-worker/src/index.test.ts,23,test,only explicitly never-run instances use the 24-hour grace,False,legacy-not-retrospectively-reviewed
 LEG-1f4ed81df174,L2,Worker,tunnel-worker/src/index.test.ts,27,test,long-running healthy/degraded tunnels and live connections are never reaped,False,legacy-not-retrospectively-reviewed
@@ -2786,9 +2797,13 @@ LEG-ecc3db077598,L2,Worker,tunnel-worker/src/index.test.ts,317,test,a contended 
 LEG-5e7c29471a78,L2,Worker,tunnel-worker/src/index.test.ts,329,test,abandoned pending replacements are reclaimed without removing the original route or identity,False,legacy-not-retrospectively-reviewed
 LEG-065e2b72a07c,L2,Worker,tunnel-worker/src/index.test.ts,356,test,a deletion response for a different instance cannot authorize replacing this device,False,legacy-not-retrospectively-reviewed
 LEG-8a6bc8f06e3d,L2,Worker,tunnel-worker/src/index.test.ts,364,test,incoming handlers reject oversized objects before KV or provider work,False,legacy-not-retrospectively-reviewed
-LEG-bdae316ffb38,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,52,it,legacy misreaped device + simultaneous recovery requests create one replacement and keep its address,False,legacy-not-retrospectively-reviewed
-LEG-f2a0f723bef4,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,69,it,"persistent pending journal survives reconstruction and stale KV, resuming without a second tunnel",False,legacy-not-retrospectively-reviewed
-LEG-8f6295488228,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,94,it,a lost create response is found by its persistent opaque operation name,False,legacy-not-retrospectively-reviewed
-LEG-9509f6fa6d26,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,102,it,reclaim and recovery share coordination; an old instance cannot delete a replacement route,False,legacy-not-retrospectively-reviewed
-LEG-d5b340d664d9,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,119,it,an abandoned pending instance can be reclaimed and a returning legacy Mac still resumes at the original address,False,legacy-not-retrospectively-reviewed
-LEG-04b28410bb4a,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,135,it,deployed entry preserves the smaller Standard body limit and rejects before coordination,False,legacy-not-retrospectively-reviewed
+MAP-10a12656b76f,L2,Worker,tunnel-worker/src/index.test.ts,385,reviewed-selector,POST /direct/servers requires matching device secret to disclose current and code-reserved servers,False,WKH-002
+MAP-4723838bc4c1,L2,Worker,tunnel-worker/src/index.test.ts,436,reviewed-selector,POST /direct/revoke enforces constant-time admin/sync bearer auth and removes minted accounts,False,WKH-002
+MAP-8afad98aae73,L2,Worker,tunnel-worker/src/index.test.ts,489,reviewed-selector,Standard provision caps normalize IPv6 /64 prefixes while unwrapping IPv4-mapped addresses,False,WKH-002
+MAP-8364f141247c,L2,Worker,tunnel-worker/src/index.test.ts,513,reviewed-selector,reapDevice fast-skips already-reaped non-pending tombstones with zero Cloudflare API calls,False,WKH-002
+LEG-bdae316ffb38,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,56,it,legacy misreaped device + simultaneous recovery requests create one replacement and keep its address,False,legacy-not-retrospectively-reviewed
+LEG-f2a0f723bef4,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,73,it,"persistent pending journal survives reconstruction and stale KV, resuming without a second tunnel",False,legacy-not-retrospectively-reviewed
+LEG-8f6295488228,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,98,it,a lost create response is found by its persistent opaque operation name,False,legacy-not-retrospectively-reviewed
+LEG-9509f6fa6d26,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,106,it,reclaim and recovery share coordination; an old instance cannot delete a replacement route,False,legacy-not-retrospectively-reviewed
+LEG-d5b340d664d9,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,123,it,an abandoned pending instance can be reclaimed and a returning legacy Mac still resumes at the original address,False,legacy-not-retrospectively-reviewed
+LEG-04b28410bb4a,L2,Worker,tunnel-worker/test/lifecycle.spec.ts,139,it,deployed entry preserves the smaller Standard body limit and rejects before coordination,False,legacy-not-retrospectively-reviewed

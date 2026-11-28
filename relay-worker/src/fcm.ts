@@ -5,12 +5,21 @@ export interface FCMIntent {
   options?: number; silent?: boolean; badge?: number; collapseId?: string; liveActivity?: boolean;
 }
 export interface FCMCredentials {project_id: string; client_email: string; private_key: string; type: string}
+export class FCMValidationError extends Error {}
 let cached: {identity: string; token: string; until: number} | null = null;
 const encoder = new TextEncoder();
 const base64 = (bytes: Uint8Array) => btoa(Array.from(bytes, x => String.fromCharCode(x)).join('')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+function validFCMToken(token: unknown): token is string {
+  if (typeof token !== 'string' || !token || token.length > 4096) return false;
+  for (let i = 0; i < token.length; i++) {
+    const code = token.charCodeAt(i);
+    if (code <= 0x20 || code === 0x7f) return false;
+  }
+  return true;
+}
 export function fcmMessage(intent: FCMIntent) {
-  if (intent.liveActivity) throw new Error('Live Activity is iOS-only');
-  if (!intent.token || intent.token.length > 4096) throw new Error('Invalid FCM token');
+  if (intent.liveActivity) throw new FCMValidationError('Live Activity is iOS-only');
+  if (!validFCMToken(intent.token)) throw new FCMValidationError('bad token');
   const data: Record<string, string> = {
     title: intent.title ?? '', body: intent.body ?? '', server: intent.subtitle ?? '',
     pane: intent.pane ?? '', kind: intent.kind ?? '', silent: String(!!intent.silent),
@@ -19,7 +28,7 @@ export function fcmMessage(intent: FCMIntent) {
   if (intent.badge !== undefined) data.badge = String(intent.badge);
   if (intent.collapseId) data.collapseId = intent.collapseId;
   const result = {message: {token: intent.token, data, android: {priority: intent.silent ? 'NORMAL' : 'HIGH', ttl: intent.silent ? '300s' : '120s'}}};
-  if (encoder.encode(JSON.stringify(result)).length > 4096) throw new Error('FCM payload is too large');
+  if (encoder.encode(JSON.stringify(result)).length > 4096) throw new FCMValidationError('FCM payload is too large');
   return result;
 }
 async function accessToken(credentials: FCMCredentials): Promise<string> {
@@ -44,9 +53,14 @@ async function accessToken(credentials: FCMCredentials): Promise<string> {
 }
 export async function sendFCM(intent: FCMIntent, configuration?: string): Promise<Response> {
   const json = (value: unknown, status: number) => Response.json(value, {status});
+  let message: ReturnType<typeof fcmMessage>;
+  try {
+    message = fcmMessage(intent);
+  } catch (error) {
+    return json({error: error instanceof FCMValidationError ? error.message : 'invalid request'}, 400);
+  }
   if (!configuration) return json({error: 'android push is not configured'}, 503);
   try {
-    const message = fcmMessage(intent);
     const credentials = JSON.parse(configuration) as FCMCredentials;
     const token = await accessToken(credentials);
     const response = await fetch(`https://fcm.googleapis.com/v1/projects/${credentials.project_id}/messages:send`, {

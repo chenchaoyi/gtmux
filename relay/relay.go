@@ -1,6 +1,6 @@
 // Command relay is the gtmux push relay: a tiny, stateless, dumb forwarder.
 // `gtmux serve` (on the user's Mac) POSTs minimal push intents here; the relay
-// holds the platform push credentials (APNs now; FCM/HMS later) — which are tied
+// holds the platform push credentials (APNs and FCM) — which are tied
 // to the app's developer account, NOT the user's — and forwards each intent to
 // the right gateway. It keeps no device roster or notification-history database.
 // Payloads can contain task titles, visible agent choices and Mac/pane identifiers;
@@ -13,6 +13,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"io"
@@ -66,7 +68,25 @@ func (s *relayServer) handler() http.Handler {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok", "service": "gtmux-relay"})
 	})
 	mux.HandleFunc("/push", s.handlePush)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/" {
+			writeJSON(w, http.StatusNotFound, errBody("not found"))
+			return
+		}
+		s.handlePush(w, r)
+	})
 	return mux
+}
+
+// sameBearer compares the Authorization header against "Bearer "+expected over
+// fixed-length SHA-256 digests so neither token length nor prefix timing leaks.
+func sameBearer(supplied, expected string) bool {
+	if expected == "" || supplied == "" || len(supplied) > 1024 {
+		return false
+	}
+	a := sha256.Sum256([]byte(supplied))
+	b := sha256.Sum256([]byte("Bearer " + expected))
+	return subtle.ConstantTimeCompare(a[:], b[:]) == 1
 }
 
 func (s *relayServer) handlePush(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +98,7 @@ func (s *relayServer) handlePush(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, errBody("relay unavailable"))
 		return
 	}
-	if r.Header.Get("Authorization") != "Bearer "+s.token {
+	if !sameBearer(r.Header.Get("Authorization"), s.token) {
 		writeJSON(w, http.StatusUnauthorized, errBody("unauthorized"))
 		return
 	}
@@ -116,6 +136,22 @@ func (s *relayServer) handlePush(w http.ResponseWriter, r *http.Request) {
 	if platform == "" {
 		platform = "ios"
 	}
+	switch platform {
+	case "ios":
+		if !validAPNSToken(req.Token) {
+			writeJSON(w, http.StatusBadRequest, errBody("bad token"))
+			return
+		}
+	case "android":
+		if _, err := fcmMessage(req); err != nil {
+			writeJSON(w, http.StatusBadRequest, errBody(err.Error()))
+			return
+		}
+		if s.pushers["android"] == nil {
+			writeJSON(w, http.StatusServiceUnavailable, errBody("android push is not configured"))
+			return
+		}
+	}
 	pusher := s.pushers[platform]
 	if pusher == nil {
 		writeJSON(w, http.StatusBadRequest, errBody("unsupported platform: "+platform))
@@ -126,7 +162,12 @@ func (s *relayServer) handlePush(w http.ResponseWriter, r *http.Request) {
 	if err := pusher.Push(ctx, req); err != nil {
 		var rejection *apnsFailure
 		var fcm *fcmFailure
-		if errors.As(err, &rejection) {
+		var badFCM *fcmValidationError
+		if errors.Is(err, errBadAPNSToken) {
+			writeJSON(w, http.StatusBadRequest, errBody("bad token"))
+		} else if errors.As(err, &badFCM) {
+			writeJSON(w, http.StatusBadRequest, errBody(badFCM.Error()))
+		} else if errors.As(err, &rejection) {
 			writeJSON(w, http.StatusBadGateway, map[string]any{"error": "apns", "status": rejection.Status, "detail": rejection.Detail})
 		} else if errors.As(err, &fcm) {
 			writeJSON(w, http.StatusBadGateway, map[string]any{"error": "fcm", "status": fcm.Status, "code": fcm.Code})

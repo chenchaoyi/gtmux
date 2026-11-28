@@ -4,16 +4,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  crc32, preferredPort, assignPort, redeem, authfile, revokeCode, loadRegistry, sameSecret,
+  crc32, preferredPort, assignPort, redeem, authfile, revokeCode, revokeDirectCode, loadRegistry, sameSecret,
   loadServers, offered, serverByToken, serverOf, move, readRegistry, authfileClaim,
   REGISTRY_KEY, SERVERS_KEY, LEGACY_SERVER, PORT_BASE, PORT_SPAN, type KV, type Registry,
 } from "./direct.ts";
 
 class MemKV implements KV {
   m = new Map<string, string>();
+  ops: string[] = [];
   failPut = false;
   async get(k: string) { return this.m.has(k) ? this.m.get(k)! : null; }
-  async put(k: string, v: string) { if (this.failPut) throw new Error("kv down"); this.m.set(k, v); }
+  async put(k: string, v: string) { if (this.failPut) throw new Error("kv down"); this.ops.push(`put:${k}`); this.m.set(k, v); }
+  async delete(k: string) { this.ops.push(`del:${k}`); this.m.delete(k); }
 }
 
 const CODE = "gtd-0123456789abcdef01234567";
@@ -306,5 +308,25 @@ test("only a registry that exists can vouch for an empty authfile", async () => 
     assert.equal((await readRegistry(kv)).present, false, bad);
   }
   assert.equal(authfileClaim(true, "has space", {}), undefined, "an id the sync cannot parse makes no claim");
+});
+
+test("revokeDirectCode validates code format and removes minted accounts before deleting the code key", async () => {
+  const kv = fresh();
+  await redeem(CODE, dev(1), deps(kv));
+  await redeem(OTHER, dev(2), deps(kv));
+  kv.ops = [];
+
+  const bad = await revokeDirectCode("bad", { kv });
+  assert.equal(bad.status, 400);
+  assert.deepEqual(kv.ops, []);
+
+  const ok = await revokeDirectCode(CODE, { kv });
+  assert.equal(ok.status, 200);
+  assert.deepEqual(ok.body, { ok: true, code: CODE, removed: 1 });
+  assert.deepEqual(kv.ops, [`put:${REGISTRY_KEY}`, `del:${CODE}`]);
+  assert.equal(kv.m.has(CODE), false);
+  const reg = await loadRegistry(kv);
+  assert.equal(reg.accounts[dev(1)], undefined);
+  assert.ok(reg.accounts[dev(2)]);
 });
 

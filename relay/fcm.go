@@ -39,6 +39,24 @@ type fcmFailure struct {
 
 func (e *fcmFailure) Error() string { return fmt.Sprintf("fcm status %d", e.Status) }
 
+type fcmValidationError struct {
+	msg string
+}
+
+func (e *fcmValidationError) Error() string { return e.msg }
+
+func validFCMToken(token string) bool {
+	if token == "" || len(token) > 4096 {
+		return false
+	}
+	for i := 0; i < len(token); i++ {
+		if token[i] <= 0x20 || token[i] == 0x7f {
+			return false
+		}
+	}
+	return true
+}
+
 func fcmFromEnv() (*fcmPusher, error) {
 	path := os.Getenv("FCM_SERVICE_ACCOUNT_PATH")
 	if path == "" {
@@ -80,8 +98,11 @@ func newFCMPusher(data []byte) (*fcmPusher, error) {
 	return &fcmPusher{project: credentials.Project, email: credentials.Email, key: key, client: &http.Client{Timeout: 8 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, oauthURL: "https://oauth2.googleapis.com/token", sendURL: "https://fcm.googleapis.com/v1/projects/" + credentials.Project + "/messages:send"}, nil
 }
 func fcmMessage(req pushRequest) (map[string]any, error) {
-	if req.LiveActivity || req.Token == "" || len(req.Token) > 4096 {
-		return nil, errors.New("invalid FCM intent")
+	if req.LiveActivity {
+		return nil, &fcmValidationError{msg: "Live Activity is iOS-only"}
+	}
+	if !validFCMToken(req.Token) {
+		return nil, &fcmValidationError{msg: "bad token"}
 	}
 	data := map[string]string{"title": req.Title, "body": req.Body, "server": req.Subtitle, "pane": req.Pane, "kind": req.Kind, "silent": strconv.FormatBool(req.Silent)}
 	if req.Options != nil {
@@ -100,7 +121,7 @@ func fcmMessage(req pushRequest) (map[string]any, error) {
 	message := map[string]any{"message": map[string]any{"token": req.Token, "data": data, "android": map[string]string{"priority": priority, "ttl": ttl}}}
 	encoded, _ := json.Marshal(message)
 	if len(encoded) > 4096 {
-		return nil, errors.New("FCM payload too large")
+		return nil, &fcmValidationError{msg: "FCM payload is too large"}
 	}
 	return message, nil
 }

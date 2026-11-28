@@ -386,7 +386,7 @@ LEG-7d9d736a19c0,G,RN / mobile harness,mobileapp/src/ui/ChatView.fullscreen.test
 LEG-246bb7d75d82,G,RN / mobile harness,mobileapp/src/ui/SettingsRow.test.tsx,77,test,Needs you and Finished are inset under Push notifications,False,legacy-not-retrospectively-reviewed
 LEG-9912d4966a87,G,RN / mobile harness,mobileapp/src/ui/TimeSeparator.test.tsx,43,test,takes no palette,False,legacy-not-retrospectively-reviewed
 LEG-b0713c20fdb5,G,RN / mobile harness,mobileapp/src/ui/paneLines.test.ts,55,test,parseAnsi is called only where the renderer owns the normalization,False,legacy-not-retrospectively-reviewed
-LEG-d961adf7f844,G,Worker,relay-worker/src/index.test.ts,100,test,actual Worker requests match the shared Go/Worker APNs contract,False,legacy-not-retrospectively-reviewed
+LEG-d961adf7f844,G,Worker,relay-worker/src/index.test.ts,99,test,actual Worker requests match the shared Go/Worker APNs contract,False,legacy-not-retrospectively-reviewed
 LEG-ab574333cbac,G,Go core / CLI / server,relay/apns_contract_test.go,20,Test,TestSharedAPNSContract,False,legacy-not-retrospectively-reviewed
 LEG-4832b59a1b49,G,Go core / CLI / server,relay/fcm_test.go,22,Test,TestFCMContract,False,legacy-not-retrospectively-reviewed
 LEG-efd03aa8174a,G,CI / tooling,scripts/android_ci_package_test.py,18,unittest,test_same_package_and_failed_only_rerun,False,legacy-not-retrospectively-reviewed

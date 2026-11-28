@@ -165,13 +165,13 @@
       ]
     },
     "download-worker/test/service.test.mjs": {
-      "sha256": "04995543f593e282c766576810581039f7e7151a8d9dbc5f278520aa6a9fed32",
+      "sha256": "6c42f66521e8cc2e26ecb159f3dd9c0150fc1c58077c94f8032e0c45ea7ddd9e",
       "layer": "L2",
       "stack": "Worker",
       "cases": [
         {
           "id": "LEG-dc83f4e46721",
-          "line": 58,
+          "line": 59,
           "kind": "test",
           "name": "publication is authenticated and host/path scoped before bucket writes",
           "dynamic": false,
@@ -179,7 +179,7 @@
         },
         {
           "id": "LEG-3189bf281235",
-          "line": 68,
+          "line": 69,
           "kind": "test",
           "name": "only complete signed releases advance stable; exact bytes stay on both hosts",
           "dynamic": false,
@@ -187,7 +187,7 @@
         },
         {
           "id": "LEG-4b11912130f3",
-          "line": 87,
+          "line": 88,
           "kind": "test",
           "name": "signature, exact asset schema and uploaded hashes fail closed",
           "dynamic": false,
@@ -195,7 +195,7 @@
         },
         {
           "id": "LEG-f0de792d23c8",
-          "line": 100,
+          "line": 101,
           "kind": "test",
           "name": "published versions cannot be overwritten or downgraded",
           "dynamic": false,
@@ -203,7 +203,7 @@
         },
         {
           "id": "LEG-43437c4aac58",
-          "line": 108,
+          "line": 109,
           "kind": "test",
           "name": "GET/HEAD, conditional reads, ranges and If-Range are consistent",
           "dynamic": false,
@@ -211,7 +211,7 @@
         },
         {
           "id": "LEG-acf4b90662e1",
-          "line": 125,
+          "line": 126,
           "kind": "test",
           "name": "stable promotion uses an atomic conditional write",
           "dynamic": false,
@@ -219,11 +219,29 @@
         },
         {
           "id": "LEG-e6e66ce49ff1",
-          "line": 134,
+          "line": 135,
           "kind": "test",
           "name": "metadata and artifact publication is bounded",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-927e831516e1",
+          "line": 141,
+          "kind": "reviewed-selector",
+          "name": "verifyEnvelope memoizes RSA-3072 CryptoKey per publicKey and evicts invalid keys",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-005"
+        },
+        {
+          "id": "MAP-43c4ce167e8d",
+          "line": 161,
+          "kind": "reviewed-selector",
+          "name": "standard GET uses one atomic R2 get without head or spurious TOCTOU 503 while caching only immutable 200 GETs",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-005"
         }
       ]
     },
@@ -61298,7 +61316,7 @@
       ]
     },
     "relay-worker/src/fcm.test.ts": {
-      "sha256": "1eb5fda57842d20719e667025c1ec36223ffe521c6ccb014afa0fe029e56ce12",
+      "sha256": "27a50dc8d50978b663a9f7ca5afbd78b7c17560b8e274aa8c17f74576bd36942",
       "layer": "L2",
       "stack": "Worker",
       "cases": [
@@ -61328,22 +61346,31 @@
         },
         {
           "id": "LEG-5337b4735cca",
-          "line": 26,
+          "line": 47,
           "kind": "test",
           "name": "FCM signs scoped RS256 assertions, caches OAuth and normalizes revoked tokens",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-dd004a40f53a",
+          "line": 26,
+          "kind": "reviewed-selector",
+          "name": "client-side FCM validation errors return 400 while unconfigured returns 503 and bad server credentials return 502",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-003"
         }
       ]
     },
     "relay-worker/src/index.test.ts": {
-      "sha256": "3a0abeb644d3f06422497dd0f648836cc305827876d642d6da527ee3a3349190",
+      "sha256": "4993e6f9a40bd83d5b287231864ad491df0fce75c167363705ae3f254880c940",
       "layer": "L2",
       "stack": "Worker",
       "cases": [
         {
           "id": "LEG-b0f696691fdf",
-          "line": 19,
+          "line": 18,
           "kind": "test",
           "name": "waiting alert → quick-reply category + mutable-content + routing fields",
           "dynamic": false,
@@ -61351,7 +61378,7 @@
         },
         {
           "id": "LEG-5e51c3095d37",
-          "line": 43,
+          "line": 42,
           "kind": "test",
           "name": "non-waiting alert (done) → NO quick-reply category",
           "dynamic": false,
@@ -61359,7 +61386,7 @@
         },
         {
           "id": "LEG-5c4318bf80af",
-          "line": 50,
+          "line": 49,
           "kind": "test",
           "name": "silent badge-sync → content-available only, background priority, no alert",
           "dynamic": false,
@@ -61367,7 +61394,7 @@
         },
         {
           "id": "LEG-e97ff79fc330",
-          "line": 65,
+          "line": 64,
           "kind": "test",
           "name": "badge rides along on an alert push too",
           "dynamic": false,
@@ -61375,7 +61402,7 @@
         },
         {
           "id": "LEG-640cea680e02",
-          "line": 70,
+          "line": 69,
           "kind": "test",
           "name": "empty optionals default cleanly (no undefined leaks in the wire body)",
           "dynamic": false,
@@ -61383,7 +61410,7 @@
         },
         {
           "id": "LEG-14d8300f2e11",
-          "line": 80,
+          "line": 79,
           "kind": "test",
           "name": "live activity → timestamp + event + content-state + stale-date",
           "dynamic": false,
@@ -61391,7 +61418,7 @@
         },
         {
           "id": "LEG-4069af73c90d",
-          "line": 93,
+          "line": 92,
           "kind": "test",
           "name": "live activity without a stale-date omits the key (no undefined leak)",
           "dynamic": false,
@@ -61399,7 +61426,7 @@
         },
         {
           "id": "LEG-d961adf7f844",
-          "line": 100,
+          "line": 99,
           "kind": "test",
           "name": "actual Worker requests match the shared Go/Worker APNs contract",
           "dynamic": false,
@@ -61412,11 +61439,38 @@
           "name": "relay rejects missing configuration and oversized or invalid objects before provider work",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-6f5c2875f1c7",
+          "line": 151,
+          "kind": "reviewed-selector",
+          "name": "relay validates APNs hex tokens strictly and accepts POST / alongside POST /push",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-003"
+        },
+        {
+          "id": "MAP-c565ddaa4b1e",
+          "line": 203,
+          "kind": "reviewed-selector",
+          "name": "relay bounds APNs fetches with an 8s timeout signal and returns 502 on timeout",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-003"
+        },
+        {
+          "id": "MAP-de3d7bb903a8",
+          "line": 238,
+          "kind": "reviewed-selector",
+          "name": "relay compares bearer tokens in constant time and enforces per-IP /64 sliding-window rate limits",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-003"
         }
       ]
     },
     "relay/apns_contract_test.go": {
-      "sha256": "3b489909b21fbdb82714055afe23b1c04dbdb18189f9420bdf02472863d604dd",
+      "sha256": "3d244b61e0d60cd1caacb9b908d10b6c7f542bc51a85fed2ac59b3bfc7e5c5bb",
       "layer": "L2",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -61451,11 +61505,20 @@
           "name": "TestAPNSLiveActivityUsesDedicatedWireType",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-901ee22b4503",
+          "line": 106,
+          "kind": "reviewed-selector",
+          "name": "TestAPNSContractRejectsNonHexTokensBeforeGateway",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-004"
         }
       ]
     },
     "relay/body_bounds_test.go": {
-      "sha256": "5a5d9c40485778dfb445fa762b7ce29e487f20d3b7f3b0b5bdb3e6260ab6afbc",
+      "sha256": "58cfdfcf43f8727401442122a74a41acfcbe3e85edfd76922f186149ddf25c06",
       "layer": "L2",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -61490,11 +61553,20 @@
           "name": "TestRelayAuthenticatesBeforeOpeningBody",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-944094bdd521",
+          "line": 64,
+          "kind": "reviewed-selector",
+          "name": "TestRelayRootEndpointSharesBodyAndAuthBounds",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-004"
         }
       ]
     },
     "relay/fcm_test.go": {
-      "sha256": "9b085bc8e1bc5b32374c4ee82a85fbaefa93219d85bd8832c5639fe4bafffcda",
+      "sha256": "77f92a89b480df4d2f31cc251e7560d1ee79968a16a0f96a28904590ea67f94b",
       "layer": "L2",
       "stack": "Go core / CLI / server",
       "cases": [
@@ -61529,17 +61601,26 @@
           "name": "TestFCMRejectsUnsupportedOrOverlongIntents",
           "dynamic": false,
           "layer": "L1"
+        },
+        {
+          "id": "MAP-616851bd596c",
+          "line": 139,
+          "kind": "reviewed-selector",
+          "name": "TestRelayFCMHandlerValidationAndUnconfiguredParity",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-004"
         }
       ]
     },
     "relay/relay_test.go": {
-      "sha256": "cd7f5595041735abfca2e157d0617897bfc2bee46632848ba095e670992d7bc4",
+      "sha256": "d0f23080048516db70781b0fcf7c7de0115b621387b7902863a83d9ee8f7ef3e",
       "layer": "L2",
       "stack": "Go core / CLI / server",
       "cases": [
         {
           "id": "LEG-e04c0b1b373e",
-          "line": 44,
+          "line": 49,
           "kind": "Test",
           "name": "TestRelayPush",
           "dynamic": false,
@@ -61547,7 +61628,7 @@
         },
         {
           "id": "LEG-05e2857a501c",
-          "line": 81,
+          "line": 89,
           "kind": "Test",
           "name": "TestRelayPushGatewayError",
           "dynamic": false,
@@ -61555,7 +61636,7 @@
         },
         {
           "id": "LEG-444702381167",
-          "line": 92,
+          "line": 98,
           "kind": "Test",
           "name": "TestSignProviderJWT",
           "dynamic": false,
@@ -61563,7 +61644,7 @@
         },
         {
           "id": "LEG-830df1204b31",
-          "line": 124,
+          "line": 131,
           "kind": "Test",
           "name": "TestAPNSPush",
           "dynamic": false,
@@ -61571,7 +61652,7 @@
         },
         {
           "id": "LEG-3adbdca9096b",
-          "line": 155,
+          "line": 161,
           "kind": "Test",
           "name": "TestAPNSSilentBadge",
           "dynamic": false,
@@ -61579,11 +61660,20 @@
         },
         {
           "id": "LEG-72ab23403100",
-          "line": 189,
+          "line": 197,
           "kind": "Test",
           "name": "TestAPNSPushError",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-69f30d171c6b",
+          "line": 211,
+          "kind": "reviewed-selector",
+          "name": "TestRelayParityAndAPNSTokenValidation",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-004"
         }
       ]
     },
@@ -64114,13 +64204,13 @@
       ]
     },
     "tunnel-worker/src/direct.test.ts": {
-      "sha256": "50def971169f4a3c5bf459071e1426375083e206bd28a8572d72f421cae11a0c",
+      "sha256": "81c142a652cf77fe01d665353e27bf5e3ac7045908fde6640957be53d6a9c9e4",
       "layer": "L2",
       "stack": "Worker",
       "cases": [
         {
           "id": "LEG-69563fe32201",
-          "line": 36,
+          "line": 38,
           "kind": "test",
           "name": "the port formula is the client's: Go's crc32.ChecksumIEEE over the id",
           "dynamic": false,
@@ -64128,7 +64218,7 @@
         },
         {
           "id": "LEG-f3f8a76744ad",
-          "line": 49,
+          "line": 51,
           "kind": "test",
           "name": "each device gets its own account, allowed its own port and nothing else",
           "dynamic": false,
@@ -64136,7 +64226,7 @@
         },
         {
           "id": "LEG-9986e056b831",
-          "line": 69,
+          "line": 71,
           "kind": "test",
           "name": "a device that redeems again gets the same account back",
           "dynamic": false,
@@ -64144,7 +64234,7 @@
         },
         {
           "id": "LEG-32ea17f24117",
-          "line": 77,
+          "line": 79,
           "kind": "test",
           "name": "a code mints accounts for at most `cap` devices",
           "dynamic": false,
@@ -64152,7 +64242,7 @@
         },
         {
           "id": "LEG-6834ff0e301b",
-          "line": 88,
+          "line": 90,
           "kind": "test",
           "name": "two devices whose derived ports collide never share one",
           "dynamic": false,
@@ -64160,7 +64250,7 @@
         },
         {
           "id": "LEG-195b68b3e901",
-          "line": 106,
+          "line": 108,
           "kind": "test",
           "name": "if a race ever puts two accounts on one port, only the older can bind it",
           "dynamic": false,
@@ -64168,7 +64258,7 @@
         },
         {
           "id": "LEG-aebbacc62623",
-          "line": 116,
+          "line": 118,
           "kind": "test",
           "name": "revoking a code removes the accounts it minted, and only those",
           "dynamic": false,
@@ -64176,7 +64266,7 @@
         },
         {
           "id": "LEG-db3a2918bcfc",
-          "line": 127,
+          "line": 129,
           "kind": "test",
           "name": "a device moving to another code keeps its account and port",
           "dynamic": false,
@@ -64184,7 +64274,7 @@
         },
         {
           "id": "LEG-4eeb2edcc889",
-          "line": 136,
+          "line": 138,
           "kind": "test",
           "name": "refusals mint nothing and say why",
           "dynamic": false,
@@ -64192,7 +64282,7 @@
         },
         {
           "id": "LEG-b23afc73a52f",
-          "line": 146,
+          "line": 148,
           "kind": "test",
           "name": "an account that could not be saved is never handed out",
           "dynamic": false,
@@ -64200,7 +64290,7 @@
         },
         {
           "id": "LEG-498011cef737",
-          "line": 152,
+          "line": 154,
           "kind": "test",
           "name": "the sync token comparison does not short-circuit",
           "dynamic": false,
@@ -64208,7 +64298,7 @@
         },
         {
           "id": "LEG-26d173e8c9c7",
-          "line": 176,
+          "line": 178,
           "kind": "test",
           "name": "no server list configured: one server, the configured URL, exactly as before",
           "dynamic": false,
@@ -64216,7 +64306,7 @@
         },
         {
           "id": "LEG-3888cf7257eb",
-          "line": 188,
+          "line": 190,
           "kind": "test",
           "name": "a server added to the list is usable with no code change here",
           "dynamic": false,
@@ -64224,7 +64314,7 @@
         },
         {
           "id": "LEG-c75525c5957c",
-          "line": 196,
+          "line": 198,
           "kind": "test",
           "name": "a region preference picks a server in that region",
           "dynamic": false,
@@ -64232,7 +64322,7 @@
         },
         {
           "id": "LEG-28388065f5f4",
-          "line": 202,
+          "line": 204,
           "kind": "test",
           "name": "a server reserved for named codes is offered to those codes only",
           "dynamic": false,
@@ -64240,7 +64330,7 @@
         },
         {
           "id": "LEG-430c7d3e04e6",
-          "line": 214,
+          "line": 216,
           "kind": "test",
           "name": "what a client is told about a server never includes the server's own token",
           "dynamic": false,
@@ -64248,7 +64338,7 @@
         },
         {
           "id": "LEG-3c69f9784845",
-          "line": 222,
+          "line": 224,
           "kind": "test",
           "name": "an account file holds that server's tenants and no others",
           "dynamic": false,
@@ -64256,7 +64346,7 @@
         },
         {
           "id": "LEG-3f19c0578a69",
-          "line": 234,
+          "line": 236,
           "kind": "test",
           "name": "a server is named by the token it presents; an unknown token names none",
           "dynamic": false,
@@ -64264,7 +64354,7 @@
         },
         {
           "id": "LEG-7b66d462142b",
-          "line": 242,
+          "line": 244,
           "kind": "test",
           "name": "accounts minted before the list belong to the server that existed",
           "dynamic": false,
@@ -64272,7 +64362,7 @@
         },
         {
           "id": "LEG-ac6336f0f45d",
-          "line": 252,
+          "line": 254,
           "kind": "test",
           "name": "moving needs the device's own account, and keeps its port",
           "dynamic": false,
@@ -64280,7 +64370,7 @@
         },
         {
           "id": "LEG-0aec42ca82a1",
-          "line": 271,
+          "line": 273,
           "kind": "test",
           "name": "moving to a server this code may not use is refused",
           "dynamic": false,
@@ -64288,7 +64378,7 @@
         },
         {
           "id": "LEG-4761b64c6fbe",
-          "line": 279,
+          "line": 281,
           "kind": "test",
           "name": "a malformed server list falls back to the configured server, never to nothing",
           "dynamic": false,
@@ -64296,16 +64386,25 @@
         },
         {
           "id": "LEG-4ab4181bbfc8",
-          "line": 290,
+          "line": 292,
           "kind": "test",
           "name": "only a registry that exists can vouch for an empty authfile",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-15b7175b0a9e",
+          "line": 313,
+          "kind": "reviewed-selector",
+          "name": "revokeDirectCode validates code format and removes minted accounts before deleting the code key",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-002"
         }
       ]
     },
     "tunnel-worker/src/index.test.ts": {
-      "sha256": "32c6213edd4a1573ced54d900ae78410946683bfd3e46f3c04afca71779f47c3",
+      "sha256": "b97ffdc32b37e09effd62c15a3b3012dde656519e3b0cf2851975c4ffe6ae6ba",
       "layer": "L2",
       "stack": "Worker",
       "cases": [
@@ -64532,17 +64631,53 @@
           "name": "incoming handlers reject oversized objects before KV or provider work",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-10a12656b76f",
+          "line": 385,
+          "kind": "reviewed-selector",
+          "name": "POST /direct/servers requires matching device secret to disclose current and code-reserved servers",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-002"
+        },
+        {
+          "id": "MAP-4723838bc4c1",
+          "line": 436,
+          "kind": "reviewed-selector",
+          "name": "POST /direct/revoke enforces constant-time admin/sync bearer auth and removes minted accounts",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-002"
+        },
+        {
+          "id": "MAP-8afad98aae73",
+          "line": 489,
+          "kind": "reviewed-selector",
+          "name": "Standard provision caps normalize IPv6 /64 prefixes while unwrapping IPv4-mapped addresses",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-002"
+        },
+        {
+          "id": "MAP-8364f141247c",
+          "line": 513,
+          "kind": "reviewed-selector",
+          "name": "reapDevice fast-skips already-reaped non-pending tombstones with zero Cloudflare API calls",
+          "dynamic": false,
+          "layer": "L2",
+          "design": "WKH-002"
         }
       ]
     },
     "tunnel-worker/test/lifecycle.spec.ts": {
-      "sha256": "f9c6b0d95201b6d55cfa3dd8d41214fb496f894df4cfe3195df2c9a2d45b0aa8",
+      "sha256": "e2f5a4becadaf24c8a307abc26a27bde24eea99c4d3ee77fa6fa7868a0ce14c6",
       "layer": "L3",
       "stack": "Worker",
       "cases": [
         {
           "id": "LEG-bdae316ffb38",
-          "line": 52,
+          "line": 56,
           "kind": "it",
           "name": "legacy misreaped device + simultaneous recovery requests create one replacement and keep its address",
           "dynamic": false,
@@ -64550,7 +64685,7 @@
         },
         {
           "id": "LEG-f2a0f723bef4",
-          "line": 69,
+          "line": 73,
           "kind": "it",
           "name": "persistent pending journal survives reconstruction and stale KV, resuming without a second tunnel",
           "dynamic": false,
@@ -64558,7 +64693,7 @@
         },
         {
           "id": "LEG-8f6295488228",
-          "line": 94,
+          "line": 98,
           "kind": "it",
           "name": "a lost create response is found by its persistent opaque operation name",
           "dynamic": false,
@@ -64566,7 +64701,7 @@
         },
         {
           "id": "LEG-9509f6fa6d26",
-          "line": 102,
+          "line": 106,
           "kind": "it",
           "name": "reclaim and recovery share coordination; an old instance cannot delete a replacement route",
           "dynamic": false,
@@ -64574,7 +64709,7 @@
         },
         {
           "id": "LEG-d5b340d664d9",
-          "line": 119,
+          "line": 123,
           "kind": "it",
           "name": "an abandoned pending instance can be reclaimed and a returning legacy Mac still resumes at the original address",
           "dynamic": false,
@@ -64582,11 +64717,38 @@
         },
         {
           "id": "LEG-04b28410bb4a",
-          "line": 135,
+          "line": 139,
           "kind": "it",
           "name": "deployed entry preserves the smaller Standard body limit and rejects before coordination",
           "dynamic": false,
           "layer": "L2"
+        },
+        {
+          "id": "MAP-69b9942433bb",
+          "line": 156,
+          "kind": "reviewed-selector",
+          "name": "DirectRegistry SQLite coordinator serializes concurrent redeem, move, servers, authfile, and revoke without KV 429 loss",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WKH-001"
+        },
+        {
+          "id": "MAP-4905d05cee17",
+          "line": 254,
+          "kind": "reviewed-selector",
+          "name": "DirectRegistry hydrates legacy registry:v1 once, omits authfile claim before initialization, and survives reconstruction",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WKH-001"
+        },
+        {
+          "id": "MAP-6c5ba19eb0fb",
+          "line": 292,
+          "kind": "reviewed-selector",
+          "name": "scheduled sweep honors wall-clock budget, preserves unvisited cursor progress, and still runs reconcileActiveCount",
+          "dynamic": false,
+          "layer": "L3",
+          "design": "WKH-001"
         }
       ]
     },

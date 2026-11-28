@@ -46,9 +46,9 @@ func TestRelayRejectsLargeOrTrailingBodyBeforeProvider(t *testing.T) {
 			}
 		})
 	}
-	valid := `{"token":"fixture"}`
+	valid := `{"token":"` + validTestToken + `"}`
 	valid += strings.Repeat(" ", 65536-len(valid))
-	if rr := post(t, h, valid, "fixture-secret"); rr.Code != 200 || len(p.got) != 1 || p.got[0].Token != "fixture" {
+	if rr := post(t, h, valid, "fixture-secret"); rr.Code != 200 || len(p.got) != 1 || p.got[0].Token != validTestToken {
 		t.Fatalf("boundary request failed: %d", rr.Code)
 	}
 }
@@ -59,5 +59,22 @@ func TestRelayAuthenticatesBeforeOpeningBody(t *testing.T) {
 	h.ServeHTTP(rr, r)
 	if rr.Code != http.StatusUnauthorized {
 		t.Fatal(rr.Code)
+	}
+}
+func TestRelayRootEndpointSharesBodyAndAuthBounds(t *testing.T) {
+	p := &fakePusher{}
+	h := (&relayServer{token: "fixture-secret", pushers: map[string]Pusher{"ios": p}}).handler()
+	unauth := httptest.NewRequest("POST", "/", strings.NewReader(strings.Repeat("x", 65537)))
+	unauthRR := httptest.NewRecorder()
+	h.ServeHTTP(unauthRR, unauth)
+	if unauthRR.Code != http.StatusUnauthorized {
+		t.Fatalf("root unauthorized = %d, want 401", unauthRR.Code)
+	}
+	okReq := httptest.NewRequest("POST", "/", strings.NewReader(`{"token":"`+validTestToken+`"}`))
+	okReq.Header.Set("Authorization", "Bearer fixture-secret")
+	okRR := httptest.NewRecorder()
+	h.ServeHTTP(okRR, okReq)
+	if okRR.Code != http.StatusOK || len(p.got) != 1 {
+		t.Fatalf("root valid push = %d, got %d", okRR.Code, len(p.got))
 	}
 }

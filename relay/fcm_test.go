@@ -135,3 +135,32 @@ func TestFCMRejectsUnsupportedOrOverlongIntents(t *testing.T) {
 		t.Fatal("invalid provider configuration accepted")
 	}
 }
+
+func TestRelayFCMHandlerValidationAndUnconfiguredParity(t *testing.T) {
+	unconfigured := (&relayServer{token: "secret", pushers: map[string]Pusher{}}).handler()
+	if rr := post(t, unconfigured, `{"platform":"android","token":"synthetic-fcm"}`, "secret"); rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("unconfigured android = %d, want 503", rr.Code)
+	}
+
+	fp := &fakePusher{}
+	configured := (&relayServer{token: "secret", pushers: map[string]Pusher{"android": fp}}).handler()
+	for _, body := range []string{
+		`{"platform":"android","token":"synthetic-fcm","liveActivity":true}`,
+		`{"platform":"android","token":"synthetic-fcm","body":"` + strings.Repeat("x", 5000) + `"}`,
+		`{"platform":"android","token":"bad token with spaces"}`,
+		`{"platform":"android","token":"` + strings.Repeat("t", 4097) + `"}`,
+	} {
+		for _, path := range []string{"/", "/push"} {
+			req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+			req.Header.Set("Authorization", "Bearer secret")
+			rr := httptest.NewRecorder()
+			configured.ServeHTTP(rr, req)
+			if rr.Code != http.StatusBadRequest {
+				t.Fatalf("POST %s invalid FCM intent = %d, want 400 (%s)", path, rr.Code, rr.Body.String())
+			}
+		}
+	}
+	if len(fp.got) != 0 {
+		t.Fatal("invalid FCM intent reached pusher")
+	}
+}

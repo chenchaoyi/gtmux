@@ -170,3 +170,6 @@ LEG-e39e092eb399,L3,Browser,tests/web/trace.test.cjs,316,scenario,"iPad portrait
 MAP-60efa59b6d67,L3,reviewed implementation,tests/web/workbench-recover-resize.test.cjs,8,reviewed-selector,WLI-006 Resizing recovers a clipped saved workbench tile,False,WLI-006
 MAP-9f47acacb889,L3,reviewed implementation,tests/web/workbench-resize-edges.test.cjs,41,reviewed-selector,WLI-003 The workbench panel resizes on eight edges and corners,False,"WLI-003,WLI-004"
 MAP-82b85f45b6f1,L3,reviewed implementation,tests/web/workbench-resize-edges.test.cjs,89,reviewed-selector,WLI-004 A touch drags the top-left corner without moving the header,False,"WLI-003,WLI-004"
+MAP-69b9942433bb,L3,Worker,tunnel-worker/test/lifecycle.spec.ts,156,reviewed-selector,"DirectRegistry SQLite coordinator serializes concurrent redeem, move, servers, authfile, and revoke without KV 429 loss",False,WKH-001
+MAP-4905d05cee17,L3,Worker,tunnel-worker/test/lifecycle.spec.ts,254,reviewed-selector,"DirectRegistry hydrates legacy registry:v1 once, omits authfile claim before initialization, and survives reconstruction",False,WKH-001
+MAP-6c5ba19eb0fb,L3,Worker,tunnel-worker/test/lifecycle.spec.ts,292,reviewed-selector,"scheduled sweep honors wall-clock budget, preserves unvisited cursor progress, and still runs reconcileActiveCount",False,WKH-001

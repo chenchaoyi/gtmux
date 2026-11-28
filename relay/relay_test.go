@@ -41,6 +41,11 @@ func post(t *testing.T, h http.Handler, body, token string) *httptest.ResponseRe
 	return rr
 }
 
+const (
+	validTestToken  = "0123456789abcdef0123456789abcdef"
+	validTestToken2 = "abcdef0123456789abcdef0123456789"
+)
+
 func TestRelayPush(t *testing.T) {
 	fp := &fakePusher{}
 	s := &relayServer{token: "secret", pushers: map[string]Pusher{"ios": fp}}
@@ -54,26 +59,29 @@ func TestRelayPush(t *testing.T) {
 		t.Fatalf("health = %d", hrr.Code)
 	}
 
-	if rr := post(t, h, `{"token":"d","platform":"ios","title":"hi"}`, ""); rr.Code != http.StatusUnauthorized {
+	if rr := post(t, h, `{"token":"`+validTestToken+`","platform":"ios","title":"hi"}`, ""); rr.Code != http.StatusUnauthorized {
 		t.Fatalf("no token = %d, want 401", rr.Code)
 	}
 	if rr := post(t, h, `{"platform":"ios"}`, "secret"); rr.Code != http.StatusBadRequest {
 		t.Fatalf("missing device token = %d, want 400", rr.Code)
 	}
-	if rr := post(t, h, `{"token":"d","platform":"android"}`, "secret"); rr.Code != http.StatusBadRequest {
+	if rr := post(t, h, `{"token":"synthetic-fcm","platform":"android"}`, "secret"); rr.Code != http.StatusServiceUnavailable {
+		t.Fatalf("unconfigured android = %d, want 503", rr.Code)
+	}
+	if rr := post(t, h, `{"token":"synthetic","platform":"harmony"}`, "secret"); rr.Code != http.StatusBadRequest {
 		t.Fatalf("unsupported platform = %d, want 400", rr.Code)
 	}
 
-	rr := post(t, h, `{"token":"d","platform":"ios","title":"hi","pane":"%1"}`, "secret")
+	rr := post(t, h, `{"token":"`+validTestToken+`","platform":"ios","title":"hi","pane":"%1"}`, "secret")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("push = %d, want 200", rr.Code)
 	}
-	if len(fp.got) != 1 || fp.got[0].Token != "d" || fp.got[0].Pane != "%1" {
+	if len(fp.got) != 1 || fp.got[0].Token != validTestToken || fp.got[0].Pane != "%1" {
 		t.Fatalf("pusher got %+v", fp.got)
 	}
 
 	// platform defaults to ios when omitted
-	if rr := post(t, h, `{"token":"d2","title":"hi"}`, "secret"); rr.Code != http.StatusOK {
+	if rr := post(t, h, `{"token":"`+validTestToken2+`","title":"hi"}`, "secret"); rr.Code != http.StatusOK {
 		t.Fatalf("default platform push = %d, want 200", rr.Code)
 	}
 }
@@ -81,7 +89,7 @@ func TestRelayPush(t *testing.T) {
 func TestRelayPushGatewayError(t *testing.T) {
 	fp := &fakePusher{err: errors.New("BadDeviceToken")}
 	s := &relayServer{token: "fixture-secret", pushers: map[string]Pusher{"ios": fp}}
-	rr := post(t, s.handler(), `{"token":"d","platform":"ios"}`, "fixture-secret")
+	rr := post(t, s.handler(), `{"token":"`+validTestToken+`","platform":"ios"}`, "fixture-secret")
 	if rr.Code != http.StatusBadGateway {
 		t.Fatalf("gateway error = %d, want 502", rr.Code)
 	}
@@ -139,10 +147,10 @@ func TestAPNSPush(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := p.Push(context.Background(), pushRequest{Token: "devtok", Title: "hi", Body: "b", Pane: "%2"}); err != nil {
+	if err := p.Push(context.Background(), pushRequest{Token: validTestToken, Title: "hi", Body: "b", Pane: "%2"}); err != nil {
 		t.Fatalf("push: %v", err)
 	}
-	if gotPath != "/3/device/devtok" {
+	if gotPath != "/3/device/"+validTestToken {
 		t.Fatalf("path = %q", gotPath)
 	}
 	if gotTopic != "com.gtmux.app" || gotType != "alert" || !strings.HasPrefix(gotAuth, "bearer ") {
@@ -168,7 +176,7 @@ func TestAPNSSilentBadge(t *testing.T) {
 	p, _ := newAPNSPusher(apple.URL, "t", "k", "tm", mustP8(t, key))
 	badge := 3
 	if err := p.Push(context.Background(), pushRequest{
-		Token: "x", Silent: true, Badge: &badge, CollapseID: "%5", Pane: "%5",
+		Token: validTestToken, Silent: true, Badge: &badge, CollapseID: "%5", Pane: "%5",
 	}); err != nil {
 		t.Fatalf("push: %v", err)
 	}
@@ -194,9 +202,70 @@ func TestAPNSPushError(t *testing.T) {
 	}))
 	defer apple.Close()
 	p, _ := newAPNSPusher(apple.URL, "t", "k", "tm", mustP8(t, key))
-	err := p.Push(context.Background(), pushRequest{Token: "x"})
+	err := p.Push(context.Background(), pushRequest{Token: validTestToken})
 	if err == nil || !strings.Contains(err.Error(), "BadDeviceToken") {
 		t.Fatalf("err = %v, want BadDeviceToken", err)
+	}
+}
+
+func TestRelayParityAndAPNSTokenValidation(t *testing.T) {
+	fp := &fakePusher{}
+	s := &relayServer{token: "fixture-bearer", pushers: map[string]Pusher{"ios": fp}}
+	h := s.handler()
+
+	// Both POST / and POST /push accept valid authenticated intents; unknown paths return 404.
+	for _, path := range []string{"/", "/push"} {
+		req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(`{"token":"`+validTestToken+`","title":"ok"}`))
+		req.Header.Set("Authorization", "Bearer fixture-bearer")
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Fatalf("POST %s = %d, want 200", path, rr.Code)
+		}
+	}
+	unknown := httptest.NewRequest(http.MethodPost, "/other", strings.NewReader(`{}`))
+	unknownRR := httptest.NewRecorder()
+	h.ServeHTTP(unknownRR, unknown)
+	if unknownRR.Code != http.StatusNotFound {
+		t.Fatalf("POST /other = %d, want 404", unknownRR.Code)
+	}
+
+	// Constant-time bearer check rejects missing, prefix, and overlong headers.
+	for _, badAuth := range []string{"", "Bearer fixture-beare", "Bearer fixture-bearer-extra", "Bearer " + strings.Repeat("x", 1025)} {
+		if sameBearer(badAuth, "fixture-bearer") {
+			t.Fatalf("sameBearer accepted %q", badAuth)
+		}
+	}
+	if !sameBearer("Bearer fixture-bearer", "fixture-bearer") {
+		t.Fatal("sameBearer rejected exact match")
+	}
+
+	// Non-hex or out-of-bounds APNs tokens return 400 {"error":"bad token"} before reaching Pusher.
+	before := len(fp.got)
+	for _, badToken := range []string{
+		"fixture",
+		strings.Repeat("a", 31),
+		strings.Repeat("f", 513),
+		strings.Repeat("a", 31) + "g",
+		"../../admin/" + validTestToken,
+	} {
+		rr := post(t, h, `{"token":"`+badToken+`","platform":"ios"}`, "fixture-bearer")
+		if rr.Code != http.StatusBadRequest || !strings.Contains(rr.Body.String(), `"bad token"`) {
+			t.Fatalf("token %q: code=%d body=%s", badToken, rr.Code, rr.Body.String())
+		}
+	}
+	if len(fp.got) != before {
+		t.Fatalf("invalid APNs token reached pusher")
+	}
+
+	// apnsPusher.Push itself also refuses non-hex tokens before signing or dialing.
+	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	p, err := newAPNSPusher("http://127.0.0.1:1", "com.gtmux.app", "K", "T", mustP8(t, key))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := p.Push(context.Background(), pushRequest{Token: "not-hex"}); !errors.Is(err, errBadAPNSToken) {
+		t.Fatalf("apnsPusher.Push err = %v, want errBadAPNSToken", err)
 	}
 }
 

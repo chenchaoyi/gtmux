@@ -27,6 +27,7 @@ export const LEGACY_SERVER = "default";
 export interface KV {
   get(key: string): Promise<string | null>;
   put(key: string, value: string): Promise<void>;
+  delete?(key: string): Promise<void>;
 }
 
 export interface Account {
@@ -349,6 +350,25 @@ export function revokeCode(reg: Registry, code: string): { reg: Registry; remove
     else accounts[dev] = a;
   }
   return { reg: { accounts }, removed };
+}
+
+export interface RevokeDeps {
+  kv: KV;
+}
+
+/**
+ * revokeDirectCode removes every account minted by `code` from the registry first and
+ * deletes the code record second. Running inside DirectRegistry makes revocation atomic
+ * with redeem and move while preserving retry safety if code deletion fails.
+ */
+export async function revokeDirectCode(code: string, d: RevokeDeps): Promise<RedeemResult> {
+  code = (code || "").trim();
+  if (!CODE.test(code)) return { status: 400, body: { error: "bad code" } };
+  const { reg } = await readRegistry(d.kv);
+  const next = revokeCode(reg, code);
+  await d.kv.put(REGISTRY_KEY, JSON.stringify(next.reg));
+  if (d.kv.delete) await d.kv.delete(code);
+  return { status: 200, body: { ok: true, code, removed: next.removed } };
 }
 
 /** sameSecret compares two strings in time independent of where they first differ. */
