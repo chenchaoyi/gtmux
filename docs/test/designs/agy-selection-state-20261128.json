@@ -1,0 +1,36 @@
+{
+  "id": "agy-selection-state-20261128",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Antigravity implementation owner, design self-review",
+    "date": "2026-11-28",
+    "decision": "Recognize Antigravity CLI > approval/choice menus, soft-wrapped option continuations, screen-wait radar promotion, and pre-marker pending-ask gating",
+    "notes": "Antigravity CLI renders > 1. ... numbered choices with \u2191/\u2193 Navigate footer chrome and emits no PermissionRequest hook. Require navigation hint chrome below ASCII > selectors so Markdown blockquotes (> 1. ...) never false-positive, join narrow-pane soft-wrapped option continuations, and open HasPendingAsk only for verified screen-wait panes when no non-ask marker exists."
+  },
+  "cases": [
+    {
+      "id": "AGY-SEL-001",
+      "layer": "L1",
+      "description": "Prompt parser and waiting detector recognize Antigravity > approval menus and wrapped narrow-pane options while rejecting Markdown blockquotes",
+      "setup": "Construct captures of Antigravity command/tool approval menus on both wide and 46-column soft-wrapped mobile screens, Markdown > 1. blockquotes in prose, answered menus above a redrawn composer, and Antigravity project trust startup gates.",
+      "action": "Run ParseOptions, WaitingOptions, OptionsReplyable, and IsStartupGate across all fixtures.",
+      "expected": "WaitingOptions and ParseOptions extract all four complete unwrapped Antigravity choices and mark them OptionsReplyable; Markdown blockquotes without menu navigation chrome and answered menus above a redrawn composer return nil; and Do you trust the contents of this project? matches IsStartupGate for agy.",
+      "planned_files": [
+        "internal/prompt/prompt_test.go"
+      ]
+    },
+    {
+      "id": "AGY-SEL-002",
+      "layer": "L2",
+      "description": "Radar, digest, and server pending-ask gate promote Antigravity screen approval menus to waiting immediately and clear back to working or idle once answered",
+      "setup": "Simulate a live Antigravity tmux pane with an active PreInvocation turn marker transitioning into a Run this command? screen menu (before and after slow-tick marker persistence) and then returning to running/idle output.",
+      "action": "Evaluate GatherAgents, GatherDigest, ScreenWaitKind, and hasPendingAsk across pre-marker screen wait, startup/draft markers, and post-answer screen transitions.",
+      "expected": "GatherAgents and GatherDigest report status waiting with kind permission and replyable Ask options immediately; hasPendingAsk returns true for the live screen-wait pane before slow-tick writes waiting/<pane> while keeping startup, draft, and empty markers false; and clearing the menu immediately restores working or idle.",
+      "planned_files": [
+        "internal/radar/agy_wait_test.go",
+        "internal/app/pendingask_test.go"
+      ]
+    }
+  ],
+  "seal": "17f8d08ab02244ee96e93b2896fdd92836e6b294306e68445c564b0e8c04daeb"
+}
