@@ -32,6 +32,7 @@ QUALITY_ONLY_SCRIPTS = {
     "scripts/test_design.py", "scripts/test_design_test.py",
     "scripts/check_private_source.py", "scripts/check_private_source_test.py",
     "scripts/check_delivery_retention.py", "scripts/check_delivery_retention_test.py",
+    "scripts/macos_release_source.py", "scripts/macos_release_source_test.py",
 }
 GO_GATE_SCRIPTS = {
     "scripts/check-design.sh", "scripts/import-boundaries.sh",

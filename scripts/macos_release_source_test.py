@@ -21,10 +21,11 @@ class RecoveryTests(unittest.TestCase):
         self.original = {'id': 10, 'run_number': 1, 'run_attempt': 2, 'event': 'push', 'head_branch': self.tag,
             'head_sha': self.product, 'path': source.WORKFLOW, 'repository': {'full_name': source.REPO},
             'status': 'completed', 'conclusion': 'failure'}
+        self.valid_notes = "v1.2.3\n\nuser:\n- Ship feature A across CLI and Mac.\n\nuser-zh:\n- 支持功能 A，覆盖命令行与菜单栏应用。\n"
         self.table = {
             'git/ref/heads/main': {'object': {'sha': self.definition}},
             'git/ref/tags/' + self.tag: {'object': {'type': 'tag', 'sha': 'd' * 40}},
-            'git/tags/' + 'd' * 40: {'tag': self.tag, 'object': {'type': 'commit', 'sha': self.product}},
+            'git/tags/' + 'd' * 40: {'tag': self.tag, 'message': self.valid_notes, 'object': {'type': 'commit', 'sha': self.product}},
             'releases/tags/' + self.tag: self.release, 'releases/latest': self.release,
             'actions/workflows/release.yml/runs?event=push&per_page=100': {'workflow_runs': [self.original]},
             'actions/runs/10/jobs?per_page=100': {'jobs': [
@@ -50,11 +51,59 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(result['ref'], 'refs/tags/' + self.tag)
 
     def test_normal_tag_and_snapshot_do_not_fetch_recovery_authority(self):
-        for event, ref, release in [('push', 'refs/tags/v1.2.3', 'true'), ('workflow_dispatch', 'refs/heads/topic', 'false')]:
-            result = source.resolve({**self.env, 'RECOVERY_TAG': '', 'GITHUB_EVENT_NAME': event, 'GITHUB_REF': ref}, Mock(side_effect=AssertionError('unexpected API')))
-            self.assertEqual(result['source'], self.definition)
-            self.assertEqual(result['release'], release)
-            self.assertEqual(result['recovery'], 'false')
+        # Snapshot dispatch touches no GitHub API at all.
+        snap = source.resolve({**self.env, 'RECOVERY_TAG': '', 'GITHUB_EVENT_NAME': 'workflow_dispatch', 'GITHUB_REF': 'refs/heads/topic'},
+                              Mock(side_effect=AssertionError('unexpected API')))
+        self.assertEqual((snap['source'], snap['release'], snap['recovery']), (self.definition, 'false', 'false'))
+
+        # Official tag push verifies annotated tag, main CI, and bilingual What's New without consulting recovery runs.
+        called = []
+        def tag_api(path):
+            called.append(path)
+            self.assertNotIn('release.yml/runs', path)
+            return self.api(path)
+        rel = source.resolve({**self.env, 'RECOVERY_TAG': '', 'GITHUB_SHA': self.product, 'GITHUB_EVENT_NAME': 'push', 'GITHUB_REF': 'refs/tags/' + self.tag}, tag_api)
+        self.assertEqual((rel['source'], rel['release'], rel['recovery']), (self.product, 'true', 'false'))
+        self.assertIn('git/tags/' + 'd' * 40, called)
+
+    def test_RWN_001_release_tag_requires_verified_ci_and_bilingual_whatsnew_blocks(self):
+        push_env = {**self.env, 'RECOVERY_TAG': '', 'GITHUB_SHA': self.product, 'GITHUB_EVENT_NAME': 'push', 'GITHUB_REF': 'refs/tags/' + self.tag}
+        # Lightweight tag is rejected on tag push.
+        orig_ref = self.table['git/ref/tags/' + self.tag]
+        self.table['git/ref/tags/' + self.tag] = {'object': {'type': 'commit', 'sha': self.product}}
+        with self.assertRaises(ValueError):
+            source.resolve(push_env, self.api)
+        self.table['git/ref/tags/' + self.tag] = orig_ref
+
+        # Tag push without passing main push CI is rejected.
+        ci_key = f'actions/workflows/ci.yml/runs?head_sha={self.product}&event=push&per_page=100'
+        orig_ci = copy.deepcopy(self.table[ci_key])
+        self.table[ci_key]['workflow_runs'][0]['conclusion'] = 'failure'
+        with self.assertRaises(DeliveryError):
+            source.resolve(push_env, self.api)
+        self.table[ci_key] = orig_ci
+
+        # Invalid What's New tag bodies fail closed before any build starts.
+        bad_messages = [
+            "v1.2.3\n\n- English bullet without user: header\n\n---\n\n- 无标题头中文条目\n",
+            "v1.2.3\n\nuser:\n- English only\n",
+            "v1.2.3\n\nuser-zh:\n- 只有中文\n",
+            "v1.2.3\n\nuser:\n\n- Blank line right after header\n\nuser-zh:\n- 中文\n",
+            "v1.2.3\n\nuser:\n- First item\n\n- Split item after blank line\n\nuser-zh:\n- 中文\n",
+            "v1.2.3\n\n```\nuser:\n- Fenced example only\nuser-zh:\n- 代码块示例\n```\n",
+        ]
+        for msg in bad_messages:
+            self.table['git/tags/' + 'd' * 40]['message'] = msg
+            with self.subTest(msg=msg), self.assertRaises(ValueError):
+                source.resolve(push_env, self.api)
+        self.table['git/tags/' + 'd' * 40]['message'] = self.valid_notes
+
+        # Local --check-notes preflight accepts valid bilingual notes and rejects malformed ones.
+        with tempfile.TemporaryDirectory() as tmp:
+            good = Path(tmp) / 'good.txt'
+            good.write_text(self.valid_notes, encoding='utf-8')
+            en, zh = source.validate_tag_notes(good.read_text(encoding='utf-8'))
+            self.assertEqual((len(en), len(zh)), (1, 1))
 
     def test_dispatch_identity_branch_and_tag_cannot_inject_source(self):
         for field, value in [('GITHUB_ACTOR', 'other'), ('GITHUB_REF', 'refs/heads/topic'), ('GITHUB_EVENT_NAME', 'push'),

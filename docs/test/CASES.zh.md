@@ -2,7 +2,7 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1532 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1533 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
@@ -11,7 +11,7 @@
 | L3 · 运行时集成 | 171 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
-| G · 质量门禁 | 531 | [G.csv](cases/G.csv) |
+| G · 质量门禁 | 535 | [G.csv](cases/G.csv) |
 
 数字不是通过数。存量 6,223 个位置来自 4fad6119 盘点（声明、子测试、动态模板），另加明确的新用例、原生过程入口和评审映射入口；动态实例不展开。没有具名用例的辅助文件仍保留摘要。存量层次是结构分类，混合边界在触及时需语义复核，不补造历史评审/运行结果。`reviewed-selector` 也不冒充框架发现的声明。源码/目录/映射漂移由门禁拦截，但测试名不能自动证明断言质量。
 
@@ -670,6 +670,8 @@
 | PWR-001 | One production collection per producer tick, no extra REST collections within freshness; explicit next producer bypasses TTL; clone ownership preserved; failure/oversize never turns stale bytes into success; scopes never cross |
 | PWR-002 | Frame probes within one pass share exact text; each pane is captured at most once, no frame survives into next gather; new approval becomes waiting without invented done; unrelated non-Codex states retained |
 | PWR-003 | SSE uses fresh producer, REST reads its cache rather than second gather; role/completion/follow/native identity unchanged; no real services/power settings touched |
+| RWN-001 | Only annotated vX.Y.Z tags targeting the exact green-CI commit with non-empty, contiguous user: and user-zh: blocks pass; lightweight tags, missing language blocks, split/orphan bullets, and fenced-only markers fail closed before goreleaser or Mac builds run. |
+| RWN-002 | Selecting only macos_release_source guard scripts keeps full=False and selected=[], running unit tests in the mandatory policy job without unrelated mobile or desktop builds. |
 | RSR-011 | No POST, new ID or overwrite until local state is known. Explicit retry re-reads and preserves exact old ID/revision, checks its status before preview and only explicitly retries that ID. Repeated/corrupt local read failure leaves a reachable read-only retry and no start/clear. A confirmed empty record may resume preview. A late old-target read cannot grant readiness or alter the current target. All earlier assertions remain unchanged. |
 | RSR-010 | Existing status is queried without successful new preview. Status success shows the old job and reachable check action; failure retains ID and reachable read-only retry without POST/new ID/clear. Unknown old target cannot update or route to the new target. Corrupt local record never enables a new POST. Original assertions and timers remain. |
 | RSR-001 | Reads never start work; only owner may start; strict bounded schema; stale/changed/uncertain codes preserved |

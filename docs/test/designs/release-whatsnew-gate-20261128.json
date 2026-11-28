@@ -1,0 +1,37 @@
+{
+  "id": "release-whatsnew-gate-20261128",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Antigravity implementation owner, design self-review",
+    "date": "2026-11-28",
+    "decision": "Require verified annotated release tags with non-empty bilingual user: and user-zh: What's New blocks before release jobs run, plus local --check-notes preflight",
+    "notes": "Closes the v1.0.206 gap where an annotated tag lacking user:/user-zh: headers passed release.yml and silently omitted the version from gtmux whatsnew and Gtmux.app's What's New window."
+  },
+  "cases": [
+    {
+      "id": "RWN-001",
+      "layer": "G",
+      "description": "Release source gate and local preflight reject release tags lacking verified main CI or valid bilingual user:/user-zh: What's New blocks",
+      "setup": "Construct GitHub tag/CI API fixtures and tag-note files covering valid user:/user-zh: blocks, missing headers, lightweight tags, failed main CI, blank lines splitting bullets, and fenced code blocks.",
+      "action": "Run macos_release_source.resolve on tag pushes and macos_release_source.validate_tag_notes / --check-notes.",
+      "expected": "Only annotated vX.Y.Z tags targeting the exact green-CI commit with non-empty, contiguous user: and user-zh: blocks pass; lightweight tags, missing language blocks, split/orphan bullets, and fenced-only markers fail closed before goreleaser or Mac builds run.",
+      "planned_files": [
+        "scripts/macos_release_source.py",
+        "scripts/macos_release_source_test.py"
+      ]
+    },
+    {
+      "id": "RWN-002",
+      "layer": "G",
+      "description": "CI scope classifies macos_release_source guard scripts under policy-only scripts",
+      "setup": "Pass scripts/macos_release_source.py and scripts/macos_release_source_test.py to ci.classify.",
+      "action": "Evaluate ci.classify selected jobs and full flag.",
+      "expected": "Selecting only macos_release_source guard scripts keeps full=False and selected=[], running unit tests in the mandatory policy job without unrelated mobile or desktop builds.",
+      "planned_files": [
+        "scripts/ci.py",
+        "scripts/ci_test.py"
+      ]
+    }
+  ],
+  "seal": "ba74d8b2554cada2ca559f1cd64ebc181f7c06c1b4d8dfcf8137db55bfe738c7"
+}

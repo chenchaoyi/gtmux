@@ -75,6 +75,11 @@ class ScopeTests(unittest.TestCase):
                      "openspec/changes/foo/other.yaml", "scripts/unknown_helper.py"]:
             self.assertTrue(ci.classify([path])["full"])
 
+    def test_RWN_002_release_source_guard_scripts_are_policy_only(self):
+        plan = ci.classify(["scripts/macos_release_source.py", "scripts/macos_release_source_test.py"])
+        self.assertFalse(plan["full"])
+        self.assertEqual(plan["selected"], [])
+
     def test_WFH_002_mobile_release_metadata_and_web_shared_boundaries(self):
         self.assertEqual(set(ci.classify(["mobileapp/release-notes/1.0.206.srchash",
                                           "mobileapp/ios/GtmuxMobile.xcodeproj/project.pbxproj"])["selected"]),

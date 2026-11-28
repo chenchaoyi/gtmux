@@ -7128,33 +7128,34 @@ LEG-c77bc44423da,G,CI / tooling,scripts/check_private_source_test.py,48,unittest
 LEG-3a0cbcd63152,G,CI / tooling,scripts/check_private_source_test.py,55,unittest,test_private_filenames_fail_without_repeating_the_name_in_diagnostics,False,legacy-not-retrospectively-reviewed
 LEG-36acddae2fe2,G,CI / tooling,scripts/check_private_source_test.py,63,unittest,test_unreadable_source_fails_and_exception_text_never_reaches_output,False,legacy-not-retrospectively-reviewed
 LEG-046c8bb3bdbc,G,CI / tooling,scripts/check_private_source_test.py,71,unittest,test_wrapper_clears_private_environment_before_build_or_spec_helpers,False,legacy-not-retrospectively-reviewed
-MAP-41a5bc78e4e8,G,reviewed implementation,scripts/ci.py,83,reviewed-selector,confirmed_unit_test_isolation,False,CT-SCOPE
+MAP-41a5bc78e4e8,G,reviewed implementation,scripts/ci.py,84,reviewed-selector,confirmed_unit_test_isolation,False,CT-SCOPE
 MAP-74a0218bed87,G,reviewed implementation,scripts/ci.py,13,reviewed-selector,ANDROID_JOBS,False,"CT-SCOPE,ACS-001"
-MAP-a4f326b77fc6,L1,reviewed implementation,scripts/ci.py,42,reviewed-selector,document,False,WFG-004
+MAP-a4f326b77fc6,L1,reviewed implementation,scripts/ci.py,43,reviewed-selector,document,False,WFG-004
 MAP-43e91d565746,L1,reviewed implementation,scripts/ci.py,25,reviewed-selector,DOC_FILES,False,WFG-004
 MAP-95b2d459c856,G,reviewed implementation,scripts/ci.py,28,reviewed-selector,QUALITY_ONLY_SCRIPTS,False,"CIS-001,CIS-002,CIS-003,CIS-004"
-MAP-38dd12ab9f25,G,reviewed implementation,scripts/ci.py,36,reviewed-selector,GO_GATE_SCRIPTS,False,"CIS-001,CIS-002,CIS-003,CIS-004"
-MAP-515053c33d08,G,reviewed implementation,scripts/ci.py,100,reviewed-selector,classify,False,"CIS-001,CIS-002,CIS-003,CIS-004"
+MAP-38dd12ab9f25,G,reviewed implementation,scripts/ci.py,37,reviewed-selector,GO_GATE_SCRIPTS,False,"CIS-001,CIS-002,CIS-003,CIS-004"
+MAP-515053c33d08,G,reviewed implementation,scripts/ci.py,101,reviewed-selector,classify,False,"CIS-001,CIS-002,CIS-003,CIS-004"
 LEG-bb0f4dd7bc8b,G,CI / tooling,scripts/ci_test.py,35,unittest,test_docs_only_and_mixed_changes,False,legacy-not-retrospectively-reviewed
-LEG-5e8793132c96,G,CI / tooling,scripts/ci_test.py,93,unittest,test_shared_or_unknown_impact_is_full,True,legacy-not-retrospectively-reviewed
-LEG-7bbcfe8992be,G,CI / tooling,scripts/ci_test.py,104,unittest,test_recognized_modules_include_consumers,False,legacy-not-retrospectively-reviewed
-LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,123,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
-LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,132,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
-LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,158,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
-LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,169,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
-LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,181,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
-LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,193,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
-LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,251,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
-LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,257,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
-LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,276,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
-LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,286,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
+LEG-5e8793132c96,G,CI / tooling,scripts/ci_test.py,98,unittest,test_shared_or_unknown_impact_is_full,True,legacy-not-retrospectively-reviewed
+LEG-7bbcfe8992be,G,CI / tooling,scripts/ci_test.py,109,unittest,test_recognized_modules_include_consumers,False,legacy-not-retrospectively-reviewed
+LEG-bbdfd85a9000,G,CI / tooling,scripts/ci_test.py,128,unittest,test_nul_parser_preserves_names_and_old_rename_path,True,legacy-not-retrospectively-reviewed
+LEG-30f2f4661935,G,CI / tooling,scripts/ci_test.py,137,unittest,test_actual_git_rename_deletion_and_symlink,False,legacy-not-retrospectively-reviewed
+LEG-a0a184955335,G,CI / tooling,scripts/ci_test.py,163,unittest,test_missing_refs_force_full_cli_outputs,False,legacy-not-retrospectively-reviewed
+LEG-513d57a7489a,G,CI / tooling,scripts/ci_test.py,174,unittest,test_workflow_jobs_cannot_grow_outside_aggregation,False,legacy-not-retrospectively-reviewed
+LEG-1f71c99fb4dc,G,CI / tooling,scripts/ci_test.py,186,unittest,test_unsigned_ios_preserves_arm64_target_and_verifies_products,False,legacy-not-retrospectively-reviewed
+LEG-2514a184abce,G,CI / tooling,scripts/ci_test.py,198,unittest,test_android_package_is_built_once_and_both_devices_use_its_output,False,legacy-not-retrospectively-reviewed
+LEG-76200ceafcf2,G,CI / tooling,scripts/ci_test.py,256,unittest,test_docs_can_skip_heavy_jobs_but_require_quality,False,legacy-not-retrospectively-reviewed
+LEG-ecfb4bf818ba,G,CI / tooling,scripts/ci_test.py,262,unittest,test_missing_skipped_failed_cancelled_required_job_never_green,True,legacy-not-retrospectively-reviewed
+LEG-252965413bf3,G,CI / tooling,scripts/ci_test.py,281,unittest,test_bad_plans_or_unselected_failure_are_rejected,False,legacy-not-retrospectively-reviewed
+LEG-8a6a845c7484,G,CI / tooling,scripts/ci_test.py,291,unittest,test_mac_host_keeps_both_architectures_and_native_checks,False,legacy-not-retrospectively-reviewed
 LEG-28f4d1551b14,G,CI / tooling,scripts/ci_test.py,282,unittest,test_ios_delivery_pins_the_same_arm_toolchain_and_keeps_protection,False,legacy-not-retrospectively-reviewed
 MAP-349a1f57f0b7,G,CI / tooling,scripts/ci_test.py,43,reviewed-selector,test_reviewed_test_records_are_policy_only_without_hiding_test_changes,False,TD-006
 MAP-5f57607e8e0e,G,CI / tooling,scripts/ci_test.py,17,reviewed-selector,test_unit_test_scope_requires_immutable_product_exclusion,False,CT-SCOPE
-MAP-1d7d386ae4bf,G,CI / tooling,scripts/ci_test.py,266,reviewed-selector,test_android_aggregation_requires_the_entire_job_family,False,"CT-SCOPE,ACS-001"
+MAP-1d7d386ae4bf,G,CI / tooling,scripts/ci_test.py,271,reviewed-selector,test_android_aggregation_requires_the_entire_job_family,False,"CT-SCOPE,ACS-001"
 MAP-1897df85f0b4,L1,CI / tooling,scripts/ci_test.py,51,reviewed-selector,test_harness_instructions_and_openspec_skills_are_policy_only,False,WFG-004
-MAP-abc39513e700,G,CI / tooling,scripts/ci_test.py,78,reviewed-selector,test_WFH_002_mobile_release_metadata_and_web_shared_boundaries,False,"CIS-001,CIS-002,CIS-003,CIS-004,WFH-002,WFH-003"
-MAP-871c9155622c,G,CI / tooling,scripts/ci_test.py,304,reviewed-selector,test_ios_delivery_and_store_assets_pin_arm_toolchain_and_sha_actions,False,"CIS-001,CIS-002,CIS-003,CIS-004,WFH-002,WFH-003"
+MAP-abc39513e700,G,CI / tooling,scripts/ci_test.py,83,reviewed-selector,test_WFH_002_mobile_release_metadata_and_web_shared_boundaries,False,"CIS-001,CIS-002,CIS-003,CIS-004,WFH-002,WFH-003"
+MAP-871c9155622c,G,CI / tooling,scripts/ci_test.py,309,reviewed-selector,test_ios_delivery_and_store_assets_pin_arm_toolchain_and_sha_actions,False,"CIS-001,CIS-002,CIS-003,CIS-004,WFH-002,WFH-003"
+MAP-9986bcf32af7,G,CI / tooling,scripts/ci_test.py,78,reviewed-selector,test_RWN_002_release_source_guard_scripts_are_policy_only,False,"CIS-001,CIS-002,CIS-003,CIS-004,WFH-002,WFH-003,RWN-002"
 LEG-0a1ce627fdd1,G,CI / tooling,scripts/install_platform_test.py,70,unittest,test_linux_archives_install_without_any_mac_application,True,legacy-not-retrospectively-reviewed
 LEG-8ccffb001b09,G,CI / tooling,scripts/install_platform_test.py,80,unittest,test_checksum_failure_never_installs,False,legacy-not-retrospectively-reviewed
 LEG-c81cb29009cc,G,CI / tooling,scripts/install_platform_test.py,86,unittest,test_existing_optional_client_is_updated_only_by_capable_release,True,legacy-not-retrospectively-reviewed
@@ -7184,19 +7185,22 @@ LEG-5b4f0466d8be,G,CI / tooling,scripts/macos_release_artifact_test.py,76,unitte
 LEG-00e8674df08f,G,CI / tooling,scripts/macos_release_artifact_test.py,87,unittest,test_staging_does_not_replace_an_existing_build,False,legacy-not-retrospectively-reviewed
 LEG-2c4103097c81,G,CI / tooling,scripts/macos_release_artifact_test.py,106,unittest,test_builds_overlap_but_publication_and_mirror_wait_for_all_successes,False,legacy-not-retrospectively-reviewed
 MAP-bdae33b97993,G,CI / tooling,scripts/macos_release_artifact_test.py,91,reviewed-selector,test_staging_refuses_managed_state_alias,False,STOR-005
-LEG-f25be4639f14,G,CI / tooling,scripts/macos_release_source_test.py,47,unittest,test_exact_product_is_separate_from_workflow_definition,False,legacy-not-retrospectively-reviewed
-LEG-df83a87677f8,G,CI / tooling,scripts/macos_release_source_test.py,52,unittest,test_normal_tag_and_snapshot_do_not_fetch_recovery_authority,False,legacy-not-retrospectively-reviewed
-LEG-024e8902532b,G,CI / tooling,scripts/macos_release_source_test.py,59,unittest,test_dispatch_identity_branch_and_tag_cannot_inject_source,True,legacy-not-retrospectively-reviewed
-LEG-3ec53d8da2ff,G,CI / tooling,scripts/macos_release_source_test.py,65,unittest,test_moved_main_lightweight_tag_or_wrong_annotated_target_refused,True,legacy-not-retrospectively-reviewed
-LEG-d287d08892e1,G,CI / tooling,scripts/macos_release_source_test.py,74,unittest,test_both_latest_product_and_definition_main_ci_required,True,legacy-not-retrospectively-reviewed
-LEG-7d91fb17352f,G,CI / tooling,scripts/macos_release_source_test.py,82,unittest,test_cli_assets_and_current_stable_release_required,True,legacy-not-retrospectively-reviewed
-LEG-0f5c2d90cdb7,G,CI / tooling,scripts/macos_release_source_test.py,90,unittest,test_existing_mac_is_not_rebuilt,False,legacy-not-retrospectively-reviewed
-LEG-6e59738888f6,G,CI / tooling,scripts/macos_release_source_test.py,95,unittest,test_newer_failed_cli_cannot_reuse_old_success,False,legacy-not-retrospectively-reviewed
-LEG-7398b7442e11,G,CI / tooling,scripts/macos_release_source_test.py,99,unittest,test_wrong_cli_source_run_failure_or_successful_mac_refused,True,legacy-not-retrospectively-reviewed
-LEG-4581141dbca6,G,CI / tooling,scripts/macos_release_source_test.py,106,unittest,test_recovery_publication_requires_independent_staple_and_all_jobs,True,legacy-not-retrospectively-reviewed
-LEG-5b769fb296e9,G,CI / tooling,scripts/macos_release_source_test.py,120,unittest,test_publication_is_bound_to_its_reviewed_definition_if_main_advances,False,legacy-not-retrospectively-reviewed
-LEG-5aad5158d068,G,CI / tooling,scripts/macos_release_source_test.py,125,unittest,test_definition_and_product_cannot_be_swapped_at_publication,False,legacy-not-retrospectively-reviewed
-LEG-49bb706f9b27,G,CI / tooling,scripts/macos_release_source_test.py,130,unittest,test_attach_is_idempotent_only_for_identical_published_bytes,False,legacy-not-retrospectively-reviewed
+MAP-3522d769fcb9,G,reviewed implementation,scripts/macos_release_source.py,71,reviewed-selector,def validate_tag_notes(,False,RWN-001
+MAP-88aeb1cc998e,G,reviewed implementation,scripts/macos_release_source.py,144,reviewed-selector,def resolve(,False,RWN-001
+LEG-f25be4639f14,G,CI / tooling,scripts/macos_release_source_test.py,48,unittest,test_exact_product_is_separate_from_workflow_definition,False,legacy-not-retrospectively-reviewed
+LEG-df83a87677f8,G,CI / tooling,scripts/macos_release_source_test.py,53,unittest,test_normal_tag_and_snapshot_do_not_fetch_recovery_authority,False,legacy-not-retrospectively-reviewed
+LEG-024e8902532b,G,CI / tooling,scripts/macos_release_source_test.py,108,unittest,test_dispatch_identity_branch_and_tag_cannot_inject_source,True,legacy-not-retrospectively-reviewed
+LEG-3ec53d8da2ff,G,CI / tooling,scripts/macos_release_source_test.py,114,unittest,test_moved_main_lightweight_tag_or_wrong_annotated_target_refused,True,legacy-not-retrospectively-reviewed
+LEG-d287d08892e1,G,CI / tooling,scripts/macos_release_source_test.py,123,unittest,test_both_latest_product_and_definition_main_ci_required,True,legacy-not-retrospectively-reviewed
+LEG-7d91fb17352f,G,CI / tooling,scripts/macos_release_source_test.py,131,unittest,test_cli_assets_and_current_stable_release_required,True,legacy-not-retrospectively-reviewed
+LEG-0f5c2d90cdb7,G,CI / tooling,scripts/macos_release_source_test.py,139,unittest,test_existing_mac_is_not_rebuilt,False,legacy-not-retrospectively-reviewed
+LEG-6e59738888f6,G,CI / tooling,scripts/macos_release_source_test.py,144,unittest,test_newer_failed_cli_cannot_reuse_old_success,False,legacy-not-retrospectively-reviewed
+LEG-7398b7442e11,G,CI / tooling,scripts/macos_release_source_test.py,148,unittest,test_wrong_cli_source_run_failure_or_successful_mac_refused,True,legacy-not-retrospectively-reviewed
+LEG-4581141dbca6,G,CI / tooling,scripts/macos_release_source_test.py,155,unittest,test_recovery_publication_requires_independent_staple_and_all_jobs,True,legacy-not-retrospectively-reviewed
+LEG-5b769fb296e9,G,CI / tooling,scripts/macos_release_source_test.py,169,unittest,test_publication_is_bound_to_its_reviewed_definition_if_main_advances,False,legacy-not-retrospectively-reviewed
+LEG-5aad5158d068,G,CI / tooling,scripts/macos_release_source_test.py,174,unittest,test_definition_and_product_cannot_be_swapped_at_publication,False,legacy-not-retrospectively-reviewed
+LEG-49bb706f9b27,G,CI / tooling,scripts/macos_release_source_test.py,179,unittest,test_attach_is_idempotent_only_for_identical_published_bytes,False,legacy-not-retrospectively-reviewed
+MAP-ce8ff863ddc5,G,CI / tooling,scripts/macos_release_source_test.py,69,reviewed-selector,test_RWN_001_release_tag_requires_verified_ci_and_bilingual_whatsnew_blocks,False,RWN-001
 MAP-176254a5b730,G,reviewed implementation,scripts/openspec_check.py,8,reviewed-selector,COMMAND,False,"OSV-001,OSV-002,OSV-003,OSV-004,OSV-005,OSV-006"
 MAP-878d29975287,G,reviewed implementation,scripts/openspec_check.py,9,reviewed-selector,LEGACY_PROSE_LEN_WARNING,False,"OSV-001,OSV-002,OSV-003,OSV-004,OSV-005,OSV-006"
 MAP-ab19978fc91f,G,reviewed implementation,scripts/openspec_check.py,15,reviewed-selector,blocking_issues,False,"OSV-001,OSV-002,OSV-003,OSV-004,OSV-005,OSV-006"
