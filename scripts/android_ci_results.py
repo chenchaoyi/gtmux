@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Select and verify full phone coverage and the two tablet emulator shards."""
+"""Select and verify the two phone and two tablet Android emulator shards."""
 
 import argparse
 from datetime import datetime
@@ -45,13 +45,15 @@ def execution(job):
     return job["runner_id"], started, finished
 
 
-def shard_attempts(jobs, run, attempt, job_head):
+def shard_attempts(jobs, run, attempt, job_head, device="tablet"):
     """GitHub copies retained successes into the current attempt with new job IDs."""
+    if device not in DEVICES:
+        raise ValueError("Invalid Android device")
     if not isinstance(jobs, list) or not all(isinstance(job, dict) for job in jobs):
         raise ValueError("Missing or invalid Android job history")
     result = {}
     for part in PARTS:
-        name = f"Android tablet emulator shard {part}"
+        name = f"Android {device} emulator shard {part}"
         history = {}
         for job in (job for job in jobs if job.get("name") == name):
             index = job.get("run_attempt")
@@ -91,17 +93,17 @@ def lane(source, run, attempt, device, part):
 
 def selected_cases(inventory, device, part):
     cases, selections = inventory
+    if device in DEVICES and part in PARTS:
+        return selections[part]
     if device == "phone" and part == 0:
         return list(cases)
-    if device == "tablet" and part in PARTS:
-        return selections[part]
     raise ValueError("Invalid Android device and shard combination")
 
 
 def verify_lane(receipt_dir, inventory, package, source, run, attempt, device, part):
     cases, _ = inventory
     selected = selected_cases(inventory, device, part)
-    label = "Android phone" if device == "phone" else f"Android tablet shard {part}"
+    label = f"Android {device}" if part == 0 else f"Android {device} shard {part}"
     if (not isinstance(package, dict) or package.get("source") != source or package.get("run") != run
             or type(package.get("attempt")) is not int or package["attempt"] < 1
             or type(package.get("bytes")) is not int or not 0 < package["bytes"] <= 256 * 1024**2
@@ -138,8 +140,10 @@ def verify_lane(receipt_dir, inventory, package, source, run, attempt, device, p
     return len(selected)
 
 
-def verify_device(directory, inventory, package, source, run, attempts):
-    return sum(verify_lane(directory / str(part), inventory, package, source, run, attempts[part], "tablet", part)
+def verify_device(directory, inventory, package, source, run, attempts, device="tablet"):
+    if device not in DEVICES:
+        raise ValueError("Invalid Android device")
+    return sum(verify_lane(directory / str(part), inventory, package, source, run, attempts[part], device, part)
                for part in PARTS)
 
 
@@ -153,8 +157,10 @@ def main():
         command.add_argument("--shard", type=int, choices=(0, *PARTS), required=True)
         command.add_argument("--evidence", type=Path, required=True)
     resolve = commands.add_parser("resolve")
+    resolve.add_argument("--device", choices=DEVICES, default="tablet")
     resolve.add_argument("--jobs", type=Path, required=True)
     verify = commands.add_parser("verify")
+    verify.add_argument("--device", choices=DEVICES, default="tablet")
     verify.add_argument("--receipts", type=Path, required=True)
     verify.add_argument("--attempt-1", type=int, required=True)
     verify.add_argument("--attempt-2", type=int, required=True)
@@ -166,7 +172,7 @@ def main():
             raise ValueError("Invalid workflow identity")
         if args.command == "resolve":
             jobs = json.loads(args.jobs.read_text())
-            for part, origin in shard_attempts(jobs, run, attempt, os.environ["GTMUX_CI_JOB_HEAD"]).items():
+            for part, origin in shard_attempts(jobs, run, attempt, os.environ["GTMUX_CI_JOB_HEAD"], args.device).items():
                 print(f"attempt_{part}={origin}")
         elif args.command == "select":
             selected = selected_cases(suite(), args.device, args.shard)
@@ -184,8 +190,8 @@ def main():
             if any(not 1 <= origin <= attempt for origin in attempts.values()):
                 raise ValueError("Invalid shard receipt attempt")
             package = json.loads(os.environ["GTMUX_ANDROID_QA_RECEIPT"])
-            count = verify_device(args.receipts, suite(), package, source, run, attempts)
-            print(f"Android tablet: {count} cases passed once on QA APK {package['sha256']}")
+            count = verify_device(args.receipts, suite(), package, source, run, attempts, args.device)
+            print(f"Android {args.device}: {count} cases passed once on QA APK {package['sha256']}")
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
         print(f"Android CI: {error}", file=sys.stderr)
         return 1

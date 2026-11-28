@@ -102,8 +102,9 @@ def validate(root, catalogue, mappings, plans, paths):
 def history_errors(root, base, head, mappings, plans):
     if not all(re.fullmatch('[0-9a-f]{40}', x or '') for x in (base, head)):
         return ['PR history requires exact base and head commits']
-    changed = subprocess.check_output(['git', 'diff', '--name-only', '--no-renames', '-z', base + '...' + head], cwd=root).decode().rstrip('\0').split('\0')
+    changed = [p for p in subprocess.check_output(['git', 'diff', '--name-only', '--no-renames', '-z', base + '...' + head], cwd=root).decode().rstrip('\0').split('\0') if p]
     old = json.loads(subprocess.check_output(['git', 'show', base + ':' + CATALOGUE], cwd=root)) if subprocess.run(['git', 'cat-file', '-e', base + ':' + CATALOGUE], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else {'files': {}}
+    old_mappings = json.loads(subprocess.check_output(['git', 'show', base + ':' + MAPPING], cwd=root)) if subprocess.run(['git', 'cat-file', '-e', base + ':' + MAPPING], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0 else {}
     errors = []
     for path in changed:
         if not is_test(path) and path not in old['files'] and path not in mappings:
@@ -116,22 +117,35 @@ def history_errors(root, base, head, mappings, plans):
         if not commits:
             errors.append('Cannot establish first implementation edit: ' + path); continue
         parent = commits[0] + '^'
+        existed = subprocess.run(['git', 'cat-file', '-e', base + ':' + path], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+        old_cases = set((old_mappings.get(path) or {}).get('cases', [])) if existed else set()
+        added_cases = [k for k in mapping['cases'] if k not in old_cases]
+        fresh_existing = False
         for key in mapping['cases']:
             candidates = [(n, p) for n, p in plans.items() if any(c['id'] == key for c in p['cases'])]
             if len(candidates) != 1:
                 errors.append('Unknown reviewed case: ' + key); continue
             name, plan = candidates[0]
+            if existed and added_cases and key in old_cases:
+                continue
             try:
                 prior = json.loads(subprocess.check_output(['git', 'show', parent + ':' + name], cwd=root, stderr=subprocess.DEVNULL))
-                existed = subprocess.run(['git', 'cat-file', '-e', base + ':' + path], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
-                if existed and subprocess.run(['git', 'cat-file', '-e', base + ':' + name], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
-                    old_plan = json.loads(subprocess.check_output(['git', 'show', base + ':' + name], cwd=root))
-                    if old_plan.get('seal') == prior.get('seal'):
-                        raise ValueError('Changed test needs a fresh review, not an unchanged historical seal')
                 if prior.get('seal') != seal(prior) or prior.get('status') != 'reviewed' or not any(c == next(c for c in plan['cases'] if c['id'] == key) for c in prior.get('cases', [])):
                     raise ValueError('Design changed')
+                if existed:
+                    if subprocess.run(['git', 'cat-file', '-e', base + ':' + name], cwd=root, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+                        old_plan = json.loads(subprocess.check_output(['git', 'show', base + ':' + name], cwd=root))
+                        if old_plan.get('seal') != prior.get('seal'):
+                            fresh_existing = True
+                        elif added_cases:
+                            raise ValueError('Added case needs a fresh review, not an unchanged historical seal')
+                    else:
+                        fresh_existing = True
             except (subprocess.CalledProcessError, ValueError, StopIteration):
-                errors.append('Design must be reviewed in an earlier commit: ' + path + ' / ' + key)
+                if not existed or added_cases:
+                    errors.append('Design must be reviewed in an earlier commit: ' + path + ' / ' + key)
+        if existed and not added_cases and not fresh_existing:
+            errors.append('Design must be reviewed in an earlier commit: ' + path + ' / ' + ','.join(mapping['cases']))
     return errors
 
 

@@ -10,7 +10,13 @@ import subprocess
 import sys
 
 
-ANDROID_JOBS = {"android-native", "android-phone", "android-emulator-shards", "android-emulator"}
+ANDROID_JOBS = {
+    "android-native",
+    "android-phone-shards",
+    "android-phone",
+    "android-emulator-shards",
+    "android-emulator",
+}
 JOBS = {
     "test": "core", "cross-build": "cross", "mobile": "mobile", "web": "web",
     "menubar": "menubar", "relay-worker": "relay", "tunnel-worker": "tunnel",
@@ -32,7 +38,31 @@ GO_GATE_SCRIPTS = {
     "scripts/vulncheck.sh", "scripts/vulncheck_test.py",
     "scripts/check_go_security.py", "scripts/check_go_security_test.py",
 }
+WEB_SHARED_MOBILE_PATHS = {
+    "mobileapp/src/documents/references.ts",
+    "mobileapp/src/screens/promptIdentityCases.json",
+    "mobileapp/src/ui/ActionIcon.tsx",
+    "mobileapp/src/ui/ActivityIcon.tsx",
+    "mobileapp/src/ui/SettingsIcons.tsx",
+    "mobileapp/src/ui/activity.ts",
+    "mobileapp/src/ui/codeFormatting.ts",
+    "mobileapp/src/ui/codeReading.ts",
+    "mobileapp/src/ui/codexPinned.ts",
+    "mobileapp/src/ui/codexPinnedCases.json",
+    "mobileapp/src/ui/diffModel.ts",
+    "mobileapp/src/ui/participantPresentation.json",
+    "mobileapp/src/ui/term.ts",
+    "mobileapp/src/ui/toolPresentation.ts",
+}
 DOC_IMAGES = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+
+
+def web_shared_mobile(path):
+    return path in WEB_SHARED_MOBILE_PATHS or (
+        path.startswith("mobileapp/src/trace/") and
+        not path.endswith((".test.ts", ".test.tsx")) and
+        PurePosixPath(path).suffix in {".ts", ".tsx", ".js", ".cjs", ".json"}
+    )
 
 
 def document(path):
@@ -102,16 +132,28 @@ def classify(paths, force_reason=None, unit_test_isolation=False):
               (path.startswith("internal/") and not path.startswith("internal/server/") and "/testdata/" in path)):
             selected.update(("test", "cross-build"))
             reasons.append("Go CLI/core package (HTTP wire contract pinned in Go tests): " + json.dumps(path))
+        elif re.fullmatch(r"mobileapp/release-notes/[0-9]+\.[0-9]+\.[0-9]+\.srchash", path):
+            selected.update(("mobile", "ios-native"))
+            reasons.append("Apple release-notes source hash stamp: " + json.dumps(path))
+        elif path == "mobileapp/release-notes/android.json":
+            selected.update(ANDROID_JOBS | {"mobile"})
+            reasons.append("Android release-notes archive: " + json.dumps(path))
+        elif path == "mobileapp/ios/GtmuxMobile.xcodeproj/project.pbxproj":
+            selected.update(("mobile", "ios-native"))
+            reasons.append("iOS Xcode project configuration: " + json.dumps(path))
         elif (unit_test_isolation and
               re.fullmatch(r"mobileapp/src/(?:[\w-]+/)*[\w.-]+\.test\.tsx?", path)):
-            selected.update(("mobile", "web"))
-            reasons.append("Jest-only source excluded by pinned Metro resolver; full RN/Web checks: " + json.dumps(path))
+            selected.add("mobile")
+            reasons.append("Jest-only source excluded by pinned Metro resolver: " + json.dumps(path))
         elif path.startswith("mobileapp/src/api/"):
             full = True
             reasons.append("Shared HTTP contract consumer: " + json.dumps(path))
-        elif path.startswith(("mobileapp/src/", "mobileapp/e2e/")) and PurePosixPath(path).suffix in {".ts", ".tsx", ".js", ".cjs"}:
+        elif web_shared_mobile(path):
             selected.update(ANDROID_JOBS | {"mobile", "web", "ios-native"})
-            reasons.append("Phone/iPad code, native compile and shared Web presentation: " + json.dumps(path))
+            reasons.append("Web-shared mobile model/presentation source: " + json.dumps(path))
+        elif path.startswith(("mobileapp/src/", "mobileapp/e2e/")) and PurePosixPath(path).suffix in {".ts", ".tsx", ".js", ".cjs"}:
+            selected.update(ANDROID_JOBS | {"mobile", "ios-native"})
+            reasons.append("Phone/iPad code and native compile: " + json.dumps(path))
         elif path.startswith("mobileapp/ios/") and PurePosixPath(path).suffix in {".swift", ".m", ".mm", ".h"}:
             selected.update(("mobile", "ios-native"))
             reasons.append("iOS native code and phone consumers: " + json.dumps(path))

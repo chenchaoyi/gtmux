@@ -1,0 +1,50 @@
+{
+  "id": "workflow-hardening-20261128",
+  "status": "reviewed",
+  "review": {
+    "reviewer": "Antigravity implementation owner, design self-review",
+    "date": "2026-11-28",
+    "decision": "Eliminate historical case coupling in test_design PR history, narrow mobile CI scope, shard Android phone flows, remove duplicate menubar Release compiles, and pin workflow environments and action SHAs",
+    "notes": "User-approved workflow review items 1, 2, 3.1-3.3, 4.1-4.3, and 5.1 (5.2 local git hooks intentionally excluded). Verify negative fail-closed boundaries alongside scope/sharding speedups."
+  },
+  "cases": [
+    {
+      "id": "WFH-001",
+      "layer": "G",
+      "description": "PR history gate preserves unchanged historical case mappings when an existing test file adds newly reviewed cases",
+      "setup": "Create an isolated Git repository with a baseline test file mapped to a sealed historical case, then add a second reviewed and sealed design case in an earlier PR commit before appending a new test and case ID to the existing file.",
+      "action": "Run test_design.history_errors across incremental case additions, same-commit design violations, and unresealed edits with no added case ID.",
+      "expected": "Appending a newly reviewed case ID to an existing test file passes without requiring the untouched historical plan to be re-sealed, while modifying an existing test file with neither a newly reviewed case nor a re-sealed existing case still fails closed.",
+      "planned_files": [
+        "scripts/test_design_test.py",
+        "scripts/test_design.py"
+      ]
+    },
+    {
+      "id": "WFH-002",
+      "layer": "G",
+      "description": "CI scope narrows mobile release metadata and non-shared RN UI changes while preserving Web shared-source and universal Mac checks",
+      "setup": "Evaluate ci.classify on mobile release-notes metadata, pure RN UI components, Web-shared mobileapp sources, and inspect ci.yml/ios-store-assets.yml/release.yml contracts.",
+      "action": "Run ci_test scope, Mac universal product, pinned host/toolchain, Node LTS uniformity, and SHA-pinned workflow action assertions.",
+      "expected": "Mobile release metadata (.srchash, android.json, GtmuxMobile.xcodeproj) selects mobile/iOS/Android gates without unrelated Go/menubar/Worker suites; non-shared RN UI files skip Web while Web-consumed mobileapp files still select Web; menubar verifies universal arm64+x86_64 binaries via build.sh without duplicate full Release builds; ios-store-assets pins macos-15 and Xcode 26.3; and workflows SHA-pin third-party actions.",
+      "planned_files": [
+        "scripts/ci_test.py",
+        "scripts/ci.py"
+      ]
+    },
+    {
+      "id": "WFH-003",
+      "layer": "G",
+      "description": "Android phone and tablet emulator suites both execute across two verified shards under their existing aggregate check names",
+      "setup": "Provide synthetic QA APK and shard 1/2 execution receipts and job histories for both phone and tablet profiles.",
+      "action": "Run android_ci_results shard selection, attempt resolution, lane verification, and device summary verification for both phone and tablet.",
+      "expected": "Both phone and tablet split the 31-case suite cleanly across shards 1 and 2 without crossing setup groups, preserve per-shard receipts across failed-only reruns, and publish the exact required aggregate check names Android phone emulator flows and Android tablet emulator flows.",
+      "planned_files": [
+        "scripts/android_ci_results_test.py",
+        "scripts/ci_test.py",
+        "scripts/android_ci_results.py"
+      ]
+    }
+  ],
+  "seal": "4dd86facddb89e7c115ea9a79f056534b493e114686efacbd4f5bb8c951a4bcb"
+}

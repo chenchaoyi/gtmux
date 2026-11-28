@@ -35,10 +35,10 @@ python3 mobileapp/scripts/release-preflight.py --identity-only
 
 ## 构建一次，分别验证
 
-Android CI 只构建、lint 和测试一次 QA APK。手机完整跑一遍，平板分两片并行，三项
+Android CI 只构建、lint 和测试一次 QA APK。手机与平板各自分两片并行，四项
 模拟器任务都使用同一个经核验的包。`Android phone emulator flows` 和 `Android tablet emulator flows`
 分别确认本设备全部用例恰好通过一次，且对应同一份原生构建回执。一片失败后，其他分片
-仍继续并留存证据。仅重跑失败任务时，按实际执行轮次取回分片证据，并复用原成功构建的
+仍继续并留存证据。仅重跑失败任务时，按实际执行轮次取回手机和平板分片证据，并复用原成功构建的
 APK。Android 交付门禁继续接受旧版完整的合并检查，或同时通过原生、手机和平板三项检查。
 
 Mac 签名、公证和手机签名要求保持。Mac 构建与 CLI 检查、构建并行；独立上传任务等待

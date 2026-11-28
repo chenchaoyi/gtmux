@@ -11,7 +11,7 @@ The catalogue covers 1532 test/harness source files. Each CSV row lists stable I
 | L3 · Runtime integration | 171 | [L3.csv](cases/L3.csv) |
 | L4 · Application journeys | 152 | [L4.csv](cases/L4.csv) |
 | M · Manual / device | 13 | [M.csv](cases/M.csv) |
-| G · Qualification guards | 526 | [G.csv](cases/G.csv) |
+| G · Qualification guards | 531 | [G.csv](cases/G.csv) |
 
 Numbers are not passes. The legacy 6,223 positions came from the 4fad6119 inventory (declarations, subtests, dynamic templates); explicit new cases, native oracles and reviewed selectors are indexed separately. Dynamic instances are not expanded. Harnesses without named cases retain their hashes. Legacy layers are structural triage; mixed boundaries need semantic review when touched, not fictional historical review/results. A reviewed-selector is not a framework-discovered declaration. Gates catch source/index/mapping drift; names cannot prove assertion quality.
 
@@ -787,3 +787,6 @@ Refresh with `python3 scripts/test_design.py --refresh`; only reviewed/mapped ch
 | WHS-005 | The two in-flight lanes each issue one request. Roster completion paints the header without writing terminal content or fetching or drawing hidden Chat. Existing capture outputs remain first, second and newest, discarding the outdated capture. A deferred roster reply for a retired view cannot repaint it after completion. |
 | WWP-001 | Both panels remain visible and separate without moving the first. The 1024-pixel layout uses the room below. Chat histories and drafts stay with their own pane. The fixture receives exactly one request for the selected pane. |
 | WWP-002 | The two saved geometries stay exact while a third tile chooses open space. The fixture receives no message. |
+| WFH-001 | Appending a newly reviewed case ID to an existing test file passes without requiring the untouched historical plan to be re-sealed, while modifying an existing test file with neither a newly reviewed case nor a re-sealed existing case still fails closed. |
+| WFH-002 | Mobile release metadata (.srchash, android.json, GtmuxMobile.xcodeproj) selects mobile/iOS/Android gates without unrelated Go/menubar/Worker suites; non-shared RN UI files skip Web while Web-consumed mobileapp files still select Web; menubar verifies universal arm64+x86_64 binaries via build.sh without duplicate full Release builds; ios-store-assets pins macos-15 and Xcode 26.3; and workflows SHA-pin third-party actions. |
+| WFH-003 | Both phone and tablet split the 31-case suite cleanly across shards 1 and 2 without crossing setup groups, preserve per-shard receipts across failed-only reruns, and publish the exact required aggregate check names Android phone emulator flows and Android tablet emulator flows. |

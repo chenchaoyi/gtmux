@@ -33,7 +33,7 @@ jobs:
     outputs:
       commit: ${{ steps.source.outputs.commit }}
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -61,15 +61,21 @@ jobs:
   build:
     if: inputs.stage != 'render-only'
     needs: source
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 35
     env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
       STORE_TAG: ${{ inputs.release_tag }}
       STORE_COMMIT: ${{ needs.source.outputs.commit }}
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Verify pinned ARM Mac toolchain
+        run: |
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
+          xcodebuild -version
       - name: Reuse a validated build when available
         id: reuse
         env:
@@ -86,17 +92,17 @@ jobs:
             echo 'ready=true' >> "$GITHUB_OUTPUT"
             echo 'Reused verified Simulator build.' >> "$GITHUB_STEP_SUMMARY"
           fi
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.reuse.outputs.ready != 'true'
         with:
           ref: ${{ needs.source.outputs.commit }}
           path: source
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: steps.reuse.outputs.ready != 'true'
         with:
-          node-version: '22'
-      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1
+          node-version: '24'
+      - uses: ruby/setup-ruby@145243922b4465b78e04dd66294782c7de45901f # v1.345.0
         if: steps.reuse.outputs.ready != 'true'
         with:
           working-directory: source/mobileapp
@@ -112,13 +118,13 @@ jobs:
           (cd ios && bundle exec pod install)
           xcodebuild -workspace ios/GtmuxMobile.xcworkspace -scheme GtmuxMobile \
             -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -jobs 2 \
-            -derivedDataPath "$RUNNER_TEMP/store-build" ARCHS="$(uname -m)" CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath "$RUNNER_TEMP/store-build" ARCHS=arm64 ONLY_ACTIVE_ARCH=NO CODE_SIGNING_ALLOWED=NO \
             build 2>&1 | tee "$RUNNER_TEMP/store-build.log"
           python3 "$GITHUB_WORKSPACE/mobileapp/scripts/store_artifacts.py" pack-build \
             --app "$RUNNER_TEMP/store-build/Build/Products/Release-iphonesimulator/gtmux.app" \
             --root "$RUNNER_TEMP/simulator" --tag "$STORE_TAG" --commit "$STORE_COMMIT" \
-            --xcode "$(xcodebuild -version)" --arch "$(uname -m)"
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+            --xcode "$(xcodebuild -version)" --arch arm64
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: store-simulator-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -126,7 +132,7 @@ jobs:
             ${{ runner.temp }}/simulator/simulator-app.tar.gz
           if-no-files-found: error
           retention-days: 7
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
           name: store-build-failure-${{ github.run_id }}-${{ github.run_attempt }}
@@ -135,24 +141,29 @@ jobs:
 
   capture:
     needs: [source, build]
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 45
     env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
       STORE_TAG: ${{ inputs.release_tag }}
       STORE_COMMIT: ${{ needs.source.outputs.commit }}
       WORKFLOW_COMMIT: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.source.outputs.commit }}
           path: source
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - name: Verify pinned ARM Mac toolchain
+        run: |
+          test "$(uname -m)" = arm64
+          test -d "$DEVELOPER_DIR"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Retrieve build and any completed capture groups
         env:
           REUSE: ${{ inputs.reuse_run }}
@@ -161,7 +172,7 @@ jobs:
           set -euo pipefail
           gh run download "$GITHUB_RUN_ID" --name "store-simulator-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" --dir "$RUNNER_TEMP/simulator"
           python3 mobileapp/scripts/store_artifacts.py unpack-build --root "$RUNNER_TEMP/simulator" \
-            --tag "$STORE_TAG" --commit "$STORE_COMMIT" --xcode "$(xcodebuild -version)" --arch "$(uname -m)"
+            --tag "$STORE_TAG" --commit "$STORE_COMMIT" --xcode "$(xcodebuild -version)" --arch arm64
           if [[ -n "$REUSE" ]]; then
             python3 mobileapp/scripts/store_artifacts.py fetch --root "$RUNNER_TEMP/capture" --run "$REUSE" --kind checkpoint --optional
           fi
@@ -181,7 +192,7 @@ jobs:
             --app "$RUNNER_TEMP/simulator/gtmux.app" --output "$RUNNER_TEMP/capture"
       - name: Preserve completed groups even after failure
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: store-checkpoint-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -192,7 +203,7 @@ jobs:
           retention-days: 7
       - name: Preserve visual-review evidence
         if: always()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: store-review-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -202,7 +213,7 @@ jobs:
           retention-days: 7
       - name: Capture diagnostics
         if: failure()
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: store-capture-failure-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -216,20 +227,22 @@ jobs:
   render:
     if: ${{ !cancelled() && needs.source.result == 'success' && (needs.capture.result == 'success' || inputs.stage == 'render-only') }}
     needs: [source, capture]
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.source.outputs.commit }}
           path: source
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Render current captions from verified release captures
         env:
           REUSE: ${{ inputs.reuse_run }}
@@ -247,7 +260,7 @@ jobs:
           python3 mobileapp/scripts/store_artifacts.py render --source source/mobileapp --renderer mobileapp/scripts \
             --captures "$RUNNER_TEMP/capture" --root "$RUNNER_TEMP/store-assets" --tag "$TAG" --commit "$COMMIT" --render-commit "$GITHUB_SHA"
           echo 'All four capture groups verified. Images generated; human visual review and ASC placement are still required.' >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: appstore-assets-${{ inputs.release_tag }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/store-assets
@@ -255,7 +268,7 @@ jobs:
           retention-days: 7
       - name: Forward verified raw checkpoint for later render-only retries
         if: inputs.stage == 'render-only'
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: store-checkpoint-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
