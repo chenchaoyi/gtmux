@@ -20,6 +20,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {Alert as AlertType, SectionKey} from '../api/types';
 import type {ServerMode} from '../api/types';
 import {useAgents} from '../state/AgentsContext';
+import {createReadTask, startReadPolling, useScreenFocused} from '../state/readTask';
+import {USAGE_READ_TIMEOUT_MS} from './usageFailure';
 import {Agent} from '../api/types';
 import {useApp} from '../state/AppContext';
 import {Debug} from '../debug';
@@ -72,6 +74,7 @@ export function RadarPanel({
   // Outside the navigator (the demo) this is undefined and the routes it reaches — Servers,
   // Settings — are not offered; inside, it is the screen's own navigation.
   const navigation = React.useContext(NavigationContext) as {navigate: (r: string, p?: unknown) => void} | undefined;
+  const focused = useScreenFocused();
   const {select, cursor} = useWorkspace();
   const sidebar = variant === 'sidebar';
   // The long-press sheet. The row IS the whole state (null = closed), so a stale sheet
@@ -113,23 +116,14 @@ export function RadarPanel({
   // owner surface. `false` = no bottleneck.
   const [resCrit, setResCrit] = useState(false);
   useEffect(() => {
-    if (isGuest || demoChrome) return;
-    let alive = true;
-    const load = () =>
-      client
-        .usage()
-        .then(u => {
-          if (!alive) return;
-          setResCrit(u?.resource?.machine?.tier === 'red');
-        })
-        .catch(() => {});
-    load();
-    const id = setInterval(load, 25000);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, [client, isGuest, demoChrome]);
+    if (isGuest || demoChrome || !focused) return;
+    const task = createReadTask(
+      signal => client.usage(signal),
+      u => setResCrit(u?.resource?.machine?.tier === 'red'),
+      {timeoutMs: USAGE_READ_TIMEOUT_MS},
+    );
+    return startReadPolling(task, 25_000);
+  }, [client, isGuest, demoChrome, focused]);
   // Collapsed sections persist across launches (MOBILE §3).
   const [collapsed, setCollapsed] = useState<Set<SectionKey>>(new Set());
   // "Waiting only" narrows the list to the panes needing you (MOBILE §3/§8) — a fast
@@ -205,18 +199,13 @@ export function RadarPanel({
   useEffect(() => {
     // The demo's client deliberately does not answer host-state calls (demoClient
     // `NotInDemo`): a stub that looked like a Mac would be worse than no call.
-    if (demoChrome) return;
-    let alive = true;
-    const tick = () => {
-      client.serverMode().then(m => alive && setSrv(m)).catch(() => {});
-    };
-    tick();
-    const id = setInterval(tick, 30000);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, [client, demoChrome, serverModeRev]);
+    if (demoChrome || !focused) return;
+    const task = createReadTask(
+      signal => (signal ? client.serverMode(signal) : client.serverMode()),
+      m => setSrv(m),
+    );
+    return startReadPolling(task, 30_000);
+  }, [client, demoChrome, serverModeRev, focused]);
   const srvOn = !!srv && (srv.system_disablesleep || srv.state === 'lapsed');
 
   // In the SIDEBAR the header's one row has to hold the Mac's name, a switch chip, a

@@ -394,9 +394,21 @@ export function readableToolOutput(source: string, terminal: boolean): string {
   return text;
 }
 export function displayWorkdir(value: string): string {
-  try {
-    const uri = new URL(value);
-    if (uri.protocol === 'file:' && (!uri.hostname || uri.hostname === 'localhost')) return decodeURIComponent(uri.pathname);
-  } catch { /* Unknown or malformed text remains the recorded value. */ }
+  // Parse RFC 8089 local file URIs directly; React Native's URL polyfill returns pathname="/" for file://.
+  if (value && value.length <= 4096 && !/[\u0000-\u001f\u007f]/.test(value) && /^file:\/\//i.test(value)) {
+    const rest = value.slice(7);
+    const hash = rest.indexOf('#');
+    const body = hash >= 0 ? rest.slice(0, hash) : rest;
+    const slash = body.indexOf('/');
+    if (!body.includes('?') && slash >= 0) {
+      const authority = body.slice(0, slash);
+      if (authority === '' || authority.toLowerCase() === 'localhost') {
+        try {
+          const decoded = decodeURIComponent(body.slice(slash));
+          if (decoded && !decoded.startsWith('//') && !/[\u0000-\u001f\u007f]/.test(decoded)) return decoded;
+        } catch { /* Unknown or malformed text remains the recorded value. */ }
+      }
+    }
+  }
   return value;
 }

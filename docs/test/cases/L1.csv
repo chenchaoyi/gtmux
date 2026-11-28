@@ -2938,13 +2938,13 @@ LEG-27aac7a6ac6c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NewSessionC
 LEG-4da97fd3772c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,77,XCTest,testBareOrTestHostNeverStartsTheSystemDeliveryPath,False,legacy-not-retrospectively-reviewed
 LEG-a0ac61a80b4c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,91,XCTest,testLaterTurnsOnTheSamePaneAreNotSilenced,False,legacy-not-retrospectively-reviewed
 LEG-ca8398f9394e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,110,XCTest,testAnAsynchronousFailureDoesNotPoisonTheNextTurn,False,legacy-not-retrospectively-reviewed
-LEG-3f7e830cbf9e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,122,XCTest,testResolvedWaitsWithdrawEvenWhenAcceptanceIsLate,False,legacy-not-retrospectively-reviewed
-LEG-5256316b25fe,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,199,XCTest,testStartupWaitsForPermissionAndDrainsEventsFromThatGap,False,legacy-not-retrospectively-reviewed
-LEG-a33a1fd43325,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,212,XCTest,testPermissionCanRecoverWithoutRestartingTheApp,False,legacy-not-retrospectively-reviewed
-LEG-de67024e42e1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,228,XCTest,testPermissionRefreshKeepsTheQueueUntilTheFreshVerdict,False,legacy-not-retrospectively-reviewed
-LEG-66c4149c72a4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,243,XCTest,testAnUndecidedPermissionIsRequestedOnce,False,legacy-not-retrospectively-reviewed
-LEG-85ba98704b83,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,253,XCTest,testOffAndStaleRequestsDoNotPost,False,legacy-not-retrospectively-reviewed
-LEG-563fd6673864,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,263,XCTest,testExplicitTestHasNoAgentTargetAndReportsAcceptanceOnly,False,legacy-not-retrospectively-reviewed
+LEG-3f7e830cbf9e,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,123,XCTest,testResolvedWaitsWithdrawEvenWhenAcceptanceIsLate,False,legacy-not-retrospectively-reviewed
+LEG-5256316b25fe,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,201,XCTest,testStartupWaitsForPermissionAndDrainsEventsFromThatGap,False,legacy-not-retrospectively-reviewed
+LEG-a33a1fd43325,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,214,XCTest,testPermissionCanRecoverWithoutRestartingTheApp,False,legacy-not-retrospectively-reviewed
+LEG-de67024e42e1,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,230,XCTest,testPermissionRefreshKeepsTheQueueUntilTheFreshVerdict,False,legacy-not-retrospectively-reviewed
+LEG-66c4149c72a4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,245,XCTest,testAnUndecidedPermissionIsRequestedOnce,False,legacy-not-retrospectively-reviewed
+LEG-85ba98704b83,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,255,XCTest,testOffAndStaleRequestsDoNotPost,False,legacy-not-retrospectively-reviewed
+LEG-563fd6673864,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationManagerTests.swift,265,XCTest,testExplicitTestHasNoAgentTargetAndReportsAcceptanceOnly,False,legacy-not-retrospectively-reviewed
 LEG-d80028d0991c,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/NotificationPreferencesLayoutTests.swift,32,XCTest,testTestFeedbackAndPermissionStatesRemainVisible,False,legacy-not-retrospectively-reviewed
 LEG-659408c65bf3,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/PairStoreTests.swift,8,XCTest,testParseDevicesFiltersGuests,False,legacy-not-retrospectively-reviewed
 LEG-7b153f97837b,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/PairStoreTests.swift,22,XCTest,testDeviceKind,False,legacy-not-retrospectively-reviewed
@@ -3132,11 +3132,11 @@ LEG-e0dc65359e21,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/ShareStoreT
 MAP-65d132bc45c7,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift,18,reviewed-selector,testKeyStatesHaveDifferentGeometryWithoutUsingColor,False,DFC-008
 MAP-a1c39b6f044d,L1,reviewed implementation,macapp/Tests/GtmuxBarTests/StatusItemGlyphTests.swift,26,reviewed-selector,testAwakeModifierDoesNotEraseTheStatusDifference,False,DFC-008
 LEG-5761910660c9,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,28,XCTest,testVisibilityIsOffUntilASurfaceOpens,False,legacy-not-retrospectively-reviewed
-LEG-3dd66bcf03b4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,33,XCTest,testItTracksOpenAndClose,False,legacy-not-retrospectively-reviewed
+LEG-3dd66bcf03b4,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,34,XCTest,testItTracksOpenAndClose,False,legacy-not-retrospectively-reviewed
 LEG-ff08152b6882,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,46,XCTest,testTheWindowAndItsContentSurviveAClose,False,legacy-not-retrospectively-reviewed
-LEG-8d065dec033b,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,69,XCTest,testTheOpenThatFollowsItsOwnCloseIsIgnored,False,legacy-not-retrospectively-reviewed
-LEG-ced77fb5e9ad,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,78,XCTest,testADeliberateReopenIsNotSwallowed,False,legacy-not-retrospectively-reviewed
-LEG-669306d7b2e0,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,86,XCTest,testTheFirstEverClickOpens,False,legacy-not-retrospectively-reviewed
+LEG-8d065dec033b,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,92,XCTest,testTheOpenThatFollowsItsOwnCloseIsIgnored,False,legacy-not-retrospectively-reviewed
+LEG-ced77fb5e9ad,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,101,XCTest,testADeliberateReopenIsNotSwallowed,False,legacy-not-retrospectively-reviewed
+LEG-669306d7b2e0,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/SurfaceTeardownTests.swift,109,XCTest,testTheFirstEverClickOpens,False,legacy-not-retrospectively-reviewed
 LEG-f2b057270e7a,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/TabOrderPollTests.swift,6,XCTest,testConcurrentTicksAdmitOneRead,False,legacy-not-retrospectively-reviewed
 LEG-964d67f75e78,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/TabOrderPollTests.swift,18,XCTest,testFailureBackoffPreservesCountsAndRecoversOnce,False,legacy-not-retrospectively-reviewed
 LEG-3e213b31a30f,L1,macOS / Widgets Swift,macapp/Tests/GtmuxBarTests/TabOrderPollTests.swift,40,XCTest,testChangedFailureIsVisibleAndRetryIsCapped,False,legacy-not-retrospectively-reviewed
@@ -3473,6 +3473,10 @@ LEG-77f04b7fd089,L1,RN / mobile harness,mobileapp/src/diag/lines.test.ts,171,tes
 LEG-c3096f48dbc0,L1,RN / mobile harness,mobileapp/src/diag/lines.test.ts,186,test.each(),gateway errors describe the connection and recovery keeps failure counts (zh=%s),True,legacy-not-retrospectively-reviewed
 LEG-ca6b3a4df0d0,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,3,test,local report destinations remain data instead of launchable OS URLs,False,legacy-not-retrospectively-reviewed
 LEG-cca6fc710d75,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,13,test,download metadata must match conversation identity and a bounded content hash,False,legacy-not-retrospectively-reviewed
+MAP-34cde66a7a6a,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,5,reviewed-selector,parseFileURI resolves empty and localhost authorities and strips fragments before decoding,False,CPH-001
+MAP-8b88acd2d455,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,12,reviewed-selector,"parseFileURI rejects missing double-slash, non-localhost authorities, queries, UNC paths, and bad escapes",False,CPH-001
+MAP-150254dcab9a,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,31,reviewed-selector,documentReference strips fragments on file:// and local paths while keeping gtmux-file strict,False,CPH-001
+MAP-493e57a067f1,L1,RN / mobile harness,mobileapp/src/documents/references.test.ts,59,reviewed-selector,documentReference and displayWorkdir work when globalThis.URL has React Native Blob URL file:// bug,False,CPH-001
 LEG-bc4c3f256c44,L1,RN / mobile harness,mobileapp/src/i18n/index.test.ts,16,it,reads AppleLocale on iOS and maps zh* -> zh,False,legacy-not-retrospectively-reviewed
 LEG-d928ded3278e,L1,RN / mobile harness,mobileapp/src/i18n/index.test.ts,22,it,falls back to AppleLanguages[0] on iOS,False,legacy-not-retrospectively-reviewed
 LEG-5bceac37bc98,L1,RN / mobile harness,mobileapp/src/i18n/index.test.ts,28,it,maps any non-zh iOS locale to en,False,legacy-not-retrospectively-reviewed

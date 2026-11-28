@@ -94,13 +94,13 @@ final class NotificationManagerTests: XCTestCase {
         await start(subject)
         try enqueue("first")
         subject.reconcile(waitingPanes: [])
-        XCTAssertEqual(center.requests.count, 1)
+        await settle { center.requests.count == 1 }
         center.completions[0](nil)
         await Task.yield()
         // Same second, pane, kind and copy: a separate queue event is still a new turn.
         try enqueue("second")
         subject.reconcile(waitingPanes: [])
-        XCTAssertEqual(center.requests.count, 2)
+        await settle { center.requests.count == 2 }
         XCTAssertEqual(center.requests.map(\.identifier), ["gtmux-done-%7", "gtmux-done-%7"])
         XCTAssertNil(center.requests.last?.content.sound)
         subject.reconcile(waitingPanes: [])
@@ -112,11 +112,12 @@ final class NotificationManagerTests: XCTestCase {
         await start(subject)
         try enqueue("failed")
         subject.reconcile(waitingPanes: [])
+        await settle { center.requests.count == 1 }
         center.completions[0](NSError(domain: "fixture", code: 1))
         await Task.yield()
         try enqueue("next")
         subject.reconcile(waitingPanes: [])
-        XCTAssertEqual(center.requests.count, 2)
+        await settle { center.requests.count == 2 }
     }
 
     @MainActor func testResolvedWaitsWithdrawEvenWhenAcceptanceIsLate() async throws {
@@ -125,7 +126,7 @@ final class NotificationManagerTests: XCTestCase {
         subject.reconcile(waitingPanes: ["%7"])
         try enqueue("waiting", kind: "input")
         subject.reconcile(waitingPanes: ["%7"])
-        XCTAssertEqual(center.requests.count, 1)
+        await settle { center.requests.count == 1 }
         XCTAssertEqual(center.requests[0].content.interruptionLevel, .active)
         XCTAssertNotNil(center.requests[0].content.sound)
         subject.reconcile(waitingPanes: [])
@@ -137,7 +138,7 @@ final class NotificationManagerTests: XCTestCase {
         subject.reconcile(waitingPanes: ["%7"])
         try enqueue("new-question", kind: "input")
         subject.reconcile(waitingPanes: ["%7"])
-        XCTAssertEqual(center.requests.count, 2)
+        await settle { center.requests.count == 2 }
     }
 
     @MainActor func testHQAttentionUpdatesItsIdentityAndWithdrawsLateAcceptance() async throws {
@@ -148,10 +149,11 @@ final class NotificationManagerTests: XCTestCase {
         try enqueue("a-before", kind: "attention", attentionID: first, body: "Check the saved attempt.")
         try enqueue("b", kind: "attention", attentionID: second, body: "Answer the question.")
         subject.reconcile(waitingPanes: [])
-        XCTAssertEqual(center.requests.count, 2)
+        await settle { center.requests.count == 2 }
 
         try enqueue("a-after", kind: "attention", attentionID: first, body: "Answer the new question.")
         subject.reconcile(waitingPanes: [])
+        await settle { center.requests.count == 3 }
         let firstID = "gtmux-hq-attention-\(first)", secondID = "gtmux-hq-attention-\(second)"
         XCTAssertEqual(center.requests.map(\.identifier), [firstID, secondID, firstID])
         XCTAssertEqual(center.requests.last?.content.body, "Answer the new question.")
@@ -222,7 +224,7 @@ final class NotificationManagerTests: XCTestCase {
         XCTAssertFalse(subject.authorization.banners)
         try enqueue("allowed")
         subject.reconcile(waitingPanes: [])
-        XCTAssertEqual(center.requests.count, 1)
+        await settle { center.requests.count == 1 }
     }
 
     @MainActor func testPermissionRefreshKeepsTheQueueUntilTheFreshVerdict() async throws {
@@ -277,5 +279,35 @@ final class NotificationManagerTests: XCTestCase {
         XCTAssertEqual(center.requests.count, 1, "permission refresh must not resubmit an in-flight test")
         center.completions[0](nil)
         await settle { subject.testState == .accepted }
+    }
+
+    @MainActor func testInputNotificationResolvesOptionsOffMainActorBeforePosting() async throws {
+        let center = FixtureNotificationCenter()
+        let lock = NSLock()
+        var ranOffMain = false
+        let subject = NotificationManager(
+            center: center,
+            queueDirectory: queue,
+            enabled: { true },
+            options: { _ in
+                let offMain = !Thread.isMainThread
+                lock.lock()
+                ranOffMain = offMain
+                lock.unlock()
+                return [ReplyOption(n: 1, label: "Approve")]
+            },
+            bundleIdentifier: "com.example.gtmux.fixture",
+            now: { Date(timeIntervalSince1970: 1000) }
+        )
+        await start(subject)
+        subject.reconcile(waitingPanes: ["%7"])
+        try enqueue("input-off-main", kind: "input")
+        subject.reconcile(waitingPanes: ["%7"])
+        await settle { center.requests.count == 1 }
+        lock.lock()
+        let verifiedOffMain = ranOffMain
+        lock.unlock()
+        XCTAssertTrue(verifiedOffMain, "options CLI lookup must run off the main thread")
+        XCTAssertEqual(center.requests[0].content.categoryIdentifier, "GTMUX_REPLY_%7")
     }
 }

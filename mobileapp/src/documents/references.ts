@@ -5,16 +5,41 @@ export interface DocumentReference {
   path: string;
 }
 
+// RFC 8089 local file URI parser. Never use runtime new URL() for file: URIs:
+// React Native's Blob URL polyfill returns pathname="/" and hostname="" for file://.
+export function parseFileURI(raw: string): string | null {
+  if (!raw || raw.length > 4096 || /[\u0000-\u001f\u007f]/.test(raw) || !/^file:\/\//i.test(raw)) return null;
+  const rest = raw.slice(7);
+  const hash = rest.indexOf('#');
+  const body = hash >= 0 ? rest.slice(0, hash) : rest;
+  if (body.includes('?')) return null;
+  const slash = body.indexOf('/');
+  if (slash < 0) return null;
+  const authority = body.slice(0, slash);
+  if (authority !== '' && authority.toLowerCase() !== 'localhost') return null;
+  try {
+    const decoded = decodeURIComponent(body.slice(slash));
+    if (!decoded || decoded.startsWith('//') || /[\u0000-\u001f\u007f]/.test(decoded)) return null;
+    return decoded;
+  } catch {
+    return null;
+  }
+}
+
 export function documentReference(href: string): DocumentReference | null {
   if (!href || href.length > 4096 || /[\u0000-\u001f\u007f]/.test(href)) return null;
   if (/^gtmux-file:[a-f0-9]{32}$/.test(href)) return {reference: href, name: '', path: ''};
-  let path = href;
-  if (/^file:/i.test(path)) {
-    try {
-      const url = new URL(path);
-      if (url.hostname && url.hostname !== 'localhost' || url.search || url.hash) return null;
-      path = decodeURIComponent(url.pathname);
-    } catch { return null; }
+  let path: string;
+  if (/^file:/i.test(href)) {
+    const parsed = parseFileURI(href);
+    if (!parsed) return null;
+    path = parsed;
+  } else {
+    if (/^[a-z][a-z\d+.-]*:/i.test(href) || href.startsWith('//')) return null;
+    const hash = href.indexOf('#');
+    const rawPath = hash >= 0 ? href.slice(0, hash) : href;
+    if (!rawPath || rawPath.includes('?')) return null;
+    path = rawPath;
   }
   if (/^[a-z][a-z\d+.-]*:/i.test(path) || path.startsWith('//')) return null;
   const relativeFile = /\.(?:html?|md|markdown|pdf|png|jpe?g|txt|log|json|csv|go|rs|py|tsx?|js|css|sh|ya?ml)$/i.test(path);

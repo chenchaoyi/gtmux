@@ -57,6 +57,29 @@ final class PaneBrowserWindowTests: XCTestCase {
         XCTAssertTrue(c.window === w, "same window, so its size and position survive")
         c.window?.close()
     }
+
+    func testClosingPaneBrowserLeavesMenuPopoverVisibilityUntouched() {
+        let popoverVisibility = MenuVisibility.shared
+        popoverVisibility.setVisible(true)
+        defer { popoverVisibility.setVisible(false) }
+
+        let c = PaneBrowserController()
+        XCTAssertFalse(c.visibility.visible)
+        c.show(l10n: L10n.shared, radar: AgentStore())
+        XCTAssertTrue(c.visibility.visible)
+        XCTAssertTrue(popoverVisibility.visible)
+
+        guard let w = c.window else { return XCTFail("show() made no window") }
+        NotificationCenter.default.post(name: NSWindow.willCloseNotification, object: w)
+        XCTAssertFalse(c.visibility.visible, "the closed browser stops its own animations")
+        XCTAssertTrue(popoverVisibility.visible, "closing the browser must not freeze an open popover")
+
+        popoverVisibility.setVisible(false)
+        c.show(l10n: L10n.shared, radar: AgentStore())
+        XCTAssertTrue(c.visibility.visible)
+        XCTAssertFalse(popoverVisibility.visible, "opening the browser must not wake a closed popover")
+        c.window?.close()
+    }
 }
 
 /// Clicking the status item to CLOSE the panel must close it — not close and reopen it.

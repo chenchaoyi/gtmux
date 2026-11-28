@@ -8,7 +8,30 @@ import React
 @objc(LiveActivityModule)
 class LiveActivityModule: RCTEventEmitter {
 
+  private let lock = NSLock()
   private var lastToken: String?
+  private var tokenTask: Task<Void, Never>?
+
+  private func cachedToken() -> String {
+    lock.lock()
+    defer { lock.unlock() }
+    return lastToken ?? ""
+  }
+
+  private func setCachedToken(_ token: String?) {
+    lock.lock()
+    defer { lock.unlock() }
+    lastToken = token
+  }
+
+  private func replaceTokenTask(_ next: Task<Void, Never>?) {
+    lock.lock()
+    let prev = tokenTask
+    tokenTask = next
+    if next == nil { lastToken = nil }
+    lock.unlock()
+    prev?.cancel()
+  }
 
   // How far ahead each update marks the activity stale. iOS dims a stale card to the
   // widget's "offline" state, so a dead server (no more pushes refreshing this) stops
@@ -46,7 +69,7 @@ class LiveActivityModule: RCTEventEmitter {
   // for a JS listener that attaches after the token was first emitted.
   @objc(getPushToken:rejecter:)
   func getPushToken(_ resolve: @escaping RCTPromiseResolveBlock, rejecter _: @escaping RCTPromiseRejectBlock) {
-    resolve(lastToken ?? "")
+    resolve(cachedToken())
   }
 
   @objc(start:working:idle:title:session:items:server:resolver:rejecter:)
@@ -60,37 +83,41 @@ class LiveActivityModule: RCTEventEmitter {
       }
       let srv = server as String
       let st = state(waiting, working, idle, title, session, items)
-      // Reuse the running activity ONLY if it tracks the SAME server. After a
-      // server switch (end + start can race), a leftover activity for the OLD Mac
-      // must be replaced — its static server name can't be updated in place.
-      if let existing = Activity<GtmuxActivityAttributes>.activities.first {
-        if existing.attributes.server == srv {
-          observeToken(existing)
-          Task {
-            await applyUpdate(existing, st)
-            resolve(existing.id)
-          }
+      Task { [weak self] in
+        guard let self else { return }
+        // Reuse the running activity ONLY if it tracks the SAME server. After a
+        // server switch, await ending every stale activity before requesting a new one.
+        let running = Activity<GtmuxActivityAttributes>.activities
+        if let existing = running.first, existing.attributes.server == srv, running.count == 1 {
+          self.observeToken(existing)
+          await self.applyUpdate(existing, st)
+          resolve(existing.id)
           return
         }
-        Task { for act in Activity<GtmuxActivityAttributes>.activities { await act.end(dismissalPolicy: .immediate) } }
-      }
-      do {
-        let act: Activity<GtmuxActivityAttributes>
-        if #available(iOS 16.2, *) {
-          act = try Activity.request(
-            attributes: GtmuxActivityAttributes(server: srv),
-            content: ActivityContent(state: st, staleDate: Date().addingTimeInterval(staleWindow)),
-            pushType: .token)
-        } else {
-          act = try Activity.request(
-            attributes: GtmuxActivityAttributes(server: srv),
-            contentState: st,
-            pushType: .token)
+        if !running.isEmpty {
+          self.replaceTokenTask(nil)
+          for act in running {
+            await act.end(dismissalPolicy: .immediate)
+          }
         }
-        observeToken(act)
-        resolve(act.id)
-      } catch {
-        reject("start_failed", error.localizedDescription, error)
+        do {
+          let act: Activity<GtmuxActivityAttributes>
+          if #available(iOS 16.2, *) {
+            act = try Activity.request(
+              attributes: GtmuxActivityAttributes(server: srv),
+              content: ActivityContent(state: st, staleDate: Date().addingTimeInterval(self.staleWindow)),
+              pushType: .token)
+          } else {
+            act = try Activity.request(
+              attributes: GtmuxActivityAttributes(server: srv),
+              contentState: st,
+              pushType: .token)
+          }
+          self.observeToken(act)
+          resolve(act.id)
+        } catch {
+          reject("start_failed", error.localizedDescription, error)
+        }
       }
     } else {
       reject("unsupported", "iOS 16.1+ required", nil)
@@ -123,6 +150,7 @@ class LiveActivityModule: RCTEventEmitter {
   }
 
   @objc func end() {
+    replaceTokenTask(nil)
     if #available(iOS 16.1, *) {
       Task {
         for act in Activity<GtmuxActivityAttributes>.activities {
@@ -134,13 +162,15 @@ class LiveActivityModule: RCTEventEmitter {
 
   @available(iOS 16.1, *)
   private func observeToken(_ act: Activity<GtmuxActivityAttributes>) {
-    Task { [weak self] in
+    let task = Task { [weak self] in
       for await data in act.pushTokenUpdates {
+        guard !Task.isCancelled, let self else { break }
         let hex = data.map { String(format: "%02x", $0) }.joined()
-        self?.lastToken = hex
-        self?.sendEvent(withName: "onActivityPushToken", body: ["token": hex])
+        self.setCachedToken(hex)
+        self.sendEvent(withName: "onActivityPushToken", body: ["token": hex])
       }
     }
+    replaceTokenTask(task)
   }
 
   @available(iOS 16.1, *)

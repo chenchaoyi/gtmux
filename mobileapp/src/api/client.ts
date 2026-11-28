@@ -1014,8 +1014,8 @@ export class GtmuxClient {
   // awareness source. Transient failures throw so callers retain their snapshot.
   // serverMode: read the lid-closed keep-awake state (owner scope only; a guest
   // token gets 403 and sees nothing, by design — this is a machine-level control).
-  async serverMode(): Promise<ServerMode | null> {
-    const r = await tfetch(`${this.base}/api/awake`, {headers: this.h()});
+  async serverMode(signal?: AbortSignal): Promise<ServerMode | null> {
+    const r = await tfetch(`${this.base}/api/awake`, {headers: this.h(), signal});
     if (!r.ok) return null;
     return (await r.json().catch(() => null)) as ServerMode | null;
   }

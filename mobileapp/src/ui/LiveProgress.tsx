@@ -11,6 +11,7 @@ import {Chevron} from './Icons';
 import {TestIds} from '../constants/testIds';
 import {ChromeText} from './ChromeText';
 import {Lang} from '../i18n';
+import {serverNowSec} from '../api/clock';
 
 export const COLLAPSED_LIVE_ROW_HEIGHT = 48;
 export const LIVE_CHUNK_MAX_ROWS = 32;
@@ -63,10 +64,28 @@ function sameChunkRows(a: AnsiLine[], b: AnsiLine[]): boolean {
   return true;
 }
 
+function liveElapsedText(since: number | undefined, nowSec: number): string | undefined {
+  if (!since || since <= 0 || nowSec < since) return undefined;
+  const s = nowSec - since;
+  return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)}m${s % 60}s` : `${Math.floor(s / 3600)}h${Math.floor((s % 3600) / 60)}m`;
+}
+
+function workingStatusLabel(since: number | undefined, nowSec: number, hasOutput: boolean, lang: Lang): string {
+  const el = liveElapsedText(since, nowSec);
+  if (hasOutput) {
+    const base = lang === 'zh' ? '正在工作' : 'Working';
+    return el ? `${base} · ${el}` : base;
+  }
+  const base = lang === 'zh' ? '正在思考' : 'Thinking';
+  return el ? `${base}… ${el}` : `${base}…`;
+}
+
 /** The conversation owns disclosure state; this row can disappear between observations. */
-export function LiveProgress({avatar, label, lines, problem, fontSize, fontFamily, lang, open, onToggle, working = true, inspectAvailable = true, sourceLabel, heightLimit, savedHeight, onResize}: {
+export function LiveProgress({avatar, label, workingSince, hasLiveOutput, lines, problem, fontSize, fontFamily, lang, open, onToggle, working = true, inspectAvailable = true, sourceLabel, heightLimit, savedHeight, onResize}: {
   avatar: React.ReactNode;
-  label: string;
+  label?: string;
+  workingSince?: number;
+  hasLiveOutput?: boolean;
   lines: AnsiLine[];
   problem?: PaneReadProblem;
   fontSize: number;
@@ -83,6 +102,14 @@ export function LiveProgress({avatar, label, lines, problem, fontSize, fontFamil
 }) {
   const pal = useReadingPalette();
   const styles = React.useMemo(() => makeStyles(pal), [pal]);
+  const [nowSec, setNowSec] = React.useState(() => serverNowSec());
+  React.useEffect(() => {
+    if (!working || label !== undefined) return;
+    setNowSec(serverNowSec());
+    const id = setInterval(() => setNowSec(serverNowSec()), 1000);
+    return () => clearInterval(id);
+  }, [working, label]);
+  const resolvedLabel = label ?? workingStatusLabel(workingSince, nowSec, hasLiveOutput ?? lines.length > 0, lang);
   const [desiredHeight, setDesiredHeight] = React.useState(savedHeight ?? DEFAULT_LIVE_PREVIEW_HEIGHT);
   const [headerHeight, setHeaderHeight] = React.useState(HEADER_HEIGHT + (sourceLabel ? 22 : 0));
   const previewLimit = heightLimit === undefined ? DEFAULT_LIVE_PREVIEW_HEIGHT
@@ -123,7 +150,7 @@ export function LiveProgress({avatar, label, lines, problem, fontSize, fontFamil
   const action = lang === 'zh' ? (open ? '收起实时画面' : '展开实时画面') : (open ? 'Hide live view' : 'Show live view');
   const marker = <>
     {working && <BrandLoader size={14} neutral={pal.fg3} />}
-    <ChromeText style={styles.label} numberOfLines={1}>{label}</ChromeText>
+    <ChromeText style={styles.label} numberOfLines={1}>{resolvedLabel}</ChromeText>
   </>;
   const actionContent = (title: string) => <View style={[styles.action, !open && styles.disclosureAction]}>
     <ChromeText style={styles.actionText} numberOfLines={open ? 1 : undefined}>{title}</ChromeText>
@@ -132,7 +159,7 @@ export function LiveProgress({avatar, label, lines, problem, fontSize, fontFamil
   const toggleProps = {
     testID: TestIds.detail.chatLiveToggle,
     accessibilityRole: 'button' as const,
-    accessibilityLabel: `${label}, ${action}`,
+    accessibilityLabel: `${resolvedLabel}, ${action}`,
     accessibilityState: {expanded: open},
     onPress: onToggle,
     activeOpacity: 0.7,
@@ -208,7 +235,7 @@ const LiveChunk = React.memo(function LiveChunk({rows, fontSize, lineHeight, fon
 
 // The viewport can resize independently of the bounded capture. Keep the displayed
 // frame while browsing: a rotating buffer can otherwise replace the row under a finger.
-function LiveScrollback({lines, height, fontSize, lineHeight, fontFamily}: {
+const LiveScrollback = React.memo(function LiveScrollback({lines, height, fontSize, lineHeight, fontFamily}: {
   lines: AnsiLine[]; height: number; fontSize: number; lineHeight: number; fontFamily?: string;
 }) {
   const live = React.useMemo(() => lines.length > MOBILE_SCROLLBACK_LINES ? lines.slice(-MOBILE_SCROLLBACK_LINES) : lines, [lines]);
@@ -247,7 +274,7 @@ function LiveScrollback({lines, height, fontSize, lineHeight, fontFamily}: {
       </View>
     </ScrollView>
   </ScrollView>;
-}
+});
 
 const makeStyles = (pal: Palette) => StyleSheet.create({
   expanded: {backgroundColor: pal.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: readingColors(pal).dark ? '#24606B' : '#88C3CD', borderRadius: 12, padding: PANEL_PADDING, overflow: 'hidden'},

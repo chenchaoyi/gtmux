@@ -24,7 +24,7 @@
 // Two-generation eviction: each call keeps only the lines present in THIS frame, so
 // the map is bounded by the buffer size and scrolled-away lines don't leak.
 import {AnsiLine, AnsiOpts, parseAnsi} from './ansi';
-import {annotateUrls, wrapLine} from './term';
+import {MOBILE_SCROLLBACK_LINES, annotateUrls, normalizeGlyphs, wrapLine} from './term';
 
 export interface LineEntry {
   spans: AnsiLine; // parsed spans (identity-stable while the raw line is unchanged)
@@ -92,6 +92,20 @@ function linesThrough(
 // layout-less path (Android's paragraph renderer + the chat view's tests).
 export function parseLinesCached(raws: string[], opts: AnsiOpts, cache: LineCache): AnsiLine[] {
   return linesThrough(raws, opts, undefined, cache).lines;
+}
+
+/** Slice a raw pane capture to maxLines, normalize glyphs per line, and parse through LineCache. */
+export function parsePaneTextCached(
+  text: string,
+  cache: LineCache,
+  opts: AnsiOpts = {},
+  maxLines = MOBILE_SCROLLBACK_LINES,
+): AnsiLine[] {
+  if (!text) return [];
+  const split = text.split('\n');
+  const sliced = split.length > maxLines ? split.slice(-maxLines) : split;
+  const normalized = sliced.map(normalizeGlyphs);
+  return parseLinesCached(normalized, opts, cache);
 }
 
 // wrapLinesCached: parse AND hard-wrap raw lines through the cache (the iOS grid

@@ -17,6 +17,7 @@ import {NavigationContext} from '@react-navigation/native';
 import {
   Alert,
   Animated,
+  AppState,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -33,14 +34,15 @@ import {Agent, canReadConversation, nativeReadOnlyNotice, paneLabel, sameAgent, 
 import {Debug} from '../debug';
 import {isAuthError, SendPayload, TranscriptTurn} from '../api/client';
 import {useAgents} from '../state/AgentsContext';
-import {createReadTask, startReadPolling} from '../state/readTask';
+import {createReadTask, startReadPolling, useScreenFocused} from '../state/readTask';
 import {noteChatEchoReceipt, beginChatEcho, chatEchoRecorded, type PendingChatEcho} from './pendingChatEcho';
 import {useApp} from '../state/AppContext';
 import {StatusBadge} from '../ui/StatusBadge';
 import {AgentAvatar} from '../ui/AgentAvatar';
 import {statusLabel} from '../i18n';
 import {AnsiLine} from '../ui/ansi';
-import {paneLines} from '../ui/term';
+import {MOBILE_SCROLLBACK_LINES, hasPaneOutput} from '../ui/term';
+import {makeLineCache, parsePaneTextCached} from '../ui/termLineCache';
 import {Composer} from '../ui/Composer';
 import {ExitFullScreenIcon} from '../ui/Icons';
 import {ChatView} from '../ui/ChatView';
@@ -190,6 +192,7 @@ function PaneDetailView({
   // own conversation says nothing. Owner-only at the server, so a guest reads [] and the
   // row never appears.
   const isHQ = live.role === 'supervisor';
+  const focused = useScreenFocused();
   const [tasks, setTasks] = useState<BackgroundTask[]>([]);
   const [tasksOpen, setTasksOpen] = useState(false);
   useEffect(() => {
@@ -197,21 +200,14 @@ function PaneDetailView({
       setTasks([]);
       return;
     }
-    let alive = true;
-    const pull = () => {
-      client.tasks().then(t => {
-        if (alive) setTasks(t);
-      });
-    };
-    pull();
+    if (!focused) return;
     // 20s: the ledger moves when work is dispatched or a pane changes state, neither of
     // which is per-second. The pane poll already carries the conversation itself.
-    const id = setInterval(pull, 20_000);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, [isHQ, client]);
+    return startReadPolling(
+      createReadTask(signal => client.tasks(signal), setTasks),
+      20_000,
+    );
+  }, [isHQ, client, focused]);
   const taskTally = useMemo(() => tally(tasks), [tasks]);
   const [neighborH, setNeighborH] = useState(0); // measured once, for the collapse animation
   const [ctlH, setCtlH] = useState(0); // the controls row — folds with the rest (see below)
@@ -569,6 +565,13 @@ function PaneDetailView({
 
   useEffect(() => {
     setCaptureIdentity(undefined);
+  }, [client, agent.pane_id, paneReadIdentity]);
+
+  useEffect(() => {
+    if (!focused) {
+      paneRead.current = null;
+      return;
+    }
     const task = createReadTask(signal => client.pane(agent.pane_id, signal), r => {
       // Skip the update when the screen is unchanged so a re-render doesn't
       // clobber an in-progress text selection (React bails on an equal value).
@@ -598,7 +601,7 @@ function PaneDetailView({
     paneRead.current = task;
     const stop = startReadPolling(task, 1500);
     return () => {stop(); if (paneRead.current === task) paneRead.current = null;};
-  }, [client, agent.pane_id, paneReadIdentity]);
+  }, [client, agent.pane_id, paneReadIdentity, focused]);
 
   // The composer's callbacks keep their identity across renders, so the memoized
   // Composer skips the re-render every terminal refresh causes (see ComposerKey). They
@@ -629,13 +632,13 @@ function PaneDetailView({
   );
 
   const inputEnabled = !isNative && !(mode === 'chat' && historyReadOnly) && (!isGuest || inputPanes.includes(agent.pane_id));
-  const interaction = usePaneInteraction(client, agent.pane_id, !isNative && live.status === 'waiting', answeredAt);
+  const interaction = usePaneInteraction(client, agent.pane_id, focused && !isNative && live.status === 'waiting', answeredAt);
   const refreshInteraction = interaction.refresh;
   const interactionRefresh = useRef(refreshInteraction); interactionRefresh.current = refreshInteraction;
   const keyControl = useTerminalKeys(isNative ? undefined : `${client.base}|${agent.pane_id}`, inputEnabled, onLoadKeys, onSendKey);
   const showQuestionBanner = !fullscreen && !isNative && !!keyControl.cap?.actions.length;
   const questionInset = showQuestionBanner ? questionBannerH : 0;
-  useEffect(() => { refreshInteraction(); }, [mode, refreshInteraction]);
+  useEffect(() => { if (focused) refreshInteraction(); }, [mode, refreshInteraction, focused]);
 
   // Fetch the transcript on mount + when the status flips or a prompt is sent (a turn
   // likely completed) — AND on a slow poll for as long as the chat is on screen.
@@ -664,6 +667,12 @@ function PaneDetailView({
   const turnsAtRef = useRef(0);
   const pollTranscript = mode === 'chat' || traceOpen;
   useEffect(() => {
+    if (!focused) {
+      loadTurnsRef.current = () => {};
+      receiptRefresh.current = () => {};
+      retryTurnsRef.current = () => {};
+      return;
+    }
     const task = createReadTask(
       signal => {
         turnsAtRef.current = Date.now();
@@ -688,15 +697,23 @@ function PaneDetailView({
     receiptRefresh.current = () => {task.invalidate(); etagRef.current = undefined; task.run();};
     retryTurnsRef.current = () => {setReload({identity: chatIdentity, busy: true, attempted: true}); task.invalidate(); etagRef.current = undefined; task.run();};
     if (pollTranscript) return startReadPolling(task, live.status === 'working' ? CHAT_ACTIVE_POLL_MS : CHAT_IDLE_POLL_MS);
-    task.run();
+    if (AppState.currentState !== 'background' && AppState.currentState !== 'inactive') task.run();
     return task.dispose;
-  }, [client, agent.pane_id, chatIdentity, live.status, pendingPrompt, pollTranscript]);
+  }, [client, agent.pane_id, chatIdentity, live.status, pendingPrompt, pollTranscript, focused]);
 
-  // Only the chat view reads these, for its live card, and it is mounted only once chat
-  // was opened. Parsing the whole capture (screen plus 2000 lines of scrollback) on every
-  // terminal change for a view that does not exist was work the composer's keystrokes
-  // waited behind (2026-10-05).
-  const lines: AnsiLine[] = useMemo(() => (seenChat && captureIdentity === paneReadIdentity ? paneLines(text) : NO_LINES), [text, seenChat, captureIdentity, paneReadIdentity]);
+  // Only the chat view reads these, for its live card, and only when the card is open or
+  // actively showing working output. Idle collapsed chat passes a cheap boolean instead.
+  const [chatLiveOpen, setChatLiveOpen] = useState(false);
+  const chatLineCache = useRef(makeLineCache());
+  const hasLiveOutput = useMemo(
+    () => captureIdentity === paneReadIdentity && hasPaneOutput(text),
+    [text, captureIdentity, paneReadIdentity],
+  );
+  const needChatLines = seenChat && mode === 'chat' && captureIdentity === paneReadIdentity && (live.status === 'working' || chatLiveOpen);
+  const lines: AnsiLine[] = useMemo(
+    () => (needChatLines ? parsePaneTextCached(text, chatLineCache.current, {}, MOBILE_SCROLLBACK_LINES) : NO_LINES),
+    [needChatLines, text],
+  );
 
   // Memoize the two HEAVY views by their real data deps so a mode switch (which
   // changes only `mode`/`switching`, not these deps) reuses the SAME element refs
@@ -705,9 +722,9 @@ function PaneDetailView({
   // trees in JS even when nothing changed — that was the "停顿 on unchanging content".
   const chatEl = useMemo(
     () => (
-      <ChatView liveSource={paneReadIdentity} liveBindingPending={liveBindingPending} liveProblem={liveProblem} readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onOpenTerminal={isNative ? undefined : () => pickModeRef.current('terminal')} onRetry={() => retryTurnsRef.current()} pendingPrompt={visiblePendingPrompt} pendingEcho={pendingEcho.current ?? undefined} retrying={retrying} retryFailed={retryFailed} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
+      <ChatView liveSource={paneReadIdentity} liveBindingPending={liveBindingPending} liveProblem={liveProblem} readOnlyHistory={historyReadOnly} client={isGuest ? undefined : client} agent={live} lines={lines} hasLiveOutput={hasLiveOutput} onLiveOpenChange={setChatLiveOpen} status={live.status} fontSize={fontSize} pal={pal} lang={lang} turns={turns} droppedTurns={droppedTurns} sessionReset={sessionReset} workingSince={live.since} loading={!chatLoaded} failed={chatFailed} associationFailed={chatAssociationFailed} onOpenTerminal={isNative ? undefined : () => pickModeRef.current('terminal')} onRetry={() => retryTurnsRef.current()} pendingPrompt={visiblePendingPrompt} pendingEcho={pendingEcho.current ?? undefined} retrying={retrying} retryFailed={retryFailed} pendingDelivered={pendingDelivered} pendingDelivery={pendingDelivery} fontPref={fontPref} onLiveEdge={chatEdge} topPad={chromeH + questionInset} controlsTop={fullscreen ? insets.top : chromeH + questionInset} controlsShift={fullscreen ? undefined : collapse.interpolate({inputRange: [0, 1], outputRange: [0, -chromeH]})} maxWidth={isWide ? READING_WIDTH : undefined} />
     ),
-    [client, isGuest, isNative, live, liveProblem, liveBindingPending, paneReadIdentity, lines, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, visiblePendingPrompt, retrying, retryFailed, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
+    [client, isGuest, isNative, live, liveProblem, liveBindingPending, paneReadIdentity, lines, hasLiveOutput, fontSize, pal, lang, turns, droppedTurns, sessionReset, chatLoaded, chatFailed, chatAssociationFailed, historyReadOnly, visiblePendingPrompt, retrying, retryFailed, pendingDelivered, pendingDelivery, fontPref, chatEdge, chromeH, questionInset, fullscreen, insets.top, isWide, collapse],
   );
   // Codex pins the prompt of the turn on screen to the top row, cut to the pane's width
   // (ui/codexPinned). When that row is recognised, the full prompt from the conversation
@@ -727,10 +744,11 @@ function PaneDetailView({
   // fetch. The terminal does not poll the log, so ask for it here — at most once per
   // CODEX_PIN_REFRESH_MS, and only while such a row is showing. The request is conditional
   // on the last ETag, so an unchanged log costs a 304.
-  const unmatchedCut = mode === 'terminal' && !fullscreen && !pinned && hasCodexCutRow(text, live.agent, paneCols);
+  const unmatchedCut = focused && mode === 'terminal' && !fullscreen && !pinned && hasCodexCutRow(text, live.agent, paneCols);
   useEffect(() => {
     if (!unmatchedCut) return;
     const tick = () => {
+      if (AppState.currentState === 'background' || AppState.currentState === 'inactive') return;
       if (Date.now() - turnsAtRef.current >= CODEX_PIN_REFRESH_MS) loadTurnsRef.current();
     };
     tick();
@@ -752,24 +770,18 @@ function PaneDetailView({
   // Load the sibling panes in this pane's session, refreshed on a slow cadence
   // (siblings change on a human timescale). Demo mode has no server → skip.
   useEffect(() => {
-    if (demo) return;
-    let alive = true;
-    const load = () =>
-      client
-        .panes()
-        .then(rows => {
-          if (!alive) return;
+    if (demo || !focused) return;
+    return startReadPolling(
+      createReadTask(
+        signal => client.panes(signal),
+        rows => {
           const next = rows.filter(r => r.session === live.session && r.pane_id !== live.pane_id);
-          setNeighbors(prev => (sameJSON(prev, next) ? prev : next)); // as the options poll
-        })
-        .catch(() => {});
-    load();
-    const id = setInterval(load, 5000);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, [client, demo, live.session, live.pane_id]);
+          setNeighbors(prev => (sameJSON(prev, next) ? prev : next));
+        },
+      ),
+      5000,
+    );
+  }, [client, demo, live.session, live.pane_id, focused]);
 
   // Full-screen TERMINAL keeps the top safe-area inset (the exit pill must clear
   // the notch), but the inset strip must be painted the TERMINAL's dark, not the
@@ -1134,9 +1146,9 @@ function PaneDetailView({
           pal={pal}
           lang={lang}
           demo={demo}
-          key={draftKeyFor(client.base, live.pane_id || agent.pane_id, live.session_id || live.observed_conversation?.session_id)}
-            draftKey={draftKeyFor(client.base, live.pane_id || agent.pane_id, live.session_id || live.observed_conversation?.session_id)}
-            paneId={live.pane_id || agent.pane_id}
+          key={draftKeyFor(client.base, live.pane_id || agent.pane_id)}
+          draftKey={draftKeyFor(client.base, live.pane_id || agent.pane_id, live.session_id || live.observed_conversation?.session_id)}
+          paneId={live.pane_id || agent.pane_id}
           historyScope={historyScope(live)}
           enabled={inputEnabled}
           draftOnly={mode === 'chat' && historyReadOnly}

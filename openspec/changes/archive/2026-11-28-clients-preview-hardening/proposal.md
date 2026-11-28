@@ -1,0 +1,23 @@
+# Proposal: Client Preview URI Parsing, Polling Cadence, and Surface Hardening
+
+## Why
+
+1. **Broken `file://` and `#L` anchor links on React Native and Web**: Coding agents emit Markdown file links as `[file.go](file:///abs/path/file.go#L10-L20)` or `[file.go](/abs/path/file.go#L10)`. React Native's `Libraries/Blob/URL.js` polyfill returns `pathname = "/"` and `hostname = ""` for every `file:` URL, causing `documentReference` and `displayWorkdir` to fail on real iOS/Android devices, while `#L` fragments were rejected on `file:` URLs and left attached to local paths.
+2. **Client polling storms and SSE reconnect churn**: Mobile `HQConsoleView` polled heavy endpoints (`usage`, `hqBoard`, `hqKnowledge`, `digest`, `hqEvents`) every 3s even when unfocused or in `workspaceMode`; `HQWorkspaceView` kept polling every 10s behind the console; `DetailScreen` and `RadarPanel` used raw `setInterval`s without navigation focus gating; `AgentsContext` left errored `EventSource` instances polling during backoff, retried confirmed `401`/`403` errors forever, and tore down SSE on transient iOS `inactive` states; and Web Workbench Terminal tiles polled when `WB.on` was false or `document.hidden` was true without `ETag` caching on chat transcripts.
+3. **Render, draft, main-thread, and native resource hardening**: `ChatView`'s 1s `nowSec` clock re-rendered all historical `MarkdownView`/`ToolSteps` every second, `<Composer>` remounted and lost unsent text/attachments when `session_id` resolved, `HQScreen` control keys clobbered held failed text prompts, macOS `Gtmux.app` ran blocking CLI/image work on `@MainActor` and shared a single `MenuVisibility` boolean across independent surfaces, and iOS/Android native modules (`HQMemory`, `NotificationService`, `LiveActivityModule`, `DocumentActivity`) needed parity and lifecycle guards.
+
+## What Changes
+
+- Replace `new URL(...)` `file:` handling in `mobileapp/src/documents/references.ts` and `mobileapp/src/ui/toolPresentation.ts` with pure RFC 8089 `file://` parsing and `#fragment` stripping across `file:` and local paths, regenerate `internal/server/web/documents.js` and `trace-model.js`, and strip fragments in iOS `DocumentPreviewController.openMarkdownLink`.
+- Decouple `HQConsoleView` polling (`30s` resources, `6s` activity skipped in `workspaceMode`), pause `HQWorkspaceView` periodic polling off-overview, gate `HQScreen`/`DetailScreen`/`RadarPanel` polling on screen focus and `AppState === 'active'` via `startReadPolling`, and harden `AgentsContext` SSE teardown, `401`/`403` retry cap, `inactive` retention, memoization, and guest-scoped `share()` re-polling.
+- Isolate `ChatView`'s 1s working clock inside `LiveProgress`, memoize `MarkdownView`, `ToolSteps`, and `readingColors`, gate/cache `ChatView` live terminal line parsing, keep `<Composer>` mounted across `session_id` resolution while migrating drafts and flushing on unmount/send, and protect held failed text prompts from control-key clobbering.
+- Gate Web `app.js` pollers on `WB.on` and `!document.hidden` with `visibilitychange` refresh and per-pane/per-tile `ETag` (`If-None-Match` / `304`) transcript caching.
+- Move macOS `NotificationManager` options/icon work and `Preferences.refreshTabAlert` off-main, guard `PaneBrowserStore.refresh` with `AgentRefreshGate` + `capturePoll`, pause timers across display sleep and gate client/share refreshes on `popover.isShown`, isolate per-surface `SurfaceVisibility`, harden iOS `HQMemory`, `NotificationService`, and `LiveActivityModule` plus Android `DocumentActivity` PDF rendering, and stamp mobile release `1.0.208`.
+
+## Surfaces
+
+- **terminal**: Unchanged CLI behavior; Go core continues serving conditional `ETag` transcripts and local artifact resolution.
+- **menubar**: Off-main CLI/attachment work in `NotificationManager` and `Preferences`, single-flight `PaneBrowserStore` refresh, sleep-aware timers, popover-gated viewer/share polling, and independent `SurfaceVisibility` between popover and pane browser.
+- **phone**: Fixed `file://` and `#L` document links and `displayWorkdir` on RN runtime, reduced polling and SSE churn, smoother `ChatView` working ticks, retained `<Composer>` drafts/attachments across session binding, hardened iOS `HQMemory`/`NotificationService`/`LiveActivityModule` and Android `DocumentActivity`, stamped `1.0.208`.
+- **iPad**: Shares all `mobileapp/` fixes, regular-layout `HQConsoleView` memoization, focus/foreground polling gates, and `1.0.208` release metadata.
+- **Web**: Regenerated `documents.js` and `trace-model.js` with RFC 8089 `file://` and `#fragment` support, hidden-workbench/background-tab polling gates, `visibilitychange` recovery, and `ETag` `304` chat transcript short-circuiting.

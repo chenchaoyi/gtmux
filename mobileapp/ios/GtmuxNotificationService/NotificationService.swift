@@ -22,6 +22,7 @@ import UserNotifications
 
 class NotificationService: UNNotificationServiceExtension {
     private var contentHandler: ((UNNotificationContent) -> Void)?
+    private var bestAttemptContent: UNMutableNotificationContent?
 
     override func didReceive(_ request: UNNotificationRequest,
                              withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
@@ -30,6 +31,7 @@ class NotificationService: UNNotificationServiceExtension {
             contentHandler(request.content)
             return
         }
+        self.bestAttemptContent = content
         let kind = content.userInfo["kind"] as? String ?? ""
         if let url = Self.badgeImage(kind: kind),
            // Clip the THUMBNAIL to the strip's leading square — the glyph — so the
@@ -44,7 +46,9 @@ class NotificationService: UNNotificationServiceExtension {
     }
 
     override func serviceExtensionTimeWillExpire() {
-        contentHandler?(UNMutableNotificationContent())
+        if let contentHandler, let bestAttemptContent {
+            contentHandler(bestAttemptContent)
+        }
     }
 
     /// Render the status badge to a temp PNG: a dark rounded app-icon tile with the
@@ -92,8 +96,13 @@ class NotificationService: UNNotificationServiceExtension {
             }
         }
         guard let png = img.pngData() else { return nil }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("gtmux-badge-\(waiting ? "waiting" : "done").png")
-        try? png.write(to: url)
-        return url
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("gtmux-badge-\(waiting ? "waiting" : "done")-\(UUID().uuidString).png")
+        do {
+            try png.write(to: url, options: .atomic)
+            return url
+        } catch {
+            return nil
+        }
     }
 }

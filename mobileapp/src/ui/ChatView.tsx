@@ -31,7 +31,6 @@ import {JumpToBottom} from './JumpToBottom';
 import {SenderAvatar} from './SenderAvatar';
 import {TimeSeparator} from './TimeSeparator';
 import {UserAvatar} from './UserAvatar';
-import {serverNowSec} from '../api/clock';
 import {MarkdownView} from './MarkdownView';
 import {separatorLabels} from './time';
 import {nativeFontFamily} from './term';
@@ -104,17 +103,9 @@ interface Props {
   // Font-family config (same value the terminal uses), so chat text matches the
   // terminal font — resolved via the shared nativeFontFamily().
   fontPref?: string;
-  // When the agent started its current turn (the radar row's `since`). Used only to
-  // show how long it has been thinking — a silent wait is indistinguishable from a
-  // hung one, so the view always says which it is.
   workingSince?: number;
-  /**
-   * How far the tail sits below the viewport, in points (0 = pinned to the live edge).
-   * The host folds its chrome from this. It is a DISTANCE and not a boolean because the
-   * threshold that keeps the chrome stable depends on how tall the chrome is, which only
-   * the host knows — see ui/liveEdge.
-   */
-  /** How far from the live tail, and whether a gesture is still running — see NativeTerm. */
+  hasLiveOutput?: boolean;
+  onLiveOpenChange?: (open: boolean) => void;
   onLiveEdge?: (gap: number) => void;
   /** The host installs a "move the offset by dy" function here — see NativeTerm's copy. */
   /** Constant top padding, the height of the host's floating chrome. */
@@ -179,9 +170,9 @@ export function liveLabel(since: number | undefined, nowSec: number, lang: Lang)
   return el ? `${base} · ${el}` : base;
 }
 
-export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, liveProblem, liveSource, liveBindingPending = false, onRetry, onOpenTerminal, retrying = false, retryFailed = false, pendingEcho, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
+export function ChatView({client, readOnly = false, agent, lines, status, fontSize, pal, lang, turns: recentTurns, droppedTurns = 0, sessionReset, earlierAvailable, onLoadEarlier, acts, actsSince = 0, onOpenAct, loading, failed = false, associationFailed = false, readOnlyHistory = false, liveProblem, liveSource, liveBindingPending = false, onRetry, onOpenTerminal, retrying = false, retryFailed = false, pendingEcho, pendingPrompt, pendingDelivered = false, pendingDelivery, fontPref, workingSince, hasLiveOutput, onLiveOpenChange, onLiveEdge, topPad = 0, controlsTop, controlsShift, maxWidth}: Props) {
   const styles = useMemo(() => makeStyles(pal), [pal]);
-  const {markdown: MD_COLORS, userMarkdown: USER_MD_COLORS} = readingColors(pal);
+  const {markdown: MD_COLORS, userMarkdown: USER_MD_COLORS} = useMemo(() => readingColors(pal), [pal]);
   const CHAT_FG = pal.fg, CHAT_FG_DIM = pal.fg2;
   // Radar timestamps and temporary status changes are observations, not a new reader.
   const conversationReadOnly = readOnly || readOnlyHistory;
@@ -192,6 +183,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const [liveDisclosure, setLiveDisclosure] = useState({scope: liveScope, open: false});
   const liveOpen = liveDisclosure.scope === liveScope && liveDisclosure.open;
   React.useEffect(() => {setLiveDisclosure(prev => prev.scope === liveScope ? prev : {scope: liveScope, open: false});}, [liveScope]);
+  React.useEffect(() => {onLiveOpenChange?.(liveOpen);}, [liveOpen, onLiveOpenChange]);
   const liveSize = React.useRef<{scope: string; height?: number}>({scope: liveScope});
   if (liveSize.current.scope !== liveScope) liveSize.current = {scope: liveScope};
   const [viewportHeight, setViewportHeight] = useState<number>();
@@ -200,6 +192,16 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const avatar = (content: React.ReactNode, target: ProfileTarget, placement?: 'incoming' | 'outgoing') => <TouchableOpacity testID="participant-avatar" accessibilityRole="button" accessibilityLabel={lang === 'zh' ? '查看参与者资料' : 'View participant profile'} style={[styles.avatarButton, placement === 'outgoing' && styles.messageAvatar, placement === 'incoming' && styles.incomingAvatar]} onPress={() => setProfileTarget(target)}>{content}</TouchableOpacity>;
   const fontFamily = nativeFontFamily(fontPref, Platform.OS); // match the terminal font (shared resolver)
   const [expanded, setExpanded] = React.useState<Record<string, boolean>>({}); // per step-group
+  const stepToggles = React.useRef<{scope: string; map: Map<string, () => void>}>({scope: chatScope, map: new Map()});
+  if (stepToggles.current.scope !== chatScope) stepToggles.current = {scope: chatScope, map: new Map()};
+  const stepToggleFor = (key: string) => {
+    let fn = stepToggles.current.map.get(key);
+    if (!fn) {
+      fn = () => setExpanded(e => ({...e, [key]: !stepsOpen(e[key])}));
+      stepToggles.current.map.set(key, fn);
+    }
+    return fn;
+  };
   const scrollRef = React.useRef<ScrollView>(null);
   const offRef = React.useRef(0);
   const contentHeight = React.useRef(0);
@@ -326,17 +328,6 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
   const [windowSize, setWindowSize] = React.useState(CHAT_WINDOW);
   const [historyEnd, setHistoryEnd] = React.useState<{scope: string; id: string} | undefined>();
   React.useEffect(() => {historyOperation.current++; prependAnchor.current = undefined; setHistoryEnd(undefined); setWindowSize(CHAT_WINDOW);}, [client, chatScope, agent.agent]);
-  // A 1s heartbeat WHILE WORKING only, so the "thinking" elapsed label moves. Idle
-  // costs nothing: the interval isn't created unless a turn is actually running.
-  // The SERVER's clock, not the phone's: `workingSince` is a timestamp the Mac produced,
-  // and subtracting it from a phone that runs fast turns a twelve-second turn into
-  // "Thinking… 3m12s". See api/clock.
-  const [nowSec, setNowSec] = React.useState(() => serverNowSec());
-  React.useEffect(() => {
-    if (status !== 'working') return;
-    const id = setInterval(() => setNowSec(serverNowSec()), 1000);
-    return () => clearInterval(id);
-  }, [status]);
   const [turnOpen, setTurnOpen] = React.useState<Record<string, boolean>>({});
   // A very long USER prompt (e.g. a pasted context dump) is auto-collapsed to a few
   // lines with a tap-to-expand toggle, so it doesn't bury the conversation. A prompt
@@ -456,7 +447,9 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
     heightLimit={liveHeightLimit} savedHeight={liveSize.current.height}
     onResize={height => {if (liveSize.current.scope === liveScope) liveSize.current.height = height;}}
     avatar={avatar(<AgentAvatar agent={agent} size={26} radius={7} bg={pal.surface} fg={pal.fg2} />, {kind: 'agent', agent})}
-    label={status !== 'working' ? statusLabel(status, lang) : liveShown.length ? liveLabel(workingSince, nowSec, lang) : thinkingLabel(workingSince, nowSec, lang)}
+    label={status !== 'working' ? statusLabel(status, lang) : undefined}
+    workingSince={workingSince}
+    hasLiveOutput={hasLiveOutput ?? liveShown.length > 0}
     inspectAvailable={inspectAvailable} working={status === 'working'}
     sourceLabel={readOnlyHistory ? (lang === 'zh' ? `当前 pane ${agent.pane_id} · 历史对话关联待确认` : `Current pane ${agent.pane_id} · History association unconfirmed`) : undefined}
     problem={liveProblem} lines={liveShown} fontSize={fontSize} fontFamily={fontFamily} lang={lang} />;
@@ -735,7 +728,7 @@ export function ChatView({client, readOnly = false, agent, lines, status, fontSi
                     const stepsShown = stepsOpen(expanded[key]);
                     return (
                     <ToolSteps client={client} session={t.session_id || agent.session_id} home={agent.home_id} steps={seg.steps} open={stepsShown} lang={lang} fontSize={fontSize}
-                      onToggle={() => setExpanded(e => ({...e, [key]: !stepsShown}))} />
+                      onToggle={stepToggleFor(key)} />
                     );
                   })()}
                 </View>

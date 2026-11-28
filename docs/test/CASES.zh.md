@@ -2,12 +2,12 @@
 
 [English](CASES.md) · [测试体系](TEST-PLAN.zh.md) · [完整 CSV](CASES.csv)
 
-目录覆盖 1534 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
+目录覆盖 1537 份测试/辅助源码。CSV 每行列出稳定 ID、层次、技术栈、源码/行、原始测试描述、动态标记与设计来源。下表链接分别是各层完整列表，可筛选或导入表格；英文测试名保持源码原文，便于定位。
 
 | 层次 | 静态目录条目 | 完整用例列表 |
 | --- | --- | --- |
-| L1 · 单元/纯逻辑 | 3836 | [L1.csv](cases/L1.csv) |
-| L2 · 组件/契约 | 2808 | [L2.csv](cases/L2.csv) |
+| L1 · 单元/纯逻辑 | 3840 | [L1.csv](cases/L1.csv) |
+| L2 · 组件/契约 | 2819 | [L2.csv](cases/L2.csv) |
 | L3 · 运行时集成 | 174 | [L3.csv](cases/L3.csv) |
 | L4 · 应用操作流程 | 152 | [L4.csv](cases/L4.csv) |
 | M · 人工/设备 | 13 | [M.csv](cases/M.csv) |
@@ -119,6 +119,13 @@
 | CIS-002 | CLI/core Go and embedded HQ playbook select ['cross-build', 'test']; relay Go adds 'relay-worker'; artifact Go adds 'menubar' and 'web'; server Go adds 'menubar', 'mobile', and 'web'; api/contract.md, tests/contracts/, assets/, and go.mod remain full. |
 | CIS-003 | Renaming a Go file into docs/ retains Go checks rather than collapsing to docs-only; renaming api/contract.md into docs/ remains full; symlink changes raise ValueError. |
 | CIS-004 | Shared/uncertain paths select all CI jobs and any non-success required job fails ci.verdict. |
+| CPH-001 | Valid local file URIs and local paths resolve to decoded fragment-free paths even under the broken RN URL polyfill; remote authorities, file queries, non-file schemes, and fragmented gtmux-file IDs return null or remain literal in displayWorkdir. |
+| CPH-002 | SHA256 matches references.ts; anchored file:// and local paths return clean decoded paths and filenames while remote hosts, queries, javascript: URLs, and fragmented gtmux-file IDs return null. |
+| CPH-003 | HQ polls usage/board/knowledge at 30s and digest/events at 6s (skipping digest/events in workspaceMode), HQWorkspaceView pauses periodic polling on console and refreshes on return to overview, unfocused screens pause polling and resume on focus, and control keys never clear held failed text prompts. |
+| CPH-004 | onError immediately unsubscribes the broken EventSource before backoff, consecutive >=2 401/403 SSE failures stop further retry timers, inactive keeps SSE open while background closes and active reopens once, and unchanged share capabilities do not trigger redundant context re-renders. |
+| CPH-005 | LiveProgress updates elapsed seconds while historical MarkdownView and ToolSteps skip re-rendering; Composer keeps typed text and attachments without remounting when session_id resolves, migrates stored drafts, flushes dirty drafts on unmount, and deletes stored drafts immediately on send. |
+| CPH-006 | Hidden or inactive-workbench polls issue zero network requests, returning to visible immediately refreshes the active surface, and second chat polls send If-None-Match and skip JSON parsing and DOM redraws on 304. |
+| CPH-007 | Closing PaneBrowserController turns off only its own SurfaceVisibility without mutating MenuVisibility.shared, and NotificationManager calls options(pane) off the main thread before registering the reply category and adding the notification on the main thread. |
 | HXF-001 | Only the exact original backend observation tied to a positively gone verified frontend matches; every incomplete/changed/unknown case returns false; later generation wins even within one second; no observation, history or binding is removed or rewritten |
 | HXF-002 | Only completed exact closed-backend observations become idle/history; unfollowed history is absent, explicit follow remains idle and status-only without new input/read/knowledge authority. New starts/submits/waits, different turns/homes, changed generations and uncertain evidence remain visible with their existing states. Observation/history/consent bytes persist unchanged; backend role is evaluated once per process in a gather. The exact old radar code fails the new historical-worker visibility assertion while preservation controls pass |
 | HXF-003 | ESRCH or a positively later nonfuture process birth proves only the old frontend is gone; every unknown/original/overlapping/future case remains conservative, and a newly written observation wins; no native state is deleted or rewritten. The previous ESRCH-only implementation fails the replacement-incarnation case |

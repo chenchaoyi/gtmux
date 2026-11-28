@@ -1,5 +1,5 @@
-// Generated from shared App trace analysis and presentation; SHA256 d90c8208ce62b70aca2751bc146d3ab68debfc6034d25941b2c2efc647fc31dd
-// Body SHA256 363d2e1465fa3a1624ae777bc687a4f4ebf4b43791aef1c256e795c1d0365cd9
+// Generated from shared App trace analysis and presentation; SHA256 cd660b4183739ac20ddcebdaf48a0d54c237592d61773a3dea8547afd748eb4f
+// Body SHA256 ca05d685b9639ceff6d17f8c97c145e3aa0410ce56d50ae1028d85f01c8c70a8
 (function(root){var modules={"model":function(exports,require){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -1057,12 +1057,24 @@ function readableToolOutput(source, terminal) {
     return text;
 }
 function displayWorkdir(value) {
-    try {
-        const uri = new URL(value);
-        if (uri.protocol === 'file:' && (!uri.hostname || uri.hostname === 'localhost'))
-            return decodeURIComponent(uri.pathname);
+    // Parse RFC 8089 local file URIs directly; React Native's URL polyfill returns pathname="/" for file://.
+    if (value && value.length <= 4096 && !/[\u0000-\u001f\u007f]/.test(value) && /^file:\/\//i.test(value)) {
+        const rest = value.slice(7);
+        const hash = rest.indexOf('#');
+        const body = hash >= 0 ? rest.slice(0, hash) : rest;
+        const slash = body.indexOf('/');
+        if (!body.includes('?') && slash >= 0) {
+            const authority = body.slice(0, slash);
+            if (authority === '' || authority.toLowerCase() === 'localhost') {
+                try {
+                    const decoded = decodeURIComponent(body.slice(slash));
+                    if (decoded && !decoded.startsWith('//') && !/[\u0000-\u001f\u007f]/.test(decoded))
+                        return decoded;
+                }
+                catch { /* Unknown or malformed text remains the recorded value. */ }
+            }
+        }
     }
-    catch { /* Unknown or malformed text remains the recorded value. */ }
     return value;
 }
 

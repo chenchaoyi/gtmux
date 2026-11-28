@@ -35,11 +35,17 @@ export function useSendRecovery(scope: object) {
       if (previous.retrying) return false;
       // Ref first: two captured presses in the same React frame start one retry.
       put({...previous, retrying: true});
+    } else if (!payload.text && payload.key && previous?.scope === scope && !!previous.payload.text) {
+      // Control keys never discard an unsent failed text prompt waiting for recovery.
+      return true;
     } else put(null);
     return true;
   }, [isCurrent, scope, put]);
   const record = useCallback((payload: SendPayload, reason: string, status?: number, code?: SendFailureCode) => {
     if (!isCurrent()) return false;
+    if (!payload.text && payload.key && held.current?.scope === scope && !!held.current.payload.text && held.current.payload.send_id !== payload.send_id) {
+      return false;
+    }
     const restored = !!payload.text && (status === 401 || status === 403);
     if (restored) setRestoration({scope, text: payload.text!, at: ++restoreSequence.current});
     put({scope, payload, reason, status, code, retrying: false, restored});

@@ -325,13 +325,22 @@ final class DocumentPreviewController: UIViewController, QLPreviewControllerData
     decisionHandler(ownDocument && navigationAction.targetFrame?.isMainFrame == true && !navigationAction.shouldPerformDownload ? .allow : .cancel)
   }
   private func openMarkdownLink(_ target: String) {
-    guard let file, let url = URL(string: target) else { return }
-    if ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
-      present(SFSafariViewController(url: url), animated: true); return
+    guard let file else { return }
+    if let url = URL(string: target) {
+      let scheme = url.scheme?.lowercased() ?? ""
+      if ["http", "https"].contains(scheme) {
+        present(SFSafariViewController(url: url), animated: true); return
+      }
+      if scheme == "mailto" { UIApplication.shared.open(url); return }
     }
-    if url.scheme?.lowercased() == "mailto" { UIApplication.shared.open(url); return }
-    var related = request; related["reference"] = target; related["name"] = url.lastPathComponent
-    related["parent_id"] = target.hasPrefix("gtmux-file:") ? nil : file.id
+    let clean = target.hasPrefix("gtmux-file:") ? target : String(target.prefix { $0 != "#" })
+    guard !clean.isEmpty else { return }
+    let resolvedPath = URL(string: clean)?.path ?? clean.removingPercentEncoding ?? clean
+    let itemName = URL(fileURLWithPath: resolvedPath).lastPathComponent
+    var related = request
+    related["reference"] = clean
+    related["name"] = clean.hasPrefix("gtmux-file:") ? "" : itemName
+    related["parent_id"] = clean.hasPrefix("gtmux-file:") ? nil : file.id
     navigationController?.pushViewController(DocumentPreviewController(request: related), animated: true)
   }
   func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,

@@ -16,7 +16,7 @@ import type { HQWorkspace } from '../api/hqWorkspace';
 import { useAgents } from '../state/AgentsContext';
 import { useApp } from '../state/AppContext';
 import type { HQResourceRequest } from '../state/WorkspaceContext';
-import { createReadTask, startReadPolling } from '../state/readTask';
+import { createReadTask, startReadPolling, useScreenFocused } from '../state/readTask';
 import { draftKeyFor } from '../state/drafts';
 import { HQAvatar } from '../ui/HQAvatar';
 import { ChromeText } from '../ui/ChromeText';
@@ -70,8 +70,11 @@ export function HQWorkspaceView(
   const retry = useRef<() => void>(() => {});
   const retireWorkspace = useRef<() => void>(() => {});
   const supported = typeof client.hqWorkspace === 'function' && !isGuest;
-  const data = record?.client === client ? record.value : undefined;
+  const focused = useScreenFocused();
+  const hasLoadedForClient = record?.client === client;
+  const data = hasLoadedForClient ? record.value : undefined;
   const unavailable = data === null;
+  const pollWorkspace = focused && (page === 'overview' || unavailable || !hasLoadedForClient);
   const clearPrivate = useCallback(() => {
     retireWorkspace.current();
     setRefreshing(false);
@@ -81,7 +84,7 @@ export function HQWorkspaceView(
   }, []);
   const resources = useHQResourceSummaries(
     client,
-    supported && page === 'overview' && !!data,
+    supported && focused && page === 'overview' && !!data,
     clearPrivate,
   );
   useEffect(() => {
@@ -102,7 +105,7 @@ export function HQWorkspaceView(
     }
   }, [client, navigationCurrent, navigationIdentity]);
   useEffect(() => {
-    if (!supported) return;
+    if (!supported || !pollWorkspace) return;
     const task = createReadTask(
       signal => client.hqWorkspace(signal),
       value => {
@@ -123,8 +126,12 @@ export function HQWorkspaceView(
     );
     retry.current = task.run;
     retireWorkspace.current = task.invalidate;
+    if (page !== 'overview' && !unavailable) {
+      task.run();
+      return task.dispose;
+    }
     return startReadPolling(task, unavailable ? 60000 : 10000);
-  }, [client, supported, unavailable]);
+  }, [client, supported, pollWorkspace, page, unavailable]);
   if (!supported || data === null || (navigationCurrent && page === 'console'))
     return (
       <React.Fragment key={navigationIdentity}>

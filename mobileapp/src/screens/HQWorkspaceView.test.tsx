@@ -141,19 +141,36 @@ test('resource summaries lead the overview with real facts and keep resource nav
   expect(text()).toContain('Needs input');
 });
 test('an unavailable workspace in the conversation stays unknown instead of becoming an empty legacy queue', async () => {
-  await mount();
-  await press('Talk to HQ');
-  expect(consoleRender.mock.calls.at(-1)?.[0].matterSummary).toEqual({
-    needsInput: 1,
-    following: 2,
-  });
   mockContext.client.hqWorkspace.mockRejectedValue(
     new ApiError(403, 'workspace'),
   );
-  await act(async () => jest.advanceTimersByTime(10000));
+  await act(async () => {
+    tree = renderer.create(
+      <HQWorkspaceView
+        agent={hq}
+        prefill="status"
+        renderConsole={consoleRender}
+      />,
+    );
+  });
   const props = consoleRender.mock.calls.at(-1)?.[0];
   expect(props.workspaceMode).toBe(true);
   expect(props.matterSummary).toBeUndefined();
+});
+test('conversation page pauses periodic workspace polling until returning to overview', async () => {
+  await mount();
+  expect(mockContext.client.hqWorkspace).toHaveBeenCalledTimes(1);
+  await press('Talk to HQ');
+  mockContext.client.hqBoard.mockClear();
+  mockContext.client.hqKnowledge.mockClear();
+  mockContext.client.usage.mockClear();
+  await act(async () => jest.advanceTimersByTime(30000));
+  expect(mockContext.client.hqWorkspace).toHaveBeenCalledTimes(1);
+  expect(mockContext.client.hqBoard).not.toHaveBeenCalled();
+  expect(mockContext.client.hqKnowledge).not.toHaveBeenCalled();
+  expect(mockContext.client.usage).not.toHaveBeenCalled();
+  await act(async () => consoleRender.mock.calls.at(-1)?.[0].onBack());
+  expect(mockContext.client.hqWorkspace).toHaveBeenCalledTimes(2);
 });
 test('wide overviews flow current matters together while expansion remains reversible', async () => {
   mockWindowWidth = 1024;
